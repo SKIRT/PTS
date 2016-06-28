@@ -16,12 +16,12 @@
 
 # -----------------------------------------------------------------
 
-# Import standard modules
-from random import randint as rand_randint, uniform as rand_uniform, choice as rand_choice
-
 # Import other evolve modules
 import tree
 import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -29,7 +29,7 @@ def G1DBinaryStringInitializator(genome, **args):
 
     """ 1D Binary String initializator """
 
-    genome.genomeList = [rand_choice((0, 1)) for _ in xrange(genome.getListSize())]
+    genome.genomeList = [prng.choice((0, 1)) for _ in xrange(genome.getListSize())]
 
 # -----------------------------------------------------------------
 
@@ -44,7 +44,7 @@ def G2DBinaryStringInitializator(genome, **args):
 
     for i in xrange(genome.getHeight()):
         for j in xrange(genome.getWidth()):
-            random_gene = rand_choice((0, 1))
+            random_gene = prng.choice((0, 1))
             genome.setItem(i, j, random_gene)
 
 # -----------------------------------------------------------------
@@ -65,28 +65,49 @@ def G1DListInitializatorAllele(genome, **args):
 # -----------------------------------------------------------------
 
 def G1DListInitializatorInteger(genome, **args):
-    """ Integer initialization function of G1DList
-
-    This initializator accepts the *rangemin* and *rangemax* genome parameters.
 
     """
+    Integer initialization function of G1DList
+    This initializator accepts the *rangemin* and *rangemax* genome parameters.
+    """
+
     range_min = genome.getParam("rangemin", 0)
     range_max = genome.getParam("rangemax", 100)
 
-    genome.genomeList = [rand_randint(range_min, range_max) for i in xrange(genome.getListSize())]
+    genome.genomeList = [prng.randint(range_min, range_max) for i in xrange(genome.getListSize())]
 
 # -----------------------------------------------------------------
 
 def G1DListInitializatorReal(genome, **args):
 
-    """ Real initialization function of G1DList
+    """
+    Real initialization function of G1DList
     This initializator accepts the *rangemin* and *rangemax* genome parameters.
     """
 
     range_min = genome.getParam("rangemin", 0)
     range_max = genome.getParam("rangemax", 100)
 
-    genome.genomeList = [rand_uniform(range_min, range_max) for i in xrange(genome.getListSize())]
+    genome.genomeList = [prng.uniform(range_min, range_max) for i in xrange(genome.getListSize())]
+
+# -----------------------------------------------------------------
+
+def HeterogeneousListMutatorRealRange(genome, **args):
+
+    """
+    :param genome:
+    :param args:
+    :return:
+    """
+
+    genome.genomeList = []
+
+    for index in xrange(genome.getListSize()):
+
+        range_min = genome.getParam("minima")[index]
+        range_max = genome.getParam("maxima")[index]
+
+        genome.genomeList.append(prng.uniform(range_min, range_max))
 
 # -----------------------------------------------------------------
 
@@ -100,7 +121,7 @@ def G2DListInitializatorInteger(genome, **args):
 
     for i in xrange(genome.getHeight()):
         for j in xrange(genome.getWidth()):
-            randomInteger = rand_randint(genome.getParam("rangemin", 0),
+            randomInteger = prng.randint(genome.getParam("rangemin", 0),
                                          genome.getParam("rangemax", 100))
             genome.setItem(i, j, randomInteger)
 
@@ -116,7 +137,7 @@ def G2DListInitializatorReal(genome, **args):
 
     for i in xrange(genome.getHeight()):
         for j in xrange(genome.getWidth()):
-            randomReal = rand_uniform(genome.getParam("rangemin", 0),
+            randomReal = prng.uniform(genome.getParam("rangemin", 0),
                                       genome.getParam("rangemax", 100))
             genome.setItem(i, j, randomReal)
 
@@ -171,7 +192,7 @@ def GTreeInitializatorInteger(genome, **args):
     range_min = genome.getParam("rangemin", 0)
     range_max = genome.getParam("rangemax", 100)
 
-    lambda_generator = lambda: rand_randint(range_min, range_max)
+    lambda_generator = lambda: prng.randint(range_min, range_max)
 
     method = genome.getParam("method", "grow")
 

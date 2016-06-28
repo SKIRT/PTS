@@ -11,291 +11,293 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-from random import randint as rand_randint, choice as rand_choice
-from random import random as rand_random
 import math
 
 # Import other evolve modules
 import utils
 import constants
 
+# Import the relevant PTS classes and modules
+from ..core.tools.random import prng
+
 # -----------------------------------------------------------------
 
 def G1DBinaryStringXSinglePoint(genome, **args):
 
-   """
-   The crossover of 1D Binary String, Single Point
-   .. warning:: You can't use this crossover method for binary strings with length of 1.
-   """
+    """
+    The crossover of 1D Binary String, Single Point
+    .. warning:: You can't use this crossover method for binary strings with length of 1.
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   if len(gMom) == 1:
+    if len(gMom) == 1:
       utils.raiseException("The Binary String have one element, can't use the Single Point Crossover method !", TypeError)
 
-   cut = rand_randint(1, len(gMom) - 1)
+    cut = prng.randint(1, len(gMom) - 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       sister[cut:] = gDad[cut:]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       brother[cut:] = gMom[cut:]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DBinaryStringXTwoPoint(genome, **args):
 
-   """
-   The 1D Binary String crossover, Two Point
-   .. warning:: You can't use this crossover method for binary strings with length of 1.
-   """
+    """
+    The 1D Binary String crossover, Two Point
+    .. warning:: You can't use this crossover method for binary strings with length of 1.
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   if len(gMom) == 1:
+    if len(gMom) == 1:
       utils.raiseException("The Binary String have one element, can't use the Two Point Crossover method !", TypeError)
 
-   cuts = [rand_randint(1, len(gMom) - 1), rand_randint(1, len(gMom) - 1)]
+    cuts = [prng.randint(1, len(gMom) - 1), prng.randint(1, len(gMom) - 1)]
 
-   if cuts[0] > cuts[1]:
+    if cuts[0] > cuts[1]:
       utils.listSwapElement(cuts, 0, 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       sister[cuts[0]:cuts[1]] = gDad[cuts[0]:cuts[1]]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       brother[cuts[0]:cuts[1]] = gMom[cuts[0]:cuts[1]]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DBinaryStringXUniform(genome, **args):
 
-   """
-   The G1DList Uniform Crossover
-   """
+    """
+    The G1DList Uniform Crossover
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   sister = gMom.clone()
-   brother = gDad.clone()
-   sister.resetStats()
-   brother.resetStats()
+    sister = gMom.clone()
+    brother = gDad.clone()
+    sister.resetStats()
+    brother.resetStats()
 
-   for i in xrange(len(gMom)):
+    for i in xrange(len(gMom)):
       if utils.randomFlipCoin(constants.CDefG1DBinaryStringUniformProb):
          temp = sister[i]
          sister[i] = brother[i]
          brother[i] = temp
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DListCrossoverSinglePoint(genome, **args):
 
-   """
-   The crossover of G1DList, Single Point
-   .. warning:: You can't use this crossover method for lists with just one element.
-   """
+    """
+    The crossover of G1DList, Single Point
+    .. warning:: You can't use this crossover method for lists with just one element.
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   if len(gMom) == 1:
+    if len(gMom) == 1:
       utils.raiseException("The 1D List have one element, can't use the Single Point Crossover method !", TypeError)
 
-   cut = rand_randint(1, len(gMom) - 1)
+    cut = prng.randint(1, len(gMom) - 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       sister[cut:] = gDad[cut:]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       brother[cut:] = gMom[cut:]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DListCrossoverTwoPoint(genome, **args):
 
-   """
-   The G1DList crossover, Two Point
-   .. warning:: You can't use this crossover method for lists with just one element.
-   """
+    """
+    The G1DList crossover, Two Point
+    .. warning:: You can't use this crossover method for lists with just one element.
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   if len(gMom) == 1:
+    if len(gMom) == 1:
       utils.raiseException("The 1D List have one element, can't use the Two Point Crossover method !", TypeError)
 
-   cuts = [rand_randint(1, len(gMom) - 1), rand_randint(1, len(gMom) - 1)]
+    cuts = [prng.randint(1, len(gMom) - 1), prng.randint(1, len(gMom) - 1)]
 
-   if cuts[0] > cuts[1]:
+    if cuts[0] > cuts[1]:
       utils.listSwapElement(cuts, 0, 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       sister[cuts[0]:cuts[1]] = gDad[cuts[0]:cuts[1]]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       brother[cuts[0]:cuts[1]] = gMom[cuts[0]:cuts[1]]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DListCrossoverUniform(genome, **args):
 
-   """
-   The G1DList Uniform Crossover
-   Each gene has a 50% chance of being swapped between mom and dad
-   """
+    """
+    The G1DList Uniform Crossover
+    Each gene has a 50% chance of being swapped between mom and dad
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   sister = gMom.clone()
-   brother = gDad.clone()
-   sister.resetStats()
-   brother.resetStats()
+    sister = gMom.clone()
+    brother = gDad.clone()
+    sister.resetStats()
+    brother.resetStats()
 
-   for i in xrange(len(gMom)):
+    for i in xrange(len(gMom)):
       if utils.randomFlipCoin(constants.CDefG1DListCrossUniformProb):
          temp = sister[i]
          sister[i] = brother[i]
          brother[i] = temp
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DListCrossoverOX(genome, **args):
 
-   """ The OX Crossover for G1DList  (order crossover) """
+    """ The OX Crossover for G1DList  (order crossover) """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
-   listSize = len(gMom)
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
+    listSize = len(gMom)
 
-   c1, c2 = [rand_randint(1, len(gMom) - 1), rand_randint(1, len(gMom) - 1)]
+    c1, c2 = [prng.randint(1, len(gMom) - 1), prng.randint(1, len(gMom) - 1)]
 
-   while c1 == c2:
-      c2 = rand_randint(1, len(gMom) - 1)
+    while c1 == c2:
+      c2 = prng.randint(1, len(gMom) - 1)
 
-   if c1 > c2:
+    if c1 > c2:
       h = c1
       c1 = c2
       c2 = h
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       P1 = [c for c in gMom[c2:] + gMom[:c2] if c not in gDad[c1:c2]]
       sister.genomeList = P1[listSize - c2:] + gDad[c1:c2] + P1[:listSize - c2]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       P2 = [c for c in gDad[c2:] + gDad[:c2] if c not in gMom[c1:c2]]
       brother.genomeList = P2[listSize - c2:] + gMom[c1:c2] + P2[:listSize - c2]
 
-   assert listSize == len(sister)
-   assert listSize == len(brother)
+    assert listSize == len(sister)
+    assert listSize == len(brother)
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DListCrossoverEdge(genome, **args):
 
-   """ THe Edge Recombination crossover for G1DList (widely used for TSP problem)
-   See more information in the `Edge Recombination Operator <http://en.wikipedia.org/wiki/Edge_recombination_operator>`_
-   Wikipedia entry.
-   """
+    """ THe Edge Recombination crossover for G1DList (widely used for TSP problem)
+    See more information in the `Edge Recombination Operator <http://en.wikipedia.org/wiki/Edge_recombination_operator>`_
+    Wikipedia entry.
+    """
 
-   gMom, sisterl = args["mom"], []
-   gDad, brotherl = args["dad"], []
+    gMom, sisterl = args["mom"], []
+    gDad, brotherl = args["dad"], []
 
-   mom_edges, dad_edges, merge_edges = utils.G1DListGetEdgesComposite(gMom, gDad)
+    mom_edges, dad_edges, merge_edges = utils.G1DListGetEdgesComposite(gMom, gDad)
 
-   for c, u in (sisterl, set(gMom)), (brotherl, set(gDad)):
+    for c, u in (sisterl, set(gMom)), (brotherl, set(gDad)):
       curr = None
       for i in xrange(len(gMom)):
-         curr = rand_choice(tuple(u)) if not curr else curr
+         curr = prng.choice(tuple(u)) if not curr else curr
          c.append(curr)
          u.remove(curr)
          d = [v for v in merge_edges.get(curr, []) if v in u]
          if d:
-            curr = rand_choice(d)
+            curr = prng.choice(d)
          else:
             s = [v for v in mom_edges.get(curr, []) if v in u]
             s += [v for v in dad_edges.get(curr, []) if v in u]
-            curr = rand_choice(s) if s else None
+            curr = prng.choice(s) if s else None
 
-   sister = gMom.clone()
-   brother = gDad.clone()
-   sister.resetStats()
-   brother.resetStats()
+    sister = gMom.clone()
+    brother = gDad.clone()
+    sister.resetStats()
+    brother.resetStats()
 
-   sister.genomeList = sisterl
-   brother.genomeList = brotherl
+    sister.genomeList = sisterl
+    brother.genomeList = brotherl
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DListCrossoverCutCrossfill(genome, **args):
 
-   """ The crossover of G1DList, Cut and crossfill, for permutations
-   """
+    """
+    The crossover of G1DList, Cut and crossfill, for permutations
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   if len(gMom) == 1: utils.raiseException("The 1D List have one element, can't use the Single Point Crossover method !", TypeError)
+    if len(gMom) == 1: utils.raiseException("The 1D List have one element, can't use the Single Point Crossover method !", TypeError)
 
-   cut = rand_randint(1, len(gMom) - 1)
+    cut = prng.randint(1, len(gMom) - 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       mother_part = gMom[0:cut]
       sister.resetStats()
@@ -309,7 +311,7 @@ def G1DListCrossoverCutCrossfill(genome, **args):
          sister[cut + x] = v
          x += 1
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       father_part = gDad[0:cut]
       brother.resetStats()
@@ -323,37 +325,38 @@ def G1DListCrossoverCutCrossfill(genome, **args):
          brother[cut + x] = v
          x += 1
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G1DListCrossoverRealSBX(genome, **args):
 
-   """ Experimental SBX Implementation - Follows the implementation in NSGA-II (Deb, et.al)
-   Some implementation `reference <http://vision.ucsd.edu/~sagarwal/icannga.pdf>`_.
-   And another reference to the `Simulated Binary Crossover <http://www.mitpressjournals.org/doi/abs/10.1162/106365601750190406>`_.
-   .. warning:: This crossover method is Data Type Dependent, which means that
+    """
+    Experimental SBX Implementation - Follows the implementation in NSGA-II (Deb, et.al)
+    Some implementation `reference <http://vision.ucsd.edu/~sagarwal/icannga.pdf>`_.
+    And another reference to the `Simulated Binary Crossover <http://www.mitpressjournals.org/doi/abs/10.1162/106365601750190406>`_.
+    .. warning:: This crossover method is Data Type Dependent, which means that
                 must be used for 1D genome of real values.
-   """
+    """
 
-   EPS = constants.CDefG1DListSBXEPS
-   # Crossover distribution index
-   eta_c = constants.CDefG1DListSBXEtac
+    EPS = constants.CDefG1DListSBXEPS
+    # Crossover distribution index
+    eta_c = constants.CDefG1DListSBXEtac
 
-   gMom = args["mom"]
-   gDad = args["dad"]
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   # Get the variable bounds ('gDad' could have been used; but I love Mom:-))
-   lb = gMom.getParam("rangemin", constants.CDefRangeMin)
-   ub = gMom.getParam("rangemax", constants.CDefRangeMax)
+    # Get the variable bounds ('gDad' could have been used; but I love Mom:-))
+    lb = gMom.getParam("rangemin", constants.CDefRangeMin)
+    ub = gMom.getParam("rangemax", constants.CDefRangeMax)
 
-   sister = gMom.clone()
-   brother = gDad.clone()
+    sister = gMom.clone()
+    brother = gDad.clone()
 
-   sister.resetStats()
-   brother.resetStats()
+    sister.resetStats()
+    brother.resetStats()
 
-   for i in range(0, len(gMom)):
+    for i in range(0, len(gMom)):
       if math.fabs(gMom[i] - gDad[i]) > EPS:
          if gMom[i] > gDad[i]:
             #swap
@@ -362,7 +365,7 @@ def G1DListCrossoverRealSBX(genome, **args):
             gDad[i] = temp
 
          #random number betwn. 0 & 1
-         u = rand_random()
+         u = prng.random_sample()
 
          beta = 1.0 + 2 * (gMom[i] - lb) / (1.0 * (gDad[i] - gMom[i]))
          alpha = 2.0 - beta ** (-(eta_c + 1.0))
@@ -394,214 +397,224 @@ def G1DListCrossoverRealSBX(genome, **args):
          if sister[i] < lb:
             sister[i] = lb
 
-         if rand_random() > 0.5:
+         if prng.random_sample() > 0.5:
+
             # Swap
             temp = sister[i]
             sister[i] = brother[i]
             brother[i] = temp
+
       else:
+
          sister[i] = gMom[i]
          brother[i] = gDad[i]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G2DListCrossoverUniform(genome, **args):
 
-   """ The G2DList Uniform Crossover """
+    """
+    The G2DList Uniform Crossover
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   sister = gMom.clone()
-   brother = gDad.clone()
-   sister.resetStats()
-   brother.resetStats()
+    sister = gMom.clone()
+    brother = gDad.clone()
+    sister.resetStats()
+    brother.resetStats()
 
-   h, w = gMom.getSize()
+    h, w = gMom.getSize()
 
-   for i in xrange(h):
+    for i in xrange(h):
       for j in xrange(w):
          if utils.randomFlipCoin(constants.CDefG2DListCrossUniformProb):
             temp = sister.getItem(i, j)
             sister.setItem(i, j, brother.getItem(i, j))
             brother.setItem(i, j, temp)
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G2DListCrossoverSingleVPoint(genome, **args):
 
-   """ The crossover of G2DList, Single Vertical Point """
+    """ The crossover of G2DList, Single Vertical Point """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   cut = rand_randint(1, gMom.getWidth() - 1)
+    cut = prng.randint(1, gMom.getWidth() - 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       for i in xrange(sister.getHeight()):
          sister[i][cut:] = gDad[i][cut:]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       for i in xrange(brother.getHeight()):
          brother[i][cut:] = gMom[i][cut:]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G2DListCrossoverSingleHPoint(genome, **args):
 
-   """ The crossover of G2DList, Single Horizontal Point """
+    """ The crossover of G2DList, Single Horizontal Point """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   cut = rand_randint(1, gMom.getHeight() - 1)
+    cut = prng.randint(1, gMom.getHeight() - 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       for i in xrange(cut, sister.getHeight()):
          sister[i][:] = gDad[i][:]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       for i in xrange(brother.getHeight()):
          brother[i][:] = gMom[i][:]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G2DBinaryStringXUniform(genome, **args):
 
-   """ The G2DBinaryString Uniform Crossover
-   .. versionadded:: 0.6
+    """
+    The G2DBinaryString Uniform Crossover
+    .. versionadded:: 0.6
       The *G2DBinaryStringXUniform* function
-   """
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   sister = gMom.clone()
-   brother = gDad.clone()
-   sister.resetStats()
-   brother.resetStats()
+    sister = gMom.clone()
+    brother = gDad.clone()
+    sister.resetStats()
+    brother.resetStats()
 
-   h, w = gMom.getSize()
+    h, w = gMom.getSize()
 
-   for i in xrange(h):
+    for i in xrange(h):
       for j in xrange(w):
          if utils.randomFlipCoin(constants.CDefG2DBinaryStringUniformProb):
             temp = sister.getItem(i, j)
             sister.setItem(i, j, brother.getItem(i, j))
             brother.setItem(i, j, temp)
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G2DBinaryStringXSingleVPoint(genome, **args):
 
-   """ The crossover of G2DBinaryString, Single Vertical Point
-   .. versionadded:: 0.6
+    """
+    The crossover of G2DBinaryString, Single Vertical Point
+    .. versionadded:: 0.6
       The *G2DBinaryStringXSingleVPoint* function
-   """
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   cut = rand_randint(1, gMom.getWidth() - 1)
+    cut = prng.randint(1, gMom.getWidth() - 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       for i in xrange(sister.getHeight()):
          sister[i][cut:] = gDad[i][cut:]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       for i in xrange(brother.getHeight()):
          brother[i][cut:] = gMom[i][cut:]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def G2DBinaryStringXSingleHPoint(genome, **args):
 
-   """ The crossover of G2DBinaryString, Single Horizontal Point
-   .. versionadded:: 0.6
+    """
+    The crossover of G2DBinaryString, Single Horizontal Point
+    .. versionadded:: 0.6
       The *G2DBinaryStringXSingleHPoint* function
-   """
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"]
-   gDad = args["dad"]
+    sister = None
+    brother = None
+    gMom = args["mom"]
+    gDad = args["dad"]
 
-   cut = rand_randint(1, gMom.getHeight() - 1)
+    cut = prng.randint(1, gMom.getHeight() - 1)
 
-   if args["count"] >= 1:
+    if args["count"] >= 1:
       sister = gMom.clone()
       sister.resetStats()
       for i in xrange(cut, sister.getHeight()):
          sister[i][:] = gDad[i][:]
 
-   if args["count"] == 2:
+    if args["count"] == 2:
       brother = gDad.clone()
       brother.resetStats()
       for i in xrange(brother.getHeight()):
          brother[i][:] = gMom[i][:]
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def GTreeCrossoverSinglePoint(genome, **args):
 
-   """ The crossover for GTree, Single Point """
+    """
+    The crossover for GTree, Single Point
+    """
 
-   sister = None
-   brother = None
-   gMom = args["mom"].clone()
-   gDad = args["dad"].clone()
+    sister = None
+    brother = None
+    gMom = args["mom"].clone()
+    gDad = args["dad"].clone()
 
-   gMom.resetStats()
-   gDad.resetStats()
+    gMom.resetStats()
+    gDad.resetStats()
 
-   node_mom_stack = []
-   all_mom_nodes = []
-   node_mom_tmp = None
+    node_mom_stack = []
+    all_mom_nodes = []
+    node_mom_tmp = None
 
-   node_dad_stack = []
-   all_dad_nodes = []
-   node_dad_tmp = None
+    node_dad_stack = []
+    all_dad_nodes = []
+    node_dad_tmp = None
 
-   node_mom_stack.append(gMom.getRoot())
-   node_dad_stack.append(gDad.getRoot())
+    node_mom_stack.append(gMom.getRoot())
+    node_dad_stack.append(gDad.getRoot())
 
-   while (len(node_mom_stack) > 0) and (len(node_dad_stack) > 0):
+    while (len(node_mom_stack) > 0) and (len(node_dad_stack) > 0):
       node_mom_tmp = node_mom_stack.pop()
       node_dad_tmp = node_dad_stack.pop()
 
@@ -612,73 +625,74 @@ def GTreeCrossoverSinglePoint(genome, **args):
       node_mom_stack.extend(node_mom_tmp.getChilds())
       node_dad_stack.extend(node_dad_tmp.getChilds())
 
-   if len(all_mom_nodes) == 0 or len(all_dad_nodes) == 0:
+    if len(all_mom_nodes) == 0 or len(all_dad_nodes) == 0:
       return (gMom, gDad)
 
-   if len(all_dad_nodes) == 1:
+    if len(all_dad_nodes) == 1:
       nodeDad = all_dad_nodes[0]
-   else:
-      nodeDad = rand_choice(all_dad_nodes)
+    else:
+      nodeDad = prng.choice(all_dad_nodes)
 
-   if len(all_mom_nodes) == 1:
+    if len(all_mom_nodes) == 1:
       nodeMom = all_mom_nodes[0]
-   else:
-      nodeMom = rand_choice(all_mom_nodes)
+    else:
+      nodeMom = prng.choice(all_mom_nodes)
 
-   nodeMom_parent = nodeMom.getParent()
-   nodeDad_parent = nodeDad.getParent()
+    nodeMom_parent = nodeMom.getParent()
+    nodeDad_parent = nodeDad.getParent()
 
-   # Sister
-   if args["count"] >= 1:
+    # Sister
+    if args["count"] >= 1:
       sister = gMom
       nodeDad.setParent(nodeMom_parent)
       nodeMom_parent.replaceChild(nodeMom, nodeDad)
       sister.processNodes()
 
-   # Brother
-   if args["count"] == 2:
+    # Brother
+    if args["count"] == 2:
       brother = gDad
       nodeMom.setParent(nodeDad_parent)
       nodeDad_parent.replaceChild(nodeDad, nodeMom)
       brother.processNodes()
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def GTreeCrossoverSinglePointStrict(genome, **args):
 
-   """ The crossover of Tree, Strict Single Point
-   ..note:: This crossover method creates offspring with restriction of the
+    """
+    The crossover of Tree, Strict Single Point
+    ..note:: This crossover method creates offspring with restriction of the
             *max_depth* parameter.
-   Accepts the *max_attempt* parameter, *max_depth* (required), and
-   the distr_leaft (>= 0.0 and <= 1.0), which represents the probability
-   of leaf selection when findin random nodes for crossover.
+    Accepts the *max_attempt* parameter, *max_depth* (required), and
+    the distr_leaft (>= 0.0 and <= 1.0), which represents the probability
+    of leaf selection when findin random nodes for crossover.
 
-   """
-   sister = None
-   brother = None
+    """
+    sister = None
+    brother = None
 
-   gMom = args["mom"].clone()
-   gDad = args["dad"].clone()
+    gMom = args["mom"].clone()
+    gDad = args["dad"].clone()
 
-   gMom.resetStats()
-   gDad.resetStats()
+    gMom.resetStats()
+    gDad.resetStats()
 
-   max_depth = gMom.getParam("max_depth", None)
-   max_attempt = gMom.getParam("max_attempt", 10)
-   distr_leaf = gMom.getParam("distr_leaf", None)
+    max_depth = gMom.getParam("max_depth", None)
+    max_attempt = gMom.getParam("max_attempt", 10)
+    distr_leaf = gMom.getParam("distr_leaf", None)
 
-   if max_depth is None:
+    if max_depth is None:
       utils.raiseException("You must specify the max_depth genome parameter !", ValueError)
 
-   if max_depth < 0:
+    if max_depth < 0:
       utils.raiseException("The max_depth must be >= 1, if you want to use GTreeCrossoverSinglePointStrict crossover !", ValueError)
 
-   momRandom = None
-   dadRandom = None
+    momRandom = None
+    dadRandom = None
 
-   for i in xrange(max_attempt):
+    for i in xrange(max_attempt):
 
       if distr_leaf is None:
          dadRandom = gDad.getRandomNode()
@@ -708,17 +722,17 @@ def GTreeCrossoverSinglePointStrict(genome, **args):
       if (dD + mH <= max_depth) and (mD + dH <= max_depth):
          break
 
-   if i == (max_attempt - 1):
+    if i == (max_attempt - 1):
       assert gMom.getHeight() <= max_depth
       return (gMom, gDad)
-   else:
+    else:
       nodeMom, nodeDad = momRandom, dadRandom
 
-   nodeMom_parent = nodeMom.getParent()
-   nodeDad_parent = nodeDad.getParent()
+    nodeMom_parent = nodeMom.getParent()
+    nodeDad_parent = nodeDad.getParent()
 
-   # Sister
-   if args["count"] >= 1:
+    # Sister
+    if args["count"] >= 1:
       sister = gMom
       nodeDad.setParent(nodeMom_parent)
 
@@ -729,8 +743,8 @@ def GTreeCrossoverSinglePointStrict(genome, **args):
       sister.processNodes()
       assert sister.getHeight() <= max_depth
 
-   # Brother
-   if args["count"] == 2:
+    # Brother
+    if args["count"] == 2:
       brother = gDad
       nodeMom.setParent(nodeDad_parent)
 
@@ -741,40 +755,41 @@ def GTreeCrossoverSinglePointStrict(genome, **args):
       brother.processNodes()
       assert brother.getHeight() <= max_depth
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------
 
 def GTreeGPCrossoverSinglePoint(genome, **args):
 
-   """ The crossover of the GTreeGP, Single Point for Genetic Programming
-   ..note:: This crossover method creates offspring with restriction of the
+    """
+    The crossover of the GTreeGP, Single Point for Genetic Programming
+    ..note:: This crossover method creates offspring with restriction of the
             *max_depth* parameter.
-   Accepts the *max_attempt* parameter, *max_depth* (required).
-   """
+    Accepts the *max_attempt* parameter, *max_depth* (required).
+    """
 
-   sister = None
-   brother = None
+    sister = None
+    brother = None
 
-   gMom = args["mom"].clone()
-   gDad = args["dad"].clone()
+    gMom = args["mom"].clone()
+    gDad = args["dad"].clone()
 
-   gMom.resetStats()
-   gDad.resetStats()
+    gMom.resetStats()
+    gDad.resetStats()
 
-   max_depth = gMom.getParam("max_depth", None)
-   max_attempt = gMom.getParam("max_attempt", 15)
+    max_depth = gMom.getParam("max_depth", None)
+    max_attempt = gMom.getParam("max_attempt", 15)
 
-   if max_depth is None:
+    if max_depth is None:
       utils.raiseException("You must specify the max_depth genome parameter !", ValueError)
 
-   if max_depth < 0:
+    if max_depth < 0:
       utils.raiseException("The max_depth must be >= 1, if you want to use GTreeCrossoverSinglePointStrict crossover !", ValueError)
 
-   momRandom = None
-   dadRandom = None
+    momRandom = None
+    dadRandom = None
 
-   for i in xrange(max_attempt):
+    for i in xrange(max_attempt):
 
       dadRandom = gDad.getRandomNode()
 
@@ -800,17 +815,17 @@ def GTreeGPCrossoverSinglePoint(genome, **args):
 
       break
 
-   if i == (max_attempt - 1):
+    if i == (max_attempt - 1):
       assert gMom.getHeight() <= max_depth
       return (gMom, gDad)
-   else:
+    else:
       nodeMom, nodeDad = momRandom, dadRandom
 
-   nodeMom_parent = nodeMom.getParent()
-   nodeDad_parent = nodeDad.getParent()
+    nodeMom_parent = nodeMom.getParent()
+    nodeDad_parent = nodeDad.getParent()
 
-   # Sister
-   if args["count"] >= 1:
+    # Sister
+    if args["count"] >= 1:
       sister = gMom
       nodeDad.setParent(nodeMom_parent)
 
@@ -821,8 +836,8 @@ def GTreeGPCrossoverSinglePoint(genome, **args):
       sister.processNodes()
       assert sister.getHeight() <= max_depth
 
-   # Brother
-   if args["count"] == 2:
+    # Brother
+    if args["count"] == 2:
       brother = gDad
       nodeMom.setParent(nodeDad_parent)
 
@@ -833,6 +848,6 @@ def GTreeGPCrossoverSinglePoint(genome, **args):
       brother.processNodes()
       assert brother.getHeight() <= max_depth
 
-   return (sister, brother)
+    return (sister, brother)
 
 # -----------------------------------------------------------------

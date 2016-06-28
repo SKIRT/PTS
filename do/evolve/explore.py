@@ -15,13 +15,19 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import tables
 from pts.core.tools import filesystem as fs
-from pts.evolve.simplega import GSimpleGA, RawScoreCriteria
+from pts.evolve.simplega import SimpleGeneticAlgorithm, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import mutators
 from pts.evolve import initializators
 from pts.evolve import constants
 from pts.core.tools.logging import log
 from pts.core.tools import time
+
+# -----------------------------------------------------------------
+
+seed = 4357
+
+
 
 # -----------------------------------------------------------------
 
@@ -44,8 +50,8 @@ genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 
 #genome.evaluator.set(chi_squared_function)
 
-# Genetic Algorithm Instance
-ga = GSimpleGA(genome)
+# Genetic algorithm instance
+ga = SimpleGeneticAlgorithm(genome, seed=4357)
 ga.terminationCriteria.set(RawScoreCriteria)
 ga.setMinimax(constants.minimaxType["minimize"])
 ga.setGenerations(20)

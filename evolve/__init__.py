@@ -20,7 +20,7 @@
 __all__ = ["Consts", "Crossovers", "DBAdapters", "FunctionSlot",
            "G1DBinaryString", "G1DList", "G2DBinaryString",
            "G2DList", "GAllele", "GenomeBase", "GPopulation",
-           "GSimpleGA", "GTree", "Initializators",
+           "SimpleGeneticAlgorithm", "GTree", "Initializators",
            "Migration", "Mutators", "Network", "Scaling", "Selectors",
            "Statistics", "Util"]
 

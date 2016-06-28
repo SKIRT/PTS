@@ -25,13 +25,13 @@
 # Ensure Python 3 functionality
 from __future__ import division, print_function
 
-# Import standard modules
-import random
-
 # Import other evolve modules
 from genome import GenomeBase, GTreeBase, GTreeNodeBase
 import constants
 import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.random import prng
 
 try:
     import pydot
@@ -215,7 +215,7 @@ def buildGTreeGrow(depth, value_callback, max_siblings, max_depth):
     if depth == max_depth:
         return n
 
-    for i in xrange(random.randint(0, abs(max_siblings))):
+    for i in xrange(prng.randint(0, abs(max_siblings))):
         child = buildGTreeGrow(depth + 1, value_callback, max_siblings, max_depth)
         child.setParent(n)
         n.addChild(child)
@@ -245,7 +245,7 @@ def buildGTreeFull(depth, value_callback, max_siblings, max_depth):
     if max_siblings < 0:
         range_val = abs(max_siblings)
     else:
-        range_val = random.randint(1, abs(max_siblings))
+        range_val = prng.randint(1, abs(max_siblings))
 
     for i in xrange(range_val):
         child = buildGTreeFull(depth + 1, value_callback, max_siblings, max_depth)
@@ -761,16 +761,16 @@ def buildGTreeGPGrow(ga_engine, depth, max_depth):
     assert gp_function_set is not None
 
     if depth == max_depth:
-        random_terminal = checkTerminal(random.choice(gp_terminals))
+        random_terminal = checkTerminal(prng.choice(gp_terminals))
         n = GTreeNodeGP(random_terminal, constants.nodeType["TERMINAL"])
         return n
     else:
         # Do not generate degenerative trees
         if depth == 0:
-            random_node = random.choice(gp_function_set.keys())
+            random_node = prng.choice(gp_function_set.keys())
         else:
-            fchoice = random.choice([gp_function_set.keys(), gp_terminals])
-            random_node = random.choice(fchoice)
+            fchoice = prng.choice([gp_function_set.keys(), gp_terminals])
+            random_node = prng.choice(fchoice)
 
         if random_node in gp_terminals:
             n = GTreeNodeGP(checkTerminal(random_node), constants.nodeType["TERMINAL"])
@@ -804,11 +804,11 @@ def buildGTreeGPFull(ga_engine, depth, max_depth):
     assert gp_function_set is not None
 
     if depth == max_depth:
-        random_terminal = checkTerminal(random.choice(gp_terminals))
+        random_terminal = checkTerminal(prng.choice(gp_terminals))
         n = GTreeNodeGP(random_terminal, constants.nodeType["TERMINAL"])
         return n
     else:
-        random_oper = random.choice(gp_function_set.keys())
+        random_oper = prng.choice(gp_function_set.keys())
         n = GTreeNodeGP(random_oper, constants.nodeType["NONTERMINAL"])
 
     if n.getType() == constants.nodeType["NONTERMINAL"]:

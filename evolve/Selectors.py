@@ -10,11 +10,11 @@
 
 # -----------------------------------------------------------------
 
-# Import standard modules
-import random
-
 # Import other evolve modules
 import constants
+
+# Import the relevant PTS classes and modules
+from ..core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -44,7 +44,7 @@ def GRankSelector(population, **args):
    else:
       count = GRankSelector.cacheCount
 
-   return population[random.randint(0, count)]
+   return population[prng.randint(0, count)]
 
 GRankSelector.cachePopID = None
 GRankSelector.cacheCount = None
@@ -55,7 +55,7 @@ def GUniformSelector(population, **args):
 
    """ The Uniform Selector """
 
-   return population[random.randint(0, len(population) - 1)]
+   return population[prng.randint(0, len(population) - 1)]
 
 # -----------------------------------------------------------------
 
@@ -100,7 +100,7 @@ def GTournamentSelectorAlternative(population, **args):
    len_pop = len(population)
    should_minimize = population.minimax == constants.minimaxType["minimize"]
    minimax_operator = min if should_minimize else max
-   tournament_pool = [population[random.randint(0, len_pop - 1)] for i in xrange(pool_size)]
+   tournament_pool = [population[prng.randint(0, len_pop - 1)] for i in xrange(pool_size)]
 
    if population.sortType == constants.sortType["scaled"]:
       choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
@@ -123,7 +123,7 @@ def GRouletteWheel(population, **args):
    else:
       psum = GRouletteWheel.cacheWheel
 
-   cutoff = random.random()
+   cutoff = prng.random_sample()
    lower = 0
    upper = len(population) - 1
    while(upper >= lower):

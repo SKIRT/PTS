@@ -10,9 +10,6 @@
 
 # -----------------------------------------------------------------
 
-# Import standard modules
-from random import randint as rand_randint, choice as rand_choice
-
 # Import other evolve modules
 import utils
 import network
@@ -21,6 +18,7 @@ from functionslot import FunctionSlot
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
+from ..core.tools.random import prng
 
 try:
    from mpi4py import MPI
@@ -44,81 +42,86 @@ class MigrationScheme(object):
 
     def __init__(self):
 
-      """
-      The constructor ...
-      """
+        """
+        The constructor ...
+        """
 
-      self.selector = FunctionSlot("Selector")
-      self.GAEngine = None
-      self.nMigrationRate = Consts.CDefGenMigrationRate
-      self.nIndividuals = Consts.CDefMigrationNIndividuals
-      self.nReplacement = Consts.CDefGenMigrationReplacement
-      self.networkCompression = 9
+        self.selector = FunctionSlot("Selector")
+        self.GAEngine = None
+        self.nMigrationRate = constants.CDefGenMigrationRate
+        self.nIndividuals = constants.CDefMigrationNIndividuals
+        self.nReplacement = constants.CDefGenMigrationReplacement
+        self.networkCompression = 9
 
     # -----------------------------------------------------------------
 
     def isReady(self):
 
-      """ Returns true if is time to migrate """
+        """
+        Returns true if is time to migrate
+        """
 
-      return True if self.GAEngine.getCurrentGeneration() % self.nMigrationRate == 0 else False
+        return True if self.GAEngine.getCurrentGeneration() % self.nMigrationRate == 0 else False
 
     # -----------------------------------------------------------------
 
     def getCompressionLevel(self):
 
-      """ Get the zlib compression level of network data
-      The values are in the interval described on the :func:`Network.pickleAndCompress`
-      """
+        """ Get the zlib compression level of network data
+        The values are in the interval described on the :func:`Network.pickleAndCompress`
+        """
 
-      return self.networkCompression
+        return self.networkCompression
 
     # -----------------------------------------------------------------
 
     def setCompressionLevel(self, level):
-      """ Set the zlib compression level of network data
 
-      The values are in the interval described on the :func:`Network.pickleAndCompress`
+        """ Set the zlib compression level of network data
+        The values are in the interval described on the :func:`Network.pickleAndCompress`
+        :param level: the zlib compression level
+        """
 
-      :param level: the zlib compression level
-      """
-      self.networkCompression = level
+        self.networkCompression = level
 
     # -----------------------------------------------------------------
 
     def getNumReplacement(self):
 
-      """ Return the number of individuals that will be
-      replaced in the migration process """
+        """ Return the number of individuals that will be
+        replaced in the migration process """
 
-      return self.nReplacement
+        return self.nReplacement
 
     # -----------------------------------------------------------------
 
     def setNumReplacement(self, num_individuals):
 
-      """ Return the number of individuals that will be
-      replaced in the migration process
-      :param num_individuals: the number of individuals to be replaced
-      """
+        """
+        Return the number of individuals that will be
+        replaced in the migration process
+        :param num_individuals: the number of individuals to be replaced
+        """
 
-      self.nReplacement = num_individuals
+        self.nReplacement = num_individuals
 
     # -----------------------------------------------------------------
 
     def getNumIndividuals(self):
 
-      """ Return the number of individuals that will migrate
-      :rtype: the number of individuals to be replaced
-      """
+        """
+        Return the number of individuals that will migrate
+        :rtype: the number of individuals to be replaced
+        """
 
-      return self.nIndividuals
+        return self.nIndividuals
 
     # -----------------------------------------------------------------
 
     def setNumIndividuals(self, num_individuals):
 
-      """ Set the number of individuals that will migrate
+      """
+      Set the number of individuals that will migrate
       :param num_individuals: the number of individuals
       """
 
@@ -128,7 +131,8 @@ class MigrationScheme(object):
 
     def setMigrationRate(self, generations):
 
-      """ Sets the generation frequency supposed to migrate
+      """
+      Sets the generation frequency supposed to migrate
       and receive individuals.
       :param generations: the number of generations
       """
@@ -151,13 +155,16 @@ class MigrationScheme(object):
     def setGAEngine(self, ga_engine):
 
       """ Sets the GA Engine handler """
+
       self.GAEngine = ga_engine
 
     # -----------------------------------------------------------------
 
     def start(self):
 
-      """ Initializes the migration scheme """
+      """
+      Initializes the migration scheme
+      """
 
       pass
 
@@ -165,7 +172,9 @@ class MigrationScheme(object):
 
     def stop(self):
 
-      """ Stops the migration engine """
+      """
+      Stops the migration engine
+      """
 
       pass
 
@@ -173,7 +182,8 @@ class MigrationScheme(object):
 
     def select(self):
 
-      """ Picks an individual from population using specific selection method
+      """
+      Picks an individual from population using specific selection method
       :rtype: an individual object
       """
 
@@ -187,11 +197,13 @@ class MigrationScheme(object):
     # -----------------------------------------------------------------
 
     def selectPool(self, num_individuals):
-      """ Select num_individuals number of individuals and return a pool
 
+      """
+      Select num_individuals number of individuals and return a pool
       :param num_individuals: the number of individuals to select
       :rtype: list with individuals
       """
+
       pool = [self.select() for i in xrange(num_individuals)]
       return pool
 
@@ -199,7 +211,9 @@ class MigrationScheme(object):
 
     def exchange(self):
 
-      """ Exchange individuals """
+      """
+      Exchange individuals
+      """
 
       pass
 
@@ -224,48 +238,71 @@ class WANMigration(MigrationScheme):
       migration_scheme.selector.set(Selectors.GRouletteWheel) """
 
     def __init__(self, host, port, group_name):
-      super(WANMigration, self).__init__()
-      self.setMyself(host, port)
-      self.setGroupName(group_name)
-      self.topologyGraph = None
-      self.serverThread = network.UDPThreadServer(host, port)
-      self.clientThread = network.UDPThreadUnicastClient(self.myself[0], rand_randint(30000, 65534))
+
+        """
+        The constructor ...
+        :param host:
+        :param port:
+        :param group_name:
+        """
+
+        super(WANMigration, self).__init__()
+        self.setMyself(host, port)
+        self.setGroupName(group_name)
+        self.topologyGraph = None
+        self.serverThread = network.UDPThreadServer(host, port)
+        self.clientThread = network.UDPThreadUnicastClient(self.myself[0], prng.randint(30000, 65534))
+
+    # -----------------------------------------------------------------
 
     def setMyself(self, host, port):
-      """ Which interface you will use to send/receive data
 
+      """ Which interface you will use to send/receive data
       :param host: your hostname
       :param port: your port
       """
+
       self.myself = (host, port)
 
-    def getGroupName(self):
-      """ Gets the group name
+    # -----------------------------------------------------------------
 
+    def getGroupName(self):
+
+      """ Gets the group name
       .. note:: all islands of evolution which are supposed to exchange
                 individuals, must have the same group name.
       """
+
       return self.groupName
 
+    # -----------------------------------------------------------------
+
     def setGroupName(self, name):
+
       """ Sets the group name
-
       :param name: the group name
-
       .. note:: all islands of evolution which are supposed to exchange
                 individuals, must have the same group name.
       """
+
       self.groupName = name
 
-    def setTopology(self, graph):
-      """ Sets the topology of the migrations
+    # -----------------------------------------------------------------
 
+    def setTopology(self, graph):
+
+      """ Sets the topology of the migrations
       :param graph: the :class:`Util.Graph` instance
       """
+
       self.topologyGraph = graph
 
+    # -----------------------------------------------------------------
+
     def start(self):
+
       """ Start capture of packets and initialize the migration scheme """
+
       self.serverThread.start()
 
       if self.topologyGraph is None:
@@ -275,8 +312,12 @@ class WANMigration(MigrationScheme):
       self.clientThread.setMultipleTargetHost(targets)
       self.clientThread.start()
 
+    # -----------------------------------------------------------------
+
     def stop(self):
+
       """ Stops the migration engine """
+
       self.serverThread.shutdown()
       self.clientThread.shutdown()
       server_timeout = self.serverThread.timeout
@@ -290,6 +331,8 @@ class WANMigration(MigrationScheme):
 
       if self.clientThread.isAlive():
          log.warning("warning: client thread not joined !")
+
+    # -----------------------------------------------------------------
 
     def exchange(self):
 
@@ -328,7 +371,7 @@ class WANMigration(MigrationScheme):
       for i in xrange(self.getNumReplacement()):
          if len(pool) <= 0:
             break
-         choice = rand_choice(pool)
+         choice = prng.choice(pool)
          pool.remove(choice)
 
          # replace the worst
@@ -338,82 +381,87 @@ class WANMigration(MigrationScheme):
 
 class MPIMigration(MigrationScheme):
 
-    """ This is the MPIMigration """
+    """
+    This is the MPIMigration class
+    """
 
     def __init__(self):
-      # Delayed ImportError of mpi4py
-      if not HAS_MPI4PY:
+
+        # Delayed ImportError of mpi4py
+        if not HAS_MPI4PY:
          raise ImportError("No module named mpi4py, you must install mpi4py to use MPIMIgration!")
 
-      super(MPIMigration, self).__init__()
+        super(MPIMigration, self).__init__()
 
-      self.comm = MPI.COMM_WORLD
-      self.pid = self.comm.rank
+        self.comm = MPI.COMM_WORLD
+        self.pid = self.comm.rank
 
-      if self.pid == 0:
+        if self.pid == 0:
          self.source = self.comm.size - 1
-      else:
+        else:
          self.source = self.comm.rank - 1
 
-      self.dest = (self.comm.rank + 1) % (self.comm.size)
+        self.dest = (self.comm.rank + 1) % (self.comm.size)
 
-      self.all_stars = None
+        self.all_stars = None
+
+    # -----------------------------------------------------------------
 
     def isReady(self):
-      """ Returns true if is time to migrate """
 
-      if self.GAEngine.getCurrentGeneration() == 0:
-         return False
+        """
+        Returns true if is time to migrate
+        """
 
-      if self.GAEngine.getCurrentGeneration() % self.nMigrationRate == 0:
-         return True
-      else:
-         return False
+        if self.GAEngine.getCurrentGeneration() == 0: return False
+
+        if self.GAEngine.getCurrentGeneration() % self.nMigrationRate == 0: return True
+        else: return False
 
     # -----------------------------------------------------------------
 
     def gather_bests(self):
 
-      '''
-      Collect all the best individuals from the various populations. The
-      result is stored in process 0
-      '''
+        """
+        Collect all the best individuals from the various populations. The
+        result is stored in process 0
+        """
 
-      best_guy = self.select()
-      self.all_stars = self.comm.gather(sendobj=best_guy, root=0)
+        best_guy = self.select()
+        self.all_stars = self.comm.gather(sendobj=best_guy, root=0)
 
     # -----------------------------------------------------------------
 
     def exchange(self):
 
-      """
-      This is the main method, is where the individuals
-      are exchanged
-      """
+        """
+        This is the main method, is where the individuals
+        are exchanged
+        """
 
-      if not self.isReady(): return
+        if not self.isReady(): return
 
-      pool_to_send = self.selectPool(self.getNumIndividuals())
-      pool_received = self.comm.sendrecv(sendobj=pool_to_send,
+        pool_to_send = self.selectPool(self.getNumIndividuals())
+        pool_received = self.comm.sendrecv(sendobj=pool_to_send,
                                          dest=self.dest,
                                          sendtag=0,
                                          recvobj=None,
                                          source=self.source,
                                          recvtag=0)
 
-      population = self.GAEngine.getPopulation()
+        population = self.GAEngine.getPopulation()
 
-      pool = pool_received
-      for i in xrange(self.getNumReplacement()):
+        pool = pool_received
+        for i in xrange(self.getNumReplacement()):
          if len(pool) <= 0:
             break
 
-         choice = rand_choice(pool)
+         choice = prng.choice(pool)
          pool.remove(choice)
 
          # replace the worst
          population[len(population) - 1 - i] = choice
 
-      self.gather_bests()
+        self.gather_bests()
 
 # -----------------------------------------------------------------

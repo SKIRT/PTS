@@ -70,7 +70,7 @@ last_generation = None
 
 # Check the index of the last generation
 for name in fs.directories_in_path():
-    if "ref" in name: continue
+    if "reference" in name or "original" in name: continue
     generation = int(name.split("Generation ")[1])
     if last_generation is None or generation > last_generation: last_generation = generation
 
@@ -146,7 +146,6 @@ with open(best_path, 'w') as best_file:
     best_file.write("Parameter b: " + str(best_parameter_b) + "\n")
 
 popt, pcov = curve_fit(fit_function, test_data_x, test_data_y)
-
 parameter_a_real = popt[0]
 parameter_b_real = popt[1]
 
@@ -155,7 +154,8 @@ print("Best parameter b:", best_parameter_b, " REAL:", parameter_b_real)
 
 plt.figure()
 plt.scatter(test_data_x, test_data_y)
-plt.plot(x, [fit_function(best_parameter_a, best_parameter_b, x_i) for x_i in x])
+plt.plot(x, [fit_function(x_i, best_parameter_a, best_parameter_b) for x_i in x])
+plt.plot(x, [fit_function(x_i, parameter_a_real, parameter_b_real) for x_i in x])
 plt.ylim(65, 95)
 plt.xlim(12,22)
 

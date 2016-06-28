@@ -1,8 +1,9 @@
-from pyevolve import GSimpleGA
-from pyevolve import G1DList
-from pyevolve import Mutators, Initializators
-from pyevolve import Selectors
-from pyevolve import Consts
+
+from pts.evolve.simplega import SimpleGeneticAlgorithm, RawScoreCriteria
+from pts.evolve.genomes import G1DList
+from pts.evolve import Mutators, Initializators
+from pts.evolve import Selectors
+from pts.evolve import Consts
 import math
 
 # This is the Rastrigin Function, a deception function
@@ -26,8 +27,8 @@ def run_main():
    genome.evaluator.set(rastrigin)
 
    # Genetic Algorithm Instance
-   ga = GSimpleGA.GSimpleGA(genome)
-   ga.terminationCriteria.set(GSimpleGA.RawScoreCriteria)
+   ga = SimpleGeneticAlgorithm(genome)
+   ga.terminationCriteria.set(RawScoreCriteria)
    ga.setMinimax(Consts.minimaxType["minimize"])
    ga.setGenerations(3000)
    ga.setCrossoverRate(0.8)

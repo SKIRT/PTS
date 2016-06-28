@@ -343,11 +343,11 @@ class GPopulation(object):
          The parameter `index`.
         """
 
-        if self.sortType == constants.sortType["raw"]:
-         return self.internalPop[index]
+        if self.sortType == constants.sortType["raw"]: return self.internalPop[index]
         else:
-         self.sort()
-         return self.internalPopRaw[index]
+
+            self.sort()
+            return self.internalPopRaw[index]
 
     # -----------------------------------------------------------------
 

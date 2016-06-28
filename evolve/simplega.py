@@ -40,10 +40,8 @@
 from __future__ import division, print_function
 
 # Import standard modules
-import random
 from time import time
 from types import BooleanType
-from sys import platform as sys_platform
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
@@ -57,6 +55,7 @@ import utils
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
 from ..core.tools import serialization
+from ..core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -133,7 +132,7 @@ def FitnessStatsCriteria(ga_engine):
 
 # -----------------------------------------------------------------
 
-class GSimpleGA(object):
+class SimpleGeneticAlgorithm(object):
 
     """ GA Engine Class - The Genetic Algorithm Core
 
@@ -199,8 +198,7 @@ class GSimpleGA(object):
 
         """ Initializator of GSimpleGA """
 
-        if seed is not None:
-            random.seed(seed)
+        #if seed is not None: random.seed(seed) # used to be like this
 
         if type(interactiveMode) != BooleanType:
             utils.raiseException("Interactive Mode option must be True or False", TypeError)
@@ -842,7 +840,7 @@ class GSimpleGA(object):
                 for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1):
                     (sister, brother) = it
             else:
-                sister = random.choice([genomeMom, genomeDad])
+                sister = prng.choice([genomeMom, genomeDad])
                 sister = sister.clone()
                 sister.mutate(pmut=self.pMutation, ga_engine=self)
 
@@ -871,16 +869,16 @@ class GSimpleGA(object):
         # Evaluate
         self.new_population.evaluate()
 
-        # Elitism:
-        if self.elitism: self.do_elitism(self.new_population)
+        # Replace population
+        self.replace_internal_population()
 
-        # Set the new population as the internal population and sort it
-        self.internalPop = self.new_population
+        # Sort the population
         self.internalPop.sort()
 
-        ### NEW
+        # Set new population to None
         self.new_population = None
 
+        # Inform the user
         log.success("The generation %d was finished.", self.currentGeneration)
 
         # Increment the current generation number
@@ -892,6 +890,21 @@ class GSimpleGA(object):
               return True
 
         return self.currentGeneration == self.nGenerations
+
+    # -----------------------------------------------------------------
+
+    def replace_internal_population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Elitism:
+        if self.elitism: self.do_elitism(self.new_population)
+
+        # Set the new population as the internal population and sort it
+        self.internalPop = self.new_population
 
     # -----------------------------------------------------------------
 

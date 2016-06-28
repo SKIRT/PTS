@@ -15,11 +15,13 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-from random import uniform as rand_uniform
 from types import BooleanType
 
 # Import other evolve modules
 import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -225,7 +227,7 @@ class FunctionSlot(object):
          for f in self.funcList:
             yield f(obj, **args)
       else:
-         v = rand_uniform(0, 1)
+         v = prng.uniform(0, 1)
          fobj = None
          for func, weight in zip(self.funcList, self.funcWeights):
             fobj = func

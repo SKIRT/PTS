@@ -11,7 +11,6 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-from random import random as rand_random
 from math import sqrt as math_sqrt
 
 # Import other evolve modules
@@ -19,6 +18,7 @@ import constants
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
+from ..core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -41,7 +41,7 @@ def randomFlipCoin(p):
     if p == 0.0:
         return False
 
-    return rand_random() <= p
+    return prng.random_sample() <= p
 
 # -----------------------------------------------------------------
 

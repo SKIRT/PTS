@@ -12,12 +12,14 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-from random import choice as rand_choice
 import inspect
 
 # Import other evolve modules
 from functionslot import FunctionSlot
 import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -31,7 +33,9 @@ class GenomeBase(object):
 
    def __init__(self):
 
-      """Genome Constructor"""
+      """
+      Genome Constructor
+      """
 
       self.evaluator = FunctionSlot("Evaluator")
       self.initializator = FunctionSlot("Initializator")
@@ -666,16 +670,18 @@ class GTreeBase(GenomeBase):
     # -----------------------------------------------------------------
 
     def getRandomNode(self, node_type=0):
-      """ Returns a random node from the Tree
 
+      """ Returns a random node from the Tree
       :param node_type: 0 = Any, 1 = Leaf, 2 = Branch
       :rtype: random node
       """
+
       lists = (self.nodes_list, self.nodes_leaf, self.nodes_branch)
       cho = lists[node_type]
       if len(cho) <= 0:
          return None
-      return rand_choice(cho)
+
+      return prng.choice(cho)
 
     # -----------------------------------------------------------------
 

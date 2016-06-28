@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.evolve.original Reference, original implementation.
+## \package pts.do.evolve.reference Reference, PTS code.
 #
 
 # -----------------------------------------------------------------
@@ -19,11 +19,11 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Import the relevant PTS classes and modules
-from pts.evolve.simplega import SimpleGeneticAlgorithm, RawScoreCriteria
-from pts.evolve.genomes.list1d import G1DList
-from pts.evolve import mutators
-from pts.evolve import initializators
-from pts.evolve import constants
+from pyevolve.GSimpleGA import GSimpleGA, RawScoreCriteria
+from pyevolve.G1DList import G1DList
+from pyevolve import Mutators
+from pyevolve import Initializators
+from pyevolve import Consts
 from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
@@ -76,17 +76,17 @@ def chi_squared_function(chromosome):
 # Genome instance
 genome = G1DList(2)
 genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
-genome.initializator.set(initializators.G1DListInitializatorReal)
-genome.mutator.set(mutators.G1DListMutatorRealGaussian)
+genome.initializator.set(Initializators.G1DListInitializatorReal)
+genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
 
 # Set the evaluator function
 genome.evaluator.set(chi_squared_function)
 
 # Genetic algorithm instance
-ga = SimpleGeneticAlgorithm(genome, seed=4357)
+ga = GSimpleGA(genome, seed=4357)
 ga.terminationCriteria.set(RawScoreCriteria)
-ga.setMinimax(constants.minimaxType["minimize"])
-ga.setGenerations(10)
+ga.setMinimax(Consts.minimaxType["minimize"])
+ga.setGenerations(3)
 ga.setCrossoverRate(0.5)
 ga.setPopulationSize(100)
 ga.setMutationRate(0.5)
@@ -99,7 +99,7 @@ print("Final generation:", ga.currentGeneration)
 # -----------------------------------------------------------------
 
 # Determine the path to the reference directory
-ref_path = fs.join(fs.cwd(), "reference")
+ref_path = fs.join(fs.cwd(), "original")
 fs.create_directory(ref_path)
 
 # -----------------------------------------------------------------

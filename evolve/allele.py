@@ -10,12 +10,12 @@
 
 # -----------------------------------------------------------------
 
-# Import standard modules
-import random
-
 # Import other evolve modules
 import constants
 import utils
+
+# Import the relevant PTS classes and modules
+from ..core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -174,7 +174,7 @@ class GAlleleList(object):
 
       """ Returns one random choice from the options list """
 
-      return random.choice(self.options)
+      return prng.choice(self.options)
 
     # -----------------------------------------------------------------
 
@@ -264,105 +264,136 @@ class GAlleleRange(object):
 
     def __init__(self, begin=constants.CDefRangeMin, end=constants.CDefRangeMax, real=False):
 
-      """ The constructor of GAlleleRange class """
+        """
+        The constructor of GAlleleRange class
+        """
 
-      self.beginEnd = [(begin, end)]
-      self.real = real
-      self.minimum = None
-      self.maximum = None
-      self.__processMinMax()
+        self.beginEnd = [(begin, end)]
+        self.real = real
+        self.minimum = None
+        self.maximum = None
+        self.__processMinMax()
 
     # -----------------------------------------------------------------
 
     def __processMinMax(self):
 
-      """ Process the mininum and maximum of the Allele """
+        """ Process the mininum and maximum of the Allele """
 
-      self.minimum = min([x for x, y in self.beginEnd])
-      self.maximum = max([y for x, y in self.beginEnd])
+        self.minimum = min([x for x, y in self.beginEnd])
+        self.maximum = max([y for x, y in self.beginEnd])
 
     # -----------------------------------------------------------------
 
     def add(self, begin, end):
 
-      """ Add a new range
-      :param begin: the begin of range
-      :param end: the end of the range
-      """
+        """
+        This function adds a new range
+        :param begin: the begin of range
+        :param end: the end of the range
+        """
 
-      if begin > end:
+        if begin > end:
          utils.raiseException('Wrong value, the end of the range (%s) is greater than the begin (%s) !' % (end, begin), ValueError)
-      self.beginEnd.append((begin, end))
-      self.__processMinMax()
+        self.beginEnd.append((begin, end))
+        self.__processMinMax()
+
+    # -----------------------------------------------------------------
 
     def __getitem__(self, index):
-      return self.beginEnd[index]
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.beginEnd[index]
+
+    # -----------------------------------------------------------------
 
     def __setitem__(self, index, value):
-      if value[0] > value[1]:
+
+        """
+        This function ...
+        :param index:
+        :param value:
+        :return:
+        """
+
+        if value[0] > value[1]:
          utils.raiseException('Wrong value, the end of the range is greater than the begin ! %s' % value, ValueError)
-      self.beginEnd[index] = value
-      self.__processMinMax()
+        self.beginEnd[index] = value
+        self.__processMinMax()
 
     # -----------------------------------------------------------------
 
     def __iter__(self):
 
-      return iter(self.beginEnd)
+        """
+        This function ...
+        :return:
+        """
+
+        return iter(self.beginEnd)
 
     # -----------------------------------------------------------------
 
     def getMaximum(self):
 
-      """ Return the maximum of all the ranges
-      :rtype: the maximum value
-      """
+        """
+        Return the maximum of all the ranges
+        :rtype: the maximum value
+        """
 
-      return self.maximum
+        return self.maximum
 
     # -----------------------------------------------------------------
 
     def getMinimum(self):
 
-      """ Return the minimum of all the ranges
-      :rtype: the minimum value
-      """
+        """
+        Return the minimum of all the ranges
+        :rtype: the minimum value
+        """
 
-      return self.minimum
+        return self.minimum
 
     # -----------------------------------------------------------------
 
     def clear(self):
 
-      """ Removes all ranges """
+        """
+        Removes all ranges
+        """
 
-      del self.beginEnd[:]
-      self.minimum = None
-      self.maximum = None
+        del self.beginEnd[:]
+        self.minimum = None
+        self.maximum = None
 
     # -----------------------------------------------------------------
 
     def getRandomAllele(self):
 
-      """ Returns one random choice between the range """
+        """
+        Returns one random choice between the range
+        """
 
-      rand_func = random.uniform if self.real else random.randint
+        if len(self.beginEnd) <= 1: choice = 0
+        else: choice = prng.randint(0, len(self.beginEnd) - 1)
 
-      if len(self.beginEnd) <= 1:
-         choice = 0
-      else:
-         choice = random.randint(0, len(self.beginEnd) - 1)
-      return rand_func(self.beginEnd[choice][0], self.beginEnd[choice][1])
+        if self.real: return prng.uniform(self.beginEnd[choice][0], self.beginEnd[choice][1])
+        else: return prng.randint(self.beginEnd[choice][0], self.beginEnd[choice][1])
 
     # -----------------------------------------------------------------
 
     def setReal(self, flag=True):
 
-      """ Pass in True if the range is real or False if integer
-      :param flag: True or False
-      """
+        """ Pass in True if the range is real or False if integer
+        :param flag: True or False
+        """
 
-      self.real = flag
+        self.real = flag
 
     # -----------------------------------------------------------------
 
