@@ -31,6 +31,8 @@ from .logging import log
 # randint (low[, high, size, dtype])	Return random integers from low (inclusive) to high (exclusive).  # EXCLUSIVE END !
 # random_integers (low[, high, size])	Random integers of type np.int between low and high, inclusive. # INCLUSIVE END !
 
+# THE LATTER IS DEPRECATED : WE ARE GOING TO USE RANDINT(MIN, MAX + 1) THEN
+
 # -----------------------------------------------------------------
 
 # SKIRT seed

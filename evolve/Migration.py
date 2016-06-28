@@ -251,7 +251,7 @@ class WANMigration(MigrationScheme):
         self.setGroupName(group_name)
         self.topologyGraph = None
         self.serverThread = network.UDPThreadServer(host, port)
-        self.clientThread = network.UDPThreadUnicastClient(self.myself[0], prng.randint(30000, 65534)) # HERE IT SHOULD BE INCLUSIVE
+        self.clientThread = network.UDPThreadUnicastClient(self.myself[0], prng.randint(30000, 65534 + 1)) # HERE IT SHOULD BE INCLUSIVE
 
     # -----------------------------------------------------------------
 

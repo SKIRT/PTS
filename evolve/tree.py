@@ -197,7 +197,8 @@ class GTreeNode(GTreeNodeBase):
 
 def buildGTreeGrow(depth, value_callback, max_siblings, max_depth):
 
-    """ Random generates a Tree structure using the value_callback
+    """
+    Random generates a Tree structure using the value_callback
     for data generation and the method "Grow"
 
     :param depth: the initial depth, zero
@@ -215,10 +216,12 @@ def buildGTreeGrow(depth, value_callback, max_siblings, max_depth):
     if depth == max_depth:
         return n
 
-    for i in xrange(prng.randint(0, abs(max_siblings))): # HERE IT SHOULD BE INCLUSIVE
+    for i in xrange(prng.randint(0, abs(max_siblings) + 1)): # HERE IT SHOULD BE INCLUSIVE
+
         child = buildGTreeGrow(depth + 1, value_callback, max_siblings, max_depth)
         child.setParent(n)
         n.addChild(child)
+
     return n
 
 # -----------------------------------------------------------------
@@ -242,10 +245,8 @@ def buildGTreeFull(depth, value_callback, max_siblings, max_depth):
     if depth == max_depth:
         return n
 
-    if max_siblings < 0:
-        range_val = abs(max_siblings)
-    else:
-        range_val = prng.randint(1, abs(max_siblings)) # HERE IT SHOULD BE INCLUSIVE
+    if max_siblings < 0: range_val = abs(max_siblings)
+    else: range_val = prng.randint(1, abs(max_siblings) + 1) # HERE IT SHOULD BE INCLUSIVE
 
     for i in xrange(range_val):
         child = buildGTreeFull(depth + 1, value_callback, max_siblings, max_depth)

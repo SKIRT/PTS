@@ -383,13 +383,14 @@ class GAlleleRange(object):
         else: choice = prng.randint(0, len(self.beginEnd))
 
         if self.real: return prng.uniform(self.beginEnd[choice][0], self.beginEnd[choice][1])
-        else: return prng.randint(self.beginEnd[choice][0], self.beginEnd[choice][1]) # HERE IT SHOULD BE INCLUSIVE
+        else: return prng.randint(self.beginEnd[choice][0], self.beginEnd[choice][1] + 1) # HERE IT SHOULD BE INCLUSIVE
 
     # -----------------------------------------------------------------
 
     def setReal(self, flag=True):
 
-        """ Pass in True if the range is real or False if integer
+        """
+        Pass in True if the range is real or False if integer
         :param flag: True or False
         """
 
@@ -399,7 +400,9 @@ class GAlleleRange(object):
 
     def getReal(self):
 
-      """ Returns True if the range is real or False if it is integer """
+      """
+      Returns True if the range is real or False if it is integer
+      """
 
       return self.real
 
@@ -407,7 +410,9 @@ class GAlleleRange(object):
 
     def __len__(self):
 
-      """ Returns the ranges in the allele """
+      """
+      Returns the ranges in the allele
+      """
 
       return len(self.beginEnd)
 
@@ -415,7 +420,9 @@ class GAlleleRange(object):
 
     def __repr__(self):
 
-      """ Return a string representation of the allele """
+      """
+      Return a string representation of the allele
+      """
 
       ret = "- GAlleleRange\n"
       ret += "\tReal:\t\t %s\n" % (self.real,)

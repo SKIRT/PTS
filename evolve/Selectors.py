@@ -45,7 +45,7 @@ def GRankSelector(population, **args):
     else: count = GRankSelector.cacheCount
 
     if count == 0: individual = population[0]
-    else: individual = population[prng.randint(0, count)] # HERE IT SHOULD BE INCLUSIVE
+    else: individual = population[prng.randint(0, count + 1)] # HERE IT SHOULD BE INCLUSIVE
 
     return individual
 
