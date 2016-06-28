@@ -37,7 +37,7 @@ def G1DBinaryStringXSinglePoint(genome, **args):
     if len(gMom) == 1:
       utils.raiseException("The Binary String have one element, can't use the Single Point Crossover method !", TypeError)
 
-    cut = prng.randint(1, len(gMom) - 1)
+    cut = prng.randint(1, len(gMom))
 
     if args["count"] >= 1:
       sister = gMom.clone()
@@ -68,7 +68,7 @@ def G1DBinaryStringXTwoPoint(genome, **args):
     if len(gMom) == 1:
       utils.raiseException("The Binary String have one element, can't use the Two Point Crossover method !", TypeError)
 
-    cuts = [prng.randint(1, len(gMom) - 1), prng.randint(1, len(gMom) - 1)]
+    cuts = [prng.randint(1, len(gMom)), prng.randint(1, len(gMom))]
 
     if cuts[0] > cuts[1]:
       utils.listSwapElement(cuts, 0, 1)
@@ -128,7 +128,7 @@ def G1DListCrossoverSinglePoint(genome, **args):
     if len(gMom) == 1:
       utils.raiseException("The 1D List have one element, can't use the Single Point Crossover method !", TypeError)
 
-    cut = prng.randint(1, len(gMom) - 1)
+    cut = prng.randint(1, len(gMom))
 
     if args["count"] >= 1:
       sister = gMom.clone()
@@ -159,7 +159,7 @@ def G1DListCrossoverTwoPoint(genome, **args):
     if len(gMom) == 1:
       utils.raiseException("The 1D List have one element, can't use the Two Point Crossover method !", TypeError)
 
-    cuts = [prng.randint(1, len(gMom) - 1), prng.randint(1, len(gMom) - 1)]
+    cuts = [prng.randint(1, len(gMom)), prng.randint(1, len(gMom))]
 
     if cuts[0] > cuts[1]:
       utils.listSwapElement(cuts, 0, 1)
@@ -215,10 +215,10 @@ def G1DListCrossoverOX(genome, **args):
     gDad = args["dad"]
     listSize = len(gMom)
 
-    c1, c2 = [prng.randint(1, len(gMom) - 1), prng.randint(1, len(gMom) - 1)]
+    c1, c2 = [prng.randint(1, len(gMom)), prng.randint(1, len(gMom))]
 
     while c1 == c2:
-      c2 = prng.randint(1, len(gMom) - 1)
+      c2 = prng.randint(1, len(gMom))
 
     if c1 > c2:
       h = c1
@@ -295,7 +295,7 @@ def G1DListCrossoverCutCrossfill(genome, **args):
 
     if len(gMom) == 1: utils.raiseException("The 1D List have one element, can't use the Single Point Crossover method !", TypeError)
 
-    cut = prng.randint(1, len(gMom) - 1)
+    cut = prng.randint(1, len(gMom))
 
     if args["count"] >= 1:
       sister = gMom.clone()
@@ -451,7 +451,7 @@ def G2DListCrossoverSingleVPoint(genome, **args):
     gMom = args["mom"]
     gDad = args["dad"]
 
-    cut = prng.randint(1, gMom.getWidth() - 1)
+    cut = prng.randint(1, gMom.getWidth())
 
     if args["count"] >= 1:
       sister = gMom.clone()
@@ -478,7 +478,7 @@ def G2DListCrossoverSingleHPoint(genome, **args):
     gMom = args["mom"]
     gDad = args["dad"]
 
-    cut = prng.randint(1, gMom.getHeight() - 1)
+    cut = prng.randint(1, gMom.getHeight())
 
     if args["count"] >= 1:
       sister = gMom.clone()
@@ -540,7 +540,7 @@ def G2DBinaryStringXSingleVPoint(genome, **args):
     gMom = args["mom"]
     gDad = args["dad"]
 
-    cut = prng.randint(1, gMom.getWidth() - 1)
+    cut = prng.randint(1, gMom.getWidth())
 
     if args["count"] >= 1:
       sister = gMom.clone()
@@ -571,7 +571,7 @@ def G2DBinaryStringXSingleHPoint(genome, **args):
     gMom = args["mom"]
     gDad = args["dad"]
 
-    cut = prng.randint(1, gMom.getHeight() - 1)
+    cut = prng.randint(1, gMom.getHeight())
 
     if args["count"] >= 1:
       sister = gMom.clone()

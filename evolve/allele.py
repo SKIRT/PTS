@@ -380,7 +380,7 @@ class GAlleleRange(object):
         """
 
         if len(self.beginEnd) <= 1: choice = 0
-        else: choice = prng.randint(0, len(self.beginEnd) - 1)
+        else: choice = prng.randint(0, len(self.beginEnd))
 
         if self.real: return prng.uniform(self.beginEnd[choice][0], self.beginEnd[choice][1])
         else: return prng.randint(self.beginEnd[choice][0], self.beginEnd[choice][1]) # HERE IT SHOULD BE INCLUSIVE

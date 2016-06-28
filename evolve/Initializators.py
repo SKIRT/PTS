@@ -121,7 +121,7 @@ def G2DListInitializatorInteger(genome, **args):
 
     for i in xrange(genome.getHeight()):
         for j in xrange(genome.getWidth()):
-            randomInteger = prng.randint(genome.getParam("rangemin", 0),
+            randomInteger = prng.randint(genome.getParam("rangemin", 0), # HERE IT SHOULD BE INCLUSIVE
                                          genome.getParam("rangemax", 100)) # HERE IT SHOULD BE INCLUSIVE
             genome.setItem(i, j, randomInteger)
 

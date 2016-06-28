@@ -60,7 +60,7 @@ def GUniformSelector(population, **args):
 
    """ The Uniform Selector """
 
-   return population[prng.randint(0, len(population) - 1)]
+   return population[prng.randint(0, len(population))]
 
 # -----------------------------------------------------------------
 
@@ -105,7 +105,7 @@ def GTournamentSelectorAlternative(population, **args):
    len_pop = len(population)
    should_minimize = population.minimax == constants.minimaxType["minimize"]
    minimax_operator = min if should_minimize else max
-   tournament_pool = [population[prng.randint(0, len_pop - 1)] for i in xrange(pool_size)]
+   tournament_pool = [population[prng.randint(0, len_pop)] for i in xrange(pool_size)]
 
    if population.sortType == constants.sortType["scaled"]:
       choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
