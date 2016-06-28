@@ -1,6 +1,6 @@
 
-from pts.evolve.simplega import SimpleGeneticAlgorithm, RawScoreCriteria
-from pts.evolve.genomes import G1DList
+from pts.evolve.simplega import GAEngine, RawScoreCriteria
+from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import Mutators, Initializators
 from pts.evolve import Selectors
 from pts.evolve import Consts
@@ -19,7 +19,7 @@ def rastrigin(genome):
 def run_main():
     
    # Genome instance
-   genome = G1DList.G1DList(20)
+   genome = G1DList(20)
    genome.setParams(rangemin=-5.2, rangemax=5.30, bestrawscore=0.00, rounddecimal=2)
    genome.initializator.set(Initializators.G1DListInitializatorReal)
    genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
@@ -27,7 +27,7 @@ def run_main():
    genome.evaluator.set(rastrigin)
 
    # Genetic Algorithm Instance
-   ga = SimpleGeneticAlgorithm(genome)
+   ga = GAEngine(genome)
    ga.terminationCriteria.set(RawScoreCriteria)
    ga.setMinimax(Consts.minimaxType["minimize"])
    ga.setGenerations(3000)

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.GSimpleGA This module contains the GA Engine, the GA Engine class is responsible
+## \package pts.evolve.simplega This module contains the GA Engine, the GA Engine class is responsible
 #  for all the evolutionary process. It contains the GA Engine related
 #  functions, like the Termination Criteria functions for convergence analysis, etc.
 #
@@ -40,6 +40,7 @@
 from __future__ import division, print_function
 
 # Import standard modules
+import numpy as np
 from time import time
 from types import BooleanType
 from sys import stdout as sys_stdout
@@ -134,19 +135,19 @@ def FitnessStatsCriteria(ga_engine):
 
 # -----------------------------------------------------------------
 
-class SimpleGeneticAlgorithm(object):
+class GAEngine(object):
 
-    """ GA Engine Class - The Genetic Algorithm Core
+    """
+    This class represents the Genetic Algorithm Engine
 
     Example:
-       >>> ga = GSimpleGA.GSimpleGA(genome)
+       >>> ga = GAEngine(genome)
        >>> ga.selector.set(Selectors.GRouletteWheel)
        >>> ga.setGenerations(120)
        >>> ga.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
 
     :param genome: the :term:`Sample Genome`
     :param interactiveMode: this flag enables the Interactive Mode, the default is True
-    :param seed: the random seed value
 
     .. note:: if you use the same random seed, all the runs of algorithm will be the same
 
@@ -262,6 +263,9 @@ class SimpleGeneticAlgorithm(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the genetic algorithm engine from '" + path + "' ...")
+
         # Load the GA object from file
         ga = serialization.load(path)
 
@@ -280,6 +284,7 @@ class SimpleGeneticAlgorithm(object):
         :return:
         """
 
+        # Save to the current path
         self.saveto(self.path)
 
     # -----------------------------------------------------------------
@@ -292,6 +297,10 @@ class SimpleGeneticAlgorithm(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Saving the genetic algorithm engine to '" + path + "' ...")
+
+        # Set the new path as the current path and save
         self.path = path
         serialization.dump(self, path, protocol=2)
 
@@ -299,7 +308,8 @@ class SimpleGeneticAlgorithm(object):
 
     def setGPMode(self, bool_value):
 
-        """ Sets the Genetic Programming mode of the GA Engine
+        """
+        Sets the Genetic Programming mode of the GA Engine
         :param bool_value: True or False
         """
 
@@ -739,35 +749,69 @@ class SimpleGeneticAlgorithm(object):
 
     # -----------------------------------------------------------------
 
-    def load_scores(self, scores):
+    def set_scores(self, scores, check=None):
 
         """
         This function ...
         :param scores:
+        :param check:
         :return:
         """
 
-        if self.new_population is not None:
+        # Set the scores for the initial population
+        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check)
 
-            index = 0
-            for ind in self.new_population:
-
-                # Set the score
-                ind.score = scores[index]
-
-                # Increment the index
-                index += 1
-
+        # Set the scores for the new population
         else:
 
-            index = 0
-            for ind in self.internalPop:
+            # Set scores
+            self.set_scores_for_population(self.new_population, scores, check)
 
-                # Set the score
-                ind.score = scores[index]
+            # Replace
+            if self.new_population is not None: self.replace_internal_population()
 
-                # Increment the index
-                index += 1
+            # Increment the current generation number
+            self.currentGeneration += 1
+
+        # Sort the internal population
+        self.internalPop.sort()
+
+        # Set new pop to None
+        self.new_population = None
+
+    # -----------------------------------------------------------------
+
+    def set_scores_for_population(self, population, scores, check=None):
+
+        """
+        This function ...
+        :param population:
+        :param scores:
+        :param check:
+        :return:
+        """
+
+        index = 0
+        for individual in population:
+
+            if check is not None:
+
+                # Get the parametr values for this individual
+                parameter_a = individual.genomeList[0]
+                parameter_b = individual.genomeList[1]
+
+                parameter_a_check = check["Parameter a"][index]
+                parameter_b_check = check["Parameter b"][index]
+                rel_diff_a = abs((parameter_a - parameter_a_check) / parameter_a)
+                rel_diff_b = abs((parameter_b - parameter_b_check) / parameter_b)
+                assert np.isclose(parameter_a, parameter_a_check, rtol=1e-11), rel_diff_a
+                assert np.isclose(parameter_b, parameter_b_check, rtol=1e-11), rel_diff_b
+
+            # Set the score
+            individual.score = scores[index]
+
+            # Increment the index
+            index += 1
 
     # -----------------------------------------------------------------
 
@@ -798,6 +842,9 @@ class SimpleGeneticAlgorithm(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Creating generation " + str(self.currentGeneration) + " ...")
 
         # Clone the current internal population
         newPop = GPopulation(self.internalPop)
@@ -869,6 +916,7 @@ class SimpleGeneticAlgorithm(object):
         self.generate_new_population()
 
         # Evaluate
+        print(self.generation_description)
         self.new_population.evaluate()
 
         # Replace population
@@ -881,7 +929,7 @@ class SimpleGeneticAlgorithm(object):
         self.new_population = None
 
         # Inform the user
-        log.success("The generation %d was finished.", self.currentGeneration)
+        #log.success("The generation %d was finished.", self.currentGeneration)
 
         # Increment the current generation number
         self.currentGeneration += 1
@@ -1026,6 +1074,34 @@ class SimpleGeneticAlgorithm(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def is_initial_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.new_population is None:
+            if self.currentGeneration > 0: raise RuntimeError("Inconsistent state: 'new_population' does exist but 'currentGeneration' >0")
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_description(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.is_initial_generation: return "Initial generation"
+        else: return "Generation " + str(self.currentGeneration)
+
+    # -----------------------------------------------------------------
+
     def initialize_evolution(self):
 
         """
@@ -1034,7 +1110,23 @@ class SimpleGeneticAlgorithm(object):
         """
 
         self.initialize()
+
+        # Inform the user ...
+        log.info("Evaluating and sorting the initial population ...")
+
+        # Evaluate and sort the internal population
         self.internalPop.evaluate()
+        self.sort_internal_population()
+
+    # -----------------------------------------------------------------
+
+    def sort_internal_population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         self.internalPop.sort()
 
     # -----------------------------------------------------------------
@@ -1053,15 +1145,17 @@ class SimpleGeneticAlgorithm(object):
 
     # -----------------------------------------------------------------
 
-    def finish_evolution(self):
+    def finish_evolution(self, silent=True):
 
         """
         This function ...
         :return:
         """
 
-        self.printStats()
-        self.printTimeElapsed()
+        if not silent:
+
+            self.printStats()
+            self.printTimeElapsed()
 
         if self.dbAdapter:
             log.debug("Closing the DB Adapter")

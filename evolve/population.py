@@ -436,10 +436,13 @@ class GPopulation(object):
 
     def initialize(self, **args):
 
-        """ Initialize all individuals of population,
-        this calls the initialize() of individuals """
+        """
+        Initialize all individuals of population,
+        this calls the initialize() of individuals
+        """
 
-        log.debug("Initializing the population")
+        # Inform the user
+        log.info("Initializing the population ...")
 
         if self.oneSelfGenome.getParam("full_diversity", True) and hasattr(self.oneSelfGenome, "compare"):
          for i in xrange(len(self.internalPop)):
@@ -450,41 +453,46 @@ class GPopulation(object):
         else:
          for gen in self.internalPop:
             gen.initialize(**args)
+
         self.clearFlags()
 
     # -----------------------------------------------------------------
 
     def evaluate(self, **args):
 
-        """ Evaluate all individuals in population, calls the evaluate() method of individuals
+        """
+        Evaluate all individuals in population, calls the evaluate() method of individuals
         :param args: this params are passed to the evaluation function
         """
 
         # Inform the user
-        log.debug("Evaluating the new created population.")
+        log.info("Evaluating the new population ...")
 
         # We have multiprocessing
         if self.multiProcessing[0] and MULTI_PROCESSING:
 
-         log.debug("Evaluating the population using the multiprocessing method")
-         proc_pool = Pool(processes=self.multiProcessing[2])
+            log.debug("Evaluating the population using the multiprocessing method")
+            proc_pool = Pool(processes=self.multiProcessing[2])
 
-         # Multiprocessing full_copy parameter
-         if self.multiProcessing[1]:
-            results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
-            proc_pool.close()
-            proc_pool.join()
-            for i in xrange(len(self.internalPop)):
-               self.internalPop[i] = results[i]
-         else:
-            results = proc_pool.map(multiprocessing_eval, self.internalPop)
-            proc_pool.close()
-            proc_pool.join()
-            for individual, score in zip(self.internalPop, results):
-               individual.score = score
-        else:
-         for ind in self.internalPop:
-            ind.evaluate(**args)
+            # Multiprocessing full_copy parameter
+            if self.multiProcessing[1]:
+
+                results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
+                proc_pool.close()
+                proc_pool.join()
+                for i in xrange(len(self.internalPop)): self.internalPop[i] = results[i]
+
+            else:
+
+                results = proc_pool.map(multiprocessing_eval, self.internalPop)
+                proc_pool.close()
+                proc_pool.join()
+                for individual, score in zip(self.internalPop, results): individual.score = score
+
+        else: # No multiprocessing: basically just a loop over evaluate() of the individuals
+
+            # Evaluate each individual
+            for ind in self.internalPop: ind.evaluate(**args)
 
         self.clearFlags()
 

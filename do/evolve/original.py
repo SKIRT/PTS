@@ -27,6 +27,14 @@ from pyevolve import Consts
 from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
+
+# -----------------------------------------------------------------
+
+# Configuration
+config = Configuration()
+config.add_positional_optional("seed", int, "the random seed", 4357)
+config.read()
 
 # -----------------------------------------------------------------
 
@@ -83,7 +91,8 @@ genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
 genome.evaluator.set(chi_squared_function)
 
 # Genetic algorithm instance
-ga = GSimpleGA(genome, seed=4357)
+#seed = 4357
+ga = GSimpleGA(genome, seed=config.arguments.seed)
 ga.terminationCriteria.set(RawScoreCriteria)
 ga.setMinimax(Consts.minimaxType["minimize"])
 ga.setGenerations(5)

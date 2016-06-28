@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Import the relevant PTS classes and modules
-from pts.evolve.simplega import SimpleGeneticAlgorithm, RawScoreCriteria
+from pts.evolve.engine import GAEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import mutators
 from pts.evolve import initializators
@@ -28,6 +28,14 @@ from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
 from pts.core.tools.random import setup_prng
+from pts.core.basics.configuration import Configuration
+
+# -----------------------------------------------------------------
+
+# Configuration
+config = Configuration()
+config.add_positional_optional("seed", int, "the random seed", 4357)
+config.read()
 
 # -----------------------------------------------------------------
 
@@ -74,7 +82,8 @@ def chi_squared_function(chromosome):
 
 # -----------------------------------------------------------------
 
-seed = 4357
+#seed = 4357
+seed = config.arguments.seed
 prng = setup_prng(seed)
 
 # -----------------------------------------------------------------
@@ -89,7 +98,7 @@ genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 genome.evaluator.set(chi_squared_function)
 
 # Genetic algorithm instance
-ga = SimpleGeneticAlgorithm(genome)
+ga = GAEngine(genome)
 ga.terminationCriteria.set(RawScoreCriteria)
 ga.setMinimax(constants.minimaxType["minimize"])
 ga.setGenerations(5)
@@ -98,7 +107,8 @@ ga.setPopulationSize(100)
 ga.setMutationRate(0.5)
 
 # Evolve
-ga.evolve(freq_stats=1)
+#ga.evolve(freq_stats=False)
+ga.evolve()
 
 print("Final generation:", ga.currentGeneration)
 

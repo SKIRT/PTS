@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import tables
 from pts.core.tools import filesystem as fs
-from pts.evolve.simplega import SimpleGeneticAlgorithm, RawScoreCriteria
+from pts.evolve.engine import GAEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import mutators
 from pts.evolve import initializators
@@ -23,10 +23,18 @@ from pts.evolve import constants
 from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools.random import setup_prng, save_state
+from pts.core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
-seed = 4357
+# Configuration
+config = Configuration()
+config.add_positional_optional("seed", int, "the random seed", 4357)
+config.read()
+
+# -----------------------------------------------------------------
+
+seed = config.arguments.seed
 prng = setup_prng(seed)
 
 # -----------------------------------------------------------------
@@ -51,7 +59,7 @@ genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 #genome.evaluator.set(chi_squared_function)
 
 # Genetic algorithm instance
-ga = SimpleGeneticAlgorithm(genome)
+ga = GAEngine(genome)
 ga.terminationCriteria.set(RawScoreCriteria)
 ga.setMinimax(constants.minimaxType["minimize"])
 ga.setGenerations(5)
@@ -83,7 +91,7 @@ parameters_table = tables.new(data, names)
 # Save the genetic algorithm
 ga.saveto(path)
 
-print("Current generation: ", ga.currentGeneration)
+#print("Current generation: ", ga.currentGeneration)
 
 # Save the parameter table
 tables.write(parameters_table, parameters_path, format="ascii.ecsv")
