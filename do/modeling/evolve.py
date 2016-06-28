@@ -36,6 +36,7 @@ config.add_optional("ionizing", "float_tuple", "the range of the FUV luminosity 
 config.add_optional("dust", "float_tuple", "the range of the dust mass", (0.5e7, 3.e7))
 
 # Flags
+config.add_flag("relative", "whether the range values are relative to the best (or initial) parameter value")
 config.add_flag("visualise", "make visualisations")
 
 # Read the configuration settings from the provided command-line arguments

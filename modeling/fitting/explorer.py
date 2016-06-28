@@ -109,9 +109,7 @@ class ParameterExplorer(FittingModelLauncher):
         log.info("Initializing the animations ...")
 
         # Initialize the scatter animation
-        self.scatter_animation = ScatterAnimation([self.config.young_stars.min, self.config.young_stars.max],
-                                                  [self.config.ionizing_stars.min, self.config.ionizing_stars.max],
-                                                  [self.config.dust.min, self.config.dust.max])
+        self.scatter_animation = ScatterAnimation(self.ranges["FUV young"], self.ranges["FUV ionizing"], self.ranges["Dust mass"])
         self.scatter_animation.x_label = "FUV luminosity of young stars"
         self.scatter_animation.y_label = "FUV luminosity of ionizing stars"
         self.scatter_animation.z_label = "Dust mass"

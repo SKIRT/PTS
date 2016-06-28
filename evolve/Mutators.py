@@ -371,6 +371,19 @@ def G1DListMutatorRealGaussian(genome, **args):
 
 # -----------------------------------------------------------------
 
+def HeterogeneousListMutatorRealGaussian(genome, *args):
+
+    """
+    Mutator ...
+    :param genome:
+    :param args:
+    :return:
+    """
+
+
+
+# -----------------------------------------------------------------
+
 def G1DListMutatorRealGaussianGradient(genome, **args):
 
    """ The mutator of G1DList, Gaussian Gradient Mutator

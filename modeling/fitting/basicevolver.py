@@ -45,50 +45,6 @@ class BasicModelEvolver(ModelEvolver):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new ParameterExplorer instance
-        explorer = cls(arguments.config)
-
-        # Set the modeling path
-        explorer.config.path = arguments.path
-
-        # Set the number of simulations to launch in the batch
-        if arguments.simulations is not None: explorer.config.simulations = arguments.simulations
-
-        # Set the remote host IDs
-        if arguments.remotes is not None: explorer.config.remotes = arguments.remotes
-
-        # Set the limits of the FUV luminosity of the young stellar population
-        if arguments.young is not None:
-            explorer.config.young_stars.min = arguments.young[0]
-            explorer.config.young_stars_max = arguments.young[1]
-
-        # Set the limits of the FUV luminosity of the ionizing stellar population
-        if arguments.ionizing is not None:
-            explorer.config.ionizing_stars.min = arguments.ionizing[0]
-            explorer.config.ionizing_stars.max = arguments.ionizing[1]
-
-        # Set the limits of the dust mass
-        if arguments.dust is not None:
-            explorer.config.dust.min = arguments.dust[0]
-            explorer.config.dust.max = arguments.dust[1]
-
-        # Make visualisations
-        explorer.config.visualise = arguments.visualise
-
-        # Return the new instance
-        return explorer
-
-    # -----------------------------------------------------------------
-
     def load_input(self):
 
         """
@@ -145,23 +101,21 @@ class BasicModelEvolver(ModelEvolver):
         log.info("Initializing the animations ...")
 
         # Initialize the scatter animation
-        self.scatter_animation = ScatterAnimation([self.config.young_stars.min, self.config.young_stars.max],
-                                             [self.config.ionizing_stars.min, self.config.ionizing_stars.max],
-                                             [self.config.dust.min, self.config.dust.max])
+        self.scatter_animation = ScatterAnimation(self.ranges["FUV young"], self.ranges["FUV ionizing"], self.ranges["Dust mass"])
         self.scatter_animation.x_label = "FUV luminosity of young stars"
         self.scatter_animation.y_label = "FUV luminosity of ionizing stars"
         self.scatter_animation.z_label = "Dust mass"
 
         # Initialize the young FUV luminosity distribution animation
-        self.fuv_young_animation = DistributionAnimation(self.config.young_stars.min, self.config.young_stars.max, "FUV luminosity of young stars", "New models")
+        self.fuv_young_animation = DistributionAnimation(self.ranges["FUV young"][0], self.ranges["FUV young"][1], "FUV luminosity of young stars", "New models")
         self.fuv_young_animation.add_reference_distribution("Previous models", self.distributions["FUV young"])
 
         # Initialize the ionizing FUV luminosity distribution animation
-        self.fuv_ionizing_animation = DistributionAnimation(self.config.ionizing_stars.min, self.config.ionizing_stars.max, "FUV luminosity of ionizing stars", "New models")
+        self.fuv_ionizing_animation = DistributionAnimation(self.ranges["FUV ionizing"][0], self.ranges["FUV ionizing"][1], "FUV luminosity of ionizing stars", "New models")
         self.fuv_ionizing_animation.add_reference_distribution("Previous models", self.distributions["FUV ionizing"])
 
         # Initialize the dust mass distribution animation
-        self.dust_mass_animation = DistributionAnimation(self.config.dust.min, self.config.dust.max, "Dust mass", "New models")
+        self.dust_mass_animation = DistributionAnimation(self.ranges["Dust mass"][0], self.ranges["Dust mass"][1], "Dust mass", "New models")
         self.dust_mass_animation.add_reference_distribution("Previous models", self.distributions["Dust mass"])
 
     # -----------------------------------------------------------------

@@ -92,7 +92,7 @@ def G1DListInitializatorReal(genome, **args):
 
 # -----------------------------------------------------------------
 
-def HeterogeneousListMutatorRealRange(genome, **args):
+def HeterogeneousListInitializerReal(genome, **args):
 
     """
     :param genome:

@@ -51,13 +51,16 @@ class FittingComponent(ModelingComponent):
         self.fit_in_path = None
 
         # The path to the fit/out directory
-        self.fit_out_path = None
+        #self.fit_out_path = None
 
         # The path to the fit/res directory
-        self.fit_res_path = None
+        #self.fit_res_path = None
 
         # The path to the fit/plot directory
-        self.fit_plot_path = None
+        #self.fit_plot_path = None
+
+        # The path to the fit/evolution directory
+        self.fit_generations_path = None
 
         # The path to the fit/best directory
         self.fit_best_path = None
@@ -127,13 +130,16 @@ class FittingComponent(ModelingComponent):
         self.fit_in_path = fs.join(self.fit_path, "in")
 
         # Set the path to the fit/out directory
-        self.fit_out_path = fs.join(self.fit_path, "out")
+        #self.fit_out_path = fs.join(self.fit_path, "out")
 
         # Set the path to the fit/res directory
-        self.fit_res_path = fs.join(self.fit_path, "res")
+        #self.fit_res_path = fs.join(self.fit_path, "res")
 
         # Set the path to the fit/plot directory
-        self.fit_plot_path = fs.join(self.fit_path, "plot")
+        #self.fit_plot_path = fs.join(self.fit_path, "plot")
+
+        # Set the path to the fit/generations directory
+        self.fit_generations_path = fs.join(self.fit_path, "generations")
 
         # Set the path to the fit/best directory
         self.fit_best_path = fs.join(self.fit_path, "best")
@@ -145,7 +151,8 @@ class FittingComponent(ModelingComponent):
         self.fit_grid_path = fs.join(self.fit_path, "grid")
 
         # Create the fit/in, fit/out, fit/res, fit/plot, fit/best, fit/prob and fit/grid directories
-        fs.create_directories([self.fit_in_path, self.fit_out_path, self.fit_res_path, self.fit_plot_path, self.fit_best_path, self.fit_prob_path, self.fit_grid_path])
+        #fs.create_directories([self.fit_in_path, self.fit_out_path, self.fit_res_path, self.fit_plot_path, self.fit_best_path, self.fit_prob_path, self.fit_grid_path])
+        fs.create_directories([self.fit_in_path, self.fit_generations_path, self.fit_best_path, self.fit_prob_path, self.fit_grid_path])
 
         # Set the paths to the fit/grid/lowres and fit/grid/highres directories
         self.fit_grid_lowres_path = fs.join(self.fit_grid_path, "low-res")

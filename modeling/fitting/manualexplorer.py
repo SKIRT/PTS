@@ -13,14 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 
 # Import the relevant PTS classes and modules
 from .explorer import ParameterExplorer
 from ...core.tools.logging import log
-from ...magic.animation.scatter import ScatterAnimation
-from ...core.tools import filesystem as fs
-from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -51,129 +49,101 @@ class ManualParameterExplorer(ParameterExplorer):
         """
 
         # Inform the user
-        log.info("Determining the parameter ranges ...")
-
-        # Get the current values in the ski file prepared by InputInitializer
-        young_luminosity_guess, young_filter = self.ski.get_stellar_component_luminosity("Young stars")
-        ionizing_luminosity_guess, ionizing_filter = self.ski.get_stellar_component_luminosity("Ionizing stars")
-        dust_mass_guess = self.ski.get_dust_component_mass(0)
-
-        # Inform the user
-        log.info("Determining every possible combination of parameter values ...")
-
-        # Determine the ranges
-        fuv_young_range = self.young_luminosity_range(young_luminosity_guess)
-        fuv_ionizing_range = self.ionizing_luminosity_range(ionizing_luminosity_guess)
-        dust_mass_range = self.dust_mass_range(dust_mass_guess)
-
-        # Make animation
-        if self.config.visualise:
-            animation = ScatterAnimation([fuv_young_range[0], fuv_young_range[-1]], [fuv_ionizing_range[0], fuv_ionizing_range[-1]], [dust_mass_range[0].to("Msun").value, dust_mass_range[-1].to("Msun").value])
-            animation.x_label = "FUV young"
-            animation.y_label = "FUV ionizing"
-            animation.z_label = "Dust mass"
-            animation.density = False
-        else: animation = None
+        log.info("Setting the parameter values for the different models ...")
 
         # Loop over the different values of the young stellar luminosity
-        for young_luminosity in fuv_young_range:
+        for young_luminosity in self.get_fuv_young_values():
 
             # Loop over the different values of the ionizing stellar luminosity
-            for ionizing_luminosity in fuv_ionizing_range:
+            for ionizing_luminosity in self.get_fuv_ionizing_values():
 
                 # Loop over the different values of the dust mass
-                for dust_mass in dust_mass_range:
+                for dust_mass in self.get_dust_mass_values():
 
                     # Add the parameter values to the dictionary
                     self.parameters["FUV young"].append(young_luminosity)
                     self.parameters["FUV ionizing"].append(ionizing_luminosity)
                     self.parameters["Dust mass"].append(dust_mass)
 
-                    # Add a point (and thus a frame) to the animation
-                    if animation is not None: animation.add_point(young_luminosity, ionizing_luminosity, dust_mass.to("Msun").value)
-
-        # Save the animation
-        if animation is not None:
-            path = fs.join(self.visualisation_path, time.unique_name("initialparameterexploration") + ".gif")
-            animation.save(path)
+                    # Update the animation
+                    if self.config.visualise: self.scatter_animation.add_point(young_luminosity, ionizing_luminosity, dust_mass)
 
     # -----------------------------------------------------------------
 
-    def young_luminosity_range(self, luminosity):
+    def get_fuv_young_values(self):
 
         """
         This function ...
-        :param luminosity:
         :return:
         """
 
         # Inform the user
-        log.info("Setting the range for the FUV luminosity of the young stars ...")
+        log.info("Setting the values for the FUV luminosity of the young stars ...")
 
-        # Set the range of the FUV luminosity of the young stellar population
-        min_value = self.config.young_stars.rel_min * luminosity
-        max_value = self.config.young_stars.rel_max * luminosity
+        # Get min and max value
+        min_value = self.ranges["FUV young"][0]
+        max_value = self.ranges["FUV young"][1]
+
+        # Get number of values
+        nvalues = int(math.ceil(self.config.simulations**(1./3.)))
+
+        # Create a linear or logarithmic range of values
+        if self.config.young_log: values = np.logspace(min_value, max_value, num=nvalues, endpoint=True)
+        else: values = np.linspace(min_value, max_value, num=nvalues, endpoint=True)
+
+        # Return the FUV luminosities of the young stellar component
+        return values
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_ionizing_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the values for the FUV luminosity of the ionizing stars ...")
+
+        # Get min and max value
+        min_value = self.ranges["FUV ionizing"][0]
+        max_value = self.ranges["FUV ionizing"][1]
+
+        # Get number of values
+        nvalues = int(math.ceil(self.config.simulations ** (1. / 3.)))
 
         # Create a linear or logarithmic range of luminosities
-        if self.config.young_stars.scale == "linear":
-            young_luminosities = np.linspace(min_value, max_value, num=self.config.young_stars.nvalues, endpoint=True)
-        elif self.config.young_stars.scale == "logarithmic":
-            young_luminosities = np.logspace(min_value, max_value, num=self.config.young_stars.nvalues, endpoint=True)
-        else: raise ValueError("Invalid scale for the young stellar luminosity values")
+        if self.config.ionizing_log: values = np.logspace(min_value, max_value, num=nvalues, endpoint=True)
+        else: values = np.linspace(min_value, max_value, num=nvalues, endpoint=True)
 
-        # Return the range of FUV luminosities of the young stellar component
-        return young_luminosities
+        # Return the FUV luminosities of the ionizing stellar component
+        return values
 
     # -----------------------------------------------------------------
 
-    def ionizing_luminosity_range(self, luminosity):
+    def get_dust_mass_values(self):
 
         """
         This function ...
-        :param luminosity:
         :return:
         """
 
         # Inform the user
-        log.info("Setting the range for the FUV luminosity of the ionizing stars ...")
+        log.info("Setting the values for the dust mass ...")
 
-        # Determine the minimum and maximum FUV luminosity of the ionizing stellar population
-        min_value = self.config.ionizing_stars.rel_min * luminosity
-        max_value = self.config.ionizing_stars.rel_max * luminosity
+        # Get min and max value
+        min_value = self.ranges["Dust mass"][0]
+        max_value = self.ranges["Dust mass"][1]
 
-        # Create a linear or logarithmic range of luminosities
-        if self.config.ionizing_stars.scale == "linear":
-            ionizing_luminosities = np.linspace(min_value, max_value, num=self.config.ionizing_stars.nvalues, endpoint=True)
-        elif self.config.ionizing_stars.scale == "log":
-            ionizing_luminosities = np.logspace(min_value, max_value, num=self.config.ionizing_stars.nvalues, endpoint=True)
-        else: raise ValueError("Invalid scale for the ionizing stellar luminosity values")
-
-        # Return the range of FUV luminosities of the ionizing stellar component
-        return ionizing_luminosities
-
-    # -----------------------------------------------------------------
-
-    def dust_mass_range(self, mass):
-
-        """
-        This function ...
-        :param mass:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the range for the dust mass ...")
-
-        # Set the dust mass range
-        min_value = self.config.dust.rel_min * mass
-        max_value = self.config.dust.rel_max * mass
+        # Get number of values
+        nvalues = int(math.ceil(self.config.simulations ** (1. / 3.)))
 
         # Create a linear or logarithmic range of dust masses
-        if self.config.dust.scale == "linear": dust_masses = np.linspace(min_value, max_value, num=self.config.dust.nvalues, endpoint=True)
-        elif self.config.dust.scale == "log": dust_masses = np.logspace(min_value, max_value, num=self.config.dust.nvalues, endpoint=True)
-        else: raise ValueError("Invalid scale for the dust mass values")
+        if self.config.dust_log: values = np.logspace(min_value, max_value, num=nvalues, endpoint=True)
+        else: values = np.linspace(min_value, max_value, num=nvalues, endpoint=True)
 
-        # Return the range of dust masses
-        return dust_masses
+        # Return the dust masses
+        return values
 
 # -----------------------------------------------------------------

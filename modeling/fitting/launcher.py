@@ -35,7 +35,7 @@ from ...magic.misc.kernels import AnianoKernels
 # -----------------------------------------------------------------
 
 class FittingModelLauncher(FittingComponent):
-    
+
     """
     This class...
     """
@@ -58,9 +58,7 @@ class FittingModelLauncher(FittingComponent):
         # -- Attributes --
 
         # The parameter ranges
-        self.fuv_young_range = None
-        self.fuv_ionizing_range = None
-        self.dust_mass_range = None
+        self.ranges = dict()
 
         # The names of the filters for which we have photometry
         self.filter_names = []
@@ -184,9 +182,37 @@ class FittingModelLauncher(FittingComponent):
         # Inform the user
         log.info("Setting the parameter ranges ...")
 
-        #[self.config.young_stars.min, self.config.young_stars.max],
-        #[self.config.ionizing_stars.min, self.config.ionizing_stars.max], \
-        #[self.config.dust.min, self.config.dust.max]
+        # The given ranges are relative to the best or initial value
+        if self.config.relative:
+
+            # TODO: get parameter values of best fitting model
+
+            # Get the current values in the ski file prepared by InputInitializer
+            young_luminosity_guess, young_filter = self.ski.get_stellar_component_luminosity("Young stars")
+            ionizing_luminosity_guess, ionizing_filter = self.ski.get_stellar_component_luminosity("Ionizing stars")
+            dust_mass_guess = self.ski.get_dust_component_mass(0)
+
+            # Set the range of the FUV luminosity of the young stellar population
+            min_value = self.config.young[0] * young_luminosity_guess
+            max_value = self.config.young[1] * young_luminosity_guess
+            self.ranges["FUV young"] = (min_value, max_value)
+
+            # Set the range of the FUV luminosity of the ionizing stellar population
+            min_value = self.config.ionizing[0] * ionizing_luminosity_guess
+            max_value = self.config.ionizing[1] * ionizing_luminosity_guess
+            self.ranges["FUV ionizing"] = (min_value, max_value)
+
+            # Set the range of the dust mass
+            min_value = self.config.dust[0] * dust_mass_guess
+            max_value = self.config.dust[1] * dust_mass_guess
+            self.ranges["Dust mass"] = (min_value, max_value)
+
+        else:
+
+            # Set the ranges directly from the command-line arguments
+            self.ranges["FUV young"] = self.config.young
+            self.ranges["FUV ionizing"] = self.config.ionizing
+            self.ranges["Dust mass"] = self.config.dust
 
     # -----------------------------------------------------------------
 

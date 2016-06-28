@@ -36,6 +36,7 @@ config.add_optional("ionizing", "float_tuple", "the range of the FUV luminosity 
 config.add_optional("dust", "float_tuple", "the range of the dust mass", (0.5e7, 3.e7))
 
 # Flags
+config.add_flag("relative", "whether the range values are relative to the best (or initial) parameter value")
 config.add_flag("young_log", "use logarithmic spacing of the young stellar luminosity values")
 config.add_flag("ionizing_log", "use logarithmic spacing of the ionizing stellar luminosity values")
 config.add_flag("dust_log", "use logarithmic spacing of the dust mass values")
