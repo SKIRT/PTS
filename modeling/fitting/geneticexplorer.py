@@ -12,13 +12,14 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import the relevant PTS classes and modules
 from .explorer import ParameterExplorer
-from .genetic import GeneticAlgorithm
 from ...core.tools.logging import log
+from ...evolve.engine import GAEngine, RawScoreCriteria
+from ...evolve.genomes.list1d import G1DList
+from ...evolve import mutators
+from ...evolve import initializators
+from ...evolve import constants
 
 # -----------------------------------------------------------------
 
@@ -39,8 +40,8 @@ class GeneticParameterExplorer(ParameterExplorer):
         # Call the constructor of the base class
         super(GeneticParameterExplorer, self).__init__(config)
 
-        # The genetic algorithm
-        self.ga = None
+        # The genetic algorithm engine
+        self.engine = None
 
     # -----------------------------------------------------------------
 
@@ -67,12 +68,39 @@ class GeneticParameterExplorer(ParameterExplorer):
         #fuv_ionizing_range = self.ionizing_luminosity_range(ionizing_luminosity_guess)
         #dust_mass_range = self.dust_mass_range(dust_mass_guess)
 
-        # Create the genetic algorithm
-        self.ga = GeneticAlgorithm()
+        # Create the first genome
+        genome = G1DList(3)
+        genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
+        genome.initializator.set(initializators.G1DListInitializatorReal)
+        genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 
+        # Create the genetic algorithm engine
+        self.engine = GAEngine(genome)
 
+        self.engine.terminationCriteria.set(RawScoreCriteria)
+        self.engine.setMinimax(constants.minimaxType["minimize"])
+        self.engine.setGenerations(5)
+        self.engine.setCrossoverRate(0.5)
+        self.engine.setPopulationSize(100)
+        self.engine.setMutationRate(0.5)
 
+        # Initialize the genetic algorithm
+        self.engine.initialize()
 
+        # Get the initial population
+        population = self.engine.get_population()
+
+        # Loop over the individuals of the population
+        for individual in population:
+
+            young_luminosity = individual[0]
+            ionizing_luminosity = individual[1]
+            dust_mass = individual[2]
+
+            # Add the parameter values to the dictionary
+            self.parameters["FUV young"].append(young_luminosity)
+            self.parameters["FUV ionizing"].append(ionizing_luminosity)
+            self.parameters["Dust mass"].append(dust_mass)
 
     # -----------------------------------------------------------------
 

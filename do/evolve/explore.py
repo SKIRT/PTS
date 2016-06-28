@@ -48,7 +48,7 @@ parameters_path = fs.join(fs.cwd(), "parameters.dat")
 # -----------------------------------------------------------------
 
 # Inform the user
-log.info("Creating the GA ...")
+log.info("Creating the GA engine ...")
 
 # Genome instance
 genome = G1DList(2)
@@ -57,6 +57,9 @@ genome.initializator.set(initializators.G1DListInitializatorReal)
 genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 
 #genome.evaluator.set(chi_squared_function)
+
+# Inform the user
+log.info("Creating the GA engine ...")
 
 # Genetic algorithm instance
 ga = GAEngine(genome)
@@ -69,6 +72,8 @@ ga.setMutationRate(0.5)
 
 # Initialize the genetic algorithm
 ga.initialize()
+
+
 
 name_column = []
 par_a_column = []

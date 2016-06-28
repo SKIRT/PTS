@@ -151,7 +151,7 @@ save_state(new_random_path)
 # newpop = ga.generate_new_population()
 # for ind in newpop: print(ind.genomeList)
 
-#pop = ga.getPopulation()
+#pop = ga.get_population()
 #print(pop)
 #best = ga.bestIndividual()
 

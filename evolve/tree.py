@@ -657,7 +657,7 @@ class GTreeGP(GTreeBase):
         if not HAVE_PYDOT:
             utils.raiseException("You must install Pydot to use this feature !")
 
-        pop = ga_engine.getPopulation()
+        pop = ga_engine.get_population()
         graph = pydot.Dot(graph_type="digraph")
 
         if not isinstance(pop[0], GTreeGP):
@@ -697,7 +697,7 @@ class GTreeGP(GTreeBase):
         if not HAVE_PYDOT:
             utils.raiseException("You must install Pydot to use this feature !")
 
-        pop = ga_engine.getPopulation()
+        pop = ga_engine.get_population()
         graph = pydot.Dot(graph_type="digraph")
 
         if not isinstance(pop[0], GTreeGP):

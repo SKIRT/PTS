@@ -374,12 +374,15 @@ def get_filter(name, header=None):
         if wavelength is not None:
 
             value = wavelength.to("micron").value
-            ten_percent = 0.1 * value
-            lower = value - ten_percent
-            upper = value + ten_percent
+            five_percent = 0.05 * value
+            lower = value - five_percent
+            upper = value + five_percent
+
+            if "FILTER" in header: name = header["FILTER"].split("  / ")[0].replace(" ", "")
+            else: name = None
 
             # Create a custom filter around the wavelength
-            fltr = Filter((lower, upper))
+            fltr = Filter((lower, upper), name=name)
 
         else: fltr = None
 

@@ -17,6 +17,7 @@ from .evolver import ModelEvolver
 from ...core.tools.logging import log
 from ...magic.animation.scatter import ScatterAnimation
 from ...magic.animation.distribution import DistributionAnimation
+from ...evolve.engine import GAEngine
 
 # -----------------------------------------------------------------
 

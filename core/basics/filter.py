@@ -105,13 +105,14 @@ class Filter:
     #| Generic/Johnson.I | Johnson I
     #| Generic/Johnson.J | Johnson J
     #| Generic/Johnson.M | Johnson M
-    def __init__(self, filterspec):
+    def __init__(self, filterspec, name=None):
 
         # string --> load from appropriate resource file
         if isinstance(filterspec, types.StringTypes):
             for pythondir in sys.path:
                 filterdir = os.path.join(pythondir, "pts", "core", "dat", "filters")
                 if os.path.isdir(filterdir):
+
                     filterfiles = filter(lambda fn: fn.endswith(".xml") and filterspec in fn, os.listdir(filterdir))
                     if len(filterfiles) > 1: raise ValueError("filter spec " + filterspec + " is ambiguous")
                     if len(filterfiles) < 1: raise ValueError("no filter found with spec " + filterspec)
@@ -153,6 +154,8 @@ class Filter:
                     self._IntegratedTransmission = integral1
                     self._WavelengthPivot = np.sqrt(integral1/integral2)
 
+                    self.true_filter = True
+
                     # report success
                     return
 
@@ -160,18 +163,20 @@ class Filter:
 
         # range --> construct ad hoc uniform bolometer
         else:
+            if name is None: name = "Uniform"
             self._WavelengthMin, self._WavelengthMax = map(float,filterspec)
             self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
             self._WavelengthMean = self._WavelengthCen
             self._WavelengthEff = self._WavelengthCen
-            self._FilterID = "Uniform_[{},{}]".format(self._WavelengthMin,self._WavelengthMax)
-            self._Description = "Uniform filter in range [{},{}]".format(self._WavelengthMin,self._WavelengthMax)
+            self._FilterID = name + "_[{},{}]".format(self._WavelengthMin,self._WavelengthMax)
+            self._Description = name + " filter in range [{},{}]".format(self._WavelengthMin,self._WavelengthMax)
             self._Wavelengths = np.array((self._WavelengthMin,self._WavelengthMax))
             self._Transmission = np.ones((2,))
             self._PhotonCounter = False
             self._IntegratedTransmission = self._WavelengthMax - self._WavelengthMin
             self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
             self._EffWidth = self._WavelengthMax - self._WavelengthMin
+            self.true_filter = False
 
     # ---------- Alternative construction -------------------------------
 
@@ -337,19 +342,30 @@ class Filter:
         else: raise ValueError("The band " + self.name + " is not defined for the Aniano set of kernels")
 
     @property
-    def name(self): return self._FilterID.split("/")[1]
+    def name(self):
+        if self.true_filter: return self._FilterID.split("/")[1]
+        else: return self._FilterID.split("_")[0]
 
     @property
-    def observatory(self): return self._FilterID.split("/")[0]
+    def observatory(self):
+        if self.true_filter: return self._FilterID.split("/")[0]
+        else: return None
 
     @property
-    def instrument(self): return self._FilterID.split("/")[1].split(".")[0]
+    def instrument(self):
+        if self.true_filter: return self._FilterID.split("/")[1].split(".")[0]
+        else: return None
 
     @property
-    def band(self): return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
+    def band(self):
+        if self.true_filter: return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
+        elif self._FilterID.startswith("Uniform"): return None
+        else: return self._FilterID.split("_")[0]
 
     ## This function returns the filter in string format ('instrument' 'band')
-    def __str__(self): return self.instrument + " " + self.band
+    def __str__(self):
+        if self.true_filter: return self.instrument + " " + self.band
+        else: return self.name
 
     ## This function returns a unique identifier for the filter.
     def filterID(self):

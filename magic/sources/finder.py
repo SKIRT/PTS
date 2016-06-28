@@ -348,8 +348,14 @@ class SourceFinder(Configurable):
 
         # Downsample or just make a local reference to the image frame
         if self.downsampled:
+
+            # Debugging
+            log.debug("Downsampling the original image with a factor of " + str(self.config.downsample_factor) + " ...")
             self.frame = frame.downsampled(self.config.downsample_factor)
             self.original_wcs = frame.wcs
+            # Debugging
+            log.debug("Shape of the downsampled image: " + str(self.frame.shape) + " (original shape: " + str(frame.shape) + ")")
+
         else: self.frame = frame
 
         # Set the galactic and stellar catalog

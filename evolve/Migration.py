@@ -366,7 +366,7 @@ class WANMigration(MigrationScheme):
       if len(pool) <= 0:
          return
 
-      population = self.GAEngine.getPopulation()
+      population = self.GAEngine.get_population()
 
       for i in xrange(self.getNumReplacement()):
          if len(pool) <= 0:
@@ -449,7 +449,7 @@ class MPIMigration(MigrationScheme):
                                          source=self.source,
                                          recvtag=0)
 
-        population = self.GAEngine.getPopulation()
+        population = self.GAEngine.get_population()
 
         pool = pool_received
         for i in xrange(self.getNumReplacement()):

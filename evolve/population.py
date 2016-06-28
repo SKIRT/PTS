@@ -94,7 +94,7 @@ class GPopulation(object):
 
     **Examples**
       Get the population from the :class:`GSimpleGA.GSimpleGA` (GA Engine) instance
-         >>> pop = ga_engine.getPopulation()
+         >>> pop = ga_engine.get_population()
 
       Get the best fitness individual
          >>> bestIndividual = pop.bestFitness()

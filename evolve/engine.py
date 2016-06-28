@@ -100,7 +100,7 @@ def ConvergenceCriteria(ga_engine):
        >>> ga_engine.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
     """
 
-    pop = ga_engine.getPopulation()
+    pop = ga_engine.get_population()
     return pop[0] == pop[len(pop) - 1]
 
 # -----------------------------------------------------------------
@@ -189,7 +189,7 @@ class GAEngine(object):
     one parameter which is the GA Engine, follows an example: ::
 
        def ConvergenceCriteria(ga_engine):
-          pop = ga_engine.getPopulation()
+          pop = ga_engine.get_population()
           return pop[0] == pop[len(pop)-1]
 
     When this function returns True, the GA Engine will stop the evolution and show
@@ -815,7 +815,7 @@ class GAEngine(object):
 
     # -----------------------------------------------------------------
 
-    def getPopulation(self):
+    def get_population(self):
 
         """ Return the internal population of GA Engine
         :rtype: the population (:class:`GPopulation.GPopulation`)

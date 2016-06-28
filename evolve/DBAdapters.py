@@ -450,7 +450,7 @@ class DBSQLite(DBBaseAdapter):
          The method now receives the *ga_engine* parameter.
       """
       stats = ga_engine.getStatistics()
-      population = ga_engine.getPopulation()
+      population = ga_engine.get_population()
       generation = ga_engine.getCurrentGeneration()
 
       c = self.getCursor()
@@ -794,15 +794,15 @@ class DBMySQLAdapter(DBBaseAdapter):
       self.createStructure(stats)
 
    def insert(self, ga_engine):
+
       """ Inserts the statistics data to database
-
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       stats = ga_engine.getStatistics()
-      population = ga_engine.getPopulation()
+      population = ga_engine.get_population()
       generation = ga_engine.getCurrentGeneration()
 
       c = self.getCursor()
