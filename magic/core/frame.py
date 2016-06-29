@@ -104,7 +104,7 @@ class Frame(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=0, no_filter=False):
+    def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False):
 
         """
         This function ...
@@ -113,7 +113,7 @@ class Frame(np.ndarray):
         :param name:
         :param description:
         :param plane:
-        :param hdulist_index:
+        :param hdulist_index: if None, is automatically decided based on where the imageHDU is.
         :param no_filter:
         :return:
         """
@@ -123,6 +123,19 @@ class Frame(np.ndarray):
 
         # Open the HDU list for the FITS file
         hdulist = fits.open(path)
+
+        # Look for the first HDU with data
+        if hdulist_index is None:
+
+            index = 0
+            while True:
+
+                if hdulist[index].data is not None:
+                    hdulist_index = index
+                    break
+                index += 1
+
+            if hdulist_index is None: raise ValueError("The FITS file does not contain any data")
 
         # Get the primary HDU
         hdu = hdulist[hdulist_index]

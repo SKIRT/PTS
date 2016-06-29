@@ -297,8 +297,13 @@ class CoordinateSystem(wcs.WCS):
         ref_pix = self.wcs.crpix
         ref_world = self.wcs.crval
 
+        center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame="fk5")
+
         # Get the orientation of the coordinate system
-        orientation = self.orientation
+        try: orientation = self.orientation
+        except ValueError:
+            largest_distance = max(ra_distance, dec_distance) * Unit("deg")
+            return center, largest_distance, largest_distance
 
         if "x" in orientation[0] and "y" in orientation[1]: # RA axis = x axis and DEC axis = y axis
 
@@ -322,8 +327,6 @@ class CoordinateSystem(wcs.WCS):
         if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):
             #print("ERROR: the coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
             log.warning("The coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
-
-        center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame="fk5")
 
         # Create RA and DEC span as quantities
         ra_span = ra_distance * Unit("deg")
