@@ -36,6 +36,24 @@ import ChrisFuncs
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
+from ...core.tools.logging import log
+
+# -----------------------------------------------------------------
+
+def GALEX_Level_Chisq(level_params, image):
+
+    """
+    Fit flat plane to the image to find level
+    :param level_params:
+    :param image:
+    :return:
+    """
+
+    level = level_params['level'].value
+    chi = image - level
+    chisq = chi**2.0
+
+    return chisq
 
 # -----------------------------------------------------------------
 
@@ -49,14 +67,6 @@ def GALEX_Zero(fitsfile_dir, convfile_dir, target_suffix):
     :return:
     """
 
-    # Define sill ysubfunction that fits flat plane to image, to find level
-    def GALEX_Level_Chisq(level_params, image):
-
-        level = level_params['level'].value
-        chi = image - level
-        chisq = chi**2.0
-        return chisq
-
     # Make list of files in target directory that have target suffix
     allfile_list = os.listdir(fitsfile_dir)
     fitsfile_list = []
@@ -67,7 +77,7 @@ def GALEX_Zero(fitsfile_dir, convfile_dir, target_suffix):
     # Loop over each file
     for i in range(0, len(fitsfile_list)):
 
-        print('Matching background of map '+fitsfile_list[i])
+        log.info('Matching background of map ' + fitsfile_list[i])
 
         # Read in corresponding map from directory containing convolved images
         fitsdata_conv = fits.open(convfile_dir+'/'+fitsfile_list[i])
@@ -286,6 +296,7 @@ def GALEX_Montage(name, ra, dec, width, band_dict, root_dir):
 
         # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
         print('Cleaning '+str(len(raw_files))+' raw maps for '+id_string)
+
         pool = mp.Pool(processes=6)
         for raw_file in raw_files:
             pool.apply_async(GALEX_Clean, args=(raw_file, root_dir, temp_dir, temp_dir+'Reproject_Temp/', band_dict,))
@@ -349,7 +360,7 @@ def GALEX_Montage(name, ra, dec, width, band_dict, root_dir):
 
 # -----------------------------------------------------------------
 
-def do_for_galaxy(galaxy_name):
+def do_for_galaxy(galaxy_name, ra, dec, d25):
 
     """
     This function ...
@@ -361,17 +372,14 @@ def do_for_galaxy(galaxy_name):
     bands_dict = {'FUV': {'band_short': 'fd', 'band_long': 'FUV'},
                   'NUV': {'band_short': 'nd', 'band_long': 'NUV'}}
 
-    name = name_list[i]
-    ra = ra_list[i]
-    dec = dec_list[i]
-    d25 = d25_list[i]
     time_start = time.time()
+
     if d25 < 6.0:
         width = 0.5
     elif d25 >= 6.0:
         width = 1.0
 
-    print('Processing source ' + name)
+    log.info('Processing source ' + galaxy_name + " ...")
 
     # Check if any GALEX tiles have coverage of source in question; if not, continue
     bands_in_dict = {}
@@ -403,7 +411,8 @@ def do_for_galaxy(galaxy_name):
     alrady_processed_file.close()
 
     # Clean memory, and return timings
-    gc.collect()
+    #gc.collect()
+
     time_source = time.time() - time_start
     time_source_list.append(time_source)
     time_total += time_source
@@ -413,8 +422,7 @@ def do_for_galaxy(galaxy_name):
     time_remaining_est_mean = ((source_total - source_counter) * time_source_mean) / 3600.0
     time_remaining_est_median = ((source_total - source_counter) * time_source_median) / 3600.0
     print('Estimated time remaining from mean: ' + str(time_remaining_est_mean)[
-                                                   :7] + ' hours (estimate from median: ' + str(
-        time_remaining_est_median)[:7] + ' hours)')
+                                                   :7] + ' hours (estimate from median: ' + str(time_remaining_est_median)[:7] + ' hours)')
 
 # -----------------------------------------------------------------
 

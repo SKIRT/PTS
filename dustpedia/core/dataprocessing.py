@@ -328,6 +328,29 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
+    def make_galex_mosaic(self, galaxy_name, output_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param output_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making mosaic for " + galaxy_name + " for GALEX ...")
+
+        # Find the index of the galaxy in the LEDA - WISE table
+        index = tables.find_index(self.leda_wise_table, galaxy_name)
+
+        ra = self.leda_wise_table['ra2000'][index]
+        dec = self.leda_wise_table['de2000'][index]
+        d25 = self.leda_wise_table['d25'][index]
+
+
+
+    # -----------------------------------------------------------------
+
     def make_sdss_mosaic(self, galaxy_name, band, output_path):
 
         """
