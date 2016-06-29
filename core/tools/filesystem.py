@@ -270,6 +270,18 @@ def remove_directory(path):
 
 # -----------------------------------------------------------------
 
+def remove_directories(paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    for path in paths: remove_directory(path)
+
+# -----------------------------------------------------------------
+
 def remove_file(path):
 
     """
@@ -279,6 +291,18 @@ def remove_file(path):
     """
 
     os.remove(path)
+
+# -----------------------------------------------------------------
+
+def remove_files(paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    for path in paths: remove_file(path)
 
 # -----------------------------------------------------------------
 

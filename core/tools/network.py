@@ -14,6 +14,66 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from subprocess import call, check_output
+import urllib
+from . import filesystem as fs
+from .logging import log
+
+# -----------------------------------------------------------------
+
+def download_file(url, path):
+
+    """
+    This function ...
+    :param url
+    :param path:
+    :return:
+    """
+
+    # Get the name of the file
+    filename = fs.name(url)
+
+    # Determine the local path to the file
+    filepath = fs.join(path, filename) if fs.is_directory(path) else path
+
+    # Debugging
+    log.debug("Downloading '" + filename + "' to '" + path + "' ...")
+
+    # Download
+    urllib.urlretrieve(url, filepath)
+
+    # Return the file path
+    return filepath
+
+# -----------------------------------------------------------------
+
+def download_files(urls, path):
+
+    """
+    This function ...
+    :param urls:
+    :param path:
+    :return:
+    """
+
+    paths = []
+
+    # Loop over the urls
+    for url in urls:
+
+        filename = fs.name(url)
+        filepath = fs.join(path, filename)
+
+        # Debugging
+        log.debug("Downloading '" + filename + "' to '" + path + "' ...")
+
+        # Download
+        urllib.urlretrieve(url, filepath)
+
+        # If succesful, add the file path to the list
+        paths.append(filepath)
+
+    # Return paths
+    return paths
 
 # -----------------------------------------------------------------
 

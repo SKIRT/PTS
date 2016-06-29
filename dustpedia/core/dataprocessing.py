@@ -13,8 +13,9 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import urllib
+import bz2
 import tempfile
+import numpy as np
 
 # Import astronomical modules
 import montage_wrapper as montage
@@ -30,6 +31,7 @@ from ...core.tools import inspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...magic.tools import plotting
+from ...core.tools import network
 
 # -----------------------------------------------------------------
 
@@ -121,6 +123,61 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 
 
 
+## NEW INFO:
+
+# Firstly, checking my code, I realised that I didn't implement the "attachment to target location" criterion in the
+# GALEX maps; it appears it basically never happens in GALEX. (I mainly brought in that criterion to handle Spitzer
+# maps, where it is really common to have multiple unattached observations within a given 0.5x0.5 degree patch of sky.)
+
+# To use Montage to find out what images cover a given part of the sky, you first want to run mImgTable on the folder
+# containing your image files, like so:
+# montage_wrapper.commands.mImgtbl('/folder/with/maps/', 'Image_Metadata_Table.dat', corners=True)
+
+# The 'Image_Metadata_Table.dat' output file is a table recording the geometry of all the files in the folder in
+# question. You then use this file as an input to the function mCoverageCheck, which is used like this:
+
+# montage_wrapper.commands_extra.mCoverageCheck('Image_Metadata_Table.dat', 'Overlap_Table.dat', mode='box', ra=ra,
+# dec=dec, width=width)
+
+# The 'Overlap_Table.dat' contains the subset of the rows from 'Image_Metadata_Table.dat' that intersect the defined
+# region (not just those that cover the centre coordinate). I then read in this in with:
+
+# overlap_files = np.genfromtxt('Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
+
+# Regarding doing the actual mosaicing, it was nice and straightforward with the SDSS data, where I used the
+# high-level Montage command mExec:
+
+# montage_wrapper.commands.mExec('SDSS', band, raw_dir='/path/to/files/', level_only=False, corners=False,
+# debug_level=0, output_image='Mosaic.fits', region_header='Header.hdr', workspace_dir='/some/temp/dir')
+
+# The nice thing about this command is that if you leave out the set raw_dir=None, then it will automatically
+# retrieve the necessary SDSS primary fields from the SDSS server. However, when dealing with large numbers of
+# cutouts in succession, I found it somewhat quicker to wget the files myself. The region_header is typically a
+# file created by Montage's mHdr function.
+
+# For GALEX, the mosaicing was a bit more involved:
+#
+# - I had to use the relative-response and sky-background maps to work out which part of each fits file was usable,
+#   becuase raw GALEX tiles use 0 to indicate that a pixel recieved no photons... *or* that the pixel is outside
+#   the detector footprint... MADNESS!
+# - The co-addition had to be weighted by the exposure time. To do this, I created relative weight maps where each
+#   pixel was just the square root of the 'exptime' header keyword value (where the relative-response and
+#   sky-background maps were used to remove irrelevant pixels).
+# - I had to adjust the background levels myself, as Montage hates all the zeros in GALEX maps.
+
+# And whilst I did the re-projection with Montage, I did the actual coaddition using SWarp (as it has a far quicker
+# runtime than doing it myself in Python). I have attached the very (very, very, very, very) ugly script I used to do
+# all this. This should make it possible for you to work out the process I followed.
+
+# Regarding not needing to make the full maps to work out the poisson noise, you're probably right.
+
+# For the GALEX maps, you probably just need the input maps and the weight maps, re-projected to the output grid.
+
+# For SDSS, all input maps are given equal weighting. By using mExec I skipped all of the 'intermediate' steps of
+# the mosaicing. However you could just use mProjExec to regrid to all of the input fields for a given galaxy to the
+# output projection mExec will have used. Jjust give the ra, dec, and width to mHdr to produce a header, and then
+# use this header as input to mProjExec to regrid all the individual image to the final projection.
+
 # -----------------------------------------------------------------
 
 class DustPediaDataProcessing(object):
@@ -188,26 +245,6 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def download_files(self, urls, path):
-
-        """
-        This function ...
-        :param urls:
-        :param path:
-        :return:
-        """
-
-        # Loop over the urls
-        for url in urls:
-
-            filename = fs.name(url)
-            filepath = fs.join(path, filename)
-
-            # Download
-            urllib.urlretrieve(url, filepath)
-
-    # -----------------------------------------------------------------
-
     def download_galex_observations_for_galaxy(self, galaxy_name, path):
 
         """
@@ -221,7 +258,7 @@ class DustPediaDataProcessing(object):
         urls = self.get_galex_observation_urls_for_galaxy(galaxy_name)
 
         # Download the files
-        self.download_files(urls, path)
+        network.download_files(urls, path)
 
     # -----------------------------------------------------------------
 
@@ -277,6 +314,61 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
+    def get_sdss_overlap(self, galaxy_name, band):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the overlap of the SDSS observations for " + galaxy_name + " in the " + band + " band ...")
+
+        # To use Montage to find out what images cover a given part of the sky, you first want to run mImgTable on the folder
+        # containing your image files, like so:
+        # montage_wrapper.commands.mImgtbl('/folder/with/maps/', 'Image_Metadata_Table.dat', corners=True)
+
+        # The 'Image_Metadata_Table.dat' output file is a table recording the geometry of all the files in the folder in
+        # question. You then use this file as an input to the function mCoverageCheck, which is used like this:
+
+        # montage_wrapper.commands_extra.mCoverageCheck('Image_Metadata_Table.dat', 'Overlap_Table.dat', mode='box', ra=ra,
+        # dec=dec, width=width)
+
+        # The 'Overlap_Table.dat' contains the subset of the rows from 'Image_Metadata_Table.dat' that intersect the defined
+        # region (not just those that cover the centre coordinate). I then read in this in with:
+
+        # overlap_files = np.genfromtxt('Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
+
+        temp_path = fs.join(fs.home(), "test")
+        fs.create_directory(temp_path)
+
+        # Download the SDSS primary fields
+        self.download_sdss_primary_fields_for_galaxy(galaxy_name, band, temp_path)
+
+        meta_path = fs.join(temp_path, "meta.dat")
+
+        # Get the image table of which images cover a given part of the sky
+        montage.commands.mImgtbl(temp_path, meta_path, corners=True)
+
+        overlap_path = fs.join(temp_path, "overlap.dat")
+
+        # Check the coverage for our galaxy
+        # Get the coordinate range first for this galaxy
+        ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
+        ra = ra.to("deg").value
+        dec = dec.to("deg").value
+        width = width.to("deg").value
+        montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='box', ra=ra, dec=dec, width=width)
+
+        # Load the overlap table
+        overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype="S500")
+
+        print(overlap_files)
+
+    # -----------------------------------------------------------------
+
     def download_sdss_primary_fields_for_galaxy(self, galaxy_name, band, path):
 
         """
@@ -287,11 +379,29 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Downloading the SDSS primary fields for " + galaxy_name + " in the " + band + " band to '" + path + "' ...")
+
         # Get the urls
         urls = self.get_sdss_primary_field_urls_for_galaxy(galaxy_name, band)
 
+        # Debugging
+        log.debug("Number of primary fields that will be downloaded: " + str(len(urls)))
+
         # Download the files
-        self.download_files(urls, path)
+        paths = network.download_files(urls, path)
+
+        # Debugging
+        log.debug("Decompressing the files ...")
+
+        # Decompress the files
+        decompress_bz2(paths)
+
+        # Debugging
+        log.debug("Removing the compressed files ...")
+
+        # Remove the compressed files
+        fs.remove_files(paths)
 
     # -----------------------------------------------------------------
 
@@ -499,5 +609,35 @@ def SDSS_Primary_Check(urls, index):
         if check_string in index:
             urls_pri.append(url)
     return urls_pri
+
+# -----------------------------------------------------------------
+
+def decompress_bz2(filepaths):
+
+    """
+    This function ...
+    :param filepaths:
+    :return:
+    """
+
+    # Loop over the files
+    for filepath in filepaths:
+
+        # Get the name of the file
+        filename = fs.name(filepath)
+
+        # Get directory of the file
+        path = fs.directory_of(filepath)
+
+        # Strip the bz2 extension
+        newfilename = fs.strip_extension(filename)
+
+        # Determine path to new file
+        newfilepath = fs.join(path, newfilename)
+
+        # Decompress, create decompressed new file
+        with open(newfilepath, 'wb') as new_file, bz2.BZ2File(filepath, 'rb') as file:
+            for data in iter(lambda : file.read(100 * 1024), b''):
+                new_file.write(data)
 
 # -----------------------------------------------------------------

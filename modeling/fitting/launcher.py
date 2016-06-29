@@ -34,7 +34,7 @@ from ...magic.misc.kernels import AnianoKernels
 
 # -----------------------------------------------------------------
 
-class FittingModelLauncher(FittingComponent):
+class FittingModelLauncher(FittingComponent, BatchLauncher):
 
     """
     This class...
