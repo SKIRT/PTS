@@ -195,7 +195,19 @@ class DustPediaDataProcessing(object):
         """
 
         # Determine the path to a temporary directory
-        self.temp_path = tempfile.gettempdir()
+        self.temp_path = fs.join(tempfile.gettempdir(), time.unique_name("DustPedia"))
+        fs.create_directory(self.temp_path)
+
+    # -----------------------------------------------------------------
+
+    def __del__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if fs.is_directory(self.temp_path): fs.remove_directory(self.temp_path)
 
     # -----------------------------------------------------------------
 
@@ -329,20 +341,35 @@ class DustPediaDataProcessing(object):
         log.info("Making mosaic for " + galaxy_name + " for SDSS " + band + " band ...")
 
         # Determine the path to the temporary directory for downloading the images
-        temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
+        #temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
 
         # Create the temporary directory
-        fs.create_directory(temp_path)
+        #fs.create_directory(temp_path)
 
         # Download the FITS files to be used for mosaicing
-        self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_path)
+        #self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_path)
+
+        temp_path = fs.join(fs.home(), "SDSS_NGC3031_i_2016-06-29--12-10-26-341")
 
         # Determine the path to the result file
         mosaic_path = fs.join(self.temp_path, "mosaic.fits")
 
+        # Get the target header
+        header = self.get_header_for_galaxy(galaxy_name, "SDSS")
+
+        # Save the header to the temp location
+        header_path = fs.join(self.temp_path, "target.hdr")
+        header.totextfile(header_path)
+
+        # Inform the user
+        log.info("Performing the mosaicing ...")
+
+        # Set debug level
+        debug_level = 4 if log.is_debug() else 0
+
         # Perform the mosaicing
-        montage.commands.mExec("SDSS", band, raw_dir=temp_path, level_only=False, corners=False, debug_level=0,
-                               output_image=mosaic_path, region_header='Header.hdr', workspace_dir=self.temp_path)
+        montage.commands.mExec("SDSS", band, raw_dir=temp_path, level_only=False, corners=False, debug_level=debug_level,
+                               output_image=mosaic_path, region_header=header_path)#, workspace_dir=self.temp_path)
 
         # Load the mosaic image
         return Image.from_file(mosaic_path)
