@@ -222,7 +222,7 @@ def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
 
 # -----------------------------------------------------------------
 
-def GALEX_Montage(name, ra, dec, width, band_dict, root_dir):
+def mosaic_galex(name, ra, dec, width, band_dict, root_dir):
 
     """
     Function to SWarp together GALEX tiles of a given source
@@ -360,72 +360,6 @@ def GALEX_Montage(name, ra, dec, width, band_dict, root_dir):
 
 # -----------------------------------------------------------------
 
-def do_for_galaxy(galaxy_name, ra, dec, d25):
-
-    """
-    This function ...
-    :param galaxy_name:
-    :return:
-    """
-
-    # State band information
-    bands_dict = {'FUV': {'band_short': 'fd', 'band_long': 'FUV'},
-                  'NUV': {'band_short': 'nd', 'band_long': 'NUV'}}
-
-    time_start = time.time()
-
-    if d25 < 6.0:
-        width = 0.5
-    elif d25 >= 6.0:
-        width = 1.0
-
-    log.info('Processing source ' + galaxy_name + " ...")
-
-    # Check if any GALEX tiles have coverage of source in question; if not, continue
-    bands_in_dict = {}
-    for band in bands_dict.keys():
-
-        montage.commands_extra.mCoverageCheck(root_dir + band + '_Image_Metadata_Table.dat',
-                                              root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat',
-                                              mode='point', ra=ra, dec=dec)
-        if sum(1 for line in open(root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat')) <= 3:
-            print('No GALEX ' + band + ' coverage for ' + name)
-        else:
-            bands_in_dict[band] = bands_dict[band]
-        os.remove(root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat')
-
-    if len(bands_in_dict) == 0:
-
-        alrady_processed_file = open('/home/saruman/spx7cjc/DustPedia/GALEX/GALEX_Already_Processed_List.dat', 'a')
-        alrady_processed_file.write(name + '\n')
-        alrady_processed_file.close()
-        continue
-
-    # Loop over bands, conducting SWarping function
-    for band in bands_in_dict.keys():
-        GALEX_Montage(name, ra, dec, width, bands_dict[band], root_dir)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
-
-    # Record that processing of souce has been compelted
-    alrady_processed_file = open('/home/saruman/spx7cjc/DustPedia/GALEX/GALEX_Already_Processed_List.dat', 'a')
-    alrady_processed_file.write(name + '\n')
-    alrady_processed_file.close()
-
-    # Clean memory, and return timings
-    #gc.collect()
-
-    time_source = time.time() - time_start
-    time_source_list.append(time_source)
-    time_total += time_source
-    time_source_mins = time_source / 60.0
-    time_source_mean = time_total / source_counter
-    time_source_median = np.median(time_source_list)
-    time_remaining_est_mean = ((source_total - source_counter) * time_source_mean) / 3600.0
-    time_remaining_est_median = ((source_total - source_counter) * time_source_median) / 3600.0
-    print('Estimated time remaining from mean: ' + str(time_remaining_est_mean)[
-                                                   :7] + ' hours (estimate from median: ' + str(time_remaining_est_median)[:7] + ' hours)')
-
-# -----------------------------------------------------------------
-
 def main():
 
     # Define paths
@@ -509,7 +443,7 @@ def main():
 
         # Loop over bands, conducting SWarping function
         for band in bands_in_dict.keys():
-            GALEX_Montage(name, ra, dec, width, bands_dict[band], root_dir)#pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
+            mosaic_galex(name, ra, dec, width, bands_dict[band], root_dir)#pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
 
         # Record that processing of souce has been compelted
         alrady_processed_file = open('/home/saruman/spx7cjc/DustPedia/GALEX/GALEX_Already_Processed_List.dat', 'a')

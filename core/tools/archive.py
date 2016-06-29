@@ -5,9 +5,10 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.tools.archive Transparently opening files from a ZIP archive.
+## \package pts.core.tools.archive Compressing, decompressing and transparently opening files from ZIP/GZ/BZ2 archives.
 #
 # The functions in this module allow opening a file contained in a ZIP archive without first extracting the file.
+# It also allows compressing and decompressing .gz and .bz2 files.
 
 # -----------------------------------------------------------------
 
@@ -16,6 +17,115 @@ import os
 import os.path
 import zipfile
 import StringIO
+import shutil
+import gzip
+import bz2
+
+# Import the relevant PTS classes and modules
+from . import filesystem as fs
+
+# -----------------------------------------------------------------
+
+def decompress_file(path, new_path):
+
+    """
+    This funtion ...
+    :param path:
+    :param new_path:
+    :return:
+    """
+
+    if path.endswith(".bz2"): decompress_bz2(path, new_path)
+    elif path.endswith(".gz"): decompress_gz(path, new_path)
+    elif path.endswith(".zip"): decompress_zip(path, new_path)
+    else: raise ValueError("Unrecognized archive type (must be bz2, gz or zip)")
+
+# -----------------------------------------------------------------
+
+def decompress_files(filepaths, remove=False):
+
+    """
+    This function ...
+    :param filepaths:
+    :param remove:
+    :return:
+    """
+
+    # Initialize a list for the decompressed file paths
+    new_paths = []
+
+    # Loop over the files
+    for filepath in filepaths:
+
+        # Get the name of the file
+        filename = fs.name(filepath)
+
+        # Get directory of the file
+        path = fs.directory_of(filepath)
+
+        # Strip the bz2 extension
+        newfilename = fs.strip_extension(filename)
+
+        # Determine path to new file
+        newfilepath = fs.join(path, newfilename)
+
+        # Decompress this file
+        decompress_file(filepath, newfilepath)
+
+        # If succesful, add the new path to the list
+        new_paths.append(newfilepath)
+
+    # Remove original files if requested
+    if remove: fs.remove_files(filepaths)
+
+    # Return the list of new file paths
+    return new_paths
+
+# -----------------------------------------------------------------
+
+def decompress_zip(zip_path, new_path):
+
+    """
+    This function decompresses a .zip file
+    :param zip_path:
+    :param new_path:
+    :return:
+    """
+
+    with zipfile.ZipFile(zip_path, 'w') as myzip:
+        myzip.write(new_path)
+
+# -----------------------------------------------------------------
+
+def decompress_gz(gz_path, new_path):
+
+    """
+    This function decompresses a .gz file
+    :param gz_path:
+    :param new_path:
+    :return:
+    """
+
+    # Decompress the kernel FITS file
+    with gzip.open(gz_path, 'rb') as f_in:
+        with open(new_path, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+# -----------------------------------------------------------------
+
+def decompress_bz2(bz2_path, new_path):
+
+    """
+    This function decompresses a .bz2 file
+    :param bz2_path:
+    :param new_path:
+    :return:
+    """
+
+    # Decompress, create decompressed new file
+    with open(new_path, 'wb') as new_file, bz2.BZ2File(bz2_path, 'rb') as file:
+        for data in iter(lambda: file.read(100 * 1024), b''):
+            new_file.write(data)
 
 # -----------------------------------------------------------------
 

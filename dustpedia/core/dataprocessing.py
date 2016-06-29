@@ -34,6 +34,8 @@ from ...magic.tools import plotting
 from ...core.tools import network
 from ...core.tools import time
 from ...magic.core.image import Image
+from .galex_montage_functions import mosaic_galex
+from ...core.tools import archive
 
 # -----------------------------------------------------------------
 
@@ -268,11 +270,23 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Downloading the GALEX observations for " + galaxy_name + " to '" + path + "' ...")
+
         # Get the urls
         urls = self.get_galex_observation_urls_for_galaxy(galaxy_name)
 
+        # Debugging
+        log.debug("Number of observations that will be downloaded: " + str(len(urls)))
+
         # Download the files
-        network.download_files(urls, path)
+        paths = network.download_files(urls, path)
+
+        # Debugging
+        log.debug("Decompressing the files ...")
+
+        # Decompress the files and remove the originals
+        archive.decompress_files(paths, remove=True)
 
     # -----------------------------------------------------------------
 
@@ -340,14 +354,51 @@ class DustPediaDataProcessing(object):
         # Inform the user
         log.info("Making mosaic for " + galaxy_name + " for GALEX ...")
 
-        # Find the index of the galaxy in the LEDA - WISE table
-        index = tables.find_index(self.leda_wise_table, galaxy_name)
+        # Get coordinate range for target image
+        ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
 
-        ra = self.leda_wise_table['ra2000'][index]
-        dec = self.leda_wise_table['de2000'][index]
-        d25 = self.leda_wise_table['d25'][index]
+        # --
 
+        # Determine the path to the temporary directory for downloading the images
+        temp_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
+        # Create the temporary directory
+        fs.create_directory(temp_path)
+
+        # --
+
+        # Download the GALEX observations to the temporary directory # they are decompressed here also
+        self.download_galex_observations_for_galaxy(galaxy_name, temp_path)
+
+        # --
+
+        return
+
+        # Generate the meta and then overlap file
+        meta_path, overlap_path = self.generate_meta_and_overlap_file(path, ra, dec, width)
+
+        # State band information
+        bands_dict = {'FUV': {'band_short': 'fd', 'band_long': 'FUV'},
+                      'NUV': {'band_short': 'nd', 'band_long': 'NUV'}}
+
+        # Check if any GALEX tiles have coverage of source in question; if not, continue
+        bands_in_dict = {}
+        for band in bands_dict.keys():
+
+            montage.commands_extra.mCoverageCheck(meta_path, root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat', mode='point', ra=ra, dec=dec)
+            if sum(1 for line in open(root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat')) <= 3:
+                print('No GALEX ' + band + ' coverage for ' + name)
+            else: bands_in_dict[band] = bands_dict[band]
+
+            #os.remove(root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat')
+
+        # Check if coverage in any band
+        if len(bands_in_dict) == 0: raise RuntimeError("No coverage in any GALEX band!")
+
+        # Loop over bands, conducting SWarping function
+        for band in bands_in_dict.keys():
+
+            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], root_dir)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
 
     # -----------------------------------------------------------------
 
@@ -429,23 +480,14 @@ class DustPediaDataProcessing(object):
         # Download the SDSS primary fields
         self.download_sdss_primary_fields_for_galaxy(galaxy_name, band, temp_path)
 
-        meta_path = fs.join(temp_path, "meta.dat")
-
-        # Get the image table of which images cover a given part of the sky
-        montage.commands.mImgtbl(temp_path, meta_path, corners=True)
-
-        overlap_path = fs.join(temp_path, "overlap.dat")
-
-        # Check the coverage for our galaxy
         # Get the coordinate range first for this galaxy
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
         ra = ra.to("deg").value
         dec = dec.to("deg").value
         width = width.to("deg").value
-        montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='box', ra=ra, dec=dec, width=width)
 
-        # Load the overlap table
-        overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype="S500")
+        # Get the names of the overlapping image files
+        overlap_files = self.get_overlapping_files(temp_path, ra, dec, width)
 
         # Loop over the FITS files in the temp directory, remove non-overlapping
         for path in fs.files_in_path(temp_path, extension="fits"):
@@ -455,6 +497,54 @@ class DustPediaDataProcessing(object):
 
                 log.debug("Removing the '" + fs.name(path) + "' image since it does not overlap with the target area ...")
                 fs.remove_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_overlapping_files(self, path, ra, dec, width):
+
+        """
+        This function ...
+        :param path to the directory with the images
+        :param ra:
+        :param dec:
+        :param width:
+        :return:
+        """
+
+        # Generate the meta and then overlap file
+        meta_path, overlap_path = self.generate_meta_and_overlap_file(path, ra, dec, width)
+
+        # Load the overlap table
+        overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype="S500")
+
+        # Return the names of the overlapping images
+        return overlap_files
+
+    # -----------------------------------------------------------------
+
+    def generate_meta_and_overlap_file(self, path, ra, dec, width):
+
+        """
+        This function ...
+        :param path:
+        :param ra:
+        :param dec:
+        :param width:
+        :return:
+        """
+
+        meta_path = fs.join(path, "meta.dat")
+
+        # Get the image table of which images cover a given part of the sky
+        montage.commands.mImgtbl(path, meta_path, corners=True)
+
+        overlap_path = fs.join(path, "overlap.dat")
+
+        # Check the coverage for our galaxy
+        montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='box', ra=ra, dec=dec, width=width)
+
+        # Return the paths to the created files
+        return meta_path, overlap_path
 
     # -----------------------------------------------------------------
 
@@ -483,14 +573,8 @@ class DustPediaDataProcessing(object):
         # Debugging
         log.debug("Decompressing the files ...")
 
-        # Decompress the files
-        decompress_bz2(paths)
-
-        # Debugging
-        log.debug("Removing the compressed files ...")
-
-        # Remove the compressed files
-        fs.remove_files(paths)
+        # Decompress the files and remove the originals
+        archive.decompress_files(paths, remove=True)
 
     # -----------------------------------------------------------------
 
@@ -698,35 +782,5 @@ def SDSS_Primary_Check(urls, index):
         if check_string in index:
             urls_pri.append(url)
     return urls_pri
-
-# -----------------------------------------------------------------
-
-def decompress_bz2(filepaths):
-
-    """
-    This function ...
-    :param filepaths:
-    :return:
-    """
-
-    # Loop over the files
-    for filepath in filepaths:
-
-        # Get the name of the file
-        filename = fs.name(filepath)
-
-        # Get directory of the file
-        path = fs.directory_of(filepath)
-
-        # Strip the bz2 extension
-        newfilename = fs.strip_extension(filename)
-
-        # Determine path to new file
-        newfilepath = fs.join(path, newfilename)
-
-        # Decompress, create decompressed new file
-        with open(newfilepath, 'wb') as new_file, bz2.BZ2File(filepath, 'rb') as file:
-            for data in iter(lambda : file.read(100 * 1024), b''):
-                new_file.write(data)
 
 # -----------------------------------------------------------------
