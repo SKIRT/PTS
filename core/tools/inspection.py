@@ -18,6 +18,7 @@ import os
 import sys
 import imp
 import inspect
+import socket
 import subprocess
 from operator import itemgetter, methodcaller
 from collections import defaultdict
@@ -67,6 +68,17 @@ skirt_release_dir = os.path.join(skirt_root_dir, "release") if skirt_path is not
 
 # The path to the SKIRT run directory
 skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None else None
+
+# -----------------------------------------------------------------
+
+def host_name():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return socket.gethostname()
 
 # -----------------------------------------------------------------
 
