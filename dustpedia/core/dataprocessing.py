@@ -32,6 +32,8 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...magic.tools import plotting
 from ...core.tools import network
+from ...core.tools import time
+from ...magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -314,12 +316,46 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def get_sdss_overlap(self, galaxy_name, band):
+    def make_sdss_mosaic(self, galaxy_name, band):
 
         """
         This function ...
         :param galaxy_name:
         :param band:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making mosaic for " + galaxy_name + " for SDSS " + band + " band ...")
+
+        # Determine the path to the temporary directory for downloading the images
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
+
+        # Create the temporary directory
+        fs.create_directory(temp_path)
+
+        # Download the FITS files to be used for mosaicing
+        self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_path)
+
+        # Determine the path to the result file
+        mosaic_path = fs.join(self.temp_path, "mosaic.fits")
+
+        # Perform the mosaicing
+        montage.commands.mExec("SDSS", band, raw_dir=temp_path, level_only=False, corners=False, debug_level=0,
+                               output_image=mosaic_path, region_header='Header.hdr', workspace_dir=self.temp_path)
+
+        # Load the mosaic image
+        return Image.from_file(mosaic_path)
+
+    # -----------------------------------------------------------------
+
+    def download_sdss_primary_fields_for_galaxy_for_mosaic(self, galaxy_name, band, temp_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :param temp_path:
         :return:
         """
 
@@ -341,9 +377,6 @@ class DustPediaDataProcessing(object):
 
         # overlap_files = np.genfromtxt('Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
 
-        temp_path = fs.join(fs.home(), "test")
-        fs.create_directory(temp_path)
-
         # Download the SDSS primary fields
         self.download_sdss_primary_fields_for_galaxy(galaxy_name, band, temp_path)
 
@@ -363,9 +396,16 @@ class DustPediaDataProcessing(object):
         montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='box', ra=ra, dec=dec, width=width)
 
         # Load the overlap table
-        overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype="S500")
+        overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype="S500")
 
-        print(overlap_files)
+        # Loop over the FITS files in the temp directory, remove non-overlapping
+        for path in fs.files_in_path(temp_path, extension="fits"):
+
+            # If the path is not in the overlap_files list, remove the FITS file
+            if path not in overlap_files:
+
+                log.debug("Removing the '" + fs.name(path) + "' image since it does not overlap with the target area ...")
+                fs.remove_file(path)
 
     # -----------------------------------------------------------------
 
