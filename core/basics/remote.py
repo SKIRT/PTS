@@ -13,8 +13,8 @@
 import os
 import re
 import sys
-import pxssh
 import pexpect
+from pexpect import pxssh
 import tempfile
 
 # Import the relevant PTS classes and modules
