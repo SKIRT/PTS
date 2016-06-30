@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 
 # Import astronomical modules
@@ -424,7 +425,30 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
-        # TODO: Should support any arbritrary orientation angle, not just 0, +90, +180, -90 ...
+        diag_a = self.pixel_scale_matrix[0,1]
+        diag_b = self.pixel_scale_matrix[1,0]
+
+        if not np.isclose(diag_a, diag_b): log.warning("The diagonal elements of the pixel scale matrix are not equal")
+
+        first = self.pixel_scale_matrix[0,0]
+
+        radians = np.arctan(diag_a / first)
+
+        degrees = radians / math.pi * 180.
+
+        return Angle(degrees, "deg")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def standard_orientation_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Angles of 0, +90, +180, -90 ...
 
         orientation = self.orientation
 
@@ -450,10 +474,11 @@ class CoordinateSystem(wcs.WCS):
         elif orientation == ("-y", "-x"): return Angle(-90., "deg")
         elif orientation == ("+x", "-y"): return Angle(180., "deg")
         elif orientation == ("+y", "+x"): return Angle(90, "deg")
-        else: raise ValueError("Unknown orientation angle")
+        else: raise ValueError("Not a standard orientation angle")
 
     # -----------------------------------------------------------------
 
+    @property
     def orientation_angle_flipped(self):
 
         """
@@ -473,7 +498,7 @@ class CoordinateSystem(wcs.WCS):
         elif orientation == ("-x", "-y"): return Angle(-90., "deg")
         elif orientation == ("+y", "-x"): return Angle(180., "deg")
         elif orientation == ("+x", "+y"): return Angle(90, "deg")
-        else: raise ValueError("Unknown orientation angle")
+        else: raise ValueError("Not a standard orientation angle")
 
     # -----------------------------------------------------------------
 
