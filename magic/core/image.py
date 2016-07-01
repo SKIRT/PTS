@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..basics.layers import Layers, newLayers
+from ..basics.layers import newLayers
 from ..basics.region import Region
 from ..basics.mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem

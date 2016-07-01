@@ -132,17 +132,20 @@ def find_closest_index(table, value, column_name=None):
     # Get first column name if none is given
     if column_name is None: column_name = table.colnames[0]
 
-    closest_delta = float("inf")
+    closest_delta = None
+    #closest_delta = float("inf")
+    closest_index = None
 
     # Loop over all entries in the column
     for i in range(len(table)):
 
-        delta = table[column_name][i] - value
+        delta = abs(table[column_name][i] - value)
 
-        if delta < closest_delta: closest_delta = delta
-        else: return i
+        if closest_delta is None or delta < closest_delta:
+            closest_delta = delta
+            closest_index = i
 
-    return None
+    return closest_index
 
 # -----------------------------------------------------------------
 

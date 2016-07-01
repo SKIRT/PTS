@@ -201,6 +201,18 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
+    def __getitem__(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.table["Wavelength"][index] * Unit("micron")
+
+    # -----------------------------------------------------------------
+
     def add_point(self, wavelength):
 
         """
