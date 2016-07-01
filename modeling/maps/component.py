@@ -62,15 +62,12 @@ class MapsComponent(ModelingComponent):
         self.config.output_path = self.maps_path
 
         # Set the path to the maps/solar directory
-        self.maps_solar_path = fs.join(self.maps_path, "solar")
+        self.maps_solar_path = fs.create_directory_in(self.maps_path, "solar")
 
         # Set the path to the maps/intermediate directory
-        self.maps_intermediate_path = fs.join(self.maps_path, "intermediate")
+        self.maps_intermediate_path = fs.create_directory_in(self.maps_path, "intermediate")
 
         # Set the path to the maps/cutoff directory
-        self.maps_cutoff_path = fs.join(self.maps_path, "cutoff")
-
-        # Create the maps/solar and maps/intermediate directories
-        fs.create_directories([self.maps_solar_path, self.maps_intermediate_path, self.maps_cutoff_path])
+        self.maps_cutoff_path = fs.create_directory_in(self.maps_path, "cutoff")
 
 # -----------------------------------------------------------------

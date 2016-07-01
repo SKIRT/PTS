@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.decomposition.component Contains the DecompositionComponent class
+## \package pts.modeling.decomposition.component Contains the DecompositionComponent class.
 
 # -----------------------------------------------------------------
 

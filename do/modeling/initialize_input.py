@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.initialize_input Initialize the input directory for the fitting procedure.
+## \package pts.do.modeling.initialize_fit Do some initialization before starting the fitting.
 
 # -----------------------------------------------------------------
 
@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.modeling.fitting.initialization import InputInitializer
+from pts.modeling.fitting.initialization import FittingInitializer
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import Configuration
@@ -50,12 +50,12 @@ level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting initialize_input ...")
+log.start("Starting initialize_fit ...")
 
 # -----------------------------------------------------------------
 
 # Create a InputInitializer object
-initializer = InputInitializer(config.get_settings())
+initializer = FittingInitializer(config.get_settings())
 
 # Run the input initialization
 initializer.run()

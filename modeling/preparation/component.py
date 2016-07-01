@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.preparation.component Contains the PreparationComponent class
+## \package pts.modeling.preparation.component Contains the PreparationComponent class.
 
 # -----------------------------------------------------------------
 

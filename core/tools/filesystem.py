@@ -210,6 +210,21 @@ def create_directory(path, recursive=False):
 
 # -----------------------------------------------------------------
 
+def create_directory_in(base_path, name):
+
+    """
+    This function ...
+    :param base_path:
+    :param name:
+    :return:
+    """
+
+    directory_path = join(base_path, name)
+    create_directory(directory_path)
+    return directory_path
+
+# -----------------------------------------------------------------
+
 def create_directories(paths, recursive=False):
     
     """
@@ -220,6 +235,21 @@ def create_directories(paths, recursive=False):
     
     # Loop over the different paths in the list
     for path in paths: create_directory(path, recursive)
+
+# -----------------------------------------------------------------
+
+def create_directories_in(base_path, names):
+
+    """
+    This function ...
+    :param base_path:
+    :param names:
+    :return:
+    """
+
+    paths = []
+    for name in names: paths.append(create_directory_in(base_path, name))
+    return paths
 
 # -----------------------------------------------------------------
 

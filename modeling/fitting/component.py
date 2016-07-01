@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.component Contains the FittingComponent class
+## \package pts.modeling.fitting.component Contains the FittingComponent class.
 
 # -----------------------------------------------------------------
 
@@ -68,10 +68,6 @@ class FittingComponent(ModelingComponent):
         # The path to the fit/grid directory
         self.fit_grid_path = None
 
-        # The paths to the fit/grid/lowres and fit/grid/highres directories
-        #self.fit_grid_lowres_path = None
-        #self.fit_grid_highres_path = None
-
         # The path to the ski file
         self.fit_ski_path = None
 
@@ -124,38 +120,31 @@ class FittingComponent(ModelingComponent):
         self.config.output_path = self.fit_path
 
         # Set the path to the fit/in directory
-        self.fit_in_path = fs.join(self.fit_path, "in")
-        fs.create_directory(self.fit_in_path)
+        self.fit_in_path = fs.create_directory_in(self.fit_path, "in")
 
         # Set the path to the fit/generations directory
-        self.fit_generations_path = fs.join(self.fit_path, "generations")
+        self.fit_generations_path = fs.create_directory_in(self.fit_path, "generations")
 
         # Set the path to the fit/wavelength grids directory
-        self.fit_wavelength_grids_path = fs.join(self.fit_path, "wavelength grids")
+        self.fit_wavelength_grids_path = fs.create_directory_in(self.fit_path, "wavelength grids")
 
         # Set the path to the fit/dust grids directory
-        self.fit_dust_grids_path = fs.join(self.fit_path, "dust grids")
+        self.fit_dust_grids_path = fs.create_directory_in(self.fit_path, "dust grids")
 
         # Set the path to the fit/best directory
-        self.fit_best_path = fs.join(self.fit_path, "best")
+        self.fit_best_path = fs.create_directory_in(self.fit_path, "best")
 
         # Set the path to the fit/prob directory
-        self.fit_prob_path = fs.join(self.fit_path, "prob")
+        self.fit_prob_path = fs.create_directory_in(self.fit_path, "prob")
 
         # Set the path to the fit/grid directory
-        self.fit_grid_path = fs.join(self.fit_path, "grid")
+        self.fit_grid_path = fs.create_directory_in(self.fit_path, "grid")
 
         # Set the path to the fit/scripts directory
-        self.fit_scripts_path = fs.join(self.fit_path, "scripts")
-
-        # Create the fit/scripts directory
-        if not fs.is_directory(self.fit_scripts_path): fs.create_directory(self.fit_scripts_path)
+        self.fit_scripts_path = fs.create_directory_in(self.fit_path, "scripts")
 
         # Set the path to the fit/geometries directory
-        self.fit_geometries_path = fs.join(self.fit_path, "geometries")
-
-        # Creaete the fit/geometries directory
-        if not fs.is_directory(self.fit_geometries_path): fs.create_directory(self.fit_geometries_path)
+        self.fit_geometries_path = fs.create_directory_in(self.fit_path, "geometries")
 
         # Set and create the paths to the fit/best/ contribution directories
         for contribution in contributions:
@@ -165,10 +154,7 @@ class FittingComponent(ModelingComponent):
             self.fit_best_contribution_paths[contribution] = path
 
         # Set the path to the fit/best/images directory
-        self.fit_best_images_path = fs.join(self.fit_best_path, "images")
-
-        # Create the fit/best/images directory
-        fs.create_directory(self.fit_best_images_path)
+        self.fit_best_images_path = fs.create_directory_in(self.fit_best_path, "images")
 
         # Set the path to the parameter file
         self.parameter_table_path = fs.join(self.fit_path, "parameters.dat")

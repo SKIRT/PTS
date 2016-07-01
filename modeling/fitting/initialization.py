@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.initialization Contains the InputInitializer
+## \package pts.modeling.fitting.initialization Contains the FittingInitializer class.
 
 # -----------------------------------------------------------------
 
@@ -14,8 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
-import bisect
-import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
@@ -32,16 +30,13 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
 from ..basics.instruments import SEDInstrument, FrameInstrument
-from ..basics.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
 from ..core.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
 from ...core.tools.logging import log
-from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.projection import GalaxyProjection
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.arguments import SkirtArguments
-from ..core.emissionlines import EmissionLines
 from ..core.sed import ObservedSED
 from .wavelengthgrids import WavelengthGridGenerator
 from .dustgrids import DustGridGenerator
@@ -52,7 +47,7 @@ template_ski_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "template
 
 # -----------------------------------------------------------------
 
-class InputInitializer(FittingComponent):
+class FittingInitializer(FittingComponent):
     
     """
     This class...
@@ -67,7 +62,7 @@ class InputInitializer(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(InputInitializer, self).__init__(config)
+        super(FittingInitializer, self).__init__(config)
 
         # -- Attributes --
 
@@ -121,48 +116,6 @@ class InputInitializer(FittingComponent):
 
         # The ski file for generating simulated images
         self.ski_images = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new InputInitializer instance
-        initializer = cls(arguments.config)
-
-        # Set the modeling path
-        initializer.config.path = arguments.path
-
-        # Set minimum and maximum wavelength of the total grid
-        if arguments.lambda_minmax is not None:
-            initializer.config.wavelengths.min = arguments.lambda_minmax[0]
-            initializer.config.wavelengths.max = arguments.lambda_minmax[1]
-
-        # Set minimum and maximum wavelength of the zoomed-in grid
-        if arguments.lambda_minmax_zoom is not None:
-            initializer.config.wavelengths.min_zoom = arguments.lambda_minmax_zoom[0]
-            initializer.config.wavelengths.max_zoom = arguments.lambda_minmax_zoom[1]
-
-        # Set the number of wavelength points
-        if arguments.nlambda is not None:
-            # Based on npoints = 1.1 * npoints_zoom
-            initializer.config.wavelengths.npoints = 1.1 * arguments.nlambda / 2.1
-            initializer.config.wavelengths.npoints_zoom = arguments.nlambda / 2.1
-
-        # Set the number of photon packages per wavelength
-        if arguments.packages is not None: initializer.config.packages = arguments.packages
-
-        # Set selfabsorption
-        initializer.config.selfabsorption = arguments.selfabsorption
-
-        # Return the new instance
-        return initializer
 
     # -----------------------------------------------------------------
 
@@ -235,7 +188,7 @@ class InputInitializer(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(InputInitializer, self).setup()
+        super(FittingInitializer, self).setup()
 
         # Create filters
         self.i1 = Filter.from_string("I1")

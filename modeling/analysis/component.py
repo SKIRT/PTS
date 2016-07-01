@@ -95,42 +95,34 @@ class AnalysisComponent(ModelingComponent):
         super(AnalysisComponent, self).setup()
 
         # Set the path to the analysis/in path
-        self.analysis_in_path = fs.join(self.analysis_path, "in")
+        self.analysis_in_path = fs.create_directory_in(self.analysis_path, "in")
 
         # Set the path to the analysis/out path
-        self.analysis_out_path = fs.join(self.analysis_path, "out")
+        self.analysis_out_path = fs.create_directory_in(self.analysis_path, "out")
 
         # Set the path to the analysis/extr path
-        self.analysis_extr_path = fs.join(self.analysis_path, "extr")
+        self.analysis_extr_path = fs.create_directory_in(self.analysis_path, "extr")
 
         # Set the path to the analysis/plot path
-        self.analysis_plot_path = fs.join(self.analysis_path, "plot")
+        self.analysis_plot_path = fs.create_directory_in(self.analysis_path, "plot")
 
         # Set the path to the analysis/misc path
-        self.analysis_misc_path = fs.join(self.analysis_path, "misc")
+        self.analysis_misc_path = fs.create_directory_in(self.analysis_path, "misc")
 
         # Set the path to the analysis/attenuation path
-        self.analysis_attenuation_path = fs.join(self.analysis_path, "attenuation")
+        self.analysis_attenuation_path = fs.create_directory_in(self.analysis_path, "attenuation")
 
         # Set the path to the analysis/colours path
-        self.analysis_colours_path = fs.join(self.analysis_path, "colours")
+        self.analysis_colours_path = fs.create_directory_in(self.analysis_path, "colours")
 
         # Set the path to the analysis/residuals path
-        self.analysis_residuals_path = fs.join(self.analysis_path, "residuals")
+        self.analysis_residuals_path = fs.create_directory_in(self.analysis_path, "residuals")
 
         # Set the path to the analysis/heating path
-        self.analysis_heating_path = fs.join(self.analysis_path, "heating")
-
-        # Create the analysis subdirectories
-        fs.create_directories([self.analysis_in_path, self.analysis_out_path, self.analysis_extr_path,
-                               self.analysis_plot_path, self.analysis_misc_path, self.analysis_attenuation_path,
-                               self.analysis_colours_path, self.analysis_residuals_path, self.analysis_heating_path])
+        self.analysis_heating_path = fs.create_directory_in(self.analysis_path, "heating")
 
         # Set the path to the analysis/scripts directory
-        self.analysis_scripts_path = fs.join(self.analysis_path, "scripts")
-
-        # Create the analysis/scripts directory
-        if not fs.is_directory(self.analysis_scripts_path): fs.create_directory(self.analysis_scripts_path)
+        self.analysis_scripts_path = fs.create_directory_in(self.analysis_path, "scripts")
 
         # Set the path to the ski file and wavelength grid file
         self.analysis_ski_path = fs.join(self.analysis_path, self.galaxy_name + ".ski")

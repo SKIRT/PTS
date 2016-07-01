@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.plotting.component Contains the PlottingComponent class
+## \package pts.modeling.plotting.component Contains the PlottingComponent class.
 
 # -----------------------------------------------------------------
 
@@ -63,32 +63,27 @@ class PlottingComponent(ModelingComponent):
         self.config.output_path = self.plot_path
 
         # Set the path to the plot/data directory
-        self.plot_data_path = fs.join(self.plot_path, "data")
+        self.plot_data_path = fs.create_directory_in(self.plot_path, "data")
 
         # Set the path to the plot/prep directory
-        self.plot_preparation_path = fs.join(self.plot_path, "prep")
+        self.plot_preparation_path = fs.create_directory_in(self.plot_path, "prep")
 
         # Set the path to the plot/components directory
-        self.plot_decomposition_path = fs.join(self.plot_path, "components")
+        self.plot_decomposition_path = fs.create_directory_in(self.plot_path, "components")
 
         # Set the path to the plot/trunc directory
-        self.plot_truncation_path = fs.join(self.plot_path, "trunc")
+        self.plot_truncation_path = fs.create_directory_in(self.plot_path, "trunc")
 
         # Set the path to the plot/phot directory
-        self.plot_photometry_path = fs.join(self.plot_path, "phot")
+        self.plot_photometry_path = fs.create_directory_in(self.plot_path, "phot")
 
         # Set the path to the plot/maps directory
-        self.plot_maps_path = fs.join(self.plot_path, "maps")
+        self.plot_maps_path = fs.create_directory_in(self.plot_path, "maps")
 
         # Set the path to the plot/fit directory
-        self.plot_fitting_path = fs.join(self.plot_path, "fit")
+        self.plot_fitting_path = fs.create_directory_in(self.plot_path, "fit")
 
         # Set the path to the plot/analysis directory
-        self.plot_analysis_path = fs.join(self.plot_path, "analysis")
-
-        # Create the directories
-        fs.create_directories([self.plot_data_path, self.plot_preparation_path, self.plot_decomposition_path,
-                               self.plot_truncation_path, self.plot_photometry_path, self.plot_maps_path,
-                               self.plot_fitting_path, self.plot_analysis_path])
+        self.plot_analysis_path = fs.create_directory_in(self.plot_path, "analysis")
 
 # -----------------------------------------------------------------

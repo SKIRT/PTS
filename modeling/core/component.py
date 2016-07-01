@@ -157,19 +157,4 @@ class ModelingComponent(NewConfigurable):
         filters = self.get_observed_filters()
         return [str(fltr) for fltr in filters]
 
-    # -----------------------------------------------------------------
-
-    def register_directory(self, base_path, name):
-
-        """
-        This function ...
-        :param base_path:
-        :param name:
-        :return:
-        """
-
-        directory_path = fs.join(base_path, name)
-        fs.create_directory(directory_path)
-        return directory_path
-
 # -----------------------------------------------------------------
