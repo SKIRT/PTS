@@ -29,28 +29,33 @@ class TimeLineTable(Table):
     This function ...
     """
 
-    def __init__(self, process_list, phase_list, start_list, end_list):
+    @classmethod
+    def from_columns(cls, process_list, phase_list, start_list, end_list):
 
         """
-        The constructor ...
+        This function ...
         :param process_list:
         :param phase_list:
         :param start_list:
         :param end_list:
+        :return:
         """
 
         names = ["Process rank", "Simulation phase", "Start time", "End time"]
         data = [process_list, phase_list, start_list, end_list]
 
         # Call the constructor of the base class
-        super(TimeLineTable, self).__init__(data, names=names, masked=True)
+        table = cls(data, names=names, masked=True)
 
         # Set the column units
-        self["Start time"].unit = "s"
-        self["End time"].unit = "s"
+        table["Start time"].unit = "s"
+        table["End time"].unit = "s"
 
         # The path to the table file
-        self.path = None
+        table.path = None
+
+        # Return the table
+        return table
 
     # -----------------------------------------------------------------
 
@@ -64,7 +69,7 @@ class TimeLineTable(Table):
         """
 
         # Open the table
-        table = super(TimeLineTable, cls).read(path, format="ascii.ecsv")
+        table = cls.read(path, format="ascii.ecsv")
 
         # Set the path
         table.path = path
@@ -469,7 +474,7 @@ class TimeLineExtractor(object):
         if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list)
 
         # Create the table
-        self.table = TimeLineTable(process_list, phase_list, start_list, end_list)
+        self.table = TimeLineTable.from_columns(process_list, phase_list, start_list, end_list)
 
     # -----------------------------------------------------------------
 

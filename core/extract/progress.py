@@ -6,7 +6,7 @@
 # *****************************************************************
 
 ## \package pts.core.extract.progress Contains the ProgressTable class and the the ProgressExtractor class.
-# The latter class is used for extracting simulation progress from a simulation's log files into a ProgressTable object.
+#  The latter class is used for extracting simulation progress from a simulation's log files into a ProgressTable object.
 
 # -----------------------------------------------------------------
 
@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.table import Table
-from astropy.io import registry
 
 # -----------------------------------------------------------------
 
@@ -25,28 +24,31 @@ class ProgressTable(Table):
     This function ...
     """
 
-    def __init__(self, process_list, phase_list, seconds_list, progress_list):
+    @classmethod
+    def from_columns(cls, process_list, phase_list, seconds_list, progress_list):
 
         """
-        The constructor ...
+        This function ...
         :param process_list:
         :param phase_list:
         :param seconds_list:
         :param progress_list:
+        :return:
         """
 
         names = ["Process rank", "Simulation phase", "Time", "Progress"]
         data = [process_list, phase_list, seconds_list, progress_list]
 
         # Call the constructor of the base class
-        super(ProgressTable, self).__init__(data, names=names, masked=True)
+        table = cls(data, names=names, masked=True)
 
         # Set the column units
-        self["Time"].unit = "s"
-        self["Progress"].unit = "%"
+        table["Time"].unit = "s"
+        table["Progress"].unit = "%"
 
-        # The path to the table file
-        self.path = None
+        table.path = None
+
+        return table
 
     # -----------------------------------------------------------------
 
@@ -60,6 +62,7 @@ class ProgressTable(Table):
         """
 
         # Open the table
+        #table = cls.read(path, format="ascii.ecsv")
         table = super(ProgressTable, cls).read(path, format="ascii.ecsv")
 
         # Set the path
@@ -357,7 +360,7 @@ class ProgressExtractor(object):
                         progress_list.append(100.0)
 
         # Create the progress table
-        self.table = ProgressTable(process_list, phase_list, seconds_list, progress_list)
+        self.table = ProgressTable.from_columns(process_list, phase_list, seconds_list, progress_list)
 
     # -----------------------------------------------------------------
 

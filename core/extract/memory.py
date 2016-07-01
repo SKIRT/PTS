@@ -28,14 +28,18 @@ class MemoryUsageTable(Table):
     This function ...
     """
 
-    def __init__(self, process_list, phase_list, seconds_list, memory_list, delta_list=None, id_list=None):
+    @classmethod
+    def from_columns(cls, process_list, phase_list, seconds_list, memory_list, delta_list=None, id_list=None):
 
         """
-        The constructor ...
+        This function ...
         :param process_list:
         :param phase_list:
         :param seconds_list:
         :param memory_list:
+        :param delta_list:
+        :param id_list:
+        :return:
         """
 
         names = ['Process rank', 'Simulation phase', 'Simulation time', 'Memory usage']
@@ -52,15 +56,18 @@ class MemoryUsageTable(Table):
             data.append(id_list)
 
         # Call the constructor of the base class
-        super(MemoryUsageTable, self).__init__(data, names=names, masked=True)
+        table = cls(data, names=names, masked=True)
 
         # Set the column units
-        self["Simulation time"].unit = "s"
-        self["Memory usage"].unit = "GB"
-        if self.has_allocation_info: self["Array (de)allocation"].unit = "GB"
+        table["Simulation time"].unit = "s"
+        table["Memory usage"].unit = "GB"
+        if table.has_allocation_info: table["Array (de)allocation"].unit = "GB"
 
         # The path to the table file
-        self.path = None
+        table.path = None
+
+        # Return the table
+        return table
 
     # -----------------------------------------------------------------
 
@@ -74,7 +81,7 @@ class MemoryUsageTable(Table):
         """
 
         # Open the table
-        table = super(MemoryUsageTable, cls).read(path, format="ascii.ecsv")
+        table = cls.read(path, format="ascii.ecsv")
 
         # Set the path
         table.path = path
@@ -286,7 +293,7 @@ class MemoryExtractor(object):
             id_list = None
 
         # Create the memory usage table
-        self.table = MemoryUsageTable(process_list, phase_list, seconds_list, memory_list, delta_list, id_list)
+        self.table = MemoryUsageTable.from_columns(process_list, phase_list, seconds_list, memory_list, delta_list, id_list)
 
     # -----------------------------------------------------------------
 
