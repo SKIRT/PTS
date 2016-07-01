@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..basics.layers import Layers
+from ..basics.layers import Layers, newLayers
 from ..basics.region import Region
 from ..basics.mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem
@@ -49,9 +49,9 @@ class Image(object):
         """
 
         # Initialize a set of layers to represent image frames, masks and regions
-        self.frames = Layers()
-        self.masks = Layers()
-        self.regions = Layers()
+        self.frames = newLayers()
+        self.masks = newLayers()
+        self.regions = newLayers()
 
         # The image name and path
         self.name = name
@@ -98,22 +98,39 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def asarray(self, axis=3):
+    @property
+    def nframes(self):
 
         """
         This function ...
         :return:
         """
 
-        # Get a list that contains the frames
-        frame_list = self.frames.as_list()
+        return len(self.frames)
 
-        # Stack the frames into a 3D numpy array
-        if axis == 3: return np.dstack(frame_list)
-        elif axis == 2: return np.hstack(frame_list)
-        elif axis == 1: return np.vstack(frame_list)
-        elif axis == 0: return np.stack(frame_list)
-        else: raise ValueError("'axis' parameter should be integer 0-3")
+    # -----------------------------------------------------------------
+
+    @property
+    def nmasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.masks)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nregions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.regions)
 
     # -----------------------------------------------------------------
 

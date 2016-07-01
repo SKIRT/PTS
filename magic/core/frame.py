@@ -72,7 +72,7 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def __new__(cls, data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None):
+    def __new__(cls, data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None, wavelength=None):
 
         """
         This function ...
@@ -86,6 +86,7 @@ class Frame(np.ndarray):
         :param filter:
         :param sky_subtracted:
         :param fwhm:
+        :param wavelength:
         :return:
         """
 
@@ -98,6 +99,7 @@ class Frame(np.ndarray):
         obj.sky_subtracted = sky_subtracted
         obj.zero_point = zero_point
         obj.fwhm = fwhm
+        obj._wavelength = wavelength
 
         return obj
 
@@ -440,8 +442,20 @@ class Frame(np.ndarray):
         """
 
         # Return the pivot wavelength of the frame's filter, if defined
-        if self.filter is None: return None
-        else: return self.filter.effectivewavelength() * Unit("micron")
+        if self.filter is not None: return self.filter.effectivewavelength() * Unit("micron")
+        else: return self._wavelength # return the wavelength (if defined, is None otherwise)
+
+    # -----------------------------------------------------------------
+
+    @wavelength.setter
+    def wavelength(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._wavelength = value
 
     # -----------------------------------------------------------------
 
