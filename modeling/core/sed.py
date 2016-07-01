@@ -77,6 +77,7 @@ class IntrinsicSED(object):
 
     @classmethod
     def from_file(cls, path, skiprows=0):
+
         """
         This function ...
         :param path:

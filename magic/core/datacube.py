@@ -17,6 +17,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from .image import Image
+from ...modeling.core.sed import SED
 
 # -----------------------------------------------------------------
 
@@ -70,14 +71,14 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def wavelengths(self):
+    def wavelengths(self, unit=None, asarray=False, add_unit=True):
 
         """
         This function ...
         :return:
         """
 
-        return self.wavelength_grid.wavelengths()
+        return self.wavelength_grid.wavelengths(unit, asarray, add_unit)
 
     # -----------------------------------------------------------------
 
@@ -97,5 +98,16 @@ class DataCube(Image):
         elif axis == 1: return np.vstack(frame_list)
         elif axis == 0: return np.stack(frame_list)
         else: raise ValueError("'axis' parameter should be integer 0-3")
+
+    # -----------------------------------------------------------------
+
+    def to_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
