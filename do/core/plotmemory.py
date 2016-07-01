@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.plotmemory Make plots of the memory usage for a SKIRT simulation
+## \package pts.do.core.plotmemory Make plots of the memory usage for a SKIRT simulation.
 #
 
 # -----------------------------------------------------------------
@@ -18,6 +18,18 @@ from pts.core.simulation.simulation import createsimulations
 from pts.core.extract.memory import MemoryExtractor, MemoryUsageTable
 from pts.core.plot.memory import MemoryPlotter
 from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
+
+# -----------------------------------------------------------------
+
+# Create the configuration
+config = Configuration()
+
+# Add flags
+config.add_flag("table", "save the extracted memory table")
+
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
@@ -36,6 +48,10 @@ else:
 
     # Run the extractor and get the memory table
     table = extractor.run(simulation)
+
+# -----------------------------------------------------------------
+
+if config.arguments.table and not fs.is_file(memory_table_path): table.saveto(memory_table_path)
 
 # -----------------------------------------------------------------
 

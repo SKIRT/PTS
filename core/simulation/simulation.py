@@ -45,11 +45,16 @@ def createsimulations(source="", single=False):
                 dirpath = os.path.realpath(os.path.expanduser(source))
                 logfiles = arch.listdir(dirpath, "_log.txt")
                 for logfile in logfiles:
-                    simulations.append(SkirtSimulation(prefix=logfile[:-8], outpath=dirpath))
+                    prefix = logfile[:-8]
+                    ski_path = fs.join(dirpath, prefix + ".ski")
+                    ski_path = ski_path if fs.is_file(ski_path) else None
+                    simulations.append(SkirtSimulation(prefix=logfile[:-8], outpath=dirpath, ski_path=ski_path))
             else:
                 if os.path.exists(source + "_log.txt"):
-                    simulations.append(SkirtSimulation(prefix=source))
-        elif isinstance(source,SkirtSimulation):
+                    ski_path = source + ".ski"
+                    ski_path = ski_path if fs.is_file(ski_path) else None
+                    simulations.append(SkirtSimulation(prefix=source, ski_path=ski_path))
+        elif isinstance(source, SkirtSimulation):
             simulations.append(source)
         else:
             raise ValueError("Unsupported source type for simulation")

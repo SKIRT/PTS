@@ -35,6 +35,18 @@ from pts.core.simulation.simulation import createsimulations
 from pts.core.extract.progress import ProgressExtractor, ProgressTable
 from pts.core.plot.progress import ProgressPlotter
 from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import Configuration
+
+# -----------------------------------------------------------------
+
+# Create the configuration
+config = Configuration()
+
+# Add flags
+config.add_flag("table", "save the extracted progress table")
+
+# Read the configuration settings from the provided command-line arguments
+config.read()
 
 # -----------------------------------------------------------------
 
@@ -53,6 +65,10 @@ else:
 
     # Run the extractor and get the table
     table = extractor.run(simulation)
+
+# -----------------------------------------------------------------
+
+if config.arguments.table and not fs.is_file(progress_table_path): table.saveto(progress_table_path)
 
 # -----------------------------------------------------------------
 

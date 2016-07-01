@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.table import Table
+from astropy.io import registry
 
 # -----------------------------------------------------------------
 
@@ -113,7 +114,7 @@ class ProgressExtractor(object):
         # -- Attributes --
 
         self.log_files = None
-        self.staggered = None
+        #self.staggered = None
         self.table = None
 
     # -----------------------------------------------------------------
@@ -129,7 +130,7 @@ class ProgressExtractor(object):
         self.log_files = simulation.logfiles()
 
         # Determine whether the emission spectra calculation was performed using a staggered assignment scheme
-        self.staggered = simulation.parameters().staggered()
+        #self.staggered = simulation.parameters().staggered()
 
         # Perform the extraction
         self.extract()
@@ -247,8 +248,10 @@ class ProgressExtractor(object):
                         entry = float(message.split()[-1][:-3])
 
                         # Determine the progress
-                        if self.staggered: fraction = entry / total_entries
-                        else: fraction = (entry - process * entries_per_process) / entries_per_process
+                        #if self.staggered: fraction = entry / total_entries
+                        #else: fraction = (entry - process * entries_per_process) / entries_per_process
+
+                        fraction = entry / total_entries
 
                         # Add the process rank and phase entries
                         process_list.append(process)
@@ -354,7 +357,7 @@ class ProgressExtractor(object):
                         progress_list.append(100.0)
 
         # Create the progress table
-        self.table = ProgressTable(process_list, phase_list, seconds_list, process_list)
+        self.table = ProgressTable(process_list, phase_list, seconds_list, progress_list)
 
     # -----------------------------------------------------------------
 

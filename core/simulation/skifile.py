@@ -516,12 +516,6 @@ class SkiFile:
         # return their names
         return [ instr.get("instrumentName") for instr in instruments ]
 
-    ## This function returns true if the ski file specifies a DustLib with a StaggeredAssigner, false otherwise.
-    def staggered(self):
-        # get any StaggeredAssigner elements as a DustLib child
-        staggered = self.tree.xpath("//dustLib/*/assigner/StaggeredAssigner")
-        return len(staggered) > 0
-
     ## This function returns the dust fraction specified in an SPHDustDistribution,
     # or 0 if the element or the attribute are not present.
     def dustfraction(self):
