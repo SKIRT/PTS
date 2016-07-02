@@ -7,11 +7,13 @@
 
 ## \package pts.magic.tools.wavelengths Provides ...
 
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-import astropy.units as u
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.basics.map import Map
@@ -47,8 +49,8 @@ for key in spectrum_wavelengths:
 
     if division not in ranges: ranges[division] = Map()
     ranges[division][subdivision] = Map()
-    ranges[division][subdivision].min = spectrum_wavelengths[key][0] * u.Unit("micron")
-    ranges[division][subdivision].max = spectrum_wavelengths[key][1] * u.Unit("micron")
+    ranges[division][subdivision].min = spectrum_wavelengths[key][0] * Unit("micron")
+    ranges[division][subdivision].max = spectrum_wavelengths[key][1] * Unit("micron")
 
 # -----------------------------------------------------------------
 

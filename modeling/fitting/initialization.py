@@ -69,12 +69,6 @@ class FittingInitializer(FittingComponent):
         # The ski file
         self.ski = None
 
-        # The wavelength grids
-        self.wavelength_grids = []
-
-        # The dust grids
-        self.dust_grids = []
-
         # The structural parameters
         self.parameters = None
 
@@ -304,7 +298,7 @@ class FittingInitializer(FittingComponent):
         generator = WavelengthGridGenerator()
 
         # Run the generator
-        self.wavelength_grids = generator.run()
+        generator.run()
 
     # -----------------------------------------------------------------
 

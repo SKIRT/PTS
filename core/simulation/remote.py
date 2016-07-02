@@ -384,8 +384,8 @@ class SkirtRemote(Remote):
         # The simulation does not require input
         if local_input_path is None: remote_input_path = None
 
-        # The simulation does require input
-        else:
+        # The simulation input is defined in terms of a single local directory
+        elif isinstance(local_input_path, basestring):
 
             # A remote input path is not specified, this means that we have yet to copy the input
             if remote_input_path is None:
@@ -393,15 +393,32 @@ class SkirtRemote(Remote):
                 # Determine the full path to the input directory on the remote system
                 remote_input_path = fs.join(remote_simulation_path, "in")
 
-                # Create the remote input directory
-                #self.create_directory(remote_input_path)
-
                 # Copy the input directory to the remote host
                 self.upload(local_input_path, remote_input_path)
 
-            else:
+            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist")
 
-                if not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist")
+        elif isinstance(local_input_path, list):
+
+            local_input_file_paths = local_input_path
+
+            # A remote input path is not specified, this means that we have yet to copy the input files to a new
+            # remote directory
+            if remote_input_path is None:
+
+                # Determine the full path to the remote input directory on the remote system
+                remote_input_path = fs.join(remote_simulation_path, "in")
+
+                # Create the remote directory
+                self.create_directory(remote_input_path)
+
+                # Upload the local input files to the new remote directory
+                self.upload(local_input_file_paths, remote_input_path)
+
+            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist")
+
+        # Invalid format for arguments.input_path
+        else: raise ValueError("Invalid value for 'input_path': must be None, local directory path or list of file paths")
 
         # Set the remote input and output path
         arguments.input_path = remote_input_path

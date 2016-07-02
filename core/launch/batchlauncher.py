@@ -89,23 +89,6 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new BatchLauncher instance
-        launcher = cls()
-
-        # Return the new batch launcher
-        return launcher
-
-    # -----------------------------------------------------------------
-
     def add_to_queue(self, definition, name=None, parallelization=None):
 
         """
@@ -788,26 +771,56 @@ class BatchLauncher(Configurable):
         # Set the options
         simulation.set_analysis_options(self.config.analysis)
 
-        # Determine the extraction directory for this simulation (and create it if necessary)
-        if self.config.analysis.extraction.path is not None: extraction_path = fs.join(self.config.analysis.extraction.path, simulation.name)
-        else: extraction_path = fs.join(simulation.output_path, "extr")
+        # Determine the path to the extraction directory for this simulation
+        if self.config.analysis.extraction.path is None:
+            extraction_path = fs.join(simulation.base_path, "extr")
+            # the ski files of multiple simulations can be int he same directory
+            if fs.is_directory(extraction_path): extraction_path = fs.join(simulation.base_path, simulation.name, "extr")
+        elif self.config.relative: extraction_path = fs.join(simulation.base_path, self.config.analysis.extraction.path)
+        else: extraction_path = fs.join(self.config.analysis.extraction.path, simulation.name)
+
+        # Create the extraction directory only if it is necessary
         if simulation.analysis.any_extraction:
+
             if not fs.is_directory(extraction_path): fs.create_directory(extraction_path, recursive=True)
             simulation.analysis.extraction.path = extraction_path
 
-        # Determine the plotting directory for this simulation (and create it if necessary)
-        if self.config.analysis.plotting.path is not None: plotting_path = fs.join(self.config.analysis.plotting.path, simulation.name)
-        else: plotting_path = fs.join(simulation.output_path, "plot")
+        # Set the extraction path to None otherwise
+        else: simulation.analysis.extraction.path = None
+
+        # Determine the path to the plotting directory for this simulation
+        if self.config.analysis.plotting.path is None:
+            plotting_path = fs.join(simulation.base_path, "plot")
+            # the ski files of multiple simulations can be in the same directory
+            if fs.is_directory(plotting_path): plotting_path = fs.join(simulation.base_path, simulation.name, "plot")
+        elif self.config.relative: plotting_path = fs.join(simulation.base_path, self.config.analysis.plotting.path)
+        else: plotting_path = fs.join(self.config.analysis.plotting.path, simulation.name)
+
+        # Create the plotting directory only if it is necessary
         if simulation.analysis.any_plotting:
+
             if not fs.is_directory(plotting_path): fs.create_directory(plotting_path, recursive=True)
             simulation.analysis.plotting.path = plotting_path
 
+        # Set the plotting path to None otherwise
+        else: simulation.analysis.plotting.path = None
+
         # Determine the 'misc' directory for this simulation (and create it if necessary)
-        if self.config.analysis.misc.path is not None: misc_path = fs.join(self.config.analysis.misc.path, simulation.name)
-        else: misc_path = fs.join(simulation.output_path, "misc")
+        if self.config.analysis.misc.path is None:
+            misc_path = fs.join(simulation.base_path, "misc")
+            # the ski files of multiple simulations can be int he same directory
+            if fs.is_directory(misc_path): misc_path = fs.join(simulation.base_path, simulation.name, "misc")
+        elif self.config.relative: misc_path = fs.join(simulation.base_path, self.config.analysis.misc.path)
+        else: misc_path = fs.join(self.config.analysis.misc.path, simulation.name)
+
+        # Create the misc directory only if it is necessary
         if simulation.analysis.any_misc:
+
             if not fs.is_directory(misc_path): fs.create_directory(misc_path, recursive=True)
             simulation.analysis.misc.path = misc_path
+
+        # Set the misc path to None otherwise
+        else: simulation.analysis.misc.path = None
 
         # Set timing and memory table paths (if specified for this batch launcher)
         if self.config.timing_table_path is not None: simulation.analysis.timing_table_path = self.config.timing_table_path

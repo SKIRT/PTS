@@ -18,6 +18,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
+from .generations import GenerationsTable
 
 # -----------------------------------------------------------------
 
@@ -70,6 +71,9 @@ class FittingComponent(ModelingComponent):
 
         # The path to the ski file
         self.fit_ski_path = None
+
+        # The path to the generations table
+        self.generations_table_path = None
 
         # The path to the parameter table
         self.parameter_table_path = None
@@ -155,6 +159,14 @@ class FittingComponent(ModelingComponent):
 
         # Set the path to the fit/best/images directory
         self.fit_best_images_path = fs.create_directory_in(self.fit_best_path, "images")
+
+        # Set the path to the generations table
+        self.generations_table_path = fs.join(self.fit_path, "generations.dat")
+
+        # Initialize the generations table
+        generations_table = GenerationsTable(self.generations_table_path)
+
+        # -----------------------------------------------------------------
 
         # Set the path to the parameter file
         self.parameter_table_path = fs.join(self.fit_path, "parameters.dat")

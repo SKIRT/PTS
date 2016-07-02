@@ -12,12 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
-# Import the relevant PTS classes and modules
-from ...core.simulation.wavelengthgrid import WavelengthGrid
-
 # -----------------------------------------------------------------
 
 # define some relevant emission lines as a list of (label, center) tuples
@@ -72,28 +66,6 @@ linedefs = [(0.1215, 0.1198, 0     , r"A$\mathrm{1}$"),
 
 # -----------------------------------------------------------------
 
-def make_grid(wmin, wmax, N):
-
-    """
-    This function returns a wavelength grid (in micron) with a given resolution (nr of points per decade)
-    # in the specified range (in micron), aligned with the 10^n grid points.
-    """
-
-    result = []
-
-    # generate wavelength points p on a logarithmic scale with lambda = 10**p micron
-    #  -2 <==> 0.01
-    #   4 <==> 10000
-    for i in range(-2*N,4*N+1):
-        p = float(i)/N
-        w = 10.**p
-        if wmin <= w < wmax: result.append(w)
-
-    # Return the grid
-    return result
-
-# -----------------------------------------------------------------
-
 class EmissionLine(object):
 
     """
@@ -137,56 +109,5 @@ class EmissionLines(list):
 
             # Add the line
             self.append(line)
-
-    # -----------------------------------------------------------------
-
-    def create_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # construct the basic grid
-        grid1 = make_grid(0.02, 0.085, 25)  # UV
-        grid2 = make_grid(0.085, 3, 100)  # optical
-        grid3 = make_grid(3, 27, 125)  # PAH
-        grid4 = make_grid(27, 1000, 50)  # dust
-        grid5 = make_grid(1000, 2000, 25)  # extension
-
-        # The total grid
-        wavelengths = grid1 + grid2 + grid3 + grid4 + grid5
-
-        # Add emission line grid points
-        logdelta = 0.001
-        for line in self:
-
-            center = line.center
-            left = line.left
-            right = line.right
-
-            #logcenter = np.log10(center)
-            logleft = np.log10(left if left > 0 else center) - logdelta
-            logright = np.log10(right if right > 0 else center) + logdelta
-            newgrid = []
-            for w in wavelengths:
-                logw = np.log10(w)
-                if logw < logleft or logw > logright:
-                    newgrid.append(w)
-            newgrid.append(center)
-            if left > 0:
-                newgrid.append(left)
-            if right > 0:
-                newgrid.append(right)
-            wavelengths = newgrid
-
-        # sort the grid points
-        wavelengths = sorted(wavelengths)
-
-        # Create the wavelength grid
-        grid = WavelengthGrid.from_wavelengths(wavelengths)
-
-        # Return the wavelength grid
-        return grid
 
 # -----------------------------------------------------------------

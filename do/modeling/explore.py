@@ -13,8 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.modeling.fitting.manualexplorer import ManualParameterExplorer
-from pts.modeling.fitting.geneticexplorer import GeneticParameterExplorer
+from pts.modeling.fitting.explorer import ParameterExplorer
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import Configuration
@@ -25,8 +24,8 @@ from pts.core.basics.errors import ConfigurationError
 # Create the configuration
 config = Configuration()
 
-# Required parameters
-config.add_required("method", str, "the evolution method (manual or genetic)", False)
+# Positional optional parameter
+config.add_positional_optional("generation_method", str, "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
 
 # Optional parameters
 config.add_optional("remote", str, "the remote host on which to run the parameters exploration", "nancy")
@@ -41,6 +40,11 @@ config.add_flag("young_log", "use logarithmic spacing of the young stellar lumin
 config.add_flag("ionizing_log", "use logarithmic spacing of the ionizing stellar luminosity values")
 config.add_flag("dust_log", "use logarithmic spacing of the dust mass values")
 config.add_flag("visualise", "make visualisations")
+
+config.add_flag("--dry", "dry-run (don't actually launch simulations)")
+
+config.add_flag("--refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations")
+config.add_flag("--refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations")
 
 # Read the configuration settings from the provided command-line arguments
 config.read()
@@ -59,10 +63,8 @@ log.start("Starting explore ...")
 
 # -----------------------------------------------------------------
 
-# Based on the exploration method, create either a ManualParameterExplorer or a GeneticParameterExplorer instance
-if config.arguments.method == "manual": explorer = ManualParameterExplorer(config.get_settings())
-elif config.arguments.method == "genetic": explorer = GeneticParameterExplorer(config.get_settings())
-else: raise ConfigurationError("Wrong option for 'method'")
+# Create the parameter explorer
+explorer = ParameterExplorer(config.get_settings())
 
 # Run the parameter exploration
 explorer.run()

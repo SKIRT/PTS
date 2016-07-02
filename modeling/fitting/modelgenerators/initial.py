@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.geneticexplorer Contains the GeneticParameterExplorer class.
+## \package pts.modeling.fitting.modelgenerators.initial Contains the InitialModelGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -13,47 +13,55 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .explorer import ParameterExplorer
-from ...core.tools.logging import log
-from ...evolve.engine import GAEngine, RawScoreCriteria
-from ...evolve.genomes.list1d import G1DList
-from ...evolve import mutators
-from ...evolve import initializators
-from ...evolve import constants
+from ....core.tools.logging import log
+from ....evolve.engine import GAEngine, RawScoreCriteria
+from ....evolve.genomes.list1d import G1DList
+from ....evolve import mutators
+from ....evolve import initializators
+from ....evolve import constants
+from .generator import ModelGenerator
 
 # -----------------------------------------------------------------
 
-class GeneticParameterExplorer(ParameterExplorer):
+class InitialModelGenerator(ModelGenerator):
     
     """
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self):
 
         """
         The constructor ...
-        :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(GeneticParameterExplorer, self).__init__(config)
-
-        # The genetic algorithm engine
-        self.engine = None
+        super(InitialModelGenerator, self).__init__()
 
     # -----------------------------------------------------------------
 
-    def set_parameters(self):
+    def run(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Creating the initial population of models ...")
+        # 1. Call the setup function
+        self.setup()
+
+        # Generate the model parameters
+        self.generate()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Set minima and maxima for the different genes (model parameters)
         minima = [self.ranges["FUV young"][0], self.ranges["FUV ionizing"][0], self.ranges["Dust mass"][0]]
@@ -62,13 +70,13 @@ class GeneticParameterExplorer(ParameterExplorer):
         # Create the first genome
         genome = G1DList(3)
 
-        #genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
-        #genome.initializator.set(initializators.G1DListInitializatorReal)
-        #genome.mutator.set(mutators.G1DListMutatorRealGaussian)
+        # genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
+        # genome.initializator.set(initializators.G1DListInitializatorReal)
+        # genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 
         genome.setParams(minima=minima, maxima=maxima, bestrawscore=0.00, rounddecimal=2)
         genome.initializator.set(initializators.HeterogeneousListInitializerReal)
-        #genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
+        # genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
         genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
 
         # Create the genetic algorithm engine
@@ -84,6 +92,15 @@ class GeneticParameterExplorer(ParameterExplorer):
 
         # Initialize the genetic algorithm
         self.engine.initialize()
+
+    # -----------------------------------------------------------------
+
+    def generate(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Get the initial population
         population = self.engine.get_population()

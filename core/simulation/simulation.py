@@ -122,6 +122,9 @@ class SkirtSimulation(object):
 
         if self.ski_path is None: self.ski_path = self.outfilepath("parameters.xml")
 
+        # The base path = the directory where the ski file is located
+        self.base_path = fs.directory_of(self.ski_path)
+
         # provide placeholders for caching frequently-used objects
         self._parameters = None
         self._units = None

@@ -29,7 +29,7 @@ class Configuration(object):
     This function ...
     """
 
-    def __init__(self, add_logging=True, add_cwd=True):
+    def __init__(self, add_logging=True, add_cwd=True, prefix=None):
 
         """
         The constructor ...
@@ -46,6 +46,9 @@ class Configuration(object):
 
         # List of argument names for the settings of the class instance the configuration is converted into
         self.to_instance = []
+
+        # The prefix (for parent configurations)
+        self.prefix = prefix
 
         # The parsed arguments
         self.arguments = None
@@ -86,7 +89,7 @@ class Configuration(object):
         :return:
         """
 
-        self.sections[name] = Configuration(add_logging=False)
+        self.sections[name] = Configuration(add_logging=False, prefix=name)
 
     # -----------------------------------------------------------------
 
@@ -118,6 +121,9 @@ class Configuration(object):
         # Get the real type
         real_type = get_real_type(user_type)
 
+        # Add prefix
+        if self.prefix is not None: name = self.prefix + "/" + name
+
         # Add the argument
         self.parser.add_argument(name, type=real_type, help=description, choices=choices)
 
@@ -126,7 +132,7 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def add_positional_optional(self, name, user_type, description, default=None, to_instance=True):
+    def add_positional_optional(self, name, user_type, description, default=None, to_instance=True, choices=None):
 
         """
         This function ...
@@ -144,8 +150,11 @@ class Configuration(object):
         # Get the real default value
         default = get_real_value(default, user_type)
 
+        # Add prefix
+        if self.prefix is not None: name = self.prefix + "/" + name
+
         # Add the argument
-        self.parser.add_argument(name, type=real_type, help=description, default=default, nargs='?')
+        self.parser.add_argument(name, type=real_type, help=description, default=default, nargs='?', choices=choices)
 
         # To instance
         if to_instance: self.to_instance.append(name)
@@ -171,6 +180,9 @@ class Configuration(object):
         # Get the real default value
         default = get_real_value(default, user_type)
 
+        # Add prefix
+        if self.prefix is not None: name = self.prefix + "/" + name
+
         # Add the argument
         if letter is None: self.parser.add_argument("--" + name, type=real_type, help=description, default=default)
         else: self.parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default)
@@ -189,6 +201,9 @@ class Configuration(object):
         :param to_instance:
         :return:
         """
+
+        # Add prefix
+        if self.prefix is not None: name = self.prefix + "/" + name
 
         # Add the argument
         if letter is None: self.parser.add_argument("--" + name, action="store_true", help=description)
@@ -209,6 +224,9 @@ class Configuration(object):
         # Let the parser parse
         self.arguments = self.parser.parse_args()
 
+        # Recursive for the sections
+        for name in self.sections: self.sections[name].read()
+
     # -----------------------------------------------------------------
 
     def get_settings(self):
@@ -218,7 +236,25 @@ class Configuration(object):
         :return:
         """
 
-        pass
+        # Create the settings Map
+        settings = Map()
+
+        # Add fixed
+        for name in self.fixed: settings[name] = self.fixed[name]
+
+        # Add base settings
+        for argument in self.arguments: settings[argument] = self.arguments[argument]
+
+        # Add the configuration settings of the various sections
+        for name in self.sections:
+
+            # Create a map for the settings
+            settings[name] = Map()
+
+            for argument in self.sections[name].arguments: settings[name][argument] = self.sections[name].arguments[argument]
+
+        # Return the settings
+        return settings
 
 # -----------------------------------------------------------------
 

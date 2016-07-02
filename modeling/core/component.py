@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import NewConfigurable
 from ...core.tools import inspection
@@ -124,7 +127,8 @@ class ModelingComponent(NewConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_observed_sed(self):
+    @lazyproperty
+    def observed_sed(self):
 
         """
         This function ...
@@ -135,26 +139,26 @@ class ModelingComponent(NewConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_observed_filters(self):
+    @lazyproperty
+    def observed_filters(self):
 
         """
         This function ...
         :return:
         """
 
-        sed = self.get_observed_sed()
-        return sed.filters()
+        return self.observed_sed.filters()
 
     # -----------------------------------------------------------------
 
-    def get_observed_filter_names(self):
+    @lazyproperty
+    def observed_filter_names(self):
 
         """
         This function ...
         :return:
         """
 
-        filters = self.get_observed_filters()
-        return [str(fltr) for fltr in filters]
+        return [str(fltr) for fltr in self.observed_filters]
 
 # -----------------------------------------------------------------
