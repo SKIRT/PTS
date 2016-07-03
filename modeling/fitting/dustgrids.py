@@ -84,12 +84,6 @@ class DustGridGenerator(object):
         # Inform the user
         log.info("Creating the grids ...")
 
-        # Create the low-resolution grid
-        self.create_low_res_grid()
-
-        # Create the high-resolution grid
-        self.create_high_res_grid()
-
     # -----------------------------------------------------------------
 
     def create_low_res_grid(self):

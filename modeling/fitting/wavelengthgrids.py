@@ -80,7 +80,7 @@ class WavelengthGridGenerator(FittingComponent):
         self.setup()
 
         # 2. Generate the grids
-        self.generate(min_npoints, max_npoints, ngrids)
+        self.generate(min_npoints, max_npoints, ngrids, fixed)
 
         # 17. Writing
         #self.write()
@@ -99,7 +99,7 @@ class WavelengthGridGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def generate(self, min_npoints, max_npoints, ngrids):
+    def generate(self, min_npoints, max_npoints, ngrids, fixed=None):
 
         """
         This function ...
@@ -109,16 +109,33 @@ class WavelengthGridGenerator(FittingComponent):
         # Inform the user
         log.info("Generating the wavelength grids ...")
 
+        # Determine the increment
+        increment = (max_npoints - min_npoints) / float(ngrids)
 
+        # List of floats
+        values = np.arange(min_npoints, max_npoints, increment)
+
+        npoints_list = []
+        for value in values:
+            if int(value) == npoints_list[-1]: continue
+            else: npoints_list.append(int(value))
+
+        # Loop over the different number of points
+        for npoints in npoints_list:
+
+            # Create the grid and add it to the list
+            grid = self.create_grid(npoints, fixed=fixed)
+            self.grids.append(grid)
 
     # -----------------------------------------------------------------
 
-    def create_grid(self, npoints, add_emission_lines=False):
+    def create_grid(self, npoints, add_emission_lines=False, fixed=None):
 
         """
         This function ...
         :param npoints:
         :param add_emission_lines:
+        :param fixed:
         :return:
         """
 
@@ -169,6 +186,10 @@ class WavelengthGridGenerator(FittingComponent):
                     newgrid.append(right)
                 wavelengths = newgrid
 
+        # Add fixed wavelength points
+        if fixed is not None:
+            for wavelength in fixed: wavelengths.append(wavelength)
+
         # Sort the wavelength points
         wavelengths = sorted(wavelengths)
 
@@ -177,57 +198,6 @@ class WavelengthGridGenerator(FittingComponent):
 
         # Return the grid
         return grid
-
-    # -----------------------------------------------------------------
-
-    def create_low_res_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the low-resolution wavelength grid ...")
-
-        # Verify the grid parameters
-        if self.config.wavelengths.npoints < 2: raise ValueError("the number of points in the low-resolution grid should be at least 2")
-        if self.config.wavelengths.npoints_zoom < 2: raise ValueError("the number of points in the high-resolution subgrid should be at least 2")
-        if self.config.wavelengths.min <= 0: raise ValueError("the shortest wavelength should be positive")
-        if (self.config.wavelengths.min_zoom <= self.config.wavelengths.min
-            or self.config.wavelengths.max_zoom <= self.config.wavelengths.min_zoom
-            or self.config.wavelengths.max <= self.config.wavelengths.max_zoom):
-                raise ValueError("the high-resolution subgrid should be properly nested in the low-resolution grid")
-
-        logmin = np.log10(float(self.config.wavelengths.min))
-        logmax = np.log10(float(self.config.wavelengths.max))
-        logmin_zoom = np.log10(float(self.config.wavelengths.min_zoom))
-        logmax_zoom = np.log10(float(self.config.wavelengths.max_zoom))
-
-        # Build the high- and low-resolution grids independently
-        base_grid = np.logspace(logmin, logmax, num=self.config.wavelengths.npoints, endpoint=True, base=10)
-        zoom_grid = np.logspace(logmin_zoom, logmax_zoom, num=self.config.wavelengths.npoints_zoom, endpoint=True, base=10)
-
-        # Merge the two grids
-        total_grid = []
-
-        # Add the wavelengths of the low-resolution grid before the first wavelength of the high-resolution grid
-        for wavelength in base_grid:
-            if wavelength < self.config.wavelengths.min_zoom: total_grid.append(wavelength)
-
-        # Add the wavelengths of the high-resolution grid
-        for wavelength in zoom_grid: total_grid.append(wavelength)
-
-        # Add the wavelengths of the low-resolution grid after the last wavelength of the high-resolution grid
-        for wavelength in base_grid:
-            if wavelength > self.config.wavelengths.max_zoom: total_grid.append(wavelength)
-
-        # Add the central wavelengths of the filters used for normalizing the stellar components
-        bisect.insort(total_grid, self.i1.centerwavelength())
-        bisect.insort(total_grid, self.fuv.centerwavelength())
-
-        # Create table for the low-resolution wavelength grid
-        self.lowres_wavelength_grid = WavelengthGrid.from_wavelengths(total_grid)
 
     # -----------------------------------------------------------------
 

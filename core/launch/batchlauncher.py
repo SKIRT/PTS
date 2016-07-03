@@ -776,7 +776,7 @@ class BatchLauncher(Configurable):
             extraction_path = fs.join(simulation.base_path, "extr")
             # the ski files of multiple simulations can be int he same directory
             if fs.is_directory(extraction_path): extraction_path = fs.join(simulation.base_path, simulation.name, "extr")
-        elif self.config.relative: extraction_path = fs.join(simulation.base_path, self.config.analysis.extraction.path)
+        elif self.config.analysis.relative: extraction_path = fs.join(simulation.base_path, self.config.analysis.extraction.path)
         else: extraction_path = fs.join(self.config.analysis.extraction.path, simulation.name)
 
         # Create the extraction directory only if it is necessary
@@ -793,7 +793,7 @@ class BatchLauncher(Configurable):
             plotting_path = fs.join(simulation.base_path, "plot")
             # the ski files of multiple simulations can be in the same directory
             if fs.is_directory(plotting_path): plotting_path = fs.join(simulation.base_path, simulation.name, "plot")
-        elif self.config.relative: plotting_path = fs.join(simulation.base_path, self.config.analysis.plotting.path)
+        elif self.config.analysis.relative: plotting_path = fs.join(simulation.base_path, self.config.analysis.plotting.path)
         else: plotting_path = fs.join(self.config.analysis.plotting.path, simulation.name)
 
         # Create the plotting directory only if it is necessary
@@ -810,7 +810,7 @@ class BatchLauncher(Configurable):
             misc_path = fs.join(simulation.base_path, "misc")
             # the ski files of multiple simulations can be int he same directory
             if fs.is_directory(misc_path): misc_path = fs.join(simulation.base_path, simulation.name, "misc")
-        elif self.config.relative: misc_path = fs.join(simulation.base_path, self.config.analysis.misc.path)
+        elif self.config.analysis.relative: misc_path = fs.join(simulation.base_path, self.config.analysis.misc.path)
         else: misc_path = fs.join(self.config.analysis.misc.path, simulation.name)
 
         # Create the misc directory only if it is necessary

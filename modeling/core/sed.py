@@ -132,7 +132,8 @@ class ObservedSED(object):
         """
 
         # Attributes
-        self.table = Table(names=["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error-", "Error+"], dtype=('S10', 'S10', 'S10', 'f8', 'f8', 'f8', 'f8'))
+        self.table = Table(names=["Observatory", "Instrument", "Band", "Wavelength", "Flux", "Error-", "Error+"],
+                           dtype=('S10', 'S10', 'S10', 'f8', 'f8', 'f8', 'f8'))
         self.table["Wavelength"].unit = Unit("micron")
         self.table["Flux"].unit = Unit("Jy")
         self.table["Error-"].unit = Unit("Jy")
@@ -253,17 +254,17 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, filter, flux, error):
+    def add_entry(self, fltr, flux, error):
 
         """
         This function ...
-        :param filter:
+        :param fltr:
         :param flux:
         :param error:
         :return:
         """
 
-        self.table.add_row([filter.observatory, filter.instrument, filter.band, filter.pivotwavelength(), flux, error.lower, error.upper])
+        self.table.add_row([fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), flux, error.lower, error.upper])
 
     # -----------------------------------------------------------------
 
@@ -360,17 +361,17 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
-    def flux_for_filter(self, filter, unit=None, add_unit=True):
+    def flux_for_filter(self, fltr, unit=None, add_unit=True):
 
         """
         This function ...
-        :param filter:
+        :param fltr:
         :param unit:
         :param add_unit:
         :return:
         """
 
-        return self.flux_for_band(filter.instrument, filter.band, unit, add_unit)
+        return self.flux_for_band(fltr.instrument, fltr.band, unit, add_unit)
 
     # -----------------------------------------------------------------
 
@@ -419,17 +420,17 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
-    def error_for_filter(self, filter, unit=None, add_unit=True):
+    def error_for_filter(self, fltr, unit=None, add_unit=True):
 
         """
         This function ...
-        :param filter:
+        :param fltr:
         :param unit:
         :param add_unit:
         :return:
         """
 
-        return self.error_for_band(filter.instrument, filter.band, unit, add_unit)
+        return self.error_for_band(fltr.instrument, fltr.band, unit, add_unit)
 
     # -----------------------------------------------------------------
 
@@ -510,7 +511,7 @@ class SED(object):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, wavelength_unit="micron", flux_unit="Jy"):
 
         """
         The constructor ...
@@ -518,7 +519,34 @@ class SED(object):
         """
 
         # Attributes
-        self.table = None
+        self.table = Table(names=["Wavelength", "Flux", "Error-", "Error+"], dtype=('f8', 'f8', 'f8', 'f8'))
+        self.table["Wavelength"].unit = Unit(wavelength_unit)
+        self.table["Flux"].unit = Unit(flux_unit)
+        self.table["Error-"].unit = Unit(flux_unit)
+        self.table["Error+"].unit = Unit(flux_unit)
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, wavelength, flux, error=None):
+
+        """
+        This function ...
+        :param wavelength:
+        :param flux:
+        :param error:
+        :return:
+        """
+
+        wavelength_unit = self.table["Wavelength"].unit
+        wavelength = wavelength.to(wavelength_unit).value
+
+        flux_unit = self.table["Flux"].unit
+        flux = flux.to(flux_unit).value
+
+        error_lower = error.lower.to(flux_unit).value if error is not None else None
+        error_upper = error.upper.to(flux_unit).value if error is not None else None
+
+        self.table.add_row([wavelength, flux, error_lower, error_upper])
 
     # -----------------------------------------------------------------
 

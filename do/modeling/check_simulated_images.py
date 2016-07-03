@@ -27,6 +27,7 @@ from pts.magic.core.frame import Frame
 from pts.core.basics.configuration import Configuration
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.image import Image
+from pts.magic.core.datacube import DataCube
 from pts.magic.tools import plotting
 from pts.core.basics.filter import Filter
 
@@ -122,12 +123,12 @@ plt.show()
 
 # Load wavelength grid
 wavelength_grid_path = fs.join(modeling_path, "fit", "in", "wavelengths_lowres.txt")
-wavelengthgrid = WavelengthGrid.from_skirt_input(wavelength_grid_path)
-wavelengths = wavelengthgrid.wavelengths(asarray=True) # list of wavelengths
+wavelength_grid = WavelengthGrid.from_skirt_input(wavelength_grid_path)
+wavelengths = wavelength_grid.wavelengths(asarray=True) # list of wavelengths
 
 # Load simulated datacube
 datacube_path = fs.join(modeling_path, "fit", "best", "images", "M81_earth_total.fits")
-image = Image.from_file(datacube_path, always_call_first_primary=False)
+datacube = DataCube.from_file(datacube_path, wavelength_grid)
 
 x = []
 y = []
@@ -137,24 +138,11 @@ fs.create_directory(new_path)
 
 ### NEW
 
-# Loop over the wavelengths, convert image to flux (wavelength) density
-print(len(image.frames), len(wavelengths))
-for l in range(len(wavelengths)):
-
-    # Get the wavelength
-    wavelength = wavelengths[l]
-
-    # Determine the name of the frame in the datacube
-    frame_name = "frame" + str(l)
-
-    # Divide this frame by the wavelength in micron
-    image.frames[frame_name] /= wavelength
-
-    # Set the new unit
-    image.frames[frame_name].unit = "W / (m2 * arcsec2 * micron)"
+# Convert datacube to flux (wavelength) density
+datacube.convert_to_fluxdensity("W / (m2 * arcsec2 * micron)")
 
 # Pack datacube into a 3D array
-fluxdensities = image.asarray()
+fluxdensities = datacube.asarray()
 
 ###
 
@@ -168,14 +156,14 @@ for filter_name in sorted_filter_names:
     print(filter_name, filter_wavelength)
 
     # Index of closest index to wavelength
-    index = wavelengthgrid.closest_wavelength_index(filter_wavelength)
+    index = wavelength_grid.closest_wavelength_index(filter_wavelength)
 
     # Get frame of closest wavelength to IRAC
     label = "frame"+str(index)
     frame = image.frames[label]
 
     # Divide by wavelength
-    wavelength = wavelengthgrid[index]
+    wavelength = wavelength_grid[index]
     #frame /= wavelength.to("micron").value
 
     print(filter_name, wavelength)

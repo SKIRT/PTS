@@ -69,6 +69,9 @@ class ParameterExplorer(FittingComponent):
         # The ski file
         self.ski = None
 
+        # Initial generation is present
+        self.has_initial = False
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -114,10 +117,14 @@ class ParameterExplorer(FittingComponent):
         # Call the setup function of the base class
         super(ParameterExplorer, self).setup()
 
+        # Check whether the initial generation has been created
+        initial_generation_path = fs.join(self.fit_generations_path, "initial")
+        self.has_initial = fs.is_directory(initial_generation_path)
+
         # Set options for the batch launcher
         self.set_launcher_options()
 
-        # Set the model generato
+        # Set the model generator
         self.set_generator()
 
     # -----------------------------------------------------------------
@@ -135,9 +142,9 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.remotes = self.config.remotes  # the remote hosts on which to run the simulations
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
-        self.launcher.config.relative = True
 
         # Set options for the BatchLauncher: simulation analysis options
+        self.launcher.config.analysis.relative = True
         self.launcher.config.analysis.extraction.path = "res"
         self.launcher.config.analysis.misc.path = "res"  # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
         self.launcher.config.analysis.plotting.path = "plot"  # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
@@ -186,8 +193,20 @@ class ParameterExplorer(FittingComponent):
         # Generate new models using genetic algorithms
         elif self.config.generation_method == "genetic":
 
-            # Depends on whether the evolution has started or not
+            if self.has_initial:
 
+                self.generation = # Determine from index of last generation
+                self.generation_name = str()
+
+                # Create the model generator
+                self.generator = GeneticModelGenerator()
+
+            else:
+
+                self.generation_name = "initial"
+
+                # Create the model generator
+                self.generator = InitialModelGenerator()
 
     # -----------------------------------------------------------------
 

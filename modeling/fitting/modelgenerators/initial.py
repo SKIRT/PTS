@@ -39,9 +39,15 @@ class InitialModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(InitialModelGenerator, self).__init__()
 
+        # The dictionary with the list of the model parameters
+        self.parameters = dict()
+
+        # The genetic algorithm engine
+        self.engine = None
+
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, ranges):
 
         """
         This function ...
@@ -49,14 +55,14 @@ class InitialModelGenerator(ModelGenerator):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(ranges)
 
         # Generate the model parameters
         self.generate()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, ranges):
 
         """
         This function ...
@@ -64,8 +70,8 @@ class InitialModelGenerator(ModelGenerator):
         """
 
         # Set minima and maxima for the different genes (model parameters)
-        minima = [self.ranges["FUV young"][0], self.ranges["FUV ionizing"][0], self.ranges["Dust mass"][0]]
-        maxima = [self.ranges["FUV young"][1], self.ranges["FUV ionizing"][1], self.ranges["Dust mass"][1]]
+        minima = [ranges["FUV young"][0], ranges["FUV ionizing"][0], ranges["Dust mass"][0]]
+        maxima = [ranges["FUV young"][1], ranges["FUV ionizing"][1], ranges["Dust mass"][1]]
 
         # Create the first genome
         genome = G1DList(3)

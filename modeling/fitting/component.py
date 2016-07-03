@@ -48,9 +48,6 @@ class FittingComponent(ModelingComponent):
         # The names of the fit parameters
         self.parameter_names = ["FUV young", "FUV ionizing", "Dust mass"]
 
-        # The path to the fit/in directory
-        self.fit_in_path = None
-
         # The path to the fit/evolution directory
         self.fit_generations_path = None
 
@@ -122,9 +119,6 @@ class FittingComponent(ModelingComponent):
 
         # Set the output path
         self.config.output_path = self.fit_path
-
-        # Set the path to the fit/in directory
-        self.fit_in_path = fs.create_directory_in(self.fit_path, "in")
 
         # Set the path to the fit/generations directory
         self.fit_generations_path = fs.create_directory_in(self.fit_path, "generations")
