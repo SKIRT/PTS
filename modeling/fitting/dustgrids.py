@@ -46,7 +46,7 @@ class DustGridGenerator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, smallest_cell_pixels, min_level, max_mass_fraction, ngrids):
 
         """
         This function ...
@@ -263,9 +263,5 @@ class DustGridGenerator(object):
         # Write the low-resolution dust grid
         path = fs.join(self.fit_grid_lowres_path, "lowres.grid")
         self.lowres_dust_grid.save(path)
-
-        # Write the high-resolution dust grid
-        path = fs.join(self.fit_grid_highres_path, "highres.grid")
-        self.highres_dust_grid.save(path)
 
 # -----------------------------------------------------------------

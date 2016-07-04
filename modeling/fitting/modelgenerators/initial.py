@@ -20,6 +20,7 @@ from ....evolve import mutators
 from ....evolve import initializators
 from ....evolve import constants
 from .generator import ModelGenerator
+from ....core.tools.random import save_state
 
 # -----------------------------------------------------------------
 
@@ -57,8 +58,11 @@ class InitialModelGenerator(ModelGenerator):
         # 1. Call the setup function
         self.setup(ranges)
 
-        # Generate the model parameters
+        # 2. Generate the model parameters
         self.generate()
+
+        # 3. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -76,10 +80,7 @@ class InitialModelGenerator(ModelGenerator):
         # Create the first genome
         genome = G1DList(3)
 
-        # genome.setParams(rangemin=0., rangemax=50., bestrawscore=0.00, rounddecimal=2)
-        # genome.initializator.set(initializators.G1DListInitializatorReal)
-        # genome.mutator.set(mutators.G1DListMutatorRealGaussian)
-
+        # Set genome options
         genome.setParams(minima=minima, maxima=maxima, bestrawscore=0.00, rounddecimal=2)
         genome.initializator.set(initializators.HeterogeneousListInitializerReal)
         # genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
@@ -122,5 +123,42 @@ class InitialModelGenerator(ModelGenerator):
             self.parameters["FUV young"].append(young_luminosity)
             self.parameters["FUV ionizing"].append(ionizing_luminosity)
             self.parameters["Dust mass"].append(dust_mass)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.write_engine()
+
+        self.write_prng()
+
+    # -----------------------------------------------------------------
+
+    def write_engine(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save the genetic algorithm
+        self.engine.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_prng(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save the state of the random generator
+        save_state(random_path)
 
 # -----------------------------------------------------------------

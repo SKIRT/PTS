@@ -135,6 +135,7 @@ class SkySubtractor(Configurable):
         :param sources_mask:
         :param extra_mask:
         :param saturation_region:
+        :param animation:
         :return:
         """
 

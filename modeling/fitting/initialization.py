@@ -380,8 +380,20 @@ class FittingInitializer(FittingComponent):
         # Create a DustGridGenerator instance
         generator = DustGridGenerator()
 
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.ellipse.major  # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # BINTREE:
+        # Low-resolution: 10., 6, 1e-5
+        # High-resolution: 0.5, 9, 0.5e-6
+
+        # OCTTREE:
+        # Low-resolution: 10., 2, 1e-5
+        # High-resolution: 0.5, 3, 0.5e-6
+
         # Run the generator
-        self.dust_grids = generator.run()
+        generator.run()
 
     # -----------------------------------------------------------------
 
