@@ -40,6 +40,7 @@ from ...core.simulation.arguments import SkirtArguments
 from ..core.sed import ObservedSED
 from .wavelengthgrids import WavelengthGridGenerator
 from .dustgrids import DustGridGenerator
+from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -110,6 +111,10 @@ class FittingInitializer(FittingComponent):
 
         # The ski file for generating simulated images
         self.ski_images = None
+
+        # The wavelength grid and dust grid generators
+        self.wg_generator = None
+        self.dg_generator = None
 
     # -----------------------------------------------------------------
 
@@ -196,6 +201,12 @@ class FittingInitializer(FittingComponent):
         # Reference coordinate system
         reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
         self.reference_wcs = CoordinateSystem.from_file(reference_path)
+
+        # Create a WavelengthGridGenerator
+        self.wg_generator = WavelengthGridGenerator()
+
+        # Create the DustGridGenerator
+        self.dg_generator = DustGridGenerator()
 
     # -----------------------------------------------------------------
 
@@ -294,11 +305,11 @@ class FittingInitializer(FittingComponent):
         # Inform the user
         log.info("Creating the wavelength grids ...")
 
-        # Create a WavelengthGridGenerator instance
-        generator = WavelengthGridGenerator()
+        # Create the range of npoints for the wavelength grids
+        npoints_range = IntegerRange(150, 500)
 
-        # Run the generator
-        generator.run()
+        # Generate the wavelength grids
+        self.wg_generator.run(npoints_range, 10)
 
     # -----------------------------------------------------------------
 
@@ -377,14 +388,16 @@ class FittingInitializer(FittingComponent):
         # Inform the user
         log.info("Creating the grids ...")
 
-        # Create a DustGridGenerator instance
-        generator = DustGridGenerator()
-
         # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
         major_angular = self.ellipse.major  # major axis length of the sky ellipse
         radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
 
-        # BINTREE:
+        # Get the pixelscale in physical units
+        distance = self.parameters.distance
+        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # BINTREE: (smallest_cell_pixels, min_level, max_mass_fraction)
         # Low-resolution: 10., 6, 1e-5
         # High-resolution: 0.5, 9, 0.5e-6
 
@@ -392,8 +405,26 @@ class FittingInitializer(FittingComponent):
         # Low-resolution: 10., 2, 1e-5
         # High-resolution: 0.5, 3, 0.5e-6
 
-        # Run the generator
-        generator.run()
+        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
+        # take half of the pixel size to avoid too much interpolation
+        min_scale = 0.5 * pixelscale
+        max_scale = 10. * pixelscale
+        scale_range = QuantityRange(min_scale, max_scale, invert=True)
+
+        # The range of the maximum depth level of the tree
+        level_range = IntegerRange(6, 9)
+
+        # The range of the max mass fraction
+        mass_fraction_range = RealRange(0.5e-6, 1e-5, invert=True)
+
+        # Set fixed grid properties
+        self.dg_generator.grid_type = "bintree"
+        self.dg_generator.x_radius = radius_physical
+        self.dg_generator.y_radius = radius_physical
+        self.dg_generator.z_radius = 3. * Unit("kpc")
+
+        # Generate the dust grids
+        self.dg_generator.run(scale_range, level_range, mass_fraction_range, 10, grid_type="bintree")
 
     # -----------------------------------------------------------------
 

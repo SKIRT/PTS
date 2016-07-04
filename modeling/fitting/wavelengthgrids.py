@@ -13,11 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import bisect
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from .component import FittingComponent
+#from .component import FittingComponent
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..core.emissionlines import EmissionLines
@@ -45,7 +44,7 @@ relpoints["extension"] = 25./325.  # 25
 
 # -----------------------------------------------------------------
 
-class WavelengthGridGenerator(FittingComponent):
+class WavelengthGridGenerator(object):
     
     """
     This class...
@@ -63,13 +62,18 @@ class WavelengthGridGenerator(FittingComponent):
 
         # -- Attributes --
 
+        # The wavelength grids
         self.grids = []
 
+        # The wavelength grid property table
+        self.table = []
+
+        # The emission line object
         self.emission_lines = None
 
     # -----------------------------------------------------------------
 
-    def run(self, min_npoints, max_npoints, ngrids, fixed=None): # fixed wavelength points: I1 AND FUV !!
+    def run(self, npoints_range, ngrids, fixed=None): # fixed wavelength points: I1 AND FUV !!
 
         """
         This function ...
@@ -80,10 +84,7 @@ class WavelengthGridGenerator(FittingComponent):
         self.setup()
 
         # 2. Generate the grids
-        self.generate(min_npoints, max_npoints, ngrids, fixed)
-
-        # 17. Writing
-        #self.write()
+        self.generate(npoints_range, ngrids, fixed)
 
     # -----------------------------------------------------------------
 
@@ -94,38 +95,29 @@ class WavelengthGridGenerator(FittingComponent):
         :return:
         """
 
-        # Emission lines
+        # Create the emission lines instance
         self.emission_lines = EmissionLines()
 
     # -----------------------------------------------------------------
 
-    def generate(self, min_npoints, max_npoints, ngrids, fixed=None):
+    def generate(self, npoints_range, ngrids, fixed=None):
 
         """
         This function ...
+        :param npoints_range:
+        :param ngrids:
+        :param fixed:
         :return:
         """
 
         # Inform the user
         log.info("Generating the wavelength grids ...")
 
-        # Determine the increment
-        increment = (max_npoints - min_npoints) / float(ngrids)
-
-        # List of floats
-        values = np.arange(min_npoints, max_npoints, increment)
-
-        npoints_list = []
-        for value in values:
-            if int(value) == npoints_list[-1]: continue
-            else: npoints_list.append(int(value))
-
         # Loop over the different number of points
-        for npoints in npoints_list:
+        for npoints in npoints_range.linear(ngrids):
 
             # Create the grid and add it to the list
-            grid = self.create_grid(npoints, fixed=fixed)
-            self.grids.append(grid)
+            self.create_grid(npoints, fixed=fixed)
 
     # -----------------------------------------------------------------
 
@@ -196,17 +188,8 @@ class WavelengthGridGenerator(FittingComponent):
         # Create the wavelength grid
         grid = WavelengthGrid.from_wavelengths(wavelengths)
 
-        # Return the grid
-        return grid
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
+        # Add the grid
+        self.grids.append(grid)
 
 # -----------------------------------------------------------------
 

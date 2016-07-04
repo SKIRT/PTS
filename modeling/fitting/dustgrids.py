@@ -22,6 +22,7 @@ from astropy.units import Unit, dimensionless_angles
 from ...core.tools import filesystem as fs
 from ..basics.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
 from ...core.tools.logging import log
+from ...core.basics.range import zip_linear, zip_log
 
 # -----------------------------------------------------------------
 
@@ -35,7 +36,6 @@ class DustGridGenerator(object):
 
         """
         The constructor ...
-        :param config:
         :return:
         """
 
@@ -44,22 +44,61 @@ class DustGridGenerator(object):
 
         # -- Attributes --
 
+        self._grid_type = None
+        self.x_radius = None
+        self.y_radius = None
+        self.z_radius = None
+
+        # The dust grids
+        self.grids = []
+
+        # The dust grid property table
+        self.table = None
+
     # -----------------------------------------------------------------
 
-    def run(self, smallest_cell_pixels, min_level, max_mass_fraction, ngrids):
+    @property
+    def grid_type(self):
 
         """
         This function ...
         :return:
         """
 
+        return self._grid_type
+
+    # -----------------------------------------------------------------
+
+    @grid_type.setter
+    def grid_type(self, grid_type):
+
+        """
+        This function ...
+        :return:
+        """
+
+        assert self.grid_type in ["cartesian", "bintree", "octtree"]
+        self._grid_type = grid_type
+
+    # -----------------------------------------------------------------
+
+    def run(self, scale_range, level_range, mass_fraction_range, ngrids, grid_type="bintree"):
+
+        """
+        This function ...
+        :param scale_range:
+        :param level_range:
+        :param mass_fraction_range:
+        :param ngrids:
+        :param grid_type:
+        :return:
+        """
+
         # 1. Call the setup function
         self.setup()
 
-        # ...
-
-        # 17. Writing
-        #self.write()
+        # 2. Generate the dust grids
+        self.generate(scale_range, level_range, mass_fraction_range, ngrids, grid_type)
 
     # -----------------------------------------------------------------
 
@@ -74,102 +113,70 @@ class DustGridGenerator(object):
 
     # -----------------------------------------------------------------
 
-    def create_grids(self):
+    def generate(self, scale_range, level_range, mass_fraction_range, ngrids):
 
         """
         This function ...
+        :param scale_range:
+        :param level_range:
+        :param mass_fraction_range:
+        :param ngrids:
         :return:
         """
 
         # Inform the user
         log.info("Creating the grids ...")
 
-    # -----------------------------------------------------------------
+        # Loop over the different grid parameter values
+        for scale, level, mass_fraction in zip_linear(scale_range, level_range, mass_fraction_range, npoints=ngrids):
 
-    def create_low_res_grid(self):
+            # Create the grid and add it to the list
+            if self.grid_type == "cartesian": self.create_cartesian_dust_grid(scale)
+            elif self.grid_type == "bintree": self.create_binary_tree_dust_grid(scale, level, mass_fraction)
+            elif self.grid_type == "octtree": self.create_octtree_dust_grid(scale, level, mass_fraction)
 
-        """
-        This function ...
-        :return:
-        """
+            # Add a row to the table
 
-        # Inform the user
-        log.info("Creating the low-resolution dust grid ...")
-
-        # Set the dust grid
-        if self.config.dust_grid == "cartesian": self.lowres_dust_grid = self.create_cartesian_dust_grid(10.)
-        elif self.config.dust_grid == "bintree": self.lowres_dust_grid = self.create_binary_tree_dust_grid(10., 6, 1e-5)
-        elif self.config.dust_grid == "octtree": self.lowres_dust_grid = self.create_octtree_dust_grid(10., 2, 1e-5)
-        else: raise ValueError("Invalid option for dust grid type")
 
     # -----------------------------------------------------------------
 
-    def create_high_res_grid(self):
+    def create_cartesian_dust_grid(self, scale):
 
         """
         This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the high-resolution dust grid ...")
-
-        # Set the dust grid
-        if self.config.dust_grid == "cartesian": self.highres_dust_grid = self.create_cartesian_dust_grid(1.)
-        elif self.config.dust_grid == "bintree": self.highres_dust_grid = self.create_binary_tree_dust_grid(0.5, 9, 0.5e-6)
-        elif self.config.dust_grid == "octtree": self.highres_dust_grid = self.create_octtree_dust_grid(0.5, 3, 0.5e-6)
-        else: raise ValueError("Invalid option for dust grid type")
-
-    # -----------------------------------------------------------------
-
-    def create_cartesian_dust_grid(self, smallest_cell_pixels):
-
-        """
-        This function ...
-        :param smallest_cell_pixels:
+        :param scale:
         :return:
         """
 
         # Inform the user
         log.info("Configuring the cartesian dust grid ...")
 
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
-
         # Calculate the boundaries of the dust grid
-        min_x = - radius_physical
-        max_x = radius_physical
-        min_y = - radius_physical
-        max_y = radius_physical
-        min_z = -3. * Unit("kpc")
-        max_z = 3. * Unit("kpc")
-
-        # Get the pixelscale in physical units
-        distance = self.parameters.distance
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Because we (currently) can't position the grid exactly as the 2D pixels,
-        # take half of the pixel size to avoid too much interpolation
-        # smallest_scale = 0.5 * pixelscale
-        smallest_scale = smallest_cell_pixels * pixelscale  # limit the number of cells
+        min_x = - self.x_radius
+        max_x = self.x_radius
+        min_y = - self.y_radius
+        max_y = self.y_radius
+        min_z = - self.z_radius
+        max_z = self.z_radius
 
         # Calculate the number of bins in each direction
-        x_bins = int(math.ceil((max_x - min_x).to("pc").value / smallest_scale.to("pc").value))
-        y_bins = int(math.ceil((max_y - min_y).to("pc").value / smallest_scale.to("pc").value))
-        z_bins = int(math.ceil((max_z - min_z).to("pc").value / smallest_scale.to("pc").value))
+        x_bins = int(math.ceil((max_x - min_x).to("pc").value / scale.to("pc").value))
+        y_bins = int(math.ceil((max_y - min_y).to("pc").value / scale.to("pc").value))
+        z_bins = int(math.ceil((max_z - min_z).to("pc").value / scale.to("pc").value))
 
-        # Create and return the dust grid
-        return CartesianDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins)
+        # Create the grid
+        grid = CartesianDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins)
+
+        # Add the grid
+        self.grids.append(grid)
 
     # -----------------------------------------------------------------
 
-    def create_binary_tree_dust_grid(self, smallest_cell_pixels, min_level, max_mass_fraction):
+    def create_binary_tree_dust_grid(self, scale, min_level, max_mass_fraction):
 
         """
         This function ...
-        :param smallest_cell_pixels:
+        :param scale:
         :param min_level:
         :param max_mass_fraction:
         :return:
@@ -178,34 +185,24 @@ class DustGridGenerator(object):
         # Inform the user
         log.info("Configuring the bintree dust grid ...")
 
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
-
         # Calculate the boundaries of the dust grid
-        min_x = - radius_physical
-        max_x = radius_physical
-        min_y = - radius_physical
-        max_y = radius_physical
-        min_z = -3. * Unit("kpc")
-        max_z = 3. * Unit("kpc")
-
-        # Get the pixelscale in physical units
-        distance = self.parameters.distance
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
-        # take half of the pixel size to avoid too much interpolation
-        smallest_scale = smallest_cell_pixels * pixelscale
+        min_x = - self.x_radius
+        max_x = self.x_radius
+        min_y = - self.y_radius
+        max_y = self.y_radius
+        min_z = - self.z_radius
+        max_z = self.z_radius
 
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = (max_x - min_x).to("pc").value
-        smallest_scale = smallest_scale.to("pc").value
+        smallest_scale = scale.to("pc").value
         max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
 
         # Create the dust grid
-        return BinaryTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+        grid = BinaryTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+
+        # Add the grid
+        self.grids.append(grid)
 
     # -----------------------------------------------------------------
 
@@ -219,10 +216,6 @@ class DustGridGenerator(object):
         # Inform the user
         log.info("Configuring the octtree dust grid ...")
 
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
-
         # Calculate the boundaries of the dust grid
         min_x = - radius_physical
         max_x = radius_physical
@@ -231,37 +224,15 @@ class DustGridGenerator(object):
         min_z = -3. * Unit("kpc")
         max_z = 3. * Unit("kpc")
 
-        # Get the pixelscale in physical units
-        distance = self.parameters.distance
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
-        # take half of the pixel size to avoid too much interpolation
-        smallest_scale = smallest_cell_pixels * pixelscale
-
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = (max_x - min_x).to("pc").value
         smallest_scale = smallest_scale.to("pc").value
         max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
 
-        # Create the dust grid and return it
-        return OctTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+        # Create the dust grid
+        grid = OctTreeDustGrid(min_x, max_x, min_y, max_y, min_z, max_z, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
 
-    # -----------------------------------------------------------------
-
-    def write_dust_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the dust grids ...")
-
-        # Write the low-resolution dust grid
-        path = fs.join(self.fit_grid_lowres_path, "lowres.grid")
-        self.lowres_dust_grid.save(path)
+        # Add the grid
+        self.grids.append(grid)
 
 # -----------------------------------------------------------------
