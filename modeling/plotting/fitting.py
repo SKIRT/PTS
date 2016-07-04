@@ -63,19 +63,21 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         # -- Attributes --
 
+        # Paths
+        self.plot_fitting_wavelength_grids_path = None
+        self.plot_fitting_dust_grids_path = None
+
         # The ski file
         self.ski = None
 
         # The wavelength grids
-        self.lowres_wavelength_grid = None
-        self.highres_wavelength_grid = None
+        self.wavelength_grids = []
 
         # The transmission curves
         self.transmission_curves = dict()
 
         # The distribution of dust cells per level
-        self.cell_distribution_lowres = None
-        self.cell_distribution_highres = None
+        self.dust_cell_trees = []
 
         # The runtimes
         self.runtimes = None
@@ -123,7 +125,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         self.load_transmission_curves()
 
         # 5. Load the dust cell tree data
-        self.load_dust_cell_tree()
+        self.load_dust_cell_trees()
 
         # 6. Load the runtimes
         self.load_runtimes()
@@ -145,6 +147,22 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         # 12. Plot
         self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(FittingPlotter, self).setup()
+
+        # Set paths
+        self.plot_fitting_wavelength_grids_path = fs.create_directory_in(self.plot_fitting_path, "wavelength grids")
+        self.plot_fitting_dust_grids_path = fs.create_directory_in(self.plot_fitting_path, "dust grids")
 
     # -----------------------------------------------------------------
 
@@ -176,47 +194,14 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Loading the wavelength grids used for the fitting ...")
 
-        # Load the low-resolution wavelength grid
-        self.load_low_res_wavelength_grid()
+        # Loop over the files found in the fit/wavelength grids directory
+        for path in fs.files_in_path(self.fit_wavelength_grids_path, extension="txt", sort=int):
 
-        # Load the high-resolution wavelength grid
-        self.load_high_res_wavelength_grid()
+            # Load the wavelength grid
+            grid = WavelengthGrid.from_skirt_input(path)
 
-    # -----------------------------------------------------------------
-
-    def load_low_res_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the low-resolution wavelength grid ...")
-
-        # Determine the path to the wavelength grid file
-        path = fs.join(self.fit_path, "in", "wavelengths_lowres.txt")
-
-        # Load the wavelength grid
-        if fs.is_file(path): self.lowres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
-
-    # -----------------------------------------------------------------
-
-    def load_high_res_wavelength_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the high-resolution wavelength grid ...")
-
-        # Determine the path to the wavelength grid file
-        path = fs.join(self.fit_path, "in", "wavelengths_highres.txt")
-
-        # Load the wavelength grid
-        if fs.is_file(path): self.highres_wavelength_grid = WavelengthGrid.from_skirt_input(path)
+            # Add the grid
+            self.wavelength_grids.append(grid)
 
     # -----------------------------------------------------------------
 
@@ -269,7 +254,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_dust_cell_tree(self):
+    def load_dust_cell_trees(self):
 
         """
         This function ...
@@ -279,55 +264,20 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Loading the dust cell tree information ...")
 
-        # Load the low-resolution dust cell tree information
-        self.load_low_res_dust_cell_tree()
+        # Loop over the directories inside the fit/dust grids directory
+        for path in fs.directories_in_path(self.fit_dust_grids_path, sort=int):
 
-        # Load the high-resolution dust cell tree information
-        self.load_high_res_dust_cell_tree()
+            # Determine the path to the log file of the dust grid generating simulation
+            log_file_path = fs.join(path, self.galaxy_name + "_log.txt")
 
-    # -----------------------------------------------------------------
+            # If the log file does not exist, skip
+            if not fs.is_file(log_file_path): continue
 
-    def load_low_res_dust_cell_tree(self):
+            # Open the log file
+            log_file = LogFile(log_file_path)
 
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the log file of the dust grid generating simulation
-        fit_grid_lowres_path = fs.join(self.fit_path, "grid", "low-res")
-        log_file_path = fs.join(fit_grid_lowres_path, self.galaxy_name + "_log.txt")
-
-        # If the log file does not exist, break
-        if not fs.is_file(log_file_path): return
-
-        # Open the log file
-        log_file = LogFile(log_file_path)
-
-        # Get the distribution of cells per level of the tree
-        self.cell_distribution_lowres = log_file.tree_leaf_distribution
-
-    # -----------------------------------------------------------------
-
-    def load_high_res_dust_cell_tree(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the log file of the dust grid generating simulation
-        fit_grid_highres_path = fs.join(self.fit_path, "grid", "high-res")
-        log_file_path = fs.join(fit_grid_highres_path, self.galaxy_name + "_log.txt")
-
-        # If the log file does not exist, break
-        if not fs.is_file(log_file_path): return
-
-        # Open the log file
-        log_file = LogFile(log_file_path)
-
-        # Get the distribution of cells per level of the tree
-        self.cell_distribution_highres = log_file.tree_leaf_distribution
+            # Get the distribution of cells per level of the tree
+            self.dust_cell_trees.append(log_file.tree_leaf_distribution)
 
     # -----------------------------------------------------------------
 
@@ -619,6 +569,8 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Plot the geometries
         if len(self.geometries) > 0: self.plot_geometries()
 
+        self.create_animation()
+
     # -----------------------------------------------------------------
 
     def plot_distributions(self):
@@ -668,15 +620,22 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         """
 
         # Inform the user
-        log.info("Plotting the wavelength grid ...")
+        log.info("Plotting the wavelength grids ...")
 
-        # Plot the low-resolution and high-resolution wavelength grids with the observation filters
-        self.plot_wavelengths_filters(self.lowres_wavelength_grid, "wavelengths_filters_lowres.pdf")
-        self.plot_wavelengths_filters(self.highres_wavelength_grid, "wavelengths_filters_highres.pdf")
+        # Loop over the different wavelength grids
+        index = 0
+        for grid in self.wavelength_grids:
 
-        # Plot the wavelengths with the SEDs of stars and dust
-        self.plot_wavelengths_seds(self.lowres_wavelength_grid, "wavelengths_seds_lowres.pdf")
-        self.plot_wavelengths_seds(self.highres_wavelength_grid, "wavelengths_seds_highres.pdf")
+            # Plot the low-resolution and high-resolution wavelength grids with the observation filters
+            path = fs.join(self.plot_fitting_wavelength_grids_path, "wavelengths_" + str(index) + "_filters.pdf")
+            self.plot_wavelengths_filters(grid, path)
+
+            # Plot the wavelengths with the SEDs of stars and dust
+            path = fs.join(self.plot_fitting_wavelength_grids_path, "wavelengths_" + str(index) + "_seds.pdf")
+            self.plot_wavelengths_seds(grid, path)
+
+            # Increment the index
+            index += 1
 
     # -----------------------------------------------------------------
 
@@ -766,47 +725,20 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         """
 
         # Inform the user
-        log.info("Plotting the dust grid ...")
+        log.info("Plotting the dust grids ...")
 
-        # Plot the low-resolution dust grid
-        self.plot_low_res_dust_grid()
+        # Loop over the different dust grids
+        index = 0
+        for path in fs.directories_in_path(self.fit_dust_grids_path, sort=int):
 
-        # Plot the high-resolution dust grid
-        self.plot_high_res_dust_grid()
+            ski_path = fs.join(path, self.galaxy_name + ".ski")
+            simulation = SkirtSimulation(ski_path=ski_path, outpath=path)
 
-    # -----------------------------------------------------------------
+            # Plot the grid
+            plotgrids(simulation, output_path=self.plot_fitting_dust_grids_path, silent=True, prefix=str(index))
 
-    def plot_low_res_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create a SkirtSimulation instance for the grid generating simulation
-        fit_grid_lowres_path = fs.join(self.fit_path, "grid", "low-res")
-        ski_path = fs.join(fit_grid_lowres_path, self.galaxy_name + ".ski")
-        simulation = SkirtSimulation(ski_path=ski_path, outpath=fit_grid_lowres_path)
-
-        # Plot the grid
-        plotgrids(simulation, output_path=self.plot_fitting_path, silent=True, prefix="lowres")
-
-    # -----------------------------------------------------------------
-
-    def plot_high_res_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create a SkirtSimulation instance for the grid generating simulation
-        fit_grid_highres_path = fs.join(self.fit_path, "grid", "high-res")
-        ski_path = fs.join(fit_grid_highres_path, self.galaxy_name + ".ski")
-        simulation = SkirtSimulation(ski_path=ski_path, outpath=fit_grid_highres_path)
-
-        # Plot the grid
-        plotgrids(simulation, output_path=self.plot_fitting_path, silent=True, prefix="highres")
+            # Increment the index
+            index += 1
 
     # -----------------------------------------------------------------
 
@@ -820,43 +752,18 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Plotting the dust cell distribution ...")
 
-        # Plot low-resolution dust cell distribution
-        if self.cell_distribution_lowres is not None: self.plot_low_res_dust_cell_distribution()
+        # Loop over the distributions
+        index = 0
+        for distribution in self.dust_cell_trees:
 
-        # Plot high-resolution dust cell distribution
-        if self.cell_distribution_highres is not None: self.plot_high_res_dust_cell_distribution()
+            title = "Dust cells in each tree level"
+            path = fs.join(self.plot_fitting_dust_grids_path, "cells_tree_" + str(index) + ".pdf")
 
-    # -----------------------------------------------------------------
+            # Plot
+            distribution.plot(title=title, path=path)
 
-    def plot_low_res_dust_cell_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Set plot title and path
-        title = "Dust cells in each tree level"
-        path = fs.join(self.plot_fitting_path, "cells_tree_lowres.pdf")
-
-        # Make the plot
-        self.cell_distribution_lowres.plot(title=title, path=path)
-
-    # -----------------------------------------------------------------
-
-    def plot_high_res_dust_cell_distribution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Set plot title and path
-        title = "Dust cells in each tree level"
-        path = fs.join(self.plot_fitting_path, "cells_tree_highres.pdf")
-
-        # Make the plot
-        self.cell_distribution_highres.plot(title=title, path=path)
+            # Increment the index
+            index += 1
 
     # -----------------------------------------------------------------
 
@@ -1014,5 +921,46 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         # Run the plotter
         plotter.run(path)
+
+    # -----------------------------------------------------------------
+
+    def create_animation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return
+
+        ## LOAD IMAGES:
+
+        # Inform the user
+        log.info("Loading the SED plot files ...")
+
+        # Find all PNG files within the the fit/plot directory
+        for path in fs.files_in_path(self.fit_plot_path, extension="png", recursive=True):
+
+            # Load the image (as a NumPy array)
+            image = imageio.imread(path)
+
+            # Add the image to the list of frames
+            self.frames.append(image)
+
+        ## CREATE ANIMATION:
+
+        # Create the animated GIF instance
+        self.animation = Animation(self.frames)
+
+        ## WRITE:
+
+        # Inform the user
+        log.info("Writing the GIF animation ...")
+
+        # Determine the path to the animation file
+        path = self.full_output_path("fitting.gif")
+
+        # Save the animation as a GIF file
+        self.animation.save(path)
 
 # -----------------------------------------------------------------

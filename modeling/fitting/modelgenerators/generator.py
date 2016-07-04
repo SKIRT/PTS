@@ -12,6 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import abstractmethod, ABCMeta
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ..component import FittingComponent
@@ -24,6 +28,10 @@ class ModelGenerator(FittingComponent):
     This class...
     """
 
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
@@ -33,6 +41,93 @@ class ModelGenerator(FittingComponent):
 
         # Call the constructor of the base class
         super(ModelGenerator, self).__init__()
+
+        # The dictionary with the parameter ranges
+        self.ranges = OrderedDict()
+
+        # The dictionary with the list of the model parameters
+        self.parameters = OrderedDict()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ranges.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nparameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.ranges)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmodels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.parameters[self.ranges.keys()[0]])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_minima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        minima = []
+        for name in self.ranges: minima.append(self.ranges[name].min)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maxima = []
+        for name in self.ranges: maxima.append(self.ranges[name].max)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    def add_parameter(self, name, par_range):
+
+        """
+        This function ...
+        :param name:
+        :param par_range:
+        :return:
+        """
+
+        self.ranges[name] = par_range
 
     # -----------------------------------------------------------------
 
@@ -49,10 +144,10 @@ class ModelGenerator(FittingComponent):
         # 2. Load the necessary input
         self.load_input()
 
-        # Initialize the animations
+        # 3. Initialize the animations
         self.initialize_animations()
 
-        # 2. Generate the model parameters
+        # 4. Generate the model parameters
         self.generate()
 
     # -----------------------------------------------------------------
@@ -115,12 +210,15 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @abstractmethod
     def generate(self):
 
         """
         This function ...
         :return:
         """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -138,7 +236,7 @@ class ModelGenerator(FittingComponent):
         self.scatter_animation.add_point(young_luminosity, ionizing_luminosity, dust_mass)
 
         # Update the distribution animations
-        if self.number_of_models > 1:
+        if self.nmodels > 1:
 
             # Add a frame to the animation of the distribution of the FUV luminosity of young starss
             self.fuv_young_animation.add_value(young_luminosity)
@@ -148,17 +246,5 @@ class ModelGenerator(FittingComponent):
 
             # Add a frame to the animation of the distribution of the dust mass
             self.dust_mass_animation.add_value(dust_mass)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def number_of_models(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.parameters["FUV young"])
 
 # -----------------------------------------------------------------

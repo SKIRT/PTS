@@ -371,16 +371,50 @@ def G1DListMutatorRealGaussian(genome, **args):
 
 # -----------------------------------------------------------------
 
-def HeterogeneousListMutatorRealGaussian(genome, *args):
+def HeterogeneousListMutatorRealGaussian(genome, **args):
 
-    """
-    Mutator ...
-    :param genome:
-    :param args:
-    :return:
-    """
+   """
+   Heregogeneous version of real gaussian list mutator
+   """
 
+   if args["pmut"] <= 0.0:
+      return 0
+   listSize = len(genome)
+   mutations = args["pmut"] * (listSize)
 
+   mu = genome.getParam("gauss_mu")
+   sigma = genome.getParam("gauss_sigma")
+
+   if mu is None:
+      mu = constants.CDefG1DListMutRealMU
+
+   if sigma is None:
+      sigma = constants.CDefG1DListMutRealSIGMA
+
+   if mutations < 1.0:
+      mutations = 0
+      for it in xrange(listSize):
+         if utils.randomFlipCoin(args["pmut"]):
+
+            final_value = genome[it] + prng.normal(mu, sigma)
+
+            final_value = min(final_value, genome.getParam("maxima")[it])
+            final_value = max(final_value, genome.getParam("minima")[it])
+
+            genome[it] = final_value
+            mutations += 1
+   else:
+      for it in xrange(int(round(mutations))):
+
+         which_gene = prng.randint(0, listSize)
+         final_value = genome[which_gene] + prng.normal(mu, sigma)
+
+         final_value = min(final_value, genome.getParam("maxima")[which_gene])
+         final_value = max(final_value, genome.getParam("minima")[which_gene])
+
+         genome[which_gene] = final_value
+
+   return int(mutations)
 
 # -----------------------------------------------------------------
 

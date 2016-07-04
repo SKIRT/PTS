@@ -18,7 +18,7 @@ from .generator import ModelGenerator
 
 # -----------------------------------------------------------------
 
-class GridModelGenerator(object):
+class GridModelGenerator(ModelGenerator):
     
     """
     This class...
@@ -38,20 +38,6 @@ class GridModelGenerator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # 1. Call the setup function
-        self.setup()
-
-        # ...
-
-    # -----------------------------------------------------------------
-
     def setup(self):
 
         """
@@ -60,7 +46,5 @@ class GridModelGenerator(object):
         """
 
         pass
-
-
 
 # -----------------------------------------------------------------

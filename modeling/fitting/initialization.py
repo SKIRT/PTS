@@ -35,8 +35,6 @@ from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
 from ...core.tools.logging import log
 from ..basics.projection import GalaxyProjection
-from ...core.simulation.execute import SkirtExec
-from ...core.simulation.arguments import SkirtArguments
 from ..core.sed import ObservedSED
 from .wavelengthgrids import WavelengthGridGenerator
 from .dustgrids import DustGridGenerator
@@ -128,53 +126,37 @@ class FittingInitializer(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the template ski file
-        self.load_template()
+        # 2. Load the necessary input
+        self.load_input()
 
-        # 3. Load the structural parameters of the galaxy
-        self.load_parameters()
-
-        # 4. Load the projection system
-        self.load_projection()
-
-        # 5. Load the truncation ellipse
-        self.load_truncation_ellipse()
-
-        # 6. Load the observed SED
-        self.load_observed_sed()
-
-        # 7. Create the wavelength grid
+        # 3. Create the wavelength grid
         self.create_wavelength_grids()
 
-        # 8. Create the bulge model
+        # 4. Create the bulge model
         self.create_bulge_model()
 
-        # 9. Create the deprojection model
+        # 5. Create the deprojection model
         self.create_deprojection_model()
 
-        # 10. Create the instrument
+        # 6. Create the instrument
         self.create_instrument()
 
-        # 11. Create the dust grids
+        # 7. Create the dust grids
         self.create_dust_grids()
 
-        # 12. Adjust the ski file
+        # 8. Adjust the ski file
         self.adjust_ski()
 
-        # 13. Adjust the ski files for simulating the contributions of the various stellar components
+        # 9. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
 
-        # 14. Adjust the ski file for generating simulated images
+        # 10. Adjust the ski file for generating simulated images
         self.adjust_ski_images()
 
-        # 15. Generate the grids
-        self.write_input()
-        self.generate_grids()
-
-        # 16. Calculate the weight factor to give to each band
+        # 11. Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 17. Writing
+        # 12. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -207,6 +189,30 @@ class FittingInitializer(FittingComponent):
 
         # Create the DustGridGenerator
         self.dg_generator = DustGridGenerator()
+
+    # -----------------------------------------------------------------
+
+    def load_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 1. Load the template ski file
+        self.load_template()
+
+        # 2. Load the structural parameters of the galaxy
+        self.load_parameters()
+
+        # 3. Load the projection system
+        self.load_projection()
+
+        # 4. Load the truncation ellipse
+        self.load_truncation_ellipse()
+
+        # 5. Load the observed SED
+        self.load_observed_sed()
 
     # -----------------------------------------------------------------
 
@@ -308,8 +314,11 @@ class FittingInitializer(FittingComponent):
         # Create the range of npoints for the wavelength grids
         npoints_range = IntegerRange(150, 500)
 
+        # Fixed wavelengths (always in the grid)
+        fixed = [self.i1.pivotwavelength(), self.fuv.pivotwavelength()]
+
         # Generate the wavelength grids
-        self.wg_generator.run(npoints_range, 10)
+        self.wg_generator.run(npoints_range, 10, fixed=fixed)
 
     # -----------------------------------------------------------------
 
@@ -456,8 +465,8 @@ class FittingInitializer(FittingComponent):
         # Set transient dust emissivity
         self.ski.set_transient_dust_emissivity()
 
-        # Set the dust grid
-        self.ski.set_dust_grid(self.lowres_dust_grid)
+        # Set the lowest-resolution dust grid
+        self.ski.set_dust_grid(self.dg_generator.grids[0])
 
         # Set all-cells dust library
         self.ski.set_allcells_dust_lib()
@@ -746,130 +755,6 @@ class FittingInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def generate_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Generating the dust grid data ...")
-
-        # Generate the low-resolution dust grid data
-        self.generate_low_res_grid()
-
-        # Generate the high-resolution dust grid data
-        self.generate_high_res_grid()
-
-    # -----------------------------------------------------------------
-
-    def generate_low_res_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Generating the low-resolution grid data ...")
-
-        # Generate the grid
-        optical_depth = self.generate_grid(self.lowres_dust_grid, self.fit_grid_lowres_path)
-
-        # Debugging
-        log.debug("For the low-resolution dust grid, 90% of the cells have an optical depth smaller than " + str(optical_depth))
-
-    # -----------------------------------------------------------------
-
-    def generate_high_res_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Determining ideal optical depth criterion ...")
-
-        # Calculate the optical depth (at 90% percentile) for the current grid parameters
-        optical_depth = self.generate_grid(self.highres_dust_grid, self.fit_grid_highres_path)
-
-        # Adapt the maximal optical depth criterion
-        self.highres_dust_grid.max_optical_depth = optical_depth
-
-        # Inform the user
-        log.info("Generating the high-resolution grid data ...")
-
-        # Rerun the simulation
-        optical_depth = self.generate_grid(self.highres_dust_grid, self.fit_grid_highres_path)
-
-        # Debugging
-        log.debug("For the high-resolution grid, 90% of the cells have an optical depth smaller than " + str(optical_depth))
-
-    # -----------------------------------------------------------------
-
-    def generate_grid(self, grid, output_path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Running a simulation just to generate the dust grid data files ...")
-
-        # Create a copy of the ski file
-        ski = self.ski.copy()
-
-        # Set the dust grid
-        ski.set_dust_grid(grid)
-
-        # Convert to oligochromatic simulation
-        ski.to_oligochromatic([1. * Unit("micron")])
-
-        # Remove the instrument system
-        ski.remove_instrument_system()
-
-        # Set the number of photon packages to zero
-        ski.setpackages(0)
-
-        # Disable all writing options, except the one for writing the dust grid and cell properties
-        ski.disable_all_writing_options()
-        ski.set_write_grid()
-        ski.set_write_cell_properties()
-
-        # Write the ski file
-        ski_path = fs.join(output_path, self.galaxy_name + ".ski")
-        ski.saveto(ski_path)
-
-        # Create the local SKIRT execution context
-        skirt = SkirtExec()
-
-        # Create the SKIRT arguments object
-        arguments = SkirtArguments()
-        arguments.ski_pattern = ski_path
-        arguments.input_path = self.fit_in_path
-        arguments.output_path = output_path
-
-        # Run SKIRT to generate the dust grid data files
-        skirt.run(arguments)
-
-        # Determine the path to the cell properties file
-        cellprops_path = fs.join(output_path, self.galaxy_name + "_ds_cellprops.dat")
-
-        # Get the optical depth for which 90% of the cells have a smaller value
-        optical_depth = None
-        for line in reversed(open(cellprops_path).readlines()):
-            if "of the cells have optical depth smaller than" in line:
-                optical_depth = float(line.split("than: ")[1])
-                break
-
-        # Return the optical depth
-        return optical_depth
-
-    # -----------------------------------------------------------------
-
     def calculate_weights(self):
 
         """
@@ -977,10 +862,6 @@ class FittingInitializer(FittingComponent):
 
         # Write the dust grids
         self.write_dust_grids()
-
-    # -----------------------------------------------------------------
-
-
 
     # -----------------------------------------------------------------
 

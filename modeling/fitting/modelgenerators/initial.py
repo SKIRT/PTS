@@ -40,48 +40,26 @@ class InitialModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(InitialModelGenerator, self).__init__()
 
-        # The dictionary with the list of the model parameters
-        self.parameters = dict()
-
         # The genetic algorithm engine
         self.engine = None
 
     # -----------------------------------------------------------------
 
-    def run(self, ranges):
+    def setup(self):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup(ranges)
-
-        # 2. Generate the model parameters
-        self.generate()
-
-        # 3. Writing
-        self.write()
-
-    # -----------------------------------------------------------------
-
-    def setup(self, ranges):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Set minima and maxima for the different genes (model parameters)
-        minima = [ranges["FUV young"][0], ranges["FUV ionizing"][0], ranges["Dust mass"][0]]
-        maxima = [ranges["FUV young"][1], ranges["FUV ionizing"][1], ranges["Dust mass"][1]]
+        # Call the setup function of the base class
+        super(InitialModelGenerator, self).setup()
 
         # Create the first genome
-        genome = G1DList(3)
+        genome = G1DList(self.nparameters)
 
         # Set genome options
-        genome.setParams(minima=minima, maxima=maxima, bestrawscore=0.00, rounddecimal=2)
+        genome.setParams(minima=self.parameter_minima, maxima=self.parameter_maxima, bestrawscore=0.00, rounddecimal=2)
         genome.initializator.set(initializators.HeterogeneousListInitializerReal)
         # genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
         genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
@@ -109,20 +87,24 @@ class InitialModelGenerator(ModelGenerator):
         :return:
         """
 
+        # Inform the user
+        log.info("Generating the initial population of models ...")
+
         # Get the initial population
         population = self.engine.get_population()
 
         # Loop over the individuals of the population
+        parameter_names = self.parameter_names
         for individual in population:
 
-            young_luminosity = individual[0]
-            ionizing_luminosity = individual[1]
-            dust_mass = individual[2]
+            # Loop over all the genes (parameters)
+            for i in range(len(individual)):
 
-            # Add the parameter values to the dictionary
-            self.parameters["FUV young"].append(young_luminosity)
-            self.parameters["FUV ionizing"].append(ionizing_luminosity)
-            self.parameters["Dust mass"].append(dust_mass)
+                # Get the parameter value
+                value = individual[i]
+
+                # Add the parameter value to the dictionary
+                self.parameters[parameter_names[i]].append(value)
 
     # -----------------------------------------------------------------
 
@@ -133,8 +115,10 @@ class InitialModelGenerator(ModelGenerator):
         :return:
         """
 
+        # Write the genetic algorithm engine
         self.write_engine()
 
+        # Write the state of the random number generator
         self.write_prng()
 
     # -----------------------------------------------------------------

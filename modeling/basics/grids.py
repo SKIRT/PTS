@@ -20,6 +20,18 @@ from ...core.tools import parsing
 
 # -----------------------------------------------------------------
 
+def load_grid(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return None
+
+# -----------------------------------------------------------------
+
 class BinaryTreeDustGrid(object):
 
     """

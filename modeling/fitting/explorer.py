@@ -28,6 +28,7 @@ from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
 from .generations import GenerationsTable
 from ...core.tools import time
+from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 
 # -----------------------------------------------------------------
 
