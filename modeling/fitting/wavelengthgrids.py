@@ -15,8 +15,10 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
+# Import astronomical modules
+from astropy.table import Table
+
 # Import the relevant PTS classes and modules
-#from .component import FittingComponent
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..core.emissionlines import EmissionLines
@@ -66,7 +68,7 @@ class WavelengthGridGenerator(object):
         self.grids = []
 
         # The wavelength grid property table
-        self.table = []
+        self.table = None
 
         # The emission line object
         self.emission_lines = None
@@ -97,6 +99,11 @@ class WavelengthGridGenerator(object):
 
         # Create the emission lines instance
         self.emission_lines = EmissionLines()
+
+        # Initialize the table
+        names = ["UV points", "Optical points", "PAH points", "Dust points", "Extension points", "Emission lines", "Fixed points", "Total points"]
+        dtypes = int
+        self.table = Table(names=names, dtype=dtypes)
 
     # -----------------------------------------------------------------
 
@@ -138,6 +145,9 @@ class WavelengthGridGenerator(object):
         # A list of the wavelength points
         wavelengths = []
 
+        # Keep track of the number of points per subgrid
+        subgrid_npoints = dict()
+
         # Loop over the subgrids
         for subgrid in subgrids:
 
@@ -149,10 +159,13 @@ class WavelengthGridGenerator(object):
             max_lambda = limits[subgrid][1]
             points = int(round(relpoints[subgrid] * npoints))
 
+            subgrid_npoints[subgrid] = points
+
             # Generate and add the wavelength points
             wavelengths += make_grid(min_lambda, max_lambda, points)
 
         # Add the emission lines
+        emission_npoints = 0
         if add_emission_lines:
 
             # Add emission line grid points
@@ -178,8 +191,12 @@ class WavelengthGridGenerator(object):
                     newgrid.append(right)
                 wavelengths = newgrid
 
+            emission_npoints = len(self.emission_lines)
+
         # Add fixed wavelength points
+        fixed_npoints = 0
         if fixed is not None:
+            fixed_npoints = len(fixed)
             for wavelength in fixed: wavelengths.append(wavelength)
 
         # Sort the wavelength points
@@ -190,6 +207,14 @@ class WavelengthGridGenerator(object):
 
         # Add the grid
         self.grids.append(grid)
+
+        # Add an entry to the table
+        uv_npoints = subgrid_npoints["UV"]
+        optical_npoints = subgrid_npoints["optical"]
+        pah_npoints = subgrid_npoints["PAH"]
+        dust_npoints = subgrid_npoints["dust"]
+        extension_npoints = subgrid_npoints["extension"]
+        self.table.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints, fixed_npoints, len(grid)])
 
 # -----------------------------------------------------------------
 

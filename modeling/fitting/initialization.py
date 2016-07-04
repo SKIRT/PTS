@@ -957,9 +957,6 @@ class FittingInitializer(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the input
-        #self.write_input() # is now called before create_grids() because this function needs to run some simulations locally
-
         # Write the ski file
         self.write_ski_file()
 
@@ -975,121 +972,15 @@ class FittingInitializer(FittingComponent):
         # Write the geometries
         self.write_geometries()
 
-        # Write the dust grid objects
+        # Write the wavelength grids
+        self.write_wavelength_grids()
+
+        # Write the dust grids
         self.write_dust_grids()
 
     # -----------------------------------------------------------------
 
-    def write_input(self):
 
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the input ...")
-
-        # Write the wavelength grid
-        self.write_wavelength_grids()
-
-        # Write the old stellar map
-        self.write_old_stars()
-
-        # Write the map of young stars
-        self.write_young_stars()
-
-        # Write the map of ionizing stars
-        self.write_ionizing_stars()
-
-        # Write the dust map
-        self.write_dust()
-
-    # -----------------------------------------------------------------
-
-    def write_wavelength_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the low-resolution and high-resolution wavelength grids ...")
-
-        # Write the low-resolution wavelength grid
-        grid_path = fs.join(self.fit_in_path, "wavelengths_lowres.txt")
-        self.lowres_wavelength_grid.to_skirt_input(grid_path)
-
-        # Write the high-resolution wavelength grid
-        grid_path = fs.join(self.fit_in_path, "wavelengths_highres.txt")
-        self.highres_wavelength_grid.to_skirt_input(grid_path)
-
-    # -----------------------------------------------------------------
-
-    def write_old_stars(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Copying the map of old stars to the input directory ...")
-
-        # Determine the path to the old stars map
-        old_stars_path = fs.join(self.maps_path, "old_stars.fits")
-
-        # Copy the map
-        fs.copy_file(old_stars_path, self.fit_in_path)
-
-    # -----------------------------------------------------------------
-
-    def write_young_stars(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Copying the map of young stars to the input directory ...")
-
-        # Determine the path to the young stars map
-        young_stars_path = fs.join(self.maps_path, "young_stars.fits")
-
-        # Copy the map
-        fs.copy_file(young_stars_path, self.fit_in_path)
-
-    # -----------------------------------------------------------------
-
-    def write_ionizing_stars(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the ionizing stars map
-        ionizing_stars_path = fs.join(self.maps_path, "ionizing_stars.fits")
-
-        # Copy the map
-        fs.copy_file(ionizing_stars_path, self.fit_in_path)
-
-    # -----------------------------------------------------------------
-
-    def write_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the path to the dust map
-        dust_path = fs.join(self.maps_path, "dust.fits")
-
-        # Copy the map
-        fs.copy_file(dust_path, self.fit_in_path)
 
     # -----------------------------------------------------------------
 
@@ -1185,6 +1076,35 @@ class FittingInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def write_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the wavelength grids ...")
+
+        # Loop over the grids
+        index = 0
+        for grid in self.wg_generator.grids:
+
+            # Determine the path to the grid
+            path = fs.join(self.fit_wavelength_grids_path, str(index) + ".txt")
+
+            # Save the wavelength grid
+            grid.to_skirt_input(path)
+
+            # Increment the index
+            index += 1
+
+        # Write the wavelength grids table
+        table_path = fs.join(self.fit_wavelength_grids_path, "grids.dat")
+        tables.write(self.wg_generator.table, table_path)
+
+    # -----------------------------------------------------------------
+
     def write_dust_grids(self):
 
         """
@@ -1195,13 +1115,22 @@ class FittingInitializer(FittingComponent):
         # Inform the user
         log.info("Writing the dust grids ...")
 
-        # Write the low-resolution dust grid
-        path = fs.join(self.fit_grid_lowres_path, "lowres.grid")
-        self.lowres_dust_grid.save(path)
+        # Loop over the grids
+        index = 0
+        for grid in self.dg_generator.grids:
 
-        # Write the high-resolution dust grid
-        path = fs.join(self.fit_grid_highres_path, "highres.grid")
-        self.highres_dust_grid.save(path)
+            # Determine the path to the grid
+            path = fs.join(self.fit_dust_grids_path, str(index) + ".dg")
+
+            # Save the dust grid
+            grid.save(path)
+
+            # Increment the index
+            index += 1
+
+        # Write the dust grids table
+        table_path = fs.join(self.fit_dust_grids_path, "grids.dat")
+        tables.write(self.dg_generator.table, table_path)
 
 # -----------------------------------------------------------------
 
@@ -1252,36 +1181,5 @@ def fluxdensity_to_luminosity(fluxdensity, wavelength, distance):
     #print(luminosity_, luminosity) # is OK!
 
     return luminosity
-
-# -----------------------------------------------------------------
-
-def min_level_for_smallest_scale_bintree(extent, smallest_scale):
-
-    """
-    This function ...
-    :param extent:
-    :param smallest_scale:
-    :return:
-    """
-
-    ratio = extent / smallest_scale
-    octtree_level = int(math.ceil(math.log(ratio, 2)))
-    level = int(3 * octtree_level)
-    return level
-
-# -----------------------------------------------------------------
-
-def min_level_for_smallest_scale_octtree(extent, smallest_scale):
-
-    """
-    This function ...
-    :param extent:
-    :param smallest_scale:
-    :return:
-    """
-
-    ratio = extent / smallest_scale
-    octtree_level = int(math.ceil(math.log(ratio, 2)))
-    return octtree_level
 
 # -----------------------------------------------------------------

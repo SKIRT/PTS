@@ -164,7 +164,7 @@ def equal_columns(columns):
 
 # -----------------------------------------------------------------
 
-def write(table, path, format="ascii.commented_header"):
+def write(table, path, format="ascii.ecsv"):
 
     """
     This function ...
@@ -179,7 +179,7 @@ def write(table, path, format="ascii.commented_header"):
 
 # -----------------------------------------------------------------
 
-def from_file(path, format="ascii.commented_header", fix_floats=False, fix_string_length=False):
+def from_file(path, format="ascii.ecsv", fix_floats=False, fix_string_length=False):
 
     """
     This function ...
