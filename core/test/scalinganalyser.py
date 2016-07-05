@@ -14,14 +14,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..extract.scaling import ScalingExtractor
 from ..plot.scaling import ScalingPlotter
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class ScalingAnalyser(Configurable):
+class ScalingAnalyser(OldConfigurable):
 
     """
     This class ...

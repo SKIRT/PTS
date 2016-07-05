@@ -24,7 +24,7 @@ from ..basics.coordinatesystem import CoordinateSystem
 from ..basics.mask import Mask
 from ..sources.extractor import SourceExtractor
 from ..sky.skysubtractor import SkySubtractor
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ...modeling.preparation import unitconversion
 from ...core.tools import special
@@ -38,7 +38,7 @@ from ..misc.kernels import rebin_kernel_for_image
 
 # -----------------------------------------------------------------
 
-class ImagePreparer(Configurable):
+class ImagePreparer(OldConfigurable):
 
     """
     This class...

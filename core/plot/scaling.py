@@ -489,7 +489,7 @@ class ScalingPlotter(Plotter):
         # Create the parameters table and write to file
         data = [p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
         names = ["Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
-        table = Table(data, names=names)
+        table = Table(data=data, names=names)
         table.write(parameter_file_path, format="ascii.commented_header")
 
         # Plot the fitted speedup curves and write the parameters to the file

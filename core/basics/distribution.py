@@ -173,7 +173,7 @@ class Distribution(object):
         names = [name, "Probability"]
         meta = {"mean": self.mean, "median": self.median, "percentile16": self.percentile_16, "percentile84": self.percentile_84}
 
-        table = Table(data, names=names, meta=meta, masked=True)
+        table = Table(data=data, names=names, meta=meta, masked=True)
 
         # Save the table
         table.write(path, format="ascii.ecsv")

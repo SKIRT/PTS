@@ -26,14 +26,14 @@ from ..basics.skygeometry import SkyCoordinate
 from ..core.frame import Frame
 from ..object.galaxy import Galaxy
 from ..basics.skygeometry import SkyEllipse
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class GalaxyFinder(Configurable):
+class GalaxyFinder(OldConfigurable):
 
     """
     This class ...

@@ -17,7 +17,7 @@ from ..simulation.simulation import RemoteSimulation
 from ..basics.map import Map
 from ..basics.host import find_host_ids, has_simulations
 from .analyser import SimulationAnalyser
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..simulation.remote import SkirtRemote
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -28,7 +28,7 @@ format = Map({"HEADER": '\033[95m', "BLUE": '\033[94m', "GREEN": '\033[92m', "WA
 
 # -----------------------------------------------------------------
 
-class RemoteSynchronizer(Configurable):
+class RemoteSynchronizer(OldConfigurable):
 
     """
     This class ...

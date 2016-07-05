@@ -19,14 +19,14 @@ from abc import ABCMeta
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import NewConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import inspection
 from ...core.tools import filesystem as fs
 from ..core.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
-class ModelingComponent(NewConfigurable):
+class ModelingComponent(Configurable):
     
     """
     This class...

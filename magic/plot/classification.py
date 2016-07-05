@@ -17,11 +17,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 
 # -----------------------------------------------------------------
 
-class ClassificationPlotter(Configurable):
+class ClassificationPlotter(OldConfigurable):
 
     """
     This class ...

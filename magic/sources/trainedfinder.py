@@ -32,13 +32,13 @@ from ..tools import statistics, masks, plotting, general, interpolation
 from ..analysis import sources
 from ..train import Classifier
 from ..object.star import Star
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ..basics.geometry import Coordinate
 
 # -----------------------------------------------------------------
 
-class TrainedFinder(Configurable):
+class TrainedFinder(OldConfigurable):
 
     """
     This class ...

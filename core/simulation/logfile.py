@@ -491,7 +491,7 @@ def parse(path):
         names.append("Memory")
 
     # Create the table and return it
-    return Table(data, names=names, meta={"name": "the contents of the simulation's log file"})
+    return Table(data=data, names=names, meta={"name": "the contents of the simulation's log file"})
 
 # -----------------------------------------------------------------
 
@@ -545,6 +545,7 @@ def search_end(line):
     elif "Finished the" in line and "-stage dust self-absorption cycle" in line: return True
     elif "Finished the dust emission phase" in line: return True
     elif "Finished writing results" in line: return True
+    elif "Finished communication of" in line: return True # patch Dries, test why this is necessary
     else: return False
 
 # -----------------------------------------------------------------
@@ -592,6 +593,7 @@ def search_comm(line):
     if "Starting communication of the dust densities" in line: return True
     elif "Starting communication of the absorbed luminosities" in line: return True
     elif "Starting communication of the dust emission spectra" in line: return True
+    elif "Starting communication of" in line: return True # patch Dries, test why this is necessary
     else: return False
 
 # -----------------------------------------------------------------

@@ -21,12 +21,12 @@ from ..catalog.builder import CatalogBuilder
 from ..catalog.synchronizer import CatalogSynchronizer
 from ..tools import wavelengths
 from ...core.tools import tables
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class BatchSourceFinder(Configurable):
+class BatchSourceFinder(OldConfigurable):
 
     """
     This class ...

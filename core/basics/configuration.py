@@ -233,25 +233,6 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def setup_log(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the log file path
-        logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if self.arguments.report else None
-
-        # Determine the log level
-        level = "DEBUG" if self.arguments.debug else "INFO"
-
-        # Initialize the logger
-        log = logging.setup_log(level=level, path=logfile_path)
-        log.start("Starting explore ...")
-
-    # -----------------------------------------------------------------
-
     def get_settings(self):
 
         """

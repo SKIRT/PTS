@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..simulation.remote import SkirtRemote
 from ..simulation.arguments import SkirtArguments
 from .options import LoggingOptions
@@ -29,7 +29,7 @@ from .analyser import SimulationAnalyser
 
 # -----------------------------------------------------------------
 
-class BatchLauncher(Configurable):
+class BatchLauncher(OldConfigurable):
 
     """
     This class ...

@@ -23,13 +23,13 @@ from ..basics.mask import Mask
 from ..basics.geometry import Ellipse, Coordinate
 from ..core.source import Source
 from ...core.tools.logging import log
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ..tools import plotting
 from ..tools import masks
 
 # -----------------------------------------------------------------
 
-class SourceExtractor(Configurable):
+class SourceExtractor(OldConfigurable):
 
     """
     This class ...

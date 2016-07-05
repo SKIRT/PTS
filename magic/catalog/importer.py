@@ -19,14 +19,14 @@ from config import Sequence
 # Import the relevant PTS classes and modules
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools import inspection, tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class CatalogImporter(Configurable):
+class CatalogImporter(OldConfigurable):
 
     """
     This class ...

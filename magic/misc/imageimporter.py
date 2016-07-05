@@ -21,13 +21,13 @@ from ..core.frame import Frame
 from ..core.box import Box
 from ..basics.mask import Mask
 from ..basics.region import Region
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class ImageImporter(Configurable):
+class ImageImporter(OldConfigurable):
 
     """
     This class ...

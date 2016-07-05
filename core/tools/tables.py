@@ -223,7 +223,7 @@ def new(data=None, names=None, meta=None, dtypes=None, copy=True):
     else:
 
         # Create a new table from the data
-        table = Table(data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
+        table = Table(data=data, names=names, meta=meta, masked=True, dtype=dtypes, copy=copy)
 
         # Set mask for each column from None values
         for column_index in range(len(names)):

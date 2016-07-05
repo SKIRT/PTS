@@ -24,13 +24,13 @@ from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools import inspection, tables
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class CatalogSynchronizer(Configurable):
+class CatalogSynchronizer(OldConfigurable):
 
     """
     This class ...

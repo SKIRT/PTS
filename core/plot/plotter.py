@@ -16,12 +16,12 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class Plotter(Configurable):
+class Plotter(OldConfigurable):
 
     """
     This class ...

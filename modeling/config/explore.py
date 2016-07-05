@@ -33,7 +33,4 @@ config.add_flag("dry", "dry-run (don't actually launch simulations)")
 config.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations")
 config.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations")
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
-
 # -----------------------------------------------------------------

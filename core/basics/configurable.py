@@ -22,7 +22,7 @@ from ..tools import configuration
 
 # -----------------------------------------------------------------
 
-class NewConfigurable(object):
+class Configurable(object):
 
     """
     This class ...
@@ -39,7 +39,7 @@ class NewConfigurable(object):
         :param config:
         """
 
-        self.config = config
+        self.config = config.get_settings()
 
     # -----------------------------------------------------------------
 
@@ -69,7 +69,7 @@ class NewConfigurable(object):
 
 # -----------------------------------------------------------------
 
-class Configurable(object):
+class OldConfigurable(object):
 
     """
     This class ...
@@ -85,7 +85,7 @@ class Configurable(object):
         """
 
         # Call the constructor of the base class
-        super(Configurable, self).__init__()
+        super(OldConfigurable, self).__init__()
 
         # -- Attributes --
 

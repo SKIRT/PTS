@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..extract.progress import ProgressExtractor
 from ..extract.timeline import TimeLineExtractor
 from ..extract.memory import MemoryExtractor
@@ -33,7 +33,7 @@ from ...modeling.core.sed import SED, ObservedSED
 
 # -----------------------------------------------------------------
 
-class BasicAnalyser(Configurable):
+class BasicAnalyser(OldConfigurable):
 
     """
     This class ...

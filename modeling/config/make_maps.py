@@ -11,7 +11,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration(log_path="log")
 
 # Add optional settings
 config.add_optional("map", str, "the map to be made (dust, old, NIY, IY)")
@@ -37,8 +37,5 @@ config.sections["ionizing_stars"].add_optional("mips_snr_level", float, "cut-off
 
 config.add_section("non_ionizing_stars")
 config.sections["non_ionizing_stars"].add_optional("fuv_snr_level", float, "cut-off when signal(FUV) < fuv_snr_level * uncertainty(FUV) (Ilse: 10.0)", 0.0)
-
-# Read the configuration settings from the provided command-line arguments
-config.read()
 
 # -----------------------------------------------------------------

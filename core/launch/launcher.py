@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 from .analyser import SimulationAnalyser
 from ..simulation.execute import SkirtExec
 from ..simulation.arguments import SkirtArguments
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..test.resources import ResourceEstimator
 from ..tools import monitoring
 from ..tools import filesystem as fs
@@ -25,7 +25,7 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SkirtLauncher(Configurable):
+class SkirtLauncher(OldConfigurable):
 
     """
     This class ...

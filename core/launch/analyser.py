@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..launch.basicanalyser import BasicAnalyser
 from ..launch.batchanalyser import BatchAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
@@ -24,7 +24,7 @@ from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class SimulationAnalyser(Configurable):
+class SimulationAnalyser(OldConfigurable):
 
     """
     This class ...

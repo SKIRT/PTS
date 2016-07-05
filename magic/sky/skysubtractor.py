@@ -41,13 +41,13 @@ from ..basics.geometry import Coordinate, Circle, Composite
 from ..basics.region import Region
 from ..basics.skyregion import SkyRegion
 from ..tools import plotting, statistics, fitting, plotting
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
-class SkySubtractor(Configurable):
+class SkySubtractor(OldConfigurable):
 
     """
     This class ...

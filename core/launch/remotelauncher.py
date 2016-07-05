@@ -20,7 +20,7 @@ import math
 from .analyser import SimulationAnalyser
 from ..simulation.remote import SkirtRemote
 from ..simulation.arguments import SkirtArguments
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..test.resources import ResourceEstimator
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -28,7 +28,7 @@ from .options import SchedulingOptions
 
 # -----------------------------------------------------------------
 
-class SkirtRemoteLauncher(Configurable):
+class SkirtRemoteLauncher(OldConfigurable):
 
     """
     This class ...

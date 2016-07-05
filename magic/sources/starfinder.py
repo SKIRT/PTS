@@ -28,14 +28,14 @@ from ..core.frame import Frame
 from ..core.source import Source
 from ..object.star import Star
 from ..tools import statistics, fitting
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class StarFinder(Configurable):
+class StarFinder(OldConfigurable):
 
     """
     This class ...

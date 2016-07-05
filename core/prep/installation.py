@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 import urllib
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..simulation.execute import SkirtExec
 from ..simulation.remote import Remote
 from ..tools import inspection
@@ -26,7 +26,7 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SkirtInstaller(Configurable):
+class SkirtInstaller(OldConfigurable):
 
     """
     This class ...
@@ -152,7 +152,7 @@ class SkirtInstaller(Configurable):
 
 # -----------------------------------------------------------------
 
-class SkirtRemoteInstaller(Configurable):
+class SkirtRemoteInstaller(OldConfigurable):
     
     """
     This class ...

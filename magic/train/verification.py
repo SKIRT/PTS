@@ -17,7 +17,7 @@ import os
 
 # Import the relevant PTS classes and modules
 from .classification import Classifier
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ..core.image import Image
 from ..core.source import Source
 from ...core.tools import inspection
@@ -25,7 +25,7 @@ from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class Verifier(Configurable):
+class Verifier(OldConfigurable):
 
     """
     This class ...

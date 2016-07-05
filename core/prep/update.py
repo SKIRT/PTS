@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import Configurable
+from ..basics.configurable import OldConfigurable
 from ..simulation.execute import SkirtExec
 from ..simulation.remote import SkirtRemote
 
 # -----------------------------------------------------------------
 
-class SkirtUpdater(Configurable):
+class SkirtUpdater(OldConfigurable):
     
     """
     This class ...

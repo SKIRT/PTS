@@ -158,7 +158,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     log.start("Starting " + command_name + " ...")
 
     # Create the class instance, configure it with the configuration settings
-    inst = cls(config.get_settings())
+    inst = cls(config)
 
     # Run the instance
     inst.run()

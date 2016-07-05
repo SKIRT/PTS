@@ -19,7 +19,7 @@ from sklearn import svm
 from sklearn.externals import joblib
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ..core.image import Image
 from ..core.source import Source
 from ...core.tools import inspection
@@ -27,7 +27,7 @@ from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class Classifier(Configurable):
+class Classifier(OldConfigurable):
 
     """
     This class ...

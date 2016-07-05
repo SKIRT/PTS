@@ -23,13 +23,13 @@ from ...core.tools import filesystem as fs
 from ...core.basics.filter import Filter
 from ...core.tools.logging import log
 from ...core.basics.errorbar import ErrorBar
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ..preparation import unitconversion
 from ...magic.tools import catalogs
 
 # -----------------------------------------------------------------
 
-class SEDFetcher(Configurable):
+class SEDFetcher(OldConfigurable):
 
     """
     This class ...

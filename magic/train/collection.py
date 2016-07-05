@@ -20,7 +20,7 @@ from matplotlib.widgets import Button
 # Import the relevant PTS classes and modules
 from ..core.image import Image
 from ..core.source import Source
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import OldConfigurable
 from ...core.tools import inspection
 from ...core.tools import filesystem as fs
 
@@ -30,7 +30,7 @@ description = {"star": "star", "saturation": "saturated star / diffraction patte
 
 # -----------------------------------------------------------------
 
-class Collector(Configurable):
+class Collector(OldConfigurable):
 
     """
     This class ...
