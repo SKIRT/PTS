@@ -20,6 +20,7 @@ import imp
 import inspect
 import socket
 import subprocess
+import numpy as np
 from operator import itemgetter, methodcaller
 from collections import defaultdict
 from contextlib import contextmanager
@@ -30,6 +31,8 @@ from importlib import import_module
 from . import filesystem as fs
 
 # -----------------------------------------------------------------
+
+subprojects = ["core", "magic", "eagle", "modeling", "dustpedia"]
 
 # The path to the root PTS directory
 pts_root_dir = inspect.getfile(inspect.currentframe()).split("/pts")[0]
@@ -48,6 +51,12 @@ pts_user_accounts_dir = os.path.join(pts_user_dir, "accounts")
 
 # The path to the PTS do directory containing launchable scripts (PTS/pts/do)
 pts_do_dir = os.path.join(pts_package_dir, "do")
+
+# The path to the main directory for a given PTS subproject
+def pts_subproject_dir(subproject): return os.path.join(pts_package_dir, subproject)
+
+# The path to the 'config' directory for a given PTS subproject
+def pts_config_dir(subproject): return os.path.join(pts_package_dir, subproject, "config")
 
 # The path to the 'dat' directory for a given PTS subproject
 def pts_dat_dir(subproject): return os.path.join(pts_package_dir, subproject, "dat")
@@ -534,12 +543,12 @@ def get_scripts():
 
 # -----------------------------------------------------------------
 
-def find_matches(scripts, name):
+def find_matches_scripts(name, scripts):
 
     """
     This function ...
-    :param scripts:
     :param name:
+    :param scripts:
     :return:
     """
 
@@ -562,53 +571,74 @@ def find_matches(scripts, name):
 
 # -----------------------------------------------------------------
 
-def find_matching_script(script_name):
+def find_matches_tables(name, tables):
 
     """
     This function ...
-    :param script_name:
+    :param name:
+    :param tables:
     :return:
     """
 
-    # Find matching scripts
-    scripts = get_scripts()
-    matches = find_matches(scripts, script_name)
+    # ...
+    if "/" in name:
 
-    # If there is a unique match, return it
-    if len(matches) == 1: return matches[0]
+        matches = []
+        dir_name = name.split("/")[0]
+        script_name = name.split("/")[1]
 
-    # No matches
-    elif len(matches) == 0:
-        print("No match found. Available scripts:")
+        for subproject in tables:
 
-        # Sort on the 'do' subfolder name
-        scripts = sorted(scripts, key=itemgetter(0))
+            if dir_name != subproject: continue
 
-        current_dir = None
-        for script in scripts:
+            table = tables[subproject]
 
-            if current_dir == script[0]:
-                print(" "*len(current_dir) + "/" + script[1])
-            else:
-                print(script[0] + "/" + script[1])
-                current_dir = script[0]
-        return None
+            for i in range(len(table["Command"])):
 
-    # Multiple matches
-    else:
-        print("The command you provided is ambiguous. Possible matches:")
+                if table["Command"][i].startswith(script_name): matches.append((subproject, i))
 
-        # Sort on the 'do' subfolder name
-        matches = sorted(matches, key=itemgetter(0))
+        return matches
 
-        current_dir = None
-        for script in matches:
+    elif name is not None:
 
-            if current_dir == script[0]:
-                print(" "*len(current_dir) + "/" + script[1])
-            else:
-                print(script[0] + "/" + script[1])
-                current_dir = script[0]
-        return None
+        matches = []
+
+        for subproject in tables:
+
+            table = tables[subproject]
+
+            for i in range(len(table["Command"])):
+                if table["Command"][i].startswith(name): matches.append((subproject, i))
+
+        return matches
+
+    else: return []
+
+# -----------------------------------------------------------------
+
+def get_arguments_tables():
+
+    """
+    This function ...
+    :return:
+    """
+
+    tables = dict()
+
+    # Loop over the subprojects
+    for subproject in subprojects:
+
+        table_path = fs.join(pts_subproject_dir(subproject), "commands.dat")
+        if not fs.is_file(table_path): continue
+
+        # Get the columns
+        commands, where, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
+
+        # Table
+        table = {"Command": commands, "Path": where, "Description": description}
+        tables[subproject] = table
+
+    # Return the tables
+    return tables
 
 # -----------------------------------------------------------------

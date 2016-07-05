@@ -22,6 +22,48 @@ from astropy.units import Unit
 # Import standard modules
 import argparse
 
+# Import the relevant PTS classes and modules
+from ..basics.range import IntegerRange, RealRange, QuantityRange
+
+# -----------------------------------------------------------------
+
+def real_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    min_value, max_value = float_tuple(argument)
+    return RealRange(min_value, max_value)
+
+# -----------------------------------------------------------------
+
+def integer_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    min_value, max_value = int_tuple(argument)
+    return IntegerRange(min_value, max_value)
+
+# -----------------------------------------------------------------
+
+def quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    min_quantity, max_quantity = quantity_tuple(argument)
+    return QuantityRange(min_quantity, max_quantity)
+
 # -----------------------------------------------------------------
 
 def absolute_path(argument):
@@ -53,10 +95,31 @@ def int_tuple(argument):
 
 def float_tuple(argument):
 
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
     try:
         a, b = map(float, argument.split(","))
         return a, b
     except: raise argparse.ArgumentTypeError("Tuple must be of format a,b")
+
+# -----------------------------------------------------------------
+
+def quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = map(quantity, argument.split(","))
+        return a, b
+    except: raise argparse.ArgumentTypeError("Tuple must be of format a unit_a, b unit_b")
 
 # -----------------------------------------------------------------
 
@@ -173,6 +236,21 @@ def get_boolean(entry):
     """
 
     return entry == "True"
+
+# -----------------------------------------------------------------
+
+def quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    splitted = argument.split()
+    value = float(splitted[0])
+    unit = Unit(splitted[1])
+    return value * unit
 
 # -----------------------------------------------------------------
 

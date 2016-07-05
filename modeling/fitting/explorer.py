@@ -196,7 +196,7 @@ class ParameterExplorer(FittingComponent):
 
             if self.has_initial:
 
-                self.generation = # Determine from index of last generation
+                self.generation = None # Determine from index of last generation
                 self.generation_name = str()
 
                 # Create the model generator
@@ -279,17 +279,17 @@ class ParameterExplorer(FittingComponent):
             # Set the range of the FUV luminosity of the young stellar population
             min_value = self.config.young[0] * young_luminosity_guess
             max_value = self.config.young[1] * young_luminosity_guess
-            self.ranges["FUV young"] = (min_value, max_value)
+            self.ranges["FUV young"] = RealRange(min_value, max_value)
 
             # Set the range of the FUV luminosity of the ionizing stellar population
             min_value = self.config.ionizing[0] * ionizing_luminosity_guess
             max_value = self.config.ionizing[1] * ionizing_luminosity_guess
-            self.ranges["FUV ionizing"] = (min_value, max_value)
+            self.ranges["FUV ionizing"] = RealRange(min_value, max_value)
 
             # Set the range of the dust mass
             min_value = self.config.dust[0] * dust_mass_guess
             max_value = self.config.dust[1] * dust_mass_guess
-            self.ranges["Dust mass"] = (min_value, max_value)
+            self.ranges["Dust mass"] = QuantityRange(min_value, max_value)
 
         else:
 

@@ -29,7 +29,7 @@ class Configuration(object):
     This function ...
     """
 
-    def __init__(self, add_logging=True, add_cwd=True, prefix=None):
+    def __init__(self, add_logging=True, add_cwd=True, prefix=None, log_path=None):
 
         """
         The constructor ...
@@ -56,6 +56,9 @@ class Configuration(object):
         # Add logging options
         if add_logging:
 
+            # Log path to absolute path
+            log_path = fs.absolute(log_path) if log_path is not None else fs.cwd()
+            self.add_fixed("log_path", log_path)
             self.add_flag("debug", "enable debug output", False)
             self.add_flag("report", "write a report file", False)
 
@@ -132,7 +135,7 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def add_positional_optional(self, name, user_type, description, default=None, to_instance=True, choices=None):
+    def add_positional_optional(self, name, user_type, description, default=None, to_instance=True, choices=None, convert_default=False):
 
         """
         This function ...
@@ -141,6 +144,7 @@ class Configuration(object):
         :param description:
         :param default:
         :param to_instance:
+        :param convert_default:
         :return:
         """
 
@@ -148,7 +152,7 @@ class Configuration(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        default = get_real_value(default, user_type)
+        if convert_default: default = get_real_value(default, user_type)
 
         # Add prefix
         if self.prefix is not None: name = self.prefix + "/" + name
@@ -161,7 +165,7 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default=None, to_instance=True, letter=None):
+    def add_optional(self, name, user_type, description, default=None, to_instance=True, letter=None, convert_default=False):
 
         """
         This function ...
@@ -178,7 +182,7 @@ class Configuration(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        default = get_real_value(default, user_type)
+        if convert_default: default = get_real_value(default, user_type)
 
         # Add prefix
         if self.prefix is not None: name = self.prefix + "/" + name
@@ -229,6 +233,25 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
+    def setup_log(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the log file path
+        logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if self.arguments.report else None
+
+        # Determine the log level
+        level = "DEBUG" if self.arguments.debug else "INFO"
+
+        # Initialize the logger
+        log = logging.setup_log(level=level, path=logfile_path)
+        log.start("Starting explore ...")
+
+    # -----------------------------------------------------------------
+
     def get_settings(self):
 
         """
@@ -243,7 +266,7 @@ class Configuration(object):
         for name in self.fixed: settings[name] = self.fixed[name]
 
         # Add base settings
-        for argument in self.arguments: settings[argument] = self.arguments[argument]
+        for argument in vars(self.arguments): settings[argument] = getattr(self.arguments, argument)
 
         # Add the configuration settings of the various sections
         for name in self.sections:
@@ -251,7 +274,7 @@ class Configuration(object):
             # Create a map for the settings
             settings[name] = Map()
 
-            for argument in self.sections[name].arguments: settings[name][argument] = self.sections[name].arguments[argument]
+            for argument in vars(self.sections[name].arguments): settings[name][argument] = getattr(self.sections[name].arguments, argument)
 
         # Return the settings
         return settings

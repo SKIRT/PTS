@@ -1,0 +1,2 @@
+explore | fitting.explorer.ParameterExplorer | Explore the parameter space for the radiative transfer modeling
+make_maps | maps.maker.MapMaker | Make the maps of dust and stars for the SKIRT radiative transfer modeling procedure
