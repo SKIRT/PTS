@@ -214,13 +214,13 @@ class FittingComponent(ModelingComponent):
         memory_table = MemoryTable(self.memory_table_path)
 
         # Set the paths to the probability distribution tables
-        for parameter_name in self.parameter_names:
+        for label in self.free_parameter_labels:
 
             # Determine the path to the table
-            path = fs.join(self.fit_prob_path, parameter_name.lower() + ".dat")
+            path = fs.join(self.fit_prob_path, label + ".dat")
 
             # Set the path
-            self.distribution_table_paths[parameter_name] = path
+            self.distribution_table_paths[label] = path
 
         # Set the path to the reference image
         self.reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")

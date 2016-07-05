@@ -205,6 +205,6 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return list(np.loadtxt(self.free_parameters_path, dtype=str))
+        return dict(np.genfromtxt(self.free_parameters_path, delimiter=" | ", dtype=str))
 
 # -----------------------------------------------------------------

@@ -12,10 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
-from ...core.tools import tables
 from ...core.tools import inspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
@@ -24,6 +26,7 @@ from ...core.tools import parsing
 # -----------------------------------------------------------------
 
 template_ski_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
+labels_description_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "labels_description.dat")
 
 # -----------------------------------------------------------------
 
@@ -51,6 +54,9 @@ class FittingConfigurer(FittingComponent):
 
         # The names of the free parameters
         self.parameters = []
+
+        # The descriptions for the free parameters
+        self.descriptions = dict()
 
         # The names of the filter names
         self.filter_names = []
@@ -106,6 +112,9 @@ class FittingConfigurer(FittingComponent):
         # Load the template ski file
         self.load_template()
 
+        # Load the parameter descriptions
+        self.load_descriptions()
+
     # -----------------------------------------------------------------
 
     def load_template(self):
@@ -123,6 +132,21 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def load_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        labels, descriptions = np.genfromtxt(labels_description_path, delimiter=" | ", dtype=str, unpack=True)
+
+        # Set the descriptions
+        for label, description in zip(labels, descriptions):
+            self.descriptions[label] = description
+
+    # -----------------------------------------------------------------
+
     def prompt_parameters(self):
 
         """
@@ -134,7 +158,7 @@ class FittingConfigurer(FittingComponent):
         labels = self.ski.labels()
 
         # Get the choices
-        indices = get_choices(labels, "free parameters")
+        indices = get_choices(labels, "free parameters", self.descriptions)
 
         # Set the chosen free parameters
         for index in indices: self.parameters.append(labels[index])
@@ -213,7 +237,7 @@ class FittingConfigurer(FittingComponent):
 
         # Write
         with open(self.free_parameters_path, 'w') as f:
-            for label in self.parameters: print(label, file=f)
+            for label in self.parameters: print(label + " | " + self.descriptions[label], file=f)
 
     # -----------------------------------------------------------------
 
@@ -245,18 +269,20 @@ class FittingConfigurer(FittingComponent):
 
 # -----------------------------------------------------------------
 
-def get_choices(options, feature):
+def get_choices(options, feature, descriptions=None):
 
     """
     This function ...
     :param options:
     :param feature:
+    :param descriptions:
     :return:
     """
 
     log.info("Possible " + feature + ":")
     for index, label in enumerate(options):
-        log.info(" - [" + str(index) + "] " + label)
+        description = "  " + descriptions[label] if descriptions is not None else ""
+        log.info(" - [" + str(index) + "] " + label + description)
     log.info("")
 
     log.info("Give the numbers of the " + feature + " that should be used for the fitting:")

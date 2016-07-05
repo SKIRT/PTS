@@ -1,0 +1,15 @@
+distance | distance of the galaxy
+ionizing_scaleheight | scale height of the ionizing stellar component
+sfr_compactness | compactness parameter of the star formation regions
+fuv_young | FUV luminosity of the young stellar component
+old_scaleheight | scale height of the old stellar disk component
+position_angle | position angle of the galaxy
+dust_mass | dust mass
+fuv_ionizing | FUV luminosity of the ionizing stellar component
+metallicity | metallicity
+young_scaleheight | scale height of the young stellar component
+sfr_covering | covering factor of the star formation regions
+dust_scaleheight | scale height of the dust component
+i1_old | I1 luminosity of the old stellar component
+sfr_pressure | pressure on the star formation regions
+inclination | inclination of the galactic plane
