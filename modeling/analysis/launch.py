@@ -37,7 +37,7 @@ from ..basics.projection import GalaxyProjection
 
 # -----------------------------------------------------------------
 
-class BestModelLauncher(AnalysisComponent):
+class AnalysisLauncher(AnalysisComponent):
     
     """
     This class...
@@ -241,8 +241,7 @@ class BestModelLauncher(AnalysisComponent):
 
         # Build the high- and low-resolution grids independently
         base_grid = np.logspace(logmin, logmax, num=self.config.wavelengths.npoints, endpoint=True, base=10)
-        zoom_grid = np.logspace(logmin_zoom, logmax_zoom, num=self.config.wavelengths.npoints_zoom, endpoint=True,
-                                base=10)
+        zoom_grid = np.logspace(logmin_zoom, logmax_zoom, num=self.config.wavelengths.npoints_zoom, endpoint=True, base=10)
 
         # Merge the two grids
         total_grid = []

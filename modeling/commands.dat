@@ -12,7 +12,9 @@ decompose | decomposition.decomposition.GalaxyDecomposer | Run the bulge-disk de
 fetch_data | data.fetching.DataFetcher | Fetch the data from the DustPedia database
 fit_sed | fitting.sedfitting.SEDFitter | Determine the best fit with the observed SED
 initialize_fit | fitting.initialization.FittingInitializer | Do the initialization before starting the fitting
-launch_best | analysis.launch.BestModelLauncher | Launch a simulation for the best fitting model
+configure_fit | fitting.configuration.FittingConfigurer | Configure the fitting procedure
+launch_best | fitting.bestmodellauncher.BestModelLauncher | Launch simulations to inspect the current best RT model
+launch_analysis | analysis.launch.AnalysisLauncher | Launch a simulation for analysis
 launch_heating | analysis.heating.launch.DustHeatingContributionLauncher | Launch simulations for analysing the heating contributions
 make_report | reporting.reporting.Reporter | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
 photometry | photometry.photometry.PhotoMeter | Calculate the photometry of the different input images

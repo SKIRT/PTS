@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.component Contains the ModelingComponent class
+## \package pts.modeling.core.component Contains the ModelingComponent class.
 
 # -----------------------------------------------------------------
 
@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from abc import ABCMeta
 
 # Import astronomical modules
@@ -23,6 +24,7 @@ from ...core.basics.configurable import Configurable
 from ...core.tools import inspection
 from ...core.tools import filesystem as fs
 from ..core.sed import ObservedSED
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -73,6 +75,10 @@ class ModelingComponent(Configurable):
         # The path to the observed SEDs
         self.observed_sed_path = None
         self.observed_sed_dustpedia_path = None
+
+        # The path to the free parameter file and the fitting filters file
+        self.free_parameters_path = None
+        self.fitting_filters_path = None
 
     # -----------------------------------------------------------------
 
@@ -125,6 +131,10 @@ class ModelingComponent(Configurable):
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
 
+        # Set the path to the free parameter file and the fitting filters file
+        self.free_parameters_path = fs.join(self.fit_path, "free_parameters.txt")
+        self.fitting_filters_path = fs.join(self.fit_path, "fitting_filters.txt")
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -160,5 +170,41 @@ class ModelingComponent(Configurable):
         """
 
         return [str(fltr) for fltr in self.observed_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return map(Filter.from_string, self.fitting_filter_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(np.loadtxt(self.fitting_filters_path, dtype=str))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def free_parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(np.loadtxt(self.free_parameters_path, dtype=str))
 
 # -----------------------------------------------------------------

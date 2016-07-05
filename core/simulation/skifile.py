@@ -2273,6 +2273,156 @@ class SkiFile:
 
         return get_unique_element(self.tree.getroot(), "//"+name)
 
+    # -----------------------------------------------------------------
+
+    ## This function returns the value of a certain parameter of the specified tree element as an Astropy quantity. The
+    #  default unit can be specified which is used when the unit is not described in the ski file.
+    def get_quantity(self, element, name, default_unit=None):
+
+        # Import Astropy here to avoid import errors for this module for users without an Astropy installation
+        from astropy.units import Unit
+
+        splitted = element.get(name).split()
+        value = float(splitted[0])
+        try:
+            unit = splitted[1]
+        except IndexError:
+            unit = default_unit
+
+        # Create a quantity object
+        if unit is not None: value = value * Unit(unit)
+        return value
+
+    # -----------------------------------------------------------------
+
+    ## This function sets the value of a certain parameter of the specified tree element from an Astropy quantity.
+    def set_quantity(self, element, name, value, default_unit=None):
+
+        # Import Astropy here to avoid import errors for this module for users without an Astropy installation
+        from astropy.units import Unit
+
+        try:
+
+            # If this works, assume it is a Quantity (or Angle)
+            unit = value.unit
+
+            # Works for Angles as well (str(angle) gives something that is not 'value + unit'
+            to_string = str(value.to(value.unit).value) + " " + str(unit)
+
+        except AttributeError:
+
+            if default_unit is not None:
+                to_string = str(value) + " " + str(Unit(default_unit))
+            else:
+                to_string = str(value)  # dimensionless quantity
+
+        # Set the value in the tree element
+        element.set(name, to_string)
+
+# -----------------------------------------------------------------
+
+class LabeledSkiFile(SkiFile):
+
+    """
+    This class ...
+    """
+
+    ## This function returns all labels
+    def labels(self):
+
+        labels = set()
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Loop over the settings of the element
+            for setting_name, setting_value in element.items():
+
+                if setting_value.startswith("[") and setting_value.endswith("]"):
+
+                    label = setting_value.split("[")[1].split(":")[0]
+                    labels.add(label)
+
+        # Return the list of labels
+        return list(labels)
+
+    # -----------------------------------------------------------------
+
+    def labeled_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        values = dict()
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Loop over the settings of the element
+            for setting_name, setting_value in element.items():
+
+                if setting_value.startswith("[") and setting_value.endswith("]"):
+
+                    label = setting_value.split("[")[1].split(":")[0]
+                    value = self.get_quantity(element, setting_name)
+
+                    if label in values and values[label] != value: warnings.warn("The '" + label + "' property has different values throughout the SkiFile (" + str(values[label]) + " and " + str(value) + ")")
+                    else: values[label] = value
+
+        return values
+
+    # -----------------------------------------------------------------
+
+    def delabel(self, label):
+
+        """
+        This function removes the label from a certain property
+        :param label:
+        :return:
+        """
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Loop over the settings of the element
+            for setting_name, setting_value in element.items():
+
+                if setting_value.startswith("[") and setting_value.endswith("]"):
+
+                    label_item = setting_value.split("[")[1].split(":")[0]
+                    value_item = setting_value[1:-1].split(":")[1]
+
+                    if label == label_item: element.set(setting_name, value_item)
+
+    # -----------------------------------------------------------------
+
+    # Overwrite the default implementation in SkiFile to incorporate labeled properties
+    def get_quantity(self, element, name, default_unit=None):
+
+        # Import Astropy here to avoid import errors for this module for users without an Astropy installation
+        from astropy.units import Unit
+
+        prop = element.get(name)
+        if prop.startswith("[") and prop.endswith("]"): prop = prop[1:-1].split(":")[1]
+
+        splitted = prop.split()
+        value = float(splitted[0])
+        try: unit = splitted[1]
+        except IndexError: unit = default_unit
+
+        # Create a quantity object
+        if unit is not None: value = value * Unit(unit)
+        return value
+
+    # -----------------------------------------------------------------
+
+    # Overwrite the default implementation in SkiFile to incorporate labeled properties
+    def set_quantity(self, element, name, value, default_unit=None):
+
+        pass
+
 # -----------------------------------------------------------------
 
 ## This function returns the xml tree element with the specified name that is a child of the specified element
@@ -2293,48 +2443,6 @@ def get_unique_element(element, name):
 
     # Return the child element
     return child
-
-# -----------------------------------------------------------------
-
-## This function returns the value of a certain parameter of the specified tree element as an Astropy quantity. The
-#  default unit can be specified which is used when the unit is not described in the ski file.
-def get_quantity(element, name, default_unit=None):
-
-    # Import Astropy here to avoid import errors for this module for users without an Astropy installation
-    from astropy.units import Unit
-
-    splitted = element.get(name).split()
-    value = float(splitted[0])
-    try: unit = splitted[1]
-    except IndexError: unit = default_unit
-
-    # Create a quantity object
-    if unit is not None: value = value * Unit(unit)
-    return value
-
-# -----------------------------------------------------------------
-
-## This function sets the value of a certain parameter of the specified tree element from an Astropy quantity.
-def set_quantity(element, name, value, default_unit=None):
-
-    # Import Astropy here to avoid import errors for this module for users without an Astropy installation
-    from astropy.units import Unit
-
-    try:
-
-        # If this works, assume it is a Quantity (or Angle)
-        unit = value.unit
-
-        # Works for Angles as well (str(angle) gives something that is not 'value + unit'
-        to_string = str(value.to(value.unit).value) + " " + str(unit)
-
-    except AttributeError:
-
-        if default_unit is not None: to_string = str(value) + " " + str(Unit(default_unit))
-        else: to_string = str(value)  # dimensionless quantity
-
-    # Set the value in the tree element
-    element.set(name, to_string)
 
 # -----------------------------------------------------------------
 

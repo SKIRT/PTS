@@ -18,6 +18,7 @@ import math
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
 from astropy import constants
+from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
@@ -39,10 +40,6 @@ from ..core.sed import ObservedSED
 from .wavelengthgrids import WavelengthGridGenerator
 from .dustgrids import DustGridGenerator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
-
-# -----------------------------------------------------------------
-
-template_ski_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "template.ski")
 
 # -----------------------------------------------------------------
 
@@ -190,6 +187,9 @@ class FittingInitializer(FittingComponent):
         # Create the DustGridGenerator
         self.dg_generator = DustGridGenerator()
 
+        # Create the table to contain the weights
+        self.weights = Table(names=["Instrument", "Band", "Weight"], dtype=["S5", "S7", "float64"])
+
     # -----------------------------------------------------------------
 
     def load_input(self):
@@ -227,7 +227,7 @@ class FittingInitializer(FittingComponent):
         log.info("Loading the ski file template ...")
 
         # Open the template ski file
-        self.ski = SkiFile(template_ski_path)
+        self.ski = SkiFile(self.template_ski_path)
 
     # -----------------------------------------------------------------
 
@@ -765,9 +765,6 @@ class FittingInitializer(FittingComponent):
         # Inform the user
         log.info("Calculating the weight to give to each band ...")
 
-        # Create the table to contain the weights
-        self.weights = tables.new([[], [], []], names=["Instrument", "Band", "Weight"], dtypes=["S5", "S7", "float64"])
-
         # Initialize lists to contain the filters of the different wavelength ranges
         uv_bands = []
         optical_bands = []
@@ -779,14 +776,8 @@ class FittingInitializer(FittingComponent):
         # Set the number of groups
         number_of_groups = 6
 
-        # Loop over the entries in the observed fluxes table
-        for i in range(len(self.observed_sed.table)):
-
-            instrument = self.observed_sed.table["Instrument"][i]
-            band = self.observed_sed.table["Band"][i]
-
-            # Construct filter
-            fltr = Filter.from_instrument_and_band(instrument, band)
+        # Loop over the observed SED filters
+        for fltr in self.observed_filters:
 
             # Get the central wavelength
             wavelength = fltr.centerwavelength() * Unit("micron")
