@@ -52,8 +52,8 @@ class ConvolutionKernel(Frame):
 
         elif self._pixelscale is None: raise ValueError("Pixelscale must be specified if not present in header")
 
-        # Normalized
-        self._normalized = False
+        # Prepared
+        self._prepared = False
 
     # -----------------------------------------------------------------
 
@@ -65,7 +65,7 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        return self._normalized
+        return np.abs(self.sum() - 1) < 1e-8  # same criterion as in astropy.convolution module
 
     # -----------------------------------------------------------------
 
@@ -103,6 +103,9 @@ class ConvolutionKernel(Frame):
 
         # Normalize
         self.normalize()
+
+        # Set prepared flag to True
+        self._prepared = True
 
     # -----------------------------------------------------------------
 
@@ -200,17 +203,5 @@ class ConvolutionKernel(Frame):
         """
 
         self.__idiv__(self.sum())
-        self._normalized = True
-
-    # -----------------------------------------------------------------
-
-    def check_normalization(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        assert np.abs(self.sum() - 1) < 1e-8 # same criterion as in astropy.convolution module
 
 # -----------------------------------------------------------------

@@ -344,7 +344,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path=None, add_metadata=False, origin=None, add_masks=True):
+    def save(self, path=None, add_metadata=False, origin=None, add_masks=True, add_regions=False):
 
         """
         This function exports the image (frames and masks) as a datacube into FITS file.
@@ -403,6 +403,13 @@ class Image(object):
 
                 # Increment the plane index
                 plane_index += 1
+
+        if add_regions:
+
+            # http://docs.astropy.org/en/stable/io/fits/
+
+            tbhdu = fits.BinTableHDU.from_columns([fits.Column(name='target', format='20A', array=a1), fits.Column(name='V_mag', format='E', array=a2)])
+
 
         # Add the meta information to the header
         if add_metadata:

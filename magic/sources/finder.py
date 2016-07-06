@@ -423,8 +423,12 @@ class SourceFinder(OldConfigurable):
         self.stellar_catalog = stellar_catalog
 
         # Set the special and ignore mask
-        self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
-        self.ignore_mask = Mask.from_region(ignore_region, self.frame.xsize, self.frame.ysize) if ignore_region is not None else None
+        if special_region is not None:
+            special_region_pix = special_region.to_pixel(self.frame.wcs)
+            self.special_mask = Mask.from_region(special_region_pix, self.frame.xsize, self.frame.ysize)
+        if ignore_region is not None:
+            ignore_region_pix = ignore_region.to_pixel(self.frame.wcs)
+            self.ignore_mask = Mask.from_region(ignore_region_pix, self.frame.xsize, self.frame.ysize)
 
         # Set a reference to the mask of bad pixels
         self.bad_mask = bad_mask

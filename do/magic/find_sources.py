@@ -21,6 +21,7 @@ from pts.magic.sources.finder import SourceFinder
 from pts.magic.catalog.importer import CatalogImporter
 from pts.magic.core.image import Image
 from pts.magic.basics.region import Region
+from pts.magic.basics.skyregion import SkyRegion
 from pts.core.tools import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
@@ -59,8 +60,8 @@ parser.add_argument("--no_other", action="store_true", help="don't look for sour
 parser.add_argument("--saturation_dilation_factor", type=float, help="the dilation factor to be used for the detected saturation")
 
 # Input regions
-parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore")
-parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention")
+parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore (in sky coordinates!)")
+parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention (in sky coordinates!)")
 parser.add_argument("--bad", type=str, help="the name of the file specifying regions that have to be added to the mask of bad pixels")
 
 # Parse the command line arguments
@@ -168,7 +169,7 @@ if arguments.special is not None:
     log.info("Loading region indicating areas that require special attention from " + path + " ...")
 
     # Load the region and create a mask from it
-    special_region = Region.from_file(path)
+    special_region = SkyRegion.from_file(path)
 
 # No special region
 else: special_region = None
@@ -185,7 +186,7 @@ if arguments.ignore is not None:
     log.info("Loading region indicating areas that should be ignored from " + path + " ...")
 
     # Load the region and create a mask from it
-    ignore_region = Region.from_file(path)
+    ignore_region = SkyRegion.from_file(path)
 
 # No ignore region
 else: ignore_region = None

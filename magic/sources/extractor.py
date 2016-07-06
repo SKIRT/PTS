@@ -102,7 +102,8 @@ class SourceExtractor(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation=None, special_region=None):
+    def run(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments,
+            other_segments, animation=None, special_region=None):
 
         """
         This function ...
@@ -115,11 +116,13 @@ class SourceExtractor(OldConfigurable):
         :param star_segments:
         :param other_segments:
         :param animation:
+        :param special_region:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, animation, special_region)
+        self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments,
+                   other_segments, animation, special_region)
 
         # 2. Load the sources
         self.load_sources()

@@ -20,6 +20,7 @@ import matplotlib.gridspec as gridspec
 # Import astronomical modules
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
+from astropy.visualization import MinMaxInterval, ZScaleInterval
 from photutils import CircularAperture
 
 # -----------------------------------------------------------------
@@ -76,7 +77,7 @@ def plot_mask(mask, title=None, path=None, format=None):
 
 # -----------------------------------------------------------------
 
-def plot_box(box, title=None, path=None, format=None, vmin=None, vmax=None, norm="log"):
+def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts", cmap="viridis"):
 
     """
     This function ...
@@ -84,23 +85,39 @@ def plot_box(box, title=None, path=None, format=None, vmin=None, vmax=None, norm
     :param title:
     :param path:
     :param format:
-    :param vmin:
-    :param vmax:
+    :param scale:
+    :param interval:
+    :param cmap:
     :return:
     """
 
-    # Normalization
-    if norm == "log": norm = ImageNormalize(stretch=LogStretch())
-    elif norm == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
-    else: raise ValueError("Invalid option for 'norm'")
+    # Other new colormaps: plasma, magma, inferno
 
-    # Determine the maximum value in the box and the mimimum value for plotting
-    if vmin is None: vmin = max(np.nanmin(box), 0.)
-    if vmax is None: vmax = 0.5 * (np.nanmax(box) + vmin)
+    # Normalization
+    if scale == "log": norm = ImageNormalize(stretch=LogStretch())
+    elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
+    else: raise ValueError("Invalid option for 'scale'")
+
+    if interval == "zscale":
+
+        vmin, vmax = ZScaleInterval().get_limits(box)
+
+    elif interval == "pts":
+
+        # Determine the maximum value in the box and the mimimum value for plotting
+        vmin = max(np.nanmin(box), 0.)
+        vmax = 0.5 * (np.nanmax(box) + vmin)
+
+    elif isinstance(interval, tuple):
+
+        vmin = interval[0]
+        vmax = interval[1]
+
+    else: raise ValueError("Invalid option for 'interval'")
 
     # Make the plot
     plt.figure(figsize=(7,7))
-    plt.imshow(box, origin="lower", interpolation="nearest", vmin=vmin, vmax=vmax, norm=norm, cmap="viridis")
+    plt.imshow(box, origin="lower", interpolation="nearest", vmin=vmin, vmax=vmax, norm=norm, cmap=cmap)
     plt.xlim(0, box.shape[1]-1)
     plt.ylim(0, box.shape[0]-1)
 
