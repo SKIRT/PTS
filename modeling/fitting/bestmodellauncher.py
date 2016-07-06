@@ -325,6 +325,4 @@ class BestModelLauncher(FittingComponent):
         # Write the ski file
         self.ski_images.saveto(ski_path)
 
-    # -----------------------------------------------------------------
-
 # -----------------------------------------------------------------

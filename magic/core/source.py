@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import copy
+from skimage import morphology
 
 # Import astronomical modules
 from astropy.table import Table
@@ -453,7 +454,21 @@ class Source(object):
         if method == "pts":
 
             if sigma_clip:
-                mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+                try:
+                    mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)
+                except TypeError:
+                    #plotting.plot_box(self.cutout)
+                    #plotting.plot_mask(self.mask)
+                    #print("xsize", self.cutout.xsize, self.cutout.ysize)
+                    radius = int(round(0.25 * self.cutout.xsize))
+                    #print("radius", 0.25*self.cutout.xsize, radius)
+                    disk = morphology.disk(radius, dtype=bool)
+                    mask = Mask.empty_like(self.cutout)
+                    x_min = int(round(0.5 * (self.cutout.xsize - disk.shape[1])))
+                    y_min = int(round(0.5 * (self.cutout.ysize - disk.shape[0])))
+                    #plotting.plot_mask(mask)
+                    mask[y_min:y_min+disk.shape[0], x_min:x_min+disk.shape[1]] = disk
+                    plotting.plot_mask(mask)
                 no_clip_mask = None
             else:
                 mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)

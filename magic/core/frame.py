@@ -18,9 +18,11 @@ import numpy as np
 from scipy import ndimage
 
 # Import astronomical modules
+from reproject import reproject_exact, reproject_interp
 from astropy.io import fits
 from astropy.units import Unit
 from astropy.convolution import convolve_fft
+from astropy.nddata import NDDataArray
 
 # Import the relevant PTS classes and modules
 from .box import Box
@@ -28,7 +30,7 @@ from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
 from ..basics.skygeometry import SkyCoordinate
 from ..basics.coordinatesystem import CoordinateSystem
-from ..tools import coordinates, cropping, transformations, interpolation, headers, fitting
+from ..tools import coordinates, cropping, transformations, headers
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..basics.mask import Mask
@@ -64,44 +66,60 @@ def get_frame_names(path):
 
 # -----------------------------------------------------------------
 
-class Frame(np.ndarray):
+class Frame(NDDataArray):
 
     """
     This class ...
     """
 
-    # -----------------------------------------------------------------
-
-    def __new__(cls, data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None, wavelength=None):
+    def __init__(self, data, *args, **kwargs):
 
         """
         This function ...
-        :param cls:
         :param data:
-        :param wcs:
-        :param name:
-        :param description:
-        :param unit:
-        :param zero_point:
-        :param filter:
-        :param sky_subtracted:
-        :param fwhm:
-        :param wavelength:
+        :param kwargs:
+        """
+
+        wcs = kwargs.pop("wcs", None)
+        self.name = kwargs.pop("name", None)
+        self.description = kwargs.pop("description", None)
+        self.unit = kwargs.pop("unit", None)
+        self.zero_point = kwargs.pop("zero_point", None)
+        self.filter = kwargs.pop("filter", None)
+        self.sky_subtracted = kwargs.pop("sky_subtracted", False)
+        self.fwhm = kwargs.pop("fwhm", None)
+        self._pixelscale = kwargs.pop("pixelscale", None)
+        self._wavelength = kwargs.pop("wavelength", None)
+
+        # Call the constructor of the base class
+        super(Frame, self).__init__(data, *args, **kwargs)
+
+        # Set the WCS
+        self._wcs = wcs
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, item):
+
+        """
+        This function ...
+        :param item:
         :return:
         """
 
-        obj = np.asarray(data).view(cls)
-        obj.wcs = wcs
-        obj.description = description
-        obj.unit = unit
-        obj.name = name
-        obj.filter = filter
-        obj.sky_subtracted = sky_subtracted
-        obj.zero_point = zero_point
-        obj.fwhm = fwhm
-        obj._wavelength = wavelength
+        return self._data[item]
 
-        return obj
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, item, value):
+
+        """
+        This function ...
+        :param item:
+        :return:
+        """
+
+        self._data[item] = value
 
     # -----------------------------------------------------------------
 
@@ -255,6 +273,17 @@ class Frame(np.ndarray):
 
     # -----------------------------------------------------------------
 
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
     def apply_mask(self, mask, fill=0.0):
 
         """
@@ -275,7 +304,7 @@ class Frame(np.ndarray):
         :return:
         """
 
-        return np.all(self == 0)
+        return np.all(self._data == 0)
 
     # -----------------------------------------------------------------
 
@@ -287,7 +316,7 @@ class Frame(np.ndarray):
         :return:
         """
 
-        return not np.any(self == 0)
+        return not np.any(self._data == 0)
 
     # -----------------------------------------------------------------
 
@@ -299,7 +328,9 @@ class Frame(np.ndarray):
         :return:
         """
 
-        return self.wcs.pixelscale
+        # Return the pixelscale of the WCS is WCS is defined
+        if self.wcs is not None: return self.wcs.pixelscale
+        else: return self._pixelscale  # return the pixelscale
 
     # -----------------------------------------------------------------
 
@@ -325,7 +356,9 @@ class Frame(np.ndarray):
         """
 
         # Return a zero-filled copy of the frame
-        return np.zeros_like(frame)
+        new_frame = frame.copy()
+        new_frame._data = np.zeros_like(frame._data)
+        return new_frame
 
     # -----------------------------------------------------------------
 
@@ -352,27 +385,7 @@ class Frame(np.ndarray):
         :return:
         """
 
-        np.nanmax(self) == np.nanmin(self)
-
-    # -----------------------------------------------------------------
-
-    def __array_finalize__(self, obj):
-
-        """
-        This function ...
-        :param obj:
-        :return:
-        """
-
-        if obj is None: return
-        self.wcs = getattr(obj, 'wcs', None)
-        self.name = getattr(obj, 'name', None)
-        self.description = getattr(obj, 'description', None)
-        self.unit = getattr(obj, 'unit', None)
-        self.zero_point = getattr(obj, 'zero_point', None)
-        self.filter = getattr(obj, 'filter', None)
-        self.sky_subtracted = getattr(obj, 'sky_subtracted', False)
-        self.fwhm = getattr(obj, 'fwhm', None)
+        np.nanmax(self._data) == np.nanmin(self._data)
 
     # -----------------------------------------------------------------
 
@@ -507,32 +520,7 @@ class Frame(np.ndarray):
         :return:
         """
 
-        kernel_fwhm = kernel.fwhm
-
-        # Skip the calculation for a constant frame
-        if self.is_constant():
-            copy = self.copy()
-            copy.fwhm = kernel_fwhm
-            return copy
-
-        nans_mask = np.isnan(self)
-
-        # Do the convolution on this frame
-        data = convolve_fft(self, kernel, normalize_kernel=True, interpolate_nan=True, allow_huge=allow_huge)
-
-        data[nans_mask] = float("nan")
-
-        # Return the convolved frame
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        return Frame(data,
-                     wcs=self.wcs,
-                     name=self.name,
-                     description=self.description,
-                     unit=self.unit,
-                     zero_point=self.zero_point,
-                     filter=self.filter,
-                     sky_subtracted=self.sky_subtracted,
-                     fwhm=kernel_fwhm)
+        return self.copy().convolve(kernel, allow_huge)
 
     # -----------------------------------------------------------------
 
@@ -545,12 +533,25 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # Generate a convolved Frame
-        convolved = self.convolved(kernel, allow_huge)
+        kernel_fwhm = kernel.fwhm
 
-        # Replace the data and set the FWHM
-        self[:] = convolved
-        self.fwhm = convolved.fwhm
+        # Skip the calculation for a constant frame
+        if self.is_constant():
+            copy = self.copy()
+            copy.fwhm = kernel_fwhm
+            return copy
+
+        nans_mask = np.isnan(self)
+
+        # Do the convolution on this frame
+        new_data = convolve_fft(self._data, kernel, normalize_kernel=True, interpolate_nan=True, allow_huge=allow_huge)
+
+        # Put back NaNs
+        new_data[nans_mask] = float("nan")
+
+        # Replace the data and FWHM
+        self._data = new_data
+        self.fwhm = kernel_fwhm
 
     # -----------------------------------------------------------------
 
@@ -562,42 +563,29 @@ class Frame(np.ndarray):
         :return:
         """
 
-        # TODO: use the 'Reproject' package here: http://reproject.readthedocs.org/en/stable/
-
-        # Do the rebinning
-        data = transformations.new_align_and_rebin(self, self.wcs, reference_wcs)
-
-        # Return the rebinned frame
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        return Frame(data,
-                     wcs=reference_wcs,
-                     name=self.name,
-                     description=self.description,
-                     unit=self.unit,
-                     zero_point=self.zero_point,
-                     filter=self.filter,
-                     sky_subtracted=self.sky_subtracted,
-                     fwhm=self.fwhm)
+        return self.copy().rebin(reference_wcs)
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs):
+    def rebin(self, reference_wcs, exact=True):
 
         """
         This function ...
         :param reference_wcs:
+        :param exact:
         :return:
         """
 
-        # Generate a rebinned Frame
-        rebinned = self.rebinned(reference_wcs)
+        # TODO: use the 'Reproject' package here: http://reproject.readthedocs.org/en/stable/
 
-        # Resize the current frame in-place
-        self.resize(rebinned.shape, refcheck=False)
+        # Rebin the data
+        #new_data = transformations.new_align_and_rebin(self._data, self.wcs, reference_wcs)
 
-        # Replace the data by the rebinned data and set the WCS
-        self[:] = rebinned
-        self.wcs = rebinned.wcs
+        new_data = reproject_exact(self._data, self.wcs)
+
+        # Replace the data and WCS
+        self._data = new_data
+        self._wcs = reference_wcs
 
     # -----------------------------------------------------------------
 
@@ -612,8 +600,23 @@ class Frame(np.ndarray):
         :return:
         """
 
+        return self.copy().crop(x_min, x_max, y_min, y_max)
+
+    # -----------------------------------------------------------------
+
+    def crop(self, x_min, x_max, y_min, y_max):
+
+        """
+        This function ...
+        :param x_min:
+        :param x_max:
+        :param y_min:
+        :param y_max:
+        :return:
+        """
+
         # Crop the frame
-        data = cropping.crop_check(self, x_min, x_max, y_min, y_max)
+        new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
 
         # Change the WCS
         new_wcs = self.wcs.copy()
@@ -630,42 +633,11 @@ class Frame(np.ndarray):
         new_wcs._naxis2 = new_wcs.naxis2
 
         # Check shape of data
-        assert data.shape[1] == (x_max - x_min) and data.shape[0] == (y_max - y_min)
+        assert new_data.shape[1] == (x_max - x_min) and new_data.shape[0] == (y_max - y_min)
 
-        # Return the cropped frame
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        return Frame(data,
-                     wcs=new_wcs,
-                     name=self.name,
-                     description=self.description,
-                     unit=self.unit,
-                     zero_point=self.zero_point,
-                     filter=self.filter,
-                     sky_subtracted=self.sky_subtracted,
-                     fwhm=self.fwhm)
-
-    # -----------------------------------------------------------------
-
-    def crop(self, x_min, x_max, y_min, y_max):
-
-        """
-        This function ...
-        :param x_min:
-        :param x_max:
-        :param y_min:
-        :param y_max:
-        :return:
-        """
-
-        # Generate a cropped Frame
-        cropped = self.cropped(x_min, x_max, y_min, y_max)
-
-        # Resize the current frame in-place
-        self.resize(cropped.shape, refcheck=False)
-
-        # Replace the data by the cropped data and set the WCS
-        self[:] = cropped
-        self.wcs = cropped.wcs
+        # Replace the data and WCS
+        self._data = new_data
+        self._wcs = new_wcs
 
     # -----------------------------------------------------------------
 
@@ -985,7 +957,7 @@ class Frame(np.ndarray):
         """
 
         # Set all NaN pixels to the specified value
-        self[np.isnan(self)] = value
+        self._data[np.isnan(self._data)] = value
 
     # -----------------------------------------------------------------
 
@@ -998,106 +970,7 @@ class Frame(np.ndarray):
         """
 
         # Set all inf pixels to the specified value
-        self[np.isinf(self)] = value
-
-    # -----------------------------------------------------------------
-
-    def fit_polynomial(self, order, mask=None):
-
-        """
-        This function ...
-        :param order:
-        :param mask:
-        :return:
-        """
-
-        # Do the fitting
-        polynomial = fitting.fit_polynomial(self, order, mask=mask)
-
-        # Evaluate the polynomial
-        data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
-
-        # Return a new Frame
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        return Frame(data,
-                     wcs=self.wcs,
-                     name=self.name,
-                     description=self.description,
-                     unit=self.unit,
-                     zero_point=self.zero_point,
-                     filter=self.filter,
-                     sky_subtracted=self.sky_subtracted,
-                     fwhm=self.fwhm)
-
-    # -----------------------------------------------------------------
-
-    def interpolated(self, mask, method):
-
-        """
-        This function ...
-        :param mask:
-        :param method:
-        :return:
-        """
-
-        # Fit a polynomial to the data
-        if method == "polynomial":
-            try:
-                return self.fit_polynomial(3, mask=mask)
-            except TypeError:
-                mask = mask.eroded(connectivity=2, iterations=1)
-                return self.fit_polynomial(3, mask=mask)
-
-        # Interpolate using the local mean method
-        elif method == "local_mean":
-
-            # Calculate the interpolated data
-            data = interpolation.in_paint(self, mask)
-
-            # Return a new Frame
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            return Frame(data,
-                         wcs=self.wcs,
-                         name=self.name,
-                         description=self.description,
-                         unit=self.unit,
-                         zero_point=self.zero_point,
-                         filter=self.filter,
-                         sky_subtracted=self.sky_subtracted,
-                         fwhm=self.fwhm)
-
-        # Interpolate using inverse distance weighing
-        elif method == "idw":
-
-            # Calculate the interpolated data
-            data = interpolation.in_paint(self, mask, method="idw")
-
-            # Return a new Frame
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            return Frame(data,
-                         wcs=self.wcs,
-                         name=self.name,
-                         description=self.description,
-                         unit=self.unit,
-                         zero_point=self.zero_point,
-                         filter=self.filter,
-                         sky_subtracted=self.sky_subtracted,
-                         fwhm=self.fwhm)
-
-        # Calculate the mean value of the data
-        elif method == "mean":
-
-            mean = np.ma.mean(np.ma.masked_array(self, mask=mask))
-            return self.fill(mean)
-
-        # Calculate the median value of the data
-        elif method == "median":
-
-            median = np.median(np.ma.masked_array(self, mask=mask).compressed())
-            return self.fill(median)
-
-        # Invalid option
-        else: raise ValueError("Unknown interpolation method")
+        self._data[np.isinf(self._data)] = value
 
     # -----------------------------------------------------------------
 
@@ -1109,7 +982,7 @@ class Frame(np.ndarray):
         :return:
         """
 
-        data = self[box.y_min:box.y_max, box.x_min:box.x_max]
+        data = self._data[box.y_min:box.y_max, box.x_min:box.x_max]
 
         # Create the new box and return it
         return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
@@ -1137,7 +1010,7 @@ class Frame(np.ndarray):
         else: header["ORIGIN"] = "Frame class of PTS package"
 
         # Create the HDU
-        hdu = fits.PrimaryHDU(self, header)
+        hdu = fits.PrimaryHDU(self._data, header)
 
         # Write the HDU to a FITS file
         hdu.writeto(path, clobber=True)

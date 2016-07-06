@@ -67,6 +67,7 @@ def plot_mask(mask, title=None, path=None, format=None):
     plt.ylim(0, mask.shape[0] - 1)
 
     if title is not None: plt.title(title)
+    else: plt.title("Black means True")
 
     if path is None: plt.show()
     else: plt.savefig(path, format=format)

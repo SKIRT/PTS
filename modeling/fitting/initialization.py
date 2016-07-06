@@ -24,7 +24,7 @@ from astropy.table import Table
 from .component import FittingComponent
 from ...core.tools import inspection, tables
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import SkiFile
+from ...core.simulation.skifile import SkiFile, LabeledSkiFile
 from ...core.basics.filter import Filter
 from ..basics.models import SersicModel, DeprojectionModel
 from ...magic.basics.coordinatesystem import CoordinateSystem
@@ -227,7 +227,7 @@ class FittingInitializer(FittingComponent):
         log.info("Loading the ski file template ...")
 
         # Open the template ski file
-        self.ski = SkiFile(self.template_ski_path)
+        self.ski = LabeledSkiFile(self.template_ski_path)
 
     # -----------------------------------------------------------------
 
