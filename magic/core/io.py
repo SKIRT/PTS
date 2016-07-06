@@ -133,7 +133,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
             if index is not None and i != index: continue
 
             # Get name and description of frame
-            name, description, plane_type = headers.get_frame_name_and_description(self.original_header, i, always_call_first_primary)
+            name, description, plane_type = headers.get_frame_name_and_description(original_header, i, always_call_first_primary)
 
             # The sky-subtracted flag should only be set for the primary frame
             subtracted = sky_subtracted if i == 0 else False
@@ -151,14 +151,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                               filter=fltr,
                               sky_subtracted=subtracted,
                               fwhm=fwhm)
-                #self.add_frame(frame, name)
                 frames[name] = frame
 
             elif plane_type == "mask":
 
                 #data, name=None, description=None
                 mask = Mask(hdu.data[i], name=name, description=description)
-                #self.add_mask(mask, name)
                 masks[name] = mask
 
             else: raise ValueError("Unrecognized type (must be frame or mask)")
