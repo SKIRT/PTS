@@ -67,8 +67,6 @@ class Frame(NDDataArray):
         self._wcs = wcs
         self._unit = unit
 
-        super(Frame, self).__repr__()
-
     # -----------------------------------------------------------------
 
     def __getitem__(self, item):
@@ -329,9 +327,9 @@ class Frame(NDDataArray):
         """
 
         # Return a zero-filled copy of the frame
-        new_frame = frame.copy()
-        new_frame._data = np.zeros_like(frame._data)
-        return new_frame
+        new = frame.copy()
+        new._data = np.zeros_like(frame._data)
+        return new
 
     # -----------------------------------------------------------------
 
@@ -502,7 +500,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self.copy().convolve(*args, **kwargs)
+        new = self.copy()
+        new.convolve(*args, **kwargs)
+        return new
 
     # -----------------------------------------------------------------
 
@@ -552,7 +552,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self.copy().rebin(reference_wcs)
+        new = self.copy()
+        new.rebin(reference_wcs)
+        return new
 
     # -----------------------------------------------------------------
 
@@ -594,7 +596,9 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self.copy().crop(x_min, x_max, y_min, y_max)
+        new = self.copy()
+        new.crop(x_min, x_max, y_min, y_max)
+        return new
 
     # -----------------------------------------------------------------
 
@@ -647,6 +651,82 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def padded(self, nx=0, ny=0):
+
+        """
+        This function ...
+        :param nx:
+        :param ny:
+        :return:
+        """
+
+        new = self.copy()
+        new.pad(nx, ny)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def pad(self, nx=0, ny=0):
+
+        """
+        This function ...
+        :param nx:
+        :param ny:
+        :return:
+        """
+
+        if nx == 0 and ny == 0: return
+
+        new_data = np.pad(self._data, ((ny,0), (nx,0)), 'constant')
+
+        new_wcs = copy.deepcopy(self.wcs)
+
+        new_wcs.wcs.crpix[0] += nx
+        new_wcs.wcs.crpix[1] += ny
+
+        # Change the number of pixels
+        new_wcs.naxis1 = new_data.shape[1]
+        new_wcs.naxis2 = new_data.shape[0]
+        new_wcs._naxis1 = new_wcs.naxis1
+        new_wcs._naxis2 = new_wcs.naxis2
+
+        # Set the new data and the new WCS
+        self._data = new_data
+        self._wcs = new_wcs
+
+    # -----------------------------------------------------------------
+
+    def unpad(self, nx=0, ny=0):
+
+        """
+        This function ...
+        :param nx:
+        :param ny:
+        :return:
+        """
+
+        if nx == 0 and ny == 0: return
+
+        # Slice
+        new_data = self._data[ny:, nx:]
+
+        new_wcs = copy.deepcopy(self.wcs)
+
+        new_wcs.wcs.crpix[0] -= nx
+        new_wcs.wcs.crpix[1] -= ny
+
+        # Change the number of pixels
+        new_wcs.naxis1 = new_data.shape[1]
+        new_wcs.naxis2 = new_data.shape[0]
+        new_wcs._naxis1 = new_wcs.naxis1
+        new_wcs._naxis2 = new_wcs.naxis2
+
+        # Set the new data and the new WCS
+        self._data = new_data
+        self._wcs = new_wcs
+
+    # -----------------------------------------------------------------
+
     def downsampled(self, factor, order=3):
 
         """
@@ -654,11 +734,26 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Calculate the downsampled array
-        data = ndimage.interpolation.zoom(self, zoom=1.0/factor, order=order)
+        new = self.copy()
+        new.downsample(factor, order)
+        return new
 
-        new_xsize = data.shape[1]
-        new_ysize = data.shape[0]
+    # -----------------------------------------------------------------
+
+    def downsample(self, factor, order=3):
+
+        """
+        This function ...
+        :param factor:
+        :param order:
+        :return:
+        """
+
+        # Calculate the downsampled array
+        new_data = ndimage.interpolation.zoom(self._data, zoom=1.0/factor, order=order)
+
+        new_xsize = new_data.shape[1]
+        new_ysize = new_data.shape[0]
 
         relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
 
@@ -683,21 +778,28 @@ class Frame(NDDataArray):
         new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
         new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
 
-        # Return the downsampled frame
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        return Frame(data,
-                     wcs=new_wcs,
-                     name=self.name,
-                     description=self.description,
-                     unit=self.unit,
-                     zero_point=self.zero_point,
-                     filter=self.filter,
-                     sky_subtracted=self.sky_subtracted,
-                     fwhm=self.fwhm)
+        # Set the new data and wcs
+        self._data = new_data
+        self._wcs = new_wcs
 
     # -----------------------------------------------------------------
 
     def upsampled(self, factor, integers=False):
+
+        """
+        This function ...
+        :param factor:
+        :param integers:
+        :return:
+        """
+
+        new = self.copy()
+        new.upsample(factor, integers)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def upsample(self, factor, integers=False):
 
         """
         This function ...
@@ -711,16 +813,16 @@ class Frame(NDDataArray):
             # Check whether the upsampling factor is an integer or not
             if int(factor) == factor:
 
-                data = ndimage.zoom(self, factor, order=0)
+                new_data = ndimage.zoom(self._data, factor, order=0)
 
-                new_xsize = data.shape[1]
-                new_ysize = data.shape[0]
+                new_xsize = new_data.shape[1]
+                new_ysize = new_data.shape[0]
 
                 relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
 
                 new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 
-                new_wcs = self.wcs.copy()
+                new_wcs = copy.deepcopy(self.wcs)
                 # Change the center pixel position
                 new_wcs.wcs.crpix[0] = new_center.x
                 new_wcs.wcs.crpix[1] = new_center.y
@@ -728,7 +830,6 @@ class Frame(NDDataArray):
                 # Change the number of pixels
                 new_wcs.naxis1 = new_xsize
                 new_wcs.naxis2 = new_ysize
-
                 new_wcs._naxis1 = new_wcs.naxis1
                 new_wcs._naxis2 = new_wcs.naxis2
 
@@ -736,22 +837,21 @@ class Frame(NDDataArray):
                 new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
                 new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
 
-                return Frame(data, wcs=new_wcs, name=self.name, description=self.description, unit=self.unit, zero_point=self.zero_point, filter=self.filter, sky_subtracted=self.sky_subtracted, fwhm=self.fwhm)
+                #return Frame(data, wcs=new_wcs, name=self.name, description=self.description, unit=self.unit, zero_point=self.zero_point, filter=self.filter, sky_subtracted=self.sky_subtracted, fwhm=self.fwhm)
+
+                # Set the new data and wcs
+                self._data = new_data
+                self._wcs = new_wcs
 
             # Upsampling factor is not an integer
             else:
 
-                # Create a new Frame
-                #frame = Frame.zeros_like(self)
+                old = self.copy()
 
-                #print("self.shape", self.shape)
-
-                frame = self.downsampled(1./factor)
-
-                #print("frame.shape", frame.shape)
+                self.downsample(1./factor)
 
                 #print("Checking indices ...")
-                indices = np.unique(self)
+                indices = np.unique(old._data)
 
                 #print("indices:", indices)
 
@@ -762,21 +862,16 @@ class Frame(NDDataArray):
 
                     index = int(index)
 
-                    where = Mask(self == index)
-
-                    # Rebin this mask
-                    #data = transformations.new_align_and_rebin(self.masks[mask_name].astype(float), original_wcs, reference_wcs)
+                    where = Mask(old._data == index)
 
                     # Calculate the downsampled array
                     data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
-
                     upsampled_where = data > 0.5
 
-                    frame[upsampled_where] = index
+                    self[upsampled_where] = index
 
-                return frame
-
-        else: return self.downsampled(1./factor)
+        # Just do inverse of downsample
+        else: self.downsample(factor)
 
     # -----------------------------------------------------------------
 

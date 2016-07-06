@@ -369,11 +369,6 @@ class Image(object):
         # Get the names of the frames
         frame_names = self.frames.keys()
 
-        # Sort the frame names so that 'primary' is always first
-        if "primary" in frame_names:
-            frame_names.remove("primary")
-            frame_names.insert(0, "primary")
-
         # Export all frames to the specified file
         for frame_name in frame_names:
 

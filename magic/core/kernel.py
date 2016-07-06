@@ -202,4 +202,15 @@ class ConvolutionKernel(Frame):
         self.__idiv__(self.sum())
         self._normalized = True
 
+    # -----------------------------------------------------------------
+
+    def check_normalization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        assert np.abs(self.sum() - 1) < 1e-8 # same criterion as in astropy.convolution module
+
 # -----------------------------------------------------------------

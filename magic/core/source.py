@@ -500,7 +500,6 @@ class Source(object):
         :param sigma_level:
         :param kernel:
         :param min_pixels:
-        :param mask:
         :return:
         """
 
@@ -509,27 +508,10 @@ class Source(object):
 
         if not np.all(self.mask):
 
-            #print(box)
-            #print(self.mask)
-
-            # Calculate threshold for segmentation
-            #try:
             mean, median, stddev = statistics.sigma_clipped_statistics(box, mask=self.mask)
             threshold = mean + stddev * sigma_level
-            #except TypeError:
 
-                #print(box)
-                #print(self.mask)
-
-                #plotting.plot_box(box)
-                #plotting.plot_box(self.mask)
-
-                #print("not_nan=", np.sum(np.logical_not(np.isnan(box))))
-                #exit()
-
-        else:
-
-            threshold = detect_threshold(box, snr=2.0) #snr=2.0
+        else: threshold = detect_threshold(box, snr=2.0) #snr=2.0
 
         # Perform the segmentation
         segments = detect_sources(box, threshold, npixels=min_pixels, filter_kernel=kernel).data
@@ -539,7 +521,7 @@ class Source(object):
 
         # Get the label of the center segment
         rel_center = self.cutout.rel_position(self.center)
-        label = segments[rel_center.y, rel_center.x]
+        label = segments[int(round(rel_center.y)), int(round(rel_center.x))]
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)
