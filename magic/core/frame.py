@@ -29,40 +29,9 @@ from .box import Box
 from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
 from ..basics.skygeometry import SkyCoordinate
-from ..basics.coordinatesystem import CoordinateSystem
-from ..tools import coordinates, cropping, transformations, headers
-from ...core.tools import filesystem as fs
+from ..tools import cropping
 from ...core.tools.logging import log
 from ..basics.mask import Mask
-
-# -----------------------------------------------------------------
-
-def get_frame_names(path):
-
-    """
-    This function ...
-    :param path:
-    :return:
-    """
-
-    # Load the header
-    header = fits.getheader(path)
-
-    # Get the number of planes
-    nplanes = headers.get_number_of_frames(header)
-
-    # Initialize a dictionary to contain the frame names and corresponding descriptions
-    frames = dict()
-
-    # Look at the properties of each plane
-    for i in range(nplanes):
-
-        # Get name and description of plane
-        name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
-        if plane_type == "frame": frames[name] = description
-
-    # Return the frames with their name and description
-    return frames
 
 # -----------------------------------------------------------------
 
@@ -123,6 +92,130 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.copy().__imul__(value)
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data *= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.copy().__iadd__(value)
+
+    # -----------------------------------------------------------------
+
+    def __iadd__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data += value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.copy().__isub__(value)
+
+    # -----------------------------------------------------------------
+
+    def __isub__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data -= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.copy().__idiv__(value)
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data /= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__div__(value)
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__idiv__(value)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False):
 
@@ -141,135 +234,9 @@ class Frame(NDDataArray):
         # Show which image we are importing
         log.info("Reading in file " + path + " ...")
 
-        # Open the HDU list for the FITS file
-        hdulist = fits.open(path)
+        from . import io
 
-        # Look for the first HDU with data
-        if hdulist_index is None:
-
-            index = 0
-            while True:
-
-                if hdulist[index].data is not None:
-                    hdulist_index = index
-                    break
-                index += 1
-
-            if hdulist_index is None: raise ValueError("The FITS file does not contain any data")
-
-        # Get the primary HDU
-        hdu = hdulist[hdulist_index]
-
-        # Get the image header
-        header = hdu.header
-
-        # Check whether multiple planes are present in the FITS image
-        nframes = headers.get_number_of_frames(header)
-
-        # Remove references to a potential third axis
-        flat_header = headers.flattened(header)
-
-        # Obtain the world coordinate system from the 'flattened' header
-        wcs = CoordinateSystem(flat_header)
-
-        # Load the frames
-        header_pixelscale = headers.get_pixelscale(header) # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
-        pixelscale = wcs.pixelscale
-
-        # Check whether pixelscale defined in the header is correct
-        if header_pixelscale is not None:
-
-            x_isclose = np.isclose(header_pixelscale.x.to("arcsec/pix").value, pixelscale.x.to("arcsec/pix").value)
-            y_isclose = np.isclose(header_pixelscale.y.to("arcsec/pix").value, pixelscale.y.to("arcsec/pix").value)
-
-            if not (x_isclose or y_isclose):
-
-                print("WARNING: the pixel scale defined in the header is WRONG:")
-                print("           - header pixelscale: (", header_pixelscale.x.to("arcsec/pix"), header_pixelscale.y.to("arcsec/pix"), ")")
-                print("           - actual pixelscale: (", pixelscale.x.to("arcsec/pix"), pixelscale.y.to("arcsec/pix"), ")")
-
-        if no_filter: fltr = None
-        else:
-
-            # Obtain the filter for this image
-            fltr = headers.get_filter(fs.name(path[:-5]), header)
-
-        # Obtain the units of this image
-        unit = headers.get_unit(header)
-
-        # Obtain the FWHM of this image
-        fwhm = headers.get_fwhm(header)
-
-        # Get the magnitude zero-point
-        zero_point = headers.get_zero_point(header)
-
-        # Check whether the image is sky-subtracted
-        sky_subtracted = headers.is_sky_subtracted(header)
-
-        if nframes > 1:
-
-            if plane is not None:
-
-                for i in range(nframes):
-
-                    # Get name and description of frame
-                    name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
-
-                    if plane == name and plane_type == "frame":
-                        index = i
-                        break
-
-                # If a break is not encountered, a matching plane name is not found
-                else: raise ValueError("Plane with name '" + plane + "' not found")
-
-            elif index is not None:
-
-                name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary=False)
-
-            else: # index and plane is None
-
-                for i in range(nframes):
-                    # Get name and description of frame
-                    name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
-                    if name == "primary": index = i
-                    break
-
-                if index is None: index = 0 # if index is still None, set it to zero (take the first plane)
-
-            # Get the name from the file path
-            if name is None: name = fs.name(path[:-5])
-
-            # Return the frame
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            return cls(hdu.data[index],
-                       wcs=wcs,
-                       name=name,
-                       description=description,
-                       unit=unit,
-                       zero_point=zero_point,
-                       filter=fltr,
-                       sky_subtracted=sky_subtracted,
-                       fwhm=fwhm)
-
-        else:
-
-            # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
-            if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
-
-            # Get the name from the file path
-            if name is None: name = fs.name(path[:-5])
-
-            # Return the frame
-            # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-            return cls(hdu.data,
-                       wcs=wcs,
-                       name=name,
-                       description=description,
-                       unit=unit,
-                       zero_point=zero_point,
-                       filter=fltr,
-                       sky_subtracted=sky_subtracted,
-                       fwhm=fwhm)
+        return io.load_frame(path, index, name, description, plane, hdulist_index, no_filter)
 
     # -----------------------------------------------------------------
 
@@ -567,12 +534,13 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=True):
+    def rebin(self, reference_wcs, exact=True, parallel=True):
 
         """
         This function ...
         :param reference_wcs:
         :param exact:
+        :param parallel:
         :return:
         """
 
@@ -581,11 +549,15 @@ class Frame(NDDataArray):
         # Rebin the data
         #new_data = transformations.new_align_and_rebin(self._data, self.wcs, reference_wcs)
 
-        new_data = reproject_exact(self._data, self.wcs)
+        if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
+        else: new_data, footprint = reproject_interp((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape)
 
         # Replace the data and WCS
         self._data = new_data
         self._wcs = reference_wcs
+
+        # Return the footprint
+        return footprint
 
     # -----------------------------------------------------------------
 
@@ -1009,10 +981,8 @@ class Frame(NDDataArray):
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Frame class of PTS package"
 
-        # Create the HDU
-        hdu = fits.PrimaryHDU(self._data, header)
-
-        # Write the HDU to a FITS file
-        hdu.writeto(path, clobber=True)
+        # Write
+        from . import io
+        io.write_frame(self._data, header, path)
 
 # -----------------------------------------------------------------

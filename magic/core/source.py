@@ -468,7 +468,7 @@ class Source(object):
                     y_min = int(round(0.5 * (self.cutout.ysize - disk.shape[0])))
                     #plotting.plot_mask(mask)
                     mask[y_min:y_min+disk.shape[0], x_min:x_min+disk.shape[1]] = disk
-                    plotting.plot_mask(mask)
+                    #plotting.plot_mask(mask)
                 no_clip_mask = None
             else:
                 mask = statistics.sigma_clip_mask(self.cutout, sigma_level=sigma_level, mask=self.mask)

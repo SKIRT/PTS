@@ -26,11 +26,10 @@ from astropy.units import Unit
 from ..basics.layers import newLayers
 from ..basics.region import Region
 from ..basics.mask import Mask
-from ..basics.coordinatesystem import CoordinateSystem
-from .frame import Frame
-from ..tools import headers, transformations
+from ..tools import transformations
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from . import io
 
 # -----------------------------------------------------------------
 
@@ -361,7 +360,7 @@ class Image(object):
             # Check if the coordinate system of this frame matches that of the other frames ?
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
-            datacube.append(self.frames[frame_name])
+            datacube.append(self.frames[frame_name]._data)
             
             # Add the name of the frame to the header
             header["PLANE" + str(plane_index)] = frame_name + " [frame]"
@@ -410,17 +409,11 @@ class Image(object):
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Image class of PTS package"
 
-        # Create the HDU from the data array and the header
-        hdu = fits.PrimaryHDU(np.array(datacube), header)
-
-        # Write the HDU to a FITS file
-        hdu.writeto(path, clobber=True)
+        # Write
+        io.write_datacube(datacube, header, path)
 
         # Update the path
         self.path = path
-
-        # Inform the user that the file has been created
-        log.debug("File " + path + " created")
 
     # -----------------------------------------------------------------
 
@@ -967,11 +960,11 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, filename, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
+    def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
 
         """
         This function ...
-        :param filename:
+        :param path:
         :param index:
         :param name:
         :param description:
@@ -982,165 +975,19 @@ class Image(object):
         """
 
         # Check if the file exists
-        if not fs.is_file(filename): raise IOError("File " + filename + " does not exist")
+        if not fs.is_file(path): raise IOError("File '" + path + "' does not exist")
 
         # Show which image we are importing
-        log.debug("Reading in file " + filename + " ...")
+        log.debug("Reading in file '" + path + "' ...")
 
-        # Open the HDU list for the FITS file
-        hdulist = fits.open(filename)
 
-        # Get the primary HDU
-        hdu = hdulist[hdulist_index]
+        frames, masks, meta = io.load_frames(path, index, name, description, always_call_first_primary,
+                                             rebin_to_wcs, hdulist_index, no_filter)
 
-        # Get the image header
-        self.original_header = hdu.header
-
-        # Get flattened form of the header
-        flattened_header = headers.flattened(self.original_header)
-
-        # Obtain the world coordinate system
-        wcs = CoordinateSystem(flattened_header)
-
-        # Set the filter
-        if no_filter: fltr = None
-        else:
-
-            # Obtain the filter for this image
-            fltr = headers.get_filter(self.name, self.original_header)
-
-            # Inform the user on the filter
-            if fltr is not None: log.debug("The filter for the '" + filename + "' image is " + str(fltr))
-            else: log.warning("Could not determine the filter for the image '" + filename + "'")
-
-        # Obtain the units of this image
-        unit = headers.get_unit(self.original_header)
-
-        # Obtain the FWHM of this image
-        fwhm = headers.get_fwhm(self.original_header)
-
-        # Get the magnitude zero-point
-        zero_point = headers.get_zero_point(self.original_header)
-
-        # Check whether the image is sky-subtracted
-        sky_subtracted = headers.is_sky_subtracted(self.original_header)
-
-        # Check whether multiple planes are present in the FITS image
-        nframes = headers.get_number_of_frames(self.original_header)
-        if nframes > 1:
-
-            # For each frame
-            for i in range(nframes):
-
-                # If only a frame with specific index needs to be imported, skip this frame if it does not correspond
-                if index is not None and i != index: continue
-
-                # Get name and description of frame
-                name, description, plane_type = headers.get_frame_name_and_description(self.original_header, i, always_call_first_primary)
-
-                # The sky-subtracted flag should only be set for the primary frame
-                subtracted = sky_subtracted if i == 0 else False
-
-                # Check the shape of this new frame
-                if self.shape is not None:
-
-                    if hdu.data[i].shape != self.shape:
-
-                        if rebin_to_wcs:
-
-                            # Inform the user
-                            log.warning("Rebinning the " + name + " frame (plane " + str(i) + ") of " + filename + " to match the shape of this image")
-
-                            # Check if the unit is a surface brightness unit
-                            if unit != Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
-
-                            # Change the data and the WCS
-                            hdu.data[i] = transformations.align_and_rebin(hdu.data[i], flattened_header, self.wcs.to_header())
-                            wcs = self.wcs
-
-                        else: raise ValueError("The shape of the " + name + " frame (plane " + str(i) + ") of " + filename + " does not match the shape of this image")
-
-                # Add this frame to the frames dictionary
-                if plane_type == "frame":
-
-                    # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-                    frame = Frame(hdu.data[i],
-                                  wcs=wcs,
-                                  name=name,
-                                  description=description,
-                                  unit=unit,
-                                  zero_point=zero_point,
-                                  filter=fltr,
-                                  sky_subtracted=subtracted,
-                                  fwhm=fwhm)
-                    self.add_frame(frame, name)
-
-                elif plane_type == "mask":
-
-                    #data, name=None, description=None
-                    mask = Mask(hdu.data[i], name=name, description=description)
-                    self.add_mask(mask, name)
-
-                else: raise ValueError("Unrecognized type (must be frame or mask)")
-
-        else:
-
-            # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
-            if len(hdu.data.shape) == 3: hdu.data = hdu.data[0]
-
-            if name is None: name = "primary"
-            if description is None: description = "the primary signal map"
-
-            dummy_name, dummy_description, plane_type = headers.get_frame_name_and_description(self.original_header, 0)
-
-            # Check the shape of this new frame
-            if self.shape is not None:
-
-                if hdu.data.shape != self.shape:
-
-                    if rebin_to_wcs:
-
-                        # Inform the user
-                        log.warning("Rebinning the " + name + " frame (plane 0) of " + filename + " to match the shape of this image")
-
-                        # Check if the unit is a surface brightness unit
-                        if unit != Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(unit) + " is not recognized as a surface brightness unit")
-
-                        # Change the data and the WCS
-                        hdu.data = transformations.align_and_rebin(hdu.data, flattened_header, self.wcs.to_header())
-                        wcs = self.wcs
-
-                    else: raise ValueError("The shape of the " + name + " frame (plane 0) of " + filename + " does not match the shape of this image")
-
-            if plane_type == "frame":
-
-                # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-                frame = Frame(hdu.data,
-                              wcs=wcs,
-                              name=name,
-                              description=description,
-                              unit=unit,
-                              zero_point=zero_point,
-                              filter=fltr,
-                              sky_subtracted=sky_subtracted,
-                              fwhm=fwhm)
-                # Add the primary image frame
-                self.add_frame(frame, name)
-
-            elif plane_type == "mask":
-
-                #data, name=None, description=None
-                mask = Mask(hdu.data, name=name, description=description)
-                # Add the mask
-                self.add_mask(mask, name)
-
-            else: raise ValueError("Unrecognized type (must be frame or mask)")
-
-        # Add meta information
-        for key in self.original_header: self.metadata[key.lower()] = self.original_header[key]
-
-        # Close the FITS file
-        hdulist.close()
+        # Set frames, masks and meta information
+        for frame_name in frames: self.add_frame(frames[frame_name], frame_name)
+        for mask_name in masks: self.add_mask(masks[mask_name], mask_name)
+        for keyword in meta: self.metadata[keyword] = meta[keyword]
 
     # -----------------------------------------------------------------
 

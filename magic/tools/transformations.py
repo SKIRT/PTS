@@ -60,52 +60,6 @@ def new_align_and_rebin(frame, coordinate_system, reference_system, preserve_nan
 
 # -----------------------------------------------------------------
 
-def align_and_rebin(image, header1, header2, preserve_bad_pixels=True, **kwargs):
-
-    """
-    This function interpolates an image from one FITS header onto another. It takes the following arguments:
-    :param image: an array of two-dimensional image data
-    :param header1: the header of this image
-    :param header2: the reference header
-    :param preserve_bad_pixels: if set to True, try to set NaN pixels to NaN in the zoomed image. Otherwise, bad pixels
-    will be set to zero.
-    :param kwargs:
-    :return: a NumPy array with shape defined by header2's naxis1 and naxis2. It raises a TypeError if either of the
-    headers is not a Header or a WCS instance. An exception is also raised when image1's shape does not match
-    header1's naxis1 and naxis2.
-    """
-
-    # TODO: take WCS objects instead of headers (so we don't have to convert the wcs to a header each time in the Frame class)
-
-    # Remove the third axis of the reference header
-    header2["NAXIS"] = 2
-    header2.pop("NAXIS3", None)
-
-    # Check whether the passed image matches the information in header1
-    headers.check_header_matches_image(image, header1)
-
-    # Get the mapping from pixels in the image to pixels defined on the coordinate system of the reference header
-    grid1 = headers.get_pixel_mapping(header1, header2)
-
-    # Look for bad pixels (NaN's or infinities)
-    bad_pixels = np.isnan(image) + np.isinf(image)
-
-    # Mask the bad pixels
-    image[bad_pixels] = 0
-
-    # Use Scipy to create the new image
-    new_image = scipy.ndimage.map_coordinates(image, grid1, **kwargs)
-
-    if preserve_bad_pixels:
-
-        newbad = scipy.ndimage.map_coordinates(bad_pixels, grid1, order=0, mode='constant', cval=np.nan)
-        new_image[newbad] = np.nan
-
-    # Return the new image array
-    return new_image
-
-# -----------------------------------------------------------------
-
 def zoom_fits(fitsfile, scalefactor, preserve_bad_pixels=True, **kwargs):
 
     """

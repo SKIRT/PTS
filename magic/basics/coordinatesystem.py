@@ -77,6 +77,18 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @property
+    def shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ysize, self.xsize
+
+    # -----------------------------------------------------------------
+
+    @property
     def xsize(self):
 
         """
