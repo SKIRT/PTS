@@ -199,7 +199,7 @@ class CatalogImporter(OldConfigurable):
         log.info("Importing galactic catalog from file " + path + " ...")
 
         # Load the catalog
-        self.galactic_catalog = tables.from_file(path)
+        self.galactic_catalog = tables.from_file(path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -217,7 +217,7 @@ class CatalogImporter(OldConfigurable):
         log.info("Importing stellar catalog from file " + path + " ...")
 
         # Load the catalog
-        self.stellar_catalog = tables.from_file(path)
+        self.stellar_catalog = tables.from_file(path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -312,7 +312,7 @@ class CatalogImporter(OldConfigurable):
         log.info("Writing galactic catalog to " + path + " ...")
 
         # Write the catalog to file
-        tables.write(self.galactic_catalog, path)
+        tables.write(self.galactic_catalog, path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -328,7 +328,7 @@ class CatalogImporter(OldConfigurable):
         log.info("Writing stellar catalog to " + path + " ...")
 
         # Write the catalog to file
-        tables.write(self.stellar_catalog, path)
+        tables.write(self.stellar_catalog, path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 

@@ -659,6 +659,8 @@ class Image(object):
         # Create a copy of the current wcs
         original_wcs = self.wcs.deepcopy()
 
+        footprint = None
+
         # Loop over all currently selected frames
         for frame_name in self.frames:
 
@@ -666,7 +668,7 @@ class Image(object):
             log.debug("Rebinning the " + frame_name + " frame ...")
 
             # Rebin this frame (the reference wcs is automatically set in the new frame)
-            self.frames[frame_name].rebin(reference_wcs)
+            footprint = self.frames[frame_name].rebin(reference_wcs)
 
         # Loop over the masks
         for mask_name in self.masks:
@@ -680,6 +682,13 @@ class Image(object):
             # Return the rebinned mask
             # data, name, description
             self.masks[mask_name] = Mask(data > 0.5, name=self.masks[mask_name].name, description=self.masks[mask_name].description)
+
+        if footprint is not None:
+
+            # Add mask for padded pixels after rebinning
+            # this mask now covers pixels added to the frame after rebinning plus more (radius 10 pixels)
+            padded = Mask(footprint < 0.9).disk_dilation(radius=10)
+            self.add_mask(padded, "padded")
 
     # -----------------------------------------------------------------
 
