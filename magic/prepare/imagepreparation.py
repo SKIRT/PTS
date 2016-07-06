@@ -34,7 +34,7 @@ from ...core.tools import time
 from ..tools import plotting
 from ..animation.imageblink import ImageBlinkAnimation
 from ..animation.sourceextraction import SourceExtractionAnimation
-from ..misc.kernels import rebin_kernel_for_image
+from ..core.kernel import ConvolutionKernel
 
 # -----------------------------------------------------------------
 
@@ -393,15 +393,11 @@ class ImagePreparer(OldConfigurable):
 
         else: animation = None
 
-        # Open the kernel frame
-        kernel = Frame.from_file(self.config.convolution.kernel_path)
+        # Open the convolution kernel
+        kernel = ConvolutionKernel.from_file(self.config.convolution.kernel_path, fwhm=self.config.convolution.kernel_fwhm)
 
-        # Set the kernel FWHM
-        if kernel.fwhm is None and self.config.convolution.kernel_fwhm is not None: kernel.fwhm = self.config.convolution.kernel_fwhm
-        if kernel.fwhm is None: raise RuntimeError("Kernel must either have its FWHM defined in the header or the kernel FWHM must be specified as a configuration option for the ImagePreparer")
-
-        # Rebin the kernel
-        kernel = rebin_kernel_for_image(kernel, self.image)
+        # Prepare the kernel
+        kernel.prepare_for(self.image)
 
         # Save the kernel frame for manual inspection
         if self.config.write_steps:

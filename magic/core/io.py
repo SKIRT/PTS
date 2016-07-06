@@ -205,7 +205,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
 # -----------------------------------------------------------------
 
-def load_frame(path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False):
+def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None):
 
     """
     This function ...
@@ -216,6 +216,7 @@ def load_frame(path, index=None, name=None, description=None, plane=None, hdulis
     :param plane:
     :param hdulist_index:
     :param no_filter:
+    :param fwhm:
     :return:
     """
 
@@ -278,7 +279,7 @@ def load_frame(path, index=None, name=None, description=None, plane=None, hdulis
     unit = headers.get_unit(header)
 
     # Obtain the FWHM of this image
-    fwhm = headers.get_fwhm(header)
+    if fwhm is None: fwhm = headers.get_fwhm(header)
 
     # Get the magnitude zero-point
     zero_point = headers.get_zero_point(header)
@@ -324,7 +325,7 @@ def load_frame(path, index=None, name=None, description=None, plane=None, hdulis
         if name is None: name = fs.name(path[:-5])
 
         # Return the frame
-        return Frame(hdu.data[index],
+        return cls(hdu.data[index],
                    wcs=wcs,
                    name=name,
                    description=description,
@@ -343,7 +344,7 @@ def load_frame(path, index=None, name=None, description=None, plane=None, hdulis
         if name is None: name = fs.name(path[:-5])
 
         # Return the frame
-        return Frame(hdu.data,
+        return cls(hdu.data,
                    wcs=wcs,
                    name=name,
                    description=description,

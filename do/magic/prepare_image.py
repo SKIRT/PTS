@@ -104,7 +104,7 @@ galaxy_region = Region.from_file(galaxy_region_path)
 star_region_path = fs.join(arguments.input, "stars.reg")
 
 # Load the star region
-star_region = Region.from_file(star_region_path)
+star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
 
 # Determine the path to the saturation region
 saturation_region_path = fs.join(arguments.input, "saturation.reg")

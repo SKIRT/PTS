@@ -21,7 +21,7 @@ from scipy import ndimage
 from reproject import reproject_exact, reproject_interp
 from astropy.io import fits
 from astropy.units import Unit
-from astropy.convolution import convolve_fft
+from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 
 # Import the relevant PTS classes and modules
@@ -50,9 +50,9 @@ class Frame(NDDataArray):
         """
 
         wcs = kwargs.pop("wcs", None)
+        unit = kwargs.pop("unit", None)
         self.name = kwargs.pop("name", None)
         self.description = kwargs.pop("description", None)
-        self.unit = kwargs.pop("unit", None)
         self.zero_point = kwargs.pop("zero_point", None)
         self.filter = kwargs.pop("filter", None)
         self.sky_subtracted = kwargs.pop("sky_subtracted", False)
@@ -63,8 +63,11 @@ class Frame(NDDataArray):
         # Call the constructor of the base class
         super(Frame, self).__init__(data, *args, **kwargs)
 
-        # Set the WCS
+        # Set the WCS and unit
         self._wcs = wcs
+        self._unit = unit
+
+        super(Frame, self).__repr__()
 
     # -----------------------------------------------------------------
 
@@ -217,7 +220,7 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False):
+    def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None):
 
         """
         This function ...
@@ -228,6 +231,7 @@ class Frame(NDDataArray):
         :param plane:
         :param hdulist_index: if None, is automatically decided based on where the imageHDU is.
         :param no_filter:
+        :param fwhm:
         :return:
         """
 
@@ -236,7 +240,8 @@ class Frame(NDDataArray):
 
         from . import io
 
-        return io.load_frame(path, index, name, description, plane, hdulist_index, no_filter)
+        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm)
 
     # -----------------------------------------------------------------
 
@@ -309,7 +314,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self.wcs.xy_average_pixelscale
+        if self.wcs is not None: return self.wcs.xy_average_pixelscale
+        else: return 0.5*(self._pixelscale.x + self._pixelscale.y) if self._pixelscale is not None else None
 
     # -----------------------------------------------------------------
 
@@ -459,6 +465,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def sum(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.nansum(self._data)
+
+    # -----------------------------------------------------------------
+
     def normalize(self, to=1.0):
 
         """
@@ -478,40 +495,45 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convolved(self, kernel, allow_huge=False):
+    def convolved(self, *args, **kwargs):
 
         """
         This function ...
-        :param kernel:
-        :param allow_huge:
         :return:
         """
 
-        return self.copy().convolve(kernel, allow_huge)
+        return self.copy().convolve(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=False):
+    def convolve(self, kernel, allow_huge=False, fft=True):
 
         """
         This function ...
         :param kernel:
         :param allow_huge:
+        :param fft:
         :return:
         """
 
+        # Get the kernel FWHM
         kernel_fwhm = kernel.fwhm
 
         # Skip the calculation for a constant frame
         if self.is_constant():
-            copy = self.copy()
-            copy.fwhm = kernel_fwhm
-            return copy
+
+            new_frame = self.copy()
+            new_frame.fwhm = kernel_fwhm
+            return new_frame
 
         nans_mask = np.isnan(self)
 
+        # Assert that the kernel is normalized
+        assert kernel.normalized
+
         # Do the convolution on this frame
-        new_data = convolve_fft(self._data, kernel, normalize_kernel=True, interpolate_nan=True, allow_huge=allow_huge)
+        if fft: new_data = convolve_fft(self._data, kernel._data, normalize_kernel=False, interpolate_nan=True, allow_huge=allow_huge)
+        else: new_data = convolve(self._data, kernel._data, normalize_kernel=False)
 
         # Put back NaNs
         new_data[nans_mask] = float("nan")

@@ -14,16 +14,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from scipy import ndimage
 
 # Import the relevant PTS classes and modules
-from .frame import Frame, newFrame
+from .frame import Frame
 from ...core.tools.logging import log
 from ..tools import statistics
 
 # -----------------------------------------------------------------
 
-class ConvolutionKernel(newFrame):
-#class ConvolutionKernel(Frame):
+class ConvolutionKernel(Frame):
 
     """
     This class ...
@@ -31,92 +31,82 @@ class ConvolutionKernel(newFrame):
 
     # -----------------------------------------------------------------
 
-    #def __new__(cls, data, **kwargs):
-    #def __new__(cls, data, **kwargs):
+    def __init__(self, data, *args, **kwargs):
 
-        #"""
-        #This function ...
-        #"""
-
-        #obj = np.asarray(data).view(cls)
-
-        #obj = np.ndarray.__new__(cls, data.shape, float, data)
-
-        #for attr in vars(data):
-        #    print(attr, getattr(data, attr))
-        #    #print(vars(obj))
-        #    if not hasattr(obj, attr):
-        #        print("here")
-        #        setattr(obj, attr, getattr(data, attr))
-
-        #return obj
-
-        #return super(ConvolutionKernel, cls).__new__(data, **kwargs)
-
-    # -----------------------------------------------------------------
-
-    #def __init__(self, data, **kwargs):
-
-        #"""
-        #This function ...
-        #:param data:
-        #:param kwargs:
-        #"""
+        """
+        This function ...
+        """
 
         # Call the constructor of the base class
-        #super(ConvolutionKernel, self).__init__(data, **kwargs)
-        #Frame.__init__(self, data, **kwargs)
-
-        #for attr in vars(data):
-
-            #setattr(self, attr, getattr(data, attr))
-
-            #value = getattr(data, attr)
-            #print(attr, value)
-            #self.__dict__[attr] = value
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def read(cls, path, fwhm=None):
-
-        """
-        This function ...
-        :param path:
-        :param fwhm:
-        :return:
-        """
-
-        # Open the file
-        kernel = super(ConvolutionKernel, cls).read(path, no_filter=True)
-        #kernel = cls(Frame.from_file(path, no_filter=True))
+        super(ConvolutionKernel, self).__init__(data, *args, **kwargs)
 
         # Check the FWHM
-        if kernel.fwhm is None:
-            if fwhm is None: raise ValueError("FWHM must be specified if not present in header")
-        elif fwhm is not None: assert kernel.fwhm == fwhm
+        if self.fwhm is None: raise ValueError("FWHM must be specified if not present in header")
 
-        # Return the kernel
-        return kernel
+        # Set the WCS to None, but keep the pixelscale
+        if self._wcs is not None:
+
+            if self._pixelscale is None: self._pixelscale = self.wcs.pixelscale
+            elif not np.isclose(self._pixelscale, self.wcs.pixelscale): raise ValueError("Pixelscale in the header does not correspond to the specified pixelscale")
+            self._wcs = None
+
+        elif self._pixelscale is None: raise ValueError("Pixelscale must be specified if not present in header")
+
+        # Normalized
+        self._normalized = False
 
     # -----------------------------------------------------------------
 
-    def prepare(self):
+    @property
+    def normalized(self):
 
         """
         This function ...
         :return:
         """
 
+        return self._normalized
+
+    # -----------------------------------------------------------------
+
+    def prepare_for(self, image, sigma_level=10.0):
+
+        """
+        This function ...
+        :param image:
+        :param sigma_level:
+        :return:
+        """
+
+        # Prepare
+        self.prepare(image.pixelscale, sigma_level)
+
+    # -----------------------------------------------------------------
+
+    def prepare(self, pixelscale, sigma_level=10.0):
+
+        """
+        This function ...
+        :param pixelscale:
+        :param sigma_level:
+        :return:
+        """
+
+        # Truncate
         self.truncate(sigma_level)
 
+        # Adjust pixelscale
+        self.adjust_pixelscale(pixelscale)
+
+        # Center
         self.center()
 
+        # Normalize
         self.normalize()
 
     # -----------------------------------------------------------------
 
-    def truncate(self, sigma_level=5.0):
+    def truncate(self, sigma_level=10.0):
 
         """
         This function ...
@@ -138,7 +128,26 @@ class ConvolutionKernel(newFrame):
         # Crop
         self.crop(min_x, max_x, min_y, max_y)
 
-        self.center()
+    # -----------------------------------------------------------------
+
+    def adjust_pixelscale(self, pixelscale):
+
+        """
+        This function ...
+        :return:
+        """
+
+        average_pixelscale = 0.5 * (pixelscale.x + pixelscale.y)
+
+        # Calculate the zooming factor
+        factor = (average_pixelscale / self.xy_average_pixelscale).to("").value
+
+        # Rebin to the pixelscale
+        new_data = ndimage.interpolation.zoom(self._data, zoom=1.0 / factor)
+
+        # Set the new data and pixelscale
+        self._data = new_data
+        self._pixelscale = pixelscale
 
     # -----------------------------------------------------------------
 
@@ -180,5 +189,17 @@ class ConvolutionKernel(newFrame):
         # if do_we_write eq 1 then print,' '
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def normalize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.__idiv__(self.sum())
+        self._normalized = True
 
 # -----------------------------------------------------------------

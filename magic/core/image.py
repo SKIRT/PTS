@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..basics.layers import newLayers
+from ..basics.layers import Layers
 from ..basics.region import Region
 from ..basics.mask import Mask
 from ..tools import transformations
@@ -48,9 +48,9 @@ class Image(object):
         """
 
         # Initialize a set of layers to represent image frames, masks and regions
-        self.frames = newLayers()
-        self.masks = newLayers()
-        self.regions = newLayers()
+        self.frames = Layers()
+        self.masks = Layers()
+        self.regions = Layers()
 
         # The image name and path
         self.name = name
@@ -94,6 +94,29 @@ class Image(object):
 
         # Return the image
         return image
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def primary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frames[0]
 
     # -----------------------------------------------------------------
 
@@ -142,7 +165,7 @@ class Image(object):
         """
 
         if "primary" not in self.frames: return None
-        return self.frames.primary.shape
+        return self.primary.shape
 
     # -----------------------------------------------------------------
 
@@ -155,7 +178,7 @@ class Image(object):
         """
 
         if "primary" not in self.frames: return None
-        return self.frames.primary.xsize
+        return self.primary.xsize
 
     # -----------------------------------------------------------------
 
@@ -168,7 +191,7 @@ class Image(object):
         """
 
         if "primary" not in self.frames: return None
-        return self.frames.primary.ysize
+        return self.primary.ysize
 
     # -----------------------------------------------------------------
 
@@ -183,7 +206,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the filter of the primary frame
-        return self.frames.primary.filter
+        return self.primary.filter
 
     # -----------------------------------------------------------------
 
@@ -198,7 +221,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the wavelength of the primary frame
-        return self.frames.primary.wavelength
+        return self.primary.wavelength
 
     # -----------------------------------------------------------------
 
@@ -213,7 +236,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the unit of the primary frame
-        return self.frames.primary.unit
+        return self.primary.unit
 
     # -----------------------------------------------------------------
 
@@ -228,7 +251,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the pixelscale of the primary frame
-        return self.frames.primary.pixelscale
+        return self.primary.pixelscale
 
     # -----------------------------------------------------------------
 
@@ -243,7 +266,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the averaged pixelscale of the primary frame
-        return self.frames.primary.xy_average_pixelscale
+        return self.primary.xy_average_pixelscale
 
     # -----------------------------------------------------------------
 
@@ -260,7 +283,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the FWHM of the primary frame
-        return self.frames.primary.fwhm
+        return self.primary.fwhm
 
     # -----------------------------------------------------------------
 
@@ -291,7 +314,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the wcs of the primary frame
-        return self.frames.primary.wcs
+        return self.primary.wcs
 
     # -----------------------------------------------------------------
 
@@ -306,7 +329,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the coordinate range of the primary frame
-        return self.frames.primary.coordinate_range
+        return self.primary.coordinate_range
 
     # -----------------------------------------------------------------
 
@@ -611,7 +634,7 @@ class Image(object):
 
         """
         This function ...
-        :param kernel:
+        :param kernel: of type ConvolutionKernel
         :param allow_huge:
         """
 
@@ -622,7 +645,7 @@ class Image(object):
             log.debug("Convolving the " + frame_name + " frame ...")
 
             # Convolve this frame
-            self.frames[frame_name] = self.frames[frame_name].convolved(kernel, allow_huge=allow_huge)
+            self.frames[frame_name].convolve(kernel, allow_huge=allow_huge)
 
     # -----------------------------------------------------------------
 
@@ -643,7 +666,7 @@ class Image(object):
             log.debug("Rebinning the " + frame_name + " frame ...")
 
             # Rebin this frame (the reference wcs is automatically set in the new frame)
-            self.frames[frame_name] = self.frames[frame_name].rebinned(reference_wcs)
+            self.frames[frame_name].rebin(reference_wcs)
 
         # Loop over the masks
         for mask_name in self.masks:
@@ -677,7 +700,7 @@ class Image(object):
             log.debug("Cropping the " + frame_name + " frame ...")
 
             # Crop this frame
-            self.frames[frame_name] = self.frames[frame_name].crop(x_min, x_max, y_min, y_max)
+            self.frames[frame_name].crop(x_min, x_max, y_min, y_max)
 
         # Loop over all masks
         for mask_name in self.masks:
@@ -831,42 +854,23 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def __mul__(self, factor):
+    def __mul__(self, value):
 
         """
         This function ...
-        :param factor:
+        :param value:
         :return:
         """
 
-        # Create a new image
-        image = Image(self.name)
-
-        # Set attributes
-        image.name = self.name
-        image.path = self.path
-        image.original_header = self.original_header
-        image.metadata = self.metadata
-
-        # Loop over the frames
-        for frame_name in self.frames: image.add_frame(self.frames[frame_name] * factor, frame_name)
-
-        # Loop over the masks
-        for mask_name in self.masks: image.add_mask(self.masks[mask_name] * factor, mask_name)
-
-        # Loop over the regions
-        for region_name in self.regions: image.add_region(copy.deepcopy(self.regions[region_name]), region_name)
-
-        # Return the new image
-        return image
+        return self.copy().__imul__(value)
 
     # -----------------------------------------------------------------
 
-    def __imul__(self, factor):
+    def __imul__(self, value):
 
         """
         This function ...
-        :param factor:
+        :param value:
         :return:
         """
 
@@ -874,13 +878,59 @@ class Image(object):
         for frame_name in self.frames:
 
             # Inform the user
-            log.debug("Multiplying the " + frame_name + " frame by a factor of " + str(factor))
+            log.debug("Multiplying the " + frame_name + " frame by a factor of " + str(value) + " ...")
 
             # Multiply the frame by the given factor
-            self.frames[frame_name] *= factor
+            self.frames[frame_name] *= value
 
         # Return a reference to this instance
         return self
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.copy().__idiv__(value)
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Loop over all frames
+        for frame_name in self.frames:
+
+            # Inform the user
+            log.debug("Dividing the " + frame_name + " frame by a factor of " + str(value) + " ...")
+
+            # Divide the frame by the given factor
+            self.frames[frame_name] /= value
+
+        # Return a reference to this instance
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__div__(value)
 
     # -----------------------------------------------------------------
 
@@ -893,28 +943,6 @@ class Image(object):
         """
 
         return self.__idiv__(factor)
-
-    # -----------------------------------------------------------------
-
-    def __idiv__(self, factor):
-
-        """
-        This function ...
-        :param factor:
-        :return:
-        """
-
-        # Loop over all currently selected frames
-        for frame_name in self.frames:
-
-            # Inform the user
-            log.debug("Dividing the " + frame_name + " frame by a factor of " + str(factor))
-
-            # Divide the frame by the given factor
-            self.frames[frame_name] /= factor
-
-        # Return a reference to this instance
-        return self
 
     # -----------------------------------------------------------------
 
@@ -980,7 +1008,7 @@ class Image(object):
         # Show which image we are importing
         log.debug("Reading in file '" + path + "' ...")
 
-
+        # Load frames
         frames, masks, meta = io.load_frames(path, index, name, description, always_call_first_primary,
                                              rebin_to_wcs, hdulist_index, no_filter)
 

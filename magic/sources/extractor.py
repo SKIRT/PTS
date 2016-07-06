@@ -182,8 +182,6 @@ class SourceExtractor(OldConfigurable):
 
         # Create a mask of the pixels that are NaNs
         self.nan_mask = Mask.is_nan(self.frame)
-        print(type(self.frame))
-        print(type(self.nan_mask))
         self.frame[self.nan_mask] = 0.0
 
         # Make a reference to the animation
