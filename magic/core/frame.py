@@ -69,6 +69,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @NDDataArray.wcs.setter
+    def wcs(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        self._wcs = wcs
+
+    # -----------------------------------------------------------------
+
     def __getitem__(self, item):
 
         """
