@@ -903,6 +903,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def fill(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data.fill(value)
+
+    # -----------------------------------------------------------------
+
     def rotate(self, angle):
 
         """

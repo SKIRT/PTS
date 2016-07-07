@@ -280,13 +280,13 @@ class StarFinder(OldConfigurable):
 
             # -- Cross-referencing with the galaxies in the frame --
 
-            # Loop over all galaxies
-            if self.config.fetching.cross_reference_with_galaxies:
+            # Loop over all galaxies to cross-referenc
+            if self.config.fetching.cross_reference_with_galaxies and star_on_galaxy:
 
                 # If a match is found with one of the galaxies, skip this star
                 if matches_galaxy_position(pixel_position, galaxy_pixel_position_list, galaxy_type_list, encountered_galaxies, self.config.fetching.min_distance_from_galaxy, distances):
 
-                    if special: plotting.plot_box(cutout, "Matches galaxy position")
+                    if special: plotting.plot_box(cutout, "Matches galaxy position (distance < " + str(self.config.fetching.min_distance_from_galaxy) + ")")
                     continue
 
             # Set other attributes

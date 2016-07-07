@@ -290,7 +290,7 @@ def create_star_catalog(frame, catalogs=None):
         encountered = [False] * len(catalog_column)
 
         # Inform the user
-        log.debug("DEBUG: Querying the " + catalog + " catalog")
+        log.debug("Querying the " + catalog + " catalog")
 
         # Query Vizier and obtain the resulting table
         result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=catalog)
@@ -747,6 +747,9 @@ def galaxies_in_box(center, ra_span, dec_span):
     # Create a new Vizier object and set the row limit to -1 (unlimited)
     viz = Vizier(keywords=["galaxies", "optical"])
     viz.ROW_LIMIT = -1
+
+    # Debugging
+    log.debug("Querying the HYPERLEDA catalog ...")
 
     # Query Vizier and obtain the resulting table
     result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=["VII/237"])
