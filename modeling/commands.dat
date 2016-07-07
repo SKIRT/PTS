@@ -1,28 +1,28 @@
-# Command | Class | Description
-truncate | truncation.truncation.Truncator | Create the truncated images
-explore | fitting.explorer.ParameterExplorer | Explore the parameter space for the radiative transfer modeling
-make_maps | maps.maker.MapMaker | Make the maps of dust and stars for the SKIRT radiative transfer modeling procedure
-prepare_data | preparation.preparer.DataPreparer | Do the preparation step of the SKIRT radiative transfer modeling procedure
-analyse_attenuation | analysis.attenuation.AttenuationAnalyser | Analyse the dust attenuation of the best fitting model
-analyse_cell_heating | analysis.heating.cell.CellDustHeatingAnalyser | Analyse the dust cell heating in the best fitting model
-analyse_colours | analysis.colours.colours.ColourAnalyser | Analyse the FIR colours of the best fitting model
-analyse_projected_heating | analysis.heating.projected.ProjectedDustHeatingAnalyser | Analyse the projected dust heating in the best fitting model
-analyse_residuals | analysis.residuals.ResidualAnalyser | Analyse the residuals of the best fitting model
-decompose | decomposition.decomposition.GalaxyDecomposer | Run the bulge-disk decomposition for the galaxy as part of the radiative transfer modeling
-fetch_data | data.fetching.DataFetcher | Fetch the data from the DustPedia database
-fit_sed | fitting.sedfitting.SEDFitter | Determine the best fit with the observed SED
-initialize_fit | fitting.initialization.FittingInitializer | Do the initialization before starting the fitting
-configure_fit | fitting.configuration.FittingConfigurer | Configure the fitting procedure
-launch_best | fitting.bestmodellauncher.BestModelLauncher | Launch simulations to inspect the current best RT model
-launch_analysis | analysis.launch.AnalysisLauncher | Launch a simulation for analysis
-launch_heating | analysis.heating.launch.DustHeatingContributionLauncher | Launch simulations for analysing the heating contributions
-make_report | reporting.reporting.Reporter | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
-photometry | photometry.photometry.PhotoMeter | Calculate the photometry of the different input images
-plot_data | plotting.data.DataPlotter | Make plots of the data
-plot_preparation | plotting.preparation.PreparationPlotter | Make plots of the preparation step
-plot_decomposition | plotting.decomposition.DecompositionPlotter | Make plots of the decomposition step
-plot_truncation | plotting.truncation.TruncationPlotter | Make plots of the truncation step
-plot_photometry | plotting.photometry.PhotometryPlotter | Make plots of the photometry step
-plot_maps | plotting.maps.MapsPlotter Make | plots of the map making step
-plot_fit | plotting.fitting.FittingPlotter | Make plots of the fitting step
-plot_analysis | plotting.analysis.AnalysisPlotter | Make plots of the analysis step
+# Command | Configuration | Class | Description
+truncate | -- | truncation.truncation.Truncator | Create the truncated images
+explore | -- | fitting.explorer.ParameterExplorer | Explore the parameter space for the radiative transfer modeling
+make_maps | -- | maps.maker.MapMaker | Make the maps of dust and stars for the SKIRT radiative transfer modeling procedure
+prepare_data | -- | preparation.preparer.DataPreparer | Do the preparation step of the SKIRT radiative transfer modeling procedure
+analyse_attenuation | -- | analysis.attenuation.AttenuationAnalyser | Analyse the dust attenuation of the best fitting model
+analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | Analyse the dust cell heating in the best fitting model
+analyse_colours | -- | analysis.colours.colours.ColourAnalyser | Analyse the FIR colours of the best fitting model
+analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | Analyse the projected dust heating in the best fitting model
+analyse_residuals | -- | analysis.residuals.ResidualAnalyser | Analyse the residuals of the best fitting model
+decompose | -- | decomposition.decomposition.GalaxyDecomposer | Run the bulge-disk decomposition for the galaxy as part of the radiative transfer modeling
+fetch_data | -- | data.fetching.DataFetcher | Fetch the data from the DustPedia database
+fit_sed | -- | fitting.sedfitting.SEDFitter | Determine the best fit with the observed SED
+initialize_fit | -- | fitting.initialization.FittingInitializer | Do the initialization before starting the fitting
+configure_fit | -- | fitting.configuration.FittingConfigurer | Configure the fitting procedure
+launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | Launch simulations to inspect the current best RT model
+launch_analysis | -- | analysis.launch.AnalysisLauncher | Launch a simulation for analysis
+launch_heating | -- | analysis.heating.launch.DustHeatingContributionLauncher | Launch simulations for analysing the heating contributions
+make_report | -- | reporting.reporting.Reporter | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
+photometry | -- | photometry.photometry.PhotoMeter | Calculate the photometry of the different input images
+plot_data | plot | plotting.data.DataPlotter | Make plots of the data
+plot_preparation | plot | plotting.preparation.PreparationPlotter | Make plots of the preparation step
+plot_decomposition | plot | plotting.decomposition.DecompositionPlotter | Make plots of the decomposition step
+plot_truncation | plot | plotting.truncation.TruncationPlotter | Make plots of the truncation step
+plot_photometry | plot | plotting.photometry.PhotometryPlotter | Make plots of the photometry step
+plot_maps | plot | plotting.maps.MapsPlotter | Make plots of the map making step
+plot_fit | plot | plotting.fitting.FittingPlotter | Make plots of the fitting step
+plot_analysis | plot | plotting.analysis.AnalysisPlotter | Make plots of the analysis step

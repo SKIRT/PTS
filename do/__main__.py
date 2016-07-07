@@ -138,7 +138,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     # Import the configuration
 
-    configuration_module_path = "pts." + subproject + ".config." + command_name
+    configuration_name = tables[subproject]["Configuration"][index]
+    if configuration_name == "--": configuration_name = command_name
+    configuration_module_path = "pts." + subproject + ".config." + configuration_name
 
     configuration_module = importlib.import_module(configuration_module_path)
 

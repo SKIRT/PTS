@@ -632,10 +632,10 @@ def get_arguments_tables():
         if not fs.is_file(table_path): continue
 
         # Get the columns
-        commands, where, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
+        commands, configuration, where, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
 
         # Table
-        table = {"Command": commands, "Path": where, "Description": description}
+        table = {"Command": commands, "Configuration": configuration, "Path": where, "Description": description}
         tables[subproject] = table
 
     # Return the tables

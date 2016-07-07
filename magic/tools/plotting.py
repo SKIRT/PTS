@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from skimage import exposure
 
 # Import astronomical modules
 from astropy.visualization import SqrtStretch, LogStretch
@@ -96,6 +97,7 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
     # Normalization
     if scale == "log": norm = ImageNormalize(stretch=LogStretch())
     elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch())
+    #elif scale == "skimage": norm = exposure.equalize_hist
     else: raise ValueError("Invalid option for 'scale'")
 
     if interval == "zscale":
@@ -114,6 +116,10 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         vmax = interval[1]
 
     else: raise ValueError("Invalid option for 'interval'")
+
+    #if scale == "skimage":
+    #    vmin = 0.0
+    #    vmax = 1.0
 
     # Make the plot
     plt.figure(figsize=(7,7))
