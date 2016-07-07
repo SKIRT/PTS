@@ -390,6 +390,9 @@ class Star(SkyObject):
         model = self.model
         radius = fitting.sigma(model) * config.sigmas if model is not None else default_sigma * config.sigmas
 
+        # Make sure the radius is never smaller than 4 pixels
+        radius = max(radius, 4.)
+
         # Add a new stage to the track record
         if self.has_track_record: self.track_record.set_stage("saturation")
 

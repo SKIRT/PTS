@@ -437,11 +437,11 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     if config.always_subtract_background:
 
         # Subtract the background from the source
-        #try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
-        source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
-        #except:
-        #    if special: log.debug("no source can be found (exception encountered while estimating background)")
-        #    return None
+        try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
+            source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        except:
+            if special: log.debug("no source can be found (exception encountered while estimating background)")
+            return None
 
     # Create a kernel
     sigma = config.kernel.fwhm * statistics.fwhm_to_sigma
@@ -466,10 +466,11 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         if config.debug.no_segment_before or special: source.plot(title="No segment found, gradient background will be removed")
 
         # Subtract the background from the source
-        #try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
-        source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
-        if special: log.debug("no source can be found (exception encountered while estimating background)")
-        #except: return None
+        try: # weird error coming out for example with M81 GALEX FUV image (saturation detection)
+            source.estimate_background(config.background_est_method, sigma_clip=config.sigma_clip_background)
+        except:
+            if special: log.debug("no source can be found (exception encountered while estimating background)")
+            return None
 
         if special: log.debug("looking for center segment again")
 
