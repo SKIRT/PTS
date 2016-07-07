@@ -32,6 +32,7 @@ from ...core.basics.configurable import OldConfigurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ..tools import plotting
 
 # -----------------------------------------------------------------
 
@@ -254,6 +255,17 @@ class StarFinder(OldConfigurable):
             # Get the position of the star in pixel coordinates
             pixel_position = star.pixel_position(self.frame.wcs)
 
+            # Check whether 'special'
+            special = self.special_mask.masks(pixel_position) if self.special_mask is not None else False
+            cutout = self.frame.cutout_around(pixel_position, 15) if special else None
+
+            # Check whether 'ignore'
+            ignore = self.ignore_mask.masks(pixel_position) if self.ignore_mask is not None else False
+
+            # Set attributes based on masks (special and ignore)
+            star.special = special
+            star.ignore = ignore
+
             # -- Checking for foreground or surroudings of galaxy --
 
             if "On galaxy" in self.catalog.colnames: star_on_galaxy = self.catalog["On galaxy"][i]
@@ -264,13 +276,18 @@ class StarFinder(OldConfigurable):
                 else: star_on_galaxy = False
                 on_galaxy_column[i] = star_on_galaxy
 
+                if special: plotting.plot_box(cutout, title="On galaxy" if star_on_galaxy else "Not on galaxy")
+
             # -- Cross-referencing with the galaxies in the frame --
 
             # Loop over all galaxies
             if self.config.fetching.cross_reference_with_galaxies:
 
                 # If a match is found with one of the galaxies, skip this star
-                if matches_galaxy_position(pixel_position, galaxy_pixel_position_list, galaxy_type_list, encountered_galaxies, self.config.fetching.min_distance_from_galaxy, distances): continue
+                if matches_galaxy_position(pixel_position, galaxy_pixel_position_list, galaxy_type_list, encountered_galaxies, self.config.fetching.min_distance_from_galaxy, distances):
+
+                    if special: plotting.plot_box(cutout, "Matches galaxy position")
+                    continue
 
             # Set other attributes
             star.on_galaxy = star_on_galaxy
@@ -279,16 +296,16 @@ class StarFinder(OldConfigurable):
             # Enable track record if requested
             if self.config.track_record: star.enable_track_record()
 
-            # Set attributes based on masks (special and ignore)
-            if self.special_mask is not None: star.special = self.special_mask.masks(pixel_position)
-            if self.ignore_mask is not None: star.ignore = self.ignore_mask.masks(pixel_position)
-
             # If the input mask masks this star's position, skip it (don't add it to the list of stars)
             #if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
-            if self.bad_mask is not None and self.bad_mask.masks(pixel_position): continue
+            if self.bad_mask is not None and self.bad_mask.masks(pixel_position):
+                if special: plotting.plot_box(cutout, "Covered by bad mask")
+                continue
 
             # Don't add stars which are indicated as 'not stars'
-            if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars: continue
+            if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars:
+                if special: plotting.plot_box(cutout, "Indicated as 'not a star'")
+                continue
 
             # Add the star to the list
             self.stars.append(star)
@@ -358,7 +375,7 @@ class StarFinder(OldConfigurable):
             if not star.has_source and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
-                ellipse = star.ellipse(self.frame.wcs, self.frame.xy_average_pixelscale, self.config.fitting.initial_radius)
+                ellipse = star.ellipse(self.frame.wcs, self.frame.average_pixelscale, self.config.fitting.initial_radius)
 
                 # Create a source object
                 source = Source.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
@@ -840,7 +857,7 @@ class StarFinder(OldConfigurable):
             # If the star contains a model, add the fwhm of that model to the list
             if star.has_model:
                 fwhm_pix = star.fwhm * Unit("pix")
-                fwhm_arcsec = fwhm_pix * self.frame.xy_average_pixelscale.to("arcsec/pix")
+                fwhm_arcsec = fwhm_pix * self.frame.average_pixelscale.to("arcsec/pix")
                 fwhms.append(fwhm_arcsec)
 
         # Return the list
@@ -856,7 +873,7 @@ class StarFinder(OldConfigurable):
         :return:
         """
 
-        return [(fwhm / self.frame.xy_average_pixelscale.to("arcsec/pix")).to("pix").value for fwhm in self.fwhms]
+        return [(fwhm / self.frame.average_pixelscale.to("arcsec/pix")).to("pix").value for fwhm in self.fwhms]
 
     # -----------------------------------------------------------------
 
@@ -986,7 +1003,7 @@ class StarFinder(OldConfigurable):
         :return:
         """
 
-        return (self.fwhm / self.frame.xy_average_pixelscale.to("arcsec/pix")).value
+        return (self.fwhm / self.frame.average_pixelscale.to("arcsec/pix")).value
 
     # -----------------------------------------------------------------
 

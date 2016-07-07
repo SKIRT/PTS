@@ -202,10 +202,10 @@ class ColourAnalyser(ColourAnalysisComponent):
 
         # Get the WCS of the observed image with the largest pixelscale
         for key in self.observed:
-            if target_wcs is None or self.observed[key].wcs.xy_average_pixelscale > target_wcs.xy_average_pixelscale: target_wcs = self.observed[key].wcs
+            if target_wcs is None or self.observed[key].wcs.average_pixelscale > target_wcs.average_pixelscale: target_wcs = self.observed[key].wcs
 
         # Debugging
-        log.debug("The target coordinate system has a pixelscale of " + str(target_wcs.xy_average_pixelscale) + " and a shape of (nx=" + str(target_wcs.naxis1) + ", ny=" + str(target_wcs.naxis2) + ")")
+        log.debug("The target coordinate system has a pixelscale of " + str(target_wcs.average_pixelscale) + " and a shape of (nx=" + str(target_wcs.naxis1) + ", ny=" + str(target_wcs.naxis2) + ")")
 
         # Rebin all observed images to the target coordinate system
         for key in self.observed:

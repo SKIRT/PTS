@@ -176,7 +176,7 @@ class Box(np.ndarray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def cutout(cls, frame, center, x_radius, y_radius):
+    def cutout(cls, frame, center, x_radius, y_radius=None):
 
         """
         This class method ...
@@ -186,6 +186,8 @@ class Box(np.ndarray):
         :param y_radius:
         :return:
         """
+
+        if y_radius is None: y_radius = x_radius
 
         # Crop the frame
         cropped, x_min, x_max, y_min, y_max = cropping.crop(frame, center.x, center.y, x_radius, y_radius)
@@ -567,9 +569,9 @@ class Box(np.ndarray):
                 log.debug("cutout = " + str(type(self)) + " " + str(mask.shape))
                 log.debug("mask = " + str(type(mask)) + " " + str(mask.shape))
                 print("HERE!")
-                plotting.plot_box(self)
-                plotting.plot_box(mask)
-                plotting.plot_box(np.ma.masked_array(self, mask=mask))
+                #plotting.plot_box(self)
+                #plotting.plot_box(mask)
+                #plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 print("AND HEREEE!!!")
                 mask = mask.eroded(connectivity=2, iterations=1)
                 #plotting.plot_box(np.ma.masked_array(self, mask=mask))

@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import copy
 import numpy as np
 
 # Import astronomical modules
@@ -24,11 +25,10 @@ from astropy.io import fits
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from .vector import Extent
 from .geometry import Coordinate
 from .skygeometry import SkyCoordinate
 from ..tools import coordinates
-from ...core.tools.logging import log
+from .pixelscale import Pixelscale
 
 # -----------------------------------------------------------------
 
@@ -73,6 +73,19 @@ class CoordinateSystem(wcs.WCS):
             if "PLANE" in key: del header[key]
 
         return cls(header)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # DEFAULT COPY FUNCTION OF WCS IS NOT A REAL DEEP COPY!! THIS HAS CAUSED ME BUGS THAT GAVE ME HEADACHES
+
+        return copy.deepcopy(self)
 
     # -----------------------------------------------------------------
 
@@ -130,30 +143,19 @@ class CoordinateSystem(wcs.WCS):
         y_pixelscale = result[1] * Unit("deg/pix")
 
         # Return the pixel scale as an extent
-        return Extent(x_pixelscale, y_pixelscale)
+        return Pixelscale(x_pixelscale, y_pixelscale)
 
     # -----------------------------------------------------------------
 
     @property
-    def xy_average_pixelscale(self):
+    def average_pixelscale(self):
 
         """
         This function ...
         :return:
         """
 
-        pixelscale = self.pixelscale
-
-        x_pixelscale = abs(pixelscale.x.to("arcsec/pix"))
-        y_pixelscale = abs(pixelscale.y.to("arcsec/pix"))
-
-        if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
-            log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
-            log.warning("  * x pixelscale (absolute value) = " + str(x_pixelscale))
-            log.warning("  * y pixelscale (absolute value) = " + str(y_pixelscale))
-
-        # Return a single value for the pixelscale in arcseconds
-        return 0.5 * (x_pixelscale + y_pixelscale)
+        return self.pixelscale.average
 
     # -----------------------------------------------------------------
 

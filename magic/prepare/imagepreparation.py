@@ -352,7 +352,7 @@ class ImagePreparer(OldConfigurable):
         assert self.image.unit == Unit("Jy/pix")
 
         # Get pixelscale
-        pixelscale = self.image.xy_average_pixelscale
+        pixelscale = self.image.average_pixelscale
 
         # Conversion from Jy / pix to MJy / pix
         conversion_factor = 1e-6

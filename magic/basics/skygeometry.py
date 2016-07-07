@@ -658,7 +658,7 @@ class SkyCircle(object):
         center = SkyCoordinate.from_pixel(circle.center, wcs)
 
         # Get the pixelscale
-        radius = circle.radius * Unit("pix") * wcs.xy_average_pixelscale
+        radius = circle.radius * Unit("pix") * wcs.average_pixelscale
 
         # Create a new SkyCircle
         return cls(center, radius, meta=circle.meta)
@@ -712,7 +712,7 @@ class SkyCircle(object):
         center = self.center.to_pixel(wcs)
 
         ## GET THE PIXELSCALE
-        pixelscale = wcs.xy_average_pixelscale
+        pixelscale = wcs.average_pixelscale
         radius = (self.radius / pixelscale).to("pix").value
 
         # Create a new Circle and return it
@@ -788,7 +788,7 @@ class SkyRectangle(object):
         center = SkyCoordinate.from_pixel(rectangle.center, wcs)
 
         # Get the pixelscale
-        radius = rectangle.radius * Unit("pix") * wcs.xy_average_pixelscale
+        radius = rectangle.radius * Unit("pix") * wcs.average_pixelscale
 
         # Create a new SkyRectangle
         return cls(center, radius, rectangle.angle, meta=rectangle.meta)
@@ -841,7 +841,7 @@ class SkyRectangle(object):
 
         center = self.center.to_pixel(wcs)
 
-        pixelscale = wcs.xy_average_pixelscale
+        pixelscale = wcs.average_pixelscale
         radius_x = (self.radius.x / pixelscale).to("pix").value
         radius_y = (self.radius.y / pixelscale).to("pix").value
 

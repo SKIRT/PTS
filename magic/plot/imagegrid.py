@@ -492,7 +492,7 @@ class ResidualImageGridPlotter(ImageGridPlotter):
         # Determine the wcs with the smallest pixelscale
         reference_wcs = None
         for label in self.rows:
-            if reference_wcs is None or reference_wcs.xy_average_pixelscale > self.rows[label][0].xy_average_pixelscale: reference_wcs = copy.deepcopy(self.rows[label][0].wcs)
+            if reference_wcs is None or reference_wcs.average_pixelscale > self.rows[label][0].average_pixelscale: reference_wcs = copy.deepcopy(self.rows[label][0].wcs)
 
         number_of_rows = len(self.rows)
         axisratio = float(self.rows[self.rows.keys()[0]][0].xsize) / float(self.rows[self.rows.keys()[0]][0].ysize)

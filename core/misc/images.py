@@ -338,7 +338,7 @@ class ObservedImageMaker(object):
         log.info("Converting the units of the images to " + str(unit) + " ...")
 
         # Get the pixelscale
-        #pixelscale = self.wcs.xy_average_pixelscale.to("arcsec/pix").value # in arcsec**2 / pixel
+        #pixelscale = self.wcs.average_pixelscale.to("arcsec/pix").value # in arcsec**2 / pixel
 
         # Loop over the images
         for datacube_name in self.images:

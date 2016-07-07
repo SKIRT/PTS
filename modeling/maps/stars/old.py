@@ -94,7 +94,7 @@ class OldStellarMapMaker(object):
         conversion_factor *= 1e6
 
         # Convert the 3.6 micron image from Jy / sr to Jy / pixel
-        pixelscale = self.images["3.6mu"].xy_average_pixelscale
+        pixelscale = self.images["3.6mu"].average_pixelscale
         pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
         conversion_factor /= pixel_factor
         self.images["3.6mu"] *= conversion_factor

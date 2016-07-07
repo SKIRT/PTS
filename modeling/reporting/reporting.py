@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.reporting.reporting Contains the Reporter class
+## \package pts.modeling.reporting.reporting Contains the Reporter class.
 
 # -----------------------------------------------------------------
 
@@ -172,7 +172,7 @@ class Reporter(ReportingComponent):
                 instrument_column.append(instrument)
                 band_column.append(band)
                 unit_column.append(str(image.unit))
-                pixelscale_column.append(image.xy_average_pixelscale.to("arcsec/pix").value)
+                pixelscale_column.append(image.average_pixelscale.to("arcsec/pix").value)
                 has_errors_column.append(has_errors)
                 prep_names_column.append(prep_name)
 
@@ -341,7 +341,7 @@ class Reporter(ReportingComponent):
                 result = Image.from_file(result_path)
 
                 unit = str(result.unit)
-                pixelscale = result.xy_average_pixelscale.to("arcsec/pix").value
+                pixelscale = result.average_pixelscale.to("arcsec/pix").value
                 fwhm = result.fwhm.to("arcsec").value if result.fwhm is not None else None
                 has_errors = "errors" in result.frames.keys() and not result.frames.errors.all_zero
                 has_sky = "sky" in result.frames.keys() and not result.frames.sky.all_zero

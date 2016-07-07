@@ -70,7 +70,7 @@ conversion_factor = 1.0
 conversion_factor *= 1e6
 
 # Convert the 3.6 micron image from Jy / sr to Jy / pixel
-pixelscale = frame.xy_average_pixelscale
+pixelscale = frame.average_pixelscale
 pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
 conversion_factor /= pixel_factor
 frame *= conversion_factor
@@ -128,7 +128,7 @@ exit()
 
 # FWHM of all the images
 fwhm = 11.18 * Unit("arcsec")
-fwhm_pix = (fwhm / frame.xy_average_pixelscale).to("pix").value
+fwhm_pix = (fwhm / frame.average_pixelscale).to("pix").value
 sigma = fwhm_pix * statistics.fwhm_to_sigma
 
 # Get the center pixel of the galaxy
@@ -152,7 +152,7 @@ rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_
 plotting.plot_peak_model(source.cutout, rel_center.x, rel_center.y, rel_model)
 
 model_fwhm_pix = fitting.fwhm(model) * Unit("pix")
-model_fwhm = (model_fwhm_pix * frame.xy_average_pixelscale).to("arcsec")
+model_fwhm = (model_fwhm_pix * frame.average_pixelscale).to("arcsec")
 
 print("Model FWHM: ", model_fwhm)
 

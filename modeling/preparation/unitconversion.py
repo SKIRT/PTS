@@ -480,7 +480,7 @@ class UnitConverter(OldConfigurable):
         self.conversion_factor *= 1e-6
 
         # Conversion from MJy (per pixel2) to MJy / sr
-        self.conversion_factor *= self.pixel_factor(self.image.frames.primary.xy_average_pixelscale)
+        self.conversion_factor *= self.pixel_factor(self.image.frames.primary.average_pixelscale)
 
     # -----------------------------------------------------------------
 

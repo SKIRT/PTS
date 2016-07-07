@@ -360,7 +360,7 @@ class FittingInitializer(FittingComponent):
         yc = pixel_center.y
 
         # Get the pixelscale in physical units
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix") # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix") # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the number of x and y pixels
@@ -403,7 +403,7 @@ class FittingInitializer(FittingComponent):
 
         # Get the pixelscale in physical units
         distance = self.parameters.distance
-        pixelscale_angular = self.reference_wcs.xy_average_pixelscale * Unit("pix")  # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         # BINTREE: (smallest_cell_pixels, min_level, max_mass_fraction)

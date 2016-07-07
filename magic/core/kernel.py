@@ -58,6 +58,18 @@ class ConvolutionKernel(Frame):
     # -----------------------------------------------------------------
 
     @property
+    def prepared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._prepared
+
+    # -----------------------------------------------------------------
+
+    @property
     def normalized(self):
 
         """
@@ -143,7 +155,7 @@ class ConvolutionKernel(Frame):
         average_pixelscale = 0.5 * (pixelscale.x + pixelscale.y)
 
         # Calculate the zooming factor
-        factor = (average_pixelscale / self.xy_average_pixelscale).to("").value
+        factor = (average_pixelscale / self.average_pixelscale).to("").value
 
         # Rebin to the pixelscale
         new_data = ndimage.interpolation.zoom(self._data, zoom=1.0 / factor)

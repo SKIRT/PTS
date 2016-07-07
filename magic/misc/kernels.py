@@ -46,7 +46,7 @@ def rebin_kernel(kernel, pixelscale):
     """
 
     # Calculate the zooming factor
-    factor = (pixelscale / kernel.xy_average_pixelscale).to("").value
+    factor = (pixelscale / kernel.average_pixelscale).to("").value
 
     # Rebin to the pixelscale
     data = ndimage.interpolation.zoom(kernel, zoom=1.0 / factor)
@@ -67,7 +67,7 @@ def rebin_kernel_for_image(kernel, image):
     :return:
     """
 
-    return rebin_kernel(kernel, image.xy_average_pixelscale)
+    return rebin_kernel(kernel, image.average_pixelscale)
 
 # -----------------------------------------------------------------
 
@@ -80,7 +80,7 @@ def rebin_kernel_for_frame(kernel, frame):
     :return:
     """
 
-    return rebin_kernel(kernel, frame.xy_average_pixelscale)
+    return rebin_kernel(kernel, frame.average_pixelscale)
 
 # -----------------------------------------------------------------
 

@@ -256,7 +256,7 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
-    def xy_average_pixelscale(self):
+    def average_pixelscale(self):
 
         """
         This function ...
@@ -266,7 +266,7 @@ class Image(object):
         if "primary" not in self.frames: return None
 
         # Return the averaged pixelscale of the primary frame
-        return self.primary.xy_average_pixelscale
+        return self.primary.average_pixelscale
 
     # -----------------------------------------------------------------
 
@@ -299,7 +299,7 @@ class Image(object):
         fwhm = self.fwhm
 
         # Convert into pixels
-        return (fwhm / self.xy_average_pixelscale).to("pix").value
+        return (fwhm / self.average_pixelscale).to("pix").value
 
     # -----------------------------------------------------------------
 

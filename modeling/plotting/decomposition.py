@@ -87,7 +87,7 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
         conversion_factor *= 1e6
 
         # Convert the 3.6 micron image from Jy / sr to Jy / pixel
-        pixelscale = self.frame.xy_average_pixelscale
+        pixelscale = self.frame.average_pixelscale
         pixel_factor = (1.0 / pixelscale ** 2).to("pix2/sr").value
         conversion_factor /= pixel_factor
         self.frame *= conversion_factor

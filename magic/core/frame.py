@@ -305,15 +305,15 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def xy_average_pixelscale(self):
+    def average_pixelscale(self):
 
         """
         This function ...
         :return:
         """
 
-        if self.wcs is not None: return self.wcs.xy_average_pixelscale
-        else: return 0.5*(self._pixelscale.x + self._pixelscale.y) if self._pixelscale is not None else None
+        if self.wcs is not None: return self.wcs.average_pixelscale
+        else: return self._pixelscale.average if self._pixelscale is not None else None
 
     # -----------------------------------------------------------------
 
@@ -378,7 +378,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return (self.fwhm / self.xy_average_pixelscale).to("pix").value if self.fwhm is not None else None
+        return (self.fwhm / self.average_pixelscale).to("pix").value if self.fwhm is not None else None
 
     # -----------------------------------------------------------------
 
@@ -440,6 +440,19 @@ class Frame(NDDataArray):
         """
 
         self._wavelength = value
+
+    # -----------------------------------------------------------------
+
+    def cutout_around(self, position, radius):
+
+        """
+        This function ...
+        :param position:
+        :param radius:
+        :return:
+        """
+
+        return Box.cutout(self, position, radius)
 
     # -----------------------------------------------------------------
 
@@ -526,6 +539,10 @@ class Frame(NDDataArray):
             new_frame.fwhm = kernel_fwhm
             return new_frame
 
+        # Check whether the kernel is prepared
+        if not kernel.prepared: log.warning("The convolution kernel is not prepared")
+
+        # Check where the NaNs are at
         nans_mask = np.isnan(self)
 
         # Assert that the kernel is normalized
@@ -568,11 +585,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # TODO: use the 'Reproject' package here: http://reproject.readthedocs.org/en/stable/
-
-        # Rebin the data
-        #new_data = transformations.new_align_and_rebin(self._data, self.wcs, reference_wcs)
-
+        # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
         else: new_data, footprint = reproject_interp((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape)
 
@@ -616,19 +629,23 @@ class Frame(NDDataArray):
         # Crop the frame
         new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
 
-        # Change the WCS
-        new_wcs = self.wcs.copy()
+        if self.wcs is not None:
 
-        # Change the center pixel position
-        new_wcs.wcs.crpix[0] -= x_min
-        new_wcs.wcs.crpix[1] -= y_min
+            # Copy the current WCS
+            new_wcs = self.wcs.copy()
 
-        # Change the number of pixels
-        new_wcs.naxis1 = x_max - x_min
-        new_wcs.naxis2 = y_max - y_min
+            # Change the center pixel position
+            new_wcs.wcs.crpix[0] -= x_min
+            new_wcs.wcs.crpix[1] -= y_min
 
-        new_wcs._naxis1 = new_wcs.naxis1
-        new_wcs._naxis2 = new_wcs.naxis2
+            # Change the number of pixels
+            new_wcs.naxis1 = x_max - x_min
+            new_wcs.naxis2 = y_max - y_min
+
+            new_wcs._naxis1 = new_wcs.naxis1
+            new_wcs._naxis2 = new_wcs.naxis2
+
+        else: new_wcs = None
 
         # Check shape of data
         assert new_data.shape[1] == (x_max - x_min) and new_data.shape[0] == (y_max - y_min)
@@ -679,16 +696,20 @@ class Frame(NDDataArray):
 
         new_data = np.pad(self._data, ((ny,0), (nx,0)), 'constant')
 
-        new_wcs = copy.deepcopy(self.wcs)
+        if self.wcs is not None:
 
-        new_wcs.wcs.crpix[0] += nx
-        new_wcs.wcs.crpix[1] += ny
+            new_wcs = copy.deepcopy(self.wcs)
 
-        # Change the number of pixels
-        new_wcs.naxis1 = new_data.shape[1]
-        new_wcs.naxis2 = new_data.shape[0]
-        new_wcs._naxis1 = new_wcs.naxis1
-        new_wcs._naxis2 = new_wcs.naxis2
+            new_wcs.wcs.crpix[0] += nx
+            new_wcs.wcs.crpix[1] += ny
+
+            # Change the number of pixels
+            new_wcs.naxis1 = new_data.shape[1]
+            new_wcs.naxis2 = new_data.shape[0]
+            new_wcs._naxis1 = new_wcs.naxis1
+            new_wcs._naxis2 = new_wcs.naxis2
+
+        else: new_wcs = None
 
         # Set the new data and the new WCS
         self._data = new_data
@@ -710,16 +731,20 @@ class Frame(NDDataArray):
         # Slice
         new_data = self._data[ny:, nx:]
 
-        new_wcs = copy.deepcopy(self.wcs)
+        if self.wcs is not None:
 
-        new_wcs.wcs.crpix[0] -= nx
-        new_wcs.wcs.crpix[1] -= ny
+            new_wcs = self.wcs.copy()
 
-        # Change the number of pixels
-        new_wcs.naxis1 = new_data.shape[1]
-        new_wcs.naxis2 = new_data.shape[0]
-        new_wcs._naxis1 = new_wcs.naxis1
-        new_wcs._naxis2 = new_wcs.naxis2
+            new_wcs.wcs.crpix[0] -= nx
+            new_wcs.wcs.crpix[1] -= ny
+
+            # Change the number of pixels
+            new_wcs.naxis1 = new_data.shape[1]
+            new_wcs.naxis2 = new_data.shape[0]
+            new_wcs._naxis1 = new_wcs.naxis1
+            new_wcs._naxis2 = new_wcs.naxis2
+
+        else: new_wcs = None
 
         # Set the new data and the new WCS
         self._data = new_data
@@ -759,24 +784,27 @@ class Frame(NDDataArray):
 
         new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
 
-        # Make a copy of the current WCS
-        #new_wcs = self.wcs.copy() ## THIS IS NOT A REAL DEEP COPY!! THIS HAS CAUSED ME BUGS THAT GAVE ME HEADACHES
-        new_wcs = copy.deepcopy(self.wcs)
+        if self.wcs is not None:
 
-        # Change the center pixel position
-        new_wcs.wcs.crpix[0] = new_center.x
-        new_wcs.wcs.crpix[1] = new_center.y
+            # Make a copy of the current WCS
+            new_wcs = self.wcs.copy()
 
-        # Change the number of pixels
-        new_wcs.naxis1 = new_xsize
-        new_wcs.naxis2 = new_ysize
+            # Change the center pixel position
+            new_wcs.wcs.crpix[0] = new_center.x
+            new_wcs.wcs.crpix[1] = new_center.y
 
-        new_wcs._naxis1 = new_wcs.naxis1
-        new_wcs._naxis2 = new_wcs.naxis2
+            # Change the number of pixels
+            new_wcs.naxis1 = new_xsize
+            new_wcs.naxis2 = new_ysize
 
-        # Change the pixel scale
-        new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
-        new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
+            new_wcs._naxis1 = new_wcs.naxis1
+            new_wcs._naxis2 = new_wcs.naxis2
+
+            # Change the pixel scale
+            new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
+            new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
+
+        else: new_wcs = None
 
         # Set the new data and wcs
         self._data = new_data

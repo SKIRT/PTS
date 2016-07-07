@@ -231,7 +231,7 @@ class PhotoMeter(PhotometryComponent):
             conversion_factor *= 1e6
 
             # Conversion from Jy / sr to Jy / pixel
-            pixelscale = image.xy_average_pixelscale
+            pixelscale = image.average_pixelscale
             pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
             conversion_factor /= pixel_factor
 
