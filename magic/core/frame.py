@@ -93,6 +93,78 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self._data.__eq__(other)
+
+    # -----------------------------------------------------------------
+
+    def __ne__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self._data.__ne__(other)
+
+    # -----------------------------------------------------------------
+
+    def __gt__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self._data.__gt__(other)
+
+    # -----------------------------------------------------------------
+
+    def __ge__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self._data.__ge__(other)
+
+    # -----------------------------------------------------------------
+
+    def __lt__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self._data.__lt__(other)
+
+    # -----------------------------------------------------------------
+
+    def __le__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self._data.__le__(other)
+
+    # -----------------------------------------------------------------
+
     def __mul__(self, value):
 
         """

@@ -266,6 +266,8 @@ class StarFinder(OldConfigurable):
             star.special = special
             star.ignore = ignore
 
+            special = False
+
             # -- Checking for foreground or surroudings of galaxy --
 
             if "On galaxy" in self.catalog.colnames: star_on_galaxy = self.catalog["On galaxy"][i]

@@ -447,6 +447,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     sigma = config.kernel.fwhm * statistics.fwhm_to_sigma
     kernel_size = int(round(4.0 * config.kernel.cutoff_level))
     kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
+    kernel.normalize() # to suppress warning
 
     if special: log.debug("looking for center segment")
 
@@ -673,6 +674,7 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
         # Create a Gaussian convolution kernel and return it
         sigma = config.convolution_fwhm * statistics.fwhm_to_sigma
         kernel = Gaussian2DKernel(sigma)
+        kernel.normalize() # to suppress warning
 
     # Else, set the kernel to None
     else: kernel = None

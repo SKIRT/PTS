@@ -416,6 +416,9 @@ class SourceFinder(OldConfigurable):
             # Debugging
             log.debug("Shape of the downsampled image: " + str(self.frame.shape) + " (original shape: " + str(frame.shape) + ")")
 
+            # Adjust configs for downsampling
+            self.adjust_configs_for_downsampling()
+
         else: self.frame = frame
 
         # Set the galactic and stellar catalog
@@ -447,6 +450,54 @@ class SourceFinder(OldConfigurable):
         """
 
         return self.config.downsample_factor is not None and self.config.downsample != 1
+
+    # -----------------------------------------------------------------
+
+    def adjust_configs_for_downsampling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+        # GALAXY FINDER
+
+        self.galaxy_finder.config.detection.initial_radius /= self.config.downsample_factor
+
+        self.galaxy_finder.config.detection.min_pixels = int(math.ceil(self.galaxy_finder.config.detection.min_pixels / self.config.downsample_factor))
+
+        self.galaxy_finder.config.detection.kernel.fwhm /= self.config.downsample_factor
+
+        self.galaxy_finder.config.region.default_radius /= self.config.downsample_factor
+
+        # STAR FINDER
+
+        self.star_finder.config.fetching.min_distance_from_galaxy.principal /= self.config.downsample_factor
+        self.star_finder.config.fetching.min_distance_from_galaxy.companion /= self.config.downsample_factor
+        self.star_finder.config.fetching.min_distance_from_galaxy.other /= self.config.downsample_factor
+
+        self.star_finder.config.detection.initial_radius /= self.config.downsample_factor
+
+        self.star_finder.config.detection.minimum_pixels = int(math.ceil(self.star_finder.config.detection.minimum_pixels / self.config.downsample_factor))
+
+        self.star_finder.config.detection.peak_offset_tolerance /= self.config.downsample_factor
+
+        self.star_finder.config.detection.convolution_fwhm /= self.config.downsample_factor
+
+        self.star_finder.config.fitting.minimum_pixels = int(math.ceil(self.star_finder.config.fitting.minimum_pixels / self.config.downsample_factor))
+
+        self.star_finder.config.fitting.max_model_offset /= self.config.downsample_factor
+
+        self.star_finder.config.saturation.min_pixels = int(math.ceil(self.star_finder.config.saturation.min_pixels / self.config.downsample_factor))
+
+        self.star_finder.config.saturation.kernel.fwhm /= self.config.downsample_factor
+
+        self.star_finder.config.saturation.apertures.max_offset /= self.config.downsample_factor
+
+        # TRAINED FINDER
+
+
 
     # -----------------------------------------------------------------
 

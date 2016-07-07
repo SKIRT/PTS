@@ -963,7 +963,7 @@ class SkySubtractor(OldConfigurable):
         log.info("Subtracting the sky from the frame ...")
 
         # Subtract the estimated sky from the image frame
-        self.frame[:] = self.frame - self.sky
+        self.frame -= self.sky
 
     # -----------------------------------------------------------------
 

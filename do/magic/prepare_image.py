@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.magic.prepare.imagepreparation import ImagePreparer
+from pts.magic.prepare.preparer import ImagePreparer
 from pts.core.tools import logging, time, tables, parsing
 from pts.core.tools import filesystem as fs
 from pts.magic.core.image import Image
