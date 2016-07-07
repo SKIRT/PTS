@@ -302,6 +302,31 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __pow__(self, power):
+
+        """
+        This function ...
+        :param power:
+        :return:
+        """
+
+        return self.copy().__ipow__(power)
+
+    # -----------------------------------------------------------------
+
+    def __ipow__(self, power):
+
+        """
+        This function ...
+        :param power:
+        :return:
+        """
+
+        self._data **= power
+        return self
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None):
 
