@@ -403,7 +403,7 @@ class AnalysisLauncher(AnalysisComponent):
         # Set the paths to the for each image (except for the SPIRE images)
         kernel_paths = dict()
         aniano = AnianoKernels()
-        pacs_red_psf_path = aniano.get_psf_path("PACS_160")
+        pacs_red_psf_path = aniano.get_psf_path("PACS 160")
         for filter_name in filter_names:
             if "SPIRE" in filter_name: continue
             kernel_paths[filter_name] = pacs_red_psf_path

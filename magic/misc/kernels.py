@@ -28,6 +28,7 @@ from ...core.tools import inspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import archive
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -169,18 +170,19 @@ class AnianoKernels(object):
 
     # -----------------------------------------------------------------
 
-    def get_kernel(self, from_instrument, to_instrument, high_res=True):
+    def get_kernel(self, from_filter, to_filter, high_res=True, fwhm=None):
 
         """
         This function ...
-        :param from_instrument:
-        :param to_instrument:
+        :param from_filter:
+        :param to_filter:
         :param high_res:
+        :param fwhm:
         :return:
         """
 
         # Get the local path to the kernel (will be downloaded if necessary)
-        kernel_path = self.get_kernel_path(from_instrument, to_instrument, high_res=high_res)
+        kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, fwhm=fwhm, return_name=True)
 
         # Load the kernel frame
         kernel = Frame.from_file(kernel_path)
@@ -189,8 +191,8 @@ class AnianoKernels(object):
         if kernel.fwhm is None:
 
             # Find the appropriate FWHM
-            if "Gauss" in to_instrument or "Moffet" in to_instrument: fwhm = float(to_instrument.split("_")[1]) * Unit("arcsec")
-            elif to_instrument in fwhms: fwhm = fwhms[to_instrument]
+            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * Unit("arcsec")
+            elif to_psf_name in fwhms: fwhm = fwhms[to_psf_name]
             else: fwhm = None
 
             # Set the FWHM of the kernel
@@ -201,19 +203,33 @@ class AnianoKernels(object):
 
     # -----------------------------------------------------------------
 
-    def get_kernel_path(self, from_instrument, to_instrument, high_res=True):
+    def get_kernel_path(self, from_filter, to_filter, high_res=True, fwhm=None, return_name=False):
 
         """
         This function ...
-        :param from_instrument:
-        :param to_instrument:
+        :param from_filter:
+        :param to_filter:
         :param high_res:
+        :param fwhm:
+        :param return_name:
         :return:
         """
 
-        # TODO: allow strings that are not literally the strings appearing in the Aniano FITS file names
-        from_psf_name = from_instrument
-        to_psf_name = to_instrument
+        if isinstance(from_filter, basestring): from_filter = Filter.from_string(from_filter)
+        if isinstance(to_filter, basestring): to_filter = Filter.from_string(to_filter)
+
+        if str(from_filter) in variable_fwhms: # Is SDSS
+
+            # Determine aniano name for the FWHM
+            fwhm_arcsec = fwhm.to("arcsec").value
+            aniano_name = "BiGauss_0" + closest_half_integer_string(fwhm_arcsec) # BiGauss is for SDSS
+            log.warning("The convolution kernel will be based on the FWHM of the original image, which is specified as " + str(fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
+            from_psf_name = aniano_name
+
+        else: from_psf_name = aniano_names[str(from_filter)]
+
+        # Determine to_psf_name
+        to_psf_name = aniano_names[str(to_filter)]
 
         # Determine the path to the kernel file
         if high_res: kernel_file_basename = "Kernel_HiRes_" + from_psf_name + "_to_" + to_psf_name
@@ -227,8 +243,8 @@ class AnianoKernels(object):
             self.download_kernel(kernel_file_basename)
 
             # Find the appropriate FWHM
-            if "Gauss" in to_instrument or "Moffet" in to_instrument: fwhm = float(to_instrument.split("_")[1]) * Unit("arcsec")
-            elif to_instrument in fwhms: fwhm = fwhms[to_instrument]
+            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * Unit("arcsec")
+            elif to_psf_name in fwhms: fwhm = fwhms[to_psf_name]
             else: fwhm = None
 
             # Set the FWHM of the kernel
@@ -236,28 +252,29 @@ class AnianoKernels(object):
             kernel.fwhm = fwhm
             kernel.save(kernel_file_path)
 
-        # Return the local kernel path
-        return kernel_file_path
+        # Return
+        if return_name: return kernel_file_path, to_psf_name
+        else: return kernel_file_path # Return the local kernel path
 
     # -----------------------------------------------------------------
 
-    def get_psf(self, instrument):
+    def get_psf(self, fltr):
 
         """
         This function ...
-        :param instrument:
+        :param fltr:
         :return:
         """
 
         # Get the local path to the PSF file (will be downloaded if necessary)
-        psf_path = self.get_psf_path(instrument)
+        psf_path, psf_name = self.get_psf_path(fltr, return_name=True)
 
         # Load the PSF frame
         psf = Frame.from_file(psf_path)
 
         # Get the FWHM of the PSF
-        if "Gauss" in instrument or "Moffet" in instrument: fwhm = float(instrument.split("_")[1]) * Unit("arcsec")
-        elif instrument in fwhms: fwhm = fwhms[instrument]
+        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * Unit("arcsec")
+        elif psf_name in fwhms: fwhm = fwhms[psf_name]
         else: fwhm = None
 
         # Set the FWHM of the PSF
@@ -268,16 +285,17 @@ class AnianoKernels(object):
 
     # -----------------------------------------------------------------
 
-    def get_psf_path(self, instrument):
+    def get_psf_path(self, fltr, return_name=False):
 
         """
         This function ...
-        :param instrument:
+        :param fltr:
+        :param return_name:
         :return:
         """
 
-        # TODO: allow strings that are not literally the strings appearing in the Aniano FITS file names
-        psf_name = instrument
+        # Determine the aniano name for the PSF
+        psf_name = aniano_names[str(fltr)]
 
         # Determine the path to the PSF file
         basename = "PSF_" + psf_name
@@ -290,8 +308,8 @@ class AnianoKernels(object):
             self.download_psf(basename)
 
             # Get the FWHM of the PSF
-            if "Gauss" in instrument or "Moffet" in instrument: fwhm = float(instrument.split("_")[1]) * Unit("arcsec")
-            elif instrument in fwhms: fwhm = fwhms[instrument]
+            if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * Unit("arcsec")
+            elif psf_name in fwhms: fwhm = fwhms[psf_name]
             else: fwhm = None
 
             # Set the FWHM of the PSF
@@ -299,8 +317,8 @@ class AnianoKernels(object):
             psf.fwhm = fwhm
             psf.save(psf_file_path)
 
-        # Return the local PSF path
-        return psf_file_path
+        if return_name: return psf_file_path, psf_name
+        else: return psf_file_path # Return the local PSF path
 
     # -----------------------------------------------------------------
 
@@ -445,6 +463,37 @@ class AnianoKernels(object):
 
         # Remove the fits.gz file
         fs.remove_file(gz_path)
+
+# -----------------------------------------------------------------
+
+def closest_half_integer(number):
+
+    """
+    Round a number to the closest half integer.
+    >>> closest_half_integer(1.3)
+    1.5
+    >>> closest_half_integer(2.6)
+    2.5
+    >>> closest_half_integer(3.0)
+    3.0
+    >>> closest_half_integer(4.1)
+    4.0
+    """
+
+    return round(number * 2) / 2.0
+
+# -----------------------------------------------------------------
+
+def closest_half_integer_string(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    value = closest_half_integer(number)
+    return "{0:.1f}".format(round(value, 1))
 
 # -----------------------------------------------------------------
 

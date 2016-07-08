@@ -181,15 +181,8 @@ convolve_to_filter = Filter.from_string(arguments.convolve_to)
 # Create an AnianoKernels instance
 kernels = AnianoKernels()
 
-# Get the aniano names for the image filter and the filter to which to convolve
-from_instrument = aniano_names[str(image.filter)]
-to_instrument = aniano_names[str(convolve_to_filter)]
-
-# Give a warning for the user to check the FWHM and the aniano name
-if from_instrument in variable_fwhms: log.warning("The FWHM of this image was found to be " + str(fwhm) + " by the SourceFinder. Please check that this corresponds to the aniano PSF that will be used: " + to_instrument)
-
 # Get the path to the appropriate convolution kernel
-kernel_path = kernels.get_kernel_path(from_instrument, to_instrument)
+kernel_path = kernels.get_kernel_path(image.filter, convolve_to_filter, fwhm=fwhm)
 
 # Set the kernel path
 arguments.kernel = kernel_path

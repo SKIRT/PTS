@@ -31,7 +31,6 @@ from ...core.tools import special
 from ...core.basics.animation import Animation
 from ...core.tools import filesystem as fs
 from ...core.tools import time
-from ..tools import plotting
 from ..animation.imageblink import ImageBlinkAnimation
 from ..animation.sourceextraction import SourceExtractionAnimation
 from ..core.kernel import ConvolutionKernel
