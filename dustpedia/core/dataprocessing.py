@@ -36,6 +36,9 @@ from ...core.tools import time
 from ...magic.core.image import Image
 from .galex_montage_functions import mosaic_galex
 from ...core.tools import archive
+from ...magic.core.frame import Frame
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.basics.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -399,6 +402,83 @@ class DustPediaDataProcessing(object):
         for band in bands_in_dict.keys():
 
             mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], root_dir)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
+
+    # -----------------------------------------------------------------
+
+    def make_sdss_rebinned_frames_in_counts_with_poisson(self, galaxy_name, band, output_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :param output_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making SDSS rebinned frames in counts for " + galaxy_name + " for SDSS " + band + " band ...")
+
+        # Determine the path to the temporary directory for downloading the images
+        #temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
+
+        # Create the temporary directory
+        #fs.create_directory(temp_path)
+
+        temp_path = fs.join(fs.home(), "SDSS_NGC3031_i_2016-06-29--12-10-26-341")
+
+        # Get the target header
+        header = self.get_header_for_galaxy(galaxy_name, "SDSS")
+
+        # To coordinate system
+        rebin_wcs = CoordinateSystem(header)
+
+        # Loop over the images, convert to count and rebin
+        for path, name in fs.files_in_path(temp_path, extension="fits", returns=["path", "name"]):
+
+            # Debugging
+            log.debug("Loading the " + name + " frame ...")
+
+            # Load the frame
+            frame = Frame.from_file(path, add_meta=True)
+
+            print("unit:", frame.unit)
+
+            # Get the 'NMGY' parameter
+            nanomaggy_per_count = frame.meta["nmgy"]
+
+            # Debugging
+            log.debug("Converting unit to count ...")
+
+            # Convert the frame to count
+            frame /= nanomaggy_per_count
+            frame.unit = Unit("count")
+
+            # Debugging
+            log.debug("Rebinning to the target coordinate system ...")
+
+            # Rebin the frame
+            footprint = frame.rebin(rebin_wcs, exact=False)
+
+            # Debugging
+            log.debug("Adding the rebinned field and footprint to the same image ...")
+
+            # Create image, add image frame and footprint
+            image = Image()
+            image.add_frame(frame, "primary")
+
+            padded = Mask(footprint < 0.9).disk_dilation(radius=10)
+            image.add_mask(padded, "padded")
+
+            #image.add_frame(footprint, "footprint")
+
+            # Determine new path
+            new_path = fs.join(output_path, name + ".fits")
+
+            # Debugging
+            log.debug("Saving the image to " + new_path + " ...")
+
+            # Save
+            image.save(new_path)
 
     # -----------------------------------------------------------------
 

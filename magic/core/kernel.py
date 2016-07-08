@@ -83,7 +83,7 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        return np.abs(self.sum() - 1) < 1e-8  # same criterion as in astropy.convolution module
+        return np.abs(self.sum() - 1.) < 1e-8  # same criterion as in astropy.convolution module
 
     # -----------------------------------------------------------------
 

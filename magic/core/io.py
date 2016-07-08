@@ -205,7 +205,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
 # -----------------------------------------------------------------
 
-def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None):
+def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None, add_meta=False):
 
     """
     This function ...
@@ -217,8 +217,11 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param hdulist_index:
     :param no_filter:
     :param fwhm:
+    :param add_meta:
     :return:
     """
+
+    metadata = dict()
 
     # Open the HDU list for the FITS file
     hdulist = fits.open(path)
@@ -241,6 +244,10 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     # Get the image header
     header = hdu.header
+
+    # Add meta information
+    if add_meta:
+        for key in header: metadata[key.lower()] = header[key]
 
     # Check whether multiple planes are present in the FITS image
     nframes = headers.get_number_of_frames(header)
@@ -333,7 +340,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    zero_point=zero_point,
                    filter=fltr,
                    sky_subtracted=sky_subtracted,
-                   fwhm=fwhm)
+                   fwhm=fwhm, meta=metadata)
 
     else:
 
@@ -352,7 +359,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    zero_point=zero_point,
                    filter=fltr,
                    sky_subtracted=sky_subtracted,
-                   fwhm=fwhm)
+                   fwhm=fwhm, meta=metadata)
 
 # -----------------------------------------------------------------
 

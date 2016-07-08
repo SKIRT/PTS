@@ -328,7 +328,8 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None):
+    def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
+                  fwhm=None, add_meta=False):
 
         """
         This function ...
@@ -340,6 +341,7 @@ class Frame(NDDataArray):
         :param hdulist_index: if None, is automatically decided based on where the imageHDU is.
         :param no_filter:
         :param fwhm:
+        :param add_meta:
         :return:
         """
 
@@ -349,7 +351,7 @@ class Frame(NDDataArray):
         from . import io
 
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm)
+        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
 
     # -----------------------------------------------------------------
 
