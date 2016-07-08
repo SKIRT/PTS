@@ -13,8 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 from scipy import ndimage
+from scipy.ndimage.interpolation import shift
+
+# Import astronomical modules
+from astropy.modeling import models, fitting
+from photutils.morphology import centroid_com, centroid_1dg, centroid_2dg
 
 # Import the relevant PTS classes and modules
 from .frame import Frame
@@ -104,14 +110,17 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
+        # Inform the user
+        log.info("Preparing the kernel ...")
+
         # Truncate
         self.truncate(sigma_level)
 
         # Adjust pixelscale
         self.adjust_pixelscale(pixelscale)
 
-        # Center
-        self.center()
+        # Recenter
+        self.recenter()
 
         # Normalize
         self.normalize()
@@ -128,6 +137,10 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
+        # Debugging
+        log.debug("Truncating the kernel to a sigma level of " + str(sigma_level) + " ...")
+
+        # Determine the radius in number of pixels
         sigma_pix = statistics.fwhm_to_sigma * self.fwhm_pix
         radius = sigma_level * sigma_pix
 
@@ -152,6 +165,9 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
+        # Debugging
+        log.debug("Adjusting the pixelscale of the kernel to match that of the image ...")
+
         average_pixelscale = 0.5 * (pixelscale.x + pixelscale.y)
 
         # Calculate the zooming factor
@@ -166,44 +182,160 @@ class ConvolutionKernel(Frame):
 
     # -----------------------------------------------------------------
 
-    def center(self):
+    def recenter(self, centroid_method="2dg"):
 
         """
         This function ...
         :return:
         """
 
-        # FROM CONVOLVE_IMAGE.PRO:
+        center_x = 0.5 * (self.xsize - 1)
+        center_y = 0.5 * (self.ysize - 1)
 
-        # size_im      = (size(image))[1]
-        # center_pixel = fix((size_im - 1) / 2)
+        if centroid_method == "com": x_centroid, y_centroid = self.centroid_com()
+        elif centroid_method == "fit": x_centroid, y_centroid = self.centroid_fit()
+        elif centroid_method == "2dg": x_centroid, y_centroid = self.centroid_2dg()
+        elif centroid_method == "aniano": x_centroid, y_centroid = self.get_maximum_aniano()
+        else: raise ValueError("Invalid centroid method")
+
+        # Debugging
+        log.debug("The centroid coordinate of the kernel was found to be " + str(x_centroid) + ", " + str(y_centroid))
+        log.debug("The center of the kernel image is " + str(center_x) + ", " + str(center_y))
+
+        # Calculate shift
+        shift_x = center_x - x_centroid
+        shift_y = center_y - y_centroid
+
+        # If the shift is less than 0.2 pixel, don't shift
+        if shift_x < 0.2 and shift_y <= 0.2:
+
+            log.debug("Kernel is already perfectly aligned with the center: skipping recentering ...")
+            return
+
+        # Debugging
+        log.debug("Shifting the kernel center by (" + str(shift_x) + ", " + str(shift_y) + " pixels ...")
+
+        # Shift
+        self._data = shift(self._data, [shift_x, shift_y])
+
+        # CHECK AGAIN
+
+        if centroid_method == "com": x_centroid, y_centroid = self.centroid_com()
+        elif centroid_method == "fit": x_centroid, y_centroid = self.centroid_fit()
+        elif centroid_method == "2dg": x_centroid, y_centroid = self.centroid_2dg()
+        elif centroid_method == "aniano": x_centroid, y_centroid = self.get_maximum_aniano()
+        else: raise ValueError("Invalid centroid method")
+
+        new_shift_x = center_x - x_centroid
+        new_shift_y = center_y - y_centroid
+
+        new_shift_x_relative = abs(new_shift_x) / abs(shift_x)
+        new_shift_y_relative = abs(new_shift_y) / abs(shift_y)
+
+        #print("new shift x relative " + str(new_shift_x_relative))
+        #print("new shift y relative " + str(new_shift_y_relative))
+
+        if new_shift_x_relative >= 0.1: raise RuntimeError("The recentering of the kernel failed: new x shift = " + str(new_shift_x) + ", previous x shift = " + str(shift_x))
+        if new_shift_y_relative >= 0.1: raise RuntimeError("The recentering of the kernel failed: new y shift = " + str(new_shift_y) + ", previous y shift = " + str(shift_y))
+
+    # -----------------------------------------------------------------
+
+    def centroid_com(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return centroid_com(self._data)
+
+    # -----------------------------------------------------------------
+
+    def centroid_2dg(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return centroid_2dg(self._data)
+
+    # -----------------------------------------------------------------
+
+    def center_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .box import Box
+        from ..basics.vector import Position
+
+        # Box
+        box = Box(self._data, 0, self.xsize, 0, self.ysize)
+
+        # Fit model
+        model = box.fit_model(Position(0.5*(self.xsize-1), 0.5*(self.ysize-1)), "Gaussian")
+
+        # Get x and y mean
+        x_mean = model.x_mean.value
+        y_mean = model.y_mean.value
+        return x_mean, y_mean
+
+    # -----------------------------------------------------------------
+
+    def center_aniano(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Centering the kernel ...")
+
+        # FROM CONVOLVE_IMAGE.PRO (G. Aniano)
+
+        center_x = int(0.5 * (self.xsize - 1))
+        center_y = int(0.5 * (self.ysize - 1))
 
         # get_maximun,image,x_max,y_max
+
+        x_max, y_max = self.get_maximum()
 
         # ; determine the needed shifts
-        # shift_x = center_pixel - x_max
-        # shift_y = center_pixel - y_max
+        shift_x = center_x - x_max
+        shift_y = center_y - y_max
 
         # ; make the shift if nonzero
-        # if (shift_x ne 0) or (shift_y ne 0) then begin
-        #   if do_we_write eq 1 then print,'Shifting the PSF center by ('+ strtrim(string(shift_x),2) +','+ strtrim(string(shift_y),2) + ') pixels'
-        #   image = shift(image,shift_x,shift_y)
-        #   image[  0                     :abs(shift_x),*]=0.0
-        #   image[  size_im-1-abs(shift_x):size_im-1   ,*]=0.0
-        #   image[*,0                     :abs(shift_y)  ]=0.0
-        #   image[*,size_im-1-abs(shift_y):size_im-1     ]=0.0
-        # endif
+        if (shift_x != 0) or (shift_y != 0):
 
-        # ; We check that the centering is OK:
-        # get_maximun,image,x_max,y_max
-        # shift_x = center_pixel - x_max
-        # shift_y = center_pixel - y_max
-        # if (shift_x ne 0) or (shift_y ne 0) then if do_we_write eq 1 then print,'WARNING: Something went wrong in the image centering routine!!!'
+            # Debugging
+            log.debug("Shifting the kernel center by (" + str(shift_x) + ", " + str(shift_y) + " pixels ...")
 
-        # if do_we_write eq 1 then print,'The PSF was centered successfully.'
-        # if do_we_write eq 1 then print,' '
+            self._data = shift(self._data, [shift_x,shift_y])
 
-        pass
+            # Y
+            self._data[:abs(shift_y),:] = 0.0
+            self._data[self.ysize-1-abs(shift_y):self.ysize,:] = 0.0
+
+            # X
+            self._data[:,:abs(shift_x)] = 0.0
+            self._data[:,self.xsize-1-abs(shift_x):] = 0.0
+
+        # CHECK
+
+        # Calculate shift again
+        x_max, y_max = self.get_maximum()
+        new_shift_x = center_x - x_max
+        new_shift_y = center_y - y_max
+
+        # Raise exception if there is still a shift
+        if (new_shift_x != 0) or (new_shift_y != 0): raise RuntimeError("Something went wrong during the kernel centering: "
+                                                                "new shift x = " + str(new_shift_x) + ", new shift y = "
+                                                                + str(new_shift_y) + " (previous shift x = " + str(shift_x)
+                                                                        + ", previous shift y = " + str(shift_y))
 
     # -----------------------------------------------------------------
 
@@ -215,5 +347,65 @@ class ConvolutionKernel(Frame):
         """
 
         self.__idiv__(self.sum())
+
+    # -----------------------------------------------------------------
+
+    def get_maximum_aniano(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        rad_to_mean = 5
+
+        data_copy = self._data.copy()
+
+        #
+        mean_im = data_copy * 0.0
+
+        i_range = range(-int(rad_to_mean), int(rad_to_mean)+1)
+        #print("irange", i_range)
+
+        for i in i_range:
+           j_range = range(-int(math.sqrt(rad_to_mean ** 2 - i ** 2)), int(math.sqrt(rad_to_mean ** 2 - i ** 2))+1)
+           #print("jrange", j_range)
+           for j in j_range:
+              mean_im += shift(data_copy, [i, j])
+
+        mean_im_sum = np.sum(mean_im)
+
+        #mx    = max(mean_im, location)
+        #index = ARRAY_INDICES(mean_im, location)
+        #x_max = index[0]
+        #y_max = index[1]
+
+        # Get x and y max
+        max_index = np.argmax(mean_im)
+        c = (max_index // len(mean_im[0]), max_index % len(mean_im[0]))
+        x_max = c[1]
+        y_max = c[0]
+
+        max_value = mean_im[y_max, x_max]
+        where = np.abs(mean_im - max_value) < (5e-4 * mean_im_sum)
+        count = np.sum(where)
+
+        if count > 1:
+
+            log.debug("WARNING: The PSF has " + str(count) + "pixels with values similar to its maxximun... we will take their centroid...")
+
+            xsize = data_copy.shape[1]
+            ysize = data_copy.shape[0]
+
+            xv, yv = np.meshgrid(np.arange(xsize), np.arange(ysize))
+
+            # Average x max
+            x_max = np.sum(xv[where]) / float(count)
+
+            # Average y max
+            y_max = np.sum(xv[where]) / float(count)
+
+        # Return xmax and ymax position
+        return x_max, y_max
 
 # -----------------------------------------------------------------
