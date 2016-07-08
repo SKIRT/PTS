@@ -367,7 +367,7 @@ class DustPediaDataProcessing(object):
 
         # --
 
-        # Download the GALEX observations to the temporary directory # they are decompressed here also
+        # Download the GALEX observations to the temporary directory  # they are decompressed here also
         self.download_galex_observations_for_galaxy(galaxy_name, temp_path)
 
         # --
