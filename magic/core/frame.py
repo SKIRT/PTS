@@ -650,10 +650,12 @@ class Frame(NDDataArray):
             return new_frame
 
         # Check whether the kernel is prepared
-        if not kernel.prepared: log.warning("The convolution kernel is not prepared")
+        if not kernel.prepared:
+            log.warning("The convolution kernel is not prepared, preparing ...")
+            kernel.prepare(self.pixelscale)
 
         # Check where the NaNs are at
-        nans_mask = np.isnan(self)
+        nans_mask = np.isnan(self._data)
 
         # Assert that the kernel is normalized
         assert kernel.normalized
