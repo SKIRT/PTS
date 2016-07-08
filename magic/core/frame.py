@@ -1253,3 +1253,29 @@ class Frame(NDDataArray):
         io.write_frame(self._data, header, path)
 
 # -----------------------------------------------------------------
+
+def sum(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    arrays = [np.array(arg) for arg in args]
+    return Frame(np.sum(arrays, axis=0))
+
+# -----------------------------------------------------------------
+
+def sum_quadratically(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    arrays = [np.array(arg)**2 for arg in args]
+    return Frame(np.sqrt(np.sum(arrays, axis=0)))
+
+# -----------------------------------------------------------------

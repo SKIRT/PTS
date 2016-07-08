@@ -19,7 +19,7 @@ import numpy as np
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..core.frame import Frame
+from ..core.frame import sum_quadratically
 from ..basics.coordinatesystem import CoordinateSystem
 from ..basics.mask import Mask
 from ..sources.extractor import SourceExtractor
@@ -660,22 +660,22 @@ class ImagePreparer(OldConfigurable):
         log.info("Calculating the uncertainties ...")
 
         # Create a list to contain (the squares of) all the individual error contributions so that we can sum these arrays element-wise later
-        squared_error_maps = []
+        error_maps = []
 
         # Add the Poisson errors
-        if "poisson_errors" in self.image.frames: squared_error_maps.append(self.image.frames.poisson_errors**2)
+        if "poisson_errors" in self.image.frames: error_maps.append(self.image.frames.poisson_errors)
 
         # Add the sky errors
-        squared_error_maps.append(self.sky_subtractor.noise_frame**2)
+        error_maps.append(self.sky_subtractor.noise_frame)
 
         # Add the calibration errors
-        squared_error_maps.append(self.image.frames.calibration_errors**2)
+        error_maps.append(self.image.frames.calibration_errors)
 
         # Add additional error frames indicated by the user
-        for error_frame_name in self.config.error_frame_names: squared_error_maps.append(self.image.frames[error_frame_name]**2)
+        for error_frame_name in self.config.error_frame_names: error_maps.append(self.image.frames[error_frame_name])
 
         # Calculate the final error map
-        errors = Frame(np.sqrt(np.sum(squared_error_maps, axis=0)))
+        errors = sum_quadratically(*error_maps)
 
         # Add the combined errors frame
         self.image.add_frame(errors, "errors")
