@@ -1188,6 +1188,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def python_packages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("pip list")
+        return output
+
+    # -----------------------------------------------------------------
+
     def file_or_directory(self, path):
 
         """

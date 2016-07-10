@@ -18,7 +18,7 @@ import subprocess
 
 # Import the relevant PTS classes and modules
 from .arguments import SkirtArguments
-from ..tools import inspection
+from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
 
@@ -49,7 +49,7 @@ class SkirtExec:
 
         if self._path == "skirt":
 
-            if inspection.skirt_is_present(): self._path = inspection.skirt_path
+            if introspection.skirt_is_present(): self._path = introspection.skirt_path
             else: raise EnvironmentError("SKIRT is not installed or not in the PATH environment variable")
 
         # Indicate no simulations are running yet
@@ -132,7 +132,7 @@ class SkirtExec:
     def run(self, arguments, wait=True, silent=False):
 
         # Check whether MPI is present on this system if multiple processe are requested
-        if arguments.parallel.processes > 1 and not inspection.has_mpi():
+        if arguments.parallel.processes > 1 and not introspection.has_mpi():
             log.warning("No mpirun executable: skipping simulations")
             return []
 

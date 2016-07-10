@@ -20,7 +20,7 @@ import inspect
 from config import Config, Mapping
 
 # Import the relevant PTS classes and modules
-from . import inspection
+from . import introspection
 from . import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -85,7 +85,7 @@ def set(subpackage_name, class_name, config=None):
     default_config = os.path.join(subpackage_directory, "config", class_name + ".cfg")
 
     # If we have not created a default configuration file for this class yet ...
-    if not fs.is_file(default_config): default_config = os.path.join(inspection.pts_package_dir, "core", "config", "default.cfg")
+    if not fs.is_file(default_config): default_config = os.path.join(introspection.pts_package_dir, "core", "config", "default.cfg")
 
     # Open the default configuration if no configuration file is specified, otherwise adjust the default
     # settings according to the user defined configuration file

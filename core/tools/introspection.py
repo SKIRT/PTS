@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.tools.inspection Contains some useful variables that store SKIRT and PTS installation directories
+## \package pts.core.tools.introspection Contains some useful variables that store SKIRT and PTS installation directories
 #  and provides functions for checking the presence and use of SKIRT and PTS dependencies.
 
 # -----------------------------------------------------------------
@@ -252,7 +252,7 @@ def get_pip_versions():
     packages = dict()
 
     # Launch the 'pip freeze' command and get the output
-    output = subprocess.check_output(["pip", "freeze"])
+    output = subprocess.check_output(["pip", "list"])
 
     # Loop over the different package names and record the version number
     for entry in output.split("\n"):
@@ -261,7 +261,8 @@ def get_pip_versions():
         if not entry: continue
 
         # Get the package name and version
-        name, version = entry.split("==")
+        name, version = entry.split(" (")
+        version = version.split(")")[0]
 
         # Add them to the dictionary
         packages[name.lower()] = version
@@ -338,14 +339,16 @@ def get_all_dependencies():
     # Recursively loop over all files inside this working directory
     for directory, subdirs, files in os.walk(pts_package_dir):
 
-        # Loop over all files in the (sub)directory
-        for filename in files:
+        python_files = [filename for filename in files if filename.endswith(".py")]
 
-            # If the file is not a python script, skip it
-            if not filename.endswith(".py"): continue
+        # Loop over all files in the (sub)directory
+        for filename in python_files:
 
             # Determine the full path to this file
             filepath = os.path.join(directory, filename)
+
+            has_absolute_import = False
+            modules_file = []
 
             # Read the lines of the script file
             for line in open(filepath, 'r'):
@@ -353,21 +356,49 @@ def get_all_dependencies():
                 # Look for an 'import yyy' or 'from yyy import zzz' statement
                 if line.startswith("import ") or (line.startswith("from ") and "import" in line):
 
+                    # Set absolute import
+                    if "absolute_import" in line: has_absolute_import = True
+
                     # Get the name of the module
                     module = line.split()[1].split(".")[0]
 
+                    # Skip "pts"
+                    if module == "pts": continue
+
                     # Add the module name to the list
-                    if module: modules[module].add(filepath)
+                    if module: modules_file.append(module)
+
+            # If absolute import is used, add all the imported modules (they must be external packages)
+            if has_absolute_import:
+
+                # Loop over found imported modules for this file
+                for module_name in modules_file: modules[module_name].add(filepath)
+
+            # If absolute import is not used, check whether some of the module names are just local (in the same directory)
+            else:
+
+                local_module_names_in_dir = [filename[:-3] for filename in python_files if "__init__" not in filename]
+
+                for module_name in modules_file:
+
+                    if module_name in local_module_names_in_dir: continue
+
+                    if module_name == "constants" or module_name == "genome": print(module_name, filepath, local_module_names_in_dir)
+
+                    modules[module_name].add(filepath)
 
     return modules
 
 # -----------------------------------------------------------------
 
-def add_dependencies(dependencies, script_path, encountered_internal_modules, prefix=""):
+def add_dependencies(dependencies, script_path, encountered_internal_modules, prefix="", debug=False):
 
     """
     This function ...
-    :param path:
+    :param dependencies:
+    :param script_path:
+    :param encountered_internal_modules:
+    :param prefix:
     :return:
     """
 
@@ -383,11 +414,16 @@ def add_dependencies(dependencies, script_path, encountered_internal_modules, pr
 
         import_lines.append(line)
 
+    if debug:
+        print("Import statements found in " + script_path + ":")
+        for import_line in import_lines:
+            print(" - " + import_line[:-1])
+
     # Loop over the lines where something is imported
     for line in import_lines:
 
         # Get the path to the modules that are being imported in the current line
-        modules = get_modules(line, script_path)
+        modules = get_modules(line, script_path, debug=debug)
 
         for module in modules:
 
@@ -397,7 +433,7 @@ def add_dependencies(dependencies, script_path, encountered_internal_modules, pr
                 if module in encountered_internal_modules: continue
                 else:
                     encountered_internal_modules.add(module)
-                    add_dependencies(dependencies, module, encountered_internal_modules, prefix=prefix+"  ")
+                    add_dependencies(dependencies, module, encountered_internal_modules, prefix=prefix+"  ", debug=debug)
 
             else: dependencies[module].add(script_path)
 
@@ -418,7 +454,7 @@ def is_present(package):
 
 # -----------------------------------------------------------------
 
-def get_modules(import_statement, script_path):
+def get_modules(import_statement, script_path, debug=False):
 
     """
     This function ...
@@ -456,7 +492,10 @@ def get_modules(import_statement, script_path):
             subpackage_dir = os.path.dirname(subpackage_dir)
 
         subpackage_name = after_dots.split(".")[0]
-        subpackage_path = os.path.join(subpackage_dir, subpackage_name)
+
+        #subpackage_path = os.path.join(subpackage_dir, subpackage_name) # I had this before, how could this be working??
+
+        subpackage_path = fs.join(subpackage_dir, after_dots.replace(".", "/"))
 
         for name in imported: which.append(which_module(subpackage_path, name))
 
@@ -640,5 +679,72 @@ def get_arguments_tables():
 
     # Return the tables
     return tables
+
+# -----------------------------------------------------------------
+
+def show_all_available(scripts, tables=None):
+
+    """
+    This function ...
+    :param scripts:
+    :param tables:
+    :return:
+    """
+
+    print("No match found. Available commands:")
+
+    # Combine scripts and tables
+    for subproject in tables:
+        table = tables[subproject]
+        for i in range(len(table["Command"])):
+            scripts.append((subproject, table["Command"][i] + ".py", table["Description"][i]))
+
+    # Sort on the 'do' subfolder name
+    scripts = sorted(scripts, key=itemgetter(0))
+
+    current_dir = None
+    for script in scripts:
+
+        description = "  " + script[2] if len(script) == 3 else ""
+
+        if current_dir == script[0]:
+            print(" " * len(current_dir) + "/" + script[1][:-3] + description)
+        else:
+            print(script[0] + "/" + script[1][:-3] + description)
+            current_dir = script[0]
+
+# -----------------------------------------------------------------
+
+def show_possible_matches(matches, table_matches=None, tables=None):
+
+    """
+    This function ...
+    :param matches:
+    :param table_matches:
+    :param tables:
+    :return:
+    """
+
+    print("The command you provided is ambiguous. Possible matches:")
+
+    # Combine script and table matches
+    for subproject, index in table_matches:
+        command = tables[subproject]["Command"][index]
+        description = tables[subproject]["Description"][index]
+        matches.append((subproject, command + ".py", description))
+
+    # Sort on the 'do' subfolder name
+    matches = sorted(matches, key=itemgetter(0))
+
+    current_dir = None
+    for script in matches:
+
+        description = "  " + script[2] if len(script) == 3 else ""
+
+        if current_dir == script[0]:
+            print(" " * len(current_dir) + "/" + script[1][:-3] + description)
+        else:
+            print(script[0] + "/" + script[1][:-3] + description)
+            current_dir = script[0]
 
 # -----------------------------------------------------------------

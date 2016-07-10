@@ -20,7 +20,7 @@ import urllib
 from ..basics.configurable import OldConfigurable
 from ..simulation.execute import SkirtExec
 from ..simulation.remote import Remote
-from ..tools import inspection
+from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
 
@@ -90,7 +90,7 @@ class SkirtInstaller(OldConfigurable):
         for qt_dir in fs.directories_in_path("/usr/local", startswith="Qt"):
             qmake_paths += fs.files_in_path(qt_dir, recursive=True, exact_name="qmake", extension="")
 
-        qmake_path = inspection.qmake_path()
+        qmake_path = introspection.qmake_path()
         qmake_paths += [qmake_path] if qmake_path is not None else []
 
         # Get the most recent installation

@@ -19,7 +19,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
-from ...core.tools import tables, inspection
+from ...core.tools import tables, introspection
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -39,7 +39,7 @@ class CatalogCoverage(object):
         """
 
         # Determine the path to the user catalogs directory
-        catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
+        catalogs_user_path = os.path.join(introspection.pts_user_dir, "magic", "catalogs")
 
         # Determine the path to the galaxy directory
         galaxy_path = os.path.join(catalogs_user_path, name)

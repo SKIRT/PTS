@@ -17,13 +17,13 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..core.sed import IntrinsicSED
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 # Determine the path to the Sun SED file
-sun_sed_path = fs.join(inspection.skirt_repo_dir, "dat", "SED", "Sun", "SunSED.dat")
+sun_sed_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "Sun", "SunSED.dat")
 
 # -----------------------------------------------------------------
 

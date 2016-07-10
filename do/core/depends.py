@@ -18,8 +18,9 @@ import argparse
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import inspection
+from pts.core.tools import introspection
 from pts.core.tools.logging import log
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -37,23 +38,69 @@ arguments = parser.parse_args()
 
 # If no script name is given, execute the "list_dependencies.py" script to list all dependencies of PTS and the
 # PTS modules that use them
-if arguments.script is None: dependencies = inspection.get_all_dependencies()
+if arguments.script is None: dependencies = introspection.get_all_dependencies()
 
 else:
 
-    # Find matching scripts under the 'do' directory
-    match = inspection.find_matching_script(arguments.script)
-    if match is None: exit()
+    scripts = introspection.get_scripts()
+    tables = introspection.get_arguments_tables()
 
-    # Determine the full path to the matching script
-    script_path = os.path.join(inspection.pts_do_dir, match[0], match[1])
+    # Find matching 'do' commands (actuall scripts or tabulated commands)
+    matches = introspection.find_matches_scripts(arguments.script, scripts)
+    table_matches = introspection.find_matches_tables(arguments.script, tables)
 
     # List the dependencies of the matching script
     dependencies = defaultdict(set)
-    inspection.add_dependencies(dependencies, script_path, set())
+
+    # No match
+    if len(matches) + len(table_matches) == 0:
+        introspection.show_all_available(scripts, tables)
+        exit()
+
+    # More mathces
+    elif len(matches) + len(table_matches) > 1:
+        introspection.show_possible_matches(matches, table_matches, tables)
+        exit()
+
+    # Exactly one match from existing do script
+    elif len(matches) == 1 and len(table_matches) == 0:
+
+        # Determine the full path to the matching script
+        script_path = os.path.join(introspection.pts_do_dir, matches[0][0], matches[0][1])
+
+        introspection.add_dependencies(dependencies, script_path, set())
+
+    # Exactly one match from tabulated command
+    elif len(table_matches) == 1 and len(matches) == 0:
+
+        # from pts.core.tools import logging
+        # configuration
+
+        # Path to class module
+
+        table_match = table_matches[0]
+        subproject = table_match[0]
+        index = table_match[1]
+
+        relative_class_module_path = tables[subproject]["Path"][index].replace(".", "/").rsplit("/", 1)[0] + ".py"
+
+        class_module_path = fs.join(introspection.pts_subproject_dir(subproject), relative_class_module_path)
+
+        logging_path = fs.join(introspection.pts_package_dir, "core", "tools", "logging.py")
+
+        command_name = tables[subproject]["Command"][index]
+        configuration_name = tables[subproject]["Configuration"][index]
+        if configuration_name == "--": configuration_name = command_name
+        configuration_module_path = fs.join(introspection.pts_root_dir, "pts/" + subproject + "/config/" + configuration_name + ".py")
+
+        # Add dependencies
+        encountered = set()
+        introspection.add_dependencies(dependencies, logging_path, encountered)
+        introspection.add_dependencies(dependencies, configuration_module_path, encountered)
+        introspection.add_dependencies(dependencies, class_module_path, encountered)
 
 # Get the versions of all installed python packages
-if arguments.version: versions = inspection.get_pip_versions()
+if arguments.version: versions = introspection.get_pip_versions()
 else: versions = None
 
 # Loop over the packages and report their presence
@@ -63,10 +110,10 @@ for dependency in sorted(dependencies, key=str.lower):
     script_list = dependencies[dependency]
 
     # Skip packages from the standard library, unless the appropriate flag is enabled
-    if inspection.is_std_lib(dependency) and not arguments.standard: continue
+    if introspection.is_std_lib(dependency) and not arguments.standard: continue
 
     # Check whether the current package is present
-    if inspection.is_present(dependency):
+    if introspection.is_present(dependency):
 
         # Check version number
         if versions is not None and (dependency.lower() in versions): version = versions[dependency.lower()]

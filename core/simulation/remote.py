@@ -19,7 +19,7 @@ import tempfile
 # Import the relevant PTS classes and modules
 from ..basics.remote import Remote
 from .jobscript import JobScript
-from ..tools import time, inspection
+from ..tools import time, introspection
 from ..tools import filesystem as fs
 from .simulation import RemoteSimulation
 from ..tools.logging import log
@@ -95,13 +95,13 @@ class SkirtRemote(Remote):
         self.skirt_run_dir = fs.join(self.skirt_dir, "run")
 
         # Determine the path to the local SKIRT run directory
-        self.local_skirt_host_run_dir = fs.join(inspection.skirt_run_dir, self.host.id)
+        self.local_skirt_host_run_dir = fs.join(introspection.skirt_run_dir, self.host.id)
 
         # Create the local SKIRT run directory for this host if it doesn't already exist
         if not fs.is_directory(self.local_skirt_host_run_dir): fs.create_directory(self.local_skirt_host_run_dir, recursive=True)
 
         # Give a warning if the remote SKIRT version is different from the local SKIRT version
-        local_version = inspection.skirt_version().split("built on")[0]
+        local_version = introspection.skirt_version().split("built on")[0]
         remote_version = self.skirt_version.split("built on")[0]
         if remote_version != local_version:
             log.warning("Remote SKIRT version (" + remote_version + ") is different from local SKIRT version (" + local_version + ")")

@@ -317,7 +317,7 @@ def new_memory_log():
     :return:
     """
 
-    #memory_log_conf_path = os.path.join(inspection.pts_root_dir, "memlogging.conf")
+    #memory_log_conf_path = os.path.join(introspection.pts_root_dir, "memlogging.conf")
     #logging.basicConfig(memory_log_conf_path)
 
     #logging.basicConfig(format="%(asctime)-15s %(name)-5s %(levelname)-8s %(memuse)-22s %(message)s")

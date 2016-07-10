@@ -708,7 +708,7 @@ class Frame(NDDataArray):
         self._wcs = reference_wcs
 
         # Return the footprint
-        return footprint
+        return Frame(footprint)
 
     # -----------------------------------------------------------------
 

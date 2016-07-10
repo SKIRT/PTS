@@ -21,7 +21,7 @@ from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
@@ -40,7 +40,7 @@ class SExtractor(object):
         """
 
         # Set the path to the dat/sextractor directory
-        self.data_path = os.path.join(inspection.pts_dat_dir("magic"), "sextractor")
+        self.data_path = os.path.join(introspection.pts_dat_dir("magic"), "sextractor")
 
     # -----------------------------------------------------------------
 

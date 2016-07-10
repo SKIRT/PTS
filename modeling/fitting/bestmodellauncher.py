@@ -21,7 +21,7 @@ from astropy import constants
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import inspection, tables
+from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
@@ -42,7 +42,7 @@ from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 
 # -----------------------------------------------------------------
 
-template_ski_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "template.ski")
+template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "template.ski")
 
 # -----------------------------------------------------------------
 

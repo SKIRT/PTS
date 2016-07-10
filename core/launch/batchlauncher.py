@@ -20,7 +20,7 @@ from ..basics.configurable import OldConfigurable
 from ..simulation.remote import SkirtRemote
 from ..simulation.arguments import SkirtArguments
 from .options import LoggingOptions
-from ..tools import inspection, time
+from ..tools import introspection, time
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.host import Host
@@ -202,7 +202,7 @@ class BatchLauncher(OldConfigurable):
             if self.config.remotes is not None: host_ids = self.config.remotes
 
             # If a list of remotes is not defined, create a remote for all of the hosts that have a configuration file
-            else: host_ids = inspection.remote_host_ids()
+            else: host_ids = introspection.remote_host_ids()
 
             # Return the list of host IDs
             return host_ids
@@ -485,7 +485,7 @@ class BatchLauncher(OldConfigurable):
         if self.config.remotes is not None: host_ids = self.config.remotes
 
         # If a list of remotes is not defined, create a remote for all of the hosts that have a configuration file
-        else: host_ids = inspection.remote_host_ids()
+        else: host_ids = introspection.remote_host_ids()
 
         # Loop over all the remote host ids
         for host_id in host_ids:

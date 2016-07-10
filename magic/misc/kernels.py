@@ -24,7 +24,7 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import archive
@@ -33,7 +33,7 @@ from ...core.basics.filter import Filter
 # -----------------------------------------------------------------
 
 # The path to the PTS kernels directory
-kernels_path = fs.join(inspection.pts_user_dir, "kernels")
+kernels_path = fs.join(introspection.pts_user_dir, "kernels")
 
 # -----------------------------------------------------------------
 

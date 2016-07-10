@@ -13,14 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...magic.basics.mask import Mask
-from ...magic.core.image import Image
-from ...magic.core.frame import Frame
-from .component import MapsComponent
-from ...core.tools import inspection, tables
-from ...core.tools import filesystem as fs
-from ..decomposition.decomposition import load_parameters
-from ...core.tools.logging import log
+from ....magic.basics.mask import Mask
+from ....magic.core.image import Image
+from ....magic.core.frame import Frame
+from ..component import MapsComponent
+from ....core.tools import introspection, tables
+from ....core.tools import filesystem as fs
+from ...decomposition.decomposition import load_parameters
+from ....core.tools.logging import log
 
 # -----------------------------------------------------------------
 

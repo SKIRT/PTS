@@ -25,7 +25,7 @@ from ...core.tools import tables
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
-from ...core.tools import inspection
+from ...core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -47,7 +47,7 @@ print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
 # -----------------------------------------------------------------
 
 # The path to the dustpedia account file
-account_path = fs.join(inspection.pts_user_accounts_dir, "dustpedia.txt")
+account_path = fs.join(introspection.pts_user_accounts_dir, "dustpedia.txt")
 
 # -----------------------------------------------------------------
 

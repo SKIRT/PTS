@@ -20,13 +20,13 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..core.sed import IntrinsicSED
-from ...core.tools import inspection, tables
+from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 # Determine the path to the Mappings SED directory
-mappings_path = fs.join(inspection.skirt_repo_dir, "dat", "SED", "Mappings")
+mappings_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "Mappings")
 
 # -----------------------------------------------------------------
 

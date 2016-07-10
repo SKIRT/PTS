@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration, inspection, network
+from ..tools import configuration, introspection, network
 from ..tools import filesystem as fs
 from ..tools.logging import log
 
@@ -33,7 +33,7 @@ def find_host_ids():
     ids = []
 
     # Search for files that define remote host configurations
-    hosts_directory = fs.join(inspection.pts_user_dir, "hosts")
+    hosts_directory = fs.join(introspection.pts_user_dir, "hosts")
     if not fs.is_directory(hosts_directory): fs.create_directory(hosts_directory, recursive=True)
 
     # If the hosts directory is empty, place a template host configuration file there and exit with an error
@@ -93,10 +93,10 @@ def has_simulations(host_id):
     """
 
     # Check whether the SKIRT run directory can be found
-    if inspection.skirt_run_dir is None: raise RuntimeError("The SKIRT run directory could not be located. Missing SKIRT installation?")
+    if introspection.skirt_run_dir is None: raise RuntimeError("The SKIRT run directory could not be located. Missing SKIRT installation?")
 
     # Check whether there are simulation files corresponding to this host ID
-    host_run_dir = fs.join(inspection.skirt_run_dir, host_id)
+    host_run_dir = fs.join(introspection.skirt_run_dir, host_id)
 
     # If the host run directory does not exist yet, create it
     if not fs.is_directory(host_run_dir): fs.create_directory(host_run_dir)
@@ -132,7 +132,7 @@ class Host(object):
         ## Read the host configuration file
 
         # Determine the path to the configuration file for the specified host and check if it is present
-        host_file_path = fs.join(inspection.pts_user_dir, "hosts", host_id + ".cfg")
+        host_file_path = fs.join(introspection.pts_user_dir, "hosts", host_id + ".cfg")
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
         # Open the host configuration file

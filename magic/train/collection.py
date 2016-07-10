@@ -21,7 +21,7 @@ from matplotlib.widgets import Button
 from ..core.image import Image
 from ..core.source import Source
 from ...core.basics.configurable import OldConfigurable
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -52,7 +52,7 @@ class Collector(OldConfigurable):
         self.current_source = None
 
         # Determine the path to the magic/collection user directory
-        self.collection_user_path = os.path.join(inspection.pts_user_dir, "magic", "collection")
+        self.collection_user_path = os.path.join(introspection.pts_user_dir, "magic", "collection")
 
         # Create the user collection directory
         fs.create_directory(self.collection_user_path)

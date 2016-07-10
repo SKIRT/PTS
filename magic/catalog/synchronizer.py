@@ -25,7 +25,7 @@ from ..basics.geometry import Rectangle
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
 from ...core.basics.configurable import OldConfigurable
-from ...core.tools import inspection, tables
+from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -116,7 +116,7 @@ class CatalogSynchronizer(OldConfigurable):
         self.galaxy_name = galaxy_name
 
         # Determine the path to the user catalogs directory
-        catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
+        catalogs_user_path = os.path.join(introspection.pts_user_dir, "magic", "catalogs")
 
         # Determine the path to the directory to contain the catalogs for this galaxy
         self.galaxy_user_path = os.path.join(catalogs_user_path, self.galaxy_name)

@@ -21,7 +21,7 @@ from astropy.units import Unit, spectral
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ...core.tools import tables, inspection
+from ...core.tools import tables, introspection
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -188,7 +188,7 @@ class AttenuationCurve(object):
 
 # -----------------------------------------------------------------
 
-attenuation_data_path = fs.join(inspection.pts_dat_dir("modeling"), "attenuation")
+attenuation_data_path = fs.join(introspection.pts_dat_dir("modeling"), "attenuation")
 
 # -----------------------------------------------------------------
 

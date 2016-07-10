@@ -18,13 +18,13 @@ from astroquery.irsa_dust import IrsaDust
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
 # The path to the PTS user/extinction directory
-extinction_path = fs.join(inspection.pts_user_dir, "extinction")
+extinction_path = fs.join(introspection.pts_user_dir, "extinction")
 
 # -----------------------------------------------------------------
 

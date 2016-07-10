@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.tools import inspection
+from pts.core.tools import introspection
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.core.basics.configuration import Configuration
 
@@ -43,7 +43,7 @@ log.start("Starting list_galaxies ...")
 # -----------------------------------------------------------------
 
 # Local table path
-local_table_path = fs.join(inspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
+local_table_path = fs.join(introspection.pts_dat_dir("modeling"), "s4g", "s4g_p4_table8.dat")
 
 # -----------------------------------------------------------------
 

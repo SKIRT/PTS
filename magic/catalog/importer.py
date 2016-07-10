@@ -20,7 +20,7 @@ from config import Sequence
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
 from ...core.basics.configurable import OldConfigurable
-from ...core.tools import inspection, tables
+from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
@@ -55,7 +55,7 @@ class CatalogImporter(OldConfigurable):
         self.stellar_catalog = None
 
         # Determine the path to the catalogs user directory (where the DustPedia catalogs are now stored)
-        self.catalogs_user_path = os.path.join(inspection.pts_user_dir, "magic", "catalogs")
+        self.catalogs_user_path = os.path.join(introspection.pts_user_dir, "magic", "catalogs")
 
     # -----------------------------------------------------------------
 

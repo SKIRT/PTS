@@ -21,7 +21,7 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ..core.sed import ObservedSED
 from ...core.basics.filter import Filter
@@ -114,7 +114,7 @@ class ModelingComponent(Configurable):
         self.show_path = fs.join(self.config.path, "show")
 
         # Determine the path to the kernels user directory
-        self.kernels_path = fs.join(inspection.pts_user_dir, "kernels")
+        self.kernels_path = fs.join(introspection.pts_user_dir, "kernels")
 
         # Check whether the 'data' directory exists, otherwise exit with an error
         if fs.is_directory(self.data_path):

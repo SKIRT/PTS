@@ -27,7 +27,7 @@ from astroquery.sdss import SDSS
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...magic.tools import plotting
@@ -39,10 +39,11 @@ from ...core.tools import archive
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.basics.mask import Mask
+from ...core.basics.remote import Remote, connected_remotes
 
 # -----------------------------------------------------------------
 
-dustpedia_dat_path = fs.join(inspection.pts_dat_dir("dustpedia"))
+dustpedia_dat_path = fs.join(introspection.pts_dat_dir("dustpedia"))
 
 # -----------------------------------------------------------------
 
@@ -466,10 +467,10 @@ class DustPediaDataProcessing(object):
             image = Image()
             image.add_frame(frame, "primary")
 
-            padded = Mask(footprint < 0.9).disk_dilation(radius=10)
-            image.add_mask(padded, "padded")
+            #padded = Mask(footprint < 0.9).disk_dilation(radius=10)
+            #image.add_mask(padded, "padded")
 
-            #image.add_frame(footprint, "footprint")
+            image.add_frame(footprint, "footprint")
 
             # Determine new path
             new_path = fs.join(output_path, name + ".fits")

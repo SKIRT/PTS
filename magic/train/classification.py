@@ -22,7 +22,7 @@ from sklearn.externals import joblib
 from ...core.basics.configurable import OldConfigurable
 from ..core.image import Image
 from ..core.source import Source
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -48,8 +48,8 @@ class Classifier(OldConfigurable):
         self.vector_classifier = None
 
         # Determine the path to the magic/classification user directory
-        self.collection_user_path = os.path.join(inspection.pts_user_dir, "magic", "collection")
-        self.classification_user_path = os.path.join(inspection.pts_user_dir, "magic", "classification")
+        self.collection_user_path = os.path.join(introspection.pts_user_dir, "magic", "collection")
+        self.classification_user_path = os.path.join(introspection.pts_user_dir, "magic", "classification")
 
         # Create the user classification directory
         fs.create_directory(self.classification_user_path)

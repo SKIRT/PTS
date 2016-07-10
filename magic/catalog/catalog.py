@@ -14,12 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools import catalogs
-from ...core.tools import inspection, tables
+from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-catalogs_user_path = fs.join(inspection.pts_user_dir, "catalogs")
+catalogs_user_path = fs.join(introspection.pts_user_dir, "catalogs")
 
 # -----------------------------------------------------------------
 

@@ -20,14 +20,14 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ....magic.core.frame import Frame
-from ....core.tools import inspection, tables
+from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 
 # -----------------------------------------------------------------
 
 # The path to the table containing the parameters from Cortese et. al 2008
-cortese_table_path = fs.join(inspection.pts_dat_dir("modeling"), "cortese.dat")
+cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
 
 # -----------------------------------------------------------------
 

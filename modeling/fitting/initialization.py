@@ -22,7 +22,7 @@ from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import inspection, tables
+from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile, LabeledSkiFile
 from ...core.basics.filter import Filter

@@ -21,7 +21,7 @@ from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.basics.errorbar import ErrorBar
 from ...core.basics.filter import Filter
@@ -710,7 +710,7 @@ class SED(object):
 
 # -----------------------------------------------------------------
 
-seds_path = fs.join(inspection.pts_dat_dir("modeling"), "seds")
+seds_path = fs.join(introspection.pts_dat_dir("modeling"), "seds")
 
 # -----------------------------------------------------------------
 

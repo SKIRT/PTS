@@ -22,7 +22,7 @@ import rpy2.robjects as ro
 from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
-from ....core.tools import tables, inspection
+from ....core.tools import tables, introspection
 from ....core.simulation.table import SkirtTable
 from ....core.basics.distribution import Distribution, Distribution2D
 from ....core.simulation.wavelengthgrid import WavelengthGrid

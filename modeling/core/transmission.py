@@ -21,7 +21,7 @@ from astropy.units import Unit, spectral
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ...core.tools import tables, inspection
+from ...core.tools import tables, introspection
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------

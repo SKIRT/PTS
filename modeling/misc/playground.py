@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.simulation import SkirtSimulation
 from ..core.sed import IntrinsicSED
@@ -33,7 +33,7 @@ Zsun = 0.0122        # solar metallicity according to Groves et al. 2008
 
 # -----------------------------------------------------------------
 
-dat_ski_path = fs.join(inspection.pts_dat_dir("modeling"), "ski")
+dat_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski")
 
 # -----------------------------------------------------------------
 

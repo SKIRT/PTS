@@ -19,7 +19,7 @@ import subprocess
 from lxml import html
 
 # Import the relevant PTS classes and modules
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import tables
@@ -28,7 +28,7 @@ from ...core.tools import serialization
 # -----------------------------------------------------------------
 
 # The path to the PTS user/papers directory
-papers_path = fs.join(inspection.pts_user_dir, "papers")
+papers_path = fs.join(introspection.pts_user_dir, "papers")
 
 # -----------------------------------------------------------------
 

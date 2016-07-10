@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import tables, inspection
+from pts.core.tools import tables, introspection
 from pts.core.tools import filesystem as fs
 from pts.magic.tools import catalogs
 
@@ -56,7 +56,7 @@ for i in range(len(galactic_catalog)):
 if galaxy_name is None: raise RuntimeError("The galactic catalog is invalid: principal galaxy not defined")
 
 # Determine the path to the user catalogs directory
-catalogs_user_path = fs.join(inspection.pts_user_dir, "magic", "catalogs")
+catalogs_user_path = fs.join(introspection.pts_user_dir, "magic", "catalogs")
 
 # Determint the path to the directory to contain the catalogs for this galaxy
 galaxy_user_path = fs.join(catalogs_user_path, galaxy_name)

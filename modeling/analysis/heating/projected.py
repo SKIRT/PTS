@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
-from ....core.tools import tables, inspection
+from ....core.tools import tables, introspection
 from ...core.sed import SED
 from ....core.simulation.wavelengthgrid import WavelengthGrid
 from ....magic.core.image import Image

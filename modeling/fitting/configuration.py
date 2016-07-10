@@ -18,15 +18,15 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
-from ...core.tools import inspection
+from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
 from ...core.tools import parsing
 
 # -----------------------------------------------------------------
 
-template_ski_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
-labels_description_path = fs.join(inspection.pts_dat_dir("modeling"), "ski", "labels_description.dat")
+template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
+labels_description_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labels_description.dat")
 
 # -----------------------------------------------------------------
 
