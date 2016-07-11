@@ -63,6 +63,12 @@ def pts_dat_dir(subproject): return os.path.join(pts_package_dir, subproject, "d
 
 # -----------------------------------------------------------------
 
+def pts_version():
+    label = subprocess.check_output(["git", "describe", "--tags"])
+    return label[:-1]
+
+# -----------------------------------------------------------------
+
 # The path to the SKIRT executable
 skirt_path = find_executable("skirt")
 

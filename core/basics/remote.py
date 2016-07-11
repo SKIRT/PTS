@@ -62,6 +62,9 @@ class Remote(object):
         # A regular expression object that strips away special unicode characters, used on the remote console output
         self.ansi_escape = re.compile(r'\x1b[^m]*m')
 
+        # Flag that says whether we are in a remote python session
+        self.in_python_session = False
+
     # -----------------------------------------------------------------
 
     def setup(self, host_id, cluster=None):
@@ -348,6 +351,160 @@ class Remote(object):
             # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
             if contains_extra_eof: return self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
             else: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+
+    # -----------------------------------------------------------------
+
+    def start_python_session(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.in_python_session:
+            log.warning("Already in a python session")
+            return
+
+        # Initiate a python session
+        self.ssh.sendline("python")
+        self.ssh.expect("\r\n>>>")
+
+        # Set flag
+        self.in_python_session = True
+
+    # -----------------------------------------------------------------
+
+    def send_python_line(self, line, output=False):
+
+        """
+        This function ...
+        :param line:
+        :param output:
+        :return:
+        """
+
+        if not self.in_python_session:
+            log.warning("Not in a remote python session")
+            return
+
+        self.ssh.sendline(line)
+        self.ssh.expect("\r\n>>>")
+
+        if output:
+            output = self.ssh.before.split("\r\n")[1:]
+            return output
+
+    # -----------------------------------------------------------------
+
+    def import_python_package(self, name, as_name=None, from_name=None):
+
+        """
+        This function ...
+        :param name:
+        :param as_name:
+        :param from_name:
+        :return:
+        """
+
+        command = ""
+
+        if from_name is not None:
+            command += "from " + from_name + " "
+
+        command += "import " + name
+
+        if as_name is not None:
+            command += " as " + as_name
+
+        # Execute the import command
+        output = self.send_python_line(command, output=True)
+
+        # If output is given, this is normally not so good
+        if len(output) > 0:
+
+            # Check output
+            last_line = output[-1]
+            if "cannot import" in last_line: log.warning(last_line)
+
+    # -----------------------------------------------------------------
+
+    def define_simple_python_variable(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        command = name + " = " + str(value)
+        self.send_python_line(command)
+
+    # -----------------------------------------------------------------
+
+    def get_simple_python_variable(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        output = self.send_python_line(name, output=True)
+        return eval(output[0])
+
+    # -----------------------------------------------------------------
+
+    def get_python_string(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        output = self.send_python_line(name, output=True)
+        return output[0][1:-1]
+
+    # -----------------------------------------------------------------
+
+    def python_variables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the complete dir() list of variables
+        variables = self.get_simple_python_variable("dir()")
+
+        # '__builtins__', '__doc__', '__name__', '__package__'
+        variables.remove("__builtins__")
+        variables.remove("__doc__")
+        variables.remove("__name__")
+        variables.remove("__package__")
+
+        # Return the list of user-defined variables
+        return variables
+
+    # -----------------------------------------------------------------
+
+    def end_python_line(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.in_python_session:
+            log.warning("Not in a remote python session")
+            return
+
+        self.ssh.sendline("exit()")
+        self.ssh.prompt()
+
+        # Set flag
+        self.in_python_session = False
 
     # -----------------------------------------------------------------
 
@@ -1271,5 +1428,62 @@ class Remote(object):
         """
 
         return self.host.cluster_name
+
+# -----------------------------------------------------------------
+
+class PythonRemote(Remote):
+
+    """
+    This class ...
+    :param Remote:
+    :return:
+    """
+
+    def setup(self, host_id, cluster=None):
+
+        """
+        This function ...
+        :param self:
+        :param host_id:
+        :param cluster:
+        :return:
+        """
+
+        # Call the setup of the base class
+        super(PythonRemote, self).setup(host_id, cluster=cluster)
+
+        # Initiate a python session
+        self.ssh.sendline("python")
+        self.ssh.expect("\r\n>>>")
+
+    # -----------------------------------------------------------------
+
+    def __del__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Close the remote python session
+        # self.execute("exit()")
+
+        self.ssh.sendline("exit()")
+        self.ssh.prompt()
+
+    # -----------------------------------------------------------------
+
+    def send_line(self, line):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inject each line into the remote python prompt
+        # for line in lines: self.execute(line, expect_eof=False, show_output=show_output)
+
+        self.ssh.sendline(line)
+        self.ssh.expect("\r\n>>>")
 
 # -----------------------------------------------------------------

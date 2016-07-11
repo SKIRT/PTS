@@ -420,12 +420,13 @@ class DustPediaDataProcessing(object):
         log.info("Making SDSS rebinned frames in counts for " + galaxy_name + " for SDSS " + band + " band ...")
 
         # Determine the path to the temporary directory for downloading the images
-        #temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
 
         # Create the temporary directory
-        #fs.create_directory(temp_path)
+        fs.create_directory(temp_path)
 
-        temp_path = fs.join(fs.home(), "SDSS_NGC3031_i_2016-06-29--12-10-26-341")
+        # Download the FITS files to be used for mosaicing
+        self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_path)
 
         # Get the target header
         header = self.get_header_for_galaxy(galaxy_name, "SDSS")

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.core.frame Contains the Frame class.
+## \package pts.magic.core.remoteframe Contains the RemoteFrame class.
 
 # -----------------------------------------------------------------
 
@@ -15,16 +15,10 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 import numpy as np
-import urllib
 from scipy import ndimage
-import tempfile
 
 # Import astronomical modules
-from reproject import reproject_exact, reproject_interp
-from astropy.io import fits
 from astropy.units import Unit
-from astropy.convolution import convolve, convolve_fft
-from astropy.nddata import NDDataArray
 
 # Import the relevant PTS classes and modules
 from .box import Box
@@ -35,45 +29,98 @@ from ..tools import cropping
 from ...core.tools.logging import log
 from ..basics.mask import Mask
 from ...core.tools import filesystem as fs
-from ...core.tools import archive
+
+
+from ...core.basics.remote import Remote, connected_remotes
 
 # -----------------------------------------------------------------
 
-class Frame(NDDataArray):
+def import_necessary_modules(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    log.info("Importing necessary modules ...")
+
+    # Import standard modules
+    remote.import_python_package("tempfile")
+    remote.import_python_package("urllib")
+
+    # Import the necessary PTS classes and modules
+    remote.import_python_package("Frame", from_name="pts.magic.core.frame")
+    remote.import_python_package("filesystem", from_name="pts.core.tools", as_name="fs")
+    remote.import_python_package("archive", from_name="pts.core.tools")
+
+# -----------------------------------------------------------------
+
+def get_frame_labels(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    variables = remote.python_variables()
+
+    frame_labels = []
+
+    for variable in variables:
+        if variable.startswith("frame"):
+            frame_labels.append(variable)
+
+    return frame_labels
+
+# -----------------------------------------------------------------
+
+def get_new_frame_label(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    current_labels = get_frame_labels(remote)
+    return "frame" + str(len(current_labels))
+
+# -----------------------------------------------------------------
+
+#class MagicRemote(Remote):
+
+    #"""
+    #This class ...
+    #"""
+
+    #def __init__(self):
+
+    #def setup(self):
+
+# -----------------------------------------------------------------
+
+class RemoteFrame(object):
 
     """
     This class ...
     """
 
-    def __init__(self, data, *args, **kwargs):
+    def __init__(self, label, remote):
 
         """
         This function ...
-        :param data:
-        :param kwargs:
+        :param label
+        :param remote:
         """
 
-        wcs = kwargs.pop("wcs", None)
-        unit = kwargs.pop("unit", None)
-        self.name = kwargs.pop("name", None)
-        self.description = kwargs.pop("description", None)
-        self.zero_point = kwargs.pop("zero_point", None)
-        self.filter = kwargs.pop("filter", None)
-        self.sky_subtracted = kwargs.pop("sky_subtracted", False)
-        self.fwhm = kwargs.pop("fwhm", None)
-        self._pixelscale = kwargs.pop("pixelscale", None)
-        self._wavelength = kwargs.pop("wavelength", None)
-
-        # Call the constructor of the base class
-        super(Frame, self).__init__(data, *args, **kwargs)
-
-        # Set the WCS and unit
-        self._wcs = wcs
-        self._unit = unit
+        self.label = label
+        self.remote = remote
 
     # -----------------------------------------------------------------
 
-    @NDDataArray.wcs.setter
+    @property
     def wcs(self, wcs):
 
         """
@@ -331,13 +378,38 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.remote.send_python_line("str(" + self.label + ")", output=True)
+        return output
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.remote.send_python_line("repr(" + self.label + ")", output=True)
+        return str(output)
+
+    # -----------------------------------------------------------------
+
     @classmethod
-    def from_url(cls, url, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
+    def from_url(cls, url, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
                   fwhm=None, add_meta=False):
 
         """
         This function ...
         :param url:
+        :param host_id:
         :param index:
         :param name:
         :param description:
@@ -349,44 +421,79 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Check whether we are already connected to the specified remote host
+        if host_id in connected_remotes and connected_remotes[host_id] is not None:
+            remote = connected_remotes[host_id]
+        else:
+
+            # Debugging
+            log.debug("Logging in to remote host ...")
+
+            # Create a remote instance for the specified host ID
+            remote = Remote()
+            remote.setup(host_id)
+
+        # Initiate python session
+        if not remote.in_python_session: remote.start_python_session()
+
+        ###
+
+        # Import necessary modules
+        import_necessary_modules(remote)
+
+        ###
+
         # Inform the user
         log.info("Downloading file " + url + " ...")
 
         # Local path
-        temp_path = tempfile.gettempdir()
-        filename = fs.name(url)
-        local_path = fs.join(temp_path, filename)
+        remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote.send_python_line("filename = fs.name(url)")
+        remote.send_python_line("local_path = fs.join(temp_path, filename)")
 
         # Download
-        urllib.urlretrieve(url, local_path)
+        remote.send_python_line("urllib.urlretrieve(url, local_path)")
 
-        if local_path.endswith(".fits"): fits_path = local_path
+        # Get local path (on remote)
+        local_path = remote.get_python_string("local_path")
+
+        if local_path.endswith(".fits"): remote.send_python_line("fits_path = local_path")
         else:
 
             # Inform the user
             log.info("Decompressing kernel file ...")
 
             # Fits path
-            fits_path = fs.join(temp_path, fs.strip_extension(filename))
+            remote.send_python_line("fits_path = fs.join(temp_path, fs.strip_extension(filename))")
 
             # Decompress the kernel FITS file
-            archive.decompress_file(local_path, fits_path)
+            remote.send_python_line("archive.decompress_file(local_path, fits_path)")
 
             # Remove the compressed file
-            fs.remove_file(local_path)
+            remote.send_python_line("fs.remove_file(local_path)")
 
-        # Open the FITS file
-        return cls.from_file(path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta)
+        # Find label
+        label = get_new_frame_label(remote)
+
+        # Create RemoteFrame instance
+        remoteframe = cls(label, remote)
+
+        # Actually create the frame remotely
+        remote.send_python_line(label + " = Frame.from_file(fits_path)")
+
+        # Return the remoteframe instance
+        return remoteframe
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
+    def from_file(cls, path, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
                   fwhm=None, add_meta=False):
 
         """
         This function ...
         :param path:
+        :param host_id:
         :param index:
         :param name:
         :param description:
@@ -401,10 +508,54 @@ class Frame(NDDataArray):
         # Show which image we are importing
         log.info("Reading in file " + path + " ...")
 
-        from . import io
+        # Check whether we are already connected to the specified remote host
+        if host_id in connected_remotes and connected_remotes[host_id] is not None:
+            remote = connected_remotes[host_id]
+        else:
 
-        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+            # Debugging
+            log.debug("Logging in to remote host ...")
+
+            # Create a remote instance for the specified host ID
+            remote = Remote()
+            remote.setup(host_id)
+
+        # Initiate python session
+        if not remote.in_python_session: remote.start_python_session()
+
+        ###
+
+        # Import
+        import_necessary_modules(remote)
+
+        ###
+
+        # Remote temp path
+        remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote_temp_path = remote.get_python_string("temp_path")
+
+        # Get file name
+        filename = fs.name(path)
+
+        # Upload the frame file
+        remote_frame_path = fs.join(remote_temp_path, filename)
+        log.info("Uploading the frame to " + remote_frame_path + " ...")
+        remote.upload(path, remote_temp_path, compress=True, show_output=True)
+
+        # Find label
+        label = get_new_frame_label(remote)
+
+        # Create RemoteFrame instance
+        remoteframe = cls(label, remote)
+
+        # Open the frame remotely
+        log.info("Loading the frame on the remote host ...")
+
+        # Actually create the frame remotely
+        remote.send_python_line(label + " = Frame.from_file('" + remote_frame_path + "')")
+
+        # Return the remoteframe instance
+        return remoteframe
 
     # -----------------------------------------------------------------
 
