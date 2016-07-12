@@ -443,7 +443,8 @@ class DustPediaDataProcessing(object):
             # Load the frame
             frame = Frame.from_file(path, add_meta=True)
 
-            print("unit:", frame.unit)
+            #
+            log.debug("unit:", frame.unit)
 
             # Get the 'NMGY' parameter
             nanomaggy_per_count = frame.meta["nmgy"]

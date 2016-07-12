@@ -12,12 +12,13 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-import sys
-
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import Configuration
 from pts.dustpedia.core.dataprocessing import DustPediaDataProcessing
 from pts.core.basics.remote import Remote
+from pts.core.tools import filesystem as fs
+from pts.core.tools import logging
+from pts.core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -42,7 +43,23 @@ arguments = config.get_arguments()
 
 # -----------------------------------------------------------------
 
-# If remote
+# Determine the log file path
+logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if arguments.report else None
+
+# Determine the log level
+level = "DEBUG" if arguments.debug else "INFO"
+
+# Initialize the logger
+log = logging.setup_log(level=level, path=logfile_path)
+log.start("Starting get_poisson_errors ...")
+
+# -----------------------------------------------------------------
+
+temp_name = time.unique_name(settings.band)
+
+# -----------------------------------------------------------------
+
+# Remotely
 if settings.remote is not None:
 
     # Create the remote
@@ -54,10 +71,27 @@ if settings.remote is not None:
     # Remove specification of the remote
     arguments_no_remote = arguments[:-2]
 
+    # Make a new temporary directory remotely
+    remote_path = fs.join(remote.home_directory, time.unique_name(settings.band))
+    remote.create_directory(remote_path)
+    remote.change_cwd(remote_path)
+
     # Send the appropriate command
     remote.launch_pts_command("get_poisson_errors", arguments_no_remote)
 
+    # Retrieve the remote directory
+    remote.download(remote_path, fs.cwd(), show_output=True)
+    local_path = fs.join(fs.cwd(), fs.name(remote_path))
+
+    # Remove the temporary remote directory
+    remote.remove_directory(remote_path)
+
+# Locally
 else:
+
+    # Make a local directory
+    local_path = fs.join(fs.cwd(), temp_name)
+    fs.create_directory(local_path)
 
     # Create the DustPedia data processing instance
     dpdp = DustPediaDataProcessing()
@@ -66,9 +100,15 @@ else:
     if "GALEX" in settings.band: pass
 
     # SDSS
-    elif "SDSS" in settings.band: pass
+    elif "SDSS" in settings.band:
+
+        # Make ...
+        dpdp.make_sdss_rebinned_frames_in_counts_with_poisson(settings.galaxy_name, settings.band, local_path)
 
     # Invalid option
     else: raise ValueError("Invalid option for 'band'")
+
+# Inform the user
+log.info("Results are placed in '" + local_path)
 
 # -----------------------------------------------------------------

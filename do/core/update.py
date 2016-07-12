@@ -5,34 +5,50 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.update
+## \package pts.do.core.update Update SKIRT and/or PTS locally and/or remotely.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
-from pts.core.prep.update import SkirtUpdater
-from pts.core.tools import logging, time
+from pts.core.prep.update import SkirtUpdater, PTSUpdater
+from pts.core.basics.configuration import Configuration
+from pts.core.basics.errors import ConfigurationError
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
-parser.add_argument("--remote", type=str, help="update SKIRT on a remote system")
-parser.add_argument("--debug", action="store_true", help="add this option to enable debug output for the update procedure")
+# Create configuration instance
+config = Configuration("update")
 
-# Parse the command line arguments
-arguments = parser.parse_args()
+# Add required
+config.add_required("skirt_or_pts", str, "choose to update SKIRT or PTS", to_instance=False, choices=["skirt", "pts"])
+
+# Add optional
+config.add_optional("remote", str, "update SKIRT on a remote system")
+
+# Read
+config.read()
 
 # -----------------------------------------------------------------
 
-# Create a SkirtUpdater instance and run it
-updater = SkirtUpdater.from_arguments(arguments)
+# SKIRT
+if config.arguments.skirt_or_pts == "skirt":
+
+    # Create a SkirtUpdater instance
+    updater = SkirtUpdater(config)
+
+# PTS
+elif config.arguments.skirt_or_pts == "pts":
+
+    # Create a PTSUpdater instance
+    updater = PTSUpdater(config)
+
+# Invalid
+else: raise ConfigurationError("Invalid option")
+
+# Run the updater
 updater.run()
 
 # -----------------------------------------------------------------

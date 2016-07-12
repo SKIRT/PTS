@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
 from ..simulation.remote import SkirtRemote
 
 # -----------------------------------------------------------------
 
-class SkirtUpdater(OldConfigurable):
+class SkirtUpdater(Configurable):
     
     """
     This class ...
@@ -32,34 +32,13 @@ class SkirtUpdater(OldConfigurable):
         """
         
         # Call the constructor of the base class
-        super(SkirtUpdater, self).__init__(config, "core")
+        super(SkirtUpdater, self).__init__(config)
 
         # Create the SKIRT execution context
         self.skirt = SkirtExec()
 
         # Create the SKIRT remote execution context
         self.remote = SkirtRemote()
-        
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create a new SkirtUpdater instance
-        updater = cls()
-
-        ## Adjust the configuration settings according to the command-line arguments
-
-        # Remote host
-        updater.config.remote = arguments.remote
-
-        # Return the new SkirtUpdater instance
-        return updater
 
     # -----------------------------------------------------------------
 
@@ -104,5 +83,58 @@ class SkirtUpdater(OldConfigurable):
 
         # Update the local SKIRT executable
         else: self.skirt.update()
+
+# -----------------------------------------------------------------
+
+class PTSUpdater(Configurable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        """
+        This function ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(PTSUpdater, self).__init__(config)
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.setup()
+
+        self.update()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        super(PTSUpdater, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def update(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------

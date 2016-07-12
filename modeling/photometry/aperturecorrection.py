@@ -1,27 +1,37 @@
-# Import smorgasbord
-import sys
-sys.path.insert(0, '/home/herdata/spx7cjc/Dropbox/Work/Scripts/')
-import pdb
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.modeling.photometry.aperturecorrection
+
+# -----------------------------------------------------------------
+
+# Import standard modules
 import time
 import numpy as np
 import scipy.ndimage
+import lmfit
+
+# Import astronomical modules
 import astropy.io.fits
 import astropy.wcs
 import astropy.convolution
 import astropy.modeling
-import lmfit
+
+# Other
 import ChrisFuncs
 
+# -----------------------------------------------------------------
 
-
-
-
-# Define function that uses provided beam profile to aperture-correct photometry
 def StandaloneApCorrect(input_dict):
+
     """
+    Define function that uses provided beam profile to aperture-correct photometry
+
     Entries in input_dict:
-
-
 
     psf_path: Either a string giving the path to FITS file that contains the PSF, or a False boolean (in which case an airy disc PSF will be assumed).
 
@@ -43,8 +53,6 @@ def StandaloneApCorrect(input_dict):
 
     annulus_outer: The semi-major axis of the outer edge of the background annulus, in units of the semi-major axis of the source ellipse.
     """
-
-
 
     # If no PSF given, assume Airy disc; else extract PSF from provided file
     if (str(input_dict['psf_path'])==False) or (input_dict['psf_path'] is None):
@@ -77,8 +85,6 @@ def StandaloneApCorrect(input_dict):
         # Else, if pixel sizes are already the same, leave as-is
         elif ((input_dict['pix_arcsec']/psf_cdelt_arcsec)>=0.999) and ((input_dict['pix_arcsec']/psf_cdelt_arcsec)<=0.001):
             psf = psf_in.copy()
-
-
 
     # Normalise PSF
     psf /= np.nansum(psf)
@@ -122,8 +128,6 @@ def StandaloneApCorrect(input_dict):
     else:
         use_fft = False
 
-
-
     # Set up parameters to fit galaxy with 2-dimensional sersic profile
     params = lmfit.Parameters()
     params.add('sersic_amplitide', value=initial_sersic_amplitide, vary=True)
@@ -154,8 +158,6 @@ def StandaloneApCorrect(input_dict):
     elif use_fft==False:
         conv_map = astropy.convolution.convolve(sersic_map, psf, normalize_kernel=True)
 
-
-
     # Determine annulus properties before proceeding with photometry
     bg_inner_semimaj_pix = input_dict['semimaj_pix'] * input_dict['annulus_inner']
     bg_width = (input_dict['semimaj_pix'] * input_dict['annulus_outer']) - bg_inner_semimaj_pix
@@ -178,22 +180,26 @@ def StandaloneApCorrect(input_dict):
     conv_bg_avg = conv_bg_clip[1]
     conv_ap_sum = conv_ap_calc[0] - (conv_ap_calc[1] * conv_bg_avg)
 
-
-
     # Find difference between flux measued on convoled and unconvoled sersic maps
     ap_correction = np.nanmax([ 1.0, (sersic_ap_sum/conv_ap_sum) ])
 
     # Return aperture correction
     return ap_correction
 
+# -----------------------------------------------------------------
 
-
-
-
-# Defie LMfit convolved-sersic function
 def Sersic_LMfit(params, cutout, psf, mask, use_fft, lmfit=True):
 
-
+    """
+    Define LMfit convolved-sersic function
+    :param params:
+    :param cutout:
+    :param psf:
+    :param mask:
+    :param use_fft:
+    :param lmfit:
+    :return:
+    """
 
     # Extract variable parameters
     sersic_amplitide = params['sersic_amplitide'].value
@@ -228,10 +234,9 @@ def Sersic_LMfit(params, cutout, psf, mask, use_fft, lmfit=True):
     elif lmfit==False:
         return residuals, cutout-conv_map
 
+# -----------------------------------------------------------------
 
-
-
-
+# EXAMPLE USE:
 """
 input_dict = {}
 input_dict['psf_path'] = '/home/herdata/spx7cjc/Beams/SPIRE_250.fits'
@@ -247,3 +252,5 @@ input_dict['annulus_outer'] = 1.601
 
 ap_corr = StandaloneApCorrect(input_dict)
 """
+
+# -----------------------------------------------------------------
