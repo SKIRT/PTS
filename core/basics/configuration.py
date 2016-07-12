@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import sys
 import argparse
 from collections import OrderedDict
 
@@ -29,14 +30,14 @@ class Configuration(object):
     This function ...
     """
 
-    def __init__(self, add_logging=True, add_cwd=True, prefix=None, log_path=None):
+    def __init__(self, name, description, add_logging=True, add_cwd=True, prefix=None, log_path=None):
 
         """
         The constructor ...
         """
 
         # Create the command-line parser
-        self.parser = argparse.ArgumentParser()
+        self.parser = argparse.ArgumentParser(prog=name, description=description)
 
         # Dictionary of sections
         self.sections = OrderedDict()
@@ -259,6 +260,18 @@ class Configuration(object):
 
         # Return the settings
         return settings
+
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def get_arguments():
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sys.argv[1:]
 
 # -----------------------------------------------------------------
 

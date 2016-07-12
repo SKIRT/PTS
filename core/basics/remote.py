@@ -313,6 +313,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def launch_pts_command(self, command, arguments):
+
+        """
+        This function ...
+        :param command:
+        :param arguments:
+        :return:
+        """
+
+        self.execute("pts " + command + " ".join(arguments))
+
+    # -----------------------------------------------------------------
+
     def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None):
 
         """
@@ -396,6 +409,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def remove_python_variable(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        self.send_python_line("del " + name)
+
+    # -----------------------------------------------------------------
+
     def import_python_package(self, name, as_name=None, from_name=None):
 
         """
@@ -451,7 +476,21 @@ class Remote(object):
         """
 
         output = self.send_python_line(name, output=True)
+        assert len(output) == 1, output
         return eval(output[0])
+
+    # -----------------------------------------------------------------
+
+    def get_simple_python_property(self, variable, name):
+
+        """
+        This function ...
+        :param variable:
+        :param name:
+        :return:
+        """
+
+        return self.get_simple_python_variable(variable + "." + name)
 
     # -----------------------------------------------------------------
 
@@ -1428,62 +1467,5 @@ class Remote(object):
         """
 
         return self.host.cluster_name
-
-# -----------------------------------------------------------------
-
-class PythonRemote(Remote):
-
-    """
-    This class ...
-    :param Remote:
-    :return:
-    """
-
-    def setup(self, host_id, cluster=None):
-
-        """
-        This function ...
-        :param self:
-        :param host_id:
-        :param cluster:
-        :return:
-        """
-
-        # Call the setup of the base class
-        super(PythonRemote, self).setup(host_id, cluster=cluster)
-
-        # Initiate a python session
-        self.ssh.sendline("python")
-        self.ssh.expect("\r\n>>>")
-
-    # -----------------------------------------------------------------
-
-    def __del__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Close the remote python session
-        # self.execute("exit()")
-
-        self.ssh.sendline("exit()")
-        self.ssh.prompt()
-
-    # -----------------------------------------------------------------
-
-    def send_line(self, line):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inject each line into the remote python prompt
-        # for line in lines: self.execute(line, expect_eof=False, show_output=show_output)
-
-        self.ssh.sendline(line)
-        self.ssh.expect("\r\n>>>")
 
 # -----------------------------------------------------------------

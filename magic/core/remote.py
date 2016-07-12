@@ -14,24 +14,51 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import tempfile
 import numpy as np
 from scipy import ndimage
-
-# Import astronomical modules
-from astropy.units import Unit
+from itertools import count, izip
 
 # Import the relevant PTS classes and modules
-from .box import Box
-from ..basics.vector import Position, Extent
-from ..basics.geometry import Rectangle
-from ..basics.skygeometry import SkyCoordinate
+from ..basics.vector import Position
 from ..tools import cropping
 from ...core.tools.logging import log
 from ..basics.mask import Mask
 from ...core.tools import filesystem as fs
-
-
 from ...core.basics.remote import Remote, connected_remotes
+from .frame import Frame
+from .image import Image
+
+# -----------------------------------------------------------------
+
+def prepare_remote(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    # Check whether we are already connected to the specified remote host
+    if host_id in connected_remotes and connected_remotes[host_id] is not None:
+        remote = connected_remotes[host_id]
+    else:
+
+        # Debugging
+        log.debug("Logging in to remote host ...")
+
+        # Create a remote instance for the specified host ID
+        remote = Remote()
+        remote.setup(host_id)
+
+    # Initiate python session
+    if not remote.in_python_session: remote.start_python_session()
+
+    # Import
+    import_necessary_modules(remote)
+
+    # Return the remote instance
+    return remote
 
 # -----------------------------------------------------------------
 
@@ -51,8 +78,24 @@ def import_necessary_modules(remote):
 
     # Import the necessary PTS classes and modules
     remote.import_python_package("Frame", from_name="pts.magic.core.frame")
+    remote.import_python_package("Image", from_name="pts.magic.core.image")
     remote.import_python_package("filesystem", from_name="pts.core.tools", as_name="fs")
     remote.import_python_package("archive", from_name="pts.core.tools")
+
+# -----------------------------------------------------------------
+
+def get_first_missing_integer(integers):
+
+    """
+    This function ...
+    :param integers: MUST BE SORTED !!!!
+    :return:
+    """
+
+    if integers[0] != 0: return 0
+
+    nums = (b for a, b in izip(integers, count(integers[0])) if a != b)
+    return next(nums, integers[-1] + 1)
 
 # -----------------------------------------------------------------
 
@@ -76,6 +119,18 @@ def get_frame_labels(remote):
 
 # -----------------------------------------------------------------
 
+def get_frame_indices(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    return sorted([int(label.split("frame")[1]) for label in get_frame_labels(remote)])
+
+# -----------------------------------------------------------------
+
 def get_new_frame_label(remote):
 
     """
@@ -84,8 +139,53 @@ def get_new_frame_label(remote):
     :return:
     """
 
-    current_labels = get_frame_labels(remote)
-    return "frame" + str(len(current_labels))
+    current_indices = get_frame_indices(remote)
+    return "frame" + str(get_first_missing_integer(current_indices))
+
+# -----------------------------------------------------------------
+
+def get_image_labels(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    variables = remote.python_variables()
+
+    image_labels = []
+
+    for variable in variables:
+        if variable.startswith("image"):
+            image_labels.append(variable)
+
+    return image_labels
+
+# -----------------------------------------------------------------
+
+def get_image_indices(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    return sorted([int(label.split("image")[1]) for label in get_image_labels(remote)])
+
+# -----------------------------------------------------------------
+
+def get_new_image_label(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    current_indices = get_image_indices(remote)
+    return "image" + str(get_first_missing_integer(current_indices))
 
 # -----------------------------------------------------------------
 
@@ -120,264 +220,6 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def wcs(self, wcs):
-
-        """
-        This function ...
-        :param wcs:
-        :return:
-        """
-
-        self._wcs = wcs
-
-    # -----------------------------------------------------------------
-
-    def __getitem__(self, item):
-
-        """
-        This function ...
-        :param item:
-        :return:
-        """
-
-        return self._data[item]
-
-    # -----------------------------------------------------------------
-
-    def __setitem__(self, item, value):
-
-        """
-        This function ...
-        :param item:
-        :return:
-        """
-
-        self._data[item] = value
-
-    # -----------------------------------------------------------------
-
-    def __eq__(self, other):
-
-        """
-        This function ...
-        :param other:
-        :return:
-        """
-
-        return self._data.__eq__(other)
-
-    # -----------------------------------------------------------------
-
-    def __ne__(self, other):
-
-        """
-        This function ...
-        :param other:
-        :return:
-        """
-
-        return self._data.__ne__(other)
-
-    # -----------------------------------------------------------------
-
-    def __gt__(self, other):
-
-        """
-        This function ...
-        :param other:
-        :return:
-        """
-
-        return self._data.__gt__(other)
-
-    # -----------------------------------------------------------------
-
-    def __ge__(self, other):
-
-        """
-        This function ...
-        :param other:
-        :return:
-        """
-
-        return self._data.__ge__(other)
-
-    # -----------------------------------------------------------------
-
-    def __lt__(self, other):
-
-        """
-        This function ...
-        :param other:
-        :return:
-        """
-
-        return self._data.__lt__(other)
-
-    # -----------------------------------------------------------------
-
-    def __le__(self, other):
-
-        """
-        This function ...
-        :param other:
-        :return:
-        """
-
-        return self._data.__le__(other)
-
-    # -----------------------------------------------------------------
-
-    def __mul__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.copy().__imul__(value)
-
-    # -----------------------------------------------------------------
-
-    def __imul__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        self._data *= value
-        return self
-
-    # -----------------------------------------------------------------
-
-    def __add__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.copy().__iadd__(value)
-
-    # -----------------------------------------------------------------
-
-    def __iadd__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        self._data += value
-        return self
-
-    # -----------------------------------------------------------------
-
-    def __sub__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.copy().__isub__(value)
-
-    # -----------------------------------------------------------------
-
-    def __isub__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        self._data -= value
-        return self
-
-    # -----------------------------------------------------------------
-
-    def __div__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.copy().__idiv__(value)
-
-    # -----------------------------------------------------------------
-
-    def __idiv__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        self._data /= value
-        return self
-
-    # -----------------------------------------------------------------
-
-    def __truediv__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.__div__(value)
-
-    # -----------------------------------------------------------------
-
-    def __itruediv__(self, value):
-
-        """
-        This function ...
-        :param value:
-        :return:
-        """
-
-        return self.__idiv__(value)
-
-    # -----------------------------------------------------------------
-
-    def __pow__(self, power):
-
-        """
-        This function ...
-        :param power:
-        :return:
-        """
-
-        return self.copy().__ipow__(power)
-
-    # -----------------------------------------------------------------
-
-    def __ipow__(self, power):
-
-        """
-        This function ...
-        :param power:
-        :return:
-        """
-
-        self._data **= power
-        return self
-
-    # -----------------------------------------------------------------
-
     def __str__(self):
 
         """
@@ -386,7 +228,7 @@ class RemoteFrame(object):
         """
 
         output = self.remote.send_python_line("str(" + self.label + ")", output=True)
-        return output
+        return "".join(output)
 
     # -----------------------------------------------------------------
 
@@ -398,7 +240,19 @@ class RemoteFrame(object):
         """
 
         output = self.remote.send_python_line("repr(" + self.label + ")", output=True)
-        return str(output)
+        return "".join(output)
+
+    # -----------------------------------------------------------------
+
+    def __del__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Delete the Frame on the remote from the global namespace
+        self.remote.remove_python_variable(self.label)
 
     # -----------------------------------------------------------------
 
@@ -421,27 +275,8 @@ class RemoteFrame(object):
         :return:
         """
 
-        # Check whether we are already connected to the specified remote host
-        if host_id in connected_remotes and connected_remotes[host_id] is not None:
-            remote = connected_remotes[host_id]
-        else:
-
-            # Debugging
-            log.debug("Logging in to remote host ...")
-
-            # Create a remote instance for the specified host ID
-            remote = Remote()
-            remote.setup(host_id)
-
-        # Initiate python session
-        if not remote.in_python_session: remote.start_python_session()
-
-        ###
-
-        # Import necessary modules
-        import_necessary_modules(remote)
-
-        ###
+        # Get remote instance
+        remote = prepare_remote(host_id)
 
         # Inform the user
         log.info("Downloading file " + url + " ...")
@@ -487,8 +322,8 @@ class RemoteFrame(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=False):
+    def from_file(cls, path, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None,
+                  no_filter=False, fwhm=None, add_meta=False):
 
         """
         This function ...
@@ -508,27 +343,8 @@ class RemoteFrame(object):
         # Show which image we are importing
         log.info("Reading in file " + path + " ...")
 
-        # Check whether we are already connected to the specified remote host
-        if host_id in connected_remotes and connected_remotes[host_id] is not None:
-            remote = connected_remotes[host_id]
-        else:
-
-            # Debugging
-            log.debug("Logging in to remote host ...")
-
-            # Create a remote instance for the specified host ID
-            remote = Remote()
-            remote.setup(host_id)
-
-        # Initiate python session
-        if not remote.in_python_session: remote.start_python_session()
-
-        ###
-
-        # Import
-        import_necessary_modules(remote)
-
-        ###
+        # Get the remote instance
+        remote = prepare_remote(host_id)
 
         # Remote temp path
         remote.send_python_line("temp_path = tempfile.gettempdir()")
@@ -566,123 +382,44 @@ class RemoteFrame(object):
         :return:
         """
 
-        return copy.deepcopy(self)
+        # Inform the user
+        log.info("Copying the remote frame ...")
 
-    # -----------------------------------------------------------------
+        # Find new remote label
+        label = get_new_frame_label(self.remote)
 
-    def apply_mask(self, mask, fill=0.0):
+        # Copy the frame remotely
+        self.remote.send_python_line(label + " = " + self.label + ".copy()")
 
-        """
-        This function ...
-        :param mask:
-        :param fill:
-        """
+        # Create new RemoteFrame instance
+        newremoteframe = RemoteFrame(label, self.remote)
 
-        self[mask] = fill
-
-    # -----------------------------------------------------------------
-
-    @property
-    def all_zero(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return np.all(self._data == 0)
+        # Return the new remoteframe instance
+        return newremoteframe
 
     # -----------------------------------------------------------------
 
     @property
-    def all_nonzero(self):
+    def xsize(self):
 
         """
         This function ...
         :return:
         """
 
-        return not np.any(self._data == 0)
+        return self.remote.get_simple_python_property(self.label, "xsize")
 
     # -----------------------------------------------------------------
 
     @property
-    def pixelscale(self):
+    def ysize(self):
 
         """
         This function ...
         :return:
         """
 
-        # Return the pixelscale of the WCS is WCS is defined
-        if self.wcs is not None: return self.wcs.pixelscale
-        else: return self._pixelscale  # return the pixelscale
-
-    # -----------------------------------------------------------------
-
-    @property
-    def average_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.wcs is not None: return self.wcs.average_pixelscale
-        else: return self._pixelscale.average if self._pixelscale is not None else None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def zeros_like(cls, frame):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
-        # Return a zero-filled copy of the frame
-        new = frame.copy()
-        new._data = np.zeros_like(frame._data)
-        return new
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def nans_like(cls, frame):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
-        # Return a NaN-filled copy of the frame
-        nans = cls.zeros_like(frame)
-        nans.fill(np.nan)
-        return nans
-
-    # -----------------------------------------------------------------
-
-    def is_constant(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        np.nanmax(self._data) == np.nanmin(self._data)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def xsize(self): return self.shape[1]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ysize(self): return self.shape[0]
+        return self.remote.get_simple_python_property(self.label, "ysize")
 
     # -----------------------------------------------------------------
 
@@ -694,101 +431,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return (self.fwhm / self.average_pixelscale).to("pix").value if self.fwhm is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def header(self):
-
-        """
-        This function ...
-        """
-
-        # If the WCS for this frame is defined, use it to create a header
-        if self.wcs is not None: header = self.wcs.to_header()
-
-        # Else, create a new empty header
-        else: header = fits.Header()
-
-        # Add properties to the header
-        header['NAXIS'] = 2
-        header['NAXIS1'] = self.xsize
-        header['NAXIS2'] = self.ysize
-
-        # ISSUE: see bug #4592 on Astropy GitHub (WCS.to_header issue)
-        # temporary fix !!
-        # I don't know whether this is a good fix.. but it seems to fix it for a particular situation
-        #if "PC1_1" in header:
-
-            #if "NAXIS1" in header: header.remove("NAXIS1")
-            #if "NAXIS2" in header: header.remove("NAXIS2")
-            #if "CDELT1" in header: header.remove("CDELT1")
-            #if "CDELT2" in header: header.remove("CDELT2")
-            #header.rename_keyword("PC1_1", "CD1_1")
-            #header.rename_keyword("PC2_2", "CD2_2")
-
-        # Return the header
-        return header
-
-    # -----------------------------------------------------------------
-
-    @property
-    def wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Return the pivot wavelength of the frame's filter, if defined
-        if self.filter is not None: return self.filter.effectivewavelength() * Unit("micron")
-        else: return self._wavelength # return the wavelength (if defined, is None otherwise)
-
-    # -----------------------------------------------------------------
-
-    @wavelength.setter
-    def wavelength(self, value):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self._wavelength = value
-
-    # -----------------------------------------------------------------
-
-    def cutout_around(self, position, radius):
-
-        """
-        This function ...
-        :param position:
-        :param radius:
-        :return:
-        """
-
-        return Box.cutout(self, position, radius)
-
-    # -----------------------------------------------------------------
-
-    def convert_to(self, unit):
-
-        """
-        This function ...
-        :param unit:
-        :return:
-        """
-
-        # Convert the data
-        conversion_factor = self.unit / unit
-        frame = self * conversion_factor
-
-        # Set the new unit
-        frame.unit = unit
-
-        # Return the converted frame
-        return frame
+        return self.remote.get_simple_python_property(self.label, "fwhm_pix")
 
     # -----------------------------------------------------------------
 
@@ -799,7 +442,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return np.nansum(self._data)
+        return self.remote.get_simple_python_property(self.label, "sum()")
 
     # -----------------------------------------------------------------
 
@@ -811,14 +454,8 @@ class RemoteFrame(object):
         :return:
         """
 
-        # Calculate the sum of all the pixels
-        sum = np.nansum(self)
-
-        # Calculate the conversion factor
-        factor = to / sum
-
-        # Multiply the frame with the conversion factor
-        self.__imul__(factor)
+        # Call the function on the remote
+        self.remote.send_python_line(self.label + ".normalize(" + str(to) + ")")
 
     # -----------------------------------------------------------------
 
@@ -1233,168 +870,6 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def rotate(self, angle):
-
-        """
-        This function ...
-        :param angle:
-        :return:
-        """
-
-        # Calculate the rotated array
-        #frame[np.isnan(frame)] = 0.0
-        data = ndimage.interpolation.rotate(self, angle, reshape=False, order=1, mode='constant', cval=float('nan'))
-        #new_frame = misc.imrotate(frame, angle, interp="bilinear")
-
-        # Convert the wcs to header
-        #header = self.wcs.to_header()
-
-        # Rotate the header (Sebastien's script)
-        #from ..tools import rotation
-        #rotated_header = rotation.rotate_header(header, angle)
-
-        # Create the new WCS
-        #rotated_wcs = CoordinateSystem(rotated_header)
-
-        rotated_wcs = self.wcs.deepcopy()
-        rotated_wcs.rotateCD(angle) # STILL UNTESTED
-
-        # Return the rotated frame
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        return Frame(data,
-                     wcs=rotated_wcs,
-                     name=self.name,
-                     description=self.description,
-                     unit=self.unit,
-                     zero_point=self.zero_point,
-                     filter=self.filter,
-                     sky_subtracted=self.sky_subtracted,
-                     fwhm=self.fwhm)
-
-    # -----------------------------------------------------------------
-
-    def shift(self, extent):
-
-        """
-        This function ...
-        :param extent:
-        :return:
-        """
-
-        # TODO: change the WCS !!!
-
-        # Transform the data
-        data = ndimage.interpolation.shift(self, (extent.y, extent.x))
-
-        # Return the shifted frame
-        # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        return Frame(data,
-                     wcs=None,
-                     name=self.name,
-                     description=self.description,
-                     unit=self.unit,
-                     zero_point=self.zero_point,
-                     filter=self.filter,
-                     sky_subtracted=self.sky_subtracted,
-                     fwhm=self.fwhm)
-
-    # -----------------------------------------------------------------
-
-    def center_around(self, position):
-
-        """
-        This function ...
-        :param position:
-        :return:
-        """
-
-        center = Position(x=0.5*self.xsize, y=0.5*self.ysize)
-        shift = position - center
-
-        # Return the shifted frame
-        return self.shift(shift)
-
-    # -----------------------------------------------------------------
-
-    def bounding_box(self, unit="deg"):
-
-        """
-        This function ...
-        :param unit:
-        :return:
-        """
-
-        # Get coordinate range
-        center, ra_span, dec_span = self.coordinate_range
-
-        ra = center.ra.to(unit).value
-        dec = center.dec.to(unit).value
-
-        ra_span = ra_span.to(unit).value
-        dec_span = dec_span.to(unit).value
-
-        # Create rectangle
-        center = Position(ra, dec)
-        radius = Extent(0.5 * ra_span, 0.5 * dec_span)
-        box = Rectangle(center, radius)
-
-        # Return the box
-        return box
-
-    # -----------------------------------------------------------------
-
-    @property
-    def corners(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get coordinate values
-        coordinate_values = self.wcs.calc_footprint(undistort=True)
-
-        # Initialize a list to contain the coordinates of the corners
-        corners = []
-
-        for ra_deg, dec_deg in coordinate_values:
-
-            # Create sky coordinate
-            coordinate = SkyCoordinate(ra=ra_deg, dec=dec_deg, unit="deg", frame="fk5")
-
-            # Add the coordinate of this corner to the list
-            corners.append(coordinate)
-
-        # Return the list of coordinates
-        return corners
-
-    # -----------------------------------------------------------------
-
-    @property
-    def coordinate_range(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        return self.wcs.coordinate_range
-
-    # -----------------------------------------------------------------
-
-    def contains(self, coordinate):
-
-        """
-        This function ...
-        :param coordinate:
-        :return:
-        """
-
-        pixel = coordinate.to_pixel(self.wcs)
-        return 0.0 <= pixel.x < self.xsize and 0.0 <= pixel.y < self.ysize
-
-    # -----------------------------------------------------------------
-
     def replace_nans(self, value):
 
         """
@@ -1403,8 +878,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        # Set all NaN pixels to the specified value
-        self._data[np.isnan(self._data)] = value
+        self.remote.send_python_line(self.label + ".replace_nans(" + str(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -1416,74 +890,297 @@ class RemoteFrame(object):
         :return:
         """
 
-        # Set all inf pixels to the specified value
-        self._data[np.isinf(self._data)] = value
+        self.remote.send_python_line(self.label + ".replace_infs(" + str(value) + ")")
 
     # -----------------------------------------------------------------
 
-    def box_like(self, box):
+    @classmethod
+    def from_local(cls, frame, host_id):
 
         """
         This function ...
-        :param box:
+        :param frame:
+        :param host_id:
         :return:
         """
 
-        data = self._data[box.y_min:box.y_max, box.x_min:box.x_max]
+        # Determine temporary directory path
+        temp_path = tempfile.gettempdir()
 
-        # Create the new box and return it
-        return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
+        # Determine local FITS path
+        local_path = fs.join(temp_path, "newframe_fromlocal.fits")
+
+        # Save the frame locally
+        frame.save(local_path)
+
+        # Create the remoteframe from the locally saved frame
+        remoteframe = cls.from_file(local_path, host_id)
+
+        # Remove the local file
+        fs.remove_file(local_path)
+
+        # Return the new remoteframe
+        return remoteframe
 
     # -----------------------------------------------------------------
 
-    def save(self, path, header=None, origin=None):
+    def to_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine temporary directory path
+        temp_path = tempfile.gettempdir()
+
+        # Determine local FITS path
+        local_path = fs.join(temp_path, self.label + ".fits")
+
+        # Save the remote frame locally to the temp path
+        self.save(local_path)
+
+        # Create the frame
+        frame = Frame.from_file(local_path)
+
+        # Remove the local temporary file
+        fs.remove_file(local_path)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
 
         """
         This function ...
         :param path:
-        :param header:
-        :param origin:
         """
 
-        if header is None: header = self.header
+        # Inform the user
+        log.info("Saving the remote frame to '" + path + "' locally ...")
 
-        # Set unit, FWHM and filter description
-        if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
-        if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
-        if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
+        # Determine filename and local directory
+        filename = fs.name(path)
+        local_directory = fs.directory_of(path)
 
-        # Add origin description
-        if origin is not None: header["ORIGIN"] = origin
-        else: header["ORIGIN"] = "Frame class of PTS package"
+        # Determine remote temp path
+        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
 
-        # Write
-        from . import io
-        io.write_frame(self._data, header, path)
+        # Debugging
+        log.debug("Saving the frame remotely ...")
+
+        # Determine path to save the frame remotely first
+        self.remote.send_python_line("remote_path = fs.join(temp_path, " + filename + ")")
+        remote_path = self.remote.get_python_string("remote_path")
+
+        # Debugging
+        log.debug("Downloading the frame ...")
+
+        # Save the frame remotely
+        self.remote.send_python_line(self.label + ".save(remote_path)")
+
+        # Download
+        self.remote.download(remote_path, local_directory)
+
+        # Remove the remote file
+        self.remote.remove_file(remote_path)
 
 # -----------------------------------------------------------------
 
-def sum(*args):
+class RemoteImage(object):
 
     """
-    This function ...
-    :param args:
-    :return:
+    This class ...
     """
 
-    arrays = [np.array(arg) for arg in args]
-    return Frame(np.sum(arrays, axis=0))
+    def __init__(self, label, remote):
 
-# -----------------------------------------------------------------
+        """
+        The constructor ...
+        :param label:
+        :param remote:
+        """
 
-def sum_quadratically(*args):
+        self.label = label
+        self.remote = remote
 
-    """
-    This function ...
-    :param args:
-    :return:
-    """
+    # -----------------------------------------------------------------
 
-    arrays = [np.array(arg)**2 for arg in args]
-    return Frame(np.sqrt(np.sum(arrays, axis=0)))
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.remote.send_python_line("str(" + self.label + ")", output=True)
+        return "".join(output)
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.remote.send_python_line("repr(" + self.label + ")", output=True)
+        return "".join(output)
+
+    # -----------------------------------------------------------------
+
+    def __del__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Delete the Image on the remote from the global namespace
+        self.remote.remove_python_variable(self.label)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, host_id):
+
+        """
+        This function ...
+        :param path:
+        :param host_id:
+        :return:
+        """
+
+        # Show which image we are importing
+        log.info("Reading in file " + path + " ...")
+
+        # Get the remote instance
+        remote = prepare_remote(host_id)
+
+        # Remote temp path
+        remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote_temp_path = remote.get_python_string("temp_path")
+
+        # Get file name
+        filename = fs.name(path)
+
+        # Upload the image file
+        remote_image_path = fs.join(remote_temp_path, filename)
+        log.info("Uploading the image to " + remote_image_path + " ...")
+        remote.upload(path, remote_temp_path, compress=True, show_output=True)
+
+        # Find label
+        label = get_new_image_label(remote)
+
+        # Create RemoteImage instance
+        remoteimage = cls(label, remote)
+
+        # Open the frame remotely
+        log.info("Loading the image on the remote host ...")
+
+        # Actually create the frame remotely
+        remote.send_python_line(label + " = Image.from_file('" + remote_image_path + "')")
+
+        # Return the remoteimage instance
+        return remoteimage
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the remote image to '" + path + "' locally ...")
+
+        # Determine filename and local directory
+        filename = fs.name(path)
+        local_directory = fs.directory_of(path)
+
+        # Determine remote temp path
+        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
+
+        # Debugging
+        log.debug("Saving the image remotely ...")
+
+        # Determine path to save the frame remotely first
+        self.remote.send_python_line("remote_path = fs.join(temp_path, " + filename + ")")
+        remote_path = self.remote.get_python_string("remote_path")
+
+        # Debugging
+        log.debug("Downloading the image ...")
+
+        # Save the image remotely
+        self.remote.send_python_line(self.label + ".save(remote_path)")
+
+        # Download
+        self.remote.download(remote_path, local_directory)
+
+        # Remove the remote file
+        self.remote.remove_file(remote_path)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_local(cls, image, host_id):
+
+        """
+        This function ...
+        :param image:
+        :param host_id:
+        :return:
+        """
+
+        # Determine temporary directory path
+        temp_path = tempfile.gettempdir()
+
+        # Determine local FITS path
+        local_path = fs.join(temp_path, "newimage_fromlocal.fits")
+
+        # Save the image locally
+        image.save(local_path)
+
+        # Create the remoteimage from the locally saved image
+        remoteimage = cls.from_file(local_path, host_id)
+
+        # Remove the local file
+        fs.remove_file(local_path)
+
+        # Return the new remoteimage
+        return remoteimage
+
+    # -----------------------------------------------------------------
+
+    def to_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine temporary directory path
+        temp_path = tempfile.gettempdir()
+
+        # Determine local FITS path
+        local_path = fs.join(temp_path, self.label + ".fits")
+
+        # Save the remote image locally to the temp path
+        self.save(local_path)
+
+        # Create the image
+        image = Image.from_file(local_path)
+
+        # Remove the local temporary file
+        fs.remove_file(local_path)
+
+        # Return the image
+        return image
 
 # -----------------------------------------------------------------

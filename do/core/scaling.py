@@ -22,7 +22,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("scaling", "Test the scaling of SKIRT on a particular system")
 
 # Required arguments
 config.add_required("ski_path", "absolute_path", "the name of the ski file to be used for the scaling test")

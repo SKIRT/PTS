@@ -392,7 +392,7 @@ class ConvolutionKernel(Frame):
 
         if count > 1:
 
-            log.debug("WARNING: The PSF has " + str(count) + "pixels with values similar to its maxximun... we will take their centroid...")
+            log.debug("WARNING: The PSF has " + str(count) + "pixels with values similar to its maximum... we will take their centroid...")
 
             xsize = data_copy.shape[1]
             ysize = data_copy.shape[0]
