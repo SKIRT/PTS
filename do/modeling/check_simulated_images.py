@@ -34,7 +34,7 @@ from pts.core.basics.filter import Filter
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("check_simulated_images")
 
 # Read the configuration settings from the provided command-line arguments
 config.read()

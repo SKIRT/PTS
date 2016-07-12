@@ -11,6 +11,6 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration(log_path="log")
+config = Configuration("photometry", log_path="log")
 
 # -----------------------------------------------------------------

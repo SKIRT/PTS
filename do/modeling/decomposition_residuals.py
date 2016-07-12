@@ -33,7 +33,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("decomposition_residuals")
 
 # Read the configuration settings from the provided command-line arguments
 config.read()

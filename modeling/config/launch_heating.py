@@ -11,7 +11,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration(log_path="log")
+config = Configuration("launch_heating", log_path="log")
 
 config.add_section("wavelengths")
 config.sections["wavelengths"].add_optional("unit", str, "the unit of the wavelengths", "micron")

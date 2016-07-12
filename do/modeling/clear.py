@@ -20,7 +20,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("clear")
 
 # Add setting
 config.add_required("step", str, "the modeling step for which to clear the output", to_instance=False)

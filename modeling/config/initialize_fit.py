@@ -11,7 +11,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration(log_path="log")
+config = Configuration("initialize_fit", log_path="log")
 
 # Add optional arguments
 config.add_section("wavelengths")

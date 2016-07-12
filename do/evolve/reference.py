@@ -33,7 +33,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Configuration
-config = Configuration()
+config = Configuration("reference")
 config.add_positional_optional("seed", int, "the random seed", 4357)
 config.read()
 

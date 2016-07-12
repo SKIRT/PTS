@@ -11,7 +11,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration(log_path="log")
+config = Configuration("fetch_data", log_path="log")
 
 # Add settings
 config.add_section("database")

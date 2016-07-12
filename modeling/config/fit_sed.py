@@ -11,7 +11,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration(log_path="log")
+config = Configuration("fit_sed", log_path="log")
 
 # Add optional arguments
 config.add_flag("visualise", "make visualisations")

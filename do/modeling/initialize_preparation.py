@@ -22,7 +22,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("initialize_preparation")
 
 # Add optional arguments
 config.add_optional("image", str, "the name of the image for which to run the initialization")

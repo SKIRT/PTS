@@ -28,7 +28,7 @@ from pts.core.basics.configuration import Configuration
 # TODO: work on this further
 
 # Create the configuration
-config = Configuration()
+config = Configuration("launch")
 
 # Add required arguments
 config.add_required("filename", "absolute_path", "the name/path of the ski file")

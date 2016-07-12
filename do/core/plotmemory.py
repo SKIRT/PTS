@@ -23,7 +23,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("plotmemory")
 
 # Add flags
 config.add_flag("table", "save the extracted memory table")

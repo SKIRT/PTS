@@ -28,7 +28,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Configuration
-config = Configuration()
+config = Configuration("explore")
 config.add_positional_optional("seed", int, "the random seed", 4357)
 config.read()
 

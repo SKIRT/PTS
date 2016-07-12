@@ -22,7 +22,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("setup")
 
 # Add required settings
 config.add_required("name", str, "the name of the galaxy", to_instance=False)

@@ -11,7 +11,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration()
+config = Configuration("prepareimage")
 
 # Add options
 config.add_optional("error_frame_names", "string_list", "the names of the error planes to be included in the final error map", [])

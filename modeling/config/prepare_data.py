@@ -11,7 +11,7 @@ from pts.core.basics.configuration import Configuration
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration(log_path="log")
+config = Configuration("prepare_data", log_path="log")
 
 # Add required arguments
 config.add_required("image", str, "the name of the image for which to run the preparation")

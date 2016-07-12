@@ -30,7 +30,7 @@ class Configuration(object):
     This function ...
     """
 
-    def __init__(self, name, description, add_logging=True, add_cwd=True, prefix=None, log_path=None):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, prefix=None, log_path=None):
 
         """
         The constructor ...
@@ -93,7 +93,7 @@ class Configuration(object):
         :return:
         """
 
-        self.sections[name] = Configuration(add_logging=False, prefix=name)
+        self.sections[name] = Configuration(name, add_logging=False, prefix=name)
 
     # -----------------------------------------------------------------
 
