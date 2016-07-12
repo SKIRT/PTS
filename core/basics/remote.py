@@ -1393,8 +1393,28 @@ class Remote(object):
         :return:
         """
 
+        # Dictionary
+        packages = dict()
+
+        # pip list
         output = self.execute("pip list")
-        return output
+
+        # Loop over the lines in the output
+        for entry in output:
+
+            # Known messages that corrupt the output
+            if "You are using pip version" in entry: continue
+            if "You should consider upgrading via the" in entry: continue
+
+            # Get name and version
+            name, version = entry.split(" (")
+            version = version[:-1]
+
+            # Add the package name with its version
+            packages[name] = version
+
+        # Return the dictionary of python packages with their version numbers
+        return packages
 
     # -----------------------------------------------------------------
 
