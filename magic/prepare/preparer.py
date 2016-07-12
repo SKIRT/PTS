@@ -19,7 +19,7 @@ import numpy as np
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..core.frame import sum_quadratically
+from ..core.frame import sum_frames_quadratically
 from ..basics.coordinatesystem import CoordinateSystem
 from ..basics.mask import Mask
 from ..sources.extractor import SourceExtractor
@@ -674,7 +674,7 @@ class ImagePreparer(OldConfigurable):
         for error_frame_name in self.config.error_frame_names: error_maps.append(self.image.frames[error_frame_name])
 
         # Calculate the final error map
-        errors = sum_quadratically(*error_maps)
+        errors = sum_frames_quadratically(*error_maps)
 
         # Add the combined errors frame
         self.image.add_frame(errors, "errors")

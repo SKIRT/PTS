@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import bz2
 import tempfile
 import numpy as np
 
@@ -23,7 +22,7 @@ from astropy.table import Table
 from astropy.utils import lazyproperty
 from astropy.units import Unit
 from astropy.io.fits import Header
-from astroquery.sdss import SDSS
+#from astroquery.sdss import SDSS
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -36,7 +35,7 @@ from ...core.tools import time
 from ...magic.core.image import Image
 from .galex_montage_functions import mosaic_galex
 from ...core.tools import archive
-from ...magic.core.frame import Frame
+from ...magic.core.frame import Frame, sum_frames
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.basics.mask import Mask
 from ...core.basics.remote import Remote, connected_remotes
@@ -346,6 +345,19 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
+    def make_galex_mosaic_and_poisson_frame(self, galaxy_name, output_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param output_path:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def make_galex_mosaic(self, galaxy_name, output_path):
 
         """
@@ -406,7 +418,62 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def make_sdss_rebinned_frames_in_counts_with_poisson(self, galaxy_name, band, output_path):
+    def make_sdss_mosaic_and_poisson_frame(self, galaxy_name, band, output_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :param output_path:
+        :return:
+        """
+
+        # Make rebinned frames in counts (and footprints)
+        self.make_sdss_rebinned_frames_in_counts(galaxy_name, band, output_path)
+
+        # Initialize a list to contain the frames to be summed
+        ab_frames = []
+        b_frames = []
+
+        # Loop over the files in the output directory
+        for path, name in fs.files_in_path(output_path, extension="fits", returns=["path", "name"]):
+
+            # Open the image
+            image = Image.from_file(path)
+
+            # Get the a and b frame
+            a = image.frames.primary
+            b = image.frames.footprint
+
+            # Add product of primary and footprint and footprint to the appropriate list
+            ab = a * b
+            ab_frames.append(ab)
+            b_frames.append(b)
+
+        # Take the sums
+        ab_sum = sum_frames(ab_frames)
+        b_sum = sum_frames(b_frames)
+
+        # Calculate the relative poisson errors
+        rel_poisson_frame = ab_sum**(-0.5)
+
+        # Calculate the mosaic frame
+        mosaic_frame = ab_sum / b_sum
+
+        # Make image
+        image = Image()
+
+        # Add frames
+        image.add_frame(mosaic_frame, "primary")
+        image.add_frame(rel_poisson_frame, "rel_poisson")
+
+        # Save the image
+        path = fs.join(output_path, "result.fits")
+        image.save(path)
+
+    # -----------------------------------------------------------------
+
+    def make_sdss_rebinned_frames_in_counts(self, galaxy_name, band, output_path):
 
         """
         This function ...
@@ -420,7 +487,7 @@ class DustPediaDataProcessing(object):
         log.info("Making SDSS rebinned frames in counts for " + galaxy_name + " for SDSS " + band + " band ...")
 
         # Determine the path to the temporary directory for downloading the images
-        temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_primary_fields" + galaxy_name + "_" + band))
 
         # Create the temporary directory
         fs.create_directory(temp_path)
@@ -443,8 +510,8 @@ class DustPediaDataProcessing(object):
             # Load the frame
             frame = Frame.from_file(path, add_meta=True)
 
-            #
-            log.debug("unit:", frame.unit)
+            # Print unit
+            log.debug("Unit:" + str(frame.unit))
 
             # Get the 'NMGY' parameter
             nanomaggy_per_count = frame.meta["nmgy"]
@@ -468,11 +535,9 @@ class DustPediaDataProcessing(object):
             # Create image, add image frame and footprint
             image = Image()
             image.add_frame(frame, "primary")
-
-            #padded = Mask(footprint < 0.9).disk_dilation(radius=10)
-            #image.add_mask(padded, "padded")
-
             image.add_frame(footprint, "footprint")
+            # padded = Mask(footprint < 0.9).disk_dilation(radius=10)
+            # image.add_mask(padded, "padded")
 
             # Determine new path
             new_path = fs.join(output_path, name + ".fits")
@@ -482,6 +547,9 @@ class DustPediaDataProcessing(object):
 
             # Save
             image.save(new_path)
+
+        # Remove the temporary directory
+        fs.remove_directory(temp_path)
 
     # -----------------------------------------------------------------
 

@@ -97,13 +97,15 @@ else:
     dpdp = DustPediaDataProcessing()
 
     # GALEX
-    if "GALEX" in settings.band: pass
+    if "GALEX" in settings.band:
+
+        dpdp.make_galex_mosaic_and_poisson_frame(settings.galaxy_name, local_path)
 
     # SDSS
     elif "SDSS" in settings.band:
 
         # Make ...
-        dpdp.make_sdss_rebinned_frames_in_counts_with_poisson(settings.galaxy_name, settings.band, local_path)
+        dpdp.make_sdss_mosaic_and_poisson_frame(settings.galaxy_name, settings.band, local_path)
 
     # Invalid option
     else: raise ValueError("Invalid option for 'band'")

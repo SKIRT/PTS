@@ -1311,7 +1311,7 @@ class Frame(NDDataArray):
 
 # -----------------------------------------------------------------
 
-def sum(*args):
+def sum_frames(*args):
 
     """
     This function ...
@@ -1324,7 +1324,7 @@ def sum(*args):
 
 # -----------------------------------------------------------------
 
-def sum_quadratically(*args):
+def sum_frames_quadratically(*args):
 
     """
     This function ...
