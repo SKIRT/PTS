@@ -136,13 +136,14 @@ def remote_convolution(image, kernel, host_id):
     script_file.write("# Import the relevant PTS classes and modules\n")
     script_file.write("from pts.magic.core.frame import Frame\n")
     script_file.write("from pts.magic.core.image import Image\n")
+    script_file.write("from pts.magic.core.kernel import ConvolutionKernel\n")
     script_file.write("from pts.core.tools.logging import log\n")
     script_file.write("\n")
     script_file.write("# Inform the user\n")
     script_file.write("log.info('Opening the kernel frame ...')\n")
     script_file.write("\n")
-    script_file.write("# Open the kernel frame\n")
-    script_file.write("kernel = Frame.from_file('" + remote_kernel_path + "')\n")
+    script_file.write("# Open the kernel\n")
+    script_file.write("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')\n")
     script_file.write("\n")
     for remote_frame_path in remote_frame_paths:
 
@@ -158,8 +159,8 @@ def remote_convolution(image, kernel, host_id):
         script_file.write("log.info('Convolving the " + frame_name + " frame ...')\n")
         script_file.write("\n")
         script_file.write("# Do the convolution and save the result\n")
-        script_file.write("convolved = frame.convolved(kernel, allow_huge=True)\n")
-        script_file.write("convolved.save('" + remote_frame_path + "')\n") # overwrite the frame
+        script_file.write("frame.convolve(kernel, allow_huge=True)\n")
+        script_file.write("frame.save('" + remote_frame_path + "')\n") # overwrite the frame
         script_file.write("\n")
 
         #script_file.write("# Save the image\n")

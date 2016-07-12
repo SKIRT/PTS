@@ -44,10 +44,10 @@ arguments = config.get_arguments()
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if arguments.report else None
+logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if config.arguments.report else None
 
 # Determine the log level
-level = "DEBUG" if arguments.debug else "INFO"
+level = "DEBUG" if config.arguments.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -55,7 +55,7 @@ log.start("Starting get_poisson_errors ...")
 
 # -----------------------------------------------------------------
 
-temp_name = time.unique_name(settings.band)
+temp_name = time.unique_name(settings.band.replace(" ", ""))
 
 # -----------------------------------------------------------------
 
@@ -72,7 +72,7 @@ if settings.remote is not None:
     arguments_no_remote = arguments[:-2]
 
     # Make a new temporary directory remotely
-    remote_path = fs.join(remote.home_directory, time.unique_name(settings.band))
+    remote_path = fs.join(remote.home_directory, temp_name)
     remote.create_directory(remote_path)
     remote.change_cwd(remote_path)
 

@@ -313,16 +313,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def launch_pts_command(self, command, arguments):
+    def launch_pts_command(self, command, arguments, show_output=True):
 
         """
         This function ...
         :param command:
         :param arguments:
+        :param show_output:
         :return:
         """
 
-        self.execute("pts " + command + " ".join(arguments))
+        self.execute("pts " + command + " " + " ".join(arguments), show_output=show_output)
 
     # -----------------------------------------------------------------
 
