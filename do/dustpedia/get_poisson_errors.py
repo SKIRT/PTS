@@ -104,8 +104,10 @@ else:
     # SDSS
     elif "SDSS" in settings.band:
 
+        band = settings.band.split(" ")[1]
+
         # Make ...
-        dpdp.make_sdss_mosaic_and_poisson_frame(settings.galaxy_name, settings.band, local_path)
+        dpdp.make_sdss_mosaic_and_poisson_frame(settings.galaxy_name, band, local_path)
 
     # Invalid option
     else: raise ValueError("Invalid option for 'band'")

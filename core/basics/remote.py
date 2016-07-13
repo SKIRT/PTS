@@ -22,6 +22,7 @@ from .host import Host
 from .vpn import VPN
 from ..tools.logging import log
 from ..tools import parsing
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -323,7 +324,13 @@ class Remote(object):
         :return:
         """
 
-        self.execute("pts " + command + " " + " ".join(arguments), show_output=show_output)
+        portions = []
+        for argument in arguments:
+            if " " in argument: portions.append("'" + argument + "'")
+            else: portions.append(argument)
+        argument_string = " ".join(portions)
+
+        self.execute("pts " + command + " " + argument_string, show_output=show_output)
 
     # -----------------------------------------------------------------
 
@@ -1566,5 +1573,30 @@ class Remote(object):
         """
 
         return self.host.cluster_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_root_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = self.expand_user_path("~/PTS")
+        return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_package_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.pts_root_path, "pts")
 
 # -----------------------------------------------------------------

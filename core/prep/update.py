@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
 from ..simulation.remote import SkirtRemote
+from ..basics.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -35,10 +36,12 @@ class SkirtUpdater(Configurable):
         super(SkirtUpdater, self).__init__(config)
 
         # Create the SKIRT execution context
-        self.skirt = SkirtExec()
+        #self.skirt = SkirtExec()
 
         # Create the SKIRT remote execution context
-        self.remote = SkirtRemote()
+        #self.remote = SkirtRemote()
+
+        self.remote = None
 
     # -----------------------------------------------------------------
 
@@ -67,7 +70,10 @@ class SkirtUpdater(Configurable):
         super(SkirtUpdater, self).setup()
 
         # Setup the remote execution environment if necessary
-        if self.config.remote is not None: self.remote.setup(self.config.remote)
+        if self.config.remote is not None:
+
+            self.remote = Remote()
+            self.remote.setup(self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -102,6 +108,9 @@ class PTSUpdater(Configurable):
         # Call the constructor of the base class
         super(PTSUpdater, self).__init__(config)
 
+        # The remote execution environment (if necessary)
+        self.remote = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -111,8 +120,10 @@ class PTSUpdater(Configurable):
         :return:
         """
 
+        # 1. Call the setup function
         self.setup()
 
+        # 2. Update
         self.update()
 
     # -----------------------------------------------------------------
@@ -124,7 +135,15 @@ class PTSUpdater(Configurable):
         :return:
         """
 
+        # Call the setup of the base class
         super(PTSUpdater, self).setup()
+
+        # If remote is specified
+        if self.config.remote is not None:
+
+            # Setup the remote execution environment
+            self.remote = Remote()
+            self.remote.setup(self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -135,6 +154,6 @@ class PTSUpdater(Configurable):
         :return:
         """
 
-        pass
+        
 
 # -----------------------------------------------------------------
