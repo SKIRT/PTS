@@ -62,7 +62,8 @@ for dependency in introspection.get_all_dependencies():
     remotely_present = dependency in remote_packages
 
     if locally_present and remotely_present: log.success(dependency + ": OK")
-    elif not locally_present: log.error(dependency + ": not present on this system")
-    elif not remotely_present: log.error(dependency + ": not present on " + settings.remote)
+    elif remotely_present and not locally_present: log.error(dependency + ": not present on this system")
+    elif locally_present and not remotely_present: log.error(dependency + ": not present on remote '" + settings.remote + "'")
+    else: log.error(dependency + ": not present on either this sytem or remote '" + settings.remote + "'")
 
 # -----------------------------------------------------------------

@@ -26,6 +26,8 @@ from collections import defaultdict
 from contextlib import contextmanager
 from distutils.spawn import find_executable
 from importlib import import_module
+import pip
+import pkg_resources
 
 # Import the relevant PTS classes and modules
 from . import filesystem as fs

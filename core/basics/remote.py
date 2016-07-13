@@ -388,12 +388,14 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def send_python_line(self, line, output=False):
+    def send_python_line(self, line, output=False, in_loop=False, show_output=False):
 
         """
         This function ...
         :param line:
         :param output:
+        :param in_loop:
+        :param show_output:
         :return:
         """
 
@@ -401,8 +403,17 @@ class Remote(object):
             log.warning("Not in a remote python session")
             return
 
+        # Show output
+        if show_output: self.ssh.logfile = sys.stdout
+        else: self.ssh.logfile = None
+
+        # Send line and expect
         self.ssh.sendline(line)
-        self.ssh.expect("\r\n>>>")
+        if in_loop: self.ssh.expect("\r\n...")
+        else: self.ssh.expect("\r\n>>>")
+
+        # Set the log file back to 'None'
+        self.ssh.logfile = None
 
         if output:
             output = self.ssh.before.split("\r\n")[1:]
@@ -476,7 +487,7 @@ class Remote(object):
         :return:
         """
 
-        output = self.send_python_line(name, output=True)
+        output = self.send_python_line(name, output=True, show_output=True)
         assert len(output) == 1, output
         return eval(output[0])
 
@@ -529,7 +540,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def end_python_line(self):
+    def end_python_session(self):
 
         """
         This function ...
@@ -1386,7 +1397,7 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
-    def python_packages(self):
+    def python_distributions(self):
 
         """
         This function ...
@@ -1412,6 +1423,73 @@ class Remote(object):
 
             # Add the package name with its version
             packages[name] = version
+
+        # Return the dictionary of python packages with their version numbers
+        return packages
+
+    # -----------------------------------------------------------------
+
+    @property
+    def python_packages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Dictionary
+        #packages = dict()
+
+        was_in_python_session = self.in_python_session
+
+        # Start python session
+        if not was_in_python_session: self.start_python_session()
+
+        # Import pip and pkg_resources
+        self.import_python_package("pip")
+        self.import_python_package("pkg_resources")
+
+        # Get distributions
+        self.send_python_line("distributions = pip.get_installed_distributions()")
+        #ndistributions = int(self.get_simple_python_variable("len(distributions)"))
+
+        self.send_python_line("packages = dict()")
+        self.send_python_line("for distribution in distributions:", in_loop=True, show_output=True)
+        self.send_python_line("    import_name = list(distribution._get_metadata('top_level.txt'))[0]", in_loop=True, show_output=True)
+        self.send_python_line("    version = str(distribution.parsed_version)", in_loop=True, show_output=True)
+        self.send_python_line("    packages[import_name] = version", in_loop=True, show_output=True)
+        self.send_python_line("")
+
+        # Loop over the distributions
+        #for i in range(ndistributions):
+
+            # possible interesting properties of an entry in the distributions list:
+            # .egg_name()
+            # .as_requirement()
+            # .parsed_version
+            # .has_version()
+            # .project_name
+            # .py_version
+            # .requires()
+
+            # Get 'import name"
+            #self.send_python_line("import_name = list(distributions[" + str(i) + "]._get_metadata('top_level.txt'))[0]")
+
+            # Get the name
+            #name = self.get_python_string("import_name")
+
+            # Get the version
+            #self.send_python_line("version = str(distributions[" + str(i) + "].parsed_version)")
+
+            # Get the version
+            #version = self.get_python_string("version")
+
+            # Add to the dictionary
+            #packages[name] = version
+
+        packages = self.get_simple_python_variable("packages")
+
+        if not was_in_python_session: self.end_python_session()
 
         # Return the dictionary of python packages with their version numbers
         return packages
