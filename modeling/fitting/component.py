@@ -18,7 +18,6 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
-from .generations import GenerationsTable
 
 # -----------------------------------------------------------------
 
@@ -160,9 +159,6 @@ class FittingComponent(ModelingComponent):
         # Set the path to the generations table
         self.generations_table_path = fs.join(self.fit_path, "generations.dat")
 
-        # Initialize the generations table
-        generations_table = GenerationsTable(self.generations_table_path)
-
         # -----------------------------------------------------------------
 
         # Set the path to the parameter file
@@ -214,13 +210,15 @@ class FittingComponent(ModelingComponent):
         memory_table = MemoryTable(self.memory_table_path)
 
         # Set the paths to the probability distribution tables
-        for label in self.free_parameter_labels:
+        if self.free_parameter_labels is not None:
 
-            # Determine the path to the table
-            path = fs.join(self.fit_prob_path, label + ".dat")
+            for label in self.free_parameter_labels:
 
-            # Set the path
-            self.distribution_table_paths[label] = path
+                # Determine the path to the table
+                path = fs.join(self.fit_prob_path, label + ".dat")
+
+                # Set the path
+                self.distribution_table_paths[label] = path
 
         # Set the path to the reference image
         self.reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")

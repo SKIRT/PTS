@@ -31,7 +31,7 @@ import shutil
 import gc
 import time
 
-# Import Chris'
+# Import Chris' package
 import ChrisFuncs
 
 # Import the relevant PTS classes and modules
@@ -222,7 +222,7 @@ def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
 
 # -----------------------------------------------------------------
 
-def mosaic_galex(name, ra, dec, width, band_dict, root_dir):
+def mosaic_galex(name, ra, dec, width, band_dict, root_dir, meta_path):
 
     """
     Function to SWarp together GALEX tiles of a given source
@@ -237,8 +237,11 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir):
 
     # Declare directories
     id_string = name+'_GALEX_'+band_dict['band_long']
-    in_dir = root_dir+'Raw/'
-    temp_dir = root_dir+'Temporary_Files/'+str(name)+'_'+band_dict['band_long']+'/'
+
+    #in_dir = root_dir+'Raw/'
+    #temp_dir = root_dir+'Temporary_Files/'+str(name)+'_'+band_dict['band_long']+'/'
+
+    temp_dir = fs.join(root_dir, "temp_" + band_dict["band_long"])
 
     # Create storage directories for Montage and SWarp (deleting any prior), and set appropriate Python working directory
     if os.path.exists(temp_dir):
@@ -252,16 +255,20 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir):
     os.mkdir(temp_dir+'Convolve_Temp')
     os.chdir(temp_dir+'Raw')
 
+    overlap_path = fs.join(temp_dir, "overlap_table.dat")
+
     # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)
-    montage.commands_extra.mCoverageCheck(in_dir+band_dict['band_long']+'/'+band_dict['band_long']+'_Image_Metadata_Table.dat', temp_dir+'Overlap_Table.dat', mode='circle', ra=ra, dec=dec, radius=(0.5*width)*(2.0**0.5))
-    overlap_files = np.genfromtxt(temp_dir+'Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
+    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra, dec=dec, radius=(0.5*width)*(2.0**0.5))
+
+    overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype=('S500'))
+
     if len(overlap_files.shape)==0:
         overlap_files = [overlap_files.tolist()]
     for overlap_file in overlap_files:
         shutil.copy(overlap_file, temp_dir+'/Raw/'+overlap_file.split('/')[-1:][0])
 
     # Uncompress .fits.gz files
-    [os.system('gunzip '+listfile) for listfile in os.listdir(temp_dir+'/Raw')]
+    [os.system('gunzip '+ listfile) for listfile in os.listdir(temp_dir+'/Raw')]
 
     # Ensure that at least one of the raw GALEX tiles has actual flux coverage at location of source
     raw_files = os.listdir(temp_dir+'/Raw')
@@ -288,10 +295,13 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir):
             continue
         if np.where(image_slice>0)[0].shape[0]>0:
             coverage = True
+
     if not coverage:
+
         print('No GALEX '+band_dict['band_long']+' coverage for ' + name)
         gc.collect()
         shutil.rmtree(temp_dir)
+
     elif coverage:
 
         # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)

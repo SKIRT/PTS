@@ -15,93 +15,110 @@ from __future__ import absolute_import, division, print_function
 # Import astronomical modules
 from astropy.table import Table
 
-# Import the relevant PTS classes and modules
-from ...core.tools import tables
-from ...core.tools import filesystem as fs
-
 # -----------------------------------------------------------------
 
 class GenerationsTable(Table):
-    
+
     """
     This class ...
     """
 
-    def __init__(self, path):
+    @classmethod
+    def initialize(cls, parameters):
 
         """
         This function ...
-        :param path:
-        """
-
-        # Set the path of the generations table
-        self.path = path
-
-        # If the file does not exist yet, create it
-        if not fs.is_file(self.path): self.initialize()
-
-    # -----------------------------------------------------------------
-
-    def initialize(self):
-
-        """
-        This function ...
+        :param parameters:
         :return:
         """
 
         # Create the table
         names = ["Generation name", "Generation index", "Wavelength grid level", "Dust grid level",
-                 "Number of simulations", "FUV young range"]
-        data = [[] for _ in names]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "int64", "bool", "bool",
-                  "bool", "float64", "float64", "float64", "float64", "float64", "float64", "float64", "float64",
-                  "float64"]
-        table = tables.new(data, names, dtypes=dtypes)
+                 "Number of simulations", "Self-absorption"]
+        dtypes = [str, int, int, int, int, bool]
+
+        for label in parameters:
+            names.append("Minimum value for " + label)
+            names.append("Maximum value for " + label)
+            dtypes.append(float)
+            dtypes.append(float)
+
+        # Call the constructor of the base class
+        table = cls(names=names, masked=True)
 
         # Set the column units
-        table["Total runtime"] = "s"  # runtimes are expressed in seconds
-        table["Setup time"] = "s"
-        table["Stellar emission time"] = "s"
-        table["Spectra calculation time"] = "s"
-        table["Dust emission time"] = "s"
-        table["Writing time"] = "s"
-        table["Waiting time"] = "s"
-        table["Communication time"] = "s"
-        table["Intermediate time"] = "s"
+        #table["a"].unit = "a_unit"
+        #table["b"].unit = "b_unit"
 
-        # Write the (empty) table
-        tables.write(table, self.path, format="ascii.ecsv")
+        # Set the path
+        table.path = None
+
+        # Return the generations table instance
+        return table
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def read(cls, path):
+    def from_file(cls, path):
 
         """
         This function ...
         :return:
         """
 
-        # Load the generations table
-        table = tables.from_file(path, format="ascii.ecsv")
+        # Open the table
+        table = super(GenerationsTable, cls).read(path, format="ascii.ecsv")
+
+        # Set the path
+        table.path = path
 
         # Return the table
         return table
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name):
+    def add_entry(self, name, index, wavelength_grid_level, dust_grid_level, nsimuations, selfabsorption, ranges):
 
         """
         This function ...
         :param name:
+        :param index:
+        :param wavelength_grid_level:
+        :param dust_grid_level:
+        :param nsimuations:
+        :param selfabsorption:
+        :param ranges:
         :return:
         """
 
-        # Open the timing file in 'append' mode
-        timing_file = open(self.path, 'a')
+        pass
 
-        # Initialize a list to contain the values of the row
-        row = []
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save to the current path
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Write the table in ECSV format
+        self.write(path, format="ascii.ecsv")
+
+        # Set the path
+        self.path = path
 
 # -----------------------------------------------------------------

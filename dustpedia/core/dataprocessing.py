@@ -354,44 +354,31 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
-        pass
-
-    # -----------------------------------------------------------------
-
-    def make_galex_mosaic(self, galaxy_name, output_path):
-
-        """
-        This function ...
-        :param galaxy_name:
-        :param output_path:
-        :return:
-        """
-
         # Inform the user
-        log.info("Making mosaic for " + galaxy_name + " for GALEX ...")
+        log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
+
+        # Determine the path to the temporary directory for downloading the images
+        #temp_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
+
+        # Create the temporary directory
+        #fs.create_directory(temp_path)
+
+        # Download the GALEX observations to the temporary directory  # they are decompressed here also
+        #self.download_galex_observations_for_galaxy(galaxy_name, temp_path)
+
+        ####
+
+        temp_path = fs.join(fs.home(), "GALEX_NGC3031_2016-07-08--16-44-29-311")
 
         # Get coordinate range for target image
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
 
-        # --
-
-        # Determine the path to the temporary directory for downloading the images
-        temp_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
-
-        # Create the temporary directory
-        fs.create_directory(temp_path)
-
-        # --
-
-        # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        self.download_galex_observations_for_galaxy(galaxy_name, temp_path)
-
-        # --
-
-        return
-
         # Generate the meta and then overlap file
-        meta_path, overlap_path = self.generate_meta_and_overlap_file(path, ra, dec, width)
+        #meta_path, overlap_path = self.generate_meta_and_overlap_file(temp_path, ra, dec, width)
+
+        meta_path = fs.join(temp_path, "meta.dat")
+        # Get the image table of which images cover a given part of the sky
+        montage.commands.mImgtbl(temp_path, meta_path, corners=True)
 
         # State band information
         bands_dict = {'FUV': {'band_short': 'fd', 'band_long': 'FUV'},
@@ -401,12 +388,17 @@ class DustPediaDataProcessing(object):
         bands_in_dict = {}
         for band in bands_dict.keys():
 
-            montage.commands_extra.mCoverageCheck(meta_path, root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat', mode='point', ra=ra, dec=dec)
-            if sum(1 for line in open(root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat')) <= 3:
-                print('No GALEX ' + band + ' coverage for ' + name)
+            overlap_path = fs.join(temp_path, "overlap_" + band + ".dat")
+
+            # Create overlap file
+            montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='point', ra=ra, dec=dec)
+
+            # Check if there is any coverage for this galaxy and band
+            if sum(1 for line in open(overlap_path)) <= 3: print('No GALEX ' + band + ' coverage for ' + galaxy_name)
             else: bands_in_dict[band] = bands_dict[band]
 
-            #os.remove(root_dir + 'Temporary_Files/' + name + '_' + band + '_Overlap_Check.dat')
+            # Remove overlap file
+            fs.remove_file(overlap_path)
 
         # Check if coverage in any band
         if len(bands_in_dict) == 0: raise RuntimeError("No coverage in any GALEX band!")
@@ -414,7 +406,7 @@ class DustPediaDataProcessing(object):
         # Loop over bands, conducting SWarping function
         for band in bands_in_dict.keys():
 
-            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], root_dir)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
+            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], temp_path, meta_path)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
 
     # -----------------------------------------------------------------
 
@@ -427,6 +419,9 @@ class DustPediaDataProcessing(object):
         :param output_path:
         :return:
         """
+
+        # Inform the user
+        log.info("Making SDSS mosaic and map of relative poisson errors ...")
 
         # Make rebinned frames in counts (and footprints)
         self.make_sdss_rebinned_frames_in_counts(galaxy_name, band, output_path)

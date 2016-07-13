@@ -86,6 +86,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @NDDataArray.unit.setter
+    def unit(self, unit):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        self._unit = unit
+
+    # -----------------------------------------------------------------
+
     def __getitem__(self, item):
 
         """
