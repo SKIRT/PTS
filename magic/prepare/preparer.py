@@ -27,13 +27,13 @@ from ..sky.skysubtractor import SkySubtractor
 from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ...modeling.preparation import unitconversion
-from ...core.tools import special
 from ...core.basics.animation import Animation
 from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ..animation.imageblink import ImageBlinkAnimation
 from ..animation.sourceextraction import SourceExtractionAnimation
 from ..core.kernel import ConvolutionKernel
+from ..core.remote import RemoteImage
 
 # -----------------------------------------------------------------
 
@@ -409,8 +409,10 @@ class ImagePreparer(OldConfigurable):
             # Inform the user
             log.info("Convolution will be performed remotely on host '" + self.config.convolution.remote + "' ...")
 
-            # Perform the remote convolution
-            special.remote_convolution(self.image, kernel, self.config.convolution.remote)
+            # Create remote image, convolve and make local again
+            remote_image = RemoteImage.from_local(self.image, self.config.convolution.remote)
+            remote_image.convolve(kernel, allow_huge=True)
+            self.image = remote_image.to_local()
 
         # The convolution is performed locally. # Convolve the image (the primary and errors frame)
         else: self.image.convolve(kernel, allow_huge=True)

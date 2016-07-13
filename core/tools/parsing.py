@@ -24,6 +24,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from ..basics.range import IntegerRange, RealRange, QuantityRange
+from ...magic.basics.vector import Vector
 
 # -----------------------------------------------------------------
 
@@ -120,6 +121,24 @@ def quantity_tuple(argument):
         a, b = map(quantity, argument.split(","))
         return a, b
     except: raise argparse.ArgumentTypeError("Tuple must be of format a unit_a, b unit_b")
+
+# -----------------------------------------------------------------
+
+def quantity_vector(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    tuple_string = argument.split("(")[1].split(")")[0]
+    x, y = tuple_string.split(", ")
+
+    x = quantity(x[2:])
+    y = quantity(y[2:])
+
+    return Vector(x, y)
 
 # -----------------------------------------------------------------
 
@@ -242,15 +261,48 @@ def get_boolean(entry):
 def quantity(argument):
 
     """
-    This function ...
-    :param argument:
-    :return:
+    >>> quantity("2GB")
+    (2.0, 'GB')
+    >>> quantity("17 ft")
+    (17.0, 'ft')
+    >>> quantity("   3.4e-27 frobnitzem ")
+    (3.4e-27, 'frobnitzem')
+    >>> quantity("9001")
+    (9001.0, '')
+    >>> quantity("spam sandwhiches")
+    (1.0, 'spam sandwhiches')
+    >>> quantity("")
+    (1.0, '')
     """
 
-    splitted = argument.split()
-    value = float(splitted[0])
-    unit = Unit(splitted[1])
-    return value * unit
+    # NEW IMPLEMENTATION
+    units = ""
+    number = 1.0
+    while argument:
+        try:
+            number = float(argument)
+            break
+        except ValueError:
+            units = argument[-1:] + units
+            argument = argument[:-1]
+    return number, Unit(units.strip())
+
+    # FIRST IMPLEMENTATION
+    #splitted = argument.split()
+    #value = float(splitted[0])
+    #unit = Unit(splitted[1])
+    #return value * unit
+
+    # http://stackoverflow.com/questions/2240303/separate-number-from-unit-in-a-string-in-python
+
+    # SECOND IMPLEMENTATION
+    #numeric = '0123456789-.'
+    #for i, c in enumerate(argument + " "):
+    #    if c not in numeric:
+    #        break
+    #value = argument[:i]
+    #unit = Unit(argument[i:].lstrip())
+    #return value * unit
 
 # -----------------------------------------------------------------
 

@@ -712,14 +712,13 @@ class Frame(NDDataArray):
 
         # Skip the calculation for a constant frame
         if self.is_constant():
-
-            new_frame = self.copy()
-            new_frame.fwhm = kernel_fwhm
-            return new_frame
+            self.fwhm = kernel_fwhm
+            return
 
         # Check whether the kernel is prepared
         if not kernel.prepared:
-            log.warning("The convolution kernel is not prepared, preparing ...")
+            log.warning("The convolution kernel is not prepared, creating a prepared copy ...")
+            kernel = kernel.copy()
             kernel.prepare(self.pixelscale)
 
         # Check where the NaNs are at
@@ -1298,13 +1297,14 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def save(self, path, header=None, origin=None):
+    def save(self, path, header=None, origin=None, extra_header_info=None):
 
         """
         This function ...
         :param path:
         :param header:
         :param origin:
+        :param extra_header_info:
         """
 
         if header is None: header = self.header
@@ -1317,6 +1317,10 @@ class Frame(NDDataArray):
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Frame class of PTS package"
+
+        # Add extra info
+        if extra_header_info is not None:
+            for key in extra_header_info: header[key] = extra_header_info[key]
 
         # Write
         from . import io

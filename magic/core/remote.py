@@ -13,21 +13,16 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import copy
 import tempfile
-import numpy as np
-from scipy import ndimage
 from itertools import count, izip
 
 # Import the relevant PTS classes and modules
-from ..basics.vector import Position
-from ..tools import cropping
 from ...core.tools.logging import log
-from ..basics.mask import Mask
 from ...core.tools import filesystem as fs
 from ...core.basics.remote import Remote, connected_remotes
 from .frame import Frame
 from .image import Image
+from ...core.tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -75,12 +70,16 @@ def import_necessary_modules(remote):
     # Import standard modules
     remote.import_python_package("tempfile")
     remote.import_python_package("urllib")
+    remote.import_python_package("numpy", as_name="np")
 
     # Import the necessary PTS classes and modules
     remote.import_python_package("Frame", from_name="pts.magic.core.frame")
     remote.import_python_package("Image", from_name="pts.magic.core.image")
+    remote.import_python_package("ConvolutionKernel", from_name="pts.magic.core.kernel")
+    remote.import_python_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
     remote.import_python_package("filesystem", from_name="pts.core.tools", as_name="fs")
     remote.import_python_package("archive", from_name="pts.core.tools")
+    remote.import_python_package("parsing", from_name="pts.core.tools")
 
 # -----------------------------------------------------------------
 
@@ -256,9 +255,34 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fwhm = parsing.quantity(self.remote.get_simple_python_property(self.label, "fwhm"))
+        return fwhm
+
+    # -----------------------------------------------------------------
+
+    @fwhm.setter
+    def fwhm(self, fwhm):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.remote.send_python_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
+
+    # -----------------------------------------------------------------
+
     @classmethod
-    def from_url(cls, url, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=False):
+    def from_url(cls, url, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None,
+                 no_filter=False, fwhm=None, add_meta=False):
 
         """
         This function ...
@@ -459,6 +483,17 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    def is_constant(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.get_simple_python_property(self.label, "is_constant()")
+
+    # -----------------------------------------------------------------
+
     def convolved(self, *args, **kwargs):
 
         """
@@ -487,32 +522,51 @@ class RemoteFrame(object):
 
         # Skip the calculation for a constant frame
         if self.is_constant():
+            self.fwhm = kernel_fwhm
+            return
 
-            new_frame = self.copy()
-            new_frame.fwhm = kernel_fwhm
-            return new_frame
+        # SAVE KERNEL LOCALLY
 
-        # Check whether the kernel is prepared
-        if not kernel.prepared:
-            log.warning("The convolution kernel is not prepared, preparing ...")
-            kernel.prepare(self.pixelscale)
+        # Determine temporary directory path
+        temp_path = tempfile.gettempdir()
+
+        # Determine local FITS path
+        local_path = fs.join(temp_path, "kernel.fits")
+
+        # Save the kernel locally
+        kernel.save(local_path)
+
+        # UPLOAD KERNEL
+
+        # Remote temp path
+        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote_temp_path = self.remote.get_python_string("temp_path")
+
+        # Upload the kernel file
+        remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
+        log.info("Uploading the kernel to " + remote_kernel_path + " ...")
+        self.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
+
+        # Open the kernel remotely
+        self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
+
+        # Prepare the kernel if necessary
+        #self.remote.send_python_line("if not kernel.prepared: kernel.prepare_for(" + self.label + ")")
 
         # Check where the NaNs are at
-        nans_mask = np.isnan(self._data)
+        #self.remote.send_python_line("nans_mask = np.isnan(" + self.label + "._data)")
 
         # Assert that the kernel is normalized
-        assert kernel.normalized
+        #self.remote.send_python_line("assert kernel.normalized")
 
-        # Do the convolution on this frame
-        if fft: new_data = convolve_fft(self._data, kernel._data, normalize_kernel=False, interpolate_nan=True, allow_huge=allow_huge)
-        else: new_data = convolve(self._data, kernel._data, normalize_kernel=False)
+        # Do the convolution
+        #self.remote. .... ETC
 
-        # Put back NaNs
-        new_data[nans_mask] = float("nan")
 
-        # Replace the data and FWHM
-        self._data = new_data
-        self.fwhm = kernel_fwhm
+        # OR JUST: (does constant check again and creates copy for the prepared kernel, but... much more maintainable in this way)
+
+        # Do the convolution on the remote frame
+        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")")
 
     # -----------------------------------------------------------------
 
@@ -540,16 +594,20 @@ class RemoteFrame(object):
         :return:
         """
 
-        # Calculate rebinned data and footprint of the original image
-        if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
-        else: new_data, footprint = reproject_interp((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape)
+        # Upload the WCS
+        self.remote.send_python_line("reference_wcs = CoordinateSystem('" + reference_wcs.to_header_string() + "')")
 
-        # Replace the data and WCS
-        self._data = new_data
-        self._wcs = reference_wcs
+        # Create remote frame label for the footprint
+        footprint_label = get_new_frame_label(self.remote)
 
-        # Return the footprint
-        return Frame(footprint)
+        # Rebin, get the footprint
+        self.remote.send_python_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")")
+
+        # Create a new remoteframe instance for the footprint
+        remote_footprint_frame = RemoteFrame(footprint_label, self.remote)
+
+        # Return the remoteframe footprint
+        return remote_footprint_frame
 
     # -----------------------------------------------------------------
 
@@ -581,45 +639,8 @@ class RemoteFrame(object):
         :return:
         """
 
-        # Crop the frame
-        new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
-
-        if self.wcs is not None:
-
-            # Copy the current WCS
-            new_wcs = self.wcs.copy()
-
-            # Change the center pixel position
-            new_wcs.wcs.crpix[0] -= x_min
-            new_wcs.wcs.crpix[1] -= y_min
-
-            # Change the number of pixels
-            new_wcs.naxis1 = x_max - x_min
-            new_wcs.naxis2 = y_max - y_min
-
-            new_wcs._naxis1 = new_wcs.naxis1
-            new_wcs._naxis2 = new_wcs.naxis2
-
-        else: new_wcs = None
-
-        # Check shape of data
-        assert new_data.shape[1] == (x_max - x_min) and new_data.shape[0] == (y_max - y_min)
-
-        # Replace the data and WCS
-        self._data = new_data
-        self._wcs = new_wcs
-
-    # -----------------------------------------------------------------
-
-    @property
-    def center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Position(self.wcs.wcs.crpix[0], self.wcs.wcs.crpix[1])
+        # Crop remotely
+        self.remote.send_python_line(self.label + ".crop(" + str(x_min) + ", " + str(x_max) + ", " + str(y_min) + ", " + str(y_max))
 
     # -----------------------------------------------------------------
 
@@ -647,28 +668,8 @@ class RemoteFrame(object):
         :return:
         """
 
-        if nx == 0 and ny == 0: return
-
-        new_data = np.pad(self._data, ((ny,0), (nx,0)), 'constant')
-
-        if self.wcs is not None:
-
-            new_wcs = copy.deepcopy(self.wcs)
-
-            new_wcs.wcs.crpix[0] += nx
-            new_wcs.wcs.crpix[1] += ny
-
-            # Change the number of pixels
-            new_wcs.naxis1 = new_data.shape[1]
-            new_wcs.naxis2 = new_data.shape[0]
-            new_wcs._naxis1 = new_wcs.naxis1
-            new_wcs._naxis2 = new_wcs.naxis2
-
-        else: new_wcs = None
-
-        # Set the new data and the new WCS
-        self._data = new_data
-        self._wcs = new_wcs
+        # Pad remotely
+        self.remote.send_python_line(self.label + ".pad(" + str(nx) + ", " + str(ny) + ")")
 
     # -----------------------------------------------------------------
 
@@ -681,29 +682,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        if nx == 0 and ny == 0: return
-
-        # Slice
-        new_data = self._data[ny:, nx:]
-
-        if self.wcs is not None:
-
-            new_wcs = self.wcs.copy()
-
-            new_wcs.wcs.crpix[0] -= nx
-            new_wcs.wcs.crpix[1] -= ny
-
-            # Change the number of pixels
-            new_wcs.naxis1 = new_data.shape[1]
-            new_wcs.naxis2 = new_data.shape[0]
-            new_wcs._naxis1 = new_wcs.naxis1
-            new_wcs._naxis2 = new_wcs.naxis2
-
-        else: new_wcs = None
-
-        # Set the new data and the new WCS
-        self._data = new_data
-        self._wcs = new_wcs
+        self.remote.send_python_line(self.label + ".unpad(" + str(nx) + ", " + str(ny) + ")")
 
     # -----------------------------------------------------------------
 
@@ -729,41 +708,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        # Calculate the downsampled array
-        new_data = ndimage.interpolation.zoom(self._data, zoom=1.0/factor, order=order)
-
-        new_xsize = new_data.shape[1]
-        new_ysize = new_data.shape[0]
-
-        relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
-
-        new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
-
-        if self.wcs is not None:
-
-            # Make a copy of the current WCS
-            new_wcs = self.wcs.copy()
-
-            # Change the center pixel position
-            new_wcs.wcs.crpix[0] = new_center.x
-            new_wcs.wcs.crpix[1] = new_center.y
-
-            # Change the number of pixels
-            new_wcs.naxis1 = new_xsize
-            new_wcs.naxis2 = new_ysize
-
-            new_wcs._naxis1 = new_wcs.naxis1
-            new_wcs._naxis2 = new_wcs.naxis2
-
-            # Change the pixel scale
-            new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
-            new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
-
-        else: new_wcs = None
-
-        # Set the new data and wcs
-        self._data = new_data
-        self._wcs = new_wcs
+        self.remote.send_python_line(self.label + ".downsample(" + str(factor) + ", " + str(order) + ")")
 
     # -----------------------------------------------------------------
 
@@ -791,70 +736,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        if integers:
-
-            # Check whether the upsampling factor is an integer or not
-            if int(factor) == factor:
-
-                new_data = ndimage.zoom(self._data, factor, order=0)
-
-                new_xsize = new_data.shape[1]
-                new_ysize = new_data.shape[0]
-
-                relative_center = Position(self.center.x / self.xsize, self.center.y / self.ysize)
-
-                new_center = Position(relative_center.x * new_xsize, relative_center.y * new_ysize)
-
-                new_wcs = copy.deepcopy(self.wcs)
-                # Change the center pixel position
-                new_wcs.wcs.crpix[0] = new_center.x
-                new_wcs.wcs.crpix[1] = new_center.y
-
-                # Change the number of pixels
-                new_wcs.naxis1 = new_xsize
-                new_wcs.naxis2 = new_ysize
-                new_wcs._naxis1 = new_wcs.naxis1
-                new_wcs._naxis2 = new_wcs.naxis2
-
-                # Change the pixel scale
-                new_wcs.wcs.cdelt[0] *= float(self.xsize) / float(new_xsize)
-                new_wcs.wcs.cdelt[1] *= float(self.ysize) / float(new_ysize)
-
-                #return Frame(data, wcs=new_wcs, name=self.name, description=self.description, unit=self.unit, zero_point=self.zero_point, filter=self.filter, sky_subtracted=self.sky_subtracted, fwhm=self.fwhm)
-
-                # Set the new data and wcs
-                self._data = new_data
-                self._wcs = new_wcs
-
-            # Upsampling factor is not an integer
-            else:
-
-                old = self.copy()
-
-                self.downsample(1./factor)
-
-                #print("Checking indices ...")
-                indices = np.unique(old._data)
-
-                #print("indices:", indices)
-
-                # Loop over the indices
-                for index in list(indices):
-
-                    #print(index)
-
-                    index = int(index)
-
-                    where = Mask(old._data == index)
-
-                    # Calculate the downsampled array
-                    data = ndimage.interpolation.zoom(where.astype(float), zoom=factor)
-                    upsampled_where = data > 0.5
-
-                    self[upsampled_where] = index
-
-        # Just do inverse of downsample
-        else: self.downsample(factor)
+        self.remote.send_python_line(self.label + ".upsample(" + str(factor) + ", " + str(integers) + ")")
 
     # -----------------------------------------------------------------
 
@@ -866,7 +748,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self._data.fill(value)
+        self.remote.send_python_line(self.label + ".fill(" + str(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -1182,5 +1064,59 @@ class RemoteImage(object):
 
         # Return the image
         return image
+
+    # -----------------------------------------------------------------
+
+    def convolve(self, kernel, allow_huge=False):
+
+        """
+        This function ...
+        :param kernel:
+        :param allow_huge:
+        :return:
+        """
+
+        # SAVE KERNEL LOCALLY
+
+        # Determine temporary directory path
+        temp_path = tempfile.gettempdir()
+
+        # Determine local FITS path
+        local_path = fs.join(temp_path, "kernel.fits")
+
+        # Save the kernel locally
+        kernel.save(local_path)
+
+        # UPLOAD KERNEL
+
+        # Remote temp path
+        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote_temp_path = self.remote.get_python_string("temp_path")
+
+        # Upload the kernel file
+        remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
+        log.info("Uploading the kernel to " + remote_kernel_path + " ...")
+        self.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
+
+        # Open the kernel remotely
+        self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
+
+        # Convolve the image remotely
+        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ")")
+
+    # -----------------------------------------------------------------
+
+    def rebin(self, reference_wcs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Upload the WCS
+        self.remote.send_python_line("reference_wcs = CoordinateSystem('" + reference_wcs.to_header_string() + "')")
+
+        # Rebin remotely
+        self.remote.send_python_line(self.label + ".rebin(reference_wcs)")
 
 # -----------------------------------------------------------------

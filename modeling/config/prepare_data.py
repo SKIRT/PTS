@@ -21,7 +21,7 @@ config.add_optional("reference_image", str, "the name of the reference image")
 config.add_flag("steps", "write the results of intermediate steps")
 config.add_flag("visualise", "make visualisations")
 
-config.add_section("importation")
-config.add_section("preparation")
+#config.add_section("importation")
+#config.add_section("preparation")
 
 # -----------------------------------------------------------------

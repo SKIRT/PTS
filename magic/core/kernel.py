@@ -408,4 +408,17 @@ class ConvolutionKernel(Frame):
         # Return xmax and ymax position
         return x_max, y_max
 
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Call the save function of the base class
+        super(ConvolutionKernel, self).save(path, extra_header_info={"PREPARED": self.prepared})
+
 # -----------------------------------------------------------------
