@@ -216,7 +216,7 @@ class TrainedFinder(OldConfigurable):
         self.region = Region()
 
         # Return the list of apertures
-        contours = sources.find_contours(self.segments, self.segments, self.config.detection.apertures.sigma_level)
+        contours = sources.find_contours(self.segments._data, self.segments._data, self.config.detection.apertures.sigma_level)
 
         # Add shapes to region
         for contour in contours: self.region.append(contour)
