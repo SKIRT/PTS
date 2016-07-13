@@ -25,6 +25,7 @@ from astropy.io import fits
 import astropy.io.votable
 import astropy.convolution
 import montage_wrapper as montage
+from astropy.wcs import WCS
 
 import lmfit
 import shutil
@@ -150,7 +151,7 @@ def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
     out_image = in_image.copy()
 
     # Load and align response map
-    rr_path = root_dir+'Response/'+band_dict['band_long']+'/'+raw_file.replace('-int.fits','-rr.fits.gz')
+    rr_path = root_dir + 'Response/' + band_dict['band_long'] + '/' + raw_file.replace('-int.fits','-rr.fits.gz')
     rr_fitsdata = fits.open(rr_path)
     rr_image = rr_fitsdata[0].data
     rr_zoom = np.float(out_image.shape[0]) / np.float(rr_image.shape[0])
@@ -160,7 +161,7 @@ def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
     out_image[ np.where( rr_image<=1E-10 ) ] = np.NaN
 
     # Load and align sky background map
-    bg_path = root_dir+'Background/'+band_dict['band_long']+'/'+raw_file.replace('-int.fits','-skybg.fits.gz')
+    bg_path = root_dir + 'Background/' + band_dict['band_long'] + '/' + raw_file.replace('-int.fits','-skybg.fits.gz')
     bg_fitsdata = fits.open(bg_path)
     bg_image = bg_fitsdata[0].data
     bg_zoom = np.float(out_image.shape[0]) / np.float(bg_image.shape[0])
@@ -222,7 +223,7 @@ def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
 
 # -----------------------------------------------------------------
 
-def mosaic_galex(name, ra, dec, width, band_dict, root_dir, meta_path):
+def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_path):
 
     """
     Function to SWarp together GALEX tiles of a given source
@@ -231,17 +232,19 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir, meta_path):
     :param dec:
     :param width:
     :param band_dict:
-    :param root_dir:
+    :param working_path:
+    :param meta_path:
     :return:
     """
 
     # Declare directories
-    id_string = name+'_GALEX_'+band_dict['band_long']
+    id_string = name + '_GALEX_' + band_dict['band_long']
 
-    #in_dir = root_dir+'Raw/'
-    #temp_dir = root_dir+'Temporary_Files/'+str(name)+'_'+band_dict['band_long']+'/'
 
-    temp_dir = fs.join(root_dir, "temp_" + band_dict["band_long"])
+    temp_dir = fs.join(temp_path, "temp_" + band_dict["band_long"])
+
+    raw_in_temp_dir = fs.join(temp_dir, "raw")
+    fs.create_directory(raw_in_temp_dir)
 
     # Create storage directories for Montage and SWarp (deleting any prior), and set appropriate Python working directory
     if os.path.exists(temp_dir):
@@ -260,34 +263,34 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir, meta_path):
     # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)
     montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra, dec=dec, radius=(0.5*width)*(2.0**0.5))
 
-    overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype=('S500'))
+    overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype=('S500'))
 
-    if len(overlap_files.shape)==0:
-        overlap_files = [overlap_files.tolist()]
-    for overlap_file in overlap_files:
-        shutil.copy(overlap_file, temp_dir+'/Raw/'+overlap_file.split('/')[-1:][0])
+    if len(overlapping_file_paths.shape)==0:
+        overlap_files = [overlapping_file_paths.tolist()]
+    for overlapping_file_path in overlapping_file_paths:
+        shutil.copy(overlapping_file_path, raw_in_temp_dir)
 
     # Uncompress .fits.gz files
-    [os.system('gunzip '+ listfile) for listfile in os.listdir(temp_dir+'/Raw')]
+    #[os.system('gunzip '+ listfile) for listfile in os.listdir(raw_in_temp_dir)]
 
     # Ensure that at least one of the raw GALEX tiles has actual flux coverage at location of source
-    raw_files = os.listdir(temp_dir+'/Raw')
+    raw_files = os.listdir(raw_in_temp_dir)
     coverage = False
     for raw_file in raw_files:
 
         # Read in map
-        in_fitsdata = fits.open(temp_dir+'/Raw/'+raw_file)
+        in_fitsdata = fits.open(fs.join(raw_in_temp_dir, raw_file))
         in_image = in_fitsdata[0].data
         in_header = in_fitsdata[0].header
         in_fitsdata.close()
 
         # Locate pixel coords
-        in_wcs = astropy.wcs.WCS(in_header)
+        in_wcs = WCS(in_header)
         location_pix = in_wcs.wcs_world2pix( np.array([[ np.float(ra), np.float(dec) ]]), 0 )[0]
         pix_i, pix_j = location_pix[1], location_pix[0]
 
         # Evalulate coverage at location, and proceed accordingly
-        if True in [ coord<=0 for coord in [ pix_i-10, pix_i+11, pix_j-10, pix_j+11 ] ]:
+        if True in [ coord <= 0 for coord in [ pix_i-10, pix_i+11, pix_j-10, pix_j+11 ] ]:
             continue
         try:
             image_slice = in_image[pix_i-10:pix_i+11, pix_j-10:pix_j+11]
@@ -298,26 +301,35 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir, meta_path):
 
     if not coverage:
 
-        print('No GALEX '+band_dict['band_long']+' coverage for ' + name)
+        print('No GALEX '+ band_dict['band_long'] + ' coverage for ' + name)
         gc.collect()
         shutil.rmtree(temp_dir)
 
     elif coverage:
 
         # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
-        print('Cleaning '+str(len(raw_files))+' raw maps for '+id_string)
+        print('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string)
 
-        pool = mp.Pool(processes=6)
-        for raw_file in raw_files:
-            pool.apply_async(GALEX_Clean, args=(raw_file, root_dir, temp_dir, temp_dir+'Reproject_Temp/', band_dict,))
-            #GALEX_Clean(raw_file, root_dir, temp_dir, temp_dir+'Reproject_Temp/', band_dict)
-        pool.close()
-        pool.join()
+        #pool = mp.Pool(processes=6)
+        #for raw_file in raw_files:
+        #    pool.apply_async(GALEX_Clean, args=(raw_file, root_dir, temp_dir, temp_dir+'Reproject_Temp/', band_dict,))
+        #    #GALEX_Clean(raw_file, root_dir, temp_dir, temp_dir+'Reproject_Temp/', band_dict)
+        #pool.close()
+        #pool.join()
+
+
+
+        # CLEEAN
+        GALEX_Clean(raw_file, root_dir, temp_dir, temp_dir + "Reproject_Temp/", band_dict)
+
+
 
         # Create Montage FITS header
-        location_string = str(ra)+' '+str(dec)
+        location_string = str(ra) + ' ' + str(dec)
         pix_size = 3.2
-        montage.commands.mHdr(location_string, width, temp_dir+id_string+'_HDR', pix_size=pix_size)
+        montage.commands.mHdr(location_string, width, temp_dir + id_string + '_HDR', pix_size=pix_size)
+
+
 
         # Count image files, and move to reprojection directory
         mosaic_count = 0
@@ -329,7 +341,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir, meta_path):
                 shutil.move(listfile, temp_dir+'Reproject_Temp')
 
         # If more than one image file, commence background-matching
-        if mosaic_count>1:
+        if mosaic_count > 1:
             print('Matching background of '+id_string+' maps')
             GALEX_Zero(temp_dir+'Reproject_Temp', temp_dir+'Convolve_Temp', 'int.fits')
 
@@ -361,10 +373,10 @@ def mosaic_galex(name, ra, dec, width, band_dict, root_dir, meta_path):
         out_image[ np.where( out_image<=1E-8 ) ] = 0
         out_hdu = fits.PrimaryHDU(data=out_image, header=in_header)
         out_hdulist = fits.HDUList([out_hdu])
-        out_hdulist.writeto(root_dir+'Montages/'+id_string+'.fits', clobber=True)
+        out_hdulist.writeto(root_dir + 'Montages/' + id_string + '.fits', clobber=True)
 
         # Clean up
-        print('Completed Montaging and SWarping of '+id_string)
+        print('Completed Montaging and SWarping of ' + id_string)
         gc.collect()
         shutil.rmtree(temp_dir)
 

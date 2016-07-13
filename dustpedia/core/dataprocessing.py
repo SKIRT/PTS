@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import shutil
 import tempfile
 import numpy as np
 
@@ -21,7 +22,7 @@ import montage_wrapper as montage
 from astropy.table import Table
 from astropy.utils import lazyproperty
 from astropy.units import Unit
-from astropy.io.fits import Header
+from astropy.io.fits import Header, getheader
 #from astroquery.sdss import SDSS
 
 # Import the relevant PTS classes and modules
@@ -358,40 +359,77 @@ class DustPediaDataProcessing(object):
         log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
 
         # Determine the path to the temporary directory for downloading the images
-        #temp_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
+        #working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
+
+        working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-07-08--16-44-29-311")
 
         # Create the temporary directory
         #fs.create_directory(temp_path)
 
+        # DOWNLOAD PATH
+        download_path = fs.join(working_path, "download")
+        # Create download directory
+        fs.create_directory(download_path)
+
+        # RAW PATH
+        raw_path = fs.join(working_path, "raw")
+        # Create raw directory
+        fs.create_directory(raw_path)
+
+        # TEMP PATH
+        temp_path = fs.join(working_path, "temp")
+        # Create temp directory
+        fs.create_directory(temp_path)
+
+
+        # 1 and 2 RAW directories
+        raw_1_path = fs.join(raw_path, "1")
+        raw_2_path = fs.join(raw_path, "2")
+        fs.create_directories([raw_1_path, raw_2_path])
+
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        #self.download_galex_observations_for_galaxy(galaxy_name, temp_path)
+        #self.download_galex_observations_for_galaxy(galaxy_name, download_path)
 
         ####
 
-        temp_path = fs.join(fs.home(), "GALEX_NGC3031_2016-07-08--16-44-29-311")
+        # SPLIT INTO TEMP/RAW/1 and TEMP/RAW/2
+        self.split_galex_observations(download_path, raw_1_path, raw_2_path)
 
         # Get coordinate range for target image
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
 
-        # Generate the meta and then overlap file
-        #meta_path, overlap_path = self.generate_meta_and_overlap_file(temp_path, ra, dec, width)
+        ## Generate the meta and then overlap file
+        ##meta_path, overlap_path = self.generate_meta_and_overlap_file(temp_path, ra, dec, width)
 
-        meta_path = fs.join(temp_path, "meta.dat")
-        # Get the image table of which images cover a given part of the sky
-        montage.commands.mImgtbl(temp_path, meta_path, corners=True)
+        ##meta_path = fs.join(temp_path, "meta.dat")
+        ## Get the image table of which images cover a given part of the sky
+        ##montage.commands.mImgtbl(temp_path, meta_path, corners=True)
+
+        raw_band_paths = {"FUV": raw_1_path, "NUV": raw_2_path}
 
         # State band information
         bands_dict = {'FUV': {'band_short': 'fd', 'band_long': 'FUV'},
                       'NUV': {'band_short': 'nd', 'band_long': 'NUV'}}
 
+        metadata_paths = {"FUV": fs.join(working_path, "FUV_Image_metadata_table.dat"),
+                          "NUV": fs.join(working_path, "NUV_Image_metadata_table.dat")}
+
+        # If not yet done, produce Montage image table of raw tiles
+        for band in bands_dict.keys():
+
+            print('Creating ' + band + ' image metadata table')
+            metadata_path = metadata_paths[band]
+            montage.commands.mImgtbl(raw_band_paths[band], metadata_path, corners=True)
+
         # Check if any GALEX tiles have coverage of source in question; if not, continue
         bands_in_dict = {}
         for band in bands_dict.keys():
 
+            # OVERLAP TABLE IS HERE TEMPORARY
             overlap_path = fs.join(temp_path, "overlap_" + band + ".dat")
 
             # Create overlap file
-            montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='point', ra=ra, dec=dec)
+            montage.commands_extra.mCoverageCheck(metadata_paths[band], overlap_path, mode='point', ra=ra, dec=dec)
 
             # Check if there is any coverage for this galaxy and band
             if sum(1 for line in open(overlap_path)) <= 3: print('No GALEX ' + band + ' coverage for ' + galaxy_name)
@@ -406,7 +444,32 @@ class DustPediaDataProcessing(object):
         # Loop over bands, conducting SWarping function
         for band in bands_in_dict.keys():
 
-            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], temp_path, meta_path)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
+            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], working_path, temp_path, metadata_paths[band])  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
+
+    # -----------------------------------------------------------------
+
+    def split_galex_observations(self, download_path, raw_1_path, raw_2_path):
+
+        """
+        This function ...
+        :param download_path:
+        :param raw_path:
+        :return:
+        """
+
+
+
+        for path, name in fs.files_in_path(download_path, extension="fits", returns=["path", "name"]):
+
+            # Get header
+            header = getheader(path)
+
+            # Check band
+            band = header["BAND"]
+
+            if band == 1: shutil.copy(path, raw_1_path)
+            elif band == 2: shutil.copy(path, raw_2_path)
+            else: raise RuntimeError("Invalid band: " + str(band))
 
     # -----------------------------------------------------------------
 
