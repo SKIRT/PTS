@@ -45,6 +45,13 @@ script_name = sys.argv[1] if len(sys.argv) > 1 else None
 # Find matches in existing do scripts
 scripts = introspection.get_scripts()
 tables = introspection.get_arguments_tables()
+
+if script_name is None:
+
+    print("Welcome to PTS")
+    introspection.show_all_available(scripts, tables)
+    exit()
+
 matches = introspection.find_matches_scripts(script_name, scripts)
 table_matches = introspection.find_matches_tables(script_name, tables)
 

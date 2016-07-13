@@ -342,7 +342,7 @@ class TrainedFinder(OldConfigurable):
         :return:
         """
 
-        mask = Mask(self.galaxy_finder.segments) + Mask(self.star_finder.segments)
+        mask = Mask(self.galaxy_finder.segments._data) + Mask(self.star_finder.segments._data)
         data = self.frame.copy()
         data[mask] = 0.0
 
