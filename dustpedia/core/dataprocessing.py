@@ -487,7 +487,7 @@ class DustPediaDataProcessing(object):
         log.info("Making SDSS rebinned frames in counts for " + galaxy_name + " for SDSS " + band + " band ...")
 
         # Determine the path to the temporary directory for downloading the images
-        temp_path = fs.join(fs.home(), time.unique_name("SDSS_primary_fields" + galaxy_name + "_" + band))
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_primary_fields_" + galaxy_name + "_" + band))
 
         # Create the temporary directory
         fs.create_directory(temp_path)

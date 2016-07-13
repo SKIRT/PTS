@@ -154,6 +154,18 @@ class PTSUpdater(Configurable):
         :return:
         """
 
-        
+        # Change working directory to repository directory
+        pts_git_path = self.remote.pts_package_path
+        self.remote.change_cwd(pts_git_path)
+
+        # Git pull
+        #self.remote.execute("git pull origin master", output=True)
+
+        self.remote.ssh.sendline("git pull origin master")
+        self.remote.ssh.expect(":")
+
+        self.remote.ssh.sendline("tokiotokio")
+
+        self.remote.ssh.prompt()
 
 # -----------------------------------------------------------------

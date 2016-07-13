@@ -54,7 +54,7 @@ def find_contours(frame, segments, sigma_level):
     # Get the segment properties
     # Since there is only one segment in the source.mask (the center segment), the props
     # list contains only one entry (one galaxy)
-    properties_list = source_properties(np.asarray(frame), segments)
+    properties_list = source_properties(frame._data, segments)
 
     for properties in properties_list:
 
