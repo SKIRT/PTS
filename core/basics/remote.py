@@ -494,7 +494,7 @@ class Remote(object):
         :return:
         """
 
-        output = self.send_python_line(name, output=True, show_output=True)
+        output = self.send_python_line(name, output=True)
         assert len(output) == 1, output
         return eval(output[0])
 

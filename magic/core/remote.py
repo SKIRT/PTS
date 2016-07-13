@@ -91,6 +91,8 @@ def get_first_missing_integer(integers):
     :return:
     """
 
+    if len(integers) == 0: return 0
+
     if integers[0] != 0: return 0
 
     nums = (b for a, b in izip(integers, count(integers[0])) if a != b)
