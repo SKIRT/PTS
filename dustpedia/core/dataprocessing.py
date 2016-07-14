@@ -429,9 +429,9 @@ class DustPediaDataProcessing(object):
 
 
         # 1 and 2 RAW directories
-        raw_1_path = fs.join(raw_path, "1")
-        raw_2_path = fs.join(raw_path, "2")
-        fs.create_directories(raw_1_path, raw_2_path)
+        raw_fuv_path = fs.join(raw_path, "FUV")
+        raw_nuv_path = fs.join(raw_path, "NUV")
+        fs.create_directories(raw_fuv_path, raw_nuv_path)
 
         # download/images, download/response and download/background
         download_images_path = fs.join(download_path, "images")
@@ -444,14 +444,28 @@ class DustPediaDataProcessing(object):
         self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path)
 
 
+        # FUV and NUV response directories
+        response_fuv_path = fs.join(response_path, "FUV")
+        response_nuv_path = fs.join(response_path, "NUV")
+        fs.create_directories(response_fuv_path, response_nuv_path)
+
+        # FUV and NUV background directories
+        background_fuv_path = fs.join(background_path, "FUV")
+        background_nuv_path = fs.join(background_path, "NUV")
+        fs.create_directories(background_fuv_path, background_nuv_path)
 
         ####
 
-        # SPLIT INTO TEMP/RAW/1 and TEMP/RAW/2
-        self.split_galex_observations(download_path, raw_1_path, raw_2_path)
+        # Split downloaded images into FUV and NUV
+        self.split_galex_observations(download_path, raw_fuv_path, raw_nuv_path)
 
-        # Split response maps into NUV and FUV
-        self.split_galex_observations()
+        # Split response maps into FUV and NUV
+        self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
+
+        # Split background maps into FUV and NUV
+        self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
+
+        ###
 
         # Get coordinate range for target image
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
@@ -463,7 +477,7 @@ class DustPediaDataProcessing(object):
         ## Get the image table of which images cover a given part of the sky
         ##montage.commands.mImgtbl(temp_path, meta_path, corners=True)
 
-        raw_band_paths = {"FUV": raw_1_path, "NUV": raw_2_path}
+        raw_band_paths = {"FUV": raw_fuv_path, "NUV": raw_nuv_path}
 
         # State band information
         bands_dict = {'FUV': {'band_short': 'fd', 'band_long': 'FUV'},
@@ -506,18 +520,18 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def split_galex_observations(self, download_path, raw_1_path, raw_2_path):
+    def split_galex_observations(self, original_path, path_fuv, path_nuv):
 
         """
         This function ...
-        :param download_path:
-        :param raw_path:
+        :param original_path:
+        :param path_fuv:
+        :param path_nuv:
         :return:
         """
 
-
-
-        for path, name in fs.files_in_path(download_path, extension="fits", returns=["path", "name"]):
+        # Loop over the files in the path
+        for path, name in fs.files_in_path(original_path, extension="fits", returns=["path", "name"]):
 
             # Get header
             header = getheader(path)
@@ -525,8 +539,8 @@ class DustPediaDataProcessing(object):
             # Check band
             band = header["BAND"]
 
-            if band == 1: shutil.copy(path, raw_1_path)
-            elif band == 2: shutil.copy(path, raw_2_path)
+            if band == 1: shutil.copy(path, path_fuv)
+            elif band == 2: shutil.copy(path, path_nuv)
             else: raise RuntimeError("Invalid band: " + str(band))
 
     # -----------------------------------------------------------------

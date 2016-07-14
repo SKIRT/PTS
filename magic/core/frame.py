@@ -725,7 +725,7 @@ class Frame(NDDataArray):
         nans_mask = np.isnan(self._data)
 
         # Assert that the kernel is normalized
-        if not kernel.normalized: raise RuntimeError("The kernel is not properly normalized: sum is " + str(kernel.sum()))
+        if not kernel.normalized: raise RuntimeError("The kernel is not properly normalized: sum is " + repr(kernel.sum()) + " , difference from unity is " + repr(kernel.sum() - 1.0))
 
         # Do the convolution on this frame
         if fft: new_data = convolve_fft(self._data, kernel._data, normalize_kernel=False, interpolate_nan=True, allow_huge=allow_huge)
