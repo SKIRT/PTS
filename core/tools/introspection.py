@@ -447,6 +447,44 @@ def add_dependencies(dependencies, script_path, encountered_internal_modules, pr
 
 # -----------------------------------------------------------------
 
+def installed_python_packages():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Initialize dictionary to contain the package names and version numbers
+    packages = dict()
+
+    # Get all python distributions
+    distributions = pip.get_installed_distributions()
+
+    # Loop over the distributions
+    for distribution in distributions:
+
+        # Get name and version
+        top_level_meta_data = list(distribution._get_metadata('top_level.txt'))
+        import_name = top_level_meta_data[0] if len(top_level_meta_data) > 0 else distribution.project_name
+        version = str(distribution.parsed_version)
+
+        # possible other interesting properties of an entry in the distributions list:
+        # .egg_name()
+        # .as_requirement()
+        # .parsed_version
+        # .has_version()
+        # .project_name
+        # .py_version
+        # .requires()
+
+        # Add entry to the dictionary
+        packages[import_name] = version
+
+    # Return the dictionary
+    return packages
+
+# -----------------------------------------------------------------
+
 def is_present(package):
 
     """
@@ -457,8 +495,7 @@ def is_present(package):
     try:
         imp.find_module(package)
         return True
-    except ImportError:
-        return False
+    except ImportError: return False
 
 # -----------------------------------------------------------------
 
@@ -467,6 +504,8 @@ def get_modules(import_statement, script_path, debug=False):
     """
     This function ...
     :param import_statement:
+    :param script_path:
+    :param debug:
     :return:
     """
 

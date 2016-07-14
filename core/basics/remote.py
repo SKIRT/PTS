@@ -455,6 +455,27 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def do_python_loop(self, top_statement, in_loop_lines, show_output=False):
+
+        """
+        This function ...
+        :param top_statement:
+        :param in_loop_lines:
+        :param show_output:
+        :return:
+        """
+
+        # Top statement
+        self.send_python_line(top_statement, in_loop=True)
+
+        # In-loop lines
+        for line in in_loop_lines: self.send_python_line("    " + line, in_loop=True, show_output=show_output)
+
+        # Finish the loop
+        self.send_python_line("")
+
+    # -----------------------------------------------------------------
+
     def remove_python_variable(self, name):
 
         """
@@ -1504,65 +1525,26 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
-    def python_packages(self):
+    def installed_python_packages(self):
 
         """
         This function ...
         :return:
         """
 
-        # Dictionary
-        #packages = dict()
-
+        # Check if in python session
         was_in_python_session = self.in_python_session
 
         # Start python session
         if not was_in_python_session: self.start_python_session()
 
-        # Import pip and pkg_resources
-        self.import_python_package("pip")
-        self.import_python_package("pkg_resources")
+        # Import PTS introspection tools
+        self.import_python_package("introspection", from_name="pts.core.tools")
 
-        # Get distributions
-        self.send_python_line("distributions = pip.get_installed_distributions()")
-        #ndistributions = int(self.get_simple_python_variable("len(distributions)"))
+        # Get packages
+        packages = self.get_simple_python_variable("introspection.installed_python_packages()")
 
-        self.send_python_line("packages = dict()")
-        self.send_python_line("for distribution in distributions:", in_loop=True, show_output=True)
-        self.send_python_line("    import_name = list(distribution._get_metadata('top_level.txt'))[0]", in_loop=True, show_output=True)
-        self.send_python_line("    version = str(distribution.parsed_version)", in_loop=True, show_output=True)
-        self.send_python_line("    packages[import_name] = version", in_loop=True, show_output=True)
-        self.send_python_line("")
-
-        # Loop over the distributions
-        #for i in range(ndistributions):
-
-            # possible interesting properties of an entry in the distributions list:
-            # .egg_name()
-            # .as_requirement()
-            # .parsed_version
-            # .has_version()
-            # .project_name
-            # .py_version
-            # .requires()
-
-            # Get 'import name"
-            #self.send_python_line("import_name = list(distributions[" + str(i) + "]._get_metadata('top_level.txt'))[0]")
-
-            # Get the name
-            #name = self.get_python_string("import_name")
-
-            # Get the version
-            #self.send_python_line("version = str(distributions[" + str(i) + "].parsed_version)")
-
-            # Get the version
-            #version = self.get_python_string("version")
-
-            # Add to the dictionary
-            #packages[name] = version
-
-        packages = self.get_simple_python_variable("packages")
-
+        # End python session again
         if not was_in_python_session: self.end_python_session()
 
         # Return the dictionary of python packages with their version numbers

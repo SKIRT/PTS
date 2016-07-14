@@ -39,10 +39,10 @@ remote = Remote()
 remote.setup(config.remote)
 
 # Get all python packages installed on the remote host
-remote_packages = remote.python_packages
+remote_packages = remote.installed_python_packages
 
 # Get local python package version
-local_versions = introspection.get_pip_versions()
+local_packages = introspection.installed_python_packages()
 
 # Loop over all python packages necessary for PTS
 for dependency in introspection.get_all_dependencies():
@@ -51,15 +51,21 @@ for dependency in introspection.get_all_dependencies():
     if introspection.is_std_lib(dependency): continue
 
     # Check if present
-    locally_present = introspection.is_present(dependency)
-
-    # Get version
-    #version = local_versions[dependency.lower()]
-
-    # Check if present remotely
+    locally_present = dependency in local_packages
     remotely_present = dependency in remote_packages
 
-    if locally_present and remotely_present: log.success(dependency + ": OK")
+    # Get versions
+    local_version = local_packages[dependency] if locally_present else None
+    remote_version = remote_packages[dependency] if remotely_present else None
+
+    # If present both locally and remotely
+    if locally_present and remotely_present:
+
+        # Check whether the versions match
+        if local_version == remote_version: log.success(dependency + ": OK")
+        else: log.warning(dependency + ": version " + local_version + " locally and version " + remote_version + " remotely")
+
+    # Not present on at least one system
     elif remotely_present and not locally_present: log.error(dependency + ": not present on this system")
     elif locally_present and not remotely_present: log.error(dependency + ": not present on remote '" + config.remote + "'")
     else: log.error(dependency + ": not present on either this sytem or remote '" + config.remote + "'")
