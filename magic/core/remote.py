@@ -281,7 +281,7 @@ class RemoteFrame(object):
 
     @classmethod
     def from_url(cls, url, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None,
-                 no_filter=False, fwhm=None, add_meta=False):
+                 no_filter=False, fwhm=None, add_meta=True):
 
         """
         This function ...
@@ -346,7 +346,7 @@ class RemoteFrame(object):
 
     @classmethod
     def from_file(cls, path, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None,
-                  no_filter=False, fwhm=None, add_meta=False):
+                  no_filter=False, fwhm=None, add_meta=True):
 
         """
         This function ...

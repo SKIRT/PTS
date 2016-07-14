@@ -346,7 +346,7 @@ class Frame(NDDataArray):
 
     @classmethod
     def from_url(cls, url, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=False):
+                  fwhm=None, add_meta=True):
 
         """
         This function ...
@@ -395,7 +395,7 @@ class Frame(NDDataArray):
 
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=False):
+                  fwhm=None, add_meta=True):
 
         """
         This function ...
