@@ -389,7 +389,7 @@ class Frame(NDDataArray):
             fs.remove_file(local_path)
 
         # Open the FITS file
-        return cls.from_file(path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta)
+        return cls.from_file(fits_path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta)
 
     # -----------------------------------------------------------------
 

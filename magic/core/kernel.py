@@ -61,6 +61,8 @@ class ConvolutionKernel(Frame):
         # Prepared
         self._prepared = False
 
+        if "prepared" in self.meta: self._prepared = self.meta["prepared"]
+
     # -----------------------------------------------------------------
 
     @property

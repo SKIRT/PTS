@@ -406,8 +406,16 @@ class Remote(object):
         # Set flag
         self.in_python_session = True
 
-        # Import filesystem from PTS
+        # Import standard PTS tools
         self.import_python_package("filesystem", as_name="fs", from_name="pts.core.tools")
+
+        # Set logging level to match that of local PTS
+        if log.is_debug():
+
+            self.import_python_package("setup_log", from_name="pts.core.tools.logging")
+            self.send_python_line("log = setup_log('DEBUG')")
+
+        else: self.import_python_package("log", from_name="pts.core.tools.logging")
 
     # -----------------------------------------------------------------
 

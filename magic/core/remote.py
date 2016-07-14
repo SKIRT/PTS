@@ -77,7 +77,6 @@ def import_necessary_modules(remote):
     remote.import_python_package("Image", from_name="pts.magic.core.image")
     remote.import_python_package("ConvolutionKernel", from_name="pts.magic.core.kernel")
     remote.import_python_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
-    remote.import_python_package("filesystem", from_name="pts.core.tools", as_name="fs")
     remote.import_python_package("archive", from_name="pts.core.tools")
     remote.import_python_package("parsing", from_name="pts.core.tools")
 
@@ -1097,7 +1096,7 @@ class RemoteImage(object):
         self.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
 
         # Open the kernel remotely
-        self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
+        self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')", show_output=True)
 
         # Convolve the image remotely
         self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ")", show_output=True)

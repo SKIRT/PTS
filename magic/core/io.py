@@ -205,7 +205,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
 # -----------------------------------------------------------------
 
-def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None, add_meta=False):
+def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None, add_meta=True):
 
     """
     This function ...
