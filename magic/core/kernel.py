@@ -63,6 +63,9 @@ class ConvolutionKernel(Frame):
 
         if "prepared" in self.meta: self._prepared = self.meta["prepared"]
 
+        # Make sure that the data is in 64 bit floating-point precision
+        self._data = self._data.astype("float64")
+
     # -----------------------------------------------------------------
 
     @property
@@ -85,7 +88,14 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        return np.abs(self.sum() - 1.) < 1e-7  # criterion as in astropy.convolution module = 1e-8, BUT I HAD A PROBLEM OF THE SAME FITS FILE HAVING A SLIGHTLY DIFFERNENT SOME ON DIFFERENT SYSTEMS !!! (laptop and nancy)
+        #return np.abs(self.sum() - 1.) < 1e-7  # criterion as in astropy.convolution module = 1e-8, BUT I HAD A PROBLEM OF THE SAME FITS FILE HAVING A SLIGHTLY DIFFERNENT SOME ON DIFFERENT SYSTEMS !!! (laptop and nancy)
+
+        # NOW I KNOW WHERE THIS PROBLEM WAS COMING FROM (SEE ASTROPY ISSUE #5176)
+        # the magical number of 32-bit precision floats is 1.1920928955078125e-07
+
+        # BUT NOW I MAKE SURE THAT A KERNEL IS ALWAYS IN 64-BIT REPRESENTATION AND SO 1e-8 CAN BE USED
+
+        return np.abs(self.sum() - 1.) < 1e-8
 
     # -----------------------------------------------------------------
 
