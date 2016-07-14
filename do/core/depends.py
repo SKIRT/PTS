@@ -99,9 +99,8 @@ else:
         introspection.add_dependencies(dependencies, configuration_module_path, encountered)
         introspection.add_dependencies(dependencies, class_module_path, encountered)
 
-# Get the versions of all installed python packages
-if arguments.version: versions = introspection.get_pip_versions()
-else: versions = None
+# Get the names and versions of all installed python packages
+packages = introspection.installed_python_packages()
 
 # Loop over the packages and report their presence
 for dependency in sorted(dependencies, key=str.lower):
@@ -112,12 +111,16 @@ for dependency in sorted(dependencies, key=str.lower):
     # Skip packages from the standard library, unless the appropriate flag is enabled
     if introspection.is_std_lib(dependency) and not arguments.standard: continue
 
-    # Check whether the current package is present
-    if introspection.is_present(dependency):
+    # Check presency and version
+    if dependency in packages:
+        present = True
+        if arguments.version: version = packages[dependency]
+    else:
+        present = introspection.is_present_package(dependency)
+        version = None
 
-        # Check version number
-        if versions is not None and (dependency.lower() in versions): version = versions[dependency.lower()]
-        else: version = None
+    # Check whether the current package is present
+    if present:
 
         # Show package name, whether it's present and version number (if requested)
         if version is not None: log.success(dependency + ": present (version " + version + ")")
