@@ -887,26 +887,22 @@ class RemoteImage(object):
     # -----------------------------------------------------------------
 
     def __str__(self):
-
         """
         This function ...
         :return:
         """
 
-        output = self.remote.send_python_line("str(" + self.label + ")", output=True)
-        return "".join(output)
+        return self.remote.get_simple_python_property(self.label, "__str__()")
 
-    # -----------------------------------------------------------------
+        # -----------------------------------------------------------------
 
     def __repr__(self):
-
         """
         This function ...
         :return:
         """
 
-        output = self.remote.send_python_line("repr(" + self.label + ")", output=True)
-        return "".join(output)
+        return self.remote.get_simple_python_property(self.label, "__repr__()")
 
     # -----------------------------------------------------------------
 
@@ -946,7 +942,7 @@ class RemoteImage(object):
 
         # Upload the image file
         remote_image_path = fs.join(remote_temp_path, filename)
-        log.info("Uploading the image to " + remote_image_path + " ...")
+        log.info("Uploading the image to '" + remote_image_path + "' ...")
         remote.upload(path, remote_temp_path, compress=True, show_output=True)
 
         # Find label
@@ -988,14 +984,14 @@ class RemoteImage(object):
         log.debug("Saving the image remotely ...")
 
         # Determine path to save the frame remotely first
-        self.remote.send_python_line("remote_path = fs.join(temp_path, " + filename + ")")
+        self.remote.send_python_line("remote_path = fs.join(temp_path, '" + filename + "')")
         remote_path = self.remote.get_python_string("remote_path")
 
         # Debugging
         log.debug("Downloading the image ...")
 
         # Save the image remotely
-        self.remote.send_python_line(self.label + ".save(remote_path)")
+        self.remote.send_python_line(self.label + ".save(remote_path)", show_output=True)
 
         # Download
         self.remote.download(remote_path, local_directory)
