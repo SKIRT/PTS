@@ -68,6 +68,6 @@ class ColourAnalysisComponent(AnalysisComponent):
         self.colours_residuals_path = fs.join(self.analysis_colours_path, "residuals")
 
         # Create the directories
-        fs.create_directories([self.colours_observed_path, self.colours_simulated_path, self.colours_residuals_path])
+        fs.create_directories(self.colours_observed_path, self.colours_simulated_path, self.colours_residuals_path)
 
 # -----------------------------------------------------------------

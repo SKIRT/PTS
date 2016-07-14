@@ -58,9 +58,6 @@ class MapsComponent(ModelingComponent):
         # Call the setup function of the base class
         super(MapsComponent, self).setup()
 
-        # Set the output path (= the maps directory)
-        self.config.output_path = self.maps_path
-
         # Set the path to the maps/solar directory
         self.maps_solar_path = fs.create_directory_in(self.maps_path, "solar")
 

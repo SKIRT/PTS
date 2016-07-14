@@ -225,16 +225,16 @@ def create_directory_in(base_path, name):
 
 # -----------------------------------------------------------------
 
-def create_directories(paths, recursive=False):
+def create_directories(*paths, **kwargs):
     
     """
     This function ...
     :param paths:
-    :param recursive:
+    :param kwargs:
     """
     
     # Loop over the different paths in the list
-    for path in paths: create_directory(path, recursive)
+    for path in paths: create_directory(path, kwargs.pop("recursive", False))
 
 # -----------------------------------------------------------------
 

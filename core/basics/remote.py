@@ -17,12 +17,16 @@ import pexpect
 from pexpect import pxssh
 import tempfile
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from .host import Host
 from .vpn import VPN
 from ..tools.logging import log
 from ..tools import parsing
 from ..tools import filesystem as fs
+from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -1026,6 +1030,20 @@ class Remote(object):
         # Find out the path to the user's home directory and return it
         output = self.execute("echo $HOME")
         return output[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def temp_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        remote_temp_path = fs.join(self.home_directory, time.unique_name("pts_temp"))
+        self.create_directory(remote_temp_path)
+        return remote_temp_path
 
     # -----------------------------------------------------------------
 

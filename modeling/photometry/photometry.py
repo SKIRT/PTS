@@ -381,7 +381,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Writing the percentual differences with reference fluxes to a data file ...")
 
         # Determine the full path to the output file
-        path = self.full_output_path("differences.dat")
+        path = fs.join(self.phot_path, "differences.dat")
 
         # Save the differences table
         tables.write(self.differences, path, format="ascii.ecsv")
@@ -405,7 +405,7 @@ class PhotoMeter(PhotometryComponent):
         plotter.add_observed_sed(self.sed, "PTS")
 
         # Determine the full path to the plot file
-        path = self.full_output_path("sed.pdf")
+        path = fs.join(self.phot_path, "sed.pdf")
         plotter.run(path)
 
     # -----------------------------------------------------------------
@@ -430,7 +430,7 @@ class PhotoMeter(PhotometryComponent):
         for label in self.sed_fetcher.seds: plotter.add_observed_sed(self.sed_fetcher.seds[label], label)
 
         # Determine the full path to the plot file
-        path = self.full_output_path("sed_with_references.pdf")
+        path = fs.join(self.phot_path, "sed_with_references.pdf")
         plotter.run(path)
 
 # -----------------------------------------------------------------

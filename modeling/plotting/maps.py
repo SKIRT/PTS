@@ -76,9 +76,6 @@ class MapsPlotter(PlottingComponent, MapsComponent):
         # Call the setup function of the base class
         super(MapsPlotter, self).setup()
 
-        # Set the output path
-        self.config.output_path = self.plot_path
-
     # -----------------------------------------------------------------
 
     def load_images(self):

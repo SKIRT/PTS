@@ -79,9 +79,6 @@ class ReportingComponent(ModelingComponent):
         # Call the setup function of the base class
         super(ReportingComponent, self).setup()
 
-        # Set the output path
-        self.config.output_path = self.reports_path
-
         # Set the report paths
         self.data_report_path = fs.join(self.reports_path, "data.txt")
         self.preparation_initialization_report_path = fs.join(self.reports_path, "preparation_initialization.txt")

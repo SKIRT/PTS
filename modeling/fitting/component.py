@@ -116,9 +116,6 @@ class FittingComponent(ModelingComponent):
         # Call the setup function of the base class
         super(FittingComponent, self).setup()
 
-        # Set the output path
-        self.config.output_path = self.fit_path
-
         # Set the path to the template ski file
         self.template_ski_path = fs.join(self.fit_path, "template.ski")
 

@@ -485,11 +485,6 @@ class ImagePreparer(OldConfigurable):
         # Convert the principal ellipse in sky coordinates into pixel coordinates
         principal_shape = self.principal_shape_sky.to_pixel(self.image.wcs)
 
-        from ..basics.region import Region
-        test_reg = Region()
-        test_reg.append(principal_shape)
-        test_reg.save("testreg.reg")
-
         # Convert the saturation region in sky coordinates into pixel coordinates
         if self.saturation_region_sky is not None:
             saturation_region = self.saturation_region_sky.to_pixel(self.image.wcs)

@@ -37,6 +37,11 @@ class DecompositionComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # The path to the bulge, disk and model directories
+        self.bulge_path = None
+        self.disk_path = None
+        self.model_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -49,7 +54,12 @@ class DecompositionComponent(ModelingComponent):
         # Call the setup function of the base class
         super(DecompositionComponent, self).setup()
 
-        # Set the output path
-        self.config.output_path = self.components_path
+        # Determine the path to the bulge, disk and model directories
+        self.bulge_path = fs.join(self.components_path, "bulge")
+        self.disk_path = fs.join(self.components_path, "disk")
+        self.model_path = fs.join(self.components_path, "model")
+
+        # Create the bulge and disk directories
+        fs.create_directories(self.bulge_path, self.disk_path, self.model_path)
 
 # -----------------------------------------------------------------

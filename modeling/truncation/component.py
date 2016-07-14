@@ -47,7 +47,4 @@ class TruncationComponent(ModelingComponent):
         # Call the setup function of the base class
         super(TruncationComponent, self).setup()
 
-        # Set the output path
-        self.config.output_path = self.truncation_path
-
 # -----------------------------------------------------------------

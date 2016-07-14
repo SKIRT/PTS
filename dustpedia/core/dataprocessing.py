@@ -186,6 +186,16 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 # output projection mExec will have used. Jjust give the ra, dec, and width to mHdr to produce a header, and then
 # use this header as input to mProjExec to regrid all the individual image to the final projection.
 
+
+## GALEX exposure, background , etc.
+
+# That's nice and straightforwad! You can use the same URLs as for the standard maps, but just replace
+# '-int.fits' with '-rr.fits' for the relative response maps, or '-exp.fits' for exposure maps, etc.
+
+# If you can look at the various files available for each tilenum by looking at this page for each tile:
+
+# 'http://galex.stsci.edu/GR6/?page=downloadlist&tilenum='+str(tilenum)+'&type=coaddI&product=Imaging%20Only'
+
 # -----------------------------------------------------------------
 
 class DustPediaDataProcessing(object):
@@ -265,17 +275,19 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def download_galex_observations_for_galaxy(self, galaxy_name, path):
+    def download_galex_observations_for_galaxy(self, galaxy_name, images_path, response_path, background_path):
 
         """
         This function ...
         :param galaxy_name:
-        :param path:
+        :param images_path:
+        :param response_path:
+        :param background_path:
         :return:
         """
 
         # Inform the user
-        log.info("Downloading the GALEX observations for " + galaxy_name + " to '" + path + "' ...")
+        log.info("Downloading the GALEX observations for " + galaxy_name + " to '" + images_path + "' ...")
 
         # Get the urls
         urls = self.get_galex_observation_urls_for_galaxy(galaxy_name)
@@ -284,13 +296,43 @@ class DustPediaDataProcessing(object):
         log.debug("Number of observations that will be downloaded: " + str(len(urls)))
 
         # Download the files
-        paths = network.download_files(urls, path)
+        paths = network.download_files(urls, images_path)
 
         # Debugging
         log.debug("Decompressing the files ...")
 
         # Decompress the files and remove the originals
         archive.decompress_files(paths, remove=True)
+
+        # Inform the user
+        log.info("Downloading the GALEX response maps for " + galaxy_name + " to '" + response_path + "' ...")
+
+        # Determine the URLS for the response maps
+        response_urls = [url.replace("-int.fits.gz", "-rr.fits.gz") for url in urls]
+
+        # Download the response maps
+        response_paths = network.download_files(response_urls, response_path)
+
+        # Debugging
+        log.debug("Decompressing the response files ...")
+
+        # Decompress
+        archive.decompress_files(response_paths, remove=True)
+
+        # Inform the user
+        log.info("Downloading the GALEX background maps for " + galaxy_name + " to '" + background_path + "' ...")
+
+        # Determine the URLs for the background maps
+        background_urls = [url.replace("-int.fits.gz", "-skybg.fits.gz") for url in urls]
+
+        # Download the background maps
+        background_paths = network.download_files(background_urls, background_path)
+
+        # Debugging
+        log.debug("Decompressing the background files ...")
+
+        # Decompress
+        archive.decompress_files(background_paths, remove=True)
 
     # -----------------------------------------------------------------
 
@@ -359,9 +401,9 @@ class DustPediaDataProcessing(object):
         log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
 
         # Determine the path to the temporary directory for downloading the images
-        #working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
+        working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
-        working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-07-08--16-44-29-311")
+        #working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-07-08--16-44-29-311")
 
         # Create the temporary directory
         #fs.create_directory(temp_path)
@@ -370,6 +412,10 @@ class DustPediaDataProcessing(object):
         download_path = fs.join(working_path, "download")
         # Create download directory
         fs.create_directory(download_path)
+
+        # RESPONSE AND BACKGROUND PATH
+        response_path = fs.join(working_path, "response")
+        background_path = fs.join(working_path, "background")
 
         # RAW PATH
         raw_path = fs.join(working_path, "raw")
@@ -385,15 +431,27 @@ class DustPediaDataProcessing(object):
         # 1 and 2 RAW directories
         raw_1_path = fs.join(raw_path, "1")
         raw_2_path = fs.join(raw_path, "2")
-        fs.create_directories([raw_1_path, raw_2_path])
+        fs.create_directories(raw_1_path, raw_2_path)
+
+        # download/images, download/response and download/background
+        download_images_path = fs.join(download_path, "images")
+        download_response_path = fs.join(download_path, "reponse")
+        download_background_path = fs.join(download_path, "background")
+        fs.create_directories(download_images_path, download_response_path, download_background_path)
+
 
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        #self.download_galex_observations_for_galaxy(galaxy_name, download_path)
+        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path)
+
+
 
         ####
 
         # SPLIT INTO TEMP/RAW/1 and TEMP/RAW/2
         self.split_galex_observations(download_path, raw_1_path, raw_2_path)
+
+        # Split response maps into NUV and FUV
+        self.split_galex_observations()
 
         # Get coordinate range for target image
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)

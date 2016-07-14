@@ -958,7 +958,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         log.info("Writing the GIF animation ...")
 
         # Determine the path to the animation file
-        path = self.full_output_path("fitting.gif")
+        path = fs.join(self.plot_fitting_path, "fitting.gif")
 
         # Save the animation as a GIF file
         self.animation.save(path)

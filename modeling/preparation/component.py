@@ -62,9 +62,6 @@ class PreparationComponent(ModelingComponent):
         # Call the setup function of the base class
         super(PreparationComponent, self).setup()
 
-        # Set the output path (= the preparation directory)
-        self.config.output_path = self.prep_path
-
         # Determine the path to the preparation info table
         info_path = fs.join(self.prep_path, "prep_info.dat")
 

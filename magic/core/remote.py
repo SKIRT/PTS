@@ -68,7 +68,7 @@ def import_necessary_modules(remote):
     log.info("Importing necessary modules ...")
 
     # Import standard modules
-    remote.import_python_package("tempfile")
+    #remote.import_python_package("tempfile")  ## doesn't work: we seem to have no permissions in this directory on nancy
     remote.import_python_package("urllib")
     remote.import_python_package("numpy", as_name="np")
 
@@ -306,9 +306,9 @@ class RemoteFrame(object):
         log.info("Downloading file " + url + " ...")
 
         # Local path
-        remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote_temp_path = remote.temp_directory
         remote.send_python_line("filename = fs.name(url)")
-        remote.send_python_line("local_path = fs.join(temp_path, filename)")
+        remote.send_python_line("local_path = fs.join('" + remote_temp_path + "', filename)")
 
         # Download
         remote.send_python_line("urllib.urlretrieve(url, local_path)")
@@ -371,8 +371,7 @@ class RemoteFrame(object):
         remote = prepare_remote(host_id)
 
         # Remote temp path
-        remote.send_python_line("temp_path = tempfile.gettempdir()")
-        remote_temp_path = remote.get_python_string("temp_path")
+        remote_temp_path = remote.temp_directory
 
         # Get file name
         filename = fs.name(path)
@@ -539,8 +538,7 @@ class RemoteFrame(object):
         # UPLOAD KERNEL
 
         # Remote temp path
-        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
-        remote_temp_path = self.remote.get_python_string("temp_path")
+        remote_temp_path = self.remote.temp_directory
 
         # Upload the kernel file
         remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
@@ -848,26 +846,25 @@ class RemoteFrame(object):
         local_directory = fs.directory_of(path)
 
         # Determine remote temp path
-        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote_temp_path = self.remote.temp_directory
+
+        # Remote file path
+        remote_file_path = fs.join(remote_temp_path, filename)
 
         # Debugging
         log.debug("Saving the frame remotely ...")
 
-        # Determine path to save the frame remotely first
-        self.remote.send_python_line("remote_path = fs.join(temp_path, " + filename + ")")
-        remote_path = self.remote.get_python_string("remote_path")
+        # Save the frame remotely
+        self.remote.send_python_line(self.label + ".save('" + remote_file_path + "')")
 
         # Debugging
         log.debug("Downloading the frame ...")
 
-        # Save the frame remotely
-        self.remote.send_python_line(self.label + ".save(remote_path)")
-
         # Download
-        self.remote.download(remote_path, local_directory)
+        self.remote.download(remote_file_path, local_directory)
 
         # Remove the remote file
-        self.remote.remove_file(remote_path)
+        self.remote.remove_file(remote_file_path)
 
 # -----------------------------------------------------------------
 
@@ -943,8 +940,7 @@ class RemoteImage(object):
         remote = prepare_remote(host_id)
 
         # Remote temp path
-        remote.send_python_line("temp_path = tempfile.gettempdir()")
-        remote_temp_path = remote.get_python_string("temp_path")
+        remote_temp_path = remote.temp_directory
 
         # Get file name
         filename = fs.name(path)
@@ -1090,8 +1086,7 @@ class RemoteImage(object):
         # UPLOAD KERNEL
 
         # Remote temp path
-        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
-        remote_temp_path = self.remote.get_python_string("temp_path")
+        remote_temp_path = self.remote.temp_directory
 
         # Upload the kernel file
         remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")

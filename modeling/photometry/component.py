@@ -49,7 +49,4 @@ class PhotometryComponent(ModelingComponent):
         # Call the setup function of the base class
         super(PhotometryComponent, self).setup()
 
-        # Set the output path
-        self.config.output_path = self.phot_path
-
 # -----------------------------------------------------------------

@@ -79,11 +79,6 @@ class GalaxyDecomposer(DecompositionComponent):
         self.ngc_id = None
         self.ngc_id_nospaces = None
 
-        # The path to the disk and bulge directories
-        self.bulge_directory = None
-        self.disk_directory = None
-        self.model_directory = None
-
         # The Vizier querying object
         self.vizier = Vizier()
         self.vizier.ROW_LIMIT = -1
@@ -184,14 +179,6 @@ class GalaxyDecomposer(DecompositionComponent):
         # Get the NGC name of the galaxy
         self.ngc_id = catalogs.get_ngc_name(self.galaxy_name)
         self.ngc_id_nospaces = self.ngc_id.replace(" ", "")
-
-        # Determine the path to the bulge and disk directories
-        self.bulge_directory = self.full_output_path("bulge")
-        self.disk_directory = self.full_output_path("disk")
-        self.model_directory = self.full_output_path("model")
-
-        # Create the bulge and disk directories
-        fs.create_directories([self.bulge_directory, self.disk_directory, self.model_directory])
 
         # Get the coordinate system describing the pixel grid of the prepared images
         reference_path = fs.join(self.prep_path, self.reference_image, "result.fits")
@@ -465,7 +452,7 @@ class GalaxyDecomposer(DecompositionComponent):
             else: raise RuntimeError("Unrecognized component: " + interpretation)
 
          # Determine the full path to the parameters file
-        path = self.full_output_path("parameters.dat")
+        path = fs.join(self.components_path, "parameters.dat")
 
         # Write the parameters to the specified location
         write_parameters(self.parameters, path)
@@ -762,7 +749,7 @@ class GalaxyDecomposer(DecompositionComponent):
         ski.add_instrument("earth", fake)
 
         # Create the directory to simulate the bulge
-        simple_bulge_directory = self.full_output_path("bulge_simple")
+        simple_bulge_directory = fs.join(self.components_path, "bulge_simple")
         fs.create_directory(simple_bulge_directory)
 
         # Determine the path to the ski file
@@ -827,13 +814,13 @@ class GalaxyDecomposer(DecompositionComponent):
         for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = fs.join(self.bulge_directory, "bulge.ski")
+        ski_path = fs.join(self.bulge_path, "bulge.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = fs.join(self.bulge_directory, "out")
+        out_path = fs.join(self.bulge_path, "out")
 
         # Create the output directory
         fs.create_directory(out_path)
@@ -908,13 +895,13 @@ class GalaxyDecomposer(DecompositionComponent):
         for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = fs.join(self.disk_directory, "disk.ski")
+        ski_path = fs.join(self.disk_path, "disk.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = fs.join(self.disk_directory, "out")
+        out_path = fs.join(self.disk_path, "out")
 
         # Create the output directory
         fs.create_directory(out_path)
@@ -993,13 +980,13 @@ class GalaxyDecomposer(DecompositionComponent):
         for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = fs.join(self.model_directory, "model.ski")
+        ski_path = fs.join(self.model_path, "model.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = fs.join(self.model_directory, "out")
+        out_path = fs.join(self.model_path, "out")
 
         # Create the output directory
         fs.create_directory(out_path)
@@ -1103,7 +1090,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Writing data file with parameters ...")
 
         # Determine the full path to the parameters file
-        path = self.full_output_path("parameters.dat")
+        path = fs.join(self.components_path, "parameters.dat")
 
         # Write the parameters to the specified location
         write_parameters(self.parameters, path)
@@ -1124,7 +1111,7 @@ class GalaxyDecomposer(DecompositionComponent):
         for name in self.projections:
 
             # Determine the path to the projection file
-            path = self.full_output_path(name + ".proj")
+            path = fs.join(self.components_path, name + ".proj")
 
             # Write the projection system
             self.projections[name].save(path)
@@ -1152,7 +1139,7 @@ class GalaxyDecomposer(DecompositionComponent):
         # Create region
         region = SkyRegion()
         region.append(sky_ellipse)
-        region_path = self.full_output_path("disk.reg")
+        region_path = fs.join(self.components_path, "disk.reg")
         region.save(region_path)
 
 # -----------------------------------------------------------------

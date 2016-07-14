@@ -364,7 +364,7 @@ class ScalingTest(NewConfigurable):
         if not fs.is_directory(self.main_paths.input): self.main_paths.input = None
 
         # Create the output, result, plot and temp directories if necessary
-        fs.create_directories([self.main_paths.output, self.main_paths.result, self.main_paths.plot, self.main_paths.temp])
+        fs.create_directories(self.main_paths.output, self.main_paths.result, self.main_paths.plot, self.main_paths.temp)
 
     # -----------------------------------------------------------------
 
@@ -382,7 +382,7 @@ class ScalingTest(NewConfigurable):
         self.system_paths.temp = fs.join(self.main_paths.temp, self.system_name)
 
         # Create the output, result, plot and temp directories for the system if necessary
-        fs.create_directories([self.system_paths.output, self.system_paths.result, self.system_paths.plot, self.system_paths.temp])
+        fs.create_directories(self.system_paths.output, self.system_paths.result, self.system_paths.plot, self.system_paths.temp)
 
     # -----------------------------------------------------------------
 
@@ -400,7 +400,7 @@ class ScalingTest(NewConfigurable):
         self.run_paths.temp = fs.join(self.system_paths.temp, self.scaling_run_name)
 
         # Create the output, result, plot and temp directories for this run if necessary
-        fs.create_directories([self.run_paths.output, self.run_paths.result, self.run_paths.plot, self.run_paths.temp])
+        fs.create_directories(self.run_paths.output, self.run_paths.result, self.run_paths.plot, self.run_paths.temp)
 
     # -----------------------------------------------------------------
 
