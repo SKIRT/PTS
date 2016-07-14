@@ -6,11 +6,11 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("decompose", log_path="log")
+definition = ConfigurationDefinition()
 
 # -----------------------------------------------------------------

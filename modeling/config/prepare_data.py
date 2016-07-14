@@ -6,20 +6,20 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("prepare_data", log_path="log")
+definition = ConfigurationDefinition()
 
 # Add required arguments
-config.add_required("image", str, "the name of the image for which to run the preparation")
+definition.add_required("image", str, "the name of the image for which to run the preparation")
 
 # Add optional arguments
-config.add_optional("reference_image", str, "the name of the reference image")
-config.add_flag("steps", "write the results of intermediate steps")
-config.add_flag("visualise", "make visualisations")
+definition.add_optional("reference_image", str, "the name of the reference image")
+definition.add_flag("steps", "write the results of intermediate steps")
+definition.add_flag("visualise", "make visualisations")
 
 #config.add_section("importation")
 #config.add_section("preparation")

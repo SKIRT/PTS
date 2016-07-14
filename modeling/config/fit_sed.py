@@ -6,14 +6,14 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("fit_sed", log_path="log")
+definition = Configuration()
 
 # Add optional arguments
-config.add_flag("visualise", "make visualisations")
+definition.add_flag("visualise", "make visualisations")
 
 # -----------------------------------------------------------------

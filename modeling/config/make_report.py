@@ -6,14 +6,14 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("make_report", log_path="log")
+definition = ConfigurationDefinition()
 
 # Add required setting
-config.add_required("step", str, "the modeling step for which to create the report")
+definition.add_required("step", str, "the modeling step for which to create the report")
 
 # -----------------------------------------------------------------

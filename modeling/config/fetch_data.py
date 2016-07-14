@@ -6,16 +6,16 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("fetch_data", log_path="log")
+definition = ConfigurationDefinition()
 
 # Add settings
-config.add_section("database")
-config.sections["database"].add_optional("username", str, "the username")
-config.sections["database"].add_optional("password", str, "the password")
+definition.add_section("database")
+definition.sections["database"].add_optional("username", str, "the username")
+definition.sections["database"].add_optional("password", str, "the password")
 
 # -----------------------------------------------------------------

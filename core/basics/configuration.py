@@ -24,64 +24,164 @@ from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class Configuration(object):
+class ConfigurationDefinition(object):
 
     """
     This function ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, prefix=None, log_path=None):
+    def __init__(self, prefix=None):
 
         """
-        The constructor ...
+        This function ...
+        :param prefix:
         """
 
-        # Create the command-line parser
-        self.parser = argparse.ArgumentParser(prog=name, description=description)
+        # Prefix
+        self.prefix = prefix
 
         # Dictionary of sections
         self.sections = OrderedDict()
 
         # Dictionary of fixed parameters
-        self.fixed = dict()
+        self.fixed = OrderedDict()
 
-        # List of argument names for the settings of the class instance the configuration is converted into
-        self.to_instance = []
+        # Dictionary of required parameters
+        self.required = OrderedDict()
 
-        # The prefix (for parent configurations)
-        self.prefix = prefix
+        # Dictionary of positional optional parameters
+        self.pos_optional = OrderedDict()
 
-        # The parsed arguments
-        self.arguments = None
+        # Dictionary of optional parameters
+        self.optional = OrderedDict()
 
-        # Add logging options
-        if add_logging:
-
-            # Log path to absolute path
-            log_path = fs.absolute(log_path) if log_path is not None else fs.cwd()
-            self.add_fixed("log_path", log_path)
-            self.add_flag("debug", "enable debug output", False)
-            self.add_flag("report", "write a report file", False)
-
-        # Add the path to the current working directory
-        if add_cwd: self.add_fixed("path", fs.cwd())
+        # Dictionary of flags
+        self.flags = OrderedDict()
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_file(cls, path, add_logging=True, add_cwd=True):
+    def set_arguments(self, parser):
 
         """
         This function ...
+        :param parser:
+        :return:
         """
 
-        # Create new configuration
-        config = cls(add_logging, add_cwd)
+        # Required
+        for name in self.required:
 
-        # Add options from file ...
+            real_type = self.required[name][0]
+            description = self.required[name][1]
+            choices = self.required[name][2]
 
-        # Return the configuration object
-        return config
+            # Add prefix
+            if self.prefix is not None: name = self.prefix + "/" + name
+
+            # Add argument to argument parser
+            parser.add_argument(name, type=real_type, help=description, choices=choices)
+
+        # Positional optional
+        for name in self.pos_optional:
+
+            real_type = self.pos_optional[name][0]
+            description = self.pos_optional[name][1]
+            default = self.pos_optional[name][2]
+            choices = self.pos_optional[name][3]
+
+            # Add prefix
+            if self.prefix is not None: name = self.prefix + "/" + name
+
+            # Add argument to argument parser
+            parser.add_argument(name, type=real_type, help=description, default=default, nargs='?', choices=choices)
+
+        # Optional
+        for name in self.optional:
+
+            # (real_type, description, default, letter)
+            real_type = self.optional[name][0]
+            description = self.optional[name][1]
+            default = self.optional[name][2]
+            letter = self.optional[name][3]
+
+            # Add prefix
+            if self.prefix is not None: name = self.prefix + "/" + name
+
+            # Add the argument
+            if letter is None: parser.add_argument("--" + name, type=real_type, help=description, default=default)
+            else: parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default)
+
+        # Flag
+        for name in self.flags:
+
+            # (description, letter)
+            description = self.flags[name][0]
+            letter = self.flags[name][1]
+
+            # Add prefix
+            if self.prefix is not None: name = self.prefix + "/" + name
+
+            # Add the argument
+            if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
+            else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+
+        # Add arguments of sections
+        for section_name in self.sections: self.sections[section_name].set_arguments(parser)
+
+    # -----------------------------------------------------------------
+
+    def get_settings(self, settings, arguments):
+
+        """
+        This function ...
+        :param settings:
+        :param arguments:
+        :return:
+        """
+
+        # Add fixed
+        for name in self.fixed: settings[name] = self.fixed[name]
+
+        # Add required
+        for name in self.required:
+
+            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            else: argument_name = name
+
+            settings[name] = getattr(arguments, argument_name)
+
+        # Add positional optional
+        for name in self.pos_optional:
+
+            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            else: argument_name = name
+
+            settings[name] = getattr(arguments, argument_name)
+
+        # Add optional
+        for name in self.optional:
+
+            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            else: argument_name = name
+
+            settings[name] = getattr(arguments, argument_name)
+
+        # Add flags
+        for name in self.flags:
+
+            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            else: argument_name = name
+
+            settings[name] = getattr(arguments, argument_name)
+
+        # Add the configuration settings of the various sections
+        for name in self.sections:
+
+            # Create a map for the settings
+            settings[name] = Map()
+
+            # Recursively add the settings
+            self.sections[name].get_settings(settings[name], arguments)
 
     # -----------------------------------------------------------------
 
@@ -93,7 +193,8 @@ class Configuration(object):
         :return:
         """
 
-        self.sections[name] = Configuration(name, add_logging=False, prefix=name)
+        # Add the section
+        self.sections[name] = ConfigurationDefinition(prefix=name)
 
     # -----------------------------------------------------------------
 
@@ -110,14 +211,13 @@ class Configuration(object):
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, to_instance=True, choices=None):
+    def add_required(self, name, user_type, description, choices=None):
 
         """
         This function ...
         :param name:
         :param user_type:
         :param description:
-        :param to_instance:
         :param choices:
         :return:
         """
@@ -125,18 +225,12 @@ class Configuration(object):
         # Get the real type
         real_type = get_real_type(user_type)
 
-        # Add prefix
-        if self.prefix is not None: name = self.prefix + "/" + name
-
-        # Add the argument
-        self.parser.add_argument(name, type=real_type, help=description, choices=choices)
-
-        # To instance
-        if to_instance: self.to_instance.append(name)
+        # Add
+        self.required[name] = (real_type, description, choices)
 
     # -----------------------------------------------------------------
 
-    def add_positional_optional(self, name, user_type, description, default=None, to_instance=True, choices=None, convert_default=False):
+    def add_positional_optional(self, name, user_type, description, default=None, choices=None, convert_default=False):
 
         """
         This function ...
@@ -144,7 +238,7 @@ class Configuration(object):
         :param user_type:
         :param description:
         :param default:
-        :param to_instance:
+        :param choices:
         :param convert_default:
         :return:
         """
@@ -155,18 +249,12 @@ class Configuration(object):
         # Get the real default value
         if convert_default: default = get_real_value(default, user_type)
 
-        # Add prefix
-        if self.prefix is not None: name = self.prefix + "/" + name
-
-        # Add the argument
-        self.parser.add_argument(name, type=real_type, help=description, default=default, nargs='?', choices=choices)
-
-        # To instance
-        if to_instance: self.to_instance.append(name)
+        # Add
+        self.pos_optional[name] = (real_type, description, default, choices)
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default=None, to_instance=True, letter=None, convert_default=False):
+    def add_optional(self, name, user_type, description, default=None, letter=None, convert_default=False):
 
         """
         This function ...
@@ -174,10 +262,12 @@ class Configuration(object):
         :param user_type:
         :param description:
         :param default:
-        :param to_instance:
         :param letter:
+        :param convert_default:
         :return:
         """
+
+        if self.prefix is not None and letter is not None: raise ValueError("Cannot assign letter argument for child configuration definition")
 
         # Get the real type
         real_type = get_real_type(user_type)
@@ -185,81 +275,59 @@ class Configuration(object):
         # Get the real default value
         if convert_default: default = get_real_value(default, user_type)
 
-        # Add prefix
-        if self.prefix is not None: name = self.prefix + "/" + name
-
-        # Add the argument
-        if letter is None: self.parser.add_argument("--" + name, type=real_type, help=description, default=default)
-        else: self.parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default)
-
-        # To instance
-        if to_instance: self.to_instance.append(name)
+        # Add
+        self.optional[name] = (real_type, description, default, letter)
 
     # -----------------------------------------------------------------
 
-    def add_flag(self, name, description, to_instance=True, letter=None):
+    def add_flag(self, name, description, letter=None):
 
         """
         This function ...
         :param name:
         :param description:
-        :param to_instance:
+        :param letter:
         :return:
         """
 
-        # Add prefix
-        if self.prefix is not None: name = self.prefix + "/" + name
+        # Add
+        self.flags[name] = (description, letter)
 
-        # Add the argument
-        if letter is None: self.parser.add_argument("--" + name, action="store_true", help=description)
-        else: self.parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+# -----------------------------------------------------------------
 
-        # To instance
-        if to_instance: self.to_instance.append(name)
+class ConfigurationReader(object):
 
-    # -----------------------------------------------------------------
+    """
+    This function ...
+    """
 
-    def read(self):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, log_path=None):
 
         """
         This function ...
-        :return:
+        :param name:
+        :param description:
+        :param add_logging:
+        :param add_cwd:
+        :param log_path:
         """
 
-        # Let the parser parse
-        self.arguments = self.parser.parse_args()
+        # The configuration definition
+        self.definition = None
 
-        # Recursive for the sections
-        for name in self.sections: self.sections[name].read()
+        # Create the command-line parser
+        self.parser = argparse.ArgumentParser(prog=name, description=description)
 
-    # -----------------------------------------------------------------
+        # The parsed arguments
+        self.arguments = None
 
-    def get_settings(self):
+        # ...
+        self.add_logging = add_logging
+        self.add_cwd = add_cwd
+        self.log_path = log_path
 
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the settings Map
-        settings = Map()
-
-        # Add fixed
-        for name in self.fixed: settings[name] = self.fixed[name]
-
-        # Add base settings
-        for argument in vars(self.arguments): settings[argument] = getattr(self.arguments, argument)
-
-        # Add the configuration settings of the various sections
-        for name in self.sections:
-
-            # Create a map for the settings
-            settings[name] = Map()
-
-            for argument in vars(self.sections[name].arguments): settings[name][argument] = getattr(self.sections[name].arguments, argument)
-
-        # Return the settings
-        return settings
+        # The config
+        self.config = None
 
     # -----------------------------------------------------------------
 
@@ -272,6 +340,82 @@ class Configuration(object):
         """
 
         return sys.argv[1:]
+
+    # -----------------------------------------------------------------
+
+    def read(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set definition
+        self.definition = definition
+
+        # Set logging
+        self.set_logging_and_cwd()
+
+        # Parse
+        self.parse()
+
+        # Create config
+        self.create_config()
+
+        # Return the config
+        return self.config
+
+    # -----------------------------------------------------------------
+
+    def set_logging_and_cwd(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add logging options
+        if self.add_logging:
+
+            # Log path to absolute path
+            log_path = fs.absolute(self.log_path) if self.log_path is not None else fs.cwd()
+            self.definition.add_fixed("log_path", log_path)
+            self.definition.add_flag("debug", "enable debug output", False)
+            self.definition.add_flag("report", "write a report file", False)
+
+        # Add the path to the current working directory
+        if self.add_cwd: self.definition.add_fixed("path", fs.cwd())
+
+    # -----------------------------------------------------------------
+
+    def parse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set arguments
+        self.definition.set_arguments(self.parser)
+
+        # Let the parser parse
+        self.arguments = self.parser.parse_args()
+
+    # -----------------------------------------------------------------
+
+    def create_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the settings Map
+        self.config = Map()
+
+        # Add the settings
+        self.definition.get_settings(self.config, self.arguments)
 
 # -----------------------------------------------------------------
 
