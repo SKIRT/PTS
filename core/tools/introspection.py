@@ -485,7 +485,7 @@ def installed_python_packages():
 
 # -----------------------------------------------------------------
 
-def is_present(package):
+def is_present_package(package):
 
     """
     This function ...

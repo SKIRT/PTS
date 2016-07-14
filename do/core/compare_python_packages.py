@@ -26,6 +26,9 @@ definition = ConfigurationDefinition()
 # Add required
 definition.add_required("remote", str, "the remote host ID")
 
+# Add flags
+definition.add_flag("versions", "compare versions", "v")
+
 # Get configuration
 reader = ConfigurationReader("compare_python_packages")
 config = reader.read(definition)
@@ -50,20 +53,36 @@ for dependency in introspection.get_all_dependencies():
     # Skip standard modules
     if introspection.is_std_lib(dependency): continue
 
-    # Check if present
-    locally_present = dependency in local_packages
-    remotely_present = dependency in remote_packages
+    # Check present and version locally
+    if dependency in local_packages:
+        locally_present = True
+        local_version = local_packages[dependency]
+    else:
+        # Check again for present by importing
+        locally_present = introspection.is_present_package(dependency)
+        local_version = None
 
-    # Get versions
-    local_version = local_packages[dependency] if locally_present else None
-    remote_version = remote_packages[dependency] if remotely_present else None
+    # Check present and version remotely
+    if dependency in remote_packages:
+        remotely_present = True
+        remote_version = remote_packages[dependency]
+    else:
+        # Check again for present by importing
+        remotely_present = remote.is_present_package(dependency)
+        remote_version = None
 
     # If present both locally and remotely
     if locally_present and remotely_present:
 
-        # Check whether the versions match
-        if local_version == remote_version: log.success(dependency + ": OK")
-        else: log.warning(dependency + ": version " + local_version + " locally and version " + remote_version + " remotely")
+        if config.versions:
+
+            if local_version is None and remote_version is not None: log.warning(dependency + ": local version unknown")
+            elif remote_version is None and local_version is not None: log.warning(dependency + ": remote version unknown")
+            elif remote_version is None and local_version is None: log.warning(dependency + ": local and remote version unknown")
+            elif local_version == remote_version: log.success(dependency + ": OK")
+            else: log.warning(dependency + ": version " + local_version + " locally and version " + remote_version + " remotely")
+
+        else: log.success(dependency + ": OK")
 
     # Not present on at least one system
     elif remotely_present and not locally_present: log.error(dependency + ": not present on this system")

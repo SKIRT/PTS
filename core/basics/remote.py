@@ -1552,6 +1552,33 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def is_present_package(self, package):
+
+        """"
+        This function ...
+        :param package:
+        """
+
+        # Check if in python session
+        was_in_python_session = self.in_python_session
+
+        # Start python session
+        if not was_in_python_session: self.start_python_session()
+
+        # Import PTS introspection tools
+        self.import_python_package("introspection", from_name="pts.core.tools")
+
+        # Check if present
+        present = self.get_simple_python_variable("introspection.is_present_package('" + package + "')")
+
+        # End python session again
+        if not was_in_python_session: self.end_python_session()
+
+        # Return
+        return present
+
+    # -----------------------------------------------------------------
+
     def file_or_directory(self, path):
 
         """
