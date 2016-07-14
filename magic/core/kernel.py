@@ -350,6 +350,14 @@ class ConvolutionKernel(Frame):
 
         self.__idiv__(self.sum())
 
+        sum = self.sum()
+
+        if sum - 1.0 > 1e-8:
+
+            self.__idiv__(self.sum())
+
+            if self.sum() > 1e-8: raise RuntimeError("Normalizing the kernel fails")
+
     # -----------------------------------------------------------------
 
     def get_maximum_aniano(self):
