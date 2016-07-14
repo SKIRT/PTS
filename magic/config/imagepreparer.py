@@ -6,21 +6,21 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("prepareimage")
+definition = ConfigurationDefinition()
 
 # Add options
-config.add_optional("error_frame_names", "string_list", "the names of the error planes to be included in the final error map", [])
-config.add_flag("write_steps", "write the results of intermediate steps")
-config.add_flag("write_sky_annuli", "write the sky annuli")
-config.add_optional("sky_annuli_path", str, "the path to the sky annuli directory", None)
-config.add_optional("calculate_poisson_noise", bool, "calculate poisson noise", True)
-config.add_optional("calculate_calibration_uncertainties", bool, "calculate calibration uncertanties", True)
-config.add_optional("extract_sources", bool, "extract sources", True)
+definition.add_optional("error_frame_names", "string_list", "the names of the error planes to be included in the final error map", [])
+definition.add_flag("write_steps", "write the results of intermediate steps")
+definition.add_flag("write_sky_annuli", "write the sky annuli")
+definition.add_optional("sky_annuli_path", str, "the path to the sky annuli directory", None)
+definition.add_optional("calculate_poisson_noise", bool, "calculate poisson noise", True)
+definition.add_optional("calculate_calibration_uncertainties", bool, "calculate calibration uncertanties", True)
+definition.add_optional("extract_sources", bool, "extract sources", True)
 #config.add_topic("extraction")
 #config.topics["extraction"].add_...
 

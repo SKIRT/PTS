@@ -25,7 +25,7 @@ from pts.magic.misc.calibration import CalibrationError
 from pts.magic.misc.extinction import GalacticExtinction
 from pts.core.basics.filter import Filter
 from pts.magic.misc.kernels import AnianoKernels, aniano_names, variable_fwhms
-from pts.core.basics.configuration import Configuration
+#from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 

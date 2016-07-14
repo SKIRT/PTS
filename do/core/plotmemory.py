@@ -18,18 +18,19 @@ from pts.core.simulation.simulation import createsimulations
 from pts.core.extract.memory import MemoryExtractor, MemoryUsageTable
 from pts.core.plot.memory import MemoryPlotter
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-config = Configuration("plotmemory")
+# Create the configuration definition
+definition = ConfigurationDefinition()
 
 # Add flags
-config.add_flag("table", "save the extracted memory table")
+definition.add_flag("table", "save the extracted memory table")
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+# Get the configuration
+reader = ConfigurationReader("plotmemory")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,7 @@ else:
 
 # -----------------------------------------------------------------
 
-if config.arguments.table and not fs.is_file(memory_table_path): table.saveto(memory_table_path)
+if config.table and not fs.is_file(memory_table_path): table.saveto(memory_table_path)
 
 # -----------------------------------------------------------------
 

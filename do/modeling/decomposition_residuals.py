@@ -32,19 +32,20 @@ from pts.core.basics.configuration import ConfigurationDefinition, Configuration
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-config = Configuration("decomposition_residuals")
+# Create the configuration definition
+definition = ConfigurationDefinition()
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+# Get configuration
+reader = ConfigurationReader("decomposition_residuals")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.report else None
 
 # Determine the log level
-level = "DEBUG" if config.arguments.debug else "INFO"
+level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -52,9 +53,9 @@ log.start("Starting decomposition_residuals ...")
 
 # -----------------------------------------------------------------
 
-components_path = fs.join(config.arguments.path, "components")
-truncation_path = fs.join(config.arguments.path, "truncated")
-residuals_path = fs.join(config.arguments.path, "residuals")
+components_path = fs.join(config.path, "components")
+truncation_path = fs.join(config.path, "truncated")
+residuals_path = fs.join(config.path, "residuals")
 
 # -----------------------------------------------------------------
 

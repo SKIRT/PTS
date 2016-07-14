@@ -21,42 +21,42 @@ from pts.core.launch.launcher import SkirtLauncher
 from pts.core.launch.remotelauncher import SkirtRemoteLauncher
 from pts.core.tools import logging, time, parsing
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
 # TODO: work on this further
 
 # Create the configuration
-config = Configuration("launch")
+definition = ConfigurationDefinition()
 
 # Add required arguments
-config.add_required("filename", "absolute_path", "the name/path of the ski file")
+definition.add_required("filename", "absolute_path", "the name/path of the ski file")
 
 # Add positional arguments
-config.add_positional_optional("remote", str, "the remote host on which to run the simulation (if none is specified, the simulation is run locally")
-config.add_optional("input", "absolute_path", "the simulation input directory", letter="i")
-config.add_optional("output", "absolute_path", "the simulation output directory", letter="o")
-config.add_optional("cluster", str, "the name of the cluster", letter="c")
-config.add_optional("parallel", "int_tuple", "the parallelization scheme (processes, threads)", letter="p")
-config.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
+definition.add_positional_optional("remote", str, "the remote host on which to run the simulation (if none is specified, the simulation is run locally")
+definition.add_optional("input", "absolute_path", "the simulation input directory", letter="i")
+definition.add_optional("output", "absolute_path", "the simulation output directory", letter="o")
+definition.add_optional("cluster", str, "the name of the cluster", letter="c")
+definition.add_optional("parallel", "int_tuple", "the parallelization scheme (processes, threads)", letter="p")
+definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
 
 # Flags
-config.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
-config.add_flag("brief", "enable brief console logging", letter="b")
-config.add_flag("verbose", "enable verbose logging", letter="v")
-config.add_flag("memory", "enable memory logging", letter="m")
-config.add_flag("allocation", "enable memory (de)allocation logging", letter="a")
-config.add_flag("emulate", "emulate the simulation while limiting computation", letter="e")
+definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
+definition.add_flag("brief", "enable brief console logging", letter="b")
+definition.add_flag("verbose", "enable verbose logging", letter="v")
+definition.add_flag("memory", "enable memory logging", letter="m")
+definition.add_flag("allocation", "enable memory (de)allocation logging", letter="a")
+definition.add_flag("emulate", "emulate the simulation while limiting computation", letter="e")
 
-config.add_section("extraction")
+definition.add_section("extraction")
 
-config.add_section("plotting")
+definition.add_section("plotting")
 
-config.add_section("misc")
+definition.add_section("misc")
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+#reader = ConfigurationReader("launch")
+#config = reader.read(definition)
 
 # -----------------------------------------------------------------
 

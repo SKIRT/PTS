@@ -18,18 +18,19 @@ from pts.core.simulation.simulation import createsimulations
 from pts.core.extract.timeline import TimeLineExtractor, TimeLineTable
 from pts.core.plot.timeline import TimeLinePlotter
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("plottimeline")
+definition = ConfigurationDefinition()
 
 # Add flags
-config.add_flag("table", "save the extracted timeline table")
+definition.add_flag("table", "save the extracted timeline table")
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+# Get configuration
+reader = ConfigurationReader("plottimeline")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,7 @@ else:
 
 # -----------------------------------------------------------------
 
-if config.arguments.table and not fs.is_file(timeline_table_path): table.saveto(timeline_table_path)
+if config.table and not fs.is_file(timeline_table_path): table.saveto(timeline_table_path)
 
 # -----------------------------------------------------------------
 

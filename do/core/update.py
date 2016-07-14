@@ -14,33 +14,34 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.prep.update import SkirtUpdater, PTSUpdater
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 from pts.core.basics.errors import ConfigurationError
 
 # -----------------------------------------------------------------
 
-# Create configuration instance
-config = Configuration("update")
+# Create configuration definition
+definition = ConfigurationDefinition()
 
 # Add required
-config.add_required("skirt_or_pts", str, "choose to update SKIRT or PTS", to_instance=False, choices=["skirt", "pts"])
+definition.add_required("skirt_or_pts", str, "choose to update SKIRT or PTS", choices=["skirt", "pts"])
 
 # Add optional
-config.add_optional("remote", str, "update SKIRT on a remote system")
+definition.add_optional("remote", str, "update SKIRT on a remote system")
 
-# Read
-config.read()
+# Get the configuration
+reader = ConfigurationReader("update")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
 # SKIRT
-if config.arguments.skirt_or_pts == "skirt":
+if config.skirt_or_pts == "skirt":
 
     # Create a SkirtUpdater instance
     updater = SkirtUpdater(config)
 
 # PTS
-elif config.arguments.skirt_or_pts == "pts":
+elif config.skirt_or_pts == "pts":
 
     # Create a PTSUpdater instance
     updater = PTSUpdater(config)

@@ -15,18 +15,19 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-config = Configuration("clear")
+# Create the configuration definition
+definition = ConfigurationDefinition()
 
 # Add setting
-config.add_required("step", str, "the modeling step for which to clear the output", to_instance=False)
+definition.add_required("step", str, "the modeling step for which to clear the output")
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+# Get the configuration
+reader = ConfigurationReader("clear")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
@@ -42,21 +43,21 @@ log.start("Starting clear ...")
 
 # -----------------------------------------------------------------
 
-prep_path = fs.join(config.arguments.path, "prep")
-components_path = fs.join(config.arguments.path, "components")
-truncated_path = fs.join(config.arguments.path, "truncated")
-phot_path = fs.join(config.arguments.path, "phot")
-maps_path = fs.join(config.arguments.path, "maps")
-fit_path = fs.join(config.arguments.path, "fit")
-analysis_path = fs.join(config.arguments.path, "analysis")
+prep_path = fs.join(config.path, "prep")
+components_path = fs.join(config.path, "components")
+truncated_path = fs.join(config.path, "truncated")
+phot_path = fs.join(config.path, "phot")
+maps_path = fs.join(config.path, "maps")
+fit_path = fs.join(config.path, "fit")
+analysis_path = fs.join(config.path, "analysis")
 
-if config.arguments.step == "prep": fs.clear_directory(prep_path)
-elif config.arguments.step == "components": fs.clear_directory(components_path)
-elif config.arguments.step == "truncated": fs.clear_directory(truncated_path)
-elif config.arguments.step == "phot": fs.clear_directory(phot_path)
-elif config.arguments.step == "maps": fs.clear_directory(maps_path)
-elif config.arguments.step == "fit": fs.clear_directory(fit_path)
-elif config.arguments.step == "analysis": fs.clear_directory(analysis_path)
+if config.step == "prep": fs.clear_directory(prep_path)
+elif config.step == "components": fs.clear_directory(components_path)
+elif config.step == "truncated": fs.clear_directory(truncated_path)
+elif config.step == "phot": fs.clear_directory(phot_path)
+elif config.step == "maps": fs.clear_directory(maps_path)
+elif config.step == "fit": fs.clear_directory(fit_path)
+elif config.step == "analysis": fs.clear_directory(analysis_path)
 else: raise ValueError("Invalid modeling step")
 
 # -----------------------------------------------------------------

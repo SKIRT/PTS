@@ -28,14 +28,17 @@ from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
 from pts.core.tools.random import setup_prng
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
-# Configuration
-config = Configuration("reference")
-config.add_positional_optional("seed", int, "the random seed", 4357)
-config.read()
+# Configuration definition
+definition = ConfigurationDefinition()
+definition.add_positional_optional("seed", int, "the random seed", 4357)
+
+# Get configuration
+reader = ConfigurationReader("reference")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
@@ -83,7 +86,7 @@ def chi_squared_function(chromosome):
 # -----------------------------------------------------------------
 
 #seed = 4357
-seed = config.arguments.seed
+seed = config.seed
 prng = setup_prng(seed)
 
 # -----------------------------------------------------------------

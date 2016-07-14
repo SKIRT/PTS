@@ -18,23 +18,24 @@ from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-config = Configuration("list_galaxies")
+# Create the configuration definition
+definition = ConfigurationDefinition()
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+# Get configuration
+reader = ConfigurationReader("list_galaxies")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if config.arguments.report else None
+logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if config.report else None
 
 # Determine the log level
-level = "DEBUG" if config.arguments.debug else "INFO"
+level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)

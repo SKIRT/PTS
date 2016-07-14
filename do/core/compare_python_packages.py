@@ -14,23 +14,21 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.remote import Remote
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 from pts.core.tools import introspection
 from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-# Create configuration instance
-config = Configuration("compare_python_packages")
+# Create configuration definition
+definition = ConfigurationDefinition()
 
 # Add required
-config.add_required("remote", str, "the remote host ID")
+definition.add_required("remote", str, "the remote host ID")
 
-# Read
-config.read()
-
-# Settings
-settings = config.get_settings()
+# Get configuration
+reader = ConfigurationReader("compare_python_packages")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
@@ -38,7 +36,7 @@ settings = config.get_settings()
 remote = Remote()
 
 # Log in
-remote.setup(settings.remote)
+remote.setup(config.remote)
 
 # Get all python packages installed on the remote host
 remote_packages = remote.python_packages
@@ -63,7 +61,7 @@ for dependency in introspection.get_all_dependencies():
 
     if locally_present and remotely_present: log.success(dependency + ": OK")
     elif remotely_present and not locally_present: log.error(dependency + ": not present on this system")
-    elif locally_present and not remotely_present: log.error(dependency + ": not present on remote '" + settings.remote + "'")
-    else: log.error(dependency + ": not present on either this sytem or remote '" + settings.remote + "'")
+    elif locally_present and not remotely_present: log.error(dependency + ": not present on remote '" + config.remote + "'")
+    else: log.error(dependency + ": not present on either this sytem or remote '" + config.remote + "'")
 
 # -----------------------------------------------------------------

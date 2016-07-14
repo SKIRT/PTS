@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 from pts.dustpedia.core.dataprocessing import DustPediaDataProcessing
 from pts.core.basics.remote import Remote
 from pts.core.tools import filesystem as fs
@@ -23,23 +23,19 @@ from pts.core.tools import time
 # -----------------------------------------------------------------
 
 # Configuration
-config = Configuration("get_poisson_errors", "Calculate poisson error maps for DustPedia UV and optical images")
+definition = ConfigurationDefinition()
 
 # Galaxy name
-config.add_required("galaxy_name", str, "the name of the galaxy")
-config.add_required("band", str, "the band (GALEX or SDSS u/g/r/i/z)")
+definition.add_required("galaxy_name", str, "the name of the galaxy")
+definition.add_required("band", str, "the band (GALEX or SDSS u/g/r/i/z)")
 
 # Optional
-config.add_optional("remote", str, "the remote host name", None)
+definition.add_optional("remote", str, "the remote host name", None)
 
-# Read the command line options
-config.read()
-
-# Get settings
-settings = config.get_settings()
-
-# Get command line arguments
-arguments = config.get_arguments()
+# Get configuration
+reader = ConfigurationReader("get_poisson_errors", "Calculate poisson error maps for DustPedia UV and optical images")
+config = reader.read(definition)
+arguments = reader.get_arguments()
 
 # -----------------------------------------------------------------
 
@@ -55,18 +51,18 @@ log.start("Starting get_poisson_errors ...")
 
 # -----------------------------------------------------------------
 
-temp_name = time.unique_name(settings.band.replace(" ", ""))
+temp_name = time.unique_name(config.band.replace(" ", ""))
 
 # -----------------------------------------------------------------
 
 # Remotely
-if settings.remote is not None:
+if config.remote is not None:
 
     # Create the remote
     remote = Remote()
 
     # Setup the remote
-    remote.setup(settings.remote)
+    remote.setup(config.remote)
 
     # Remove specification of the remote
     arguments_no_remote = arguments[:-2]
@@ -97,17 +93,17 @@ else:
     dpdp = DustPediaDataProcessing()
 
     # GALEX
-    if "GALEX" in settings.band:
+    if "GALEX" in config.band:
 
-        dpdp.make_galex_mosaic_and_poisson_frame(settings.galaxy_name, local_path)
+        dpdp.make_galex_mosaic_and_poisson_frame(config.galaxy_name, local_path)
 
     # SDSS
-    elif "SDSS" in settings.band:
+    elif "SDSS" in config.band:
 
-        band = settings.band.split(" ")[1]
+        band = config.band.split(" ")[1]
 
         # Make ...
-        dpdp.make_sdss_mosaic_and_poisson_frame(settings.galaxy_name, band, local_path)
+        dpdp.make_sdss_mosaic_and_poisson_frame(config.galaxy_name, band, local_path)
 
     # Invalid option
     else: raise ValueError("Invalid option for 'band'")

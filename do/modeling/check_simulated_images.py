@@ -24,7 +24,7 @@ from astropy import constants
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.image import Image
 from pts.magic.core.datacube import DataCube
@@ -33,19 +33,20 @@ from pts.core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-config = Configuration("check_simulated_images")
+# Create the configuration definition
+definition = ConfigurationDefinition()
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+# Get configuration
+reader = ConfigurationReader("check_simulated_images")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
+logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.report else None
 
 # Determine the log level
-level = "DEBUG" if config.arguments.debug else "INFO"
+level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
@@ -53,7 +54,7 @@ log.start("Starting check_simulated_images ...")
 
 # -----------------------------------------------------------------
 
-modeling_path = config.fixed["path"]
+modeling_path = config.path
 
 galaxy_name = fs.name(modeling_path)
 

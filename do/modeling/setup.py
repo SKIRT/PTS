@@ -17,23 +17,24 @@ from __future__ import absolute_import, division, print_function
 from pts.core.tools import logging
 from pts.magic.tools import catalogs
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-config = Configuration("setup")
+definition = ConfigurationDefinition()
 
 # Add required settings
-config.add_required("name", str, "the name of the galaxy", to_instance=False)
+definition.add_required("name", str, "the name of the galaxy")
 
-# Read the configuration settings from the provided command-line arguments
-config.read()
+# Get configuration
+reader = ConfigurationReader("setup")
+config = reader.read(definition)
 
 # -----------------------------------------------------------------
 
 # Determine the log level
-level = "DEBUG" if config.arguments.debug else "INFO"
+level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level)
@@ -45,7 +46,7 @@ log.start("Starting setup ...")
 log.info("Resolving the galaxy name ...")
 
 # Get the NGC name of the galaxy
-ngc_name = catalogs.get_ngc_name(config.arguments.name)
+ngc_name = catalogs.get_ngc_name(config.name)
 
 # Inform the user
 log.info("Galaxy NGC ID is '" + ngc_name + "'")
