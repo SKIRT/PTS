@@ -266,7 +266,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype=('S500'))
 
     if len(overlapping_file_paths.shape)==0:
-        overlap_files = [overlapping_file_paths.tolist()]
+        overlapping_file_paths = [overlapping_file_paths.tolist()]
     for overlapping_file_path in overlapping_file_paths:
         shutil.copy(overlapping_file_path, raw_in_temp_dir)
 

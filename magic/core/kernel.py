@@ -85,7 +85,7 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        return np.abs(self.sum() - 1.) < 1e-8  # same criterion as in astropy.convolution module
+        return np.abs(self.sum() - 1.) < 1e-7  # criterion as in astropy.convolution module = 1e-8, BUT I HAD A PROBLEM OF THE SAME FITS FILE HAVING A SLIGHTLY DIFFERNENT SOME ON DIFFERENT SYSTEMS !!! (laptop and nancy)
 
     # -----------------------------------------------------------------
 
@@ -349,14 +349,6 @@ class ConvolutionKernel(Frame):
         """
 
         self.__idiv__(self.sum())
-
-        sum = self.sum()
-
-        if sum - 1.0 > 1e-8:
-
-            self.__idiv__(self.sum())
-
-            if self.sum() > 1e-8: raise RuntimeError("Normalizing the kernel fails")
 
     # -----------------------------------------------------------------
 
