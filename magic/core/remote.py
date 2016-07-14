@@ -228,8 +228,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        output = self.remote.send_python_line("str(" + self.label + ")", output=True)
-        return "".join(output)
+        return self.remote.get_simple_python_property(self.label, "__str__()")
 
     # -----------------------------------------------------------------
 
@@ -240,8 +239,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        output = self.remote.send_python_line("repr(" + self.label + ")", output=True)
-        return "".join(output)
+        return self.remote.get_simple_python_property(self.label, "__repr__()")
 
     # -----------------------------------------------------------------
 
