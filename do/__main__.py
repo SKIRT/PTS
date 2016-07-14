@@ -75,6 +75,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     subproject, index = table_matches[0]
     command_name = tables[subproject]["Command"][index]
+    description = tables[subproject]["Description"][index]
     class_path_relative = tables[subproject]["Path"][index]
     class_path = "pts." + subproject + "." + class_path_relative
     module_path, class_name = class_path.rsplit('.', 1)
@@ -88,9 +89,11 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     cls = getattr(module, class_name)
 
+    # Import things
     from pts.core.tools import logging
+    from pts.core.basics.configuration import ConfigurationReader
 
-    # Import the configuration
+    ## GET THE CONFIGURATION DEFINITION
 
     configuration_name = tables[subproject]["Configuration"][index]
     if configuration_name == "--": configuration_name = command_name
@@ -98,20 +101,29 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     configuration_module = importlib.import_module(configuration_module_path)
 
-    config = getattr(configuration_module, "config")
+    definition = getattr(configuration_module, "definition")
 
-    # Read the configuration settings from the command-line arguments
-    config.read()
+    ## CREATE THE CONFIGURATION
+
+    # Create the ConfigurationReader
+    reader = ConfigurationReader(command_name, description, log_path="log")
+
+    # Create the configuration from the definition and from reading the command line arguments
+    config = reader.read(definition)
+
+    ## SETUP LOGGER
 
     # Determine the log file path
-    logfile_path = fs.join(config.fixed["log_path"], time.unique_name("log") + ".txt") if config.arguments.report else None
+    logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
 
     # Determine the log level
-    level = "DEBUG" if config.arguments.debug else "INFO"
+    level = "DEBUG" if config.debug else "INFO"
 
     # Initialize the logger
     log = logging.setup_log(level=level, path=logfile_path)
     log.start("Starting " + command_name + " ...")
+
+    ## DO WHAT HAS TO BE DONE
 
     # Create the class instance, configure it with the configuration settings
     inst = cls(config)

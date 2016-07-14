@@ -39,7 +39,7 @@ class Configurable(object):
         :param config:
         """
 
-        self.config = config.get_settings()
+        self.config = config
 
     # -----------------------------------------------------------------
 

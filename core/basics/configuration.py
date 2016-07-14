@@ -381,8 +381,8 @@ class ConfigurationReader(object):
             # Log path to absolute path
             log_path = fs.absolute(self.log_path) if self.log_path is not None else fs.cwd()
             self.definition.add_fixed("log_path", log_path)
-            self.definition.add_flag("debug", "enable debug output", False)
-            self.definition.add_flag("report", "write a report file", False)
+            self.definition.add_flag("debug", "enable debug output")
+            self.definition.add_flag("report", "write a report file")
 
         # Add the path to the current working directory
         if self.add_cwd: self.definition.add_fixed("path", fs.cwd())

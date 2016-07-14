@@ -28,7 +28,7 @@ from pts.magic.core.source import Source
 from pts.magic.tools import statistics, plotting, fitting
 from pts.magic.basics.geometry import Ellipse
 from pts.magic.basics.vector import Extent
-from pts.core.basics.configuration import Configuration
+from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
 
 # -----------------------------------------------------------------
 
