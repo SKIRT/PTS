@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import copy
 import numpy as np
+import warnings
 
 # Import astronomical modules
 from astropy import wcs
@@ -344,11 +345,9 @@ class CoordinateSystem(wcs.WCS):
         #assert np.isclose(dec_distance, size_dec_deg, rtol=0.05), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
 
         if not np.isclose(ra_distance, size_ra_deg, rtol=0.05):
-            #print("ERROR: the coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
-            log.warning("The coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
+            warnings.warn("The coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
         if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):
-            #print("ERROR: the coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
-            log.warning("The coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
+            warnings.warn("The coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
 
         # Create RA and DEC span as quantities
         ra_span = ra_distance * Unit("deg")
@@ -449,7 +448,8 @@ class CoordinateSystem(wcs.WCS):
         diag_a = self.pixel_scale_matrix[0,1]
         diag_b = self.pixel_scale_matrix[1,0]
 
-        if not np.isclose(diag_a, diag_b): log.warning("The diagonal elements of the pixel scale matrix are not equal")
+        if not np.isclose(diag_a, diag_b, rtol=0.05):
+            warnings.warn("The diagonal elements of the pixel scale matrix are not equal: " + repr(diag_a) + " and " + repr(diag_b))
 
         first = self.pixel_scale_matrix[0,0]
 
