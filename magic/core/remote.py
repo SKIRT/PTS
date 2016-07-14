@@ -1072,6 +1072,9 @@ class RemoteImage(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Convolving the remote image ...")
+
         # SAVE KERNEL LOCALLY
 
         # Determine temporary directory path
@@ -1097,7 +1100,7 @@ class RemoteImage(object):
         self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
 
         # Convolve the image remotely
-        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ")")
+        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ")", show_output=True)
 
     # -----------------------------------------------------------------
 

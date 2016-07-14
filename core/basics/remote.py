@@ -70,6 +70,12 @@ class Remote(object):
         # Flag that says whether we are in a remote python session
         self.in_python_session = False
 
+        # Temp directory will be set in setup
+        self._temp_path = None
+
+        # Flag that says whether we have created a temporary directory
+        self._temp_dir_created = False
+
     # -----------------------------------------------------------------
 
     def setup(self, host_id, cluster=None):
@@ -100,6 +106,9 @@ class Remote(object):
 
         # Check whether the output directory exists
         if not self.is_directory(self.host.output_path): raise ValueError("The specified output path does not exist")
+
+        # Determine path to temporary directory
+        self._temp_path = fs.join(self.home_directory, time.unique_name("pts_temp"))
 
     # -----------------------------------------------------------------
 
@@ -396,6 +405,9 @@ class Remote(object):
 
         # Set flag
         self.in_python_session = True
+
+        # Import filesystem from PTS
+        self.import_python_package("filesystem", as_name="fs", from_name="pts.core.tools")
 
     # -----------------------------------------------------------------
 
@@ -1041,9 +1053,17 @@ class Remote(object):
         :return:
         """
 
-        remote_temp_path = fs.join(self.home_directory, time.unique_name("pts_temp"))
-        self.create_directory(remote_temp_path)
-        return remote_temp_path
+        if self.in_python_session:
+
+            # Create from python
+            self.send_python_line("fs.create_directory('" + self._temp_path + "')")
+
+        else: self.create_directory(self._temp_path)
+
+        self._temp_dir_created = True
+
+        # Return the path
+        return self._temp_path
 
     # -----------------------------------------------------------------
 
@@ -1529,12 +1549,16 @@ class Remote(object):
         :return:
         """
 
-        # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
-        output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
+        if self.in_python_session: return self.get_simple_python_variable("fs.file_or_directory('" + path + "')")
 
-        # Return the result
-        if output[0] == "None": return None
-        else: return output[0]
+        else:
+
+            # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
+            output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
+
+            # Return the result
+            if output[0] == "None": return None
+            else: return output[0]
 
     # -----------------------------------------------------------------
 
@@ -1546,11 +1570,15 @@ class Remote(object):
         :return:
         """
 
-        # Launch a bash command to check whether the path exists as a directory on the remote file system
-        output = self.execute("if [ -d " + path + " ]; then echo True; else echo False; fi")
+        if self.in_python_session: return self.get_simple_python_variable("fs.is_directory('" + path + "')")
 
-        # Return the result
-        return output[0] == "True"
+        else:
+
+            # Launch a bash command to check whether the path exists as a directory on the remote file system
+            output = self.execute("if [ -d " + path + " ]; then echo True; else echo False; fi")
+
+            # Return the result
+            return output[0] == "True"
 
     # -----------------------------------------------------------------
 
@@ -1562,11 +1590,15 @@ class Remote(object):
         :return:
         """
 
-        # Launch a bash command to check whether the path exists as a regular file on the remote file system
-        output = self.execute("if [ -f " + path + " ]; then echo True; else echo False; fi")
+        if self.in_python_session: return self.get_simple_python_variable("fs.is_file('" + path + "')")
 
-        # Return the result
-        return output[0] == "True"
+        else:
+
+            # Launch a bash command to check whether the path exists as a regular file on the remote file system
+            output = self.execute("if [ -f " + path + " ]; then echo True; else echo False; fi")
+
+            # Return the result
+            return output[0] == "True"
 
     # -----------------------------------------------------------------
 

@@ -89,6 +89,20 @@ def join(*args):
 
 # -----------------------------------------------------------------
 
+def file_or_directory(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if is_file(path): return "file"
+    elif is_directory(path): return "directory"
+    else: return None
+
+# -----------------------------------------------------------------
+
 def is_file(path):
 
     """
