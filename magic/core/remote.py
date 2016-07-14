@@ -978,26 +978,28 @@ class RemoteImage(object):
         local_directory = fs.directory_of(path)
 
         # Determine remote temp path
-        self.remote.send_python_line("temp_path = tempfile.gettempdir()")
+        remote_temp_path = self.remote.temp_directory
+
+        # Determine remote path for the image
+        remote_image_path = fs.join(remote_temp_path, filename)
 
         # Debugging
         log.debug("Saving the image remotely ...")
 
-        # Determine path to save the frame remotely first
-        self.remote.send_python_line("remote_path = fs.join(temp_path, '" + filename + "')")
-        remote_path = self.remote.get_python_string("remote_path")
+        # Debugging
+        log.debug("Remote temporary path of image: " + remote_image_path)
+
+        # Save the image remotely
+        self.remote.send_python_line(self.label + ".save('" + remote_image_path + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the image ...")
 
-        # Save the image remotely
-        self.remote.send_python_line(self.label + ".save(remote_path)", show_output=True)
-
         # Download
-        self.remote.download(remote_path, local_directory)
+        self.remote.download(remote_image_path, local_directory)
 
         # Remove the remote file
-        self.remote.remove_file(remote_path)
+        self.remote.remove_file(remote_image_path)
 
     # -----------------------------------------------------------------
 
