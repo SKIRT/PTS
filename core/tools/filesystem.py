@@ -578,6 +578,28 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
 
 # -----------------------------------------------------------------
 
+def rename_file(directory, original_name, new_name):
+
+    """
+    This function ...
+    :param directory:
+    :param original_name:
+    :param new_name:
+    :return:
+    """
+
+    # Check whether the original file exists
+    original_path = join(directory, original_name)
+    if not is_file(original_path): raise ValueError("File '" + original_path + "' does not exist")
+
+    # Determine new file path
+    new_path = join(directory, new_name)
+
+    # Rename the file
+    os.rename(original_path, new_path)
+
+# -----------------------------------------------------------------
+
 def copy_file(file_path, directory_path, new_name=None):
 
     """
