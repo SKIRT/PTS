@@ -427,13 +427,13 @@ class FittingInitializer(FittingComponent):
         mass_fraction_range = RealRange(0.5e-6, 1e-5, invert=True)
 
         # Set fixed grid properties
-        self.dg_generator.grid_type = "bintree"
+        self.dg_generator.grid_type = "bintree" # set grid type
         self.dg_generator.x_radius = radius_physical
         self.dg_generator.y_radius = radius_physical
         self.dg_generator.z_radius = 3. * Unit("kpc")
 
         # Generate the dust grids
-        self.dg_generator.run(scale_range, level_range, mass_fraction_range, 10, grid_type="bintree")
+        self.dg_generator.run(scale_range, level_range, mass_fraction_range, 10)
 
     # -----------------------------------------------------------------
 

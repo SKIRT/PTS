@@ -11,7 +11,7 @@
     <instrumentSystem type="InstrumentSystem">
       <InstrumentSystem>
         <instruments type="Instrument">
-          <SimpleInstrument instrumentName="earth" distance="[distance:3.6 Mpc]" inclination="[inclination:59 deg]" azimuth="0 deg" positionAngle="[position_angle:157 deg]" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="earth" distance="[distance:3.6 Mpc]" inclination="[inclination:59 deg]" azimuth="0 deg" positionAngle="[position_angle:67 deg]" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
           <SimpleInstrument instrumentName="face-on" distance="[distance:3.6 Mpc]" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
           <SimpleInstrument instrumentName="edge-on" distance="[distance:3.6 Mpc]" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
         </instruments>

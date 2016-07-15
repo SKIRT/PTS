@@ -1054,7 +1054,7 @@ class Remote(object):
 
         # In the SKIRT directory, create the necessary subdirectories
         self.execute("cd SKIRT", output=False)
-        self.create_directories(["git", "run", "release"])
+        self.create_directories("git", "run", "release")
 
         # Clone the SKIRT repository
         if private:

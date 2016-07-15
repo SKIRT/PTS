@@ -102,7 +102,7 @@ class WavelengthGridGenerator(object):
 
         # Initialize the table
         names = ["UV points", "Optical points", "PAH points", "Dust points", "Extension points", "Emission lines", "Fixed points", "Total points"]
-        dtypes = int
+        dtypes = [int, int, int, int, int, int, int, int]
         self.table = Table(names=names, dtype=dtypes)
 
     # -----------------------------------------------------------------
@@ -140,7 +140,7 @@ class WavelengthGridGenerator(object):
 
         # Inform the user
         with_without = " with " if add_emission_lines else " without "
-        log.info("Creating a wavelength grid with " + str(npoints) + with_without + "emission lines ...")
+        log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
 
         # A list of the wavelength points
         wavelengths = []

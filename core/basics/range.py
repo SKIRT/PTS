@@ -121,7 +121,8 @@ class IntegerRange(Range):
         """
 
         real = super(IntegerRange, self).linear(npoints)
-        return np.array(set(real))
+        integers = list(set(map(int, real)))
+        return np.array(integers)
 
     # -----------------------------------------------------------------
 
@@ -134,7 +135,8 @@ class IntegerRange(Range):
         """
 
         real = super(IntegerRange, self).log(npoints)
-        return np.array(set(real))
+        integers = list(set(map(int, real)))
+        return np.array(integers)
 
     # -----------------------------------------------------------------
 
@@ -147,7 +149,8 @@ class IntegerRange(Range):
         """
 
         real = super(IntegerRange, self).sqrt(npoints)
-        return np.array(set(real))
+        integers = list(set(map(int, real)))
+        return np.array(integers)
 
 # -----------------------------------------------------------------
 
@@ -192,8 +195,8 @@ class QuantityRange(Range):
         """
 
         # Convert everything so that min_value and max_value are floats in the same unit, and so that 'unit' is the corresponding Unit
-        min_is_quantity = hasattr(min_value, unit)
-        max_is_quantity = hasattr(max_value, unit)
+        min_is_quantity = hasattr(min_value, "unit")
+        max_is_quantity = hasattr(max_value, "unit")
 
         if min_is_quantity and max_is_quantity:
 
@@ -293,7 +296,7 @@ def zip_linear(*args, **kwargs):
     temp = []
     for arg in args:
         if isinstance(arg, QuantityRange): temp.append(arg.linear(npoints, as_list=True))
-        temp.append(arg.linear(npoints))
+        else: temp.append(arg.linear(npoints))
 
     # Zip
     result = zip(*temp)
@@ -315,7 +318,29 @@ def zip_log(*args, **kwargs):
     temp = []
     for arg in args:
         if isinstance(arg, QuantityRange): temp.append(arg.log(npoints, as_list=True))
-        temp.append(arg.log(npoints))
+        else: temp.append(arg.log(npoints))
+
+    # Zip
+    result = zip(*temp)
+    return result
+
+# -----------------------------------------------------------------
+
+def zip_sqrt(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    npoints = kwargs.pop("npoints")
+
+    temp = []
+    for arg in args:
+        if isinstance(arg, QuantityRange): temp.append(arg.sqrt(npoints, as_list=True))
+        else: temp.append(arg.sqrt(npoints))
 
     # Zip
     result = zip(*temp)

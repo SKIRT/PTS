@@ -76,7 +76,7 @@ class DustGridGenerator(object):
         :return:
         """
 
-        assert self.grid_type in ["cartesian", "bintree", "octtree"]
+        if not grid_type in ["cartesian", "bintree", "octtree"]: raise RuntimeError("Grid type '" + str(grid_type) + "' invalid. Must be either 'cartesian', 'bintree', or 'octtree'.")
         self._grid_type = grid_type
 
     # -----------------------------------------------------------------
@@ -255,7 +255,7 @@ class DustGridGenerator(object):
         """
 
         # Inform the user
-        log.info("Configuring the cartesian dust grid ...")
+        log.info("Creating a cartesian dust grid with a smallest physical scale of " + str(scale) + " ...")
 
         # Calculate the number of bins in each direction
         x_bins = int(math.ceil(self.x_extent.to("pc").value / scale.to("pc").value))
@@ -284,7 +284,7 @@ class DustGridGenerator(object):
         """
 
         # Inform the user
-        log.info("Configuring the bintree dust grid ...")
+        log.info("Creating a binary tree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
 
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = self.x_extent.to("pc").value
@@ -313,7 +313,7 @@ class DustGridGenerator(object):
         """
 
         # Inform the user
-        log.info("Configuring the octtree dust grid ...")
+        log.info("Creating a octtree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
 
         # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
         extent_x = self.x_extent.to("pc").value

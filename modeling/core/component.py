@@ -120,10 +120,10 @@ class ModelingComponent(Configurable):
         if fs.is_directory(self.data_path):
 
             # Create the prep path if it does not exist yet
-            fs.create_directories([self.prep_path, self.truncation_path, self.maps_path, self.phot_path,
-                                   self.maps_path, self.components_path, self.fit_path, self.analysis_path,
-                                   self.reports_path, self.visualisation_path, self.plot_path, self.log_path,
-                                   self.show_path])
+            fs.create_directories(self.prep_path, self.truncation_path, self.maps_path, self.phot_path,
+                                  self.maps_path, self.components_path, self.fit_path, self.analysis_path,
+                                  self.reports_path, self.visualisation_path, self.plot_path, self.log_path,
+                                  self.show_path)
 
         # Exit with an error
         else: raise ValueError("The current working directory is not a radiative transfer modeling directory (the data directory is missing)")
