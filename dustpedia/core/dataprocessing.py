@@ -403,10 +403,8 @@ class DustPediaDataProcessing(object):
         # Determine the path to the temporary directory for downloading the images
         working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
-        #working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-07-08--16-44-29-311")
-
-        # Create the temporary directory
-        #fs.create_directory(temp_path)
+        # Create the working directory
+        fs.create_directory(working_path)
 
         # DOWNLOAD PATH
         download_path = fs.join(working_path, "download")
