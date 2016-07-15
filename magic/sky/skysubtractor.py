@@ -670,7 +670,7 @@ class SkySubtractor(OldConfigurable):
             # plotting.plot_box(masked_array_cutout)
 
             aperture_mean = np.ma.mean(masked_array_cutout)
-            aperture_median = np.ma.median(masked_array_cutout)[0]
+            #aperture_median = np.ma.median(masked_array_cutout)
             # aperture_median2 = np.median(masked_array_cutout.compressed()) # same result, but unnecessary compressed step
             aperture_stddev = np.std(masked_array_cutout)
 
