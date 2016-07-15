@@ -1665,6 +1665,31 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def skirt_root_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = self.expand_user_path("~/SKIRT")
+        return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt_repo_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.skirt_root_path, "git")
+
+    # -----------------------------------------------------------------
+
+    @property
     def pts_root_path(self):
 
         """

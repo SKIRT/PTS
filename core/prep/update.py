@@ -12,41 +12,45 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import subprocess
+from abc import ABCMeta, abstractmethod
+
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..simulation.execute import SkirtExec
-from ..simulation.remote import SkirtRemote
 from ..basics.remote import Remote
+from ..tools.logging import log
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
-class SKIRTUpdater(Configurable):
-    
+class Updater(Configurable):
+
     """
     This class ...
     """
-    
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
     def __init__(self, config=None):
-        
+
         """
         The constructor ...
+        :param config:
         """
-        
+
         # Call the constructor of the base class
-        super(SKIRTUpdater, self).__init__(config)
+        super(Updater, self).__init__(config)
 
-        # Create the SKIRT execution context
-        #self.skirt = SkirtExec()
-
-        # Create the SKIRT remote execution context
-        #self.remote = SkirtRemote()
-
+        # The remote execution environment
         self.remote = None
 
     # -----------------------------------------------------------------
 
     def run(self):
-        
+
         """
         This function ...
         """
@@ -67,11 +71,12 @@ class SKIRTUpdater(Configurable):
         """
 
         # Call the setup function of the base class
-        super(SkirtUpdater, self).setup()
+        super(Updater, self).setup()
 
         # Setup the remote execution environment if necessary
         if self.config.remote is not None:
 
+            # Create and setup the remote execution environment
             self.remote = Remote()
             self.remote.setup(self.config.remote)
 
@@ -84,75 +89,143 @@ class SKIRTUpdater(Configurable):
         :return:
         """
 
-        # Update the remote SKIRT executable
-        if self.config.remote is not None: self.remote.update()
+        # Update locally or remotely
+        if self.remote is None: self.update_local()
+        else: self.update_remote()
 
-        # Update the local SKIRT executable
-        else: self.skirt.update()
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def update_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def update_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 
-class PTSUpdater(Configurable):
+class SKIRTUpdater(Updater):
+    
+    """
+    This class ...
+    """
+
+    def update_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating SKIRT locally ...")
+
+        # Get the SKIRT repo directory
+        skirt_repo_path = introspection.skirt_repo_dir
+
+        # Debugging
+        log.debug("Getting latest version ...")
+
+        # Call the appropriate git command at the SKIRT repository directory
+        subprocess.call(["git", "pull", "origin", "master"], cwd=skirt_repo_path)
+
+        # Debugging
+        log.debug("Compiling latest version ...")
+
+        # Recompile SKIRT
+        subprocess.call(["sh", "makeSKIRT.sh"], cwd=skirt_repo_path)
+
+    # -----------------------------------------------------------------
+
+    def update_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating SKIRT remotely on host '" + self.config.remote + "' ...")
+
+        # Debugging
+        log.debug("Getting latest version ...")
+
+        # Change working directory to repository directory
+        skirt_git_path = self.remote.skirt_repo_path
+        self.remote.change_cwd(skirt_git_path)
+
+        # Git pull
+        self.remote.ssh.sendline("git pull origin master")
+        self.remote.ssh.expect(":")
+
+        if "Enter passphrase for key" in self.remote.ssh.before:
+
+            self.remote.execute(self.config.pubkey_password, show_output=True)
+
+        else: self.remote.prompt()
+
+        # Debugging
+        log.debug("Compiling latest version ...")
+
+        # Build SKIRT
+        self.remote.execute("./makeSKIRT.sh", show_output=True, output=False)
+
+# -----------------------------------------------------------------
+
+class PTSUpdater(Updater):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
-
-        """
-        This function ...
-        :param config:
-        """
-
-        # Call the constructor of the base class
-        super(PTSUpdater, self).__init__(config)
-
-        # The remote execution environment (if necessary)
-        self.remote = None
-
-    # -----------------------------------------------------------------
-
-    def run(self):
+    def update_local(self):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup()
+        # Inform the user
+        log.info("Updating PTS locally ...")
 
-        # 2. Update
-        self.update()
+        # Get the PTS repo directory
+        pts_git_path = introspection.pts_package_dir
+
+        # Debugging
+        log.debug("Getting latest version ...")
+
+        # Call the appropriate git command at the PTS repository directory
+        subprocess.call(["git", "pull", "origin", "master"], cwd=pts_git_path)
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def update_remote(self):
 
         """
         This function ...
         :return:
         """
 
-        # Call the setup of the base class
-        super(PTSUpdater, self).setup()
+        # Inform the user
+        log.info("Updating PTS remotely on host '" + self.config.remote + "' ...")
 
-        # If remote is specified
-        if self.config.remote is not None:
-
-            # Setup the remote execution environment
-            self.remote = Remote()
-            self.remote.setup(self.config.remote)
-
-    # -----------------------------------------------------------------
-
-    def update(self):
-
-        """
-        This function ...
-        :return:
-        """
+        # Debugging
+        log.debug("Getting latest version ...")
 
         # Change working directory to repository directory
         pts_git_path = self.remote.pts_package_path

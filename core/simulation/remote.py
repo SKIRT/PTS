@@ -796,24 +796,6 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def update(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Navigate to the SKIRT repository directory
-        self.execute("cd " + self.skirt_repo_dir, output=False)
-
-        # Update SKIRT
-        self.execute("git pull origin master", output=False)
-
-        # Compile the SKIRT code
-        self.execute("./makeSKIRT.sh", output=False)
-
-    # -----------------------------------------------------------------
-
     def get_status(self):
 
         """
