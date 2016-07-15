@@ -337,12 +337,14 @@ class Remote(object):
         :return:
         """
 
+        # Convert the list of commands back to a single string
         portions = []
         for argument in arguments:
             if " " in argument: portions.append("'" + argument + "'")
             else: portions.append(argument)
         argument_string = " ".join(portions)
 
+        # Execute the command
         self.execute("pts " + command + " " + argument_string, show_output=show_output)
 
     # -----------------------------------------------------------------

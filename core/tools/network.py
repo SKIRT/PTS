@@ -37,6 +37,7 @@ def download_file(url, path):
 
     # Debugging
     log.debug("Downloading '" + filename + "' to '" + path + "' ...")
+    log.debug("URL: " + url)
 
     # Download
     urllib.urlretrieve(url, filepath)
@@ -68,6 +69,7 @@ def download_files(urls, path):
 
         # Debugging
         log.debug("Downloading '" + filename + "' to '" + path + "' ... (" + str(index+1) + " of " + str(count) + ")")
+        log.debug("URL: " + url)
 
         # Download
         urllib.urlretrieve(url, filepath)

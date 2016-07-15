@@ -218,13 +218,4 @@ class SkirtExec:
         # Put SKIRT in the PATH environment variable
         # ...
 
-    ## This function updates the SKIRT executable
-    def update(self):
-
-        # Call the appropriate git command at the SKIRT repository directory
-        subprocess.call(["git", "pull", "origin", "master"], cwd=self.repo_directory)
-
-        # Recompile SKIRT
-        subprocess.call("./makeSKIRT.sh", cwd=self.repo_directory, shell=True)
-
 # -----------------------------------------------------------------

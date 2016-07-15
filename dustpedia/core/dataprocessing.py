@@ -467,6 +467,15 @@ class DustPediaDataProcessing(object):
 
         ###
 
+        # AFTER SPLIT, THIS CAN BE DONE:
+
+        #fs.remove_directory(download_images_path)
+        #fs.remove_directory(download_response_path)
+        #fs.remove_directory(download_background_path)
+        #fs.remove_directory(download_path)
+
+        ###
+
         # Get coordinate range for target image
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
 
@@ -516,7 +525,8 @@ class DustPediaDataProcessing(object):
         # Loop over bands, conducting SWarping function
         for band in bands_in_dict.keys():
 
-            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], working_path, temp_path, metadata_paths[band])  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
+            # Mosaicing
+            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], working_path, temp_path, metadata_paths[band], output_path)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
 
     # -----------------------------------------------------------------
 

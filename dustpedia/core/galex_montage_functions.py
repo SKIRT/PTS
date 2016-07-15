@@ -129,46 +129,49 @@ def GALEX_Zero(fitsfile_dir, convfile_dir, target_suffix):
 
 # -----------------------------------------------------------------
 
-def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
+def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict):
+#                   raw_file, working_path, temp_path_band, temp_reproject_path, band_dict
 
     """
     Function to clean GALEX tiles and create exposure maps
-    :param raw_file:
-    :param root_dir:
-    :param temp_dir:
-    :param out_dir:
-    :param band_dict:
     :return:
     """
 
+    # Inform the user ...
     print('Cleaning map ' + raw_file)
 
+    # Response and background paths for this band
+    response_path = fs.join(working_path, "response", band_dict['band_long'])
+    background_path = fs.join(working_path, "background", band_dict['band_long'])
+
+    temp_raw_path = fs.join(temp_path_band, "raw")
+
     # Read in image
-    in_fitsdata = fits.open(temp_dir+'/Raw/'+raw_file)
+    in_fitsdata = fits.open(fs.join(temp_raw_path, raw_file))
     in_image = in_fitsdata[0].data
     in_header = in_fitsdata[0].header
     in_fitsdata.close()
     out_image = in_image.copy()
 
     # Load and align response map
-    rr_path = root_dir + 'Response/' + band_dict['band_long'] + '/' + raw_file.replace('-int.fits','-rr.fits.gz')
+    rr_path = fs.join(response_path, raw_file.replace('-int.fits','-rr.fits.gz'))
     rr_fitsdata = fits.open(rr_path)
     rr_image = rr_fitsdata[0].data
     rr_zoom = np.float(out_image.shape[0]) / np.float(rr_image.shape[0])
     rr_image = scipy.ndimage.interpolation.zoom(rr_image, rr_zoom, order=0)
 
     # Clean image using response map
-    out_image[ np.where( rr_image<=1E-10 ) ] = np.NaN
+    out_image[ np.where( rr_image <= 1E-10 ) ] = np.NaN
 
     # Load and align sky background map
-    bg_path = root_dir + 'Background/' + band_dict['band_long'] + '/' + raw_file.replace('-int.fits','-skybg.fits.gz')
+    bg_path = fs.join(background_path, raw_file.replace('-int.fits','-skybg.fits.gz'))
     bg_fitsdata = fits.open(bg_path)
     bg_image = bg_fitsdata[0].data
     bg_zoom = np.float(out_image.shape[0]) / np.float(bg_image.shape[0])
     bg_image = scipy.ndimage.interpolation.zoom(bg_image, bg_zoom, order=0)
 
     # Clean image using sky background map
-    out_image[ np.where( bg_image<=1E-10 ) ] = np.NaN
+    out_image[ np.where( bg_image <= 1E-10 ) ] = np.NaN
 
     """
     # Load and align flag map
@@ -202,7 +205,7 @@ def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
     # Save cleaned image
     out_hdu = fits.PrimaryHDU(data=out_image, header=in_header)
     out_hdulist = fits.HDUList([out_hdu])
-    out_hdulist.writeto(temp_dir+'/Raw/'+raw_file, clobber=True)
+    out_hdulist.writeto(fs.join(temp_raw_path, raw_file), clobber=True)
 
     # Create convolved version of map, for later use in background-matching
     """
@@ -210,20 +213,23 @@ def GALEX_Clean(raw_file, root_dir, temp_dir, out_dir, band_dict):
         conv_image = scipy.ndimage.filters.gaussian_filter(out_image, 20)
     else:
     """
+
+    temp_convolve_path = fs.join(temp_path_band, "convolve")
+
     kernel = astropy.convolution.kernels.Tophat2DKernel(10)
     conv_image = astropy.convolution.convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True)#, interpolate_nan=True, normalize_kernel=True)
-    fits.writeto(temp_dir+'Convolve_Temp/'+raw_file, conv_image, in_header)
+    fits.writeto(fs.join(temp_convolve_path, raw_file), conv_image, in_header)
 
     # Load and align exposure time to create weight maps
     exp_image = out_image.copy()
     exp_image[ np.where( np.isnan(out_image)==False ) ] = (float(in_header['exptime']))**0.5
     exp_hdu = fits.PrimaryHDU(data=exp_image, header=in_header)
     exp_hdulist = fits.HDUList([exp_hdu])
-    exp_hdulist.writeto(out_dir+raw_file.replace('.fits','.wgt.fits'))
+    exp_hdulist.writeto(fs.join(temp_reproject_path, raw_file.replace('.fits','.wgt.fits')))
 
 # -----------------------------------------------------------------
 
-def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_path):
+def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_path, output_path):
 
     """
     Function to SWarp together GALEX tiles of a given source
@@ -233,6 +239,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     :param width:
     :param band_dict:
     :param working_path:
+    :param temp_path:
     :param meta_path:
     :return:
     """
@@ -241,47 +248,71 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     id_string = name + '_GALEX_' + band_dict['band_long']
 
     # Temporary directory
-    temp_dir = fs.join(temp_path, "temp_" + band_dict["band_long"])
+    temp_path_band = fs.join(temp_path, "temp_" + band_dict["band_long"])
 
     # Raw directory in temporary directory
-    raw_in_temp_dir = fs.join(temp_dir, "raw")
-    fs.create_directory(raw_in_temp_dir)
+    temp_raw_path = fs.join(temp_path_band, "raw")
+    fs.create_directory(temp_raw_path)
+
+    # Diffs_temp directory in temporary directory
+    temp_diffs_path = fs.join(temp_path_band, "diffs")
+    fs.create_directory(temp_diffs_path)
+
+    # Backsub_temp directory in temporary directory
+    temp_backsub_path = fs.join(temp_path_band, "backsub")
+    fs.create_directory(temp_backsub_path)
+
+    # SWarp temp directory in temporary directory
+    temp_swarp_path = fs.join(temp_path_band, "swarp")
+    fs.create_directory(temp_swarp_path)
+
+    # Reproject temp directory in temporary directory
+    temp_reproject_path = fs.join(temp_path_band, "reproject")
+    fs.create_directory(temp_reproject_path)
+
+    # Convolve temp directory in temporary directory
+    temp_convolve_path = fs.join(temp_path_band, "convolve")
+    fs.create_directory(temp_convolve_path)
 
     # Create storage directories for Montage and SWarp (deleting any prior), and set appropriate Python working directory
-    if os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir)
-    os.mkdir(temp_dir)
-    os.mkdir(temp_dir + 'Raw')
-    os.mkdir(temp_dir + 'Diffs_Temp')
-    os.mkdir(temp_dir + 'Backsub_Temp')
-    os.mkdir(temp_dir + 'SWarp_Temp')
-    os.mkdir(temp_dir + 'Reproject_Temp')
-    os.mkdir(temp_dir + 'Convolve_Temp')
-    os.chdir(temp_dir + 'Raw')
+    #os.mkdir(temp_dir + 'Raw')
+    #os.mkdir(temp_dir + 'Diffs_Temp')
+    #os.mkdir(temp_dir + 'Backsub_Temp')
+    #os.mkdir(temp_dir + 'SWarp_Temp')
+    #os.mkdir(temp_dir + 'Reproject_Temp')
+    #os.mkdir(temp_dir + 'Convolve_Temp')
+    #os.chdir(temp_dir + 'Raw')
+
+    ### CHANGE WORKING DIRECTORY TO RAW
+
+    os.chdir(temp_raw_path)
+
+    ###
 
     # Path to the overlap table
-    overlap_path = fs.join(temp_dir, "overlap_table.dat")
+    overlap_path = fs.join(temp_path_band, "overlap_table.dat")
 
     # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)
     montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra, dec=dec, radius=(0.5*width)*(2.0**0.5))
 
+    # Get file paths of overlapping observations
     overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype=('S500'))
 
     if len(overlapping_file_paths.shape)==0:
         overlapping_file_paths = [overlapping_file_paths.tolist()]
     for overlapping_file_path in overlapping_file_paths:
-        shutil.copy(overlapping_file_path, raw_in_temp_dir)
+        shutil.copy(overlapping_file_path, temp_raw_path)
 
     # Uncompress .fits.gz files
     #[os.system('gunzip '+ listfile) for listfile in os.listdir(raw_in_temp_dir)]
 
     # Ensure that at least one of the raw GALEX tiles has actual flux coverage at location of source
-    raw_files = os.listdir(raw_in_temp_dir)
+    raw_files = os.listdir(temp_raw_path)
     coverage = False
     for raw_file in raw_files:
 
         # Read in map
-        in_fitsdata = fits.open(fs.join(raw_in_temp_dir, raw_file))
+        in_fitsdata = fits.open(fs.join(temp_raw_path, raw_file))
         in_image = in_fitsdata[0].data
         in_header = in_fitsdata[0].header
         in_fitsdata.close()
@@ -305,67 +336,65 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         print('No GALEX '+ band_dict['band_long'] + ' coverage for ' + name)
         gc.collect()
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_path_band)
 
     elif coverage:
 
         # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
         print('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string)
 
-        #pool = mp.Pool(processes=6)
-        #for raw_file in raw_files:
-        #    pool.apply_async(GALEX_Clean, args=(raw_file, root_dir, temp_dir, temp_dir+'Reproject_Temp/', band_dict,))
-        #    #GALEX_Clean(raw_file, root_dir, temp_dir, temp_dir+'Reproject_Temp/', band_dict)
-        #pool.close()
-        #pool.join()
-
-
-
-        # CLEEAN
-        GALEX_Clean(raw_file, root_dir, temp_dir, temp_dir + "Reproject_Temp/", band_dict)
-
-
+        # CLEAN
+        for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
 
         # Create Montage FITS header
         location_string = str(ra) + ' ' + str(dec)
         pix_size = 3.2
-        montage.commands.mHdr(location_string, width, temp_dir + id_string + '_HDR', pix_size=pix_size)
 
-
+        header_path = fs.join(temp_path_band, id_string + '_HDR')
+        montage.commands.mHdr(location_string, width, header_path, pix_size=pix_size)
 
         # Count image files, and move to reprojection directory
         mosaic_count = 0
-        for listfile in os.listdir(temp_dir+'/Raw'):
+        for listfile in os.listdir(temp_raw_path):
             if '.fits' in listfile:
                 mosaic_count += 1
-        for listfile in os.listdir(temp_dir+'/Raw'):
+        for listfile in os.listdir(temp_raw_path):
             if '.fits' in listfile:
-                shutil.move(listfile, temp_dir+'Reproject_Temp')
+                shutil.move(listfile, temp_reproject_path)
 
         # If more than one image file, commence background-matching
         if mosaic_count > 1:
             print('Matching background of '+id_string+' maps')
-            GALEX_Zero(temp_dir+'Reproject_Temp', temp_dir+'Convolve_Temp', 'int.fits')
+            GALEX_Zero(temp_reproject_path, temp_convolve_path, 'int.fits')
+
+        #metatable_path = temp_dir + band + '_Image_Metadata_Table.dat'
+
+        metatable_path = meta_path
 
         # Reproject image and weight prior to coaddition
-        montage.commands.mImgtbl(temp_dir+'Reproject_Temp',  temp_dir+band+'_Image_Metadata_Table.dat', corners=True)
-        montage.commands.mProjExec(temp_dir+band+'_Image_Metadata_Table.dat', temp_dir+id_string+'_HDR', temp_dir+'SWarp_Temp', temp_dir+id_string+'_Proj_Stats.txt', raw_dir=temp_dir+'Reproject_Temp', debug=False, exact=True, whole=False)
+        montage.commands.mImgtbl(temp_reproject_path, metatable_path, corners=True)
+        proj_stats_path = fs.join(temp_path_band, id_string + "_Proj_Stats.txt")
+        montage.commands.mProjExec(metatable_path, header_path, temp_swarp_path, proj_stats_path, raw_dir=temp_reproject_path, debug=False, exact=True, whole=False)
 
         # Rename reprojected files for SWarp
-        for listfile in os.listdir(temp_dir+'SWarp_Temp'):
+        for listfile in os.listdir(temp_swarp_path):
             if '_area.fits' in listfile:
-                os.remove(temp_dir+'SWarp_Temp/'+listfile)
+                os.remove(fs.join(temp_swarp_path, listfile))
             elif 'hdu0_' in listfile:
-                os.rename(temp_dir+'SWarp_Temp/'+listfile, temp_dir+'SWarp_Temp/'+listfile.replace('hdu0_',''))
+                os.rename(fs.join(temp_swarp_path, listfile), fs.join(temp_swarp_path, listfile.replace('hdu0_','')))
 
         # Use SWarp to co-add images weighted by their error maps
-        print('Co-adding '+id_string+' maps')
+        print('Co-adding ' + id_string + ' maps')
         image_width_pixels = str(int((float(width)*3600.)/pix_size))
-        os.chdir(temp_dir+'/SWarp_Temp')
-        os.system('swarp *int.fits -IMAGEOUT_NAME '+id_string+'_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER '+str(ra)+','+str(dec)+' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE '+image_width_pixels+','+image_width_pixels+' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT')
+        os.chdir(temp_swarp_path)
+
+        # EXECUTE SWARP
+        swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME '+ id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra) + ',' + str(dec) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
+        os.system(swarp_command_string)
 
         # Remove null values, and save finalised map to output directory
-        in_fitsdata = fits.open(temp_dir+'/SWarp_Temp/'+id_string+'_SWarp.fits')
+        #in_fitsdata = fits.open(temp_dir+'/SWarp_Temp/'+id_string+'_SWarp.fits')
+        in_fitsdata = fits.open(fs.join(temp_swarp_path, id_string + "_SWarp.fits"))
         in_image = in_fitsdata[0].data
         in_header = in_fitsdata[0].header
         in_fitsdata.close()
@@ -375,115 +404,17 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         out_image[ np.where( out_image<=1E-8 ) ] = 0
         out_hdu = fits.PrimaryHDU(data=out_image, header=in_header)
         out_hdulist = fits.HDUList([out_hdu])
-        out_hdulist.writeto(root_dir + 'Montages/' + id_string + '.fits', clobber=True)
+
+        # Output
+        output_montages_path = fs.join(output_path, "montages")
+        fs.create_directory(output_montages_path)
+
+        # Write mosaic
+        out_hdulist.writeto(fs.join(output_montages_path, id_string + '.fits'), clobber=True)
 
         # Clean up
         print('Completed Montaging and SWarping of ' + id_string)
-        gc.collect()
-        shutil.rmtree(temp_dir)
-
-# -----------------------------------------------------------------
-
-def main():
-
-    # Define paths
-    root_dir = '/home/saruman/spx7cjc/DustPedia/GALEX/'
-
-    # Read in source catalogue
-    dustpedia_cat = np.genfromtxt(dropbox+'Work/Tables/DustPedia/DustPedia_LEDAWISE_Rehab-Herschel.csv', delimiter=',', names=True, usecols=[0,1,2,7], dtype=[('NAME','S50'), ('SOURCE_RA','f16'), ('SOURCE_DEC','f16'),('D25','f16')])
-    name_list = dustpedia_cat['objname']
-
-    # Read in list of already-Montaged sources
-    alrady_processed = np.genfromtxt('/home/saruman/spx7cjc/DustPedia/GALEX/GALEX_Already_Processed_List.dat', dtype=('S50')).tolist()
-
-    # State band information
-    bands_dict = {'FUV':{'band_short':'fd','band_long':'FUV'},
-                  'NUV':{'band_short':'nd','band_long':'NUV'}}
-
-    # Identify targets not yet processed
-    remaining_list = []
-    for i in range(0, name_list.shape[0]):
-        already_done = 0
-        name = name_list[i]
-        if name not in alrady_processed:
-            remaining_list.append(i)
-
-#    dustpedia_cat = dustpedia_cat[remaining_list]
-
-    name_list = dustpedia_cat['objname']
-    ra_list = dustpedia_cat['ra2000']
-    dec_list = dustpedia_cat['de2000']
-    d25_list = dustpedia_cat['d25']
-
-    # If not yet done, produce Montage image table of raw tiles
-    for band in bands_dict.keys():
-
-        if not os.path.exists(root_dir+band+'_Image_Metadata_Table.dat'):
-
-            print('Creating '+band+' image metadata table')
-            montage.commands.mImgtbl(root_dir+'Raw/'+band, root_dir+band+'_Image_Metadata_Table.dat', corners=True)
-
-    # Record time taken
-    time_total = 0.0
-    source_counter = 0.0
-    source_total = name_list.shape[0]
-    time_source_list = []
-
-    # Loop over each source
-    for i in range(0, dustpedia_cat.shape[0]):#np.where(name_list=='ESO358-059')[0]:
-
-        name = name_list[i]
-        ra = ra_list[i]
-        dec = dec_list[i]
-        d25 = d25_list[i]
-        time_start = time.time()
-        if d25<6.0:
-            width = 0.5
-        elif d25>=6.0:
-            width = 1.0
-
-        print('Processing source ' + name)
-
-        # Check if source is in list of already-montaged sources
-        if name in alrady_processed:
-            print(name+' already processed')
-            continue
-        source_counter += 1.0
-
-        # Check if any GALEX tiles have coverage of source in question; if not, continue
-        bands_in_dict = {}
-        for band in bands_dict.keys():
-            montage.commands_extra.mCoverageCheck(root_dir+band+'_Image_Metadata_Table.dat', root_dir+'Temporary_Files/'+name+'_'+band+'_Overlap_Check.dat', mode='point', ra=ra, dec=dec)
-            if sum(1 for line in open(root_dir+'Temporary_Files/'+name+'_'+band+'_Overlap_Check.dat'))<=3:
-                print('No GALEX '+band+' coverage for ' + name)
-            else:
-                bands_in_dict[band] = bands_dict[band]
-            os.remove(root_dir+'Temporary_Files/'+name+'_'+band+'_Overlap_Check.dat')
-        if len(bands_in_dict)==0:
-            alrady_processed_file = open('/home/saruman/spx7cjc/DustPedia/GALEX/GALEX_Already_Processed_List.dat', 'a')
-            alrady_processed_file.write(name+'\n')
-            alrady_processed_file.close()
-            continue
-
-        # Loop over bands, conducting SWarping function
-        for band in bands_in_dict.keys():
-            mosaic_galex(name, ra, dec, width, bands_dict[band], root_dir)#pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
-
-        # Record that processing of souce has been compelted
-        alrady_processed_file = open('/home/saruman/spx7cjc/DustPedia/GALEX/GALEX_Already_Processed_List.dat', 'a')
-        alrady_processed_file.write(name+'\n')
-        alrady_processed_file.close()
-
-        # Clean memory, and return timings
-        gc.collect()
-        time_source = time.time() - time_start
-        time_source_list.append(time_source)
-        time_total += time_source
-        time_source_mins = time_source / 60.0
-        time_source_mean = time_total / source_counter
-        time_source_median = np.median( time_source_list )
-        time_remaining_est_mean = ( ( source_total - source_counter ) * time_source_mean ) / 3600.0
-        time_remaining_est_median = ( ( source_total - source_counter ) * time_source_median ) / 3600.0
-        print('Estimated time remaining from mean: '+str(time_remaining_est_mean)[:7]+' hours (estimate from median: '+str(time_remaining_est_median)[:7]+' hours)')
+        #gc.collect()
+        #shutil.rmtree(temp_dir)
 
 # -----------------------------------------------------------------
