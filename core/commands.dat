@@ -1,0 +1,3 @@
+# Command | Configuration | Class | Description
+update_pts | update | prep.update.PTSUpdater | Update PTS locally or remotely
+update_skirt | update | prep.update.SKIRTUpdater | Update SKIRT locally or remotely

@@ -20,7 +20,7 @@ from ..basics.remote import Remote
 
 # -----------------------------------------------------------------
 
-class SkirtUpdater(Configurable):
+class SKIRTUpdater(Configurable):
     
     """
     This class ...
@@ -33,7 +33,7 @@ class SkirtUpdater(Configurable):
         """
         
         # Call the constructor of the base class
-        super(SkirtUpdater, self).__init__(config)
+        super(SKIRTUpdater, self).__init__(config)
 
         # Create the SKIRT execution context
         #self.skirt = SkirtExec()
@@ -159,13 +159,13 @@ class PTSUpdater(Configurable):
         self.remote.change_cwd(pts_git_path)
 
         # Git pull
-        #self.remote.execute("git pull origin master", output=True)
-
         self.remote.ssh.sendline("git pull origin master")
         self.remote.ssh.expect(":")
 
-        self.remote.ssh.sendline("tokiotokio")
+        if "Enter passphrase for key" in self.remote.ssh.before:
 
-        self.remote.ssh.prompt()
+            self.remote.execute(self.config.pubkey_password, show_output=True)
+
+        else: self.remote.prompt()
 
 # -----------------------------------------------------------------
