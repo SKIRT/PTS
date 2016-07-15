@@ -34,6 +34,7 @@ from ..animation.imageblink import ImageBlinkAnimation
 from ..animation.sourceextraction import SourceExtractionAnimation
 from ..core.kernel import ConvolutionKernel
 from ..core.remote import RemoteImage
+from ..core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -624,6 +625,9 @@ class ImagePreparer(OldConfigurable):
 
             # Check that there are no infinities or nans in the result
             assert not np.any(np.isinf(calibration_frame)) and not np.any(np.isnan(calibration_frame))
+
+            # Make frame from numpy array
+            calibration_frame = Frame(calibration_frame)
 
             # -----------------------------------------------------------------
 
