@@ -240,9 +240,10 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     # Declare directories
     id_string = name + '_GALEX_' + band_dict['band_long']
 
-
+    # Temporary directory
     temp_dir = fs.join(temp_path, "temp_" + band_dict["band_long"])
 
+    # Raw directory in temporary directory
     raw_in_temp_dir = fs.join(temp_dir, "raw")
     fs.create_directory(raw_in_temp_dir)
 
@@ -250,14 +251,15 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
     os.mkdir(temp_dir)
-    os.mkdir(temp_dir+'Raw')
-    os.mkdir(temp_dir+'Diffs_Temp')
-    os.mkdir(temp_dir+'Backsub_Temp')
-    os.mkdir(temp_dir+'SWarp_Temp')
-    os.mkdir(temp_dir+'Reproject_Temp')
-    os.mkdir(temp_dir+'Convolve_Temp')
-    os.chdir(temp_dir+'Raw')
+    os.mkdir(temp_dir + 'Raw')
+    os.mkdir(temp_dir + 'Diffs_Temp')
+    os.mkdir(temp_dir + 'Backsub_Temp')
+    os.mkdir(temp_dir + 'SWarp_Temp')
+    os.mkdir(temp_dir + 'Reproject_Temp')
+    os.mkdir(temp_dir + 'Convolve_Temp')
+    os.chdir(temp_dir + 'Raw')
 
+    # Path to the overlap table
     overlap_path = fs.join(temp_dir, "overlap_table.dat")
 
     # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)

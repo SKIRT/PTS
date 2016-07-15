@@ -40,10 +40,10 @@ arguments = reader.get_arguments()
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if config.arguments.report else None
+logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if config.report else None
 
 # Determine the log level
-level = "DEBUG" if config.arguments.debug else "INFO"
+level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
