@@ -5,8 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.prep.installation Contains the SkirtInstaller class.
-#
+## \package pts.core.prep.installation Contains the SKIRTInstaller and PTSInstaller classes.
 
 # -----------------------------------------------------------------
 
@@ -15,9 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import urllib
+from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
 from ..simulation.remote import Remote
 from ..tools import introspection
@@ -26,7 +26,107 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SkirtInstaller(OldConfigurable):
+# For SSH key:
+# eval $(ssh-agent)
+# ssh-add
+
+# -----------------------------------------------------------------
+
+class Installer(Configurable):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, config=None):
+
+        """
+        This function ...
+        """
+
+        # Call the constructor of the base class
+        super(Installer, self).__init__(config)
+
+        # The remote execution environment
+        self.remote = None
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
+        """
+        This function ...
+        """
+
+        # 1. Call the setup function
+        self.setup()
+
+        # 2. Install
+        self.install()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(Installer, self).setup()
+
+        # Setup the remote execution environment if necessary
+        if self.config.remote is not None:
+
+            # Create and setup the remote execution environment
+            self.remote = Remote()
+            self.remote.setup(self.config.remote)
+
+    # -----------------------------------------------------------------
+
+    def install(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Install locally or remotely
+        if self.remote is None: self.install_local()
+        else: self.install_remote()
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def install_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def install_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+class SKIRTInstaller(Installer):
 
     """
     This class ...
@@ -39,9 +139,7 @@ class SkirtInstaller(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SkirtInstaller, self).__init__(config, "core")
-
-        # -- Attributes --
+        super(SKIRTInstaller, self).__init__(config)
 
         # The path to the qmake executable corresponding to the most recent Qt installation
         self.qmake_path = None
@@ -284,5 +382,13 @@ class SkirtRemoteInstaller(OldConfigurable):
 
         # If SKIRT is to be installed on this system
         else: self.skirt.install(self.config.private)
+
+# -----------------------------------------------------------------
+
+class PTSInstaller(Installer):
+
+    """
+    This function ...
+    """
 
 # -----------------------------------------------------------------

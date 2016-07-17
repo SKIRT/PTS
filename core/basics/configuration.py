@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import ABCMeta, abstractmethod
 import sys
 import argparse
 from collections import OrderedDict
@@ -21,6 +22,7 @@ from collections import OrderedDict
 from .map import Map
 from ..tools import parsing
 from ..tools import filesystem as fs
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -117,16 +119,21 @@ class ConfigurationDefinition(object):
             # (description, letter)
             description = self.flags[name][0]
             letter = self.flags[name][1]
+            default = self.flags[name][2] # True or False
 
             # Add prefix
             if self.prefix is not None: name = self.prefix + "/" + name
 
             # Add the argument
-            if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
-            else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+            if letter is None:
+                if default is False: parser.add_argument("--" + name, action="store_true", help=description)
+                else: parser.add_argument("--!" + name, action="store_true", help=description)
+            else:
+                if default is False: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+                else: parser.add_argument("-!" + letter, "--!" + name, action="store_true", help=description)
 
         # Add arguments of sections
-        for section_name in self.sections: self.sections[section_name].set_arguments(parser)
+        for section_name in self.sections: self.sections[section_name][0].set_arguments(parser)
 
     # -----------------------------------------------------------------
 
@@ -140,7 +147,7 @@ class ConfigurationDefinition(object):
         """
 
         # Add fixed
-        for name in self.fixed: settings[name] = self.fixed[name]
+        for name in self.fixed: settings[name] = self.fixed[name][0]
 
         # Add required
         for name in self.required:
@@ -181,33 +188,37 @@ class ConfigurationDefinition(object):
             settings[name] = Map()
 
             # Recursively add the settings
-            self.sections[name].get_settings(settings[name], arguments)
+            definition = self.sections[name][0]
+            description = self.sections[name][1]
+            definition.get_settings(settings[name], arguments)
 
     # -----------------------------------------------------------------
 
-    def add_section(self, name):
+    def add_section(self, name, description):
 
         """
         This function ...
         :param name:
+        :param description:
         :return:
         """
 
         # Add the section
-        self.sections[name] = ConfigurationDefinition(prefix=name)
+        self.sections[name] = (ConfigurationDefinition(prefix=name), description)
 
     # -----------------------------------------------------------------
 
-    def add_fixed(self, name, value):
+    def add_fixed(self, name, description, value):
 
         """
         This function ...
         :param name:
+        :param description:
         :param value:
         :return:
         """
 
-        self.fixed[name] = value
+        self.fixed[name] = (description, value)
 
     # -----------------------------------------------------------------
 
@@ -280,26 +291,31 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def add_flag(self, name, description, letter=None):
+    def add_flag(self, name, description, default=False, letter=None):
 
         """
         This function ...
         :param name:
         :param description:
+        :param default:
         :param letter:
         :return:
         """
 
         # Add
-        self.flags[name] = (description, letter)
+        self.flags[name] = (description, letter, default)
 
 # -----------------------------------------------------------------
 
-class ConfigurationReader(object):
+class ConfigurationSetter(object):
 
     """
-    This function ...
+    This class ...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, name, description=None, add_logging=True, add_cwd=True, log_path=None):
 
@@ -312,59 +328,32 @@ class ConfigurationReader(object):
         :param log_path:
         """
 
+        # Set the name and description
+        self.name = name
+        self.description = description
+
         # The configuration definition
         self.definition = None
 
-        # Create the command-line parser
-        self.parser = argparse.ArgumentParser(prog=name, description=description)
-
-        # The parsed arguments
-        self.arguments = None
-
-        # ...
+        # Set options
         self.add_logging = add_logging
         self.add_cwd = add_cwd
         self.log_path = log_path
 
-        # The config
-        self.config = None
+        # The configuration
+        self.config = Map()
 
     # -----------------------------------------------------------------
 
-    @staticmethod
-    def get_arguments():
+    @abstractmethod
+    def run(self):
 
         """
         This function ...
         :return:
         """
 
-        return sys.argv[1:]
-
-    # -----------------------------------------------------------------
-
-    def read(self, definition):
-
-        """
-        This function ...
-        :param definition:
-        :return:
-        """
-
-        # Set definition
-        self.definition = definition
-
-        # Set logging
-        self.set_logging_and_cwd()
-
-        # Parse
-        self.parse()
-
-        # Create config
-        self.create_config()
-
-        # Return the config
-        return self.config
+        pass
 
     # -----------------------------------------------------------------
 
@@ -380,12 +369,132 @@ class ConfigurationReader(object):
 
             # Log path to absolute path
             log_path = fs.absolute(self.log_path) if self.log_path is not None else fs.cwd()
-            self.definition.add_fixed("log_path", log_path)
+            self.definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
             self.definition.add_flag("debug", "enable debug output")
             self.definition.add_flag("report", "write a report file")
 
         # Add the path to the current working directory
-        if self.add_cwd: self.definition.add_fixed("path", fs.cwd())
+        if self.add_cwd: self.definition.add_fixed("path", "the working directory", fs.cwd())
+
+# -----------------------------------------------------------------
+
+class InteractiveConfigurationSetter(ConfigurationSetter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+
+        """
+        The constructor ...
+        :param name:
+        :param description:
+        :param add_logging:
+        :param add_cwd:
+        :param log_path:
+        """
+
+        # Call the constructor of the base class
+        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+
+    # -----------------------------------------------------------------
+
+    def run(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set the definition
+        self.definition = definition
+
+        # Set logging and cwd
+        self.set_logging_and_cwd()
+
+        # Do interactive
+        self.interactive()
+
+        # Return the config
+        return self.config
+
+    # -----------------------------------------------------------------
+
+    def interactive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        add_settings_interactive(self.config, self.definition)
+
+# -----------------------------------------------------------------
+
+class ArgumentConfigurationSetter(ConfigurationSetter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param add_logging:
+        :param add_cwd:
+        :param log_path:
+        """
+
+        # Call the constructor of the base class
+        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+
+        # Create the command-line parser
+        self.parser = argparse.ArgumentParser(prog=name, description=description)
+
+        # The parsed arguments
+        self.arguments = None
+
+    # -----------------------------------------------------------------
+
+    @staticmethod
+    def get_arguments():
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sys.argv[1:]
+
+    # -----------------------------------------------------------------
+
+    def run(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set definition
+        self.definition = definition
+
+        # Set logging and cwd
+        self.set_logging_and_cwd()
+
+        # Parse
+        self.parse()
+
+        # Create config
+        self.create_config()
+
+        # Return the config
+        return self.config
 
     # -----------------------------------------------------------------
 
@@ -411,9 +520,6 @@ class ConfigurationReader(object):
         :return:
         """
 
-        # Create the settings Map
-        self.config = Map()
-
         # Add the settings
         self.definition.get_settings(self.config, self.arguments)
 
@@ -437,9 +543,339 @@ def get_real_value(default, user_type):
     """
     This function ...
     :param default:
+    :param user_type:
     :return:
     """
 
     return user_type(default)
+
+# -----------------------------------------------------------------
+
+def load_definition(configfile):
+
+    """
+    This function ...
+    :param configfile:
+    :return:
+    """
+
+    # Initialize the configuration definition
+    definition = ConfigurationDefinition()
+
+    state = 0
+    description = None
+
+    #with open(path, 'r') as configfile:
+
+    # Loop over the lines in the file
+    for line in configfile:
+
+        # Empty line
+        if line == "":
+            assert state == 2  # 2 means we got everything for a certain name
+            state = 0
+            description = None
+            continue
+
+        # Description
+        if line.startswith("#"):
+
+            if description is not None:
+                assert state == 1
+                state = 1
+                description += line.split("#")[1].strip()
+            else:
+                assert state == 0
+                state = 1
+                description = line.split("#")[1].strip()
+            continue
+
+        elif ":" in line:
+
+            before, after = line.split(":")
+
+            if after.strip() == "":
+
+                state = 3  # state 3: just before "{" is expected to start subdefinition
+                continue
+
+            else:
+
+                state = 2
+                name = before.split("[")[0].strip()
+                specification = before.split("[")[1].split("]")[0].strip().split(", ")
+                value = eval(after)
+
+                kind = specification[0]
+
+                if kind == "fixed":
+
+                    definition.add_fixed()
+
+                elif kind == "required":
+
+                    definition.add_required(name, )
+
+                elif kind == "pos_optional":
+
+                    definition.add_positional_optional()
+
+                elif kind == "optional":
+
+                    definition.add_optional()
+
+                elif kind == "flag":
+
+                    definition.add_flag()
+
+                else:
+                    raise ValueError("Invalid kind of argument: " + kind)
+
+        elif line.startswith("{"):
+
+            assert state == 3
+
+            state = 4
+
+# -----------------------------------------------------------------
+
+def write_definition(definition, configfile, indent=""):
+
+    """
+    This function ...
+    :param definition:
+    :param configfile:
+    :param indent:
+    :return:
+    """
+
+    # Fixed
+    for name in definition.fixed:
+
+        description = definition.fixed[name][0]
+        value = definition.fixed[name][1]
+
+        print(indent + "# " + description, file=configfile)
+        print(indent + name + " [fixed]: " + str(value), file=configfile)
+
+    # Required
+    for name in definition.required:
+
+        real_type = definition.required[name][0]
+        description = definition.required[name][1]
+        choices = definition.required[name][2]
+
+        print(indent + "# " + description, file=configfile)
+        print(indent + name + " [required, " + str(real_type) + "]: None", file=configfile)
+
+    # Positional optional
+    for name in definition.pos_optional:
+
+        real_type = definition.pos_optional[name][0]
+        description = definition.pos_optional[name][1]
+        default = definition.pos_optional[name][2]
+        choices = definition.pos_optional[name][3]
+
+        print(indent + "# " + description, file=configfile)
+        print(indent + name + " [pos_optional, " + str(real_type) + "]: " + str(default), file=configfile)
+
+    # Optional
+    for name in definition.optional:
+
+        real_type = definition.optional[name][0]
+        description = definition.optional[name][1]
+        default = definition.optional[name][2]
+        letter = definition.optional[name][3]
+
+        print(indent + "# " + description, file=configfile)
+        print(indent + name + " [optional, " + str(real_type) + "]: " + str(default), file=configfile)
+
+    # Flag
+    for name in definition.flags:
+
+        # (description, letter)
+        description = definition.flags[name][0]
+        letter = definition.flags[name][1]
+        default = definition.flags[name][2]  # True or False
+
+        print(indent + "# " + description, file=configfile)
+        print(indent + name + " [flag]: " + str(default), file=configfile)
+
+    # Sections
+    for section_name in definition.sections:
+
+        section_definition = definition.sections[section_name][0]
+        section_description = definition.sections[section_name][1]
+
+        print(indent + "# " + section_description, file=configfile)
+        print(indent + section_name + "[section]:", file=configfile)
+        print(indent + "{", file=configfile)
+
+        # Write the section definition
+        write_definition(section_definition, configfile, indent + "    ")
+
+        print(indent + "}", file=configfile)
+
+# -----------------------------------------------------------------
+
+def add_settings_interactive(config, definition):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Fixed
+    for name in definition.fixed:
+
+        value = definition.fixed[name][0]
+        description = definition.fixed[name][1]
+
+        # Give name and description
+        log.success(name + ": " + description + ")")
+
+        # Inform the user
+        log.info("Using fixed value of " + str(value))
+
+        # Set the value
+        config[name] = value
+
+    # Required
+    for name in definition.required:
+
+        real_type = definition.required[name][0]
+        description = definition.required[name][1]
+        choices = definition.required[name][2]
+
+        # Give name and description
+        log.success(name + ": " + description + ")")
+
+        if choices is not None:
+
+            log.info("Choose one of the options")
+
+            for index, label in enumerate(choices):
+                log.info(" - [" + str(index) + "] " + label)
+            log.info("")
+
+            # Get the number of the choice
+            answer = raw_input("   : ")
+            index = int(answer)
+            value = choices[index]
+
+        else:
+
+            log.info("Provide a value")
+
+            answer = raw_input("   : ")
+            value = real_type(answer)
+
+        # Set the value
+        config[name] = value
+
+    # Positional optional
+    for name in definition.pos_optional:
+
+        real_type = definition.pos_optional[name][0]
+        description = definition.pos_optional[name][1]
+        default = definition.pos_optional[name][2]
+        choices = definition.pos_optional[name][3]
+
+        # Give name and description
+        log.success(name + ": " + description + ")")
+
+        #
+        log.info("Press ENTER to use the default value (" + str(default) + ")")
+
+        if choices is not None:
+
+            log.info("or choose one of the options")
+
+            for index, label in enumerate(choices):
+                log.info(" - [" + str(index) + "] " + label)
+            log.info("")
+
+            # Get the number of the choice
+            answer = raw_input("   : ")
+
+            if answer == "": value = default
+            else:
+                index = int(answer)
+                value = choices[index]
+
+        else:
+
+            log.info("or provide another value")
+
+            answer = raw_input("   : ")
+            if answer == "": value = default
+            else: value = real_type(answer)
+
+        # Set the value
+        config[name] = value
+
+    # Optional
+    for name in definition.optional:
+
+        # (real_type, description, default, letter)
+        real_type = definition.optional[name][0]
+        description = definition.optional[name][1]
+        default = definition.optional[name][2]
+        letter = definition.optional[name][3]
+
+        # Give name and description
+        log.success(name + ": " + description + ")")
+
+        #
+        log.info("Press ENTER to use the default value (" + str(default) + ") or give another value")
+
+        answer = raw_input("   : ")
+        if answer == "": value = default
+        else: value = real_type(answer)
+
+        # Set the value
+        config[name] = value
+
+    # Flag
+    for name in definition.flags:
+
+        # (description, letter)
+        description = definition.flags[name][0]
+        letter = definition.flags[name][1]
+        default = definition.flags[name][2]  # True or False
+
+        # Give name and description
+        log.success(name + ": " + description)
+
+        # Ask the question
+        log.info("Do you want '" + name + "' to be enabled or not (y or n) or press ENTER for the default (" + str(default) + ")")
+
+        answer = raw_input("   : ")
+
+        if answer == "": value = default
+        elif answer == "y": value = True
+        elif answer == "n": value = False
+        elif answer == "yes": value = True
+        elif answer == "no": value = False
+        else: raise ValueError("Invalid input (must be y or n)")
+
+        # Set the value
+        config[name] = value
+
+    # Add the configuration settings of the various sections
+    for name in definition.sections:
+
+        # Create a map for the settings
+        config[name] = Map()
+
+        # Recursively add the settings
+        section_definition = definition.sections[name][0]
+        section_description = definition.sections[name][1]
+
+        # Give name and description
+        log.success(name + ": " + section_description + " (section)")
+
+        # Add the settings
+        add_settings_interactive(config[name], section_definition)
 
 # -----------------------------------------------------------------

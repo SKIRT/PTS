@@ -39,10 +39,22 @@ from pts.core.tools import time
 
 # -----------------------------------------------------------------
 
-# Get the name of the script to execute
-script_name = sys.argv[1] if len(sys.argv) > 1 else None
+script_name = None
+interactive = None
+if len(sys.argv) > 1:
 
-# Find matches in existing do scripts
+    if sys.argv[1] == "-q":
+
+        script_name = sys.argv[2] if len(sys.argv) > 2 else None
+        interactive = True
+
+    else:
+
+        # Get the name of the script to execute
+        script_name = sys.argv[1]
+        interactive = False
+
+# Find possible PTS commands
 scripts = introspection.get_scripts()
 tables = introspection.get_arguments_tables()
 
@@ -52,6 +64,7 @@ if script_name is None:
     introspection.show_all_available(scripts, tables)
     exit()
 
+# Find matches
 matches = introspection.find_matches_scripts(script_name, scripts)
 table_matches = introspection.find_matches_tables(script_name, tables)
 
@@ -91,7 +104,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     # Import things
     from pts.core.tools import logging
-    from pts.core.basics.configuration import ConfigurationReader
+    from pts.core.basics.configuration import ArgumentConfigurationSetter, InteractiveConfigurationSetter
 
     ## GET THE CONFIGURATION DEFINITION
 
@@ -105,11 +118,12 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     ## CREATE THE CONFIGURATION
 
-    # Create the ConfigurationReader
-    reader = ConfigurationReader(command_name, description, log_path="log")
+    # Create the configuration setter
+    if interactive: setter = InteractiveConfigurationSetter(command_name, description, log_path="log")
+    else: setter = ArgumentConfigurationSetter(command_name, description, log_path="log")
 
     # Create the configuration from the definition and from reading the command line arguments
-    config = reader.read(definition)
+    config = setter.run(definition)
 
     ## SETUP LOGGER
 

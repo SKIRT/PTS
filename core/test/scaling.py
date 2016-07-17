@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 from ..basics.map import Map
 from ..simulation.definition import SingleSimulationDefinition
 from ..launch.parallelization import Parallelization
-from ..basics.configurable import NewConfigurable
+from ..basics.configurable import Configurable
 from ..tools import time
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -61,7 +61,7 @@ def subset_sum(numbers, target, partial=[]):
 
 # -----------------------------------------------------------------
 
-class ScalingTest(NewConfigurable):
+class ScalingTest(Configurable):
 
     """
     An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
