@@ -114,7 +114,7 @@ for dependency in sorted(dependencies, key=str.lower):
     # Check presency and version
     if dependency in packages:
         present = True
-        if arguments.version: version = packages[dependency]
+        version = packages[dependency] if arguments.version else None
     else:
         present = introspection.is_present_package(dependency)
         version = None
