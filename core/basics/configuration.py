@@ -26,6 +26,62 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
+def load_config(config, path):
+
+    """
+    This function ...
+    :param config:
+    :param path:
+    :return:
+    """
+
+# -----------------------------------------------------------------
+
+def load_mapping(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+# -----------------------------------------------------------------
+
+def write_config(config, path):
+
+    with open(path, 'w') as configfile:
+
+        write_mapping(configfile, config)
+
+# -----------------------------------------------------------------
+
+def write_mapping(file, mapping, indent=""):
+
+    """
+    This function ...
+    :param file:
+    :param mapping:
+    :param indent:
+    :return:
+    """
+
+    for name in mapping:
+
+        value = mapping[name]
+
+        if isinstance(value, Map):
+
+            print(indent + name + ":", file=file)
+            print(indent + "{", file=file)
+            write_mapping(file, value, indent=indent+"    ")
+            print(indent + "}", file=file)
+
+        else: print(indent + name + ": " + str(mapping[name]), file=file)
+
+        print("", file=file)
+
+# -----------------------------------------------------------------
+
 class ConfigurationDefinition(object):
 
     """
@@ -59,6 +115,39 @@ class ConfigurationDefinition(object):
 
         # Dictionary of flags
         self.flags = OrderedDict()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create the definition
+        definition = cls()
+
+        # Load the definition
+        with open(path, 'r') as configfile: load_definition(configfile, definition)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Write the definition
+        with open(path, 'w') as configfile: write_definition(self, configfile)
 
     # -----------------------------------------------------------------
 
@@ -551,7 +640,7 @@ def get_real_value(default, user_type):
 
 # -----------------------------------------------------------------
 
-def load_definition(configfile):
+def load_definition(configfile, definition):
 
     """
     This function ...
@@ -560,7 +649,7 @@ def load_definition(configfile):
     """
 
     # Initialize the configuration definition
-    definition = ConfigurationDefinition()
+    #definition = ConfigurationDefinition()
 
     state = 0
     description = None

@@ -36,36 +36,8 @@ def find_host_ids():
     hosts_directory = fs.join(introspection.pts_user_dir, "hosts")
     if not fs.is_directory(hosts_directory): fs.create_directory(hosts_directory, recursive=True)
 
-    # If the hosts directory is empty, place a template host configuration file there and exit with an error
-    if len([item for item in os.listdir(hosts_directory) if fs.is_file(fs.join(hosts_directory, item))]) == 0:
-
-        config = configuration.new()
-        config.name = "server.institute.com"
-        config.user = "user000"
-        config.password = None
-        config.output_path = "~/DATA/SKIRT"
-        config.scheduler = True
-        config.mpi_command = "mpirun"
-        config.force_process_binding = False
-        config.use_hyperthreading = False
-        config.modules = ["examplemodule/2016/version2", "examplemodule2/2016/version0.1.3"]
-        config.clusters.default = "cluster_a"
-        config.clusters.cluster_a.cores = 16
-        config.clusters.cluster_b.cores = 32
-
-        config_file_path = fs.join(hosts_directory, "template.cfg")
-        config_file = open(config_file_path, 'w')
-        config.save(config_file)
-
-        log.error("No remote configuration files were found. Placing a template into PTS/user/hosts. Adjust it"
-                  " for the remote hosts you want to use before using 'pts launch' or 'pts status'.")
-        exit()
-
     # Loop over the configuration files in the hosts directory
     for filename in os.listdir(hosts_directory):
-
-        # Skip the template configuration file
-        if filename == "template.cfg": continue
 
         # Determine the full path to the host file
         file_path = fs.join(hosts_directory, filename)

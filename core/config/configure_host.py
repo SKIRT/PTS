@@ -13,8 +13,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create configuration definition
 definition = ConfigurationDefinition()
 
-# Add optional
-definition.add_optional("remote", str, "update on a remote system")
+# Add required
+definition.add_required("name", str, "the name to give to the host")
 
 # -----------------------------------------------------------------
-

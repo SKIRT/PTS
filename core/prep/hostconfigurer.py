@@ -16,6 +16,16 @@ from __future__ import absolute_import, division, print_function
 from ..basics.configurable import Configurable
 from ..tools.logging import log
 from ..tools import introspection
+from ..tools import filesystem as fs
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, write_config
+
+# -----------------------------------------------------------------
+
+# Determine the path to the template host configuration file
+template_path = fs.join(introspection.pts_config_dir("core"), "host.cfg")
+
+# Determine the path to the user hosts directory
+hosts_directory = fs.join(introspection.pts_user_dir, "hosts")
 
 # -----------------------------------------------------------------
 
@@ -35,6 +45,15 @@ class HostConfigurer(Configurable):
         # Call the constructor of the base class
         super(HostConfigurer, self).__init__(config)
 
+        # The configuration setter
+        self.setter = InteractiveConfigurationSetter("host")
+
+        # The configuration definition
+        self.definition = None
+
+        # The host configuration
+        self.host_config = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -45,6 +64,15 @@ class HostConfigurer(Configurable):
 
         # 1. Call the setup function
         self.setup()
+
+        # 2. Load the host template configuration
+        self.load_template()
+
+        # 3. Prompt for the settings
+        self.prompt()
+
+        # 4. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -59,5 +87,54 @@ class HostConfigurer(Configurable):
         super(HostConfigurer, self).setup()
 
     # -----------------------------------------------------------------
+
+    def load_template(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the configuration template
+        self.definition = ConfigurationDefinition.from_file(template_path)
+
+    # -----------------------------------------------------------------
+
+    def prompt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the configuration
+        self.config = self.setter.run(self.definition)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the host configuration
+        self.write_config()
+
+    # -----------------------------------------------------------------
+
+    def write_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the host file
+        path = fs.join(hosts_directory, self.config.name + ".cfg")
+
+        # Write the host configuration
+        write_config(self.host_config, path)
 
 # -----------------------------------------------------------------
