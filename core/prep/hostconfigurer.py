@@ -21,8 +21,11 @@ from ..basics.configuration import ConfigurationDefinition, InteractiveConfigura
 
 # -----------------------------------------------------------------
 
+# The path to the hosts configuration directory
+hosts_config_path = fs.join(introspection.pts_config_dir("core"), "hosts")
+
 # Determine the path to the template host configuration file
-template_path = fs.join(introspection.pts_config_dir("core"), "host.cfg")
+raw_template_path = fs.join(hosts_config_path, "template.cfg")
 
 # Determine the path to the user hosts directory
 hosts_directory = fs.join(introspection.pts_user_dir, "hosts")
@@ -94,6 +97,10 @@ class HostConfigurer(Configurable):
         This function ...
         :return:
         """
+
+        # Determine template path (raw template for new host or one of the preconfigured templates)
+        if self.config.preconfigured is None: template_path = raw_template_path
+        else: template_path = fs.join(hosts_config_path, self.config.preconfigured + ".cfg")
 
         # Load the configuration template
         self.definition = ConfigurationDefinition.from_file(template_path)

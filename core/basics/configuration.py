@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from abc import ABCMeta, abstractmethod
+from types import NoneType
 import sys
 import argparse
 from collections import OrderedDict
@@ -26,7 +27,83 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-def load_config(config, path):
+def load_config(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    config = Map()
+    with open(path, 'r') as configfile: load_mapping(config, configfile)
+
+    # Return the config
+    return config
+
+# -----------------------------------------------------------------
+
+def load_mapping(mappingfile, mapping, indent=""):
+
+    """
+    This function ...
+    :param mappingfile
+    :param mapping:
+    :param indent:
+    :return:
+    """
+
+    # STATES:
+    # state 0: empty line
+    # state 1: description
+    # state 2: completed entry
+    # state 3:
+
+    state = 0
+    description = None
+
+    for line in mappingfile:
+
+        # Empty line
+        if line == "":
+
+            assert state == 2  # 2 means we got everything for a certain name
+            state = 0
+            description = None
+            continue
+
+        # Description
+        if line.startswith("#"):
+
+            if description is not None:
+                assert state == 1
+                state = 1
+                description += line.split("#")[1].strip()
+            else:
+                assert state == 0
+                state = 1
+                description = line.split("#")[1].strip()
+            continue
+
+        elif ":" in line:
+
+            before, after = line.split(":")
+
+            if after.strip() == "":
+
+                state = 3  # state 3: just before "{" is expected to start subdefinition
+                continue
+
+            else:
+
+                state = 2
+                name = before.split("[")[0].strip()
+                specification = before.split("[")[1].split("]")[0].strip().split(", ")
+                value = eval(after)
+
+# -----------------------------------------------------------------
+
+def write_config(config, path):
 
     """
     This function ...
@@ -35,31 +112,15 @@ def load_config(config, path):
     :return:
     """
 
+    with open(path, 'w') as configfile: write_mapping(configfile, config)
+
 # -----------------------------------------------------------------
 
-def load_mapping(path):
+def write_mapping(mappingfile, mapping, indent=""):
 
     """
     This function ...
-    :param path:
-    :return:
-    """
-
-# -----------------------------------------------------------------
-
-def write_config(config, path):
-
-    with open(path, 'w') as configfile:
-
-        write_mapping(configfile, config)
-
-# -----------------------------------------------------------------
-
-def write_mapping(file, mapping, indent=""):
-
-    """
-    This function ...
-    :param file:
+    :param mappingfile:
     :param mapping:
     :param indent:
     :return:
@@ -71,14 +132,14 @@ def write_mapping(file, mapping, indent=""):
 
         if isinstance(value, Map):
 
-            print(indent + name + ":", file=file)
-            print(indent + "{", file=file)
-            write_mapping(file, value, indent=indent+"    ")
-            print(indent + "}", file=file)
+            print(indent + name + ":", file=mappingfile)
+            print(indent + "{", file=mappingfile)
+            write_mapping(mappingfile, value, indent=indent + "    ")
+            print(indent + "}", file=mappingfile)
 
-        else: print(indent + name + ": " + str(mapping[name]), file=file)
+        else: print(indent + name + ": " + str(mapping[name]), file=mappingfile)
 
-        print("", file=file)
+        print("", file=mappingfile)
 
 # -----------------------------------------------------------------
 
@@ -193,14 +254,15 @@ class ConfigurationDefinition(object):
             real_type = self.optional[name][0]
             description = self.optional[name][1]
             default = self.optional[name][2]
-            letter = self.optional[name][3]
+            choices = self.optional[name][3]
+            letter = self.optional[name][4]
 
             # Add prefix
             if self.prefix is not None: name = self.prefix + "/" + name
 
             # Add the argument
-            if letter is None: parser.add_argument("--" + name, type=real_type, help=description, default=default)
-            else: parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default)
+            if letter is None: parser.add_argument("--" + name, type=real_type, help=description, default=default, choices=choices)
+            else: parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default, choices=choices)
 
         # Flag
         for name in self.flags:
@@ -347,14 +409,14 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default: default = get_real_value(default, user_type)
+        if convert_default: default = get_real_value(default, real_type)
 
         # Add
         self.pos_optional[name] = (real_type, description, default, choices)
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default=None, letter=None, convert_default=False):
+    def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False):
 
         """
         This function ...
@@ -362,6 +424,7 @@ class ConfigurationDefinition(object):
         :param user_type:
         :param description:
         :param default:
+        :param choices:
         :param letter:
         :param convert_default:
         :return:
@@ -373,10 +436,10 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default: default = get_real_value(default, user_type)
+        if convert_default: default = get_real_value(default, real_type)
 
         # Add
-        self.optional[name] = (real_type, description, default, letter)
+        self.optional[name] = (real_type, description, default, choices, letter)
 
     # -----------------------------------------------------------------
 
@@ -614,6 +677,81 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
 
 # -----------------------------------------------------------------
 
+class FileConfigurationSetter(ConfigurationSetter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param add_logging:
+        :param add_cwd:
+        :param log_path:
+        """
+
+        # Call the constructor of the base class
+        super(FileConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+
+        # Set the path to the specified configuration file
+        self.path = path
+
+        # The user-provided configuration
+        self.user_config = None
+
+    # -----------------------------------------------------------------
+
+    def run(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set definition
+        self.definition = definition
+
+        # Set logging and cwd
+        self.set_logging_and_cwd()
+
+        # Load the user provided configuration
+        self.load_config()
+
+        # Create the config (check it against the definition)
+        self.create_config()
+
+        # Return the config
+        return self.config
+
+    # -----------------------------------------------------------------
+
+    def load_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.user_config = load_config(self.path)
+
+    # -----------------------------------------------------------------
+
+    def create_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
 def get_real_type(user_type):
 
     """
@@ -645,19 +783,24 @@ def load_definition(configfile, definition):
     """
     This function ...
     :param configfile:
+    :param definition:
     :return:
     """
 
-    # Initialize the configuration definition
-    #definition = ConfigurationDefinition()
+    # STATES:
+    # 0:
+    # 1:
+    # 2: we got everything for a certain name
+    # 3:
 
     state = 0
     description = None
 
-    #with open(path, 'r') as configfile:
-
     # Loop over the lines in the file
     for line in configfile:
+
+        # Strip end-of-line character
+        line = line.rstrip("\n")
 
         # Empty line
         if line == "":
@@ -693,38 +836,71 @@ def load_definition(configfile, definition):
                 state = 2
                 name = before.split("[")[0].strip()
                 specification = before.split("[")[1].split("]")[0].strip().split(", ")
-                value = eval(after)
+
+                # value = eval(after)
+                value = after
 
                 kind = specification[0]
+                user_type = specification[1] if kind != "flag" else None
+
+                if user_type == "str": user_type = str
+                elif user_type == "int": user_type = int
+                elif user_type == "float": user_type = float
+                elif user_type == "bool": user_type = bool # for fixed flags ...
+                elif user_type == "None": # for fixed things that should be None
+
+                    user_type = NoneType
+                    value = None
 
                 if kind == "fixed":
 
-                    definition.add_fixed()
+                    value = user_type(value) if value is not None else None # convert here because the add_fixed function doesn't bother with types now
+
+                    definition.add_fixed(name, description, value)
 
                 elif kind == "required":
 
-                    definition.add_required(name, )
+                    definition.add_required(name, user_type, description, choices=None)
 
                 elif kind == "pos_optional":
 
-                    definition.add_positional_optional()
+                    definition.add_positional_optional(name, user_type, description, default=value, choices=None, convert_default=True)
 
                 elif kind == "optional":
 
-                    definition.add_optional()
+                    definition.add_optional(name, user_type, description, default=value, choices=None, letter=None, convert_default=True)
 
                 elif kind == "flag":
 
-                    definition.add_flag()
+                    definition.add_flag(name, description, default=value, letter=None)
 
                 else:
                     raise ValueError("Invalid kind of argument: " + kind)
 
+                description = None
+
+        # Start of
         elif line.startswith("{"):
 
             assert state == 3
-
             state = 4
+
+            name = before.split("[")[0].strip()
+            specification = before.split("[")[1].split("]")[0].strip()
+
+            assert specification == "section"
+
+            # Initialize the configuration definition
+            definition.add_section(name, description)
+
+            # Load into the section
+            load_definition(configfile, definition.sections[name][0])
+
+            state = 2
+            description = None
+
+        # End of section or complete definition
+        elif line.startswith("}"): return
 
 # -----------------------------------------------------------------
 
@@ -774,7 +950,8 @@ def write_definition(definition, configfile, indent=""):
         real_type = definition.optional[name][0]
         description = definition.optional[name][1]
         default = definition.optional[name][2]
-        letter = definition.optional[name][3]
+        choices = definition.optional[name][3]
+        letter = definition.optional[name][4]
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [optional, " + str(real_type) + "]: " + str(default), file=configfile)
@@ -910,17 +1087,38 @@ def add_settings_interactive(config, definition):
         real_type = definition.optional[name][0]
         description = definition.optional[name][1]
         default = definition.optional[name][2]
-        letter = definition.optional[name][3]
+        choices = definition.optional[name][3]
+        letter = definition.optional[name][4]
 
         # Give name and description
         log.success(name + ": " + description + ")")
 
         #
-        log.info("Press ENTER to use the default value (" + str(default) + ") or give another value")
+        log.info("Press ENTER to use the default value (" + str(default) + ")")
 
-        answer = raw_input("   : ")
-        if answer == "": value = default
-        else: value = real_type(answer)
+        if choices is not None:
+
+            log.info("or choose one of the options")
+
+            for index, label in enumerate(choices):
+                log.info(" - [" + str(index) + "] " + label)
+            log.info("")
+
+            # Get the number of the choice
+            answer = raw_input("   : ")
+
+            if answer == "": value = default
+            else:
+                index = int(answer)
+                value = choices[index]
+
+        else:
+
+            log.info("or provide another value")
+
+            answer = raw_input("   : ")
+            if answer == "": value = default
+            else: value = real_type(answer)
 
         # Set the value
         config[name] = value

@@ -40,19 +40,31 @@ from pts.core.tools import time
 # -----------------------------------------------------------------
 
 script_name = None
-interactive = None
+configuration_method = None
 if len(sys.argv) > 1:
 
-    if sys.argv[1] == "-q":
+    if sys.argv[1] == "--interactive":
 
-        script_name = sys.argv[2] if len(sys.argv) > 2 else None
-        interactive = True
+        script_name = sys.argv[2]
+        configuration_method = "interactive"
+        del sys.argv[1]
 
-    else:
+    elif sys.argv[1] == "--arguments":
 
-        # Get the name of the script to execute
-        script_name = sys.argv[1]
-        interactive = False
+        script_name = sys.argv[2]
+        configuration_method = "arguments"
+        del sys.argv[1]
+
+    elif sys.argv[1] == "--configfile":
+
+        path = fs.absolute(sys.argv[2]) # get the absolute path of the config file
+        script_name = sys.argv[3]
+        del sys.argv[1]
+        del sys.argv[1]
+        configuration_method = "file:" + path
+
+    # Get the name of the script to execute
+    else: script_name = sys.argv[1]
 
 # Find possible PTS commands
 scripts = introspection.get_scripts()
@@ -93,6 +105,8 @@ elif len(table_matches) == 1 and len(matches) == 0:
     class_path = "pts." + subproject + "." + class_path_relative
     module_path, class_name = class_path.rsplit('.', 1)
 
+    configuration_method_table = tables[subproject]["Configuration method"][index]
+
     subproject_path = introspection.pts_subproject_dir(subproject)
 
     sys.argv[0] = fs.join(introspection.pts_root_dir, module_path.replace(".", "/") + ".py") # this is actually not necessary (and not really correct, it's not like we are calling the module where the class is..)
@@ -104,7 +118,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     # Import things
     from pts.core.tools import logging
-    from pts.core.basics.configuration import ArgumentConfigurationSetter, InteractiveConfigurationSetter
+    from pts.core.basics.configuration import ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
 
     ## GET THE CONFIGURATION DEFINITION
 
@@ -118,9 +132,16 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     ## CREATE THE CONFIGURATION
 
+    # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
+    if configuration_method is None: configuration_method = configuration_method_table
+
     # Create the configuration setter
-    if interactive: setter = InteractiveConfigurationSetter(command_name, description, log_path="log")
-    else: setter = ArgumentConfigurationSetter(command_name, description, log_path="log")
+    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description, log_path="log")
+    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description, log_path="log")
+    elif configuration_method.startswith("file"):
+        configuration_filepath = configuration_method.split(":")[1]
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description, log_path="log")
+    else: raise ValueError("Invalid configuration method: " + configuration_method)
 
     # Create the configuration from the definition and from reading the command line arguments
     config = setter.run(definition)
