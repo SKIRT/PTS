@@ -1,6 +1,6 @@
 # Command | Configuration | Class | Configuration method | Description
 truncate | -- | truncation.truncation.Truncator | arguments | Create the truncated images
-explore | -- | fitting.explorer.ParameterExplorer | arguments |  Explore the parameter space for the radiative transfer modeling
+explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the parameter space for the radiative transfer modeling
 make_old_map | -- | maps.maker.OldStellarMapMaker | arguments | Make the map of the old stellar disk
 make_young_map | -- | maps.maker.YoungStellarMapMaker | arguments | Make the map of the young stellar disk
 make_ionizing_map | -- | maps.maker.IonizingStellarMapMaker | arguments | Make the map of the ionizing stellar population

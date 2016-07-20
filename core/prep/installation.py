@@ -68,6 +68,9 @@ class Installer(Configurable):
         # 2. Install
         self.install()
 
+        # 3. Test the installation
+        self.test()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -102,6 +105,19 @@ class Installer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def test(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Test locally or remotely
+        if self.remote is None: self.test_local()
+        else: self.test_remote()
+
+    # -----------------------------------------------------------------
+
     @abstractmethod
     def install_local(self):
 
@@ -123,6 +139,39 @@ class Installer(Configurable):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def test_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def test_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+# Private repository links
+private_skirt_ssh_link = "git@github.ugent.be:SKIRT/SKIRT.git"
+private_skirt_https_link = "https://github.ugent.be/SKIRT/SKIRT.git"
+
+# Public repository links
+public_skirt_https_link = "https://github.com/SKIRT/SKIRT.git"
 
 # -----------------------------------------------------------------
 
@@ -146,31 +195,25 @@ class SKIRTInstaller(Installer):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def install_local(self):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup()
+        # Install Qt
+        self.install_qt_local()
 
-        # 2. If Qt is not present, install it
-        if self.qmake_path is None: self.install_qt()
+        # Get the SKIRT code
+        self.get_skirt_local()
 
-        # 3. Get the SKIRT source code
-        self.get()
-
-        # 4. Compile SKIRT
-        self.install()
-
-        # 5. Test the installation
-        self.test()
+        # Install SKIRT
+        self.install_skirt_local()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def install_qt_local(self):
 
         """
         This function ...
@@ -196,34 +239,27 @@ class SKIRTInstaller(Installer):
         # Check whether the Qt version is supported
         # if [[ $VERSION > '5.2.0' ]]
 
-
-
     # -----------------------------------------------------------------
 
-    def install_qt(self):
+    def get_skirt_local(self):
 
         """
         This function ...
         :return:
         """
 
-        pass
-
     # -----------------------------------------------------------------
 
-    def get(self):
+    def install_skirt_local(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Getting the SKIRT source code ...")
-
     # -----------------------------------------------------------------
 
-    def install(self):
+    def install_remote(self):
 
         """
         This function ...
@@ -231,118 +267,20 @@ class SKIRTInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Installing SKIRT ...")
+        log.info("Installing remotely ...")
+
+        # Install Qt
+        self.install_qt_remote()
+
+        # Get the SKIRT code
+        self.get_skirt_remote()
+
+        # Install SKIRT
+        self.install_skirt_remote()
 
     # -----------------------------------------------------------------
 
-    def test(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Testing the SKIRT installation ...")
-
-        # Create the SKIRT execution context
-        skirt = SkirtExec()
-
-# -----------------------------------------------------------------
-
-class SkirtRemoteInstaller(OldConfigurable):
-    
-    """
-    This class ...
-    """
-    
-    def __init__(self, config=None):
-        
-        """
-        The constructor ...
-        """
-
-        # Call the constructor of the base class
-        super(SkirtRemoteInstaller, self).__init__(config, "core")
-
-        # -- Attributes --
-
-        # Create the remote execution context
-        self.remote = Remote()
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new SkirtUpdater instance
-        updater = cls()
-
-        # Remote host
-        updater.config.remote = arguments.remote
-
-        # Use the private repository
-        updater.config.private = arguments.private
-
-        # Return the new SkirtUpdater instance
-        return updater
-
-    # -----------------------------------------------------------------
-
-    def run(self):
-        
-        """
-        This function ...
-        """
-
-        # 1. Call the setup function
-        self.setup()
-
-        # 2.
-        if self.qmake_path is None: self.install_qt()
-
-        # 3.
-        self.get()
-
-        # 4.
-        self.install()
-
-        # 5.
-        self.test()
-
-    # -----------------------------------------------------------------
-
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(SkirtRemoteInstaller, self).setup()
-
-        # Setup the remote execution environment
-        self.remote.setup(self.config.remote)
-
-    # -----------------------------------------------------------------
-
-    def check_qt(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    def install_qt(self):
+    def install_qt_remote(self):
 
         """
         This function ...
@@ -361,7 +299,7 @@ class SkirtRemoteInstaller(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get(self):
+    def get_skirt_remote(self):
 
         """
         This function ...
@@ -370,18 +308,30 @@ class SkirtRemoteInstaller(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def install(self):
+    def install_skirt_remote(self):
 
         """
         This function ...
         :return:
         """
 
-        # If the installation is to be performed on a remote system
-        if self.config.remote is not None: self.remote.install(self.config.private)
+    # -----------------------------------------------------------------
 
-        # If SKIRT is to be installed on this system
-        else: self.skirt.install(self.config.private)
+    def test_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+# Private repository links
+private_pts_ssh_link = "git@github.ugent.be:SKIRT/PTS.git"
+private_pts_https_link = "https://github.ugent.be/SKIRT/PTS.git"
+
+# Public repository links
+public_pts_link = "https://github.com/SKIRT/PTS.git"
 
 # -----------------------------------------------------------------
 
@@ -390,5 +340,45 @@ class PTSInstaller(Installer):
     """
     This function ...
     """
+
+    def install_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Installing PTS locally ...")
+
+    # -----------------------------------------------------------------
+
+    def install_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Installing PTS remotely ...")
+
+    # -----------------------------------------------------------------
+
+    def test_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def test_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
 
 # -----------------------------------------------------------------

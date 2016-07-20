@@ -1001,7 +1001,7 @@ def add_settings_interactive(config, definition):
         log.success(name + ": " + description + ")")
 
         # Inform the user
-        log.info("Using fixed value of " + str(value))
+        log.info("Using fixed value for " + str(value))
 
         # Set the value
         config[name] = value

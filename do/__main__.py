@@ -36,6 +36,7 @@ import importlib
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time
+from pts.do.commandline import show_all_available, show_possible_matches
 
 # -----------------------------------------------------------------
 
@@ -73,7 +74,7 @@ tables = introspection.get_arguments_tables()
 if script_name is None:
 
     print("Welcome to PTS")
-    introspection.show_all_available(scripts, tables)
+    show_all_available(scripts, tables)
     exit()
 
 # Find matches
@@ -81,7 +82,7 @@ matches = introspection.find_matches_scripts(script_name, scripts)
 table_matches = introspection.find_matches_tables(script_name, tables)
 
 # No match
-if len(matches) + len(table_matches) == 0: introspection.show_all_available(scripts, tables)
+if len(matches) + len(table_matches) == 0: show_all_available(scripts, tables)
 
 # If there is a unique match in an existing script, return it
 elif len(matches) == 1 and len(table_matches) == 0:
@@ -167,6 +168,6 @@ elif len(table_matches) == 1 and len(matches) == 0:
     inst.run()
 
 # Show possible matches if there are more than just one
-else: introspection.show_possible_matches(matches, table_matches, tables)
+else: show_possible_matches(matches, table_matches, tables)
 
 # -----------------------------------------------------------------
