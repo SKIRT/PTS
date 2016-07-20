@@ -237,7 +237,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Loading the generations table ...")
 
         # Load the generations table
-        self.generations_table = GenerationsTable.read(self.generations_table_path)
+        self.generations_table = GenerationsTable.read(self.generations_table_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

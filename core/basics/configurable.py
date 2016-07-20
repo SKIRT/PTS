@@ -39,7 +39,21 @@ class Configurable(object):
         :param config:
         """
 
-        self.config = config
+        if config is not None: self.config = config
+
+        # Look for the config
+        #else:
+
+        else:
+
+            from .configuration import ConfigurationDefinition
+            from .configuration import InteractiveConfigurationSetter
+
+            definition = ConfigurationDefinition()
+            setter = InteractiveConfigurationSetter(self.class_name, add_logging=False)
+
+            # Create new config
+            self.config = setter.run(definition)
 
     # -----------------------------------------------------------------
 
@@ -56,6 +70,19 @@ class Configurable(object):
     # -----------------------------------------------------------------
 
     @property
+    def class_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = type(self).__name__
+        return name
+
+    # -----------------------------------------------------------------
+
+    @property ## I THINK THIS FUNCTION CAN BE REMOVED (IT SHOULD) AND REPLACED BY CLASS_NAME
     def name(self):
 
         """

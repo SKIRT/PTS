@@ -298,7 +298,7 @@ class ConfigurationDefinition(object):
         """
 
         # Add fixed
-        for name in self.fixed: settings[name] = self.fixed[name][0]
+        for name in self.fixed: settings[name] = self.fixed[name][1]
 
         # Add required
         for name in self.required:
@@ -994,8 +994,8 @@ def add_settings_interactive(config, definition):
     # Fixed
     for name in definition.fixed:
 
-        value = definition.fixed[name][0]
-        description = definition.fixed[name][1]
+        description = definition.fixed[name][0]
+        value = definition.fixed[name][1]
 
         # Give name and description
         log.success(name + ": " + description + ")")
