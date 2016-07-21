@@ -28,6 +28,7 @@ from .generations import GenerationsTable
 
 template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
 labels_description_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labels_description.dat")
+labels_types_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labels_types.dat")
 
 # -----------------------------------------------------------------
 
@@ -59,6 +60,12 @@ class FittingConfigurer(FittingComponent):
         # The descriptions for the free parameters
         self.descriptions = dict()
 
+        # The types for the free parameters
+        self.types = dict()
+
+        # The specified ranges for the free parameters
+        self.ranges = dict()
+
         # The names of the filter names
         self.filter_names = []
 
@@ -80,13 +87,16 @@ class FittingConfigurer(FittingComponent):
         # 3. Prompt for the fitting parameters
         self.prompt_parameters()
 
-        # 4. Prompt for the fitting filters
+        # 4. Prompt for the physical parameter ranges
+        self.prompt_ranges()
+
+        # 5. Prompt for the fitting filters
         self.prompt_filters()
 
-        # 5. Adjust the labels of the template ski file
+        # 6. Adjust the labels of the template ski file
         self.adjust_labels()
 
-        # 6. Writing
+        # 7. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -115,6 +125,9 @@ class FittingConfigurer(FittingComponent):
 
         # Load the parameter descriptions
         self.load_descriptions()
+
+        # Load the parameter types
+        self.load_types()
 
     # -----------------------------------------------------------------
 
@@ -148,6 +161,21 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def load_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        labels, types, default_ranges = np.genfromtxt(labels_types_path, delimiter=" | ", dtype=str, unpack=True)
+
+        # Set the types
+        for label, type, default_range in zip(labels, types, default_ranges):
+            self.types[label] = (type, default_range)
+
+    # -----------------------------------------------------------------
+
     def prompt_parameters(self):
 
         """
@@ -163,6 +191,40 @@ class FittingConfigurer(FittingComponent):
 
         # Set the chosen free parameters
         for index in indices: self.parameters.append(labels[index])
+
+    # -----------------------------------------------------------------
+
+    def prompt_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the range for each chosen free parameter
+        for label in self.parameters:
+
+            # Get the type of the parameter
+            parameter_type = self.types[label][0]
+            default_range = self.types[label][1]
+            if default_range == "--": default_range = None
+            range_type = parameter_type + "_range"
+            parsing_function = getattr(parsing, range_type)
+
+            log.info("Give a valid physical range for the '" + label + "' parameter:")
+            if default_range is not None: log.info("Press ENTER to use the default value (" + str(default_range) + ")")
+
+            # Get the numbers
+            answer = raw_input("   : ")
+
+            # Check if default must be used
+            if default_range is not None and answer == "": answer = default_range
+
+            # Get the value
+            range = parsing_function(answer)
+
+            # Set the range
+
 
     # -----------------------------------------------------------------
 

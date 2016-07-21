@@ -112,7 +112,7 @@ class BinaryTreeDustGrid(object):
                 elif first == "Max y": max_y = parsing.get_quantity(second)
                 elif first == "Min z": min_z = parsing.get_quantity(second)
                 elif first == "Max z": max_z = parsing.get_quantity(second)
-                elif first == "Write": write = parsing.get_boolean(second)
+                elif first == "Write": write = parsing.boolean(second)
                 elif first == "Min level": min_level = int(second)
                 elif first == "Max level": max_level = int(second)
                 elif first == "Search method": search_method = second

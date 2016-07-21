@@ -7,6 +7,16 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.tools import filesystem as fs
+from pts.modeling.core.component import get_free_parameter_labels
+
+# -----------------------------------------------------------------
+
+# Determine the path to the free parameters table
+free_parameters_path = fs.join(fs.cwd(), "fit", "free_parameters.txt")
+
+# Get the labels of the free parameters
+free_parameter_labels = get_free_parameter_labels(free_parameters_path)
 
 # -----------------------------------------------------------------
 

@@ -18,19 +18,7 @@ from operator import itemgetter
 # Import the relevant PTS classes and modules
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
-
-# -----------------------------------------------------------------
-
-class bcolors:
-    
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -100,9 +88,9 @@ def show_all_available(scripts, tables=None):
         pre_config_infix = " " * nspaces + "[" if from_table else ""
         after_config_infix = "]   " + " " *(lengths_config_methods[script[0]] - len(configuration_method)) if from_table else ""
 
-        coloured_subproject = bcolors.OKGREEN + script[0] + bcolors.ENDC
-        coloured_name = bcolors.BOLD + bcolors.UNDERLINE + bcolors.FAIL + script[1] + bcolors.ENDC
-        coloured_config_method = bcolors.WARNING + pre_config_infix + configuration_method + after_config_infix + bcolors.ENDC
+        coloured_subproject = fmt.green + script[0] + fmt.reset
+        coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
+        coloured_config_method = fmt.yellow + pre_config_infix + configuration_method + after_config_infix + fmt.reset
 
         if current_dir == script[0]:
             print(" " * len(current_dir) + "/" + coloured_name + coloured_config_method + description)
@@ -177,9 +165,9 @@ def show_possible_matches(matches, table_matches=None, tables=None):
         pre_config_infix = " " * nspaces + "[" if from_table else ""
         after_config_infix = "]   " + " " * (lengths_config_methods[script[0]] - len(configuration_method)) if from_table else ""
 
-        coloured_subproject = bcolors.OKGREEN + script[0] + bcolors.ENDC
-        coloured_name = bcolors.BOLD + bcolors.UNDERLINE + bcolors.FAIL + script[1] + bcolors.ENDC
-        coloured_config_method = bcolors.WARNING + pre_config_infix + configuration_method + after_config_infix + bcolors.ENDC
+        coloured_subproject = fmt.green + script[0] + fmt.reset
+        coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
+        coloured_config_method = fmt.yellow + pre_config_infix + configuration_method + after_config_infix + fmt.reset
 
         if current_dir == script[0]:
             print(" " * len(current_dir) + "/" + coloured_name + coloured_config_method + description)

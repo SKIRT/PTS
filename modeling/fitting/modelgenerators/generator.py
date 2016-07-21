@@ -19,6 +19,8 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ..component import FittingComponent
+from ....magic.animation.scatter import ScatterAnimation
+from ....magic.animation.distribution import DistributionAnimation
 
 # -----------------------------------------------------------------
 
@@ -47,6 +49,10 @@ class ModelGenerator(FittingComponent):
 
         # The dictionary with the list of the model parameters
         self.parameters = OrderedDict()
+
+        # The animations
+        self.scatter_animation = None
+        self.parameter_animations = dict()
 
     # -----------------------------------------------------------------
 
@@ -185,28 +191,25 @@ class ModelGenerator(FittingComponent):
         # Inform the user
         log.info("Initializing the animations ...")
 
-        # Initialize the scatter animation
-        self.scatter_animation = ScatterAnimation(self.ranges["FUV young"], self.ranges["FUV ionizing"],
-                                                  self.ranges["Dust mass"])
-        self.scatter_animation.x_label = "FUV luminosity of young stars"
-        self.scatter_animation.y_label = "FUV luminosity of ionizing stars"
-        self.scatter_animation.z_label = "Dust mass"
+        # Initialize the scatter animation, if there are exactly 3 free parameters
+        if len(self.free_parameter_labels) == 3:
 
-        # Initialize the young FUV luminosity distribution animation
-        self.fuv_young_animation = DistributionAnimation(self.ranges["FUV young"][0], self.ranges["FUV young"][1],
-                                                         "FUV luminosity of young stars", "New models")
-        self.fuv_young_animation.add_reference_distribution("Previous models", self.distributions["FUV young"])
+            self.scatter_animation = ScatterAnimation(self.ranges["FUV young"], self.ranges["FUV ionizing"], self.ranges["Dust mass"])
+            self.scatter_animation.x_label = "FUV luminosity of young stars"
+            self.scatter_animation.y_label = "FUV luminosity of ionizing stars"
+            self.scatter_animation.z_label = "Dust mass"
 
-        # Initialize the ionizing FUV luminosity distribution animation
-        self.fuv_ionizing_animation = DistributionAnimation(self.ranges["FUV ionizing"][0],
-                                                            self.ranges["FUV ionizing"][1],
-                                                            "FUV luminosity of ionizing stars", "New models")
-        self.fuv_ionizing_animation.add_reference_distribution("Previous models", self.distributions["FUV ionizing"])
+        # Loop over the free parameters and create an individual animation for each of them
+        for label in self.free_parameter_labels:
 
-        # Initialize the dust mass distribution animation
-        self.dust_mass_animation = DistributionAnimation(self.ranges["Dust mass"][0], self.ranges["Dust mass"][1],
-                                                         "Dust mass", "New models")
-        self.dust_mass_animation.add_reference_distribution("Previous models", self.distributions["Dust mass"])
+            description = self.free_parameter_labels[label]
+
+            # Initialize the young FUV luminosity distribution animation
+            animation = DistributionAnimation(self.ranges[label][0], self.ranges[label][1], description, "New models")
+            animation.add_reference_distribution("Previous models", self.distributions[label])
+
+            # Add the animation to the dictionary
+            self.parameter_animations[label] = animation
 
     # -----------------------------------------------------------------
 

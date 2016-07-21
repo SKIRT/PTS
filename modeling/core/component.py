@@ -208,6 +208,18 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return dict(np.genfromtxt(self.free_parameters_path, delimiter=" | ", dtype=str)) if fs.is_file(self.free_parameters_path) else None
+        return get_free_parameter_labels(self.free_parameters_path)
+
+# -----------------------------------------------------------------
+
+def get_free_parameter_labels(table_path):
+
+    """
+    This function ...
+    :param table_path:
+    :return:
+    """
+
+    return dict(np.genfromtxt(table_path, delimiter=" | ", dtype=str)) if fs.is_file(table_path) else None
 
 # -----------------------------------------------------------------

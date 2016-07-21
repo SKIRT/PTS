@@ -28,6 +28,54 @@ from ...magic.basics.vector import Vector
 
 # -----------------------------------------------------------------
 
+def boolean(entry):
+
+    """
+    This function ...
+    :param entry:
+    :return:
+    """
+
+    return entry == "True"
+
+# -----------------------------------------------------------------
+
+def integer(argument):
+
+    """
+    This function ....
+    :param argument:
+    :return:
+    """
+
+    return int(argument)
+
+# -----------------------------------------------------------------
+
+def real(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return float(argument)
+
+# -----------------------------------------------------------------
+
+def string(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return argument
+
+# -----------------------------------------------------------------
+
 def real_range(argument):
 
     """
@@ -36,7 +84,7 @@ def real_range(argument):
     :return:
     """
 
-    min_value, max_value = float_tuple(argument)
+    min_value, max_value = real_tuple(argument)
     return RealRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -94,7 +142,7 @@ def int_tuple(argument):
 
 # -----------------------------------------------------------------
 
-def float_tuple(argument):
+def real_tuple(argument):
 
     """
     This function ...
@@ -243,18 +291,6 @@ def simulation_ids(string):
 
     # Return the dictionary with ID's of simulations that should be deleted
     return delete
-
-# -----------------------------------------------------------------
-
-def get_boolean(entry):
-
-    """
-    This function ...
-    :param entry:
-    :return:
-    """
-
-    return entry == "True"
 
 # -----------------------------------------------------------------
 
