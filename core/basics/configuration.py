@@ -161,6 +161,7 @@ class ConfigurationDefinition(object):
 
         # Dictionary of sections
         self.sections = OrderedDict()
+        self.section_descriptions = dict()
 
         # Dictionary of fixed parameters
         self.fixed = OrderedDict()
@@ -284,7 +285,7 @@ class ConfigurationDefinition(object):
                 else: parser.add_argument("-!" + letter, "--!" + name, action="store_true", help=description)
 
         # Add arguments of sections
-        for section_name in self.sections: self.sections[section_name][0].set_arguments(parser)
+        for section_name in self.sections: self.sections[section_name].set_arguments(parser)
 
     # -----------------------------------------------------------------
 
@@ -339,8 +340,8 @@ class ConfigurationDefinition(object):
             settings[name] = Map()
 
             # Recursively add the settings
-            definition = self.sections[name][0]
-            description = self.sections[name][1]
+            definition = self.sections[name]
+            description = self.section_descriptions[name]
             definition.get_settings(settings[name], arguments)
 
     # -----------------------------------------------------------------
@@ -355,7 +356,8 @@ class ConfigurationDefinition(object):
         """
 
         # Add the section
-        self.sections[name] = (ConfigurationDefinition(prefix=name), description)
+        self.sections[name] = ConfigurationDefinition(prefix=name)
+        self.section_descriptions[name] = description
 
     # -----------------------------------------------------------------
 
@@ -894,7 +896,7 @@ def load_definition(configfile, definition):
             definition.add_section(name, description)
 
             # Load into the section
-            load_definition(configfile, definition.sections[name][0])
+            load_definition(configfile, definition.sections[name])
 
             state = 2
             description = None
@@ -970,8 +972,8 @@ def write_definition(definition, configfile, indent=""):
     # Sections
     for section_name in definition.sections:
 
-        section_definition = definition.sections[section_name][0]
-        section_description = definition.sections[section_name][1]
+        section_definition = definition.sections[section_name]
+        section_description = definition.section_descriptions[section_name]
 
         print(indent + "# " + section_description, file=configfile)
         print(indent + section_name + "[section]:", file=configfile)
@@ -1156,8 +1158,8 @@ def add_settings_interactive(config, definition):
         config[name] = Map()
 
         # Recursively add the settings
-        section_definition = definition.sections[name][0]
-        section_description = definition.sections[name][1]
+        section_definition = definition.sections[name]
+        section_description = definition.section_descriptions[name]
 
         # Give name and description
         log.success(name + ": " + section_description + " (section)")
