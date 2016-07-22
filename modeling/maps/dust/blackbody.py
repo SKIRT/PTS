@@ -17,14 +17,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
+# Import astronomical modules
+from astropy.units import Unit
+
+# Import the relevant PTS classes and modules
+from ..component import MapsComponent
+from ....core.tools.logging import log
+from ....magic.core.frame import Frame
+
+# PTS evolution classes and modules
 from ....evolve.engine import GAEngine, RawScoreCriteria
 from ....evolve.genomes.list1d import G1DList
 from ....evolve import mutators
 from ....evolve import initializators
 from ....evolve import constants
-
-# Import the relevant PTS classes and modules
-from ....core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -48,7 +54,7 @@ ratio_guess = 0.5
 
 # -----------------------------------------------------------------
 
-class BlackBodyDustMapMaker(object):
+class BlackBodyDustMapMaker(MapsComponent):
 
     """
     This class...
@@ -66,6 +72,12 @@ class BlackBodyDustMapMaker(object):
 
         # -- Attributes --
 
+        # The datacube
+        self.datacube = None
+
+        # The dust map
+        self.map = None
+
     # -----------------------------------------------------------------
 
     def run(self, method="grid"):
@@ -78,8 +90,17 @@ class BlackBodyDustMapMaker(object):
         # 1. Call the setup function
         self.setup()
 
-        # ...
+        # 2. Load the necessary input
+        self.create_datacube()
+
+        # 3. Initialize the dust map to the pixel grid of the rebinned images
+        self.initialize_map()
+
+        # 4. Make the dust map
         self.make_map(method)
+
+        # 5. Normalize the dust map
+        self.normalize()
 
     # -----------------------------------------------------------------
 
@@ -90,7 +111,50 @@ class BlackBodyDustMapMaker(object):
         :return:
         """
 
-        pass
+        # Call the setup function of the base class
+        super(BlackBodyDustMapMaker, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def create_datacube(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the minimum and maximum wavelength
+        min_wavelength = 20. * Unit("micron")
+        max_wavelength = 1000. * Unit("micron")
+
+        # Create the datacube
+        self.datacube = self.dataset.create_datacube(min_wavelength, max_wavelength, exclude=["MIPS 70mu", "MIPS 160mu"])
+
+        # Convert the datacube to Jy/pix
+        conversion_factor = 1.0
+        conversion_factor *= 1e6
+
+        # Convert the 3.6 micron image from Jy / sr to Jy / pixel
+        pixelscale = self.datacube.average_pixelscale
+        pixel_factor = (1.0 / pixelscale ** 2).to("pix2/sr").value
+        conversion_factor /= pixel_factor
+        self.datacube *= conversion_factor
+        self.datacube.unit = "Jy"
+
+    # -----------------------------------------------------------------
+
+    def initialize_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Initializing the dust map ...")
+
+        # Create a map with the same shape as all the data
+        self.map = Frame.zeros_like(self.datacube)
 
     # -----------------------------------------------------------------
 
@@ -101,48 +165,78 @@ class BlackBodyDustMapMaker(object):
         :return:
         """
 
-        data = np.genfromtxt("./eg_user_files/observations_stack.dat")
-        dataID = np.genfromtxt("./eg_user_files/observations_stack.dat", usecols=0, dtype='string')
+        # Inform the user
+        log.info("Making the dust map ...")
 
-        wa = np.array([24, 100, 160, 250., 350., 500.])  # wavelengths in um
+        # Get the list of wavelengths
+        wavelengths = self.datacube.wavelengths(unit="micron", asarray=True)
 
         # Loop over all pixels
-        for i in range(len(data[:, 0])):
+        for x in range(self.datacube.xsize):
+            for y in range(self.datacube.ysize):
 
-            ydata = [data[i, 30], data[i, 34], data[i, 36], data[i, 38], data[i, 40], data[i, 42]]
-            yerr = [data[i, 31], data[i, 35], data[i, 37], data[i, 39], data[i, 41], data[i, 43]]
-            D = data[i, 1] * 3 * 10 ** 5 / 67.30
+                # Get the FIR-submm SED for this pixel
+                sed = self.datacube.sed_in_pixel(x, y)
 
-            # Do the fit for this pixel
-            if method == "grid": t1, t2, mdust, ratio = self.fit_grid(wa, ydata, yerr, D)
-            elif method == "genetic": t1, t2, mdust, ratio = self.fit_genetic(wa, ydata, yerr, D)
+                # Get the fluxes
+                fluxes = sed.fluxes(unit="Jy", asarray=True)
 
-            if plot:
+                # The errors
+                errors = fluxes * 0.0 + 1.0
 
-                plt.plot(Mddist, Mdprob)
-                plt.title(dataID[i])
-                plt.xlabel('T_cold (K)')
-                plt.show()
+                # The distance
+                D = 3.62 * Unit("Mpc")
+                D = D.to("pc").value
 
-                print(Md_sav, T1_sav, T2_sav)
+                #D = data[i, 1] * 3 * 10 ** 5 / 67.30
+                # The distance
 
-                plt.errorbar(wa, ydata, yerr=yerr, fmt='bo')
-                x2 = np.arange(10., 600., 0.1)
-                plt.loglog()
-                plt.title(dataID[i])
-                plt.ylim(0.001, 1)
-                plt.plot(x2, two_blackbodies(x2, D, np.log10(Mdratio_sav) + Md_sav, T1_sav, np.log10(Mdratio_sav) + Md_sav, T2_sav), 'r', label="best fit")
-                plt.xlabel('Wavelength (microns)')
-                plt.ylabel('Flux (Jy)')
-                plt.plot(x2, blackbody(x2, D, np.log10(Mdratio_sav) + Md_sav, T1_sav), ':', lw=2,
-                         label="cold dust: logMd = %s, Tc= %s K " % (np.log10(Mdratio_sav) + Md_sav, T1_sav))
-                plt.plot(x2, blackbody(x2, D, np.log10(Mdratio_sav) + Md_sav, T2_sav), ':', lw=2,
-                         label="warm dust: logMd = %s, Tc= %s K " % (np.log10(Mdratio_sav) + Md_sav, T2_sav))
-                plt.legend(loc=4)
-                plt.show()
+                # Do the fit for this pixel
+                if method == "grid": t1, t2, mdust, ratio = self.fit_grid(wavelengths, fluxes, errors, D)
+                elif method == "genetic": t1, t2, mdust, ratio = self.fit_genetic(wavelengths, fluxes, errors, D)
+                else: raise ValueError("Invalid method (" + method + ")")
 
-        plt.legend(frameon=False)
-        plt.savefig('fit_bb.png')
+                # Set the dust mass in the dust mass map
+                self.map[y, x] = mdust
+
+                if plot:
+
+                    plt.plot(Mddist, Mdprob)
+                    plt.title(dataID[i])
+                    plt.xlabel('T_cold (K)')
+                    plt.show()
+
+                    print(Md_sav, T1_sav, T2_sav)
+
+                    plt.errorbar(wa, ydata, yerr=yerr, fmt='bo')
+                    x2 = np.arange(10., 600., 0.1)
+                    plt.loglog()
+                    plt.title(dataID[i])
+                    plt.ylim(0.001, 1)
+                    plt.plot(x2, two_blackbodies(x2, D, np.log10(Mdratio_sav) + Md_sav, T1_sav, np.log10(Mdratio_sav) + Md_sav, T2_sav), 'r', label="best fit")
+                    plt.xlabel('Wavelength (microns)')
+                    plt.ylabel('Flux (Jy)')
+                    plt.plot(x2, blackbody(x2, D, np.log10(Mdratio_sav) + Md_sav, T1_sav), ':', lw=2,
+                             label="cold dust: logMd = %s, Tc= %s K " % (np.log10(Mdratio_sav) + Md_sav, T1_sav))
+                    plt.plot(x2, blackbody(x2, D, np.log10(Mdratio_sav) + Md_sav, T2_sav), ':', lw=2,
+                             label="warm dust: logMd = %s, Tc= %s K " % (np.log10(Mdratio_sav) + Md_sav, T2_sav))
+                    plt.legend(loc=4)
+                    plt.show()
+
+        #plt.legend(frameon=False)
+        #plt.savefig('fit_bb.png')
+
+    # -----------------------------------------------------------------
+
+    def normalize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Normalize the dust map
+        self.map.normalize()
 
     # -----------------------------------------------------------------
 
@@ -287,7 +381,7 @@ def blackbody(wa, D, Md, T1):
     :return:
     """
 
-    kv = k850 * (850/wa)**2
+    kv = k850 * (850./wa)**2
     flux = kv * 10**Md/D**2 * blackbody_base(wa, T1)*2.08*10**11 #*1.98*10**30/9.5/10**32/10**12*10**26
     return flux
 
@@ -306,7 +400,7 @@ def two_blackbodies(wa, D, Md, T1, Md2, T2):
     :return:
     """
 
-    kv = k850 * (850/wa)**2
+    kv = k850 * (850./wa)**2
     flux = kv*10**Md/D**2*blackbody_base(wa, T1)*2.08*10**11+kv*10**Md2/D**2*blackbody_base(wa, T2)*2.08*10**11 #*1.98*10**30/9.5/10**32/10**12*10**26
     return flux
 

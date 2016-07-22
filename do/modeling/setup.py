@@ -25,7 +25,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, Configuration
 definition = ConfigurationDefinition()
 
 # Add required settings
-definition.add_required("name", str, "the name of the galaxy")
+definition.add_required("name", "string", "the name of the galaxy")
 
 # Get configuration
 reader = ConfigurationReader("setup")

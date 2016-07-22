@@ -24,11 +24,11 @@ free_parameter_labels = get_free_parameter_labels(free_parameters_path)
 definition = ConfigurationDefinition()
 
 # Positional optional parameter
-definition.add_positional_optional("generation_method", str, "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
+definition.add_positional_optional("generation_method", "string", "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
 
 # Optional parameters
-definition.add_optional("remote", str, "the remote host on which to run the parameters exploration", "nancy")
-definition.add_optional("simulations", int, "the number of simulations to launch in one batch/generation", 100)
+definition.add_optional("remote", "string", "the remote host on which to run the parameters exploration", "nancy")
+definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
 definition.add_optional("young", "real_range", "the range of the FUV luminosity of the young stellar population", (0.0, 4.e16))
 definition.add_optional("ionizing", "real_range", "the range of the FUV luminosity of the ionizing stellar population", (0.0, 5.e10))
 definition.add_optional("dust", "quantity_range", "the range of the dust mass", (0.5e7, 3.e7))

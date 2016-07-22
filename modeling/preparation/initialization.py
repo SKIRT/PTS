@@ -363,7 +363,7 @@ class PreparationInitializer(PreparationComponent):
         fwhm = None
         with open(statistics_path) as statistics_file:
             for line in statistics_file:
-                if "FWHM" in line: fwhm = parsing.get_quantity(line.split("FWHM: ")[1].replace("\n", ""))
+                if "FWHM" in line: fwhm = parsing.quantity(line.split("FWHM: ")[1].replace("\n", ""))
 
         # Check whether the FWHM is valid
         if fwhm is None: raise RuntimeError("The FWHM could not be found")

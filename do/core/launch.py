@@ -34,11 +34,11 @@ definition = ConfigurationDefinition()
 definition.add_required("filename", "absolute_path", "the name/path of the ski file")
 
 # Add positional arguments
-definition.add_positional_optional("remote", str, "the remote host on which to run the simulation (if none is specified, the simulation is run locally")
+definition.add_positional_optional("remote", "string", "the remote host on which to run the simulation (if none is specified, the simulation is run locally")
 definition.add_optional("input", "absolute_path", "the simulation input directory", letter="i")
 definition.add_optional("output", "absolute_path", "the simulation output directory", letter="o")
-definition.add_optional("cluster", str, "the name of the cluster", letter="c")
-definition.add_optional("parallel", "int_tuple", "the parallelization scheme (processes, threads)", letter="p")
+definition.add_optional("cluster", "string", "the name of the cluster", letter="c")
+definition.add_optional("parallel", "integer_tuple", "the parallelization scheme (processes, threads)", letter="p")
 definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
 
 # Flags
@@ -67,7 +67,7 @@ parser.add_argument("-i", "--input", type=str, help="the simulation input path")
 parser.add_argument("-o", "--output", type=str, help="the simulation output path")
 parser.add_argument("-r", "--remote", type=str, help="run the simulation remotely")
 parser.add_argument("-c", "--cluster", type=str, help="add the name of the cluster if different from the default")
-parser.add_argument("-p", "--parallel", type=parsing.int_tuple, help="specify the parallelization scheme (processes, threads per process)")
+parser.add_argument("-p", "--parallel", type=parsing.integer_tuple, help="specify the parallelization scheme (processes, threads per process)")
 parser.add_argument("-t", "--walltime", type=parsing.duration, help="specify an estimate for the walltime of the simulation for the specified parallelization scheme")
 parser.add_argument("--relative", action="store_true", help="treats the given input and output paths as being relative to the ski/fski file")
 parser.add_argument("--brief", action="store_true", help="enable brief console logging")

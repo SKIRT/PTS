@@ -64,6 +64,52 @@ class Map(dict):
 
     # -----------------------------------------------------------------
 
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        if len(self) != len(other):
+            #print("lengths not equal")
+            return False
+
+        for label in self:
+
+            value = self[label]
+            other_value = other[label]
+
+            if isinstance(value, list):
+
+                for a in value:
+                    if a not in other_value:
+                        #print("value " + str(a) + " not in list " + str(other_value))
+                        return False
+
+            elif value != other_value:
+
+                #try: keys = value.keys() # if mapping-like
+                #except AttributeError: print("value " + str(value) + " and " + str(other_value) + " are not equal")
+                return False
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    def __ne__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return not self.__eq__(other)
+
+    # -----------------------------------------------------------------
+
     def set_items(self, items):
 
         """

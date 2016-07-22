@@ -25,7 +25,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, Configuration
 definition = ConfigurationDefinition()
 
 # Add optional arguments
-definition.add_optional("image", str, "the name of the image for which to run the initialization")
+definition.add_optional("image", "string", "the name of the image for which to run the initialization")
 definition.add_flag("visualise", "make visualisations")
 
 # Get configuration

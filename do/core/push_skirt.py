@@ -26,11 +26,11 @@ from pts.core.prep.update import SKIRTUpdater
 definition = ConfigurationDefinition()
 
 # Required parameters
-definition.add_required("message", str, "the commit message")
+definition.add_required("message", "string", "the commit message")
 
 # Optional parameters
 definition.add_positional_optional("git_remotes", "string_list", "the remote(s) to commit to", default="origin")
-definition.add_optional("remote", str, "the remote on which to pull the changes")
+definition.add_optional("remote", "string", "the remote on which to pull the changes")
 
 # -----------------------------------------------------------------
 

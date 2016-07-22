@@ -23,7 +23,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, Configuration
 definition = ConfigurationDefinition()
 
 # Add setting
-definition.add_required("step", str, "the modeling step for which to clear the output")
+definition.add_required("step", "string", "the modeling step for which to clear the output")
 
 # Get the configuration
 reader = ConfigurationReader("clear")

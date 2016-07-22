@@ -164,7 +164,6 @@ class Image(object):
         :return:
         """
 
-        if "primary" not in self.frames: return None
         return self.primary.shape
 
     # -----------------------------------------------------------------
@@ -177,7 +176,6 @@ class Image(object):
         :return:
         """
 
-        if "primary" not in self.frames: return None
         return self.primary.xsize
 
     # -----------------------------------------------------------------
@@ -190,7 +188,6 @@ class Image(object):
         :return:
         """
 
-        if "primary" not in self.frames: return None
         return self.primary.ysize
 
     # -----------------------------------------------------------------
@@ -202,8 +199,6 @@ class Image(object):
         This function ...
         :return:
         """
-
-        if "primary" not in self.frames: return None
 
         # Return the filter of the primary frame
         return self.primary.filter
@@ -218,8 +213,6 @@ class Image(object):
         :return:
         """
 
-        if "primary" not in self.frames: return None
-
         # Return the wavelength of the primary frame
         return self.primary.wavelength
 
@@ -232,8 +225,6 @@ class Image(object):
         This function ...
         :return:
         """
-
-        if "primary" not in self.frames: return None
 
         # Return the unit of the primary frame
         return self.primary.unit
@@ -248,8 +239,6 @@ class Image(object):
         :return:
         """
 
-        if "primary" not in self.frames: return None
-
         # Return the pixelscale of the primary frame
         return self.primary.pixelscale
 
@@ -262,8 +251,6 @@ class Image(object):
         This function ...
         :return:
         """
-
-        if "primary" not in self.frames: return None
 
         # Return the averaged pixelscale of the primary frame
         return self.primary.average_pixelscale
@@ -279,8 +266,6 @@ class Image(object):
         """
 
         if self._fwhm is not None: return self._fwhm
-
-        if "primary" not in self.frames: return None
 
         # Return the FWHM of the primary frame
         return self.primary.fwhm
@@ -311,8 +296,6 @@ class Image(object):
         :return:
         """
 
-        if "primary" not in self.frames: return None
-
         # Return the wcs of the primary frame
         return self.primary.wcs
 
@@ -325,8 +308,6 @@ class Image(object):
         This function ...
         :return:
         """
-
-        if "primary" not in self.frames: return None
 
         # Return the coordinate range of the primary frame
         return self.primary.coordinate_range

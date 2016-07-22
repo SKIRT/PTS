@@ -15,7 +15,7 @@ definition = ConfigurationDefinition()
 
 # Add settings
 definition.add_section("database")
-definition.sections["database"].add_optional("username", str, "the username")
-definition.sections["database"].add_optional("password", str, "the password")
+definition.sections["database"].add_optional("username", "string", "the username")
+definition.sections["database"].add_optional("password", "string", "the password")
 
 # -----------------------------------------------------------------

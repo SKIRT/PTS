@@ -14,6 +14,6 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add required setting
-definition.add_required("step", str, "the modeling step for which to create the report")
+definition.add_required("step", "string", "the modeling step for which to create the report")
 
 # -----------------------------------------------------------------

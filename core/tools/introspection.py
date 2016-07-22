@@ -66,7 +66,7 @@ def pts_dat_dir(subproject): return os.path.join(pts_package_dir, subproject, "d
 # -----------------------------------------------------------------
 
 def pts_version():
-    label = subprocess.check_output(["git", "describe", "--tags"])
+    label = subprocess.check_output(["git", "describe", "--tags"], cwd=pts_package_dir)
     return label[:-1]
 
 # -----------------------------------------------------------------

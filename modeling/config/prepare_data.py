@@ -14,10 +14,10 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add required arguments
-definition.add_required("image", str, "the name of the image for which to run the preparation")
+definition.add_required("image", "string", "the name of the image for which to run the preparation")
 
 # Add optional arguments
-definition.add_optional("reference_image", str, "the name of the reference image")
+definition.add_optional("reference_image", "string", "the name of the reference image")
 definition.add_flag("steps", "write the results of intermediate steps")
 definition.add_flag("visualise", "make visualisations")
 

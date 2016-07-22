@@ -25,6 +25,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ..core.sed import ObservedSED
 from ...core.basics.filter import Filter
+from ...magic.core.dataset import DataSet
 
 # -----------------------------------------------------------------
 
@@ -209,6 +210,37 @@ class ModelingComponent(Configurable):
         """
 
         return get_free_parameter_labels(self.free_parameters_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the image paths
+        paths = []
+
+        # Loop over all FITS files found in the 'truncated' directory
+        for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
+
+            # Ignore the bulge, disk and model images
+            if name == "bulge" or name == "disk" or name == "model": continue
+
+            # Ignore the H alpha image
+            if "Halpha" in name: continue
+
+            # Add the image path to the list
+            paths.append(path)
+
+        # Create the dataset instance
+        dataset = DataSet(paths)
+
+        # Return the dataset
+        return dataset
 
 # -----------------------------------------------------------------
 

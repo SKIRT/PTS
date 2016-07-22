@@ -31,19 +31,23 @@ from ...magic.basics.vector import Vector
 def boolean(entry):
 
     """
-    This function ...
+    Boolean value (True or False). Allowed: 'True', 'T', 'y', 'yes', 'False', 'n', 'no'
     :param entry:
     :return:
     """
 
-    return entry == "True"
+    lowercase = entry.lower()
+
+    if lowercase == "true" or lowercase == "y" or lowercase == "yes" or lowercase == "t": return True
+    elif lowercase == "false" or lowercase == "n" or lowercase == "no" or lowercase == "f": return False
+    else: raise ValueError("Invalid boolean specification")
 
 # -----------------------------------------------------------------
 
 def integer(argument):
 
     """
-    This function ....
+    Integer value
     :param argument:
     :return:
     """
@@ -55,7 +59,7 @@ def integer(argument):
 def real(argument):
 
     """
-    This function ...
+    Real (floating-point) value
     :param argument:
     :return:
     """
@@ -67,7 +71,7 @@ def real(argument):
 def string(argument):
 
     """
-    This function ...
+    String
     :param argument:
     :return:
     """
@@ -79,7 +83,7 @@ def string(argument):
 def real_range(argument):
 
     """
-    This function ...
+    Range of real (floating-point) values
     :param argument:
     :return:
     """
@@ -92,12 +96,12 @@ def real_range(argument):
 def integer_range(argument):
 
     """
-    This function ...
+    Range of integer values
     :param argument:
     :return:
     """
 
-    min_value, max_value = int_tuple(argument)
+    min_value, max_value = integer_tuple(argument)
     return IntegerRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -105,7 +109,7 @@ def integer_range(argument):
 def quantity_range(argument):
 
     """
-    This function ...
+    Range of (Astropy) quantities
     :param argument:
     :return:
     """
@@ -118,7 +122,7 @@ def quantity_range(argument):
 def absolute_path(argument):
 
     """
-    This function ...
+    Converts a relative path or filename to an absolute path
     :param argument:
     :return:
     """
@@ -127,10 +131,10 @@ def absolute_path(argument):
 
 # -----------------------------------------------------------------
 
-def int_tuple(argument):
+def integer_tuple(argument):
 
     """
-    This function ...
+    Tuple of integer values
     :param argument:
     :return:
     """
@@ -145,7 +149,7 @@ def int_tuple(argument):
 def real_tuple(argument):
 
     """
-    This function ...
+    Tuple of real (floating-point) values
     :param argument:
     :return:
     """
@@ -160,7 +164,7 @@ def real_tuple(argument):
 def quantity_tuple(argument):
 
     """
-    This function ...
+    Tuple of (Astropy) quantities
     :param argument:
     :return:
     """
@@ -205,7 +209,7 @@ def string_list(argument):
 def duration(argument):
 
     """
-    This function ...
+    Duration in seconds from hh:mm:ss format
     :param argument:
     :return:
     """
@@ -219,10 +223,10 @@ def duration(argument):
 
 # -----------------------------------------------------------------
 
-def int_list(string, name="ids"):
+def integer_list(string, name="ids"):
 
     """
-    This function returns a list of integer values, based on a string denoting a certain range (e.g. '3-9') or a
+    A list of integer values, based on a string denoting a certain range (e.g. '3-9') or a
     set of integer values seperated by commas ('2,14,20')
     :param string:
     :param name:
@@ -233,7 +237,7 @@ def int_list(string, name="ids"):
 
         parts = string.split(",")
         total_int_list = []
-        for part in parts: total_int_list += int_list(part)
+        for part in parts: total_int_list += integer_list(part)
         return total_int_list
 
     # Split the string
@@ -263,7 +267,7 @@ def int_list(string, name="ids"):
 def simulation_ids(string):
 
     """
-    This function ...
+    The IDs of remote simulations
     :param string:
     :return:
     """
@@ -284,7 +288,7 @@ def simulation_ids(string):
         host_id = splitted[0]
 
         # Get the simulation ID's
-        values = int_list(splitted[1])
+        values = integer_list(splitted[1])
 
         # Add the simulation ID's to the dictionary for the correspoding host ID
         delete[host_id] = values
@@ -297,6 +301,7 @@ def simulation_ids(string):
 def quantity(argument):
 
     """
+    An Astropy quantity.
     >>> quantity("2GB")
     (2.0, 'GB')
     >>> quantity("17 ft")
@@ -342,30 +347,10 @@ def quantity(argument):
 
 # -----------------------------------------------------------------
 
-def get_quantity(entry, default_unit=None):
+def angle(entry, default_unit=None):
 
     """
-    This function ...
-    :param entry:
-    :param default_unit:
-    :return:
-    """
-
-    splitted = entry.split()
-    value = float(splitted[0])
-    try: unit = splitted[1]
-    except IndexError: unit = default_unit
-
-    # Create a quantity object and return it
-    if unit is not None: value = value * Unit(unit)
-    return value
-
-# -----------------------------------------------------------------
-
-def get_angle(entry, default_unit=None):
-
-    """
-    This function ...
+    An Astropy Angle
     :param entry:
     :param default_unit:
     :return:

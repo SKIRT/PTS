@@ -24,7 +24,7 @@ from pts.core.tools.logging import log
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_required("remote", str, "the remote host ID")
+definition.add_required("remote", "string", "the remote host ID")
 
 # Add flags
 definition.add_flag("versions", "compare versions", "v")

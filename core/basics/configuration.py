@@ -35,8 +35,9 @@ def load_config(path):
     :return:
     """
 
+    # Create the config
     config = Map()
-    with open(path, 'r') as configfile: load_mapping(config, configfile)
+    with open(path, 'r') as configfile: load_mapping(configfile, config)
 
     # Return the config
     return config
@@ -54,26 +55,38 @@ def load_mapping(mappingfile, mapping, indent=""):
     """
 
     # STATES:
-    # state 0: empty line
-    # state 1: description
-    # state 2: completed entry
-    # state 3:
+    # 0: empty line
+    # 1: have description
+    # 2: we got everything for a certain name
+    # 3: section will begin (we expect a { now)
+    # 4: inside section
 
     state = 0
     description = None
 
+    # Loop over the lines in the file
     for line in mappingfile:
+
+        # Strip end-of-line character
+        line = line.rstrip("\n")
+
+        # Remove the indent
+        line = line.lstrip(indent)
 
         # Empty line
         if line == "":
 
-            assert state == 2  # 2 means we got everything for a certain name
+            #print("empty", line)
+            if state != 2 and state != 0: raise RuntimeError("At empty line and previous state was " + str(state))
+
             state = 0
             description = None
             continue
 
         # Description
         if line.startswith("#"):
+
+            #print("comment", line)
 
             if description is not None:
                 assert state == 1
@@ -87,7 +100,14 @@ def load_mapping(mappingfile, mapping, indent=""):
 
         elif ":" in line:
 
-            before, after = line.split(":")
+            # Remove comment after the declaration
+            if "#" in line: line = line.split("#")[0]
+
+            try:
+                before, after = line.split(":")
+            except ValueError: print(line)
+
+            #print("declaration", before, after)
 
             if after.strip() == "":
 
@@ -97,9 +117,61 @@ def load_mapping(mappingfile, mapping, indent=""):
             else:
 
                 state = 2
+
+                if before.endswith("]"):
+
+                    name = before.split("[")[0].strip()
+                    specification = before.split("[")[1].split("]")[0].strip()
+
+                else:
+
+                    name = before
+                    specification = None
+
+                value = after
+
+                if specification is None:
+
+                    value = eval(value)
+
+                else:
+
+                    parsing_function = getattr(parsing, specification)
+                    value = parsing_function(value)
+
+                #print("definition", value)
+
+                # TODO: incorporate descriptions ??
+                mapping[name] = value
+
+                description = None
+
+        # Start of section
+        elif line.startswith("{"):
+
+            assert state == 3
+            state = 4
+
+            if before.endswith("]"):
+
                 name = before.split("[")[0].strip()
-                specification = before.split("[")[1].split("]")[0].strip().split(", ")
-                value = eval(after)
+                specification = before.split("[")[1].split("]")[0].strip()
+
+                assert specification == "section"
+
+            else: name = before
+
+            # Initialize the submapping
+            mapping[name] = Map()
+
+            # Load the submapping
+            load_mapping(mappingfile, mapping[name], indent=indent+"    ")
+
+            state = 2
+            description = None
+
+        # End of section or complete definition
+        elif line.startswith("}"): return
 
 # -----------------------------------------------------------------
 
@@ -126,6 +198,8 @@ def write_mapping(mappingfile, mapping, indent=""):
     :return:
     """
 
+    index = 0
+    length = len(mapping)
     for name in mapping:
 
         value = mapping[name]
@@ -139,7 +213,8 @@ def write_mapping(mappingfile, mapping, indent=""):
 
         else: print(indent + name + ": " + str(mapping[name]), file=mappingfile)
 
-        print("", file=mappingfile)
+        if index != length - 1: print("", file=mappingfile)
+        index += 1
 
 # -----------------------------------------------------------------
 
@@ -790,10 +865,10 @@ def load_definition(configfile, definition):
     """
 
     # STATES:
-    # 0:
-    # 1:
+    # 0: empty line
+    # 1: have description
     # 2: we got everything for a certain name
-    # 3:
+    # 3: section will begin (we expect a { now)
 
     state = 0
     description = None
@@ -1000,7 +1075,7 @@ def add_settings_interactive(config, definition):
         value = definition.fixed[name][1]
 
         # Give name and description
-        log.success(name + ": " + description + ")")
+        log.success(name + ": " + description + "")
 
         # Inform the user
         log.info("Using fixed value for " + str(value))

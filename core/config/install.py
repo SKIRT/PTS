@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add optional arguments
-definition.add_optional("remote", str, "install SKIRT/PTS remotely")
+definition.add_optional("remote", "string", "install SKIRT/PTS remotely")
 
 # Add flags
 definition.add_flag("private", "use the private SKIRT/PTS repository")

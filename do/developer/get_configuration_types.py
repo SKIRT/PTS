@@ -24,12 +24,31 @@ from pts.core.tools import formatting as fmt
 # Get a list of all the functions in the parsing module
 function_list = [o for o in getmembers(parsing) if isfunction(o[1])]
 
+names = []
+descriptions = []
+longest_name = 0
+
 # Print all the function names
 for function in function_list:
 
     name = function[0]
     documentation = getdoc(function[1])
+    description = documentation.split(":param")[0].split(">>>")[0].rstrip("\n")
 
-    print(fmt.yellow + name + fmt.reset + ": " + documentation)
+    description = description.replace("\n", " ")
+
+    if len(name) > longest_name: longest_name = len(name)
+
+    names.append(name)
+    descriptions.append(description)
+
+for i in range(len(names)):
+
+    name = names[i]
+    description = descriptions[i]
+    nspaces = longest_name - len(name) + 2
+    spaces = " " * nspaces
+
+    print(fmt.yellow + name + fmt.reset + spaces + description)
 
 # -----------------------------------------------------------------

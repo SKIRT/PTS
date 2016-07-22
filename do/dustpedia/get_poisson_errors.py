@@ -26,11 +26,11 @@ from pts.core.tools import time
 definition = ConfigurationDefinition()
 
 # Galaxy name
-definition.add_required("galaxy_name", str, "the name of the galaxy")
-definition.add_required("band", str, "the band (GALEX or SDSS u/g/r/i/z)")
+definition.add_required("galaxy_name", "string", "the name of the galaxy")
+definition.add_required("band", "string", "the band (GALEX or SDSS u/g/r/i/z)")
 
 # Optional
-definition.add_optional("remote", str, "the remote host name", None)
+definition.add_optional("remote", "string", "the remote host name", None)
 
 # Get configuration
 reader = ConfigurationReader("get_poisson_errors", "Calculate poisson error maps for DustPedia UV and optical images")

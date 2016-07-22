@@ -116,10 +116,10 @@ class SersicModel(object):
 
                 if splitted[0] == "Type":
                     if splitted[1] != "SersicModel": raise ValueError("Model not of type SersicModel but '" + splitted[1] + "'")
-                elif splitted[0] == "Effective radius": effective_radius = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Effective radius": effective_radius = parsing.quantity(splitted[1])
                 elif splitted[0] == "Index": index = float(splitted[1])
                 elif splitted[0] == "Flattening": flattening = float(splitted[1])
-                elif splitted[0] == "Tilt": tilt = parsing.get_angle(splitted[1])
+                elif splitted[0] == "Tilt": tilt = parsing.angle(splitted[1])
 
         # Creaete the SersicModel and return it
         return cls(effective_radius, index, flattening, tilt)
@@ -237,12 +237,12 @@ class ExponentialDiskModel(object):
 
                 if splitted[0] == "Type":
                     if splitted[1] != "ExponentialDiskModel": raise ValueError("Model not of type ExponentialDiskModel but '" + splitted[1] + "'")
-                elif splitted[0] == "Radial scale": radial_scale = parsing.get_quantity(splitted[1])
-                elif splitted[0] == "Axial scale": axial_scale = parsing.get_quantity(splitted[1])
-                elif splitted[0] == "Radial truncation": radial_truncation = parsing.get_quantity(splitted[1])
-                elif splitted[0] == "Axial truncation": axial_truncation = parsing.get_quantity(splitted[1])
-                elif splitted[0] == "Inner radius": inner_radius = parsing.get_quantity(splitted[1])
-                elif splitted[0] == "Tilt": tilt = parsing.get_angle(splitted[1])
+                elif splitted[0] == "Radial scale": radial_scale = parsing.quantity(splitted[1])
+                elif splitted[0] == "Axial scale": axial_scale = parsing.quantity(splitted[1])
+                elif splitted[0] == "Radial truncation": radial_truncation = parsing.quantity(splitted[1])
+                elif splitted[0] == "Axial truncation": axial_truncation = parsing.quantity(splitted[1])
+                elif splitted[0] == "Inner radius": inner_radius = parsing.quantity(splitted[1])
+                elif splitted[0] == "Tilt": tilt = parsing.angle(splitted[1])
 
         # Create the ExponentialDiskModel and return it
         return cls(radial_scale, axial_scale, radial_truncation, axial_truncation, inner_radius, tilt)
@@ -343,14 +343,14 @@ class DeprojectionModel(object):
                 if splitted[0] == "Type":
                     if splitted[1] != "DeprojectionModel": raise ValueError("Model not of type DeprojectionModel but '" + splitted[1] + "'")
                 elif splitted[0] == "Filename": filename = splitted[1]
-                elif splitted[0] == "Pixelscale": pixelscale = parsing.get_quantity(splitted[1])
-                elif splitted[0] == "Position angle": position_angle = parsing.get_angle(splitted[1])
-                elif splitted[0] == "Inclination": inclination = parsing.get_angle(splitted[1])
+                elif splitted[0] == "Pixelscale": pixelscale = parsing.quantity(splitted[1])
+                elif splitted[0] == "Position angle": position_angle = parsing.angle(splitted[1])
+                elif splitted[0] == "Inclination": inclination = parsing.angle(splitted[1])
                 elif splitted[0] == "Number of x pixels": x_size = int(splitted[1])
                 elif splitted[0] == "Number of y pixels": y_size = int(splitted[1])
                 elif splitted[0] == "Center x pixel": x_center = float(splitted[1])
                 elif splitted[0] == "Center y pixel": y_center = float(splitted[1])
-                elif splitted[0] == "Scale height": scale_height = parsing.get_quantity(splitted[1])
+                elif splitted[0] == "Scale height": scale_height = parsing.quantity(splitted[1])
 
         # Create the DeprojectionModel and return it
         return cls(filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height)

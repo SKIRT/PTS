@@ -37,6 +37,18 @@ class MapsComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # The path to the maps/dust directory
+        self.maps_dust_path = None
+
+        # The path to the maps/old directory
+        self.maps_old_path = None
+
+        # The path to the maps/young directory
+        self.maps_young_path = None
+
+        # The path to the maps/ionizing directory
+        self.maps_ionizing_path = None
+
         # The path to the maps/solar directory
         self.maps_solar_path = None
 
@@ -57,6 +69,18 @@ class MapsComponent(ModelingComponent):
 
         # Call the setup function of the base class
         super(MapsComponent, self).setup()
+
+        # Set the path to the maps/dust directory
+        self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")
+
+        # Set the path to the maps/old directory
+        self.maps_old_path = fs.create_directory_in(self.maps_path, "old")
+
+        # Set the path to the maps/young directory
+        self.maps_young_path = fs.create_directory_in(self.maps_path, "young")
+
+        # Set the path to the maps/ionizing directory
+        self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
 
         # Set the path to the maps/solar directory
         self.maps_solar_path = fs.create_directory_in(self.maps_path, "solar")

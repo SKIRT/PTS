@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.core.source Contains the Source class.
+## \package pts.magic.core.datacube Contains the DataCube class.
 
 # -----------------------------------------------------------------
 
@@ -15,9 +15,15 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from .image import Image
+from .frame import Frame
 from ...modeling.core.sed import SED
+from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -68,6 +74,56 @@ class DataCube(Image):
 
             # Set the wavelength of the frame
             datacube.frames[frame_name].wavelength = datacube.wavelength_grid[i]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_files(cls, paths):
+
+        """
+        This function ...
+        :param paths: paths of frames
+        :return:
+        """
+
+        frames = [Frame.from_file(path) for path in paths]
+        return cls.from_frames(frames)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_frames(cls, frames):
+
+        """
+        This function ...
+        :param frames:
+        :return:
+        """
+
+        # Create a datacube instance
+        datacube = cls()
+
+        # The indices of the frames, sorted on wavelength
+        sorted_indices = sorted(range(len(frames)), key=lambda i: frames[i].filter.pivotwavelength())
+
+        # The list of wavelengths
+        wavelengths = []
+
+        # Add the frames
+        for index in sorted_indices:
+
+            # Add the frame
+            frame_name = "frame" + str(index)
+            datacube.add_frame(frames[index], frame_name)
+
+            # Add the wavelength
+            wavelengths.append(frames[index].filter.pivotwavelength())
+
+        # Create the wavelength grid
+        datacube.wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")
+
+        # Return the datacube
+        return datacube
 
     # -----------------------------------------------------------------
 
@@ -126,6 +182,36 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def sed_in_pixel(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        # Initialize the SED
+        sed = SED()
+
+        # Loop over the wavelengths
+        index = 0
+        for wavelength in self.wavelengths():
+
+            # Determine the name of the frame in the datacube
+            frame_name = "frame" + str(index)
+
+            # Get the flux in the pixel
+            flux = self.frames[frame_name][y, x] * self.unit
+
+            # Add an entry to the SED
+            sed.add_entry(wavelength, flux)
+
+        # Return the SED
+        return sed
+
+    # -----------------------------------------------------------------
+
     def to_sed(self):
 
         """
@@ -133,17 +219,20 @@ class DataCube(Image):
         :return:
         """
 
+        # Initialize the SED
         sed = SED()
 
         # Loop over the wavelengths
         index = 0
-        for wavelength in self.wavelength_grid.wavelengths():
+        for wavelength in self.wavelengths():
 
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
 
-            total_flux = self.frames[frame_name].sum() * self.frames[frame_name].unit
+            # Calculate the total flux
+            total_flux = self.frames[frame_name].sum() * self.unit
 
+            # Add an entry to the SED
             sed.add_entry(wavelength, total_flux)
 
         # Return the SED

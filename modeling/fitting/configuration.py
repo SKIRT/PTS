@@ -224,7 +224,7 @@ class FittingConfigurer(FittingComponent):
             range = parsing_function(answer)
 
             # Set the range
-
+            self.ranges[label] = range
 
     # -----------------------------------------------------------------
 
@@ -303,7 +303,7 @@ class FittingConfigurer(FittingComponent):
 
         # Write
         with open(self.free_parameters_path, 'w') as f:
-            for label in self.parameters: print(label + " | " + self.descriptions[label], file=f)
+            for label in self.parameters: print(label + " | " + str(self.ranges[label].min) + " | " + str(self.ranges[label].max) + " | " + self.descriptions[label], file=f)
 
     # -----------------------------------------------------------------
 
@@ -370,7 +370,7 @@ def get_choices(options, feature, descriptions=None):
 
     # Get the numbers
     answer = raw_input("   : ")
-    indices = parsing.int_list(answer)
+    indices = parsing.integer_list(answer)
 
     # Return the chosen indices
     return indices

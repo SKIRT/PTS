@@ -1403,7 +1403,7 @@ class Remote(object):
 
             # Get the list of CPU's
             string = line.split(": ")[1].strip()
-            cpu_list = parsing.int_list(string)
+            cpu_list = parsing.integer_list(string)
 
             # Set the CPU list for the current NUMA domain
             cpus[domain] = cpu_list

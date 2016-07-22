@@ -89,11 +89,12 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_wavelengths(cls, wavelengths):
+    def from_wavelengths(cls, wavelengths, unit="micron"):
 
         """
         This function ...
         :param wavelengths:
+        :param unit:
         :return:
         """
 
@@ -103,7 +104,7 @@ class WavelengthGrid(object):
         # Add the wavelengths
         grid.table = Table()
         grid.table["Wavelength"] = wavelengths
-        grid.table["Wavelength"].unit = "micron"
+        grid.table["Wavelength"].unit = unit
 
         # Return the new instance
         return grid

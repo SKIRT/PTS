@@ -14,13 +14,18 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 definition.add_section("cutoff", "options for cutting off the maps at certain noise levels")
-definition.sections["cutoff"].add_optional("reference_path", str, "...", None)
-definition.sections["cutoff"].add_optional("level", float, "cutoff when signal < level * uncertainty (ilse: 5)", 3.0)
-definition.sections["cutoff"].add_optional("remove_holes", bool, "remove holes from the cutoff mask", True)
+definition.sections["cutoff"].add_optional("reference_path", "string", "...", None)
+definition.sections["cutoff"].add_optional("level", "real", "cutoff when signal < level * uncertainty (ilse: 5)", 3.0)
+definition.sections["cutoff"].add_optional("remove_holes", "boolean", "remove holes from the cutoff mask", True)
 
 #definition.add_section("dust")
 #definition.sections["dust"].add_section("ssfr")
 #definition.sections["dust"].sections["ssfr"].add_optional("mask_low_fuv_snr", bool, "...", True)
 #definition.sections["dust"].sections["ssfr"].add_optional("fuv_snr_level", float, "cut-off when signal(FUV) < fuv_snr_level * uncertainty(FUV)  (Ilse: 10.0)", 0.0)
+
+definition.add_flag("make_black_body", "make dust map based on black-body fitting", True)
+definition.add_flag("make_emission", "make dust map based on emission", True)
+definition.add_flag("make_buat", "make dust map based on Buat", True)
+definition.add_flag("make_cortese", "make dust map based on Cortese", True)
 
 # -----------------------------------------------------------------

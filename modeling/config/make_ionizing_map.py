@@ -14,9 +14,9 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 definition.add_section("cutoff", "options for cutting off the maps at certain noise levels")
-definition.sections["cutoff"].add_optional("reference_path", str, "...", None)
-definition.sections["cutoff"].add_optional("level", float, "cutoff when signal < level * uncertainty (ilse: 5)", 3.0)
-definition.sections["cutoff"].add_optional("remove_holes", bool, "remove holes from the cutoff mask", True)
+definition.sections["cutoff"].add_optional("reference_path", "string", "...", None)
+definition.sections["cutoff"].add_optional("level", "real", "cutoff when signal < level * uncertainty (ilse: 5)", 3.0)
+definition.sections["cutoff"].add_optional("remove_holes", "boolean", "remove holes from the cutoff mask", True)
 
 #definition.add_section("ionizing_stars")
 #definition.sections["ionizing_stars"].add_section("mips_young_stars")

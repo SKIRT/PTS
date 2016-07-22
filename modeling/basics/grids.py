@@ -106,17 +106,16 @@ class BinaryTreeDustGrid(object):
                 first = splitted[0]
                 second = splitted[1]
 
-                if first == "Min x": min_x = parsing.get_quantity(second)
-                elif first == "Max x": max_x = parsing.get_quantity(second)
-                elif first == "Min y": min_y = parsing.get_quantity(second)
-                elif first == "Max y": max_y = parsing.get_quantity(second)
-                elif first == "Min z": min_z = parsing.get_quantity(second)
-                elif first == "Max z": max_z = parsing.get_quantity(second)
+                if first == "Min x": min_x = parsing.quantity(second)
+                elif first == "Max x": max_x = parsing.quantity(second)
+                elif first == "Min y": min_y = parsing.quantity(second)
+                elif first == "Max y": max_y = parsing.quantity(second)
+                elif first == "Min z": min_z = parsing.quantity(second)
+                elif first == "Max z": max_z = parsing.quantity(second)
                 elif first == "Write": write = parsing.boolean(second)
                 elif first == "Min level": min_level = int(second)
                 elif first == "Max level": max_level = int(second)
                 elif first == "Search method": search_method = second
-
 
         # Creaete the SersicModel and return it
         return cls(effective_radius, index, flattening, tilt)
