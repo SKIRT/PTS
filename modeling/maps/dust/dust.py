@@ -58,16 +58,16 @@ class DustMapMaker(MapsComponent):
         self.setup()
 
         # 2. Make a dust map based on black body pixel fitting
-        if self.config.make_black_body: self.make_black_body()
+        #if self.config.make_black_body: self.make_black_body()
 
         # 3. Make a dust map simply based on FIR / submm emission in a certain band
         if self.config.make_emission: self.make_emission()
 
         # 4. Make a dust map based on Buat
-        if self.config.make_buat: self.make_buat()
+        #if self.config.make_buat: self.make_buat()
 
         # 5. Make a dust map based on Cortese
-        if self.config.make_cortese: self.make_cortese()
+        #if self.config.make_cortese: self.make_cortese()
 
         # 6. Writing
         self.write()
@@ -100,7 +100,7 @@ class DustMapMaker(MapsComponent):
         maker.run()
 
         # Add the dust map to the dictionary
-        self.maps["Black-body"] = maker.map
+        self.maps["black-body"] = maker.map
 
     # -----------------------------------------------------------------
 
@@ -118,7 +118,7 @@ class DustMapMaker(MapsComponent):
         maker.run()
 
         # Add the dust map to the dictionary
-        self.maps["Emission"] = maker.map
+        self.maps["emission"] = maker.map
 
     # -----------------------------------------------------------------
 
@@ -136,7 +136,7 @@ class DustMapMaker(MapsComponent):
         maker.run()
 
         # Add the dust map to the dictionary
-        self.maps["Buat"] = maker.map
+        self.maps["buat"] = maker.map
 
     # -----------------------------------------------------------------
 
@@ -154,7 +154,7 @@ class DustMapMaker(MapsComponent):
         maker.run()
 
         # Add the dust map to the dictionary
-        self.maps["Cortese"] = maker.map
+        self.maps["cortese"] = maker.map
 
     # -----------------------------------------------------------------
 

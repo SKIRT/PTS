@@ -496,6 +496,21 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
+    def zeros(cls, shape):
+
+        """
+        This function ...
+        :param shape:
+        :return:
+        """
+
+        # Create a new frame
+        new = cls(np.zeros(shape))
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def zeros_like(cls, frame):
 
         """
@@ -504,9 +519,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Return a zero-filled copy of the frame
-        new = frame.copy()
-        new._data = np.zeros_like(frame._data)
+        # Create a new frame
+        new = cls(np.zeros_like(frame._data))
         return new
 
     # -----------------------------------------------------------------

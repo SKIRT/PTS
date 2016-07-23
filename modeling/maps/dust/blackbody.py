@@ -75,6 +75,9 @@ class BlackBodyDustMapMaker(MapsComponent):
         # The datacube
         self.datacube = None
 
+        # The truncation mask
+        self.mask = None
+
         # The dust map
         self.map = None
 
@@ -154,7 +157,7 @@ class BlackBodyDustMapMaker(MapsComponent):
         log.info("Initializing the dust map ...")
 
         # Create a map with the same shape as all the data
-        self.map = Frame.zeros_like(self.datacube)
+        self.map = Frame.zeros(self.datacube.shape)
 
     # -----------------------------------------------------------------
 
@@ -171,57 +174,78 @@ class BlackBodyDustMapMaker(MapsComponent):
         # Get the list of wavelengths
         wavelengths = self.datacube.wavelengths(unit="micron", asarray=True)
 
+        # Get list of x and y pixels
+        pixels_y, pixels_x = np.where(self.truncation_mask(self.datacube))
+        npixels = pixels_x.size
+
         # Loop over all pixels
-        for x in range(self.datacube.xsize):
-            for y in range(self.datacube.ysize):
+        #for x in range(self.datacube.xsize):
+        #    for y in range(self.datacube.ysize):
+        for index in range(npixels):
 
-                # Get the FIR-submm SED for this pixel
-                sed = self.datacube.sed_in_pixel(x, y)
+            # Debugging
+            log.debug("Fitting to pixel " + str(index + 1) + " of " + str(npixels) + " ...")
 
-                # Get the fluxes
-                fluxes = sed.fluxes(unit="Jy", asarray=True)
+            x = pixels_x[index]
+            y = pixels_y[index]
 
-                # The errors
-                errors = fluxes * 0.0 + 1.0
+            # Get the FIR-submm SED for this pixel
+            sed = self.datacube.pixel_sed(x, y)
 
-                # The distance
-                D = 3.62 * Unit("Mpc")
-                D = D.to("pc").value
+            # Get the fluxes
+            fluxes = sed.fluxes(unit="Jy", asarray=True)
 
-                #D = data[i, 1] * 3 * 10 ** 5 / 67.30
-                # The distance
+            if np.any(fluxes < 0): continue
 
-                # Do the fit for this pixel
-                if method == "grid": t1, t2, mdust, ratio = self.fit_grid(wavelengths, fluxes, errors, D)
-                elif method == "genetic": t1, t2, mdust, ratio = self.fit_genetic(wavelengths, fluxes, errors, D)
-                else: raise ValueError("Invalid method (" + method + ")")
+            print(fluxes)
 
-                # Set the dust mass in the dust mass map
-                self.map[y, x] = mdust
+            from ....core.plot.sed import SEDPlotter
+            plotter = SEDPlotter()
+            # plotter.add_observed_sed(sed, "pixel")
+            plotter.add_modeled_sed(sed, "pixel")
+            plotter.run()
 
-                if plot:
+            continue
 
-                    plt.plot(Mddist, Mdprob)
-                    plt.title(dataID[i])
-                    plt.xlabel('T_cold (K)')
-                    plt.show()
+            # The errors
+            errors = fluxes * 0.0 + 1.0
 
-                    print(Md_sav, T1_sav, T2_sav)
+            # The distance
+            distance = 3.62 * Unit("Mpc")
+            distance = distance.to("pc").value
 
-                    plt.errorbar(wa, ydata, yerr=yerr, fmt='bo')
-                    x2 = np.arange(10., 600., 0.1)
-                    plt.loglog()
-                    plt.title(dataID[i])
-                    plt.ylim(0.001, 1)
-                    plt.plot(x2, two_blackbodies(x2, D, np.log10(Mdratio_sav) + Md_sav, T1_sav, np.log10(Mdratio_sav) + Md_sav, T2_sav), 'r', label="best fit")
-                    plt.xlabel('Wavelength (microns)')
-                    plt.ylabel('Flux (Jy)')
-                    plt.plot(x2, blackbody(x2, D, np.log10(Mdratio_sav) + Md_sav, T1_sav), ':', lw=2,
-                             label="cold dust: logMd = %s, Tc= %s K " % (np.log10(Mdratio_sav) + Md_sav, T1_sav))
-                    plt.plot(x2, blackbody(x2, D, np.log10(Mdratio_sav) + Md_sav, T2_sav), ':', lw=2,
-                             label="warm dust: logMd = %s, Tc= %s K " % (np.log10(Mdratio_sav) + Md_sav, T2_sav))
-                    plt.legend(loc=4)
-                    plt.show()
+            #D = data[i, 1] * 3 * 10 ** 5 / 67.30
+            # The distance
+
+            # Do the fit for this pixel
+            if method == "grid": t1, t2, mdust, ratio, dust_mass_range, dust_mass_probs = self.fit_grid(wavelengths, fluxes, errors, distance)
+            elif method == "genetic": t1, t2, mdust, ratio = self.fit_genetic(wavelengths, fluxes, errors, distance)
+            else: raise ValueError("Invalid method (" + method + ")")
+
+            # Set the dust mass in the dust mass map
+            self.map[y, x] = mdust
+
+            if plot:
+
+                plt.plot(dust_mass_range, dust_mass_probs)
+                #plt.title(dataID[i])
+                plt.xlabel('T_cold (K)')
+                plt.show()
+
+                print(mdust, t1, t2)
+
+                plt.errorbar(wavelengths, fluxes, yerr=errors, fmt='bo')
+                x2 = np.arange(10., 600., 0.1)
+                plt.loglog()
+                #plt.title(dataID[i])
+                plt.ylim(0.001, 1)
+                plt.plot(x2, two_blackbodies(x2, D, np.log10(ratio) + mdust, t1, np.log10(1.0 - ratio) + mdust, t2), 'r', label="best fit")
+                plt.xlabel('Wavelength (microns)')
+                plt.ylabel('Flux (Jy)')
+                plt.plot(x2, blackbody(x2, D, np.log10(ratio) + mdust, t1), ':', lw=2, label="cold dust: logMd = %s, Tc= %s K " % (np.log10(ratio) + mdust, t1))
+                plt.plot(x2, blackbody(x2, D, np.log10(1.0 - ratio) + mdust, t2), ':', lw=2, label="warm dust: logMd = %s, Tc= %s K " % (np.log10(1.0 - ratio) + mdust, t2))
+                plt.legend(loc=4)
+                plt.show()
 
         #plt.legend(frameon=False)
         #plt.savefig('fit_bb.png')
@@ -237,6 +261,7 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         # Normalize the dust map
         self.map.normalize()
+        self.map.unit = None
 
     # -----------------------------------------------------------------
 
@@ -254,7 +279,7 @@ class BlackBodyDustMapMaker(MapsComponent):
         warm_temp_range = np.arange(t2_min, t2_max, t2_step)
         dust_mass_range = np.arange(md_min, md_max, md_step)
 
-        Mdprob = np.zeros(len(dust_mass_range))
+        dust_mass_probs = np.zeros(len(dust_mass_range))
 
         # Best values
         cold_temp_best = None
@@ -264,7 +289,7 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         ptot = 0
         # Loop over the temperatures and dust masses
-        index = 0
+        dust_mass_index = 0
         for dust_mass in dust_mass_range:
             for warm_temp in warm_temp_range:
                 for cold_temp in cold_temp_range:
@@ -291,16 +316,17 @@ class BlackBodyDustMapMaker(MapsComponent):
                         #print(Mddist[ii], Mdr_new, cold_temp_best, warm_temp_best)
 
                     prob = np.exp(-0.5 * chi2_new)
-                    Mdprob[index] += prob
+                    dust_mass_probs[dust_mass_index] += prob
                     ptot += prob
 
-                    index += 1
+            dust_mass_index += 1
 
-        Mdprob = Mdprob / ptot
+        # Normalize probabilities
+        dust_mass_probs = dust_mass_probs / ptot
 
         #print("tcold", Mddist[np.where(Mdprob == max(Mdprob))], percentiles(Mddist, Mdprob, 16), percentiles(Mddist, Mdprob, 50), percentiles(Mddist, Mdprob, 84))
 
-        return cold_temp_best, warm_temp_best, dust_mass_best, ratio_best
+        return cold_temp_best, warm_temp_best, dust_mass_best, ratio_best, dust_mass_range, dust_mass_probs
 
     # -----------------------------------------------------------------
 
@@ -406,11 +432,11 @@ def two_blackbodies(wa, D, Md, T1, Md2, T2):
 
 # -----------------------------------------------------------------
 
-def leastsq(Dustratio, Md, wa, y, yerr, D, T1, T2):
+def leastsq(ratio, Md, wa, y, yerr, D, T1, T2):
 
     """
     This function ...
-    :param Dustratio:
+    :param ratio:
     :param Md:
     :param wa:
     :param y:
@@ -422,7 +448,7 @@ def leastsq(Dustratio, Md, wa, y, yerr, D, T1, T2):
     """
 
     som = 0
-    y2 = two_blackbodies(wa, D, np.log10(Dustratio)+Md,T1,np.log10(1-(Dustratio))+Md,T2)
+    y2 = two_blackbodies(wa, D, np.log10(ratio) + Md, T1, np.log10(1.- ratio) + Md, T2)
 
     for i in range(len(wa)):
         if i!=0 or y[i]<y2[i]:

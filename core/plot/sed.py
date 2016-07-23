@@ -140,7 +140,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path, min_wavelength=None, max_wavelength=None, min_flux=None, max_flux=None):
+    def run(self, output_path=None, min_wavelength=None, max_wavelength=None, min_flux=None, max_flux=None):
 
         """
         This function ...

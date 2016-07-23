@@ -15,15 +15,13 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from .image import Image
 from .frame import Frame
 from ...modeling.core.sed import SED
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.tools.logging import log
+from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -182,7 +180,39 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def sed_in_pixel(self, x, y):
+    def local_sed(self, region):
+
+        """
+        This function ...
+        :param region:
+        :return:
+        """
+
+        # Initialize the SED
+        sed = SED()
+
+        # Create a mask from the region (or shape)
+        mask = region.to_mask(self.xsize, self.ysize)
+
+        # Loop over the wavelengths
+        index = 0
+        for wavelength in self.wavelengths():
+
+            # Determine the name of the frame in the datacube
+            frame_name = "frame" + str(index)
+
+            # Get the flux in the pixels that belong to the region
+            flux = np.sum(self.frames[frame_name][mask]) * self.unit
+
+            # Add an entry to the SED
+            sed.add_entry(wavelength, flux)
+
+        # Return the SED
+        return sed
+
+    # -----------------------------------------------------------------
+
+    def pixel_sed(self, x, y):
 
         """
         This function ...
@@ -212,12 +242,18 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def to_sed(self):
+    def global_sed(self, mask=None):
 
         """
         This function ...
         :return:
         """
+
+        # Determine the mask
+        if isinstance(mask, basestring): inverse_mask = self.masks[mask].inverse()
+        elif isinstance(mask, Mask): inverse_mask = mask.inverse()
+        elif mask is None: inverse_mask = None
+        else: raise ValueError("Mask must be string or Mask (or None) instead of " + str(type(mask)))
 
         # Initialize the SED
         sed = SED()
@@ -230,7 +266,8 @@ class DataCube(Image):
             frame_name = "frame" + str(index)
 
             # Calculate the total flux
-            total_flux = self.frames[frame_name].sum() * self.unit
+            if mask is not None: total_flux = self.frames[frame_name].sum() * self.unit
+            else: total_flux = np.sum(self.frames[frame_name][inverse_mask]) * self.unit
 
             # Add an entry to the SED
             sed.add_entry(wavelength, total_flux)

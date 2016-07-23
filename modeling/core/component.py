@@ -26,6 +26,7 @@ from ...core.tools import filesystem as fs
 from ..core.sed import ObservedSED
 from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
+from ...magic.basics.skyregion import SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -221,8 +222,8 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the image paths
-        paths = []
+        # Initialize the dataset
+        dataset = DataSet()
 
         # Loop over all FITS files found in the 'truncated' directory
         for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
@@ -233,14 +234,42 @@ class ModelingComponent(Configurable):
             # Ignore the H alpha image
             if "Halpha" in name: continue
 
-            # Add the image path to the list
-            paths.append(path)
-
-        # Create the dataset instance
-        dataset = DataSet(paths)
+            # Add the image path to the dataset
+            dataset.add_path(name, path)
 
         # Return the dataset
         return dataset
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the ellipse
+        path = fs.join(self.truncation_path, "ellipse.reg")
+        region = SkyRegion.from_file(path)
+        ellipse = region[0]
+
+        # Return the (sky) ellipse
+        return ellipse
+
+    # -----------------------------------------------------------------
+
+    def truncation_mask(self, frame):
+
+        """
+        This function ...
+        :param frame: frame, image, datacube ...
+        :return:
+        """
+
+        # Convert sky ellipse to pixel ellipse and then to mask
+        return self.truncation_ellipse.to_pixel(frame.wcs).to_mask(frame.xsize, frame.ysize)
 
 # -----------------------------------------------------------------
 

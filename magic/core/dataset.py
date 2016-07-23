@@ -12,6 +12,9 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .frame import Frame
@@ -26,14 +29,14 @@ class DataSet(object):
     This class...
     """
 
-    def __init__(self, paths=None):
+    def __init__(self):
 
         """
         The constructor ...
         """
 
         # The paths to the images
-        self.paths = [] if paths is None else paths
+        self.paths = OrderedDict()
 
     # -----------------------------------------------------------------
 
@@ -47,28 +50,52 @@ class DataSet(object):
         """
 
         # Set the paths
-        paths = fs.files_in_path(path, extension="fits")
+        paths, names = fs.files_in_path(path, extension="fits", returns=["path", "name"])
 
         # Create a new dataset instance
-        dataset = cls(paths)
+        dataset = cls()
+
+        # Add the paths
+        for path, name in zip(paths, names):
+
+            # Add the image path
+            dataset.add_path(name, path)
 
         # Return the dataset instance
         return dataset
 
     # -----------------------------------------------------------------
 
-    def add_path(self, path):
+    def add_path(self, name, path):
 
         """
         This function ...
+        :param name:
         :param path:
         :return:
         """
 
+        # Check if the file exists
         if not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
 
+        # Check if already such a name
+        if name in self.paths: raise ValueError("Already a path in the dataset with the name " + name)
+
         # Add the path
-        self.paths.append(path)
+        self.paths[name] = path
+
+    # -----------------------------------------------------------------
+
+    def get_frame(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Open the frame and return it
+        return Frame.from_file(self.paths[name])
 
     # -----------------------------------------------------------------
 
@@ -92,16 +119,13 @@ class DataSet(object):
         frames = dict()
 
         # Open the image frames
-        for path in self.paths:
-
-            # Determine the image name
-            name = fs.strip_extension(fs.name(path))
+        for name in self.paths:
 
             # Skip if name is in the exclude list
             if exclude is not None and name in exclude: continue
 
             # Open the frame
-            frame = Frame.from_file(path)
+            frame = self.get_frame(name)
 
             # Skip images of wavelength smaller than the minimum or greater than the maximum
             if min_wavelength is not None and frame.wavelength < min_wavelength: continue

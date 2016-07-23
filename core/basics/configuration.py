@@ -406,7 +406,14 @@ class ConfigurationDefinition(object):
             if self.prefix is not None: argument_name = self.prefix + "/" + name
             else: argument_name = name
 
-            settings[name] = getattr(arguments, argument_name)
+            default = self.flags[name][2]
+
+            if default: # if default == True
+
+                argument_name = "!" + argument_name
+                settings[name] = not getattr(arguments, argument_name)
+
+            else: settings[name] = getattr(arguments, argument_name)
 
         # Add the configuration settings of the various sections
         for name in self.sections:

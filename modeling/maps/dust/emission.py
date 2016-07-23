@@ -14,10 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
+from ..component import MapsComponent
 
 # -----------------------------------------------------------------
 
-class EmissionDustMapMaker(object):
+class EmissionDustMapMaker(MapsComponent):
 
     """
     This class...
@@ -35,6 +36,9 @@ class EmissionDustMapMaker(object):
 
         # -- Attributes --
 
+        # The dust map
+        self.map = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -47,9 +51,11 @@ class EmissionDustMapMaker(object):
         # 1. Call the setup function
         self.setup()
 
-        # ...
-
+        # 2. Make the map
         self.make_map()
+
+        # 3. Normalize the map
+        self.normalize_map()
 
     # -----------------------------------------------------------------
 
@@ -60,7 +66,8 @@ class EmissionDustMapMaker(object):
         :return:
         """
 
-        pass
+        # Call the setup function of the base class
+        super(EmissionDustMapMaker, self).setup()
 
     # -----------------------------------------------------------------
 
@@ -71,6 +78,18 @@ class EmissionDustMapMaker(object):
         :return:
         """
 
-        pass
+        self.map = self.dataset.get_frame("Pacs red")
+
+    # -----------------------------------------------------------------
+
+    def normalize_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.map.normalize()
+        self.map.unit = None
 
 # -----------------------------------------------------------------

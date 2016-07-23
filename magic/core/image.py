@@ -121,6 +121,18 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nframes > 0
+
+    # -----------------------------------------------------------------
+
+    @property
     def nframes(self):
 
         """
@@ -164,7 +176,7 @@ class Image(object):
         :return:
         """
 
-        return self.primary.shape
+        return self.primary.shape if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -176,7 +188,7 @@ class Image(object):
         :return:
         """
 
-        return self.primary.xsize
+        return self.primary.xsize if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -188,7 +200,7 @@ class Image(object):
         :return:
         """
 
-        return self.primary.ysize
+        return self.primary.ysize if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -201,7 +213,7 @@ class Image(object):
         """
 
         # Return the filter of the primary frame
-        return self.primary.filter
+        return self.primary.filter if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -214,7 +226,7 @@ class Image(object):
         """
 
         # Return the wavelength of the primary frame
-        return self.primary.wavelength
+        return self.primary.wavelength if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -227,7 +239,7 @@ class Image(object):
         """
 
         # Return the unit of the primary frame
-        return self.primary.unit
+        return self.primary.unit if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -240,7 +252,7 @@ class Image(object):
         """
 
         # Return the pixelscale of the primary frame
-        return self.primary.pixelscale
+        return self.primary.pixelscale if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -253,7 +265,7 @@ class Image(object):
         """
 
         # Return the averaged pixelscale of the primary frame
-        return self.primary.average_pixelscale
+        return self.primary.average_pixelscale if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -268,7 +280,7 @@ class Image(object):
         if self._fwhm is not None: return self._fwhm
 
         # Return the FWHM of the primary frame
-        return self.primary.fwhm
+        return self.primary.fwhm if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -279,6 +291,8 @@ class Image(object):
         This function ...
         :return:
         """
+
+        if not self.has_frames: return None
 
         # Get the FWHM in sky coordinates
         fwhm = self.fwhm
@@ -297,7 +311,7 @@ class Image(object):
         """
 
         # Return the wcs of the primary frame
-        return self.primary.wcs
+        return self.primary.wcs if self.has_frames else None
 
     # -----------------------------------------------------------------
 
@@ -310,7 +324,7 @@ class Image(object):
         """
 
         # Return the coordinate range of the primary frame
-        return self.primary.coordinate_range
+        return self.primary.coordinate_range if self.has_frames else None
 
     # -----------------------------------------------------------------
 
