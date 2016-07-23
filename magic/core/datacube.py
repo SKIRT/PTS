@@ -18,10 +18,11 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from .image import Image
 from .frame import Frame
-from ...modeling.core.sed import SED
+from ...modeling.core.sed import SED, ObservedSED
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.tools.logging import log
 from ..basics.mask import Mask
+from ...core.basics.errorbar import ErrorBar
 
 # -----------------------------------------------------------------
 
@@ -207,6 +208,9 @@ class DataCube(Image):
             # Add an entry to the SED
             sed.add_entry(wavelength, flux)
 
+            # Increment the index
+            index += 1
+
         # Return the SED
         return sed
 
@@ -222,7 +226,8 @@ class DataCube(Image):
         """
 
         # Initialize the SED
-        sed = SED()
+        #sed = SED()
+        sed = ObservedSED()
 
         # Loop over the wavelengths
         index = 0
@@ -235,7 +240,12 @@ class DataCube(Image):
             flux = self.frames[frame_name][y, x] * self.unit
 
             # Add an entry to the SED
-            sed.add_entry(wavelength, flux)
+            #sed.add_entry(wavelength, flux)
+            errorbar = ErrorBar(0.0, 0.0)
+            sed.add_entry(self.frames[frame_name].filter, flux, errorbar)
+
+            # Increment the index
+            index += 1
 
         # Return the SED
         return sed
@@ -271,6 +281,9 @@ class DataCube(Image):
 
             # Add an entry to the SED
             sed.add_entry(wavelength, total_flux)
+
+            # Increment the index
+            index += 1
 
         # Return the SED
         return sed

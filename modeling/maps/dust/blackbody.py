@@ -46,7 +46,8 @@ t2_step = 10.
 
 md_min = 4.
 md_max = 6.
-md_step = 0.02
+#md_step = 0.02
+md_step = 0.1
 
 ratio_min = 0.
 ratio_max = 1.
@@ -127,7 +128,7 @@ class BlackBodyDustMapMaker(MapsComponent):
         """
 
         # Determine the minimum and maximum wavelength
-        min_wavelength = 20. * Unit("micron")
+        min_wavelength = 23. * Unit("micron")
         max_wavelength = 1000. * Unit("micron")
 
         # Create the datacube
@@ -197,15 +198,16 @@ class BlackBodyDustMapMaker(MapsComponent):
 
             if np.any(fluxes < 0): continue
 
-            print(fluxes)
+            #print(fluxes)
 
-            from ....core.plot.sed import SEDPlotter
-            plotter = SEDPlotter()
+            #from ....core.plot.sed import SEDPlotter
+            #plotter = SEDPlotter()
             # plotter.add_observed_sed(sed, "pixel")
-            plotter.add_modeled_sed(sed, "pixel")
-            plotter.run()
+            #plotter.add_modeled_sed(sed, "pixel")
+            #plotter.add_observed_sed(sed, "pixel")
+            #plotter.run()
 
-            continue
+            #continue
 
             # The errors
             errors = fluxes * 0.0 + 1.0
@@ -225,6 +227,8 @@ class BlackBodyDustMapMaker(MapsComponent):
             # Set the dust mass in the dust mass map
             self.map[y, x] = mdust
 
+            plot = True
+
             if plot:
 
                 plt.plot(dust_mass_range, dust_mass_probs)
@@ -239,11 +243,11 @@ class BlackBodyDustMapMaker(MapsComponent):
                 plt.loglog()
                 #plt.title(dataID[i])
                 plt.ylim(0.001, 1)
-                plt.plot(x2, two_blackbodies(x2, D, np.log10(ratio) + mdust, t1, np.log10(1.0 - ratio) + mdust, t2), 'r', label="best fit")
+                plt.plot(x2, two_blackbodies(x2, distance, np.log10(ratio) + mdust, t1, np.log10(1.0 - ratio) + mdust, t2), 'r', label="best fit")
                 plt.xlabel('Wavelength (microns)')
                 plt.ylabel('Flux (Jy)')
-                plt.plot(x2, blackbody(x2, D, np.log10(ratio) + mdust, t1), ':', lw=2, label="cold dust: logMd = %s, Tc= %s K " % (np.log10(ratio) + mdust, t1))
-                plt.plot(x2, blackbody(x2, D, np.log10(1.0 - ratio) + mdust, t2), ':', lw=2, label="warm dust: logMd = %s, Tc= %s K " % (np.log10(1.0 - ratio) + mdust, t2))
+                plt.plot(x2, blackbody(x2, distance, np.log10(ratio) + mdust, t1), ':', lw=2, label="cold dust: logMd = %s, Tc= %s K " % (np.log10(ratio) + mdust, t1))
+                plt.plot(x2, blackbody(x2, distance, np.log10(1.0 - ratio) + mdust, t2), ':', lw=2, label="warm dust: logMd = %s, Tc= %s K " % (np.log10(1.0 - ratio) + mdust, t2))
                 plt.legend(loc=4)
                 plt.show()
 
@@ -279,6 +283,8 @@ class BlackBodyDustMapMaker(MapsComponent):
         warm_temp_range = np.arange(t2_min, t2_max, t2_step)
         dust_mass_range = np.arange(md_min, md_max, md_step)
 
+        ncombinations = len(cold_temp_range) * len(warm_temp_range) * len(dust_mass_range)
+
         dust_mass_probs = np.zeros(len(dust_mass_range))
 
         # Best values
@@ -289,13 +295,16 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         ptot = 0
         # Loop over the temperatures and dust masses
+        index = 0
         dust_mass_index = 0
         for dust_mass in dust_mass_range:
             for warm_temp in warm_temp_range:
                 for cold_temp in cold_temp_range:
 
                     # Debugging
-                    log.debug("Fitting dust ratio for a dust mass of " + str(dust_mass) + ", a warm temperature of " + str(warm_temp) + ", and a cold temperature of " + str(cold_temp) + " ...")
+                    log.debug("Fitting dust ratio for a dust mass of " + str(dust_mass) + ", a warm temperature of "
+                              + str(warm_temp) + ", and a cold temperature of " + str(cold_temp) + " (" + str(index+1)
+                              + " of " + str(ncombinations) + " ...")
 
                     # Optimize
                     popt = minimize(leastsq, [ratio_guess], args=(dust_mass, wa, ydata, yerr, D, cold_temp, warm_temp), method='Nelder-Mead', options={'maxiter': 200})
@@ -318,6 +327,8 @@ class BlackBodyDustMapMaker(MapsComponent):
                     prob = np.exp(-0.5 * chi2_new)
                     dust_mass_probs[dust_mass_index] += prob
                     ptot += prob
+
+                    index += 1
 
             dust_mass_index += 1
 

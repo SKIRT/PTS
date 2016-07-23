@@ -58,6 +58,44 @@ def get_frame_names(path):
 
 # -----------------------------------------------------------------
 
+def get_header(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Open the header and return it
+    return fits.getheader(path)
+
+# -----------------------------------------------------------------
+
+def get_data(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Open the data as a numpy array and return it
+    return fits.getdata(path)
+
+# -----------------------------------------------------------------
+
+def get_info(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return fits.info(path, output=False)
+
+# -----------------------------------------------------------------
+
 def load_frames(path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
 
     """

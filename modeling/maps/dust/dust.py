@@ -58,7 +58,7 @@ class DustMapMaker(MapsComponent):
         self.setup()
 
         # 2. Make a dust map based on black body pixel fitting
-        #if self.config.make_black_body: self.make_black_body()
+        if self.config.make_black_body: self.make_black_body()
 
         # 3. Make a dust map simply based on FIR / submm emission in a certain band
         if self.config.make_emission: self.make_emission()
