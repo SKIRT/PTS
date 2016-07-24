@@ -128,12 +128,16 @@ def load_mapping(mappingfile, mapping, indent=""):
                     name = before
                     specification = None
 
-                value = after
+                # Should not happen
+                if specification is None: raise ValueError("Invalid line (no specification): " + line)
 
-                if specification is None:
+                # Strip away leading or trailing spaces
+                value = after.strip()
 
-                    value = eval(value)
+                #if specification is None:
+                #    value = eval(value)
 
+                if value == "None": value = None
                 else:
 
                     parsing_function = getattr(parsing, specification)
@@ -833,6 +837,46 @@ class FileConfigurationSetter(ConfigurationSetter):
         """
 
         pass
+
+# -----------------------------------------------------------------
+
+class GraphicalConfigurationSetter(ConfigurationSetter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param add_logging:
+        :param add_cwd:
+        :param log_path:
+        """
+
+        # Call the constructor of the base class
+        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+
+
+
+    # -----------------------------------------------------------------
+
+    def run(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set definition
+        self.definition = definition
+
+        # Set logging and cwd
+        self.set_logging_and_cwd()
 
 # -----------------------------------------------------------------
 

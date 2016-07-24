@@ -25,6 +25,7 @@ import argparse
 # Import the relevant PTS classes and modules
 from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
+from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -40,7 +41,7 @@ def boolean(entry):
 
     if lowercase == "true" or lowercase == "y" or lowercase == "yes" or lowercase == "t": return True
     elif lowercase == "false" or lowercase == "n" or lowercase == "no" or lowercase == "f": return False
-    else: raise ValueError("Invalid boolean specification")
+    else: raise ValueError("Invalid boolean specification: " + entry)
 
 # -----------------------------------------------------------------
 
@@ -56,6 +57,34 @@ def integer(argument):
 
 # -----------------------------------------------------------------
 
+def positive_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = integer(argument)
+    if value < 0: raise ValueError("Value is smaller than zero")
+    return value
+
+# -----------------------------------------------------------------
+
+def negative_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = integer(argument)
+    if value > 0: raise ValueError("Value is greater than zero")
+    return value
+
+# -----------------------------------------------------------------
+
 def real(argument):
 
     """
@@ -65,6 +94,34 @@ def real(argument):
     """
 
     return float(argument)
+
+# -----------------------------------------------------------------
+
+def positive_real(argument):
+
+    """
+    Positive real (floating-point) value (>=0)
+    :param argument:
+    :return:
+    """
+
+    value = real(argument)
+    if value < 0: raise ValueError("Value is smaller than zero")
+    return value
+
+# -----------------------------------------------------------------
+
+def negative_real(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = real(argument)
+    if value > 0: raise ValueError("Value is greater than zero")
+    return value
 
 # -----------------------------------------------------------------
 
@@ -119,15 +176,32 @@ def quantity_range(argument):
 
 # -----------------------------------------------------------------
 
-def absolute_path(argument):
+def directory_path(argument):
 
     """
-    Converts a relative path or filename to an absolute path
+    Converts a relative path or directory name to an absolute directory path, and checks whether this
+    directory exists
     :param argument:
     :return:
     """
 
-    return os.path.abspath(argument)
+    path = fs.absolute(argument)
+    if not fs.is_directory(path): raise ValueError("Is not a directory: " + path)
+    return path
+
+# -----------------------------------------------------------------
+
+def file_path(argument):
+
+    """
+    Converts a relative path or filename to an absolute filepath, and checks whether this file exists
+    :param argument:
+    :return:
+    """
+
+    path = fs.absolute(argument)
+    if not fs.is_file(path): raise ValueError("Is not a file: " + path)
+    return path
 
 # -----------------------------------------------------------------
 
@@ -364,5 +438,32 @@ def angle(entry, default_unit=None):
     # Create an Angle object and return it
     if unit is not None: value = Angle(value, unit)
     return value
+
+# -----------------------------------------------------------------
+
+def pixel_limits(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    lst = integer_list(argument)
+    assert len(lst) == 4
+    return lst
+
+# -----------------------------------------------------------------
+
+def calibration_error(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.misc.calibration import CalibrationError
+    return CalibrationError.from_string(argument)
 
 # -----------------------------------------------------------------

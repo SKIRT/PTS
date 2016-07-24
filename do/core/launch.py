@@ -31,12 +31,12 @@ from pts.core.basics.configuration import ConfigurationDefinition, Configuration
 definition = ConfigurationDefinition()
 
 # Add required arguments
-definition.add_required("filename", "absolute_path", "the name/path of the ski file")
+definition.add_required("filename", "file_path", "the name/path of the ski file")
 
 # Add positional arguments
 definition.add_positional_optional("remote", "string", "the remote host on which to run the simulation (if none is specified, the simulation is run locally")
-definition.add_optional("input", "absolute_path", "the simulation input directory", letter="i")
-definition.add_optional("output", "absolute_path", "the simulation output directory", letter="o")
+definition.add_optional("input", "directory_path", "the simulation input directory", letter="i")
+definition.add_optional("output", "directory_path", "the simulation output directory", letter="o")
 definition.add_optional("cluster", "string", "the name of the cluster", letter="c")
 definition.add_optional("parallel", "integer_tuple", "the parallelization scheme (processes, threads)", letter="p")
 definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")

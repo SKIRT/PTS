@@ -179,16 +179,21 @@ class BlackBodyDustMapMaker(MapsComponent):
         pixels_y, pixels_x = np.where(self.truncation_mask(self.datacube))
         npixels = pixels_x.size
 
+        #ellipse = self.truncation_ellipse.to_pixel(self.datacube.wcs)
+        #center = ellipse.center
+
         # Loop over all pixels
-        #for x in range(self.datacube.xsize):
-        #    for y in range(self.datacube.ysize):
         for index in range(npixels):
+        #for index in range(1):
 
             # Debugging
             log.debug("Fitting to pixel " + str(index + 1) + " of " + str(npixels) + " ...")
 
             x = pixels_x[index]
             y = pixels_y[index]
+
+            #x = int(center.x)
+            #y = int(center.y)
 
             # Get the FIR-submm SED for this pixel
             sed = self.datacube.pixel_sed(x, y)
@@ -214,7 +219,8 @@ class BlackBodyDustMapMaker(MapsComponent):
 
             # The distance
             distance = 3.62 * Unit("Mpc")
-            distance = distance.to("pc").value
+            #distance = distance.to("pc").value
+            distance = distance.value
 
             #D = data[i, 1] * 3 * 10 ** 5 / 67.30
             # The distance
@@ -304,7 +310,7 @@ class BlackBodyDustMapMaker(MapsComponent):
                     # Debugging
                     log.debug("Fitting dust ratio for a dust mass of " + str(dust_mass) + ", a warm temperature of "
                               + str(warm_temp) + ", and a cold temperature of " + str(cold_temp) + " (" + str(index+1)
-                              + " of " + str(ncombinations) + " ...")
+                              + " of " + str(ncombinations) + ") ...")
 
                     # Optimize
                     popt = minimize(leastsq, [ratio_guess], args=(dust_mass, wa, ydata, yerr, D, cold_temp, warm_temp), method='Nelder-Mead', options={'maxiter': 200})

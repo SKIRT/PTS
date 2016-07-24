@@ -69,6 +69,28 @@ class CalibrationError(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_string(cls, string):
+
+        """
+        This function ...
+        :param string:
+        :return:
+        """
+
+        if "mag" in string:
+            value = float(string.split(" mag")[0])
+            unit = "mag"
+        elif "%" in string:
+            value = float(string.split("%")[0])
+            unit = "%"
+        else: raise ValueError("An error occured")
+
+        # Return a new class instance
+        return cls(value, unit)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_filter_name(cls, filter_name):
 
         """
@@ -80,16 +102,8 @@ class CalibrationError(object):
         # Set the calibration error
         calibration_error = calibration_errors[filter_name]
 
-        if "mag" in calibration_error:
-            value = float(calibration_error.split(" mag")[0])
-            unit = "mag"
-        elif "%" in calibration_error:
-            value = float(calibration_error.split("%")[0])
-            unit = "%"
-        else: raise ValueError("An error occured")
-
-        # Return a new class instance
-        return cls(value, unit)
+        # Create and return the calibration error instance
+        return cls.from_string(calibration_error)
 
     # -----------------------------------------------------------------
 

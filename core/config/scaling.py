@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Required arguments
-definition.add_required("ski_path", "absolute_path", "the name of the ski file to be used for the scaling test")
+definition.add_required("ski_path", "file_path", "the name of the ski file to be used for the scaling test")
 definition.add_required("remote", "string", "the name of the remote host")
 definition.add_required("mode", "string", "the parallelization mode for the scaling test", choices=["mpi", "hybrid", "threads"])
 

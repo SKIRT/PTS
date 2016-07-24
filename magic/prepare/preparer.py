@@ -672,7 +672,8 @@ class ImagePreparer(OldConfigurable):
         error_maps.append(self.image.frames.calibration_errors)
 
         # Add additional error frames indicated by the user
-        for error_frame_name in self.config.error_frame_names: error_maps.append(self.image.frames[error_frame_name])
+        if self.config.error_frame_names is not None:
+            for error_frame_name in self.config.error_frame_names: error_maps.append(self.image.frames[error_frame_name])
 
         # Calculate the final error map
         errors = sum_frames_quadratically(*error_maps)

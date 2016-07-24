@@ -8,6 +8,8 @@
 ## \package pts.core.basics.map Contains the Map class, a dictionary-like object that provides
 #  access to its values by using the 'dot' notation.
 
+from __future__ import print_function
+
 # Import standard modules
 import warnings
 
@@ -73,7 +75,7 @@ class Map(dict):
         """
 
         if len(self) != len(other):
-            #print("lengths not equal")
+            print("lengths not equal:", self, other)
             return False
 
         for label in self:
@@ -85,13 +87,13 @@ class Map(dict):
 
                 for a in value:
                     if a not in other_value:
-                        #print("value " + str(a) + " not in list " + str(other_value))
+                        print("value " + str(a) + " not in list " + str(other_value))
                         return False
 
             elif value != other_value:
 
-                #try: keys = value.keys() # if mapping-like
-                #except AttributeError: print("value " + str(value) + " and " + str(other_value) + " are not equal")
+                try: keys = value.keys() # if mapping-like
+                except AttributeError: print("value " + str(value) + " and " + str(other_value) + " are not equal")
                 return False
 
         return True
