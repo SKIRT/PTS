@@ -23,6 +23,7 @@ from ....magic.core.frame import Frame
 from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
+from ..component import MapsComponent
 
 # -----------------------------------------------------------------
 
@@ -31,7 +32,7 @@ cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat
 
 # -----------------------------------------------------------------
 
-class CorteseDustMapMaker(object):
+class CorteseDustMapMaker(MapsComponent):
 
     """
     This class...
@@ -48,6 +49,17 @@ class CorteseDustMapMaker(object):
         super(CorteseDustMapMaker, self).__init__()
 
         # -- Attributes --
+
+        # Frames and error maps
+        self.frames = dict()
+        self.errors = dict()
+
+        # FUV and TIR map in SI units (W/m2)
+        self.fuv_si = None
+        self.tir_si = None
+
+        # The TIR to FUV ratio map
+        self.tir_to_fuv = None
 
         # The table describing the calibration parameters from Cortese et. al 2008
         # Title of table: Relations to convert the TIR/FUV ratio in A(FUV) for different values of tau and
@@ -69,11 +81,20 @@ class CorteseDustMapMaker(object):
         # 1. Call the setup function
         self.setup()
 
+        # Load the image frames and errors
+        self.load_frames()
+
+        # Make the FUV map in W/m2 unit
+        self.make_fuv()
+
+        # Make the TIR map in W/m2 unit
+        self.make_tir()
+
         # ...
         self.make_map()
 
-        # Return the map
-        return self.map
+        # Normalize the dust map
+        self.normalize()
 
     # -----------------------------------------------------------------
 
@@ -84,8 +105,116 @@ class CorteseDustMapMaker(object):
         :return:
         """
 
+        #ssfr_colour: "FUV-H", "FUV-i", "FUV-r", "FUV-g" or "FUV-B"`
+        self.config.ssfr_colour = "FUV-i"
+
         # Load the Cortese et. al 2008 table
         self.cortese = tables.from_file(cortese_table_path)
+
+    # -----------------------------------------------------------------
+
+    def load_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        data_names = ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
+
+        if self.config.ssfr_colour == "FUV-H": data_names.append("2MASS H")
+        elif self.config.ssfr_colour == "FUV-i": data_names.append("SDSS i")
+        elif self.config.ssfr_colour == "FUV-r": data_names.append("SDSS r")
+        elif self.config.ssfr_colour == "FUV-g": data_names.append("SDSS g")
+        #elif self.config.ssfr_colour == "FUV-B": data_names.append("")
+        else: raise ValueError("Invalid SSFR colour option")
+
+        # Load all the frames and error maps
+        for name in data_names:
+
+            frame = self.dataset.get_frame(name)
+            errors = self.dataset.get_errors(name)
+
+            self.frames[name] = frame
+            self.errors[name] = errors
+
+    # -----------------------------------------------------------------
+
+    def make_fuv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the FUV map in W/m2 units ...")
+
+        # Convert the FUV map from MJy/sr to W/m2
+        exponent = - 20.0 + np.log10(3.e8) - np.log10(0.153e-6) + (2. * np.log10(2.85 / 206264.806247))
+
+        self.fuv_si = self.frames["GALEX FUV"] * 10.0 ** exponent
+        self.fuv_si.unit = "W/m2"
+
+        # Save
+        #fuv_converted_path = fs.join(self.maps_intermediate_path, "FUV Wpm2.fits")
+        #fuv_converted.save(fuv_converted_path)
+
+    # -----------------------------------------------------------------
+
+    def make_tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the TIR map in W/m2 units ...")
+
+        # Inform the user
+        #log.info("Creating the TIR map in solar units...")
+
+        # MIPS, PACS BLUE AND PACS RED CONVERTED TO LSUN (ABOVE)
+        # Galametz (2013) formula for Lsun units
+        tir_map = 2.133 * self.images["24mu"].frames.primary + 0.681 * self.images["70mu"].frames.primary + 1.125 * self.images["160mu"].frames.primary
+        # Return the TIR map (in solar units)
+
+
+
+        # Convert the TIR frame from solar units to W/m2
+        exponent = np.log10(3.846e26) - np.log10(4 * np.pi) - (2.0 * np.log10(self.distance_mpc * 3.08567758e22))
+
+        tir_map *= 10.0 ** exponent
+        tir_map.unit = Unit("W/m2")
+
+        # Save
+        #tir_path = fs.join(self.maps_intermediate_path, "TIR.fits")
+        #tir_map.save(tir_path)
+
+    # -----------------------------------------------------------------
+
+    def make_tir_to_fuv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
+
+        ## FUV IN W/M2
+
+        ## TIR IN W/M2
+
+        # CALCULATE TIR TO FUV RATIO
+
+        # The ratio of TIR and FUV
+        self.tir_to_fuv = np.log10(self.tir_si / self.fuv_si)
+
+        # Save TIR to FUV ratio map
+        #tir_to_fuv_path = fs.join(self.maps_intermediate_path, "TIRtoFUV.fits")
+        #tir_to_fuv.save(tir_to_fuv_path)
 
     # -----------------------------------------------------------------
 
@@ -98,7 +227,7 @@ class CorteseDustMapMaker(object):
 
         # Dust = FUV attenuation = function of (ratio of TIR and FUV luminosity)
 
-        # Creat the FUV attenuation map according to the calibration in Cortese et. al 2008
+        # Create the FUV attenuation map according to the calibration in Cortese et. al 2008
         a_fuv_cortese = self.create_afuv_cortese("FUV-i")
 
         # Set attenuation to zero where the original FUV map is smaller than zero
@@ -124,40 +253,7 @@ class CorteseDustMapMaker(object):
         """
 
         # Inform the user
-        log.info(
-            "Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
-
-        # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
-
-        # Convert the FUV map from MJy/sr to W/m2
-        factor = - 20.0 + np.log10(3.e8) - np.log10(0.153e-6) + (2 * np.log10(2.85 / 206264.806247))
-        fuv_converted = self.images["FUV"] * 10.0 ** factor
-        fuv_converted.unit = Unit("W/m2")
-
-        # Save
-        fuv_converted_path = fs.join(self.maps_intermediate_path, "FUV Wpm2.fits")
-        fuv_converted.save(fuv_converted_path)
-
-        # Get the TIR map in solar units
-        tir_map = self.get_tir_map()
-
-        # Convert the TIR frame from solar units to W/m2
-        exponent = np.log10(3.846e26) - np.log10(4 * np.pi) - (2.0 * np.log10(self.distance_mpc * 3.08567758e22))
-        tir_map *= 10.0 ** exponent
-        tir_map.unit = Unit("W/m2")
-
-        # Save
-        tir_path = fs.join(self.maps_intermediate_path, "TIR.fits")
-        tir_map.save(tir_path)
-
-        # CALCULATE TIR TO FUV RATIO
-
-        # The ratio of TIR and FUV
-        tir_to_fuv = np.log10(tir_map / fuv_converted.frames.primary)
-
-        # Save TIR to FUV ratio map
-        tir_to_fuv_path = fs.join(self.maps_intermediate_path, "TIRtoFUV.fits")
-        tir_to_fuv.save(tir_to_fuv_path)
+        log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
 
         # Get the sSFR map
         if ssfr_colour == "FUV-H":
@@ -174,12 +270,12 @@ class CorteseDustMapMaker(object):
             raise ValueError("Invalid sSFR colour")
 
         # Calculate powers of tir_to_fuv
-        tir_to_fuv2 = np.power(tir_to_fuv, 2.0)
-        tir_to_fuv3 = np.power(tir_to_fuv, 3.0)
-        tir_to_fuv4 = np.power(tir_to_fuv, 4.0)
+        tir_to_fuv2 = np.power(self.tir_to_fuv, 2.0)
+        tir_to_fuv3 = np.power(self.tir_to_fuv, 3.0)
+        tir_to_fuv4 = np.power(self.tir_to_fuv, 4.0)
 
         # Create an empty image
-        a_fuv_cortese = Frame.zeros_like(tir_to_fuv)
+        a_fuv_cortese = Frame.zeros_like(self.tir_to_fuv)
 
         limits = []
         a1_list = []
@@ -222,11 +318,11 @@ class CorteseDustMapMaker(object):
                 where = (ssfr >= limits[i][0]) * (ssfr < limits[i][1])
 
             # Set the appropriate pixels
-            a_fuv_cortese[where] = a1_list[i] + a2_list[i] * tir_to_fuv[where] + a3_list[i] * tir_to_fuv2[where] + \
+            a_fuv_cortese[where] = a1_list[i] + a2_list[i] * self.tir_to_fuv[where] + a3_list[i] * tir_to_fuv2[where] + \
                                    a4_list[i] * tir_to_fuv3[where] + a5_list[i] * tir_to_fuv4[where]
 
         # Set attenuation to zero where tir_to_fuv is NaN
-        a_fuv_cortese[np.isnan(tir_to_fuv)] = 0.0
+        a_fuv_cortese[np.isnan(self.tir_to_fuv)] = 0.0
 
         # Set attenuation to zero where sSFR is smaller than zero
         a_fuv_cortese[ssfr < 0.0] = 0.0
@@ -236,26 +332,6 @@ class CorteseDustMapMaker(object):
 
         # Return the A(FUV) map
         return a_fuv_cortese
-
-    # -----------------------------------------------------------------
-
-    def get_tir_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the TIR map ...")
-
-        # MIPS, PACS BLUE AND PACS RED CONVERTED TO LSUN (ABOVE)
-
-        # Galametz (2013) formula for Lsun units
-        tir_data = 2.133 * self.images["24mu"].frames.primary + 0.681 * self.images["70mu"].frames.primary + 1.125 * self.images["160mu"].frames.primary
-
-        # Return the TIR map (in solar units)
-        return tir_data
 
     # -----------------------------------------------------------------
 
@@ -359,5 +435,18 @@ class CorteseDustMapMaker(object):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def normalize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Normalize the dust map
+        self.map.normalize()
+        self.map.unit = None
 
 # -----------------------------------------------------------------

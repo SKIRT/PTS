@@ -25,6 +25,7 @@ from .frame import Frame
 from .io import get_frame_names
 from ...core.tools.logging import log
 from .datacube import DataCube
+from .image import Image
 
 # -----------------------------------------------------------------
 
@@ -158,6 +159,9 @@ class DataSet(object):
         :param name:
         :return:
         """
+
+        # Open the image and return it
+        return Image.from_file(self.paths[name])
 
     # -----------------------------------------------------------------
 

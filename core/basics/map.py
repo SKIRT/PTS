@@ -136,3 +136,84 @@ class Map(dict):
             else: warnings.warn("An item with the key '" + key + "' is not present in the Map")
 
 # -----------------------------------------------------------------
+
+class Configuration(Map):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        super(Configuration, self).__init__(*args, **kwargs)
+
+        # Types and descriptions
+        #self.types = dict()
+        self.descriptions = dict()
+
+    # -----------------------------------------------------------------
+
+    def set_description(self, key, value):
+
+        """
+        This function ...
+        :param key:
+        :param value:
+        :return:
+        """
+
+        self.descriptions[key] = value
+
+    # -----------------------------------------------------------------
+
+    def items_with_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # The list of items
+        items = []
+
+        for key in self:
+
+            if key == "descriptions": continue
+
+            value = self[key]
+            description = self.descriptions[key] if key in self.descriptions else None
+
+            items.append((key, value, description))
+
+        # Return the items
+        return items
+
+    # -----------------------------------------------------------------
+
+    def __getattr__(self, item):
+
+        """
+        This function ...
+        :param item:
+        :return:
+        """
+
+        try:
+            #print(item in self)
+            #value = self.get(item)
+            value = self.__getitem__(item)
+            #print("heeere", item in self)
+            return value
+        #except AttributeError:
+        except KeyError:
+            self[item] = Configuration()
+            #print("here")
+            return self[item]
+
+# -----------------------------------------------------------------
