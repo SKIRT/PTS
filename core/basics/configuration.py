@@ -337,7 +337,8 @@ def stringify_not_list(value):
     from astropy.units import Quantity
     from astropy.coordinates import Angle
 
-    if isinstance(value, int): return "integer", str(value)
+    if isinstance(value, bool): return "boolean", str(value)
+    elif isinstance(value, int): return "integer", str(value)
     elif isinstance(value, float): return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
     elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit)

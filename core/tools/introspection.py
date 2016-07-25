@@ -723,6 +723,14 @@ def get_arguments_tables():
         # Get the columns
         commands, configuration, where, method, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
 
+        # Fix
+        if isinstance(commands, basestring):
+            commands = [commands]
+            configuration = [configuration]
+            where = [where]
+            method = [method]
+            description = [description]
+
         # Table
         table = {"Command": commands, "Configuration": configuration, "Path": where, "Configuration method": method, "Description": description}
         tables[subproject] = table

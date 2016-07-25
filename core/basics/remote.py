@@ -361,7 +361,7 @@ class Remote(object):
         """
 
         # Create a name for this PTS session
-        unique_session_name = time.unique_name(command)
+        unique_session_name = time.unique_name(command.replace("/", "-"))
 
         # Create a remote temporary directory
         remote_temp_path = self.temp_directory
@@ -402,15 +402,18 @@ class Remote(object):
         # Determine the path to the remote equivalent of this file
         remote_main_path = fs.join(self.pts_package_path, "do", "__main__.py")
 
+        print(temp_path)
+        print(remote_temp_path)
+
         # Create a bash script
-        temp_script_path = fs.join(temp_path, unique_session_name + ".py")
+        temp_script_path = fs.join(temp_path, unique_session_name + ".sh")
 
         # Write the lines to the script file
         with open(temp_script_path, 'w') as script_file:
 
-            script_file.write("#!/usr/bin/env python\n")
-            script_file.write("# -*- coding: utf8 -*-\n")
-            script_file.write("\n")
+            #script_file.write("#!/usr/bin/env python\n")
+            #script_file.write("# -*- coding: utf8 -*-\n")
+            #script_file.write("\n")
             script_file.write("python " + remote_main_path + " --configfile " + remote_conf_path + " " + command + "\n")
 
         # Execute the script

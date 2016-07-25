@@ -5,16 +5,15 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+# -----------------------------------------------------------------
+#  Package initialization file
+# -----------------------------------------------------------------
+
+## \package pts.dustpedia.config TO DO
+#
+# This package ...
+#
 
 # -----------------------------------------------------------------
 
-# Configuration
-definition = ConfigurationDefinition()
-
-# Galaxy name
-definition.add_required("galaxy_name", "string", "the name of the galaxy")
-definition.add_required("band", "string", "the band (GALEX or SDSS u/g/r/i/z)")
-
-# -----------------------------------------------------------------
+# Import classes to make them available at the level of this subpackage
