@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.tirtofuv Contains the TIRtoFUVCalibrationDustMapMaker
+## \package pts.modeling.maps.dust.tirtofuv Contains the TIRtoFUVMapMaker class.
 
 # -----------------------------------------------------------------
 
