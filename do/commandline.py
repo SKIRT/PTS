@@ -31,7 +31,7 @@ def show_all_available(scripts, tables=None):
     :return:
     """
 
-    print("No match found. Available commands:")
+    print("Available PTS do commands:")
 
     # The list that will contain the info about all the scripts / table commands
     info = []

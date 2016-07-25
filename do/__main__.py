@@ -31,6 +31,7 @@
 # Import standard modules
 import sys
 import importlib
+import argparse
 
 # Import the relevant PTS modules
 from pts.core.tools import introspection
@@ -40,36 +41,42 @@ from pts.do.commandline import show_all_available, show_possible_matches
 
 # -----------------------------------------------------------------
 
-script_name = None
-configuration_method = None
-if len(sys.argv) > 1:
+parser = argparse.ArgumentParser(prog="pts")
 
-    if sys.argv[1] == "--interactive":
+parser.add_argument("do_command", type=str, help="the name of the PTS do command (preceeded by the subproject name and a slash if ambigious; i.e. 'subproject/do_command')", default=None)
+parser.add_argument("--interactive", action="store_true", help="use interactive mode for the configuration")
+parser.add_argument("--arguments", action="store_true", help="use argument mode for the configuration")
+parser.add_argument("--configfile", type=str, help="use a configuration file")
+parser.add_argument("--remote", type=str, help="launch the PTS command remotely")
+parser.add_argument("options", nargs=argparse.REMAINDER, help="options for the specific do command")
 
-        script_name = sys.argv[2]
-        configuration_method = "interactive"
-        del sys.argv[1]
-
-    elif sys.argv[1] == "--arguments":
-
-        script_name = sys.argv[2]
-        configuration_method = "arguments"
-        del sys.argv[1]
-
-    elif sys.argv[1] == "--configfile":
-
-        path = fs.absolute(sys.argv[2]) # get the absolute path of the config file
-        script_name = sys.argv[3]
-        del sys.argv[1]
-        del sys.argv[1]
-        configuration_method = "file:" + path
-
-    # Get the name of the script to execute
-    else: script_name = sys.argv[1]
+# -----------------------------------------------------------------
 
 # Find possible PTS commands
 scripts = introspection.get_scripts()
 tables = introspection.get_arguments_tables()
+if len(sys.argv) == 1: # nothing but 'pts' is provided
+
+    parser.print_help()
+    print("")
+    show_all_available(scripts, tables)
+    parser.exit()
+
+# -----------------------------------------------------------------
+
+# Parse
+args = parser.parse_args()
+
+# -----------------------------------------------------------------
+
+script_name = args.do_command
+
+configuration_method = None
+if args.interactive: configuration_method = "interactive"
+elif args.arguments: configuration_method = "arguments"
+elif args.configfile is not None: configuration_method = "file:" + args.configfile
+
+sys.argv = ["pts", args.do_command] + args.options
 
 if script_name is None:
 
