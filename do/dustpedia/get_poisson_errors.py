@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.dustpedia.core.dataprocessing import DustPediaDataProcessing
 from pts.core.basics.remote import Remote
 from pts.core.tools import filesystem as fs
@@ -33,9 +33,9 @@ definition.add_required("band", "string", "the band (GALEX or SDSS u/g/r/i/z)")
 definition.add_optional("remote", "string", "the remote host name", None)
 
 # Get configuration
-reader = ConfigurationReader("get_poisson_errors", "Calculate poisson error maps for DustPedia UV and optical images")
-config = reader.read(definition)
-arguments = reader.get_arguments()
+setter = ArgumentConfigurationSetter("get_poisson_errors", "Calculate poisson error maps for DustPedia UV and optical images")
+config = setter.run(definition)
+arguments = setter.get_arguments()
 
 # -----------------------------------------------------------------
 
