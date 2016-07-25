@@ -27,20 +27,75 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-def load_config(path):
+class Configuration(Map):
 
     """
     This function ...
-    :param path:
-    :return:
     """
 
-    # Create the config
-    config = Map()
-    with open(path, 'r') as configfile: load_mapping(configfile, config)
+    @classmethod
+    def from_file(cls, path):
 
-    # Return the config
-    return config
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Create the config
+        config = cls()
+
+        # Load the settings
+        with open(path, 'r') as configfile: load_mapping(configfile, config)
+
+        # Return the config
+        return config
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_string(cls, string):
+
+        """
+        This function ...
+        :param string:
+        :return:
+        """
+
+        # Create the config
+        config = cls()
+
+        # Load the settings
+        lines = string.split("\n")
+        load_mapping(iter(lines), config)
+
+        # Return the config
+        return config
+
+    # -----------------------------------------------------------------
+
+    def to_string(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        lines = []
+        mapping_to_lines(lines, self)
+        return "\n".join(lines)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        with open(path, 'w') as configfile: write_mapping(configfile, self)
 
 # -----------------------------------------------------------------
 
@@ -179,19 +234,6 @@ def load_mapping(mappingfile, mapping, indent=""):
 
 # -----------------------------------------------------------------
 
-def write_config(config, path):
-
-    """
-    This function ...
-    :param config:
-    :param path:
-    :return:
-    """
-
-    with open(path, 'w') as configfile: write_mapping(configfile, config)
-
-# -----------------------------------------------------------------
-
 def write_mapping(mappingfile, mapping, indent=""):
 
     """
@@ -212,12 +254,42 @@ def write_mapping(mappingfile, mapping, indent=""):
 
             print(indent + name + ":", file=mappingfile)
             print(indent + "{", file=mappingfile)
-            write_mapping(mappingfile, value, indent=indent + "    ")
+            write_mapping(mappingfile, value, indent=indent+"    ")
             print(indent + "}", file=mappingfile)
 
         else: print(indent + name + ": " + str(mapping[name]), file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
+        index += 1
+
+# -----------------------------------------------------------------
+
+def mapping_to_lines(lines, mapping, indent=""):
+
+    """
+    This function ...
+    :param lines:
+    :param mapping:
+    :param indent:
+    :return:
+    """
+
+    index = 0
+    length = len(mapping)
+    for name in mapping:
+
+        value = mapping[name]
+
+        if isinstance(value, Map):
+
+            lines.append(indent + name + ":")
+            lines.append(indent + "{")
+            mapping_to_lines(lines, value, indent=indent+"    ")
+            lines.append(indent + "}")
+
+        else: lines.append(indent + name + ": " + str(mapping[name]))
+
+        if index != length - 1: lines.append("")
         index += 1
 
 # -----------------------------------------------------------------
@@ -581,7 +653,7 @@ class ConfigurationSetter(object):
         self.log_path = log_path
 
         # The configuration
-        self.config = Map()
+        self.config = Configuration()
 
     # -----------------------------------------------------------------
 
@@ -825,7 +897,7 @@ class FileConfigurationSetter(ConfigurationSetter):
         :return:
         """
 
-        self.user_config = load_config(self.path)
+        self.user_config = Configuration.from_file(self.path)
 
     # -----------------------------------------------------------------
 
@@ -836,7 +908,9 @@ class FileConfigurationSetter(ConfigurationSetter):
         :return:
         """
 
-        pass
+        # TODO: TEMPORARY
+
+        self.config = self.user_config
 
 # -----------------------------------------------------------------
 

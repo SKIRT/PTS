@@ -137,7 +137,7 @@ class Map(dict):
 
 # -----------------------------------------------------------------
 
-class Configuration(Map):
+class ConfigurationTest(Map):
 
     """
     This class ...
@@ -151,7 +151,7 @@ class Configuration(Map):
         :param kwargs:
         """
 
-        super(Configuration, self).__init__(*args, **kwargs)
+        super(ConfigurationTest, self).__init__(*args, **kwargs)
 
         # Types and descriptions
         #self.types = dict()
@@ -212,7 +212,7 @@ class Configuration(Map):
             return value
         #except AttributeError:
         except KeyError:
-            self[item] = Configuration()
+            self[item] = ConfigurationTest()
             #print("here")
             return self[item]
 

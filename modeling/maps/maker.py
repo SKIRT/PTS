@@ -56,8 +56,7 @@ class MapMaker(MapsComponent):
 
         # -- Attributes --
 
-        # The structural galaxy parameters
-        self.parameters = None
+        # The distance to the galaxy
         self.distance_mpc = None
 
         # Input images
@@ -163,14 +162,8 @@ class MapMaker(MapsComponent):
         # Call the setup function of the base class
         super(MapMaker, self).setup()
 
-        # Determine the path to the parameters file
-        path = fs.join(self.components_path, "parameters.dat")
-
-        # Load the structural parameters
-        self.parameters = load_parameters(path)
-
         # Get the galaxy distance
-        self.distance_mpc = self.parameters.distance.to("Mpc").value
+        self.distance_mpc = self.galaxy_parameters.distance.to("Mpc").value
 
     # -----------------------------------------------------------------
 

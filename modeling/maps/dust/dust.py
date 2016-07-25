@@ -64,10 +64,10 @@ class DustMapMaker(MapsComponent):
         if self.config.make_emission: self.make_emission()
 
         # 4. Make a dust map based on Buat
-        #if self.config.make_buat: self.make_buat()
+        if self.config.make_buat: self.make_buat()
 
         # 5. Make a dust map based on Cortese
-        #if self.config.make_cortese: self.make_cortese()
+        if self.config.make_cortese: self.make_cortese()
 
         # 6. Writing
         self.write()

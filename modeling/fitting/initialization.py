@@ -28,7 +28,6 @@ from ...core.simulation.skifile import SkiFile, LabeledSkiFile
 from ...core.basics.filter import Filter
 from ..basics.models import SersicModel, DeprojectionModel
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
 from ..basics.instruments import SEDInstrument, FrameInstrument
 from ..core.sun import Sun
@@ -64,9 +63,6 @@ class FittingInitializer(FittingComponent):
 
         # The ski file
         self.ski = None
-
-        # The structural parameters
-        self.parameters = None
 
         # The projection system
         self.projection = None
@@ -202,16 +198,13 @@ class FittingInitializer(FittingComponent):
         # 1. Load the template ski file
         self.load_template()
 
-        # 2. Load the structural parameters of the galaxy
-        self.load_parameters()
-
-        # 3. Load the projection system
+        # 2. Load the projection system
         self.load_projection()
 
-        # 4. Load the truncation ellipse
+        # 3. Load the truncation ellipse
         self.load_truncation_ellipse()
 
-        # 5. Load the observed SED
+        # 4. Load the observed SED
         self.load_observed_sed()
 
     # -----------------------------------------------------------------
@@ -228,24 +221,6 @@ class FittingInitializer(FittingComponent):
 
         # Open the template ski file
         self.ski = LabeledSkiFile(self.template_ski_path)
-
-    # -----------------------------------------------------------------
-
-    def load_parameters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the decomposition parameters ...")
-
-        # Determine the path to the parameters file
-        path = fs.join(self.components_path, "parameters.dat")
-
-        # Load the parameters
-        self.parameters = load_parameters(path)
 
     # -----------------------------------------------------------------
 
@@ -332,7 +307,7 @@ class FittingInitializer(FittingComponent):
         log.info("Creating the bulge model ...")
 
         # Create a Sersic model for the bulge
-        self.bulge = SersicModel.from_galfit(self.parameters.bulge, self.parameters.inclination, self.parameters.disk.PA)
+        self.bulge = SersicModel.from_galfit(self.galaxy_parameters.bulge, self.galaxy_parameters.inclination, self.galaxy_parameters.disk.PA)
 
     # -----------------------------------------------------------------
 
@@ -350,12 +325,12 @@ class FittingInitializer(FittingComponent):
         hz = None
 
         # Get the galaxy distance, the inclination and position angle
-        distance = self.parameters.distance
-        inclination = self.parameters.inclination
-        pa = self.parameters.disk.PA
+        distance = self.galaxy_parameters.distance
+        inclination = self.galaxy_parameters.inclination
+        pa = self.galaxy_parameters.disk.PA
 
         # Get the center pixel
-        pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
+        pixel_center = self.galaxy_parameters.center.to_pixel(self.reference_wcs)
         xc = pixel_center.x
         yc = pixel_center.y
 
@@ -399,10 +374,10 @@ class FittingInitializer(FittingComponent):
 
         # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
         major_angular = self.ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.parameters.distance).to("pc", equivalencies=dimensionless_angles())
+        radius_physical = (major_angular * self.galaxy_parameters.distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the pixelscale in physical units
-        distance = self.parameters.distance
+        distance = self.galaxy_parameters.distance
         pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
@@ -524,10 +499,10 @@ class FittingInitializer(FittingComponent):
         bulge_metallicity = 0.03
 
         # Get the flux density of the bulge
-        fluxdensity = self.parameters.bulge.fluxdensity # In Jy
+        fluxdensity = self.galaxy_parameters.bulge.fluxdensity # In Jy
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.parameters.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.galaxy_parameters.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_i1).value
@@ -558,14 +533,14 @@ class FittingInitializer(FittingComponent):
 
         # Get the scale height
         #scale_height = 521. * Unit("pc") # first models
-        scale_height = self.parameters.disk.hr / 8.26 # De Geyter et al. 2014
+        scale_height = self.galaxy_parameters.disk.hr / 8.26 # De Geyter et al. 2014
 
         # Get the 3.6 micron flux density with the bulge subtracted
         i1_index = tables.find_index(self.observed_sed.table, "I1", "Band")
-        fluxdensity = self.observed_sed.table["Flux"][i1_index] * Unit("Jy") - self.parameters.bulge.fluxdensity
+        fluxdensity = self.observed_sed.table["Flux"][i1_index] * Unit("Jy") - self.galaxy_parameters.bulge.fluxdensity
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.parameters.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.galaxy_parameters.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_i1).value
@@ -609,7 +584,7 @@ class FittingInitializer(FittingComponent):
         fluxdensity = 2. * self.observed_sed.table["Flux"][fuv_index] * Unit("Jy")
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.parameters.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.galaxy_parameters.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_fuv).value

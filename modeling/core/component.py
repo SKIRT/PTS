@@ -27,6 +27,8 @@ from ..core.sed import ObservedSED
 from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
 from ...magic.basics.skyregion import SkyRegion
+from ...core.tools import parsing
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -271,6 +273,25 @@ class ModelingComponent(Configurable):
         # Convert sky ellipse to pixel ellipse and then to mask
         return self.truncation_ellipse.to_pixel(frame.wcs).to_mask(frame.xsize, frame.ysize)
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the parameters file
+        path = fs.join(self.components_path, "parameters.dat")
+
+        # Load the galaxy parameters
+        parameters = load_galaxy_parameters(path)
+
+        # Return the parameter map
+        return parameters
+
 # -----------------------------------------------------------------
 
 def get_free_parameter_labels(table_path):
@@ -282,5 +303,74 @@ def get_free_parameter_labels(table_path):
     """
 
     return dict(np.genfromtxt(table_path, delimiter=" | ", dtype=str)) if fs.is_file(table_path) else None
+
+# -----------------------------------------------------------------
+
+def load_galaxy_parameters(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Create parameters structure
+    parameters = Map()
+    parameters.bulge = Map()
+    parameters.disk = Map()
+
+    ra = None
+    dec = None
+
+    # Read the parameter file
+    with open(path, 'r') as parameter_file:
+
+        # Loop over all lines in the file
+        for line in parameter_file:
+
+            splitted = line.split(": ")
+
+            # Bulge parameters
+            if splitted[0] == "Bulge":
+
+                if splitted[1] == "Relative contribution": parameters.bulge.f = float(splitted[2])
+                elif splitted[1] == "IRAC 3.6um flux density": parameters.bulge.fluxdensity = parsing.quantity(splitted[2])
+                elif splitted[1] == "Axial ratio": parameters.bulge.q = float(splitted[2])
+                elif splitted[1] == "Position angle": parameters.bulge.PA = parsing.angle(splitted[2])
+                elif splitted[1] == "Effective radius": parameters.bulge.Re = parsing.quantity(splitted[2])
+                elif splitted[1] == "Sersic index": parameters.bulge.n = float(splitted[2])
+
+            # Disk parameters
+            elif splitted[0] == "Disk":
+
+                if splitted[1] == "Relative contribution": parameters.disk.f = float(splitted[2])
+                elif splitted[1] == "IRAC 3.6um flux density": parameters.disk.fluxdensity = parsing.quantity(splitted[2])
+                elif splitted[1] == "Axial ratio": parameters.disk.q = float(splitted[2])
+                elif splitted[1] == "Position angle": parameters.disk.PA = parsing.angle(splitted[2])
+                elif splitted[1] == "Central surface brightness": parameters.disk.mu0 = parsing.quantity(splitted[2])
+                elif splitted[1] == "Exponential scale length": parameters.disk.hr = parsing.quantity(splitted[2])
+
+            # Other parameters
+            elif len(splitted) == 2:
+
+                if splitted[0] == "Name": parameters.galaxy_name = splitted[1]
+                elif splitted[0] == "Center RA": ra = parsing.quantity(splitted[1])
+                elif splitted[0] == "Center DEC": dec = parsing.quantity(splitted[1])
+                elif splitted[0] == "Major axis length": parameters.major = parsing.quantity(splitted[1])
+                elif splitted[0] == "Ellipticity": parameters.ellipticity = float(splitted[1])
+                elif splitted[0] == "Position angle": parameters.position_angle = parsing.angle(splitted[1])
+                elif splitted[0] == "Distance": parameters.distance = parsing.quantity(splitted[1])
+                elif splitted[0] == "Distance error": parameters.distance_error = parsing.quantity(splitted[1])
+                elif splitted[0] == "Inclination": parameters.inclination = parsing.angle(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density": parameters.i1_fluxdensity = parsing.quantity(splitted[1])
+                elif splitted[0] == "IRAC 3.6um flux density error": parameters.i1_error = parsing.quantity(splitted[1])
+                elif splitted[0] == "IRAC 4.5um flux density": parameters.i2_fluxdensity = parsing.quantity(splitted[1])
+                elif splitted[0] == "IRAC 4.5um flux density error": parameters.i2_error = parsing.quantity(splitted[1])
+
+    # Add the center coordinate
+    parameters.center = SkyCoordinate(ra=ra, dec=dec)
+
+    # Return the parameters
+    return parameters
 
 # -----------------------------------------------------------------

@@ -17,6 +17,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit
+from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ....magic.core.frame import Frame
@@ -29,6 +30,14 @@ from ..component import MapsComponent
 
 # The path to the table containing the parameters from Cortese et. al 2008
 cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
+
+# The path to the table containing the Galametz calibration parameters
+galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.dat")
+
+# -----------------------------------------------------------------
+
+speed_of_light = constants.c
+solar_luminosity = 3.846e26 * Unit("W")
 
 # -----------------------------------------------------------------
 
@@ -66,6 +75,9 @@ class CorteseDustMapMaker(MapsComponent):
         # FUV − NIR/optical colours.
         self.cortese = None
 
+        # The table with the calibration factors from galametz (TIR ..)
+        self.galametz = None
+
         # The output map
         self.map = None
 
@@ -90,11 +102,14 @@ class CorteseDustMapMaker(MapsComponent):
         # Make the TIR map in W/m2 unit
         self.make_tir()
 
-        # ...
+        # Make the dust map based on Cortese et al.
         self.make_map()
 
         # Normalize the dust map
         self.normalize()
+
+        # Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -105,11 +120,17 @@ class CorteseDustMapMaker(MapsComponent):
         :return:
         """
 
+        # Call the setup function of the base class
+        super(CorteseDustMapMaker, self).setup()
+
         #ssfr_colour: "FUV-H", "FUV-i", "FUV-r", "FUV-g" or "FUV-B"`
         self.config.ssfr_colour = "FUV-i"
 
-        # Load the Cortese et. al 2008 table
-        self.cortese = tables.from_file(cortese_table_path)
+        # Load the Cortese et al. 2008 table
+        self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")
+
+        # Load the Galametz et al. table
+        self.galametz = tables.from_file(galametz_table_path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -129,12 +150,53 @@ class CorteseDustMapMaker(MapsComponent):
         #elif self.config.ssfr_colour == "FUV-B": data_names.append("")
         else: raise ValueError("Invalid SSFR colour option")
 
+        # Get the galaxy distance
+        distance = self.galaxy_parameters.distance
+
         # Load all the frames and error maps
         for name in data_names:
 
             frame = self.dataset.get_frame(name)
             errors = self.dataset.get_errors(name)
 
+            ## CONVERT TO LSUN
+
+            # Get pixelscale and wavelength
+            pixelscale = frame.average_pixelscale
+            wavelength = frame.filter.pivotwavelength() * Unit("micron")
+
+            ##
+
+            # Conversion from MJy / sr to Jy / sr
+            conversion_factor = 1e6
+
+            # Conversion from Jy / sr to Jy / pix(2)
+            conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
+
+            # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
+            conversion_factor *= 1e-26
+
+            # Conversion from W / (m2 * Hz) (per pixel) to W / (m2 * m) (per pixel)
+            conversion_factor *= (speed_of_light / wavelength**2).to("Hz/m").value
+
+            # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
+            conversion_factor *= (4. * np.pi * distance**2).to("m2").value
+
+            # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
+            conversion_factor *= wavelength.to("m").value
+
+            # Conversion from W to Lsun
+            conversion_factor *= 1. / solar_luminosity.to("W").value
+
+            ## CONVERT
+
+            frame *= conversion_factor
+            frame.unit = "Lsun"
+
+            errors *= conversion_factor
+            errors.unit = "Lsun"
+
+            # Add the frame and error map to the appropriate dictionary
             self.frames[name] = frame
             self.errors[name] = errors
 
@@ -175,22 +237,80 @@ class CorteseDustMapMaker(MapsComponent):
         # Inform the user
         #log.info("Creating the TIR map in solar units...")
 
+
+        ## GET THE GALAMETZ PARAMETERS
+        a, b, c = self.get_galametz_parameters("MIPS 24mu", "Pacs blue", "Pacs red")
+
+        assert a == 2.133
+        assert b == 0.681
+        assert c == 1.125
+
         # MIPS, PACS BLUE AND PACS RED CONVERTED TO LSUN (ABOVE)
         # Galametz (2013) formula for Lsun units
-        tir_map = 2.133 * self.images["24mu"].frames.primary + 0.681 * self.images["70mu"].frames.primary + 1.125 * self.images["160mu"].frames.primary
-        # Return the TIR map (in solar units)
+        tir_map = a * self.frames["MIPS 24mu"] + b * self.frames["Pacs blue"] + c * self.frames["Pacs red"]
 
+        # Convert the TIR frame from solar units to W / m2
+        #exponent = np.log10(3.846e26) - np.log10(4 * np.pi) - (2.0 * np.log10(self.distance_mpc * 3.08567758e22))
+        #tir_map *= 10.0 ** exponent
 
+        ## Convert the TIR map from Lsun to W / m2
 
-        # Convert the TIR frame from solar units to W/m2
-        exponent = np.log10(3.846e26) - np.log10(4 * np.pi) - (2.0 * np.log10(self.distance_mpc * 3.08567758e22))
+        conversion_factor = 1.0
 
-        tir_map *= 10.0 ** exponent
-        tir_map.unit = Unit("W/m2")
+        # Conversion from Lsun to W
 
-        # Save
-        #tir_path = fs.join(self.maps_intermediate_path, "TIR.fits")
-        #tir_map.save(tir_path)
+        conversion_factor *= solar_luminosity.to("W").value
+
+        # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
+        distance = self.galaxy_parameters.distance
+        conversion_factor /= (4. * np.pi * distance**2).to("m2").value
+
+        ## CONVERT AND SET NEW UNIT
+
+        self.tir_si = tir_map * conversion_factor
+        self.tir_si.unit = "W/m2"
+
+    # -----------------------------------------------------------------
+
+    def get_galametz_parameters(self, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        galametz_column_names = {"MIPS 24mu": "c24",
+                                 "Pacs blue": "c70",
+                                 "Pacs green": "c100",
+                                 "Pacs red": "c160",
+                                 "SPIRE PSW": "c250"}
+
+        # Needed column names
+        needed_column_names = [galametz_column_names[filter_name] for filter_name in args]
+
+        # List of not needed column names
+        colnames = self.galametz.colnames
+        not_needed_column_names = [name for name in colnames if name not in needed_column_names]
+
+        not_needed_column_names.remove("R2")
+        not_needed_column_names.remove("CV(RMSE)")
+
+        # The parameters
+        parameters = None
+
+        # Loop over the entries in the galametz table
+        for i in range(len(self.galametz)):
+
+            if is_appropriate_galametz_entry(self.galametz, i, needed_column_names, not_needed_column_names):
+
+                for name in needed_column_names: parameters.append(self.galametz[name][i])
+                break
+
+            else: continue
+
+        # Return the parameters
+        return parameters
 
     # -----------------------------------------------------------------
 
@@ -400,7 +520,7 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # Calculate the colour map
-        fuv_r = -2.5 * np.log10(self.images["FUV"].frames.primary / self.images["r"].frames.primary)
+        fuv_r = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["r"])
 
         # Replace NaNs by zeros
         fuv_r.replace_nans(0.0)
@@ -448,5 +568,74 @@ class CorteseDustMapMaker(MapsComponent):
         # Normalize the dust map
         self.map.normalize()
         self.map.unit = None
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the TIR map
+        self.write_tir()
+
+        # Write the TIR to FUV map
+        self.write_tir_to_fuv()
+
+    # -----------------------------------------------------------------
+
+    def write_tir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = fs.join(self.maps_intermediate_path, "TIR.fits")
+
+        # Write
+        self.tir_si.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_tir_to_fuv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine path
+        path = fs.join(self.maps_intermediate_path, "TIR-FUV.fits")
+
+        # Write
+        self.tir_to_fuv.save(path)
+
+# -----------------------------------------------------------------
+
+def is_appropriate_galametz_entry(table, i, needed_cols, not_needed_cols):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Check if masked columns
+    for name in not_needed_cols:
+
+        # Verify that this entry is masked
+        if not table[name].mask[i]: return False
+
+    # Check needed cols
+    for name in needed_cols:
+
+        # Verify that this entry is not masked
+        if table[name].mask[i]: return False
+
+    # No mismatches found, thus appropriate entry
+    return True
 
 # -----------------------------------------------------------------

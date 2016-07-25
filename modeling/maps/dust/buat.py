@@ -14,10 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
+from ..component import MapsComponent
 
 # -----------------------------------------------------------------
 
-class BuatDustMapMaker(object):
+class BuatDustMapMaker(MapsComponent):
 
     """
     This class...
@@ -61,7 +62,8 @@ class BuatDustMapMaker(object):
         :return:
         """
 
-        pass
+        # Call the setup function of the base class
+        super(BuatDustMapMaker, self).setup()
 
     # -----------------------------------------------------------------
 

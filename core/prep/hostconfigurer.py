@@ -17,7 +17,7 @@ from ..basics.configurable import Configurable
 from ..tools.logging import log
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, write_config
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -142,6 +142,6 @@ class HostConfigurer(Configurable):
         path = fs.join(hosts_directory, self.config.name + ".cfg")
 
         # Write the host configuration
-        write_config(self.host_config, path)
+        self.host_config.save(path)
 
 # -----------------------------------------------------------------
