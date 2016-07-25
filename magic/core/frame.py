@@ -207,6 +207,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __rmul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__mul__(value)
+
+    # -----------------------------------------------------------------
+
     def __imul__(self, value):
 
         """
@@ -229,6 +241,18 @@ class Frame(NDDataArray):
         """
 
         return self.copy().__iadd__(value)
+
+    # -----------------------------------------------------------------
+
+    def __radd__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__add__(value)
 
     # -----------------------------------------------------------------
 
@@ -257,6 +281,20 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __rsub__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new._data = value - new._data
+        return new
+
+    # -----------------------------------------------------------------
+
     def __isub__(self, value):
 
         """
@@ -279,6 +317,20 @@ class Frame(NDDataArray):
         """
 
         return self.copy().__idiv__(value)
+
+    # -----------------------------------------------------------------
+
+    def __rdiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new._data = value / new._data
+        return new
 
     # -----------------------------------------------------------------
 
@@ -689,6 +741,9 @@ class Frame(NDDataArray):
 
         # Calculate the sum of all the pixels
         sum = np.nansum(self)
+
+        # Check whether the sum is nonnegative
+        if sum < 0: raise RuntimeError("The sum of the frame is negative")
 
         # Calculate the conversion factor
         factor = to / sum

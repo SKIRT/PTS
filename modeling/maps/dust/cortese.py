@@ -120,7 +120,8 @@ class CorteseDustMapMaker(MapsComponent):
         super(CorteseDustMapMaker, self).setup()
 
         #ssfr_colour: "FUV-H", "FUV-i", "FUV-r", "FUV-g" or "FUV-B"`
-        self.config.ssfr_colour = "FUV-i"
+        #self.config.ssfr_colour = "FUV-i"
+        self.config.ssfr_colour = "FUV-r"
 
         # Load the Cortese et al. 2008 table
         self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")
@@ -202,7 +203,7 @@ class CorteseDustMapMaker(MapsComponent):
         a_fuv_cortese[self.frames["GALEX FUV"] <= 0.0] = 0.0
 
         # Make sure all pixel values are larger than or equal to zero
-        a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
+        #a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
 
         # Cutoff
         #a_fuv_cortese[self.cutoff_masks["160mu"]] = 0.0
@@ -299,7 +300,7 @@ class CorteseDustMapMaker(MapsComponent):
         log.info("Calculating the FUV-H colour map ...")
 
         # Calculate the colour map
-        fuv_h = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["2MASS H"])
+        fuv_h = Frame(-2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["2MASS H"]))
 
         # Replace NaNs by zeros
         fuv_h.replace_nans(0.0)
@@ -329,7 +330,7 @@ class CorteseDustMapMaker(MapsComponent):
         log.info("Calculating the FUV-i colour map ...")
 
         # Calculate the colour map
-        fuv_i = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS i"])
+        fuv_i = Frame(-2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS i"]))
 
         # Replace NaNs by zeros
         fuv_i.replace_nans(0.0)
@@ -353,7 +354,7 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # Calculate the colour map
-        fuv_r = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS r"])
+        fuv_r = Frame(-2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS r"]))
 
         # Replace NaNs by zeros
         fuv_r.replace_nans(0.0)
@@ -377,7 +378,7 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # Calculate the colour map
-        fuv_g = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS g"])
+        fuv_g = Frame(-2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS g"]))
 
         # Replace NaNs by zeros
         fuv_g.replace_nans(0.0)

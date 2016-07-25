@@ -400,7 +400,7 @@ def quantity(argument):
         except ValueError:
             units = argument[-1:] + units
             argument = argument[:-1]
-    return number, Unit(units.strip())
+    return number * Unit(units.strip())
 
     # FIRST IMPLEMENTATION
     #splitted = argument.split()

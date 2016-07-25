@@ -25,6 +25,7 @@ from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
+from ....magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -254,7 +255,7 @@ class TIRtoFUVMapMaker(MapsComponent):
 
         ## CONVERT AND SET NEW UNIT
 
-        self.tir_si = tir_map * conversion_factor
+        self.tir_si = Frame(tir_map * conversion_factor)
         self.tir_si.unit = "W/m2"
 
     # -----------------------------------------------------------------
@@ -291,6 +292,7 @@ class TIRtoFUVMapMaker(MapsComponent):
 
             if is_appropriate_galametz_entry(self.galametz, i, needed_column_names, not_needed_column_names):
 
+                parameters = []
                 for name in needed_column_names: parameters.append(self.galametz[name][i])
                 break
 
@@ -321,7 +323,7 @@ class TIRtoFUVMapMaker(MapsComponent):
 
         # The ratio of TIR and FUV
         self.tir_to_fuv = self.tir_si / self.fuv_si
-        self.log_tir_to_fuv = np.log10(self.tir_to_fuv)
+        self.log_tir_to_fuv = Frame(np.log10(self.tir_to_fuv))
 
     # -----------------------------------------------------------------
 

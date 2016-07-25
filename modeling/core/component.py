@@ -29,6 +29,7 @@ from ...magic.core.dataset import DataSet
 from ...magic.basics.skyregion import SkyRegion
 from ...core.tools import parsing
 from ...core.basics.map import Map
+from ...magic.basics.skygeometry import SkyCoordinate
 
 # -----------------------------------------------------------------
 
