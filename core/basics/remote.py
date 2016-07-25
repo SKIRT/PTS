@@ -432,7 +432,9 @@ class Remote(object):
         task_file_path = fs.join(self.local_pts_host_run_dir, str(task_id) + ".task")
         task.path = task_file_path
 
-        # Set properties such as the screen name
+        # Set properties such as the task ID and name and the screen name
+        task.id = task_id
+        task.name = unique_session_name
         task.screen_name = unique_session_name
         task.remote_screen_output_path = remote_temp_path
 
@@ -1822,6 +1824,93 @@ class Remote(object):
         path = fs.join(introspection.pts_run_dir, self.host.id)
         if not fs.is_directory(path): fs.create_directory(path, recursive=True)
         return path
+
+    # -----------------------------------------------------------------
+
+    def retrieve_tasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Raise an error if a connection to the remote has not been made
+        if not self.connected: raise RuntimeError("Not connected to the remote")
+
+        # Initialize a list to contain the tasks that have been retrieved
+        tasks = []
+
+        # Loop over the different entries of the status list
+        for path, task_status in self.get_status():
+
+            # Skip already retrieved tasks
+            if task_status == "retrieved": continue
+
+            # Warning
+            log.warning("Retrieving PTS task output is not implemented yet, look on the remote filesystem for the results")
+
+            # Open the simulation file
+            task = Task.from_file(path)
+
+            # Add the retrieved task to the list
+            tasks.append(task)
+
+            # If retrieval was succesful, add this information to the task file
+            task.retrieved = True
+            task.save()
+
+        # Return the list of retrieved tasks
+        return tasks
+
+    # -----------------------------------------------------------------
+
+    def get_status(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        # Initialize a list to contain the statuses
+        entries = []
+
+        # If the remote host does not use a scheduling system
+        if not self.scheduler:
+
+            # Search for task files in the local PTS run/host_id directory
+            for path in fs.files_in_path(self.local_pts_host_run_dir, extension="task", sort=int):
+
+                # Open the task file
+                task = Task.from_file(path)
+
+                # Get screen name and get report file path
+                screen_name = task.screen_name
+                log_path = task.config.log_path
+
+                # Check whether the task has already been retrieved
+                if task.retrieved: task_status = "retrieved"
+
+                # Check whether the report file exists
+                elif fs.is_file(log_path):
+
+                    if self.is_active_screen(screen_name): task_status = "running"
+                    else: task_status = "finished"
+
+                # If the log file does not exist, the task has not started yet or has been cancelled
+                else:
+
+                    # The task has not started or it's screen session has been cancelled
+                    if self.is_active_screen(screen_name): task_status = "queued"
+                    else: task_status = "cancelled"
+
+                # Add the task properties to the list
+                entries.append((path, task_status))
+
+        # If the remote has a scheduling system for launching jobs
+        #else: raise NotImplementedError("Running PTS tasks on remote schedulers is not supported yet")
+
+        # Return the list of task properties
+        return entries
 
     # -----------------------------------------------------------------
 

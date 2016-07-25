@@ -21,6 +21,7 @@ from ..basics.configurable import OldConfigurable
 from ..simulation.remote import SkirtRemote
 from ..tools import filesystem as fs
 from ..tools.logging import log
+from ..basics.task import Task
 
 # -----------------------------------------------------------------
 
@@ -55,6 +56,9 @@ class RemoteSynchronizer(OldConfigurable):
 
         # Initialize a list to contain the retrieved simulations
         self.simulations = []
+
+        # Initialize a list to contain the retrieved tasks
+        self.tasks = []
 
     # -----------------------------------------------------------------
 
@@ -93,7 +97,7 @@ class RemoteSynchronizer(OldConfigurable):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Extract information from the simulation's log files
+        # 2. Retrieve the simulations and tasks
         self.retrieve()
 
         # 3. Analyse
@@ -150,12 +154,30 @@ class RemoteSynchronizer(OldConfigurable):
         # Clear the list of remotes
         self.remotes = []
 
-        # Set default values for attributes
+        # Clear the list of simulations
         self.simulations = []
+
+        # Clear the list of tasks
+        self.tasks = []
 
     # -----------------------------------------------------------------
 
     def retrieve(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Retrieve SKIRT simulations
+        self.retrieve_simulations()
+
+        # Retrieve PTS tasks
+        self.retrieve_tasks()
+
+    # -----------------------------------------------------------------
+
+    def retrieve_simulations(self):
 
         """
         This function ...
@@ -173,6 +195,24 @@ class RemoteSynchronizer(OldConfigurable):
 
             # Retrieve simulations
             self.simulations += remote.retrieve()
+
+    # -----------------------------------------------------------------
+
+    def retrieve_tasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the different remotes
+        for remote in self.remotes:
+
+            # Inform the user
+            log.debug("Retrieving the tasks of remote '" + remote.system_name + "' ...")
+
+            # Retrieve tasks
+            self.tasks += remote.retrieve_tasks()
 
     # -----------------------------------------------------------------
 
@@ -203,6 +243,24 @@ class RemoteSynchronizer(OldConfigurable):
         This function ...
         :return:
         """
+
+        # Announce the status of the SKIRT simulations
+        self.announce_simulations()
+
+        # Announce the status of the PTS tasks
+        self.announce_tasks()
+
+    # -----------------------------------------------------------------
+
+    def announce_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("SKIRT simulations:")
 
         # Loop over the different remotes
         for remote in self.remotes:
@@ -379,6 +437,89 @@ class RemoteSynchronizer(OldConfigurable):
 
                 # Show the status of the current simulation
                 print(formatter + prefix + tag + " " + simulation.name + ": " + simulation_status + format.END)
+
+            print()
+
+    # -----------------------------------------------------------------
+
+    def announce_tasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("PTS tasks:")
+
+        # Loop over the different remotes
+        for remote in self.remotes:
+
+            # Get the status of the different tasks
+            status = remote.get_task_status()
+
+            # Show the name of the current remote
+            if len(status) > 0: log.info("Tasks on remote '" + remote.host_id + "':")
+            print()
+
+            # Get the status of the different tasks
+            for path, task_status in status:
+
+                # Open the task file
+                task = Task.from_file(path)
+
+                prefix = " - "
+                tag = "[" + str(task.id) + "]"
+
+                # Retrieved tasks (remote output has already been removed, if requested)
+                if task_status == "retrieved":
+
+                #if (self.config.ids is not None and (
+                #        remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id])) \
+                #        or (self.config.statuses is not None and "retrieved" in self.config.statuses):
+                #    tag = "[ X ]"
+
+                    # Remove the simulation file
+                    #fs.remove_file(path)
+
+                    formatter = format.GREEN
+
+                # Finished, but not yet retrieved task
+                elif task_status == "finished":
+
+                    formatter = format.BLUE
+
+                    task_status += " (do 'pts status' again to retrieve)"
+
+                # Running task
+                elif "running" in task_status:
+
+                    formatter = format.END
+
+                # Crashed task
+                elif task_status == "crashed":
+
+                    formatter = format.FAIL
+
+                # Cancelled task
+                elif task_status == "cancelled":
+
+                    formatter = format.WARNING
+
+                # Aborted task
+                elif task_status == "aborted":
+
+                    formatter = format.WARNING
+
+                # Queued task
+                elif task_status == "queued":
+
+                    formatter = format.END
+
+                else: formatter = format.END
+
+                # Show the status of the current task
+                print(formatter + prefix + tag + " " + task.name + ": " + task_status + format.END)
 
             print()
 

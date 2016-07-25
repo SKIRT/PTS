@@ -29,6 +29,10 @@ class Task(object):
         :param config_string:
         """
 
+        # The task ID and name
+        self.id = None
+        self.name = None
+
         # The command and the configuration in string format
         self.command = command
         self.config_string = config_string
