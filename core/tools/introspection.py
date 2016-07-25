@@ -42,6 +42,9 @@ pts_root_dir = inspect.getfile(inspect.currentframe()).split("/pts")[0]
 # The path to the PTS package directory (PTS/pts)
 pts_package_dir = os.path.join(pts_root_dir, "pts")
 
+# The path to the PTS run directory (PTS/run)
+pts_run_dir = os.path.join(pts_root_dir, "run")
+
 # The path to the PTS user directory (PTS/user)
 pts_user_dir = os.path.join(pts_root_dir, "user")
 

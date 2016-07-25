@@ -568,6 +568,7 @@ class SkirtRemote(Remote):
         # Check the contents of the local run directory to see which simulation id's are currently in use
         current_ids = []
         for name in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns="name"):
+
             # Get the simulation ID and add it to the list
             current_ids.append(int(name))
 

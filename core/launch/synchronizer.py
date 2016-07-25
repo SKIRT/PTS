@@ -153,9 +153,6 @@ class RemoteSynchronizer(OldConfigurable):
         # Set default values for attributes
         self.simulations = []
 
-        # Clear the analyser
-        #self.analyser.clear() # This is already done after each simulation is analysed
-
     # -----------------------------------------------------------------
 
     def retrieve(self):

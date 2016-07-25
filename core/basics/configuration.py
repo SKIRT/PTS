@@ -257,7 +257,9 @@ def write_mapping(mappingfile, mapping, indent=""):
             write_mapping(mappingfile, value, indent=indent+"    ")
             print(indent + "}", file=mappingfile)
 
-        else: print(indent + name + ": " + str(mapping[name]), file=mappingfile)
+        else:
+            ptype, string = stringify(mapping[name])
+            print(indent + name + "[" + ptype + "]: " + string, file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
         index += 1
@@ -287,10 +289,60 @@ def mapping_to_lines(lines, mapping, indent=""):
             mapping_to_lines(lines, value, indent=indent+"    ")
             lines.append(indent + "}")
 
-        else: lines.append(indent + name + ": " + str(mapping[name]))
+        else:
+
+            ptype, string = stringify(mapping[name])
+            lines.append(indent + name + " [" + ptype + "]: " + string)
 
         if index != length - 1: lines.append("")
         index += 1
+
+# -----------------------------------------------------------------
+
+def stringify(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if isinstance(value, list):
+
+        strings = []
+        ptype = None
+        for entry in value:
+
+            parsetype, val = stringify_not_list(entry)
+
+            if ptype is None: ptype = parsetype
+            elif ptype != parsetype: raise ValueError("Nonuniform list")
+
+            strings.append(val)
+
+        return ptype + "_list", ",".join(strings)
+
+    else: return stringify_not_list(value)
+
+# -----------------------------------------------------------------
+
+def stringify_not_list(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    from astropy.units import Quantity
+    from astropy.coordinates import Angle
+
+    if isinstance(value, int): return "integer", str(value)
+    elif isinstance(value, float): return "real", repr(value)
+    elif isinstance(value, basestring): return "string", value
+    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit)
+    elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit)
+    else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------
 

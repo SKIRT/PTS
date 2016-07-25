@@ -160,19 +160,15 @@ elif len(table_matches) == 1 and len(matches) == 0:
     if args.remote is not None:
 
         # Additional imports
-        import tempfile
         from pts.core.basics.remote import Remote
 
-        unique_session_name = time.unique_name(command_name)
-
-        ## SETUP LOGGER
+        # Exact command name
+        exact_command_name = subproject + "/" + command_name
 
         # Determine the log level
         level = "DEBUG" if config.debug else "INFO"
         log = logging.setup_log(level=level)
-        log.start("Starting " + command_name + " on remote host " + args.remote + " ...")
-
-        ##
+        log.start("Starting " + exact_command_name + " on remote host " + args.remote + " ...")
 
         # Debugging
         log.debug("Initializing the remote ...")
@@ -181,60 +177,8 @@ elif len(table_matches) == 1 and len(matches) == 0:
         remote = Remote()
         remote.setup(args.remote)
 
-        # Create a remote temporary directory
-        remote_temp_path = remote.temp_directory
-
-        ##
-
-        ## CHANGE THE LOG PATH TO A REMOTE PATH
-
-        # Always create a log file while executing remotely
-        config.report = True
-        config.log_path = fs.join(remote_temp_path, time.unique_name("log") + ".txt")
-
-        ##
-
-        # Debugging
-        log.debug("Saving the configuration file locally ...")
-
-        # Determine path to the temporarily saved local configuration file
-        temp_path = tempfile.gettempdir()
-        temp_conf_path = fs.join(temp_path, unique_session_name + ".cfg")
-
-        # Save the configuration file to the temporary directory
-        config.save(temp_conf_path)
-
-        # Debugging
-        log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
-
-        # Upload the config file
-        remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
-        remote.upload(temp_conf_path, remote_temp_path)
-
-        # Remove the original config file
-        fs.remove_file(temp_conf_path)
-
-        # Debugging
-        log.debug("Creating a script for remote execution ...")
-
-        # Determine the path to the remote equivalent of this file
-        remote_main_path = fs.join(remote.pts_package_path, "do", "__main__.py")
-
-        # Create a bash script
-        temp_script_path = fs.join(temp_path, unique_session_name + ".py")
-
-        with open(temp_script_path, 'w') as script_file:
-
-            script_file.write("#!/usr/bin/env python\n")
-            script_file.write("# -*- coding: utf8 -*-\n")
-            script_file.write("\n")
-            script_file.write("python " + remote_main_path + " --configfile " + remote_conf_path + " " + command_name + "\n")
-
-        # Execute the script
-        remote.start_screen(unique_session_name, temp_script_path, remote_temp_path)
-
-        # Remove the local script file
-        fs.remove_file(temp_script_path)
+        # Run PTS remotely
+        task = remote.run_pts(exact_command_name, config)
 
     # The PTS command has to be executed locally
     else:

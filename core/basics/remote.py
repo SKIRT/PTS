@@ -27,6 +27,8 @@ from ..tools.logging import log
 from ..tools import parsing
 from ..tools import filesystem as fs
 from ..tools import time
+from .task import Task
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -346,6 +348,96 @@ class Remote(object):
 
         # Execute the command
         self.execute("pts " + command + " " + argument_string, show_output=show_output)
+
+    # -----------------------------------------------------------------
+
+    def run_pts(self, command, config):
+
+        """
+        This function ...
+        :param command:
+        :param config:
+        :return:
+        """
+
+        # Create a name for this PTS session
+        unique_session_name = time.unique_name(command)
+
+        # Create a remote temporary directory
+        remote_temp_path = self.temp_directory
+
+        ##
+
+        ## CHANGE THE LOG PATH TO A REMOTE PATH
+
+        # Always create a log file while executing remotely
+        config.report = True
+        config.log_path = fs.join(remote_temp_path, time.unique_name("log") + ".txt")
+
+        ##
+
+        # Debugging
+        log.debug("Saving the configuration file locally ...")
+
+        # Determine path to the temporarily saved local configuration file
+        temp_path = tempfile.gettempdir()
+        temp_conf_path = fs.join(temp_path, unique_session_name + ".cfg")
+
+        # Save the configuration file to the temporary directory
+        config.save(temp_conf_path)
+
+        # Debugging
+        log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
+
+        # Upload the config file
+        remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
+        self.upload(temp_conf_path, remote_temp_path)
+
+        # Remove the original config file
+        fs.remove_file(temp_conf_path)
+
+        # Debugging
+        log.debug("Creating a script for remote execution ...")
+
+        # Determine the path to the remote equivalent of this file
+        remote_main_path = fs.join(self.pts_package_path, "do", "__main__.py")
+
+        # Create a bash script
+        temp_script_path = fs.join(temp_path, unique_session_name + ".py")
+
+        # Write the lines to the script file
+        with open(temp_script_path, 'w') as script_file:
+
+            script_file.write("#!/usr/bin/env python\n")
+            script_file.write("# -*- coding: utf8 -*-\n")
+            script_file.write("\n")
+            script_file.write("python " + remote_main_path + " --configfile " + remote_conf_path + " " + command + "\n")
+
+        # Execute the script
+        self.start_screen(unique_session_name, temp_script_path, remote_temp_path)
+
+        # Remove the local script file
+        fs.remove_file(temp_script_path)
+
+        # Create a new Task object
+        task = Task(command, config.to_string())
+
+        # Generate a new task ID
+        task_id = self._new_task_id()
+
+        # Determine the path to the task file
+        task_file_path = fs.join(self.local_pts_host_run_dir, str(task_id) + ".task")
+        task.path = task_file_path
+
+        # Set properties such as the screen name
+        task.screen_name = unique_session_name
+        task.remote_screen_output_path = remote_temp_path
+
+        # Save the task
+        task.save()
+
+        # Return the task
+        return task
 
     # -----------------------------------------------------------------
 
@@ -1713,5 +1805,65 @@ class Remote(object):
         """
 
         return fs.join(self.pts_root_path, "pts")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def local_pts_host_run_dir(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(introspection.pts_run_dir, self.host.id)
+        if not fs.is_directory(path): fs.create_directory(path, recursive=True)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def _task_ids_in_use(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check the contents of the local run directory to see which task id's are currently in use
+        current_ids = []
+        for name in fs.files_in_path(self.local_pts_host_run_dir, extension="task", returns="name"):
+
+            # Get the task ID and add it to the list
+            current_ids.append(int(name))
+
+        # Return the list of currently used ID's
+        return current_ids
+
+    # -----------------------------------------------------------------
+
+    def _new_task_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get a list of the ID's currently in use
+        current_ids = self._task_ids_in_use()
+
+        # Sort the current task ID's and find the lowest 'missing' integer number
+        if len(current_ids) > 0:
+            current_ids = sorted(current_ids)
+            task_id = max(current_ids) + 1
+            for index in range(max(current_ids)):
+                if current_ids[index] != index:
+                    task_id = index
+                    break
+
+            # Return the task ID
+            return task_id
+
+        # If no task ID's are currently in use, return 0
+        else: return 0
 
 # -----------------------------------------------------------------
