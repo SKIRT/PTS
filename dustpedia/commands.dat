@@ -1,0 +1,2 @@
+# Command | Configuration | Class | Configuration method | Description
+calculate_poisson_errors | poisson | core.poisson.PoissonErrorCalculator | interactive | Calculate poisson error maps for DustPedia UV and optical images.

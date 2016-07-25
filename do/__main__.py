@@ -94,6 +94,8 @@ if len(matches) + len(table_matches) == 0: show_all_available(scripts, tables)
 # If there is a unique match in an existing script, return it
 elif len(matches) == 1 and len(table_matches) == 0:
 
+    if args.remote is not None: raise ValueError("This do command cannot be executed remotely")
+
     match = matches[0]
 
     # Execute the matching script, after adjusting the command line arguments so that it appears that the script was executed directly
@@ -227,9 +229,6 @@ elif len(table_matches) == 1 and len(matches) == 0:
             script_file.write("# -*- coding: utf8 -*-\n")
             script_file.write("\n")
             script_file.write("python " + remote_main_path + " --configfile " + remote_conf_path + " " + command_name + "\n")
-
-        #print(temp_path)
-        #exit()
 
         # Execute the script
         remote.start_screen(unique_session_name, temp_script_path, remote_temp_path)
