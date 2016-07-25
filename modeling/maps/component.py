@@ -50,13 +50,13 @@ class MapsComponent(ModelingComponent):
         self.maps_ionizing_path = None
 
         # The path to the maps/solar directory
-        self.maps_solar_path = None
+        #self.maps_solar_path = None
 
         # The path to the maps/intermediate directory
-        self.maps_intermediate_path = None
+        #self.maps_intermediate_path = None
 
         # The path to the maps/cutoff directory
-        self.maps_cutoff_path = None
+        #self.maps_cutoff_path = None
 
     # -----------------------------------------------------------------
 
@@ -83,12 +83,12 @@ class MapsComponent(ModelingComponent):
         self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
 
         # Set the path to the maps/solar directory
-        self.maps_solar_path = fs.create_directory_in(self.maps_path, "solar")
+        #self.maps_solar_path = fs.create_directory_in(self.maps_path, "solar")
 
         # Set the path to the maps/intermediate directory
-        self.maps_intermediate_path = fs.create_directory_in(self.maps_path, "intermediate")
+        #self.maps_intermediate_path = fs.create_directory_in(self.maps_path, "intermediate")
 
         # Set the path to the maps/cutoff directory
-        self.maps_cutoff_path = fs.create_directory_in(self.maps_path, "cutoff")
+        #self.maps_cutoff_path = fs.create_directory_in(self.maps_path, "cutoff")
 
 # -----------------------------------------------------------------

@@ -26,11 +26,8 @@ from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from .component import MapsComponent
 from ...core.tools import filesystem as fs
-from ..decomposition.decomposition import load_parameters
 from ...core.tools.logging import log
-from .dust.buat import BuatDustMapMaker
-from .dust.cortese import CorteseDustMapMaker
-from .dust.blackbody import BlackBodyDustMapMaker
+from .dust.dust import DustMapMaker
 from .stars.old import OldStellarMapMaker
 from .stars.young import YoungStellarMapMaker
 from .stars.ionizing import IonizingStellarMapMaker
@@ -381,15 +378,15 @@ class MapMaker(MapsComponent):
         log.info("Saving input images set to zero outside the low signal-to-noise contour level")
 
         # Save each of the frames
-        self.h.save(self.config.saving.h_cutoff_path)
-        self.fuv.save(self.config.saving.fuv_cutoff_path)
-        self.ha.save(self.config.saving.ha_cutoff_path)
-        self.irac.save(self.config.saving.irac_cutoff_path)
-        self.mips.save(self.config.saving.mips_cutoff_path)
-        self.pacsblue.save(self.config.saving.pacsblue_cutoff_path)
-        self.pacsred.save(self.config.saving.pacsred_cutoff_path)
-        self.disk.save(self.config.saving.disk_cutoff_path)
-        self.bulge.save(self.config.saving.bulge_cutoff_path)
+        #self.h.save(self.config.saving.h_cutoff_path)
+        #self.fuv.save(self.config.saving.fuv_cutoff_path)
+        #self.ha.save(self.config.saving.ha_cutoff_path)
+        #self.irac.save(self.config.saving.irac_cutoff_path)
+        #self.mips.save(self.config.saving.mips_cutoff_path)
+        #self.pacsblue.save(self.config.saving.pacsblue_cutoff_path)
+        #self.pacsred.save(self.config.saving.pacsred_cutoff_path)
+        #self.disk.save(self.config.saving.disk_cutoff_path)
+        #self.bulge.save(self.config.saving.bulge_cutoff_path)
 
     # -----------------------------------------------------------------
 
@@ -409,24 +406,24 @@ class MapMaker(MapsComponent):
         self.convert_halpha_to_solar()
 
         # Convert the MIPS image to solar luminosities
-        self.convert_mips_to_solar()
+        #self.convert_mips_to_solar()
 
         # Convert the PACS images to solar luminosities
-        self.convert_pacs_to_solar()
+        #self.convert_pacs_to_solar()
 
         # Save the images that are converted to solar units
 
-        halpa_path = fs.join(self.maps_solar_path, self.images["Halpha"].name + ".fits")
-        self.images["Halpha"].save(halpa_path)
+        #halpa_path = fs.join(self.maps_solar_path, self.images["Halpha"].name + ".fits")
+        #self.images["Halpha"].save(halpa_path)
 
-        mips_path = fs.join(self.maps_solar_path, self.images["24mu"].name + ".fits")
-        self.images["24mu"].save(mips_path)
+        #mips_path = fs.join(self.maps_solar_path, self.images["24mu"].name + ".fits")
+        #self.images["24mu"].save(mips_path)
 
-        pacs70_path = fs.join(self.maps_solar_path, self.images["70mu"].name + ".fits")
-        self.images["70mu"].save(pacs70_path)
+        #pacs70_path = fs.join(self.maps_solar_path, self.images["70mu"].name + ".fits")
+        #self.images["70mu"].save(pacs70_path)
 
-        pacs160_path = fs.join(self.maps_solar_path, self.images["160mu"].name + ".fits")
-        self.images["160mu"].save(pacs160_path)
+        #pacs160_path = fs.join(self.maps_solar_path, self.images["160mu"].name + ".fits")
+        #self.images["160mu"].save(pacs160_path)
 
     # -----------------------------------------------------------------
 
@@ -445,51 +442,6 @@ class MapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def convert_mips_to_solar(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Converting the 24 micron image to solar luminosities ...")
-
-        # Calculate conversion factors from MJy/sr to solar luminosities
-        exponent = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/24e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
-
-        # Multiply the image
-        self.images["24mu"] *= 10.**exponent
-
-        # Set the new unit
-        self.images["24mu"].unit = "Lsun"
-
-    # -----------------------------------------------------------------
-
-    def convert_pacs_to_solar(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Converting the 70 and 160 micron images to solar luminosities ...")
-
-        # Calculate the conversion factors
-        exponent_70 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/70e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
-        exponent_160 = (2.0*np.log10(2.85/206264.806247)) - 20.0 + np.log10(3e8/160e-6) + np.log10(4.0*np.pi) + (2.0*np.log10(self.distance_mpc*3.08567758e22)) - np.log10(3.846e26)
-
-        # Convert the units of the 70 micron and 160 micron images from MJy/sr to solar luminosities
-        self.images["70mu"] *= 10.0**exponent_70
-        self.images["160mu"] *= 10.0**exponent_160
-
-        # Set the new unit
-        self.images["70mu"].unit = "Lsun"
-        self.images["160mu"].unit = "Lsun"
-
-    # -----------------------------------------------------------------
-
     def make_dust_map(self):
 
         """
@@ -503,7 +455,7 @@ class MapMaker(MapsComponent):
         # Dust = FUV attenuation = function of (ratio of TIR and FUV luminosity)
 
         # Create the dust map maker
-        maker = CorteseDustMapMaker()
+        maker = DustMapMaker()
 
         # Run the the map maker
         self.dust = maker.run()

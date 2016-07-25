@@ -20,6 +20,7 @@ from .emission import EmissionDustMapMaker
 from .buat import BuatDustMapMaker
 from .cortese import CorteseDustMapMaker
 from ....core.tools import filesystem as fs
+from .tirtofuv import TIRtoFUVMapMaker
 
 # -----------------------------------------------------------------
 
@@ -42,6 +43,9 @@ class DustMapMaker(MapsComponent):
 
         # -- Attributes --
 
+        # The TIR to FUV ratio (in log)
+        self.log_tir_to_fuv = None
+
         # The dust maps
         self.maps = dict()
 
@@ -57,19 +61,22 @@ class DustMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Make a dust map based on black body pixel fitting
-        if self.config.make_black_body: self.make_black_body()
+        # 2. Make the TIR to FUV map
+        if self.config.make_buat or self.config.make_cortese: self.make_tir_to_fuv()
 
-        # 3. Make a dust map simply based on FIR / submm emission in a certain band
+        # 3.. Make a dust map based on black body pixel fitting
+        #if self.config.make_black_body: self.make_black_body()
+
+        # 4. Make a dust map simply based on FIR / submm emission in a certain band
         if self.config.make_emission: self.make_emission()
 
-        # 4. Make a dust map based on Buat
+        # 5. Make a dust map based on Buat
         if self.config.make_buat: self.make_buat()
 
-        # 5. Make a dust map based on Cortese
+        # 6. Make a dust map based on Cortese
         if self.config.make_cortese: self.make_cortese()
 
-        # 6. Writing
+        # 7. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -83,6 +90,23 @@ class DustMapMaker(MapsComponent):
 
         # Call the setup function of the base class
         super(DustMapMaker, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def make_tir_to_fuv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maker = TIRtoFUVMapMaker()
+
+        # Run the maker
+        maker.run()
+
+        # Set the TIR to FUV map
+        self.log_tir_to_fuv = maker.log_tir_to_fuv
 
     # -----------------------------------------------------------------
 
@@ -133,7 +157,7 @@ class DustMapMaker(MapsComponent):
         maker = BuatDustMapMaker()
 
         # Run the maker
-        maker.run()
+        maker.run(self.log_tir_to_fuv)
 
         # Add the dust map to the dictionary
         self.maps["buat"] = maker.map
@@ -151,7 +175,7 @@ class DustMapMaker(MapsComponent):
         maker = CorteseDustMapMaker()
 
         # Run the maker
-        maker.run()
+        maker.run(self.log_tir_to_fuv)
 
         # Add the dust map to the dictionary
         self.maps["cortese"] = maker.map

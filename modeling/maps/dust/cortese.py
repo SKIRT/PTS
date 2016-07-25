@@ -63,27 +63,26 @@ class CorteseDustMapMaker(MapsComponent):
         self.frames = dict()
         self.errors = dict()
 
-        # FUV and TIR map in SI units (W/m2)
-        self.fuv_si = None
-        self.tir_si = None
+        # The TIR to FUV map
+        self.log_tir_to_fuv = None
 
-        # The TIR to FUV ratio map
-        self.tir_to_fuv = None
+        # The sSFR map
+        self.ssfr = None
+
+        # Maps/dust/cortese path
+        self.maps_dust_cortese_path = None
 
         # The table describing the calibration parameters from Cortese et. al 2008
         # Title of table: Relations to convert the TIR/FUV ratio in A(FUV) for different values of tau and
         # FUV − NIR/optical colours.
         self.cortese = None
 
-        # The table with the calibration factors from galametz (TIR ..)
-        self.galametz = None
-
-        # The output map
+        # The dust map
         self.map = None
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, log_tir_to_fuv):
 
         """
         This function ...
@@ -91,29 +90,26 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(log_tir_to_fuv)
 
-        # Load the image frames and errors
+        # 2. Load the image frames and errors
         self.load_frames()
 
-        # Make the FUV map in W/m2 unit
-        self.make_fuv()
+        # 3. Make the sSFR map
+        self.make_ssfr()
 
-        # Make the TIR map in W/m2 unit
-        self.make_tir()
-
-        # Make the dust map based on Cortese et al.
+        # 4. Make the dust map
         self.make_map()
 
-        # Normalize the dust map
+        # 5. Normalize the dust map
         self.normalize()
 
-        # Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, log_tir_to_fuv):
 
         """
         This function ...
@@ -129,8 +125,11 @@ class CorteseDustMapMaker(MapsComponent):
         # Load the Cortese et al. 2008 table
         self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")
 
-        # Load the Galametz et al. table
-        self.galametz = tables.from_file(galametz_table_path, format="ascii.commented_header")
+        # Create a maps/dust/cortese directory
+        self.maps_dust_cortese_path = fs.create_directory_in(self.maps_dust_path, "cortese")
+
+        # Set the log TIR to FUV map
+        self.log_tir_to_fuv = log_tir_to_fuv
 
     # -----------------------------------------------------------------
 
@@ -141,8 +140,10 @@ class CorteseDustMapMaker(MapsComponent):
         :return:
         """
 
-        data_names = ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
+        # Inform the user
+        log.info("Loading the necessary data ...")
 
+        data_names = ["GALEX FUV"]
         if self.config.ssfr_colour == "FUV-H": data_names.append("2MASS H")
         elif self.config.ssfr_colour == "FUV-i": data_names.append("SDSS i")
         elif self.config.ssfr_colour == "FUV-r": data_names.append("SDSS r")
@@ -150,59 +151,19 @@ class CorteseDustMapMaker(MapsComponent):
         #elif self.config.ssfr_colour == "FUV-B": data_names.append("")
         else: raise ValueError("Invalid SSFR colour option")
 
-        # Get the galaxy distance
-        distance = self.galaxy_parameters.distance
-
         # Load all the frames and error maps
         for name in data_names:
 
             frame = self.dataset.get_frame(name)
             errors = self.dataset.get_errors(name)
 
-            ## CONVERT TO LSUN
-
-            # Get pixelscale and wavelength
-            pixelscale = frame.average_pixelscale
-            wavelength = frame.filter.pivotwavelength() * Unit("micron")
-
-            ##
-
-            # Conversion from MJy / sr to Jy / sr
-            conversion_factor = 1e6
-
-            # Conversion from Jy / sr to Jy / pix(2)
-            conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
-
-            # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
-            conversion_factor *= 1e-26
-
-            # Conversion from W / (m2 * Hz) (per pixel) to W / (m2 * m) (per pixel)
-            conversion_factor *= (speed_of_light / wavelength**2).to("Hz/m").value
-
-            # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
-            conversion_factor *= (4. * np.pi * distance**2).to("m2").value
-
-            # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
-            conversion_factor *= wavelength.to("m").value
-
-            # Conversion from W to Lsun
-            conversion_factor *= 1. / solar_luminosity.to("W").value
-
-            ## CONVERT
-
-            frame *= conversion_factor
-            frame.unit = "Lsun"
-
-            errors *= conversion_factor
-            errors.unit = "Lsun"
-
             # Add the frame and error map to the appropriate dictionary
-            self.frames[name] = frame
-            self.errors[name] = errors
+            self.frames[name] = frame # in original MJy/sr units
+            self.errors[name] = errors # in original MJy/sr units
 
     # -----------------------------------------------------------------
 
-    def make_fuv(self):
+    def make_ssfr(self):
 
         """
         This function ...
@@ -210,131 +171,15 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Creating the FUV map in W/m2 units ...")
+        log.info("Creating the sSFR map ...")
 
-        # Convert the FUV map from MJy/sr to W/m2
-        exponent = - 20.0 + np.log10(3.e8) - np.log10(0.153e-6) + (2. * np.log10(2.85 / 206264.806247))
-
-        self.fuv_si = self.frames["GALEX FUV"] * 10.0 ** exponent
-        self.fuv_si.unit = "W/m2"
-
-        # Save
-        #fuv_converted_path = fs.join(self.maps_intermediate_path, "FUV Wpm2.fits")
-        #fuv_converted.save(fuv_converted_path)
-
-    # -----------------------------------------------------------------
-
-    def make_tir(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the TIR map in W/m2 units ...")
-
-        # Inform the user
-        #log.info("Creating the TIR map in solar units...")
-
-
-        ## GET THE GALAMETZ PARAMETERS
-        a, b, c = self.get_galametz_parameters("MIPS 24mu", "Pacs blue", "Pacs red")
-
-        assert a == 2.133
-        assert b == 0.681
-        assert c == 1.125
-
-        # MIPS, PACS BLUE AND PACS RED CONVERTED TO LSUN (ABOVE)
-        # Galametz (2013) formula for Lsun units
-        tir_map = a * self.frames["MIPS 24mu"] + b * self.frames["Pacs blue"] + c * self.frames["Pacs red"]
-
-        # Convert the TIR frame from solar units to W / m2
-        #exponent = np.log10(3.846e26) - np.log10(4 * np.pi) - (2.0 * np.log10(self.distance_mpc * 3.08567758e22))
-        #tir_map *= 10.0 ** exponent
-
-        ## Convert the TIR map from Lsun to W / m2
-
-        conversion_factor = 1.0
-
-        # Conversion from Lsun to W
-
-        conversion_factor *= solar_luminosity.to("W").value
-
-        # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-        distance = self.galaxy_parameters.distance
-        conversion_factor /= (4. * np.pi * distance**2).to("m2").value
-
-        ## CONVERT AND SET NEW UNIT
-
-        self.tir_si = tir_map * conversion_factor
-        self.tir_si.unit = "W/m2"
-
-    # -----------------------------------------------------------------
-
-    def get_galametz_parameters(self, *args):
-
-        """
-        This function ...
-        :param args:
-        :return:
-        """
-
-        galametz_column_names = {"MIPS 24mu": "c24",
-                                 "Pacs blue": "c70",
-                                 "Pacs green": "c100",
-                                 "Pacs red": "c160",
-                                 "SPIRE PSW": "c250"}
-
-        # Needed column names
-        needed_column_names = [galametz_column_names[filter_name] for filter_name in args]
-
-        # List of not needed column names
-        colnames = self.galametz.colnames
-        not_needed_column_names = [name for name in colnames if name not in needed_column_names]
-
-        not_needed_column_names.remove("R2")
-        not_needed_column_names.remove("CV(RMSE)")
-
-        # The parameters
-        parameters = None
-
-        # Loop over the entries in the galametz table
-        for i in range(len(self.galametz)):
-
-            if is_appropriate_galametz_entry(self.galametz, i, needed_column_names, not_needed_column_names):
-
-                for name in needed_column_names: parameters.append(self.galametz[name][i])
-                break
-
-            else: continue
-
-        # Return the parameters
-        return parameters
-
-    # -----------------------------------------------------------------
-
-    def make_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
-
-        ## FUV IN W/M2
-
-        ## TIR IN W/M2
-
-        # CALCULATE TIR TO FUV RATIO
-
-        # The ratio of TIR and FUV
-        self.tir_to_fuv = np.log10(self.tir_si / self.fuv_si)
-
-        # Save TIR to FUV ratio map
-        #tir_to_fuv_path = fs.join(self.maps_intermediate_path, "TIRtoFUV.fits")
-        #tir_to_fuv.save(tir_to_fuv_path)
+        # Get the sSFR map
+        if self.config.ssfr_colour == "FUV-H": self.ssfr = self.get_fuv_h()
+        elif self.config.ssfr_colour == "FUV-i": self.ssfr = self.get_fuv_i()
+        elif self.config.ssfr_colour == "FUV-r": self.ssfr = self.get_fuv_r()
+        elif self.config.ssfr_colour == "FUV-g": self.ssfr = self.get_fuv_g()
+        #elif self.config.ssfr_colour == "FUV-B": self.ssfr = self.get_fuv_b()
+        else: raise ValueError("Invalid sSFR colour")
 
     # -----------------------------------------------------------------
 
@@ -345,57 +190,45 @@ class CorteseDustMapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating the dust map ...")
+
         # Dust = FUV attenuation = function of (ratio of TIR and FUV luminosity)
 
         # Create the FUV attenuation map according to the calibration in Cortese et. al 2008
-        a_fuv_cortese = self.create_afuv_cortese("FUV-i")
+        a_fuv_cortese = self.create_afuv_cortese()
 
         # Set attenuation to zero where the original FUV map is smaller than zero
-        a_fuv_cortese[self.images["FUV"].frames.primary <= 0.0] = 0.0
+        a_fuv_cortese[self.frames["GALEX FUV"] <= 0.0] = 0.0
 
         # Make sure all pixel values are larger than or equal to zero
         a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
 
         # Cutoff
-        a_fuv_cortese[self.cutoff_masks["160mu"]] = 0.0
+        #a_fuv_cortese[self.cutoff_masks["160mu"]] = 0.0
 
         # Set the A(FUV) map as the dust map
         self.map = a_fuv_cortese
 
     # -----------------------------------------------------------------
 
-    def create_afuv_cortese(self, ssfr_colour):
+    def create_afuv_cortese(self):
 
         """
         This function ...
-        :param ssfr_colour: "FUV-H", "FUV-i", "FUV-r", "FUV-g" or "FUV-B"
         :return:
         """
 
         # Inform the user
         log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
 
-        # Get the sSFR map
-        if ssfr_colour == "FUV-H":
-            ssfr = self.get_fuv_h()
-        elif ssfr_colour == "FUV-i":
-            ssfr = self.get_fuv_i()
-        elif ssfr_colour == "FUV-r":
-            ssfr = self.get_fuv_r()
-        elif ssfr_colour == "FUV-g":
-            ssfr = self.get_fuv_g()
-        elif ssfr_colour == "FUV-B":
-            ssfr = self.get_fuv_b()
-        else:
-            raise ValueError("Invalid sSFR colour")
-
-        # Calculate powers of tir_to_fuv
-        tir_to_fuv2 = np.power(self.tir_to_fuv, 2.0)
-        tir_to_fuv3 = np.power(self.tir_to_fuv, 3.0)
-        tir_to_fuv4 = np.power(self.tir_to_fuv, 4.0)
+        # Calculate powers of log(tir_to_fuv)
+        tir_to_fuv2 = np.power(self.log_tir_to_fuv, 2.0)
+        tir_to_fuv3 = np.power(self.log_tir_to_fuv, 3.0)
+        tir_to_fuv4 = np.power(self.log_tir_to_fuv, 4.0)
 
         # Create an empty image
-        a_fuv_cortese = Frame.zeros_like(self.tir_to_fuv)
+        a_fuv_cortese = Frame.zeros_like(self.log_tir_to_fuv)
 
         limits = []
         a1_list = []
@@ -407,11 +240,11 @@ class CorteseDustMapMaker(MapsComponent):
         # Loop over all entries in the Cortese et. al
         for i in range(len(self.cortese)):
 
-            upper = self.cortese[ssfr_colour][i]
+            upper = self.cortese[self.config.ssfr_colour][i]
             if i == len(self.cortese) - 1:
                 lower = None
             else:
-                lower = self.cortese[ssfr_colour][i + 1]
+                lower = self.cortese[self.config.ssfr_colour][i + 1]
 
             limits.append((lower, upper))
 
@@ -431,24 +264,24 @@ class CorteseDustMapMaker(MapsComponent):
         for i in range(len(limits)):
 
             if limits[i][0] is None:
-                where = ssfr < limits[i][1]
+                where = self.ssfr < limits[i][1]
             elif limits[i][1] is None:
-                where = ssfr > limits[i][0]
+                where = self.ssfr > limits[i][0]
             else:
-                where = (ssfr >= limits[i][0]) * (ssfr < limits[i][1])
+                where = (self.ssfr >= limits[i][0]) * (self.ssfr < limits[i][1])
 
             # Set the appropriate pixels
-            a_fuv_cortese[where] = a1_list[i] + a2_list[i] * self.tir_to_fuv[where] + a3_list[i] * tir_to_fuv2[where] + \
+            a_fuv_cortese[where] = a1_list[i] + a2_list[i] * self.log_tir_to_fuv[where] + a3_list[i] * tir_to_fuv2[where] + \
                                    a4_list[i] * tir_to_fuv3[where] + a5_list[i] * tir_to_fuv4[where]
 
         # Set attenuation to zero where tir_to_fuv is NaN
-        a_fuv_cortese[np.isnan(self.tir_to_fuv)] = 0.0
+        a_fuv_cortese[np.isnan(self.log_tir_to_fuv)] = 0.0
 
         # Set attenuation to zero where sSFR is smaller than zero
-        a_fuv_cortese[ssfr < 0.0] = 0.0
+        a_fuv_cortese[self.ssfr < 0.0] = 0.0
 
         # Set attenuation to zero where sSFR is greater than 10.5
-        a_fuv_cortese[ssfr >= 10.5] = 0.0
+        a_fuv_cortese[self.ssfr >= 10.5] = 0.0
 
         # Return the A(FUV) map
         return a_fuv_cortese
@@ -466,7 +299,7 @@ class CorteseDustMapMaker(MapsComponent):
         log.info("Calculating the FUV-H colour map ...")
 
         # Calculate the colour map
-        fuv_h = -2.5 * np.log10(self.images["FUV"].frames.primary / self.images["H"].frames.primary)
+        fuv_h = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["2MASS H"])
 
         # Replace NaNs by zeros
         fuv_h.replace_nans(0.0)
@@ -496,7 +329,7 @@ class CorteseDustMapMaker(MapsComponent):
         log.info("Calculating the FUV-i colour map ...")
 
         # Calculate the colour map
-        fuv_i = -2.5 * np.log10(self.images["FUV"].frames.primary / self.images["i"].frames.primary)
+        fuv_i = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS i"])
 
         # Replace NaNs by zeros
         fuv_i.replace_nans(0.0)
@@ -520,7 +353,7 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # Calculate the colour map
-        fuv_r = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["r"])
+        fuv_r = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS r"])
 
         # Replace NaNs by zeros
         fuv_r.replace_nans(0.0)
@@ -543,18 +376,20 @@ class CorteseDustMapMaker(MapsComponent):
         :return:
         """
 
-        pass
+        # Calculate the colour map
+        fuv_g = -2.5 * np.log10(self.frames["GALEX FUV"] / self.frames["SDSS g"])
 
-    # -----------------------------------------------------------------
+        # Replace NaNs by zeros
+        fuv_g.replace_nans(0.0)
 
-    def get_fuv_b(self):
+        # Mask pixels outside of the low signal-to-noise contour
+        # fuv_r[self.mask] = 0.0
 
-        """
-        This function ...
-        :return:
-        """
+        # Set negative pixels to zero
+        fuv_g[fuv_g < 0.0] = 0.0
 
-        pass
+        # Return the FUV-g colour map
+        return fuv_g
 
     # -----------------------------------------------------------------
 
@@ -564,6 +399,9 @@ class CorteseDustMapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Normalizing the dust map ...")
 
         # Normalize the dust map
         self.map.normalize()
@@ -578,64 +416,28 @@ class CorteseDustMapMaker(MapsComponent):
         :return:
         """
 
-        # Write the TIR map
-        self.write_tir()
+        # Inform the user
+        log.info("Writing ...")
 
-        # Write the TIR to FUV map
-        self.write_tir_to_fuv()
+        # Write the sSFR map
+        self.write_ssfr()
 
     # -----------------------------------------------------------------
 
-    def write_tir(self):
+    def write_ssfr(self):
 
         """
         This function ...
         :return:
         """
 
-        # Determine path
-        path = fs.join(self.maps_intermediate_path, "TIR.fits")
+        # Inform the user
+        log.info("Writing the sSFR map ...")
+
+        # Write the sSFR map
+        path = fs.join(self.maps_dust_cortese_path, "ssfr.fits")
 
         # Write
-        self.tir_si.save(path)
-
-    # -----------------------------------------------------------------
-
-    def write_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine path
-        path = fs.join(self.maps_intermediate_path, "TIR-FUV.fits")
-
-        # Write
-        self.tir_to_fuv.save(path)
-
-# -----------------------------------------------------------------
-
-def is_appropriate_galametz_entry(table, i, needed_cols, not_needed_cols):
-
-    """
-    This function ...
-    :return:
-    """
-
-    # Check if masked columns
-    for name in not_needed_cols:
-
-        # Verify that this entry is masked
-        if not table[name].mask[i]: return False
-
-    # Check needed cols
-    for name in needed_cols:
-
-        # Verify that this entry is not masked
-        if table[name].mask[i]: return False
-
-    # No mismatches found, thus appropriate entry
-    return True
+        self.ssfr.save(path)
 
 # -----------------------------------------------------------------
