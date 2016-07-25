@@ -121,7 +121,7 @@ class CorteseDustMapMaker(MapsComponent):
 
         #ssfr_colour: "FUV-H", "FUV-i", "FUV-r", "FUV-g" or "FUV-B"`
         #self.config.ssfr_colour = "FUV-i"
-        self.config.ssfr_colour = "FUV-r"
+        self.config.ssfr_colour = "FUV-H"
 
         # Load the Cortese et al. 2008 table
         self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")
@@ -261,19 +261,30 @@ class CorteseDustMapMaker(MapsComponent):
             a4_list.append(a4)
             a5_list.append(a5)
 
+        log.debug("a1 values: " + " ".join([str(a) for a in a1_list]))
+        log.debug("a2 values: " + " ".join([str(a) for a in a2_list]))
+        log.debug("a3 values: " + " ".join([str(a) for a in a3_list]))
+        log.debug("a4 values: " + " ".join([str(a) for a in a4_list]))
+        log.debug("a5 values: " + " ".join([str(a) for a in a5_list]))
+
         # Create the FUV attenuation map
         for i in range(len(limits)):
 
-            if limits[i][0] is None:
-                where = self.ssfr < limits[i][1]
-            elif limits[i][1] is None:
-                where = self.ssfr > limits[i][0]
-            else:
-                where = (self.ssfr >= limits[i][0]) * (self.ssfr < limits[i][1])
+            upper_limit = limits[i][1]
+            lower_limit = limits[i][0]
+
+            if lower_limit is None:
+                where = self.ssfr < upper_limit
+            elif upper_limit is None:
+                where = self.ssfr > lower_limit
+            else: where = (self.ssfr >= lower_limit) * (self.ssfr < upper_limit)
 
             # Set the appropriate pixels
             a_fuv_cortese[where] = a1_list[i] + a2_list[i] * self.log_tir_to_fuv[where] + a3_list[i] * tir_to_fuv2[where] + \
                                    a4_list[i] * tir_to_fuv3[where] + a5_list[i] * tir_to_fuv4[where]
+
+        # The absolute upper limit (so 10.5 for FUV-H, 7.5 for FUV-i, 7.3 for FUV-r, 6.7 for FUV-g, and 6.3 for FUV-B
+        absolute_upper_limit = limits[0][1]
 
         # Set attenuation to zero where tir_to_fuv is NaN
         a_fuv_cortese[np.isnan(self.log_tir_to_fuv)] = 0.0
@@ -281,8 +292,8 @@ class CorteseDustMapMaker(MapsComponent):
         # Set attenuation to zero where sSFR is smaller than zero
         a_fuv_cortese[self.ssfr < 0.0] = 0.0
 
-        # Set attenuation to zero where sSFR is greater than 10.5
-        a_fuv_cortese[self.ssfr >= 10.5] = 0.0
+        # Set attenuation to zero where sSFR is greater than the absolute upper limit for the FUV-IR/optical colour
+        a_fuv_cortese[self.ssfr >= absolute_upper_limit] = 0.0
 
         # Return the A(FUV) map
         return a_fuv_cortese

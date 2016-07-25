@@ -200,15 +200,25 @@ class TIRtoFUVMapMaker(MapsComponent):
         # Inform the user
         log.info("Creating the FUV map in W/m2 units ...")
 
-        # Convert the FUV map from MJy/sr to W/m2
-        exponent = - 20.0 + np.log10(3.e8) - np.log10(0.153e-6) + (2. * np.log10(2.85 / 206264.806247))
+        ## Convert the FUV map from Lsun to W/m2
 
-        self.fuv_si = self.frames["GALEX FUV"] * 10.0 ** exponent
+        assert self.frames["GALEX FUV"].unit == Unit("Lsun")
+
+        ## Convert the TIR map from Lsun to W / m2
+
+        conversion_factor = 1.0
+
+        # Conversion from Lsun to W
+
+        conversion_factor *= solar_luminosity.to("W").value
+
+        # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
+        distance = self.galaxy_parameters.distance
+        conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
+
+        # FUV in W/M2
+        self.fuv_si = self.frames["GALEX FUV"] * conversion_factor
         self.fuv_si.unit = "W/m2"
-
-        # Save
-        #fuv_converted_path = fs.join(self.maps_intermediate_path, "FUV Wpm2.fits")
-        #fuv_converted.save(fuv_converted_path)
 
     # -----------------------------------------------------------------
 
@@ -225,7 +235,6 @@ class TIRtoFUVMapMaker(MapsComponent):
         # Inform the user
         #log.info("Creating the TIR map in solar units...")
 
-
         ## GET THE GALAMETZ PARAMETERS
         a, b, c = self.get_galametz_parameters("MIPS 24mu", "Pacs blue", "Pacs red")
 
@@ -236,10 +245,6 @@ class TIRtoFUVMapMaker(MapsComponent):
         # MIPS, PACS BLUE AND PACS RED CONVERTED TO LSUN (ABOVE)
         # Galametz (2013) formula for Lsun units
         tir_map = a * self.frames["MIPS 24mu"] + b * self.frames["Pacs blue"] + c * self.frames["Pacs red"]
-
-        # Convert the TIR frame from solar units to W / m2
-        #exponent = np.log10(3.846e26) - np.log10(4 * np.pi) - (2.0 * np.log10(self.distance_mpc * 3.08567758e22))
-        #tir_map *= 10.0 ** exponent
 
         ## Convert the TIR map from Lsun to W / m2
 
@@ -340,6 +345,9 @@ class TIRtoFUVMapMaker(MapsComponent):
         # Write the TIR map
         self.write_tir()
 
+        # Write the FUV map in SI units
+        self.write_fuv()
+
         # Write the TIR to FUV ratio map
         self.write_tir_to_fuv()
 
@@ -363,6 +371,24 @@ class TIRtoFUVMapMaker(MapsComponent):
 
         # Write
         self.tir_si.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_fuv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the FUV map ...")
+
+        # Determine path
+        path = fs.join(self.maps_tirfuv_path, "FUV.fits")
+
+        # Write
+        self.fuv_si.save(path)
 
     # -----------------------------------------------------------------
 
