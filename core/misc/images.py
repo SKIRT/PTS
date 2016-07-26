@@ -20,10 +20,12 @@ from astropy import constants
 from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..basics.filter import Filter
-from ...magic.core.image import Image
-from ...magic.core.frame import Frame
+from ...magic.core.kernel import ConvolutionKernel
+from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.core.remote import RemoteImage, RemoteFrame, RemoteDataCube
 from ..tools.special import remote_filter_convolution, remote_convolution_frame
+from ..simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -59,6 +61,9 @@ class ObservedImageMaker(object):
         # The wavelengths of the simulation
         self.wavelengths = None
 
+        # The wavelength grid of the simulation
+        self.wavelength_grid = None
+
         # Filter names
         self.filter_names = ["FUV", "NUV", "u", "g", "r", "i", "z", "H", "J", "Ks", "I1", "I2", "I3", "I4", "W1", "W2",
                              "W3", "W4", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250", "SPIRE 350", "SPIRE 500"]
@@ -66,18 +71,79 @@ class ObservedImageMaker(object):
         # The instrument names
         self.instrument_names = None
 
+        # The output path
+        self.output_path = None
+
         # The filters for which the images should be created
         self.filters = dict()
 
-        # The dictionary containing the images for various SKIRT output datacubes
+        # The dictionary containing the different SKIRT output datacubes
+        self.datacubes = dict()
+
+        # The dictionary containing the created observation images
         self.images = dict()
 
         # The reference WCS
         self.wcs = None
 
+        # The kernel paths
+        self.kernel_paths = None
+
+        # The target unit
+        self.unit = None
+
+        # The host id
+        self.host_id = None
+
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None, kernel_paths=None, unit=None, host_id=None):
+    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
+            kernel_paths=None, unit=None, host_id=None):
+
+        """
+        This function ...
+        :param simulation:
+        :param output_path:
+        :param filter_names:
+        :param instrument_names:
+        :param wcs_path:
+        :param kernel_paths:
+        :param unit:
+        :param host_id:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(simulation, output_path, filter_names, instrument_names, wcs_path, kernel_paths, unit, host_id)
+
+        # 2. Create the wavelength grid
+        self.create_wavelength_grid()
+
+        # 3. Create the filters
+        self.create_filters()
+
+        # 4. Load the datacubes
+        self.load_datacubes()
+
+        # 5. Set the WCS of the datacubes
+        if self.wcs is not None: self.set_wcs()
+
+        # 6. Make the observed images
+        self.make_images()
+
+        # 7. Do convolutions
+        if self.kernel_paths is not None: self.convolve()
+
+        # 8. Do unit conversions
+        if self.unit is not None: self.convert_units()
+
+        # 9. Write the results
+        if self.output_path is not None: self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
+              kernel_paths=None, unit=None, host_id=None):
 
         """
         This function ...
@@ -107,27 +173,41 @@ class ObservedImageMaker(object):
         # Set the instrument names
         self.instrument_names = instrument_names
 
-        # Create the filters
-        self.create_filters()
+        # Set the output path
+        self.output_path = output_path
 
-        # Make the observed images
-        self.make_images(host_id)
+        # If a WCS path is defined (a FITS file)
+        if wcs_path is not None:
 
-        # Set the WCS of the created images
-        if wcs_path is not None: self.set_wcs(wcs_path)
+            # Debugging
+            log.debug("Loading the coordinate system from '" + wcs_path + "' ...")
 
-        # Convolve the image with a given convolution kernel
-        if kernel_paths is not None:
+            # Load the WCS
+            self.wcs = CoordinateSystem.from_file(wcs_path)
 
-            # Check whether the WCS for the image is defined. If not, show a warning and skip the convolution
-            if wcs_path is None: log.warning("WCS of the image is not defined, so convolution cannot be performed (the pixelscale is undefined)")
-            else: self.convolve(kernel_paths, host_id)
+        # Set the kernel paths
+        self.kernel_paths = kernel_paths
 
-        # Convert the units (WCS has to be loaded!)
-        if unit is not None: self.convert_units(unit)
+        # Set the target unit
+        self.unit = unit
 
-        # Write the results
-        if output_path is not None: self.write(output_path)
+        # Set the host id
+        self.host_id = host_id
+
+    # -----------------------------------------------------------------
+
+    def create_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the wavelength grid ...")
+
+        # Construct the wavelength grid from the array of wavelengths
+        self.wavelength_grid = WavelengthGrid.from_wavelengths(self.wavelengths, "micron")
 
     # -----------------------------------------------------------------
 
@@ -155,16 +235,15 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def make_images(self, host_id=None):
+    def load_datacubes(self):
 
         """
         This function ...
-        :param host_id:
         :return:
         """
 
         # Inform the user
-        log.info("Making the observed images (this may take a while) ...")
+        log.info("Loading the SKIRT output datacubes ...")
 
         # Loop over the different simulated images
         for path in self.fits_paths:
@@ -179,155 +258,131 @@ class ObservedImageMaker(object):
             datacube_name = fs.strip_extension(fs.name(path))
 
             # Debugging
-            log.debug("Making the observed images for " + datacube_name + ".fits ...")
+            log.debug("Loading datacube from '" + datacube_name + ".fits' ...")
 
-            # Create a dictionary to contain the observed images for this FITS file
-            images = dict()
+            ## LOAD AND CONVERT UNITS TO SPECTRAL (WAVELENGTH-DENSITY)
 
-            # The filter convolution is performed remotely
-            if host_id is not None:
+            # Load the datacube (locally or remotely)
+            if self.host_id is not None: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.host_id)
+            else: datacube = DataCube.from_file(path, self.wavelength_grid)
 
-                # Upload the datacube, wavelength grid and filter properties, perform the convolution on the remote and get the resulting image frames back (as a dictionary where the keys are the filter names)
-                frames = remote_filter_convolution(host_id, path, self.wavelengths, self.filters)
+            # Convert the frames from neutral surface brightness to wavelength surface brightness
+            for l in range(len(self.wavelengths)):
 
-                # Add the resulting image frames to the dictionary
-                for filter_name in frames:
-                    # Add the observed image to the dictionary
-                    images[filter_name] = frames[filter_name]
+                # Get the wavelength
+                wavelength = self.wavelengths[l]
 
-            # The calculation is performed locally
-            else:
+                # Determine the name of the frame in the datacube
+                frame_name = "frame" + str(l)
 
-                # Load the simulated image
-                datacube = Image.from_file(path, always_call_first_primary=False)
+                # Divide this frame by the wavelength in micron
+                datacube.frames[frame_name] /= wavelength
 
-                # Convert the frames from neutral surface brightness to wavelength surface brightness
-                for l in range(len(self.wavelengths)):
+                # Set the new unit
+                datacube.frames[frame_name].unit = "W / (m2 * arcsec2 * micron)"
 
-                    # Get the wavelength
-                    wavelength = self.wavelengths[l]
-
-                    # Determine the name of the frame in the datacube
-                    frame_name = "frame" + str(l)
-
-                    # Divide this frame by the wavelength in micron
-                    datacube.frames[frame_name] /= wavelength
-
-                    # Set the new unit
-                    datacube.frames[frame_name].unit = "W / (m2 * arcsec2 * micron)"
-
-                # Convert the datacube to a numpy array where wavelength is the third dimension
-                fluxdensities = datacube.asarray()
-
-                # Loop over the different filters
-                for filter_name in self.filters:
-
-                    fltr = self.filters[filter_name]
-
-                    # Debugging
-                    log.debug("Making the observed image for the " + str(fltr) + " filter ...")
-
-                    # Calculate the observed image frame
-                    data = fltr.convolve(self.wavelengths, fluxdensities)
-                    frame = Frame(data)
-
-                    # Set the unit of the frame
-                    frame.unit = "W/(m2 * arcsec2 * micron)"
-
-                    # Add the observed image to the dictionary
-                    images[filter_name] = frame
-
-            # Add the dictionary of images of the current datacube to the complete images dictionary (with the datacube name as a key)
-            self.images[datacube_name] = images
+            # Add the datacube to the dictionary
+            self.datacubes[datacube_name] = datacube
 
     # -----------------------------------------------------------------
 
-    def set_wcs(self, wcs_path):
+    def set_wcs(self):
 
         """
         This function ...
-        :param wcs_path:
         :return:
         """
 
-        # TODO: allow multiple paths (in a dictionary) for the different datacubes (so that for certain instruments the WCS should not be set on the simulated images)
+        # TODO: allow multiple paths (in a dictionary) for the different datacubes
+        # (so that for certain instruments the WCS should not be set on the simulated images)
 
         # Inform the user
         log.info("Setting the WCS of the simulated images ...")
 
-        # Debugging
-        log.debug("Loading the coordinate system from '" + wcs_path + "' ...")
+        # Loop over the different datacubes and set the WCS
+        for datacube_name in self.datacubes:
 
-        # Load the WCS
-        self.wcs = CoordinateSystem.from_file(wcs_path)
+            # Debugging
+            log.debug("Setting the coordinate system of the " + datacube_name + "' datacube ...")
 
-        # Loop over the different images and set the WCS
-        for datacube_name in self.images:
-            for filter_name in self.images[datacube_name]:
-
-                # Debugging
-                log.debug("Setting the coordinate system of the " + filter_name + " image of the '" + datacube_name + "' instrument ...")
-
-                # Set the coordinate system for this frame
-                self.images[datacube_name][filter_name].wcs = self.wcs
+            # Set the coordinate system for this datacube
+            self.datacubes[datacube_name].wcs = self.wcs
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel_paths, host_id=None):
+    def make_images(self):
 
         """
         This function ...
-        :param kernel_paths:
-        :param host_id:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the observed images (this may take a while) ...")
+
+        # Loop over the datacubes
+        for datacube_name in self.datacubes:
+
+            # Debugging
+            log.debug("Making the observed images for " + datacube_name + ".fits ...")
+
+            # Create a list of the filter names
+            filter_names = self.filters.keys()
+
+            # Create the corresponding list of filters
+            filters = self.filters.values()
+
+            # Initialize a dictionary, indexed by the filter names, to contain the images
+            images = dict()
+
+            # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
+            frames = self.datacubes[datacube_name].convolve_with_filters(filters)
+
+            # Add the observed images to the dictionary
+            for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame
+
+            # Add the observed image dictionary for this datacube to the total dictionary (with the datacube name as a key)
+            self.images[datacube_name] = images
+
+    # -----------------------------------------------------------------
+
+    def convolve(self):
+
+        """
+        This function ...
         :return:
         """
 
         # Inform the user
         log.info("Convolving the images ...")
 
-        # If the convolutions must be performed remotely
-        if host_id is not None:
+        # Check whether a WCS was provided. If not, show a warning and skip the convolution
+        if self.wcs is None:
+            log.warning("WCS of the image is not defined, so convolution cannot be performed (the pixelscale is undefined)")
+            return
 
-            # Loop over the images
-            for datacube_name in self.images:
-                for filter_name in self.images[datacube_name]:
+        # Loop over the images
+        for datacube_name in self.images:
+            for filter_name in self.images[datacube_name]:
 
-                    # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
-                    if filter_name not in kernel_paths or kernel_paths[filter_name] is None: continue
+                # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
+                if filter_name not in self.kernel_paths or self.kernel_paths[filter_name] is None: continue
 
-                    # Determine the kernel path for this image
-                    kernel_path = kernel_paths[filter_name]
+                # Load the kernel
+                kernel = ConvolutionKernel.from_file(self.kernel_paths[filter_name])
 
-                    # Perform the remote convolution
-                    self.images[datacube_name][filter_name] = remote_convolution_frame(self.images[datacube_name][filter_name], kernel_path, host_id)
+                # Debugging
+                log.debug("Convolving the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
 
-        # The convolution is performed locally
-        else:
-
-            # Loop over the images
-            for datacube_name in self.images:
-                for filter_name in self.images[datacube_name]:
-
-                    # Check if the name of the image filter is a key in the 'kernel_paths' dictionary. If not, don't convolve.
-                    if filter_name not in kernel_paths or kernel_paths[filter_name] is None: continue
-
-                    # Load the kernel
-                    kernel = Frame.from_file(kernel_paths[filter_name])
-
-                    # Debugging
-                    log.debug("Convolving the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
-
-                    # Convolve this image frame
-                    self.images[datacube_name][filter_name].convolve(kernel)
+                # Convolve this image frame
+                self.images[datacube_name][filter_name].convolve(kernel)
 
     # -----------------------------------------------------------------
 
-    def convert_units(self, unit):
+    def convert_units(self):
 
         """
         This function ...
-        :param self:
-        :param unit:
         :return:
         """
 
@@ -335,7 +390,9 @@ class ObservedImageMaker(object):
         # 1 Jy = 1e-26 * W / (m2 * Hz)
 
         # Inform the user
-        log.info("Converting the units of the images to " + str(unit) + " ...")
+        log.info("Converting the units of the images to " + str(self.unit) + " ...")
+
+        assert str(self.unit) == "MJy / sr" # TEMPORARY
 
         # Get the pixelscale
         #pixelscale = self.wcs.average_pixelscale.to("arcsec/pix").value # in arcsec**2 / pixel
@@ -370,11 +427,10 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def write(self, output_path):
+    def write(self):
 
         """
         This function ...
-        :param output_path:
         :return:
         """
 
@@ -386,7 +442,7 @@ class ObservedImageMaker(object):
             for filter_name in self.images[datacube_name]:
 
                 # Determine the path to the output FITS file
-                path = fs.join(output_path, datacube_name + "__" + filter_name + ".fits")
+                path = fs.join(self.output_path, datacube_name + "__" + filter_name + ".fits")
 
                 # Save the image
                 self.images[datacube_name][filter_name].save(path)

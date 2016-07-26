@@ -1093,10 +1093,13 @@ class RemoteImage(object):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs):
+    def rebin(self, reference_wcs, exact=True, parallel=True):
 
         """
         This function ...
+        :param reference_wcs:
+        :param exact:
+        :param parallel:
         :return:
         """
 
@@ -1104,6 +1107,39 @@ class RemoteImage(object):
         self.remote.send_python_line("reference_wcs = CoordinateSystem('" + reference_wcs.to_header_string() + "')")
 
         # Rebin remotely
-        self.remote.send_python_line(self.label + ".rebin(reference_wcs)", timeout=None)
+        self.remote.send_python_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None)
+
+# -----------------------------------------------------------------
+
+class RemoteDataCube(RemoteImage):
+
+    """
+    This function ...
+    """
+
+    @classmethod
+    def from_file(cls, path, wavelength_grid, host_id):
+
+        """
+        This function ...
+        :param path:
+        :param wavelength_grid:
+        :param host_id:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def convolve_with_filters(self, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------

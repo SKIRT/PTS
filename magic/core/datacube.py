@@ -288,4 +288,85 @@ class DataCube(Image):
         # Return the SED
         return sed
 
+    # -----------------------------------------------------------------
+
+    def convolve_with_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Convolving the datacube with the " + str(fltr) + " filter ...")
+
+        # Convert the datacube to a numpy array where wavelength is the third dimension
+        array = self.asarray()
+
+        # Calculate the observed image frame
+        data = fltr.convolve(self.wavelengths, array)
+        frame = Frame(data)
+
+        # Set the unit of the frame
+        frame.unit = self.unit
+
+        # Return the resulting frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    def convolve_with_filters(self, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Convolving the datacube with " + str(len(filters)) + " different filter ...")
+
+        # Initialize list to contain the output frames
+        frames = []
+
+        # Convert the datacube to a numpy array where wavelength is the third dimension
+        array = self.asarray()
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Debugging
+            log.debug("Convolving the datacube with the " + str(fltr) + " filter ...")
+
+            # Calculate the observed image frame
+            data = fltr.convolve(self.wavelengths, array)
+            frame = Frame(data)
+
+            # Set the unit of the frame
+            frame.unit = self.unit
+
+            # Set the filter
+            frame.filter = fltr
+
+            # Set the wcs
+            frame.wcs = self.wcs
+
+            # Add the frame to the list
+            frames.append(frame)
+
+        # Return the list of resulting frames
+        return frames
+
+    # -----------------------------------------------------------------
+
+    def _end_as_array(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._asarray = None
+
 # -----------------------------------------------------------------

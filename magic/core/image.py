@@ -26,10 +26,10 @@ from astropy.units import Unit
 from ..basics.layers import Layers
 from ..basics.region import Region
 from ..basics.mask import Mask
-from ..tools import transformations
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from . import io
+from .frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -647,11 +647,13 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs):
+    def rebin(self, reference_wcs, exact=True, parallel=True):
 
         """
         This function ...
         :param reference_wcs:
+        :param exact:
+        :param parallel:
         """
 
         # Create a copy of the current wcs
@@ -666,7 +668,7 @@ class Image(object):
             log.debug("Rebinning the " + frame_name + " frame ...")
 
             # Rebin this frame (the reference wcs is automatically set in the new frame)
-            footprint = self.frames[frame_name].rebin(reference_wcs)
+            footprint = self.frames[frame_name].rebin(reference_wcs, exact=exact, parallel=parallel)
 
         # Loop over the masks
         for mask_name in self.masks:
@@ -674,13 +676,17 @@ class Image(object):
             # Inform the user
             log.debug("Rebinning the " + mask_name + " mask ...")
 
-            # Rebin this mask
-            data = transformations.new_align_and_rebin(self.masks[mask_name].astype(float), original_wcs, reference_wcs)
+            # Create a frame for the mask
+            mask_frame = Frame(self.masks[mask_name].astype(float), wcs=original_wcs)
+
+            # Rebin the mask frame
+            footprint = mask_frame.rebin(reference_wcs, exact=exact, parallel=parallel)
 
             # Return the rebinned mask
             # data, name, description
-            self.masks[mask_name] = Mask(data > 0.5, name=self.masks[mask_name].name, description=self.masks[mask_name].description)
+            self.masks[mask_name] = Mask(mask_frame > 0.5, name=self.masks[mask_name].name, description=self.masks[mask_name].description)
 
+        # If there was any frame or mask, we have footprint
         if footprint is not None:
 
             # Add mask for padded pixels after rebinning

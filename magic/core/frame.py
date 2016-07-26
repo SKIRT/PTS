@@ -809,16 +809,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def rebinned(self, reference_wcs):
+    def rebinned(self, reference_wcs, exact=True, parallel=True):
 
         """
         This function ...
         :param reference_wcs:
+        :param exact:
+        :param parallel:
         :return:
         """
 
         new = self.copy()
-        new.rebin(reference_wcs)
+        new.rebin(reference_wcs, exact=exact, parallel=parallel)
         return new
 
     # -----------------------------------------------------------------
