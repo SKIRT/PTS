@@ -176,7 +176,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def start_screen(self, name, local_script_path, script_destination, screen_output_path=None):
+    def start_screen(self, name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False):
 
         """
         This function ...
@@ -206,7 +206,7 @@ class Remote(object):
         self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False)
 
         # Remove the remote shell script
-        self.execute("rm " + remote_script_path, output=False)
+        if not keep_remote_script: self.execute("rm " + remote_script_path, output=False)
 
     # -----------------------------------------------------------------
 
@@ -342,12 +342,13 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def run_pts(self, command, config):
+    def run_pts(self, command, config, keep_remote_temp=False):
 
         """
         This function ...
         :param command:
         :param config:
+        :param keep_remote_temp:
         :return:
         """
 
@@ -408,10 +409,13 @@ class Remote(object):
             script_file.write("python " + remote_main_path + " --configfile " + remote_conf_path + " " + command + "\n")
 
         # Execute the script
-        self.start_screen(unique_session_name, temp_script_path, remote_temp_path)
+        self.start_screen(unique_session_name, temp_script_path, remote_temp_path, keep_remote_script=keep_remote_temp)
 
         # Remove the local script file
         fs.remove_file(temp_script_path)
+
+        # Remove the remote temporary directory
+        if keep_remote_temp: log.info("Remote output will be placed in '" + remote_temp_path + "'")
 
         # Create a new Task object
         task = Task(command, config.to_string())
@@ -428,6 +432,7 @@ class Remote(object):
         task.name = unique_session_name
         task.screen_name = unique_session_name
         task.remote_screen_output_path = remote_temp_path
+        task.keep_remote_output = keep_remote_temp
 
         # Save the task
         task.save()
