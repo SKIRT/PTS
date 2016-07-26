@@ -433,7 +433,7 @@ class DustPediaDataProcessing(object):
         temp_nuv_path = fs.join(temp_path, "NUV")
         # Create temp directory
         #fs.create_directory(temp_path)
-
+        #fs.create_directories(temp_fuv_path, temp_nuv_path)
 
         # 1 and 2 RAW directories
         raw_fuv_path = fs.join(raw_path, "FUV")

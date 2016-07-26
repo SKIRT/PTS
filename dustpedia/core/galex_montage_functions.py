@@ -296,9 +296,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra.to("deg").value, dec=dec.to("deg").value, radius=(0.5*width)*(2.0**0.5))
 
     # Get file paths of overlapping observations
-    overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype=('S500'))
+    overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
 
-    if len(overlapping_file_paths.shape)==0:
+    if len(overlapping_file_paths.shape) == 0:
         overlapping_file_paths = [overlapping_file_paths.tolist()]
     for overlapping_file_path in overlapping_file_paths:
         shutil.copy(overlapping_file_path, temp_raw_path)
