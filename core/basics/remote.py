@@ -1198,9 +1198,18 @@ class Remote(object):
         :return:
         """
 
-        # Find out the path to the user's home directory and return it
-        output = self.execute("echo $HOME")
-        return output[0]
+        # If we are in a python session
+        if self.in_python_session:
+
+            self.import_python_package("expanduser", from_name="os.path")
+            return self.get_python_string("expanduser('~')")
+
+        # If we are not in a python session
+        else:
+
+            # Find out the path to the user's home directory and return it
+            output = self.execute("echo $HOME")
+            return output[0]
 
     # -----------------------------------------------------------------
 
@@ -1943,10 +1952,9 @@ class Remote(object):
 
                 # Check whether the log file is present
                 log_path = None
-                for filepath in self.files_in_path(output_path):
-                    filename = fs.name(filepath)
+                for filename in self.files_in_path(output_path):
                     if "log" in filename:
-                        log_path = filepath
+                        log_path = fs.join(output_path, filename)
                         break
 
                 # Check whether the task has already been retrieved
