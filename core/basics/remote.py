@@ -618,7 +618,8 @@ class Remote(object):
             command += " as " + as_name
 
         # Execute the import command
-        output = self.send_python_line(command, output=True, show_output=log.is_debug())
+        #output = self.send_python_line(command, output=True, show_output=log.is_debug())
+        output = self.send_python_line(command, output=True)
 
         # If output is given, this is normally not so good
         if len(output) > 0:

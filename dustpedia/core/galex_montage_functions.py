@@ -293,7 +293,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     overlap_path = fs.join(temp_path_band, "overlap_table.dat")
 
     # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)
-    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra, dec=dec, radius=(0.5*width)*(2.0**0.5))
+    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra.to("deg").value, dec=dec.to("deg").value, radius=(0.5*width)*(2.0**0.5))
 
     # Get file paths of overlapping observations
     overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[31], dtype=('S500'))

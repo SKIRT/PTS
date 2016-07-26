@@ -501,7 +501,9 @@ class DustPediaDataProcessing(object):
         # If not yet done, produce Montage image table of raw tiles
         for band in bands_dict.keys():
 
-            print('Creating ' + band + ' image metadata table')
+            # Inform the user
+            log.info("Creating " + band + " image metadata table ...")
+
             metadata_path = metadata_paths[band]
             montage.commands.mImgtbl(raw_band_paths[band], metadata_path, corners=True)
 
@@ -509,27 +511,30 @@ class DustPediaDataProcessing(object):
         bands_in_dict = {}
         for band in bands_dict.keys():
 
+            # Inform the user
+            log.info("Creating " + band + " overlap file ...")
+
             # OVERLAP TABLE IS HERE TEMPORARY
             overlap_path = fs.join(temp_path, "overlap_" + band + ".dat")
 
             # Create overlap file
-            montage.commands_extra.mCoverageCheck(metadata_paths[band], overlap_path, mode='point', ra=ra, dec=dec)
+            montage.commands_extra.mCoverageCheck(metadata_paths[band], overlap_path, mode='point', ra=ra.to("deg").value, dec=dec.to("deg").value)
 
             # Check if there is any coverage for this galaxy and band
-            if sum(1 for line in open(overlap_path)) <= 3: print('No GALEX ' + band + ' coverage for ' + galaxy_name)
+            if sum(1 for line in open(overlap_path)) <= 3: log.warning("No GALEX " + band + " coverage for " + galaxy_name)
             else: bands_in_dict[band] = bands_dict[band]
 
             # Remove overlap file
             fs.remove_file(overlap_path)
 
         # Check if coverage in any band
-        if len(bands_in_dict) == 0: raise RuntimeError("No coverage in any GALEX band!")
+        if len(bands_in_dict) == 0: raise RuntimeError("No coverage in any GALEX band")
 
         # Loop over bands, conducting SWarping function
         for band in bands_in_dict.keys():
 
             # Mosaicing
-            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], working_path, temp_path, metadata_paths[band], output_path)  # pool.apply_async( GALEX_Montage, args=(name, ra, dec, d25, width, bands_dict[band], root_dir+'Temporary_Files/', in_dir, out_dir,) )
+            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], working_path, temp_path, metadata_paths[band], output_path)
 
     # -----------------------------------------------------------------
 
