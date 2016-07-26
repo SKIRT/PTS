@@ -244,6 +244,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     :return:
     """
 
+    ra_deg = ra.to("deg").value
+    dec_deg = dec.to("deg").value
+
     # Declare directories
     id_string = name + '_GALEX_' + band_dict['band_long']
 
@@ -319,7 +322,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         # Locate pixel coords
         in_wcs = WCS(in_header)
-        location_pix = in_wcs.wcs_world2pix( np.array([[ np.float(ra), np.float(dec) ]]), 0 )[0]
+        location_pix = in_wcs.wcs_world2pix( np.array([[ np.float(ra.to("deg").value), np.float(dec.to("deg").value) ]]), 0 )[0]
         pix_i, pix_j = location_pix[1], location_pix[0]
 
         # Evalulate coverage at location, and proceed accordingly
@@ -347,7 +350,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
 
         # Create Montage FITS header
-        location_string = str(ra) + ' ' + str(dec)
+        location_string = str(ra_deg) + ' ' + str(dec_deg)
         pix_size = 3.2
 
         header_path = fs.join(temp_path_band, id_string + '_HDR')
@@ -389,7 +392,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         os.chdir(temp_swarp_path)
 
         # EXECUTE SWARP
-        swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME '+ id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra) + ',' + str(dec) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
+        swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME '+ id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
         os.system(swarp_command_string)
 
         # Remove null values, and save finalised map to output directory
