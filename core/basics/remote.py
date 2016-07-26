@@ -360,11 +360,12 @@ class Remote(object):
 
         ##
 
-        ## CHANGE THE LOG PATH TO A REMOTE PATH
+        ## CHANGE THE LOG PATH TO A REMOTE PATH AND CHANGE THE CWD
 
         # Always create a log file while executing remotely
         config.report = True
-        config.log_path = fs.join(remote_temp_path, time.unique_name("log") + ".txt")
+        config.log_path = remote_temp_path
+        config.path = remote_temp_path
 
         ##
 
