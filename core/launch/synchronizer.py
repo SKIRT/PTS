@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..simulation.simulation import RemoteSimulation
-from ..basics.host import find_host_ids, has_simulations
+from ..basics.host import find_host_ids, has_simulations, has_tasks
 from .analyser import SimulationAnalyser
 from ..basics.configurable import OldConfigurable
 from ..simulation.remote import SkirtRemote
@@ -121,7 +121,7 @@ class RemoteSynchronizer(OldConfigurable):
             if self.config.remote is not None and host_id not in self.config.remote: continue
 
             # If there are currently no simulations corresponding to this host, skip it
-            if not has_simulations(host_id): continue
+            if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
 
             # Create a remote SKIRT execution context
             remote = SkirtRemote()

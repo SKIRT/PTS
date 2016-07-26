@@ -73,8 +73,29 @@ def has_simulations(host_id):
     # If the host run directory does not exist yet, create it
     if not fs.is_directory(host_run_dir): fs.create_directory(host_run_dir)
 
-    # If there are no simulation files for this host, skip it
+    # Check whether simulation files are present
     return len([item for item in os.listdir(host_run_dir) if item.endswith(".sim") and not item.startswith(".")]) > 0
+
+# -----------------------------------------------------------------
+
+def has_tasks(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    if not fs.is_directory(introspection.pts_run_dir): fs.create_directory(introspection.pts_run_dir)
+
+    # Check whether there are task files corresponding to this host ID
+    host_run_dir = fs.join(introspection.pts_run_dir, host_id)
+
+    # If the host run directory does not exist yet, create it
+    if not fs.is_directory(host_run_dir): fs.create_directory(host_run_dir)
+
+    # Check whether task files are present
+    return len([item for item in os.listdir(host_run_dir) if item.endswith(".task") and not item.startswith(".")]) > 0
 
 # -----------------------------------------------------------------
 
