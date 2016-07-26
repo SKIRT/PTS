@@ -178,7 +178,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
         remote.setup(args.remote)
 
         # Run PTS remotely
-        task = remote.run_pts(exact_command_name, config)
+        task = remote.run_pts(exact_command_name, config, keep_remote_temp=True)
 
     # The PTS command has to be executed locally
     else:
