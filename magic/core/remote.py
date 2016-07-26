@@ -563,7 +563,7 @@ class RemoteFrame(object):
         # OR JUST: (does constant check again and creates copy for the prepared kernel, but... much more maintainable in this way)
 
         # Do the convolution on the remote frame
-        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")")
+        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
 
     # -----------------------------------------------------------------
 
@@ -598,7 +598,7 @@ class RemoteFrame(object):
         footprint_label = get_new_frame_label(self.remote)
 
         # Rebin, get the footprint
-        self.remote.send_python_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")")
+        self.remote.send_python_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None)
 
         # Create a new remoteframe instance for the footprint
         remote_footprint_frame = RemoteFrame(footprint_label, self.remote)
@@ -887,6 +887,7 @@ class RemoteImage(object):
     # -----------------------------------------------------------------
 
     def __str__(self):
+
         """
         This function ...
         :return:
@@ -897,6 +898,7 @@ class RemoteImage(object):
         # -----------------------------------------------------------------
 
     def __repr__(self):
+
         """
         This function ...
         :return:
@@ -1060,12 +1062,13 @@ class RemoteImage(object):
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=False):
+    def convolve(self, kernel, allow_huge=False, fft=True):
 
         """
         This function ...
         :param kernel:
         :param allow_huge:
+        :param fft:
         :return:
         """
 
@@ -1097,7 +1100,7 @@ class RemoteImage(object):
         self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')", show_output=True)
 
         # Convolve the image remotely
-        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ")", show_output=True)
+        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
 
     # -----------------------------------------------------------------
 
@@ -1112,6 +1115,6 @@ class RemoteImage(object):
         self.remote.send_python_line("reference_wcs = CoordinateSystem('" + reference_wcs.to_header_string() + "')")
 
         # Rebin remotely
-        self.remote.send_python_line(self.label + ".rebin(reference_wcs)")
+        self.remote.send_python_line(self.label + ".rebin(reference_wcs)", timeout=None)
 
 # -----------------------------------------------------------------

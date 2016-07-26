@@ -521,7 +521,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def send_python_line(self, line, output=False, in_loop=False, show_output=False):
+    def send_python_line(self, line, output=False, in_loop=False, show_output=False, timeout=30):
 
         """
         This function ...
@@ -529,6 +529,7 @@ class Remote(object):
         :param output:
         :param in_loop:
         :param show_output:
+        :param timeout: default is 30 seconds, use None to have no timeout
         :return:
         """
 
@@ -542,8 +543,8 @@ class Remote(object):
 
         # Send line and expect
         self.ssh.sendline(line)
-        if in_loop: self.ssh.expect("\r\n...")
-        else: self.ssh.expect("\r\n>>>")
+        if in_loop: self.ssh.expect("\r\n...", timeout=timeout)
+        else: self.ssh.expect("\r\n>>>", timeout=timeout)
 
         # Set the log file back to 'None'
         self.ssh.logfile = None
