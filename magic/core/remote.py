@@ -65,6 +65,7 @@ def import_necessary_modules(remote):
     :return:
     """
 
+    # Inform the user
     log.info("Importing necessary modules ...")
 
     # Import standard modules

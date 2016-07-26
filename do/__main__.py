@@ -32,6 +32,7 @@
 import sys
 import importlib
 import argparse
+import time as _time
 
 # Import the relevant PTS modules
 from pts.core.tools import introspection
@@ -180,6 +181,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
         # Run PTS remotely
         task = remote.run_pts(exact_command_name, config, keep_remote_temp=True)
 
+        # Succesfully submitted
+        log.success("Succesfully submitted the PTS job to the remote host")
+
     # The PTS command has to be executed locally
     else:
 
@@ -195,6 +199,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
         log = logging.setup_log(level=level, path=logfile_path)
         log.start("Starting " + command_name + " ...")
 
+        # Record starting time
+        start = _time.clock()
+
         ## DO WHAT HAS TO BE DONE
 
         # Create the class instance, configure it with the configuration settings
@@ -202,6 +209,13 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
         # Run the instance
         inst.run()
+
+        # Record end time
+        end = _time.clock()
+        seconds = end - start
+
+        # Succesfully finished
+        log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
 
 # Show possible matches if there are more than just one
 else: show_possible_matches(matches, table_matches, tables)
