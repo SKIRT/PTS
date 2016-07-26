@@ -52,24 +52,25 @@ if not fs.is_directory(pts_remotes_path): fs.create_directory(pts_remotes_path)
 
 # Create directory for remote
 path = fs.join(pts_remotes_path, host.id)
-fs.create_directory(path)
+if not fs.is_directory(path): fs.create_directory(path)
 
-#sshfs xxx@nancy.ugent.be: ~/Remotes/nancy -C -o volname=nancy
-command = "sshfs " + host.user + "@" + host.name + ": " + path + " -C -o volname=" + host.id
+# If not yet mounted
+if len(fs.files_in_path(path)) == 0:
 
-print(command)
+    #sshfs xxx@nancy.ugent.be: ~/Remotes/nancy -C -o volname=nancy
+    command = "sshfs " + host.user + "@" + host.name + ": " + path + " -C -o volname=" + host.id
 
-# Create the pexpect child instance
-child = pexpect.spawn(command, timeout=30)
-if host.password is not None:
-    child.expect(['password: '])
-    child.sendline(host.password)
+    # Create the pexpect child instance
+    child = pexpect.spawn(command, timeout=30)
+    if host.password is not None:
+        child.expect(['password: '])
+        child.sendline(host.password)
 
-child.logfile = sys.stdout
+    child.logfile = sys.stdout
 
-# Execute the command and get the output
-child.expect(pexpect.EOF, timeout=None)
-child.close()
+    # Execute the command and get the output
+    child.expect(pexpect.EOF, timeout=None)
+    child.close()
 
 # Open the directory
 open_file(path)

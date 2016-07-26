@@ -248,7 +248,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     id_string = name + '_GALEX_' + band_dict['band_long']
 
     # Temporary directory
-    temp_path_band = fs.join(temp_path, "temp_" + band_dict["band_long"])
+    temp_path_band = fs.join(temp_path, band_dict["band_long"])
 
     # Raw directory in temporary directory
     temp_raw_path = fs.join(temp_path_band, "raw")
