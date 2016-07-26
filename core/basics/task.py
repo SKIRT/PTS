@@ -15,6 +15,7 @@ from astropy.utils import lazyproperty
 # Import the relevant PTS classes and modules
 from ..tools import serialization
 from .configuration import Configuration
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -96,6 +97,22 @@ class Task(object):
         """
 
         return self.config.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def screen_output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote_screen_output_path is not None:
+            name = "screenlog.0"
+            path = fs.join(self.remote_screen_output_path, name)
+            return path
+        else: return None
 
     # -----------------------------------------------------------------
 

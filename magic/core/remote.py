@@ -190,18 +190,6 @@ def get_new_image_label(remote):
 
 # -----------------------------------------------------------------
 
-#class MagicRemote(Remote):
-
-    #"""
-    #This class ...
-    #"""
-
-    #def __init__(self):
-
-    #def setup(self):
-
-# -----------------------------------------------------------------
-
 class RemoteFrame(object):
 
     """

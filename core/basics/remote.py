@@ -184,6 +184,7 @@ class Remote(object):
         :param local_script_path:
         :param script_destination:
         :param screen_output_path:
+        :param keep_remote_script:
         :return:
         """
 
@@ -202,11 +203,24 @@ class Remote(object):
         # Record the screen output: 'script' command
         #if screen_output_path is not None: self.execute("script " + screen_output_path)
 
+        # If the output directory is given for the screen output
+        cwd = None
+        if screen_output_path is not None:
+
+            # Get the path to the current working directory
+            cwd = self.working_directory
+
+            # Now change the working directory to the screen_output_path
+            self.change_cwd(screen_output_path)
+
         # Create the screen session and execute the batch script
         self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False)
 
         # Remove the remote shell script
         if not keep_remote_script: self.execute("rm " + remote_script_path, output=False)
+
+        # Navigate back to the previous working directory after changing for the screen output
+        if screen_output_path is not None: self.change_cwd(cwd)
 
     # -----------------------------------------------------------------
 
@@ -407,7 +421,8 @@ class Remote(object):
             script_file.write("python " + remote_main_path + " --configfile " + remote_conf_path + " " + command + "\n")
 
         # Execute the script
-        self.start_screen(unique_session_name, temp_script_path, remote_temp_path, keep_remote_script=keep_remote_temp)
+        # name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False
+        self.start_screen(unique_session_name, temp_script_path, remote_temp_path, screen_output_path=remote_temp_path, keep_remote_script=keep_remote_temp)
 
         # Remove the local script file
         fs.remove_file(temp_script_path)
@@ -1941,7 +1956,15 @@ class Remote(object):
                 elif log_path is not None:
 
                     if self.is_active_screen(screen_name): task_status = "running"
-                    else: task_status = "finished"
+                    else:
+
+                        # Get the last two lines of the remote log file
+                        output = self.execute("tail -2 " + log_path)
+                        last_line = output[1]
+
+                        # Check whether the last line states that the task has finished
+                        if "Finished" in last_line: task_status = "finished"
+                        else: task_status = "aborted"
 
                 # If the log file does not exist, the task has not started yet or has been cancelled
                 else:
