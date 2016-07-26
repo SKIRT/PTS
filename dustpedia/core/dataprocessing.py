@@ -400,6 +400,10 @@ class DustPediaDataProcessing(object):
         # Inform the user
         log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
 
+
+        # Inform the user
+        log.info("Creating directories ...")
+
         # Determine the path to the temporary directory for downloading the images
         #working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
@@ -445,8 +449,6 @@ class DustPediaDataProcessing(object):
         #self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path)
 
 
-
-
         # FUV and NUV response directories
         response_fuv_path = fs.join(response_path, "FUV")
         response_nuv_path = fs.join(response_path, "NUV")
@@ -459,8 +461,11 @@ class DustPediaDataProcessing(object):
 
         ####
 
+        # Inform the user
+        log.info("Splitting observations into FUV and NUV ...")
+
         # Split downloaded images into FUV and NUV
-        self.split_galex_observations(download_path, raw_fuv_path, raw_nuv_path)
+        self.split_galex_observations(download_images_path, raw_fuv_path, raw_nuv_path)
 
         # Split response maps into FUV and NUV
         self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
@@ -478,6 +483,9 @@ class DustPediaDataProcessing(object):
         #fs.remove_directory(download_path)
 
         ###
+
+        # Inform the user
+        log.info("Getting cutout range ...")
 
         # Get coordinate range for target image
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
@@ -547,6 +555,9 @@ class DustPediaDataProcessing(object):
         :param path_nuv:
         :return:
         """
+
+        # Inform the user
+        log.info("Splitting GALEX observations from '" + original_path + "' into '" + path_fuv + "' and '" + path_nuv + "' ...")
 
         # Loop over the files in the path
         for path, name in fs.files_in_path(original_path, extension="fits", returns=["path", "name"]):
