@@ -13,14 +13,17 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import platform
 import sys
 import pexpect
+import subprocess
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.core.basics.host import Host
 from pts.core.tools import filesystem as fs
+from pts.core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -34,11 +37,22 @@ config = setter.run(definition)
 
 # -----------------------------------------------------------------
 
-# Current working directory
-path = fs.cwd()
+def open_file(path):
+    if platform.system() == "Darwin": subprocess.Popen(["open", path])
+    else: subprocess.Popen(["xdg-open", path])
+
+# -----------------------------------------------------------------
 
 # Get host
 host = Host(config.remote)
+
+# PTS remotes directory
+pts_remotes_path = fs.join(introspection.pts_root_dir, "remotes")
+if not fs.is_directory(pts_remotes_path): fs.create_directory(pts_remotes_path)
+
+# Create directory for remote
+path = fs.join(pts_remotes_path, host.id)
+fs.create_directory(path)
 
 #sshfs xxx@nancy.ugent.be: ~/Remotes/nancy -C -o volname=nancy
 command = "sshfs " + host.user + "@" + host.name + ": " + path + " -C -o volname=" + host.id
@@ -56,5 +70,8 @@ child.logfile = sys.stdout
 # Execute the command and get the output
 child.expect(pexpect.EOF, timeout=None)
 child.close()
+
+# Open the directory
+open_file(path)
 
 # -----------------------------------------------------------------
