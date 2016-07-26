@@ -9,6 +9,9 @@
 
 # -----------------------------------------------------------------
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ..tools import serialization
 from .configuration import Configuration
@@ -72,7 +75,7 @@ class Task(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def config(self):
 
         """
@@ -81,6 +84,18 @@ class Task(object):
         """
 
         return Configuration.from_string(self.config_string)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.path
 
     # -----------------------------------------------------------------
 

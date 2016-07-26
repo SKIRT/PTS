@@ -130,9 +130,13 @@ class BasicAnalyser(OldConfigurable):
         self.misc_options = None
 
         # Clear the extractors
-        self.progress_extractor.clear()
-        self.timeline_extractor.clear()
-        self.memory_extractor.clear()
+        self.progress = None
+        self.timeline = None
+        self.memory = None
+
+        # Clear the flux calculator and image maker
+        self.flux_calculator = None
+        self.image_maker = None
 
     # -----------------------------------------------------------------
 

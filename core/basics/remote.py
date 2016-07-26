@@ -395,9 +395,6 @@ class Remote(object):
         # Determine the path to the remote equivalent of this file
         remote_main_path = fs.join(self.pts_package_path, "do", "__main__.py")
 
-        print(temp_path)
-        print(remote_temp_path)
-
         # Create a bash script
         temp_script_path = fs.join(temp_path, unique_session_name + ".sh")
 
@@ -1880,30 +1877,33 @@ class Remote(object):
         tasks = []
 
         # Loop over the different entries of the status list
-        for path, task_status in self.get_status():
+        for path, task_status in self.get_task_status():
 
             # Skip already retrieved tasks
             if task_status == "retrieved": continue
 
-            # Warning
-            log.warning("Retrieving PTS task output is not implemented yet, look on the remote filesystem for the results")
+            # Finished task
+            elif task_status == "finished":
 
-            # Open the simulation file
-            task = Task.from_file(path)
+                # Warning
+                log.warning("Retrieving PTS task output is not implemented yet, look on the remote filesystem for the results")
 
-            # Add the retrieved task to the list
-            tasks.append(task)
+                # Open the simulation file
+                task = Task.from_file(path)
 
-            # If retrieval was succesful, add this information to the task file
-            task.retrieved = True
-            task.save()
+                # Add the retrieved task to the list
+                tasks.append(task)
+
+                # If retrieval was succesful, add this information to the task file
+                task.retrieved = True
+                task.save()
 
         # Return the list of retrieved tasks
         return tasks
 
     # -----------------------------------------------------------------
 
-    def get_status(self):
+    def get_task_status(self):
 
         """
         This function ..
@@ -1922,15 +1922,23 @@ class Remote(object):
                 # Open the task file
                 task = Task.from_file(path)
 
-                # Get screen name and get report file path
+                # Get screen name and output path
                 screen_name = task.screen_name
-                log_path = task.config.log_path
+                output_path = task.output_path
+
+                # Check whether the log file is present
+                log_path = None
+                for filepath in self.files_in_path(output_path):
+                    filename = fs.name(filepath)
+                    if "log" in filename:
+                        log_path = filepath
+                        break
 
                 # Check whether the task has already been retrieved
                 if task.retrieved: task_status = "retrieved"
 
                 # Check whether the report file exists
-                elif fs.is_file(log_path):
+                elif log_path is not None:
 
                     if self.is_active_screen(screen_name): task_status = "running"
                     else: task_status = "finished"
