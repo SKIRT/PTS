@@ -305,7 +305,7 @@ class RemoteFrame(object):
         log.info("Downloading file " + url + " ...")
 
         # Local path
-        remote_temp_path = remote.temp_directory
+        remote_temp_path = remote.session_temp_directory
         remote.send_python_line("filename = fs.name(url)")
         remote.send_python_line("local_path = fs.join('" + remote_temp_path + "', filename)")
 
@@ -370,7 +370,7 @@ class RemoteFrame(object):
         remote = prepare_remote(host_id)
 
         # Remote temp path
-        remote_temp_path = remote.temp_directory
+        remote_temp_path = remote.session_temp_directory
 
         # Get file name
         filename = fs.name(path)
@@ -537,7 +537,7 @@ class RemoteFrame(object):
         # UPLOAD KERNEL
 
         # Remote temp path
-        remote_temp_path = self.remote.temp_directory
+        remote_temp_path = self.remote.session_temp_directory
 
         # Upload the kernel file
         remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
@@ -845,7 +845,7 @@ class RemoteFrame(object):
         local_directory = fs.directory_of(path)
 
         # Determine remote temp path
-        remote_temp_path = self.remote.temp_directory
+        remote_temp_path = self.remote.session_temp_directory
 
         # Remote file path
         remote_file_path = fs.join(remote_temp_path, filename)
@@ -937,7 +937,7 @@ class RemoteImage(object):
         remote = prepare_remote(host_id)
 
         # Remote temp path
-        remote_temp_path = remote.temp_directory
+        remote_temp_path = remote.session_temp_directory
 
         # Get file name
         filename = fs.name(path)
@@ -980,7 +980,7 @@ class RemoteImage(object):
         local_directory = fs.directory_of(path)
 
         # Determine remote temp path
-        remote_temp_path = self.remote.temp_directory
+        remote_temp_path = self.remote.session_temp_directory
 
         # Determine remote path for the image
         remote_image_path = fs.join(remote_temp_path, filename)
@@ -1089,7 +1089,7 @@ class RemoteImage(object):
         # UPLOAD KERNEL
 
         # Remote temp path
-        remote_temp_path = self.remote.temp_directory
+        remote_temp_path = self.remote.session_temp_directory
 
         # Upload the kernel file
         remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")

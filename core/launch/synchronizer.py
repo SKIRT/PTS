@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..simulation.simulation import RemoteSimulation
-from ..basics.map import Map
 from ..basics.host import find_host_ids, has_simulations
 from .analyser import SimulationAnalyser
 from ..basics.configurable import OldConfigurable
@@ -22,10 +21,7 @@ from ..simulation.remote import SkirtRemote
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.task import Task
-
-# -----------------------------------------------------------------
-
-format = Map({"HEADER": '\033[95m', "BLUE": '\033[94m', "GREEN": '\033[92m', "WARNING": '\033[93m', "FAIL": '\033[91m', "END": '\033[0m', "BOLD": '\033[1m', "UNDERLINE": '\033[4m'})
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -293,7 +289,7 @@ class RemoteSynchronizer(OldConfigurable):
                         # Remove the simulation file
                         fs.remove_file(path)
 
-                    formatter = format.GREEN
+                    formatter = fmt.green
 
                 # Finished and retrieved simulation (remote output has already been removed, if requested)
                 elif simulation_status == "retrieved":
@@ -306,7 +302,7 @@ class RemoteSynchronizer(OldConfigurable):
                         # Remove the simulation file
                         fs.remove_file(path)
 
-                    formatter = format.GREEN
+                    formatter = fmt.green
 
                 # Finished, but not yet retrieved simulation
                 elif simulation_status == "finished":
@@ -319,7 +315,7 @@ class RemoteSynchronizer(OldConfigurable):
                                                                              " retrieved yet. Deleting it now would mean all simulation output is lost. Run "
                                                                              " 'pts status' again to retrieve the simulation output.")
 
-                    formatter = format.BLUE
+                    formatter = fmt.blue
 
                     simulation_status += " (do 'pts status' again to retrieve)"
 
@@ -348,7 +344,7 @@ class RemoteSynchronizer(OldConfigurable):
                         else: log.warning("Aborting simulations not running on a host with a scheduling system is not"
                                           " implemented yet. ")
 
-                    formatter = format.END
+                    formatter = fmt.reset
 
                 # Crashed simulation
                 elif simulation_status == "crashed":
@@ -366,7 +362,7 @@ class RemoteSynchronizer(OldConfigurable):
                         remote.remove_directory(simulation.remote_output_path)
                         remote.remove_directory(simulation.remote_simulation_path)
 
-                    formatter = format.FAIL
+                    formatter = fmt.lightred
 
                 # Cancelled simulation
                 elif simulation_status == "cancelled":
@@ -384,7 +380,7 @@ class RemoteSynchronizer(OldConfigurable):
                         remote.remove_directory(simulation.remote_output_path)
                         remote.remove_directory(simulation.remote_simulation_path)
 
-                    formatter = format.WARNING
+                    formatter = fmt.lightyellow
 
                 # Aborted simulation
                 elif simulation_status == "aborted":
@@ -402,7 +398,7 @@ class RemoteSynchronizer(OldConfigurable):
                         remote.remove_directory(simulation.remote_output_path)
                         remote.remove_directory(simulation.remote_simulation_path)
 
-                    formatter = format.WARNING
+                    formatter = fmt.lightyellow
 
                 # Queued simulation
                 elif simulation_status == "queued":
@@ -430,13 +426,13 @@ class RemoteSynchronizer(OldConfigurable):
                         else: log.warning("Cancelling simulations not running on a host with a scheduling system is not"
                                           " implemented yet. ")
 
-                    formatter = format.END
+                    formatter = fmt.reset
 
                 # Other
-                else: formatter = format.END
+                else: formatter = fmt.reset
 
                 # Show the status of the current simulation
-                print(formatter + prefix + tag + " " + simulation.name + ": " + simulation_status + format.END)
+                print(formatter + prefix + tag + " " + simulation.name + ": " + simulation_status + fmt.reset)
 
             print()
 
@@ -482,44 +478,44 @@ class RemoteSynchronizer(OldConfigurable):
                     # Remove the simulation file
                     #fs.remove_file(path)
 
-                    formatter = format.GREEN
+                    formatter = fmt.green
 
                 # Finished, but not yet retrieved task
                 elif task_status == "finished":
 
-                    formatter = format.BLUE
+                    formatter = fmt.blue
 
                     task_status += " (do 'pts status' again to retrieve)"
 
                 # Running task
                 elif "running" in task_status:
 
-                    formatter = format.END
+                    formatter = fmt.reset
 
                 # Crashed task
                 elif task_status == "crashed":
 
-                    formatter = format.FAIL
+                    formatter = fmt.lightred
 
                 # Cancelled task
                 elif task_status == "cancelled":
 
-                    formatter = format.WARNING
+                    formatter = fmt.lightyellow
 
                 # Aborted task
                 elif task_status == "aborted":
 
-                    formatter = format.WARNING
+                    formatter = fmt.lightyellow
 
                 # Queued task
                 elif task_status == "queued":
 
-                    formatter = format.END
+                    formatter = fmt.reset
 
-                else: formatter = format.END
+                else: formatter = fmt.reset
 
                 # Show the status of the current task
-                print(formatter + prefix + tag + " " + task.name + ": " + task_status + format.END)
+                print(formatter + prefix + tag + " " + task.name + ": " + task_status + fmt.reset)
 
             print()
 

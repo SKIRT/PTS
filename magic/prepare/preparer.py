@@ -124,6 +124,7 @@ class ImagePreparer(OldConfigurable):
         if arguments.sky_annulus_inner is not None: preparer.config.sky_subtraction.mask.annulus_inner_factor = arguments.sky_annulus_inner
         if arguments.sky_annulus_outer is not None: preparer.config.sky_subtraction.mask.annulus_outer_factor = arguments.sky_annulus_outer
         if arguments.convolution_remote is not None: preparer.config.convolution.remote = arguments.convolution_remote
+        if arguments.rebinning_remote is not None: preparer.config.rebinning.remote = arguments.rebinning_remote
         if arguments.sky_region is not None: preparer.config.sky_subtraction.sky_region = arguments.sky_region
         if arguments.error_frames is not None: preparer.config.error_frame_names = arguments.error_frames
 
@@ -449,8 +450,19 @@ class ImagePreparer(OldConfigurable):
         # Get the coordinate system of the reference frame
         reference_system = CoordinateSystem.from_file(self.config.rebinning.rebin_to)
 
-        # Rebin the image (the primary and errors frame)
-        self.image.rebin(reference_system)
+        # Check whether the rebinning has to be performed remotely
+        if self.config.rebinning.remote is not None:
+
+            # Inform the user
+            log.info("Rebinning will be performed remotely on host '" + self.config.rebinning.remote + "' ...")
+
+            # Create remote image, rebin and make local again
+            remote_image = RemoteImage.from_local(self.image, self.config.rebinning.remote)
+            remote_image.rebin(reference_system)
+            self.image = remote_image.to_local()
+
+        # Rebin the image locally (the primary and errors frame)
+        else: self.image.rebin(reference_system)
 
         # Save rebinned frame
         if self.config.write_steps: self.write_intermediate_result("rebinned.fits")

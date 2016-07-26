@@ -72,12 +72,6 @@ class Remote(object):
         # Flag that says whether we are in a remote python session
         self.in_python_session = False
 
-        # Temp directory will be set in setup
-        self._temp_path = None
-
-        # Flag that says whether we have created a temporary directory
-        self._temp_dir_created = False
-
     # -----------------------------------------------------------------
 
     def setup(self, host_id, cluster=None):
@@ -108,9 +102,6 @@ class Remote(object):
 
         # Check whether the output directory exists
         if not self.is_directory(self.host.output_path): raise ValueError("The specified output path does not exist")
-
-        # Determine path to temporary directory
-        self._temp_path = fs.join(self.home_directory, time.unique_name("pts_temp"))
 
     # -----------------------------------------------------------------
 
@@ -364,7 +355,7 @@ class Remote(object):
         unique_session_name = time.unique_name(command.replace("/", "-"))
 
         # Create a remote temporary directory
-        remote_temp_path = self.temp_directory
+        remote_temp_path = self.new_temp_directory()
 
         ##
 
@@ -1196,24 +1187,51 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def temp_directory(self):
+    def session_temp_directory(self):
 
         """
         This function ...
         :return:
         """
 
+        # Determine the path to a new temporary directory
+        path = fs.join(self.pts_temp_path, time.unique_name("session"))
+
+        # Create the directory from within the remote python session
         if self.in_python_session:
 
             # Create from python
-            self.send_python_line("fs.create_directory('" + self._temp_path + "')")
+            self.send_python_line("fs.create_directory('" + path + "')")
 
-        else: self.create_directory(self._temp_path)
+        # Create the directory using a bash command
+        else: self.create_directory(path)
 
-        self._temp_dir_created = True
+        # Return the path to the new temporary directory
+        return path
 
-        # Return the path
-        return self._temp_path
+    # -----------------------------------------------------------------
+
+    def new_temp_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Generate the path to a new unique temporary directory
+        path = fs.join(self.pts_temp_path, time.unique_name("new"))
+
+        # Create the directory from within the remote python session
+        if self.in_python_session:
+
+            # Create from python
+            self.send_python_line("fs.create_directory('" + path + "')")
+
+        # Create the directory using a bash command
+        else: self.create_directory(path)
+
+        # Return the path to the new temporary directory
+        return path
 
     # -----------------------------------------------------------------
 
@@ -1811,6 +1829,20 @@ class Remote(object):
         """
 
         return fs.join(self.pts_root_path, "pts")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_temp_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.pts_root_path, "temp")
+        if not self.is_directory(path): self.create_directory(path)
+        return path
 
     # -----------------------------------------------------------------
 
