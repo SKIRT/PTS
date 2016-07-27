@@ -42,6 +42,7 @@ parser.add_argument("--sky_annulus_outer", type=float, help="the factor to which
 parser.add_argument("--sky_annulus_inner", type=float, help="the factor to which the ellipse describing the principal galaxy should be multiplied to represent the inner edge of the sky annulus")
 parser.add_argument("--convolution_remote", type=str, help="the name of the remote host to be used for the convolution step")
 parser.add_argument("--rebinning_remote", type=str, help="the name of the remote host to be used for the rebinning step")
+parser.add_argument("--rebinning_exact", action="store_true", help="use the 'exact' method for rebinning")
 parser.add_argument("--sky_region", type=str, help="the name/path of a file with manually selected regions for the sky estimation (not apertures but extended regions of any shape and number) (in sky coordinates!)")
 parser.add_argument("--error_frames", type=parsing.string_list, help="the names of planes in the input image which have to be regarded as error maps (seperated by commas)")
 

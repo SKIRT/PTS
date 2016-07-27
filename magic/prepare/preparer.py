@@ -127,6 +127,7 @@ class ImagePreparer(OldConfigurable):
         if arguments.rebinning_remote is not None: preparer.config.rebinning.remote = arguments.rebinning_remote
         if arguments.sky_region is not None: preparer.config.sky_subtraction.sky_region = arguments.sky_region
         if arguments.error_frames is not None: preparer.config.error_frame_names = arguments.error_frames
+        if arguments.rebinning_exact: preparer.config.rebinning.exact = True
 
         # Return the new instance
         return preparer
@@ -458,7 +459,7 @@ class ImagePreparer(OldConfigurable):
 
             # Create remote image, rebin and make local again
             remote_image = RemoteImage.from_local(self.image, self.config.rebinning.remote)
-            remote_image.rebin(reference_system)
+            remote_image.rebin(reference_system, exact=self.config.rebinning.exact)
             self.image = remote_image.to_local()
 
         # Rebin the image locally (the primary and errors frame)
