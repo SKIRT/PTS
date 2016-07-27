@@ -699,7 +699,7 @@ class RemoteFrame(object):
         footprint_label = get_new_label("Frame", self.remote)
 
         # Rebin, get the footprint
-        self.remote.send_python_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None)
+        self.remote.send_python_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None, show_output=True)
 
         # Create a new remoteframe instance for the footprint
         remote_footprint_frame = RemoteFrame(footprint_label, self.remote)
@@ -1469,7 +1469,7 @@ class RemoteImage(object):
         self.remote.send_python_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
 
         # Rebin remotely
-        self.remote.send_python_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None)
+        self.remote.send_python_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", show_output=True, timeout=None)
 
 # -----------------------------------------------------------------
 
@@ -1597,9 +1597,7 @@ class RemoteDataCube(RemoteImage):
         remoteframes = []
 
         # Do the convolution remotely
-        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)", show_output=True)
-
-        print(self.remote.python_variables())
+        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)", timeout=None, show_output=True)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):
