@@ -20,9 +20,14 @@ from itertools import count, izip
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.basics.remote import Remote, connected_remotes
-from .frame import Frame
-from .image import Image
+from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
+from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
+from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
 from ...core.tools import parsing
+
+# -----------------------------------------------------------------
+
+prepared = [] # the list of host IDs for which the remote has been prepared
 
 # -----------------------------------------------------------------
 
@@ -33,6 +38,9 @@ def prepare_remote(host_id):
     :param host_id:
     :return:
     """
+
+    # If this host has already been prepared, just return the prepared remote
+    if host_id in prepared: return connected_remotes[host_id]
 
     # Check whether we are already connected to the specified remote host
     if host_id in connected_remotes and connected_remotes[host_id] is not None:
@@ -51,6 +59,9 @@ def prepare_remote(host_id):
 
     # Import
     import_necessary_modules(remote)
+
+    # Add the host ID to the 'prepared' list
+    prepared.append(host_id)
 
     # Return the remote instance
     return remote
@@ -76,10 +87,12 @@ def import_necessary_modules(remote):
     # Import the necessary PTS classes and modules
     remote.import_python_package("Frame", from_name="pts.magic.core.frame")
     remote.import_python_package("Image", from_name="pts.magic.core.image")
+    remote.import_python_package("DataCube", from_name="pts.magic.core.datacube")
     remote.import_python_package("ConvolutionKernel", from_name="pts.magic.core.kernel")
     remote.import_python_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
     remote.import_python_package("archive", from_name="pts.core.tools")
     remote.import_python_package("parsing", from_name="pts.core.tools")
+    remote.import_python_package("Filter", from_name="pts.core.basics.filter")
 
 # -----------------------------------------------------------------
 
@@ -1241,7 +1254,92 @@ class RemoteDataCube(RemoteImage):
         :return:
         """
 
-        pass
+        # Show which image we are importing
+        log.info("Reading in file " + path + " ...")
+
+        # Get the remote instance
+        remote = prepare_remote(host_id)
+
+        # Remote temp path
+        remote_temp_path = remote.session_temp_directory
+
+        # Get file name
+        filename = fs.name(path)
+
+        ### UPLOAD DATACUBE
+
+        # Upload the datacube file
+        remote_datacube_path = fs.join(remote_temp_path, filename)
+        log.info("Uploading the datacube to '" + remote_datacube_path + "' ...")
+        remote.upload(path, remote_temp_path, compress=True, show_output=True)
+
+        ### SAVE AND UPLOAD WAVELENGTH GRID
+
+        local_temp_path = tempfile.gettempdir()
+        local_wavelength_grid_path = fs.join(local_temp_path, "wavelength_grid.dat")
+        log.debug("Saving the wavelength grid locally to '" + local_wavelength_grid_path + "' ...")
+
+        # Save
+        wavelength_grid.save(local_wavelength_grid_path)
+
+        # Upload
+        remote_wavelength_grid_path = fs.join(remote_temp_path, "wavelength_grid.dat")
+        log.info("Uploading the wavelength grid to '" + remote_wavelength_grid_path + "' ...")
+        remote.upload(local_wavelength_grid_path, remote_temp_path, show_output=True)
+
+        ###
+
+        # Find label
+        label = get_new_label(cls.local_classname(), remote)
+
+        # Create RemoteDataCube instance
+        remotedatacube = cls(label, remote)
+
+        # Open the wavelength grid remotely
+        log.info("Loading the wavelength grid on the remote host ...")
+
+        # Import the WavelengthGrid class remotely
+        remote.import_python_package("WavelengthGrid", from_name="pts.core.simulation.wavelengthgrid")
+        remote.send_python_line("wavelength_grid = WavelengthGrid.from_file('" + remote_wavelength_grid_path + "')")
+
+        # Open the frame remotely
+        log.info("Loading the datacube on the remote host ...")
+
+        # Actually create the frame remotely
+        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)")
+
+        # Return the remotedatacube instance
+        return remotedatacube
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_local(cls, datacube, host_id):
+
+        """
+        This function ...
+        :param datacube:
+        :param host_id:
+        :return:
+        """
+
+        # Determine temporary directory path
+        temp_path = tempfile.gettempdir()
+
+        # Determine local FITS path
+        local_path = fs.join(temp_path, "newdatacube_fromlocal.fits")
+
+        # Save the image locally
+        datacube.save(local_path)
+
+        # Create the remotedatacube from the locally saved FITS file
+        remotedatacube = cls.from_file(local_path, datacube.wavelength_grid, host_id)
+
+        # Remove the local file
+        fs.remove_file(local_path)
+
+        # Return the new remotedatacube
+        return remotedatacube
 
     # -----------------------------------------------------------------
 
@@ -1253,6 +1351,32 @@ class RemoteDataCube(RemoteImage):
         :return:
         """
 
-        pass
+        # Initialize filter list remotely
+        self.remote.send_python_line("filters = []")
+
+        # Reconstruct the list of filters remotely
+        for fltr in filters: self.remote.send_python_line("filters.append(Filter.from_string('" + str(fltr) + "'))")
+
+        # Initialize a list with remoteframes
+        remoteframes = []
+
+        # Do the convolution remotely
+        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)")
+
+        # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
+        for i in range(len(filters)):
+
+            # Assign a remote label to this result frame
+            label_i = get_new_label("Frame", self.remote)
+
+            # Do the assignment remotely
+            self.remote.send_python_line(label_i + " = filterconvolvedframes[" + str(i) + "]")
+
+            # Create remoteframe and add it to the list
+            remoteframe = RemoteFrame(label_i, self.remote)
+            remoteframes.append(remoteframe)
+
+        # Return the list of remoteframes
+        return remoteframes
 
 # -----------------------------------------------------------------
