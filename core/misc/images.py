@@ -23,8 +23,7 @@ from ..basics.filter import Filter
 from ...magic.core.kernel import ConvolutionKernel
 from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...magic.core.remote import RemoteImage, RemoteFrame, RemoteDataCube
-from ..tools.special import remote_filter_convolution, remote_convolution_frame
+from ...magic.core.remote import RemoteDataCube
 from ..simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
