@@ -65,6 +65,9 @@ def prepare_remote(host_id):
     # Import
     import_necessary_modules(remote)
 
+    # Set log level to debug
+    if log.is_debug(): set_debug_log_level(remote)
+
     # Add the host ID to the 'prepared' list
     prepared.append(host_id)
 
@@ -98,6 +101,23 @@ def import_necessary_modules(remote):
     remote.import_python_package("archive", from_name="pts.core.tools")
     remote.import_python_package("parsing", from_name="pts.core.tools")
     remote.import_python_package("Filter", from_name="pts.core.basics.filter")
+
+# -----------------------------------------------------------------
+
+def set_debug_log_level(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    # Inform the user
+    log.debug("Setting debug logging level remotely ...")
+
+    # Import logging module and setup logger to DEBUG level
+    remote.import_python_package("setup_log", from_name="pts.core.tools.logging")
+    remote.send_python_line("setup_log(level='DEBUG')")
 
 # -----------------------------------------------------------------
 

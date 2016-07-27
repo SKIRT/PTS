@@ -58,15 +58,22 @@ def GALEX_Level_Chisq(level_params, image):
 
 # -----------------------------------------------------------------
 
-def GALEX_Zero(fitsfile_dir, convfile_dir, target_suffix):
+def level_galex_maps(fitsfile_dir, convfile_dir, target_suffix):
 
     """
+    original name: GALEX_Zero
     Set a set of maps to the same level
     :param fitsfile_dir:
     :param convfile_dir:
     :param target_suffix:
     :return:
     """
+
+    # Inform the user
+    log.info("Inside the 'level_galex_maps' function with:")
+    log.info(" - fitsfile_dir = " + fitsfile_dir)
+    log.info(" - convfile_dir = " + convfile_dir)
+    log.info(" - target_suffix = " + target_suffix)
 
     # Make list of files in target directory that have target suffix
     allfile_list = os.listdir(fitsfile_dir)
@@ -78,7 +85,8 @@ def GALEX_Zero(fitsfile_dir, convfile_dir, target_suffix):
     # Loop over each file
     for i in range(0, len(fitsfile_list)):
 
-        log.info('Matching background of map ' + fitsfile_list[i])
+        # Inform the user
+        log.info('Matching background of map ' + fitsfile_list[i] + " ...")
 
         # Read in corresponding map from directory containing convolved images
         fitsdata_conv = fits.open(convfile_dir+'/'+fitsfile_list[i])
@@ -130,7 +138,6 @@ def GALEX_Zero(fitsfile_dir, convfile_dir, target_suffix):
 # -----------------------------------------------------------------
 
 def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict):
-#                   raw_file, working_path, temp_path_band, temp_reproject_path, band_dict
 
     """
     Function to clean GALEX tiles and create exposure maps
@@ -138,7 +145,12 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     """
 
     # Inform the user ...
-    print('Cleaning map ' + raw_file)
+    log.info("Cleaning map " + raw_file + " ...")
+    log.info(" - raw_file = " + raw_file)
+    log.info(" - working_path = " + working_path)
+    log.info(" - temp_path_band = " + temp_path_band)
+    log.info(" - temp_reproject_path = " + temp_reproject_path)
+    log.info(" - band_dict = " + str(band_dict))
 
     # Response and background paths for this band
     response_path = fs.join(working_path, "response", band_dict['band_long'])
@@ -154,7 +166,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     out_image = in_image.copy()
 
     # Load and align response map
-    rr_path = fs.join(response_path, raw_file.replace('-int.fits','-rr.fits.gz'))
+    rr_path = fs.join(response_path, raw_file.replace('-int.fits','-rr.fits'))
     rr_fitsdata = fits.open(rr_path)
     rr_image = rr_fitsdata[0].data
     rr_zoom = np.float(out_image.shape[0]) / np.float(rr_image.shape[0])
@@ -164,7 +176,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     out_image[ np.where( rr_image <= 1E-10 ) ] = np.NaN
 
     # Load and align sky background map
-    bg_path = fs.join(background_path, raw_file.replace('-int.fits','-skybg.fits.gz'))
+    bg_path = fs.join(background_path, raw_file.replace('-int.fits','-skybg.fits'))
     bg_fitsdata = fits.open(bg_path)
     bg_image = bg_fitsdata[0].data
     bg_zoom = np.float(out_image.shape[0]) / np.float(bg_image.shape[0])
@@ -217,7 +229,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     temp_convolve_path = fs.join(temp_path_band, "convolve")
 
     kernel = astropy.convolution.kernels.Tophat2DKernel(10)
-    conv_image = astropy.convolution.convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True)#, interpolate_nan=True, normalize_kernel=True)
+    conv_image = astropy.convolution.convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True) #, interpolate_nan=True, normalize_kernel=True)
     fits.writeto(fs.join(temp_convolve_path, raw_file), conv_image, in_header)
 
     # Load and align exposure time to create weight maps
@@ -243,6 +255,18 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     :param meta_path:
     :return:
     """
+
+    # Inform the user
+    log.info("Starting the 'mosaic_galex' function for: ")
+    log.info(" - name = " + name)
+    log.info(" - ra = " + str(ra))
+    log.info(" - dec = " + str(dec))
+    log.info(" - width = " + str(width))
+    log.info(" - band_dict = " + str(band_dict))
+    log.info(" - working_path = " + working_path)
+    log.info(" - temp_path = " + temp_path)
+    log.info(" - meta_path = " + meta_path)
+    log.info(" - output_path = " + output_path)
 
     ra_deg = ra.to("deg").value
     dec_deg = dec.to("deg").value
@@ -337,14 +361,15 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
     if not coverage:
 
-        print('No GALEX '+ band_dict['band_long'] + ' coverage for ' + name)
+        # Warning message
+        log.warning('No GALEX '+ band_dict['band_long'] + ' coverage for ' + name)
         gc.collect()
         shutil.rmtree(temp_path_band)
 
     elif coverage:
 
         # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
-        print('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string)
+        log.info('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string + " ...")
 
         # CLEAN
         for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
@@ -367,8 +392,12 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         # If more than one image file, commence background-matching
         if mosaic_count > 1:
-            print('Matching background of '+id_string+' maps')
-            GALEX_Zero(temp_reproject_path, temp_convolve_path, 'int.fits')
+
+            # Inform the user
+            log.info("Matching background of "+ id_string + " maps ...")
+
+            # ...
+            level_galex_maps(temp_reproject_path, temp_convolve_path, 'int.fits')
 
         #metatable_path = temp_dir + band + '_Image_Metadata_Table.dat'
 
@@ -387,7 +416,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
                 os.rename(fs.join(temp_swarp_path, listfile), fs.join(temp_swarp_path, listfile.replace('hdu0_','')))
 
         # Use SWarp to co-add images weighted by their error maps
-        print('Co-adding ' + id_string + ' maps')
+        log.info("Co-adding " + id_string + " maps ...")
         image_width_pixels = str(int((float(width)*3600.)/pix_size))
         os.chdir(temp_swarp_path)
 
@@ -416,7 +445,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         out_hdulist.writeto(fs.join(output_montages_path, id_string + '.fits'), clobber=True)
 
         # Clean up
-        print('Completed Montaging and SWarping of ' + id_string)
+        log.success("Completed Montaging and SWarping of " + id_string)
         #gc.collect()
         #shutil.rmtree(temp_dir)
 

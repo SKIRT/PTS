@@ -308,6 +308,9 @@ class DataCube(Image):
         # Initialize list to contain the output frames
         frames = []
 
+        # Debugging
+        log.debug("Converting the datacube into a single 3D array ...")
+
         # Convert the datacube to a numpy array where wavelength is the third dimension
         array = self.asarray()
 
