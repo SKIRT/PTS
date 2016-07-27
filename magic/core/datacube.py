@@ -32,14 +32,14 @@ class DataCube(Image):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, name="untitled"):
 
         """
         The constructor ...
         """
 
         # Call the constructor of the base class
-        super(DataCube, self).__init__()
+        super(DataCube, self).__init__(name)
 
         # The wavelength grid
         self.wavelength_grid = None

@@ -1596,8 +1596,12 @@ class RemoteDataCube(RemoteImage):
         # Initialize a list with remoteframes
         remoteframes = []
 
+        print(self.remote.python_variables())
+
         # Do the convolution remotely
-        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)", show_output=True)
+        output = self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)", output=True)
+
+        print(output)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):

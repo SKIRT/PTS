@@ -558,9 +558,19 @@ class Remote(object):
         # Set the log file back to 'None'
         self.ssh.logfile = None
 
-        if output:
-            output = self.ssh.before.split("\r\n")[1:]
-            return output
+        # Check and return output
+        output_lines = self.ssh.before.split("\r\n")[1:]
+
+        # Check for errors
+        if len(output_lines) > 0 and "Traceback (most recent call last)" in output_lines[0]:
+
+            # Print error message and traceback
+            log.error("Something went wrong during remote execution on host " + self.host_id)
+            log.error("Command: " + line)
+            for line in output_lines: log.error(line)
+            exit()
+
+        if output: return output_lines
 
     # -----------------------------------------------------------------
 
