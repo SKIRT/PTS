@@ -280,7 +280,7 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    @wcs.setter()
+    @wcs.setter
     def wcs(self, wcs):
 
         """
@@ -1171,7 +1171,7 @@ class RemoteImage(object):
 
     # -----------------------------------------------------------------
 
-    @wcs.setter()
+    @wcs.setter
     def wcs(self, wcs):
 
         """
