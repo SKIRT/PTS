@@ -621,7 +621,7 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=True, parallel=True):
+    def rebin(self, reference_wcs, exact=False, parallel=True):
 
         """
         This function ...
@@ -1350,7 +1350,7 @@ class RemoteImage(object):
 
     # -----------------------------------------------------------------
 
-    def rebin(self, reference_wcs, exact=True, parallel=True):
+    def rebin(self, reference_wcs, exact=False, parallel=True):
 
         """
         This function ...
