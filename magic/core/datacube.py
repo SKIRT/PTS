@@ -306,7 +306,8 @@ class DataCube(Image):
         """
 
         # Inform the user
-        log.info("Convolving the datacube with " + str(len(filters)) + " different filters ...")
+        parallel_info = " in parallel with " + str(len(filters)) + " threads" if parallel else "" # REPLACE THIS LATER BY THE NUMBER OF ACTUAL THREADS
+        log.info("Convolving the datacube with " + str(len(filters)) + " different filters" + parallel_info + " ...")
 
         # Debugging
         log.debug("Converting the datacube into a single 3D array ...")
