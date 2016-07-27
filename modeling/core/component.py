@@ -26,6 +26,7 @@ from ...core.tools import filesystem as fs
 from ..core.sed import ObservedSED
 from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
+from ...magic.core.frame import Frame
 from ...magic.basics.skyregion import SkyRegion
 from ...core.tools import parsing
 from ...core.basics.map import Map
@@ -242,6 +243,54 @@ class ModelingComponent(Configurable):
 
         # Return the dataset
         return dataset
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def halpha_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.truncation_path, "Mosaic Halpha.fits")
+
+        # Load and return the frame
+        return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.truncation_path, "disk.fits")
+
+        # Open the frame and return it
+        return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.truncation_path, "bulge.fits")
+
+        # Open the frame and return it
+        return Frame.from_file(path)
 
     # -----------------------------------------------------------------
 

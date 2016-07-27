@@ -12,33 +12,52 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
+from ..component import MapsComponent
+from ....core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class IonizingStellarMapMaker(object):
+class IonizingStellarMapMaker(MapsComponent):
 
     """
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
+        :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(IonizingStellarMapMaker, self).__init__()
+        super(IonizingStellarMapMaker, self).__init__(config)
 
         # -- Attributes --
 
+        # The MIPS 24 micron image and error map IN SOLAR UNITS
+        self.mips24 = None
+        self.mips24_errors = None
+
+        # The Halpha map IN SOLAR UNITS
+        self.halpha = None
+
+        # The disk image IN SOLAR UNITS
+        self.disk = None
+
+        # The maps of the corrected 24 micron emission
+        self.corrected_24mu_maps = dict()
+
+        # The map of ionizing stars
         self.map = None
+
+        # The path to the maps/ionizing/24mu directory
+        self.maps_ionizing_24mu_path = None
+
+        self.maps_ionizing_solar_path = None
 
     # -----------------------------------------------------------------
 
@@ -52,13 +71,17 @@ class IonizingStellarMapMaker(object):
         # 1. Call the setup function
         self.setup()
 
-        # ...
+        # 2. Load the necessary frames
+        self.load_frames()
 
-        #
+        # 3. Make the map
         self.make_map()
 
-        # Return the map
-        return self.map
+        # 4. Normalize the map
+        self.normalize_map()
+
+        # Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -69,7 +92,42 @@ class IonizingStellarMapMaker(object):
         :return:
         """
 
-        pass
+        # Call the setup function of the base class
+        super(IonizingStellarMapMaker, self).setup()
+
+        # Set
+        self.maps_ionizing_24mu_path = fs.create_directory_in(self.maps_ionizing_path, "24mu")
+
+        self.maps_ionizing_solar_path = fs.create_directory_in(self.maps_ionizing_path, "solar")
+
+    # -----------------------------------------------------------------
+
+    def load_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the necessary data ...")
+
+        # Get MIPS 24 micron frame and error map
+        self.mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
+        self.mips24_errors = self.dataset.get_errors("MIPS 24mu")  # in original MJy/sr units
+
+        # Convert to Lsun
+
+        # Get the H-alpha image
+        self.halpha = self.halpha_frame
+
+        # Convert to Lsun
+
+        # Load the disk image
+
+        self.disk = self.disk_frame
+
+        # CONVERT TO LSUN
 
     # -----------------------------------------------------------------
 
@@ -82,19 +140,22 @@ class IonizingStellarMapMaker(object):
 
         # H-ALPHA HAS BEEN CONVERTED TO LSUN (ABOVE)
 
-        # Young ionizing stars = Ha + 0.031 x MIPS24
+        # Inform the user
+        log.info("Making the map of ionizing stars ...")
 
-        # CALCULATE THE IONIZING STARS MAP BASED ON THE CONVERTED H ALPHA AND THE DISK-SUBTRACTED 24 MICRON IMAGE
+        # Loop over the different colour options
+        for factor in (self.config.factor_range.linear(self.config.factor_nvalues) + [self.config.best_factor]):
 
-        # Calculate the young stellar contribution to the 24 micron image
-        mips_young_stars = self.get_mips_young_stars_map()
+            # Calculate the corrected 24 micron image
+            corrected = self.make_corrected_24mu_map(factor)
 
-        # Save the mips_young_stars map
-        mips_young_path = fs.join(self.maps_intermediate_path, "24mu_young.fits")
-        mips_young_stars.save(mips_young_path)
+            # Add the attenuation map to the dictionary
+            self.corrected_24mu_maps[factor] = corrected
+
+        # Young ionizing stars = Ha + 0.031 x MIPS24_corrected
 
         # Calculate ionizing stars map and ratio
-        ionizing = self.images["Halpha"].frames.primary + 0.031 * mips_young_stars
+        ionizing = self.halpha + 0.031 * self.corrected_24mu_maps[self.config.best_factor]
 
         # ionizing_ratio = self.ha / (0.031*mips_young_stars)
 
@@ -120,7 +181,7 @@ class IonizingStellarMapMaker(object):
 
     # -----------------------------------------------------------------
 
-    def get_mips_young_stars_map(self):
+    def make_corrected_24mu_map(self, factor):
 
         """
         This function ...
@@ -128,7 +189,7 @@ class IonizingStellarMapMaker(object):
         """
 
         # Inform the user
-        log.info("Subtracting the old stellar contribution from the 24 micron emission ...")
+        log.info("Subtracting the old stellar contribution from the 24 micron emission map with a factor of " + str(factor) + " ...")
 
         ## Subtract old stellar contribution from FUV and MIPS 24 emission
 
@@ -138,15 +199,15 @@ class IonizingStellarMapMaker(object):
 
         ## MIPS HAS BEEN CONVERTED TO LSUN (ABOVE)
 
-        flux_mips = np.sum(self.images["24mu"].frames.primary)
+        flux_mips = self.mips24.sum()
 
         # typisch 20% en 35% respectievelijk
         # 48% voor MIPS 24 komt van Lu et al. 2014
 
-        factor = 0.48 * flux_mips / np.sum(self.disk)
+        factor = factor * flux_mips / self.disk.sum()
 
         # Subtract the disk contribution to the 24 micron image
-        new_mips = self.images["24mu"].frames.primary - factor * self.disk
+        new_mips = self.mips24 - factor * self.disk
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
         new_mips[new_mips < 0.0] = 0.0
@@ -156,5 +217,105 @@ class IonizingStellarMapMaker(object):
 
         # Return the new 24 micron frame
         return new_mips
+
+    # -----------------------------------------------------------------
+
+    def normalize_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Normalizing the map of ionizing stars ...")
+
+        # Normalize the dust map
+        self.map.normalize()
+        self.map.unit = None
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the maps that are converted to solar units
+        self.write_solar()
+
+        # Write the maps
+        self.write_24mu_maps()
+
+        # Write the ionizing stars map
+        self.write_map()
+
+    # -----------------------------------------------------------------
+
+    def write_solar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the maps that have been converted to solar units ...")
+
+        # Save
+        path = fs.join(self.maps_ionizing_solar_path, "disk.fits")
+        self.disk.save(path)
+
+        # Save
+        path = fs.join(self.maps_ionizing_solar_path, "MIPS 24mu.fits")
+        self.mips24.save(path)
+
+        # Save H alpha in solar units
+        path = fs.join(self.maps_ionizing_solar_path, "Halpha.fits")
+        self.halpha.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_24mu_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Write the corrected 24 micron images ...")
+
+        # Loop over the corrected 24 micron maps
+        for factor in self.corrected_24mu_maps:
+
+            # Determine path
+            path = fs.join(self.maps_ionizing_24mu_path, str(factor) + ".fits")
+
+            # Write
+            self.corrected_24mu_maps[factor].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Write the ionizing stars map ...")
+
+        # Determine path
+        path = fs.join(self.maps_ionizing_path, "ionizing.fits")
+
+        # Write
+        self.map.save(path)
 
 # -----------------------------------------------------------------

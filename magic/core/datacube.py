@@ -408,6 +408,9 @@ def _do_one_filter_convolution(fltr, wavelengths, array, frames, index, unit, wc
     data = fltr.convolve(wavelengths, array)
     frame = Frame(data)
 
+    # Debugging
+    log.success("Convolved the datacube with the " + str(fltr) + " filter ...")
+
     # Set the unit of the frame
     frame.unit = unit
 
