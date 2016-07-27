@@ -360,13 +360,34 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def _end_as_array(self):
+    def to_wavelength_density(self, new_unit, wavelength_unit):
 
         """
         This function ...
+        :param new_unit:
+        :param wavelength_unit:
         :return:
         """
 
-        self._asarray = None
+        # Inform the user
+        log.info("Converting the datacube from neutral flux density to flux density per unit of wavelength (in " + wavelength_unit + ")")
+
+        # Get list of wavelengths in desired unit
+        wavelengths = self.wavelength_grid.wavelengths(unit=wavelength_unit, add_unit=False)
+
+        # Convert the frames from neutral surface brightness to wavelength surface brightness
+        for l in range(self.nframes):
+
+            # Get the wavelength
+            wavelength = wavelengths[l]
+
+            # Determine the name of the frame in the datacube
+            frame_name = "frame" + str(l)
+
+            # Divide this frame by the wavelength in micron
+            self.frames[frame_name] /= wavelength
+
+        # Set the new unit of the datacube
+        self.unit = new_unit
 
 # -----------------------------------------------------------------

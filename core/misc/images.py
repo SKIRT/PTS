@@ -266,20 +266,8 @@ class ObservedImageMaker(object):
             if self.host_id is not None: datacube = RemoteDataCube.from_file(path, self.wavelength_grid, self.host_id)
             else: datacube = DataCube.from_file(path, self.wavelength_grid)
 
-            # Convert the frames from neutral surface brightness to wavelength surface brightness
-            for l in range(len(self.wavelengths)):
-
-                # Get the wavelength
-                wavelength = self.wavelengths[l]
-
-                # Determine the name of the frame in the datacube
-                frame_name = "frame" + str(l)
-
-                # Divide this frame by the wavelength in micron
-                datacube.frames[frame_name] /= wavelength
-
-                # Set the new unit
-                datacube.frames[frame_name].unit = "W / (m2 * arcsec2 * micron)"
+            # Convert the datacube from neutral flux density to wavelength flux density
+            datacube.to_wavelength_density("W / (m2 * arcsec2 * micron)", "micron")
 
             # Add the datacube to the dictionary
             self.datacubes[datacube_name] = datacube

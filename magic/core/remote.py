@@ -1230,7 +1230,7 @@ class RemoteImage(object):
         """
 
         # Upload the WCS
-        self.remote.send_python_line("reference_wcs = CoordinateSystem('" + reference_wcs.to_header_string() + "')")
+        self.remote.send_python_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
 
         # Rebin remotely
         self.remote.send_python_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None)
@@ -1378,5 +1378,19 @@ class RemoteDataCube(RemoteImage):
 
         # Return the list of remoteframes
         return remoteframes
+
+    # -----------------------------------------------------------------
+
+    def to_wavelength_density(self, new_unit, wavelength_unit):
+
+        """
+        This function ...
+        :param new_unit:
+        :param wavelength_unit:
+        :return:
+        """
+
+        # Convert to wavelength density remotely
+        self.remote.send_python_line(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
 
 # -----------------------------------------------------------------
