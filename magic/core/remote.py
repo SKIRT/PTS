@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import tempfile
 from itertools import count, izip
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -24,6 +27,7 @@ from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
 from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
 from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
 from ...core.tools import parsing
+from ..basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -236,6 +240,57 @@ class RemoteFrame(object):
 
         # Delete the Frame on the remote from the global namespace
         self.remote.remove_python_variable(self.label)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Unit(self.remote.get_python_string("str(" + self.label + ".unit)"))
+
+    # -----------------------------------------------------------------
+
+    @unit.setter
+    def unit(self, unit):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        self.remote.send_python_line(self.label + ".unit = '" + str(unit) + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem(self.remote.get_python_string(self.label + ".wcs.to_header_string()"))
+
+    # -----------------------------------------------------------------
+
+    @wcs.setter()
+    def wcs(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Set the WCS remotely
+        self.remote.send_python_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
 
     # -----------------------------------------------------------------
 
@@ -1076,6 +1131,82 @@ class RemoteImage(object):
         """
 
         return self.remote.get_simple_python_property(self.label, "shape")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Unit(self.remote.get_python_string("str(" + self.label + ".unit)"))
+
+    # -----------------------------------------------------------------
+
+    @unit.setter
+    def unit(self, unit):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        self.remote.send_python_line(self.label + ".unit = '" + str(unit) + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem(self.remote.get_python_string(self.label + ".wcs.to_header_string()"))
+
+    # -----------------------------------------------------------------
+
+    @wcs.setter()
+    def wcs(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Set the WCS remotely
+        self.remote.send_python_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fwhm = parsing.quantity(self.remote.get_simple_python_property(self.label, "fwhm"))
+        return fwhm
+
+    # -----------------------------------------------------------------
+
+    @fwhm.setter
+    def fwhm(self, fwhm):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.remote.send_python_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
 
     # -----------------------------------------------------------------
 
