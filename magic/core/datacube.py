@@ -303,7 +303,7 @@ class DataCube(Image):
         """
 
         # Inform the user
-        log.info("Convolving the datacube with " + str(len(filters)) + " different filter ...")
+        log.info("Convolving the datacube with " + str(len(filters)) + " different filters ...")
 
         # Initialize list to contain the output frames
         frames = []
@@ -318,7 +318,7 @@ class DataCube(Image):
             log.debug("Convolving the datacube with the " + str(fltr) + " filter ...")
 
             # Calculate the observed image frame
-            data = fltr.convolve(self.wavelengths, array)
+            data = fltr.convolve(self.wavelengths(asarray=True, unit="micron"), array)
             frame = Frame(data)
 
             # Set the unit of the frame

@@ -1528,8 +1528,6 @@ class RemoteDataCube(RemoteImage):
         # Find label
         label = get_new_label(cls.local_classname(), remote)
 
-        print("label", label)
-
         # Create RemoteDataCube instance
         remotedatacube = cls(label, remote)
 
@@ -1599,7 +1597,9 @@ class RemoteDataCube(RemoteImage):
         remoteframes = []
 
         # Do the convolution remotely
-        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)")
+        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)", show_output=True)
+
+        print(self.remote.python_variables())
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):
@@ -1627,8 +1627,6 @@ class RemoteDataCube(RemoteImage):
         :param wavelength_unit:
         :return:
         """
-
-        print(self.remote.python_variables())
 
         # Convert to wavelength density remotely
         self.remote.send_python_line(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
