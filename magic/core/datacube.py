@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import threading
 import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -294,19 +295,18 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters):
+    def convolve_with_filters(self, filters, parallel=False, nthreads=10):
 
         """
         This function ...
         :param filters:
+        :param parallel:
+        :param nthreads:
         :return:
         """
 
         # Inform the user
         log.info("Convolving the datacube with " + str(len(filters)) + " different filters ...")
-
-        # Initialize list to contain the output frames
-        frames = []
 
         # Debugging
         log.debug("Converting the datacube into a single 3D array ...")
@@ -314,27 +314,42 @@ class DataCube(Image):
         # Convert the datacube to a numpy array where wavelength is the third dimension
         array = self.asarray()
 
-        # Loop over the filters
-        for fltr in filters:
+        # Get the array of wavelengths
+        wavelengths = self.wavelengths(asarray=True, unit="micron")
 
-            # Debugging
-            log.debug("Convolving the datacube with the " + str(fltr) + " filter ...")
+        # Initialize list to contain the output frames per filter
+        nfilters = len(filters)
+        frames = [None] * nfilters
 
-            # Calculate the observed image frame
-            data = fltr.convolve(self.wavelengths(asarray=True, unit="micron"), array)
-            frame = Frame(data)
+        # PARALLEL EXECUTION
+        if parallel:
 
-            # Set the unit of the frame
-            frame.unit = self.unit
+            # The list of threads
+            threads = []
 
-            # Set the filter
-            frame.filter = fltr
+            for index in range(nfilters): # REPLACE THIS BY A LOOP OVER NTHREADS
 
-            # Set the wcs
-            frame.wcs = self.wcs
+                # Get the current filter
+                fltr = filters[index]
 
-            # Add the frame to the list
-            frames.append(frame)
+                # Create and start thread
+                t = threading.Thread(target=_do_one_filter_convolution, args=(fltr, wavelengths, array, frames, index, self.unit, self.wcs,))
+                threads.append(t)
+                t.start()
+
+            # Wait for all threads to finish
+            for t in threads: t.join()
+
+        # SERIAL EXECUTION
+        else:
+
+            for index in range(nfilters):
+
+                # Get the current filter
+                fltr = filters[index]
+
+                # Do the filter convolution, put frame in the frames list
+                _do_one_filter_convolution(fltr, wavelengths, array, frames, index, self.unit, self.wcs)
 
         # Return the list of resulting frames
         return frames
@@ -370,5 +385,38 @@ class DataCube(Image):
 
         # Set the new unit of the datacube
         self.unit = new_unit
+
+# -----------------------------------------------------------------
+
+def _do_one_filter_convolution(fltr, wavelengths, array, frames, index, unit, wcs):
+
+    """
+    This function ...
+    :param fltr:
+    :param wavelengths:
+    :param array:
+    :param frames:
+    :param index:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Convolving the datacube with the " + str(fltr) + " filter ...")
+
+    # Calculate the observed image frame
+    data = fltr.convolve(wavelengths, array)
+    frame = Frame(data)
+
+    # Set the unit of the frame
+    frame.unit = unit
+
+    # Set the filter
+    frame.filter = fltr
+
+    # Set the wcs
+    frame.wcs = wcs
+
+    # Add the frame to the list
+    frames[index] = frame
 
 # -----------------------------------------------------------------
