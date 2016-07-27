@@ -74,6 +74,9 @@ class DataCube(Image):
             # Set the wavelength of the frame
             datacube.frames[frame_name].wavelength = datacube.wavelength_grid[i]
 
+        # Return the datacube instance
+        return datacube
+
     # -----------------------------------------------------------------
 
     @classmethod

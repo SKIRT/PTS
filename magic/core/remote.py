@@ -1528,6 +1528,8 @@ class RemoteDataCube(RemoteImage):
         # Find label
         label = get_new_label(cls.local_classname(), remote)
 
+        print("label", label)
+
         # Create RemoteDataCube instance
         remotedatacube = cls(label, remote)
 
@@ -1542,7 +1544,7 @@ class RemoteDataCube(RemoteImage):
         log.info("Loading the datacube on the remote host ...")
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)")
+        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)", show_output=True)
 
         # Return the remotedatacube instance
         return remotedatacube
@@ -1596,12 +1598,8 @@ class RemoteDataCube(RemoteImage):
         # Initialize a list with remoteframes
         remoteframes = []
 
-        print(self.remote.python_variables())
-
         # Do the convolution remotely
-        output = self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)", output=True)
-
-        print(output)
+        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)")
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):
@@ -1629,6 +1627,8 @@ class RemoteDataCube(RemoteImage):
         :param wavelength_unit:
         :return:
         """
+
+        print(self.remote.python_variables())
 
         # Convert to wavelength density remotely
         self.remote.send_python_line(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
