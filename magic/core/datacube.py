@@ -156,31 +156,6 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convert_to_fluxdensity(self, new_unit):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the wavelengths
-        index = 0
-        for wavelength in self.wavelength_grid.wavelengths():
-
-            # Determine the name of the frame in the datacube
-            frame_name = "frame" + str(index)
-
-            # Divide this frame by the wavelength in micron
-            self.frames[frame_name] /= wavelength.to("micron")
-
-            # Set the new unit
-            self.frames[frame_name].unit = new_unit
-
-            # Increment the index
-            index += 1
-
-    # -----------------------------------------------------------------
-
     def local_sed(self, region):
 
         """

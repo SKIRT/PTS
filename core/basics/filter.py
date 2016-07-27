@@ -285,7 +285,7 @@ class Filter:
         elif name in uvot_uvw2_names: return cls("UVOT.UVW2")
         elif name in uvot_uvm2_names: return cls("UVOT.UVM2")
         elif name in uvot_uvw1_names: return cls("UVOT.UVW1")
-        else: raise ValueError("No corresponding filter found")
+        else: raise ValueError("No corresponding filter found (name = " + name + ")")
 
     @classmethod
     def from_instrument_and_band(cls, instrument, band):

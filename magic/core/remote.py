@@ -26,6 +26,7 @@ from ...core.basics.remote import Remote, connected_remotes
 from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
 from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
 from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
+from ...core.basics.filter import Filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
 
@@ -243,6 +244,50 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Check whether floating point value
+        if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
+
+        # Multiply remotely
+        self.remote.send_python_line(self.label + " *= " + repr(value))
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Check whether floating point value
+        if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
+
+        # Divide remotely
+        self.remote.send_python_line(self.label + " /= " + repr(value))
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__idiv__(value)
+
+    # -----------------------------------------------------------------
+
     @property
     def unit(self):
 
@@ -291,6 +336,22 @@ class RemoteFrame(object):
 
         # Set the WCS remotely
         self.remote.send_python_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the filter
+        fltr = Filter.from_string(self.remote.get_python_string("str(" + self.label + ".filter)"))
+
+        # Return the filter
+        return fltr
 
     # -----------------------------------------------------------------
 
@@ -984,6 +1045,50 @@ class RemoteImage(object):
 
     # -----------------------------------------------------------------
 
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Check whether floating point value
+        if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
+
+        # Multiply remotely
+        self.remote.send_python_line(self.label + " *= " + repr(value))
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Check whether floating point value
+        if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
+
+        # Divide remotely
+        self.remote.send_python_line(self.label + " /= " + repr(value))
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__idiv__(value)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path, host_id):
 
@@ -1492,7 +1597,7 @@ class RemoteDataCube(RemoteImage):
         remoteframes = []
 
         # Do the convolution remotely
-        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)")
+        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters)", show_output=True)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):
