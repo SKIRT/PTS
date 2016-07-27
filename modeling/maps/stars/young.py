@@ -118,7 +118,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Making the map of young non-ionizing stars ...")
 
         # Loop over the different colour options
-        for factor in (self.config.factor_range.linear(self.config.factor_nvalues) + [self.config.best_factor]):
+        for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
 
             # Calculate the non ionizing young stars map from the FUV data
             non_ionizing_stars = self.make_corrected_fuv_map(factor)

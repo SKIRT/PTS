@@ -12,10 +12,22 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
+# Import astronomical modules
+from astropy import constants
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....core.tools import filesystem as fs
+
+# -----------------------------------------------------------------
+
+speed_of_light = constants.c
+solar_luminosity = 3.846e26 * Unit("W")
 
 # -----------------------------------------------------------------
 
@@ -80,7 +92,7 @@ class IonizingStellarMapMaker(MapsComponent):
         # 4. Normalize the map
         self.normalize_map()
 
-        # Writing
+        # 5. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -112,22 +124,102 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the necessary data ...")
 
+        # Load the MIPS 24 micron image and convert to solar units
+        self.load_mips()
+
+        # Load the H alpha image and convert to solar units
+        self.load_halpha()
+
+        # Load the disk image and normalize to unity
+        self.load_disk()
+
+    # -----------------------------------------------------------------
+
+    def load_mips(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the MIPS 24 micron image and converting to solar units ...")
+
         # Get MIPS 24 micron frame and error map
         self.mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
         self.mips24_errors = self.dataset.get_errors("MIPS 24mu")  # in original MJy/sr units
 
-        # Convert to Lsun
+        ## CONVERT TO LSUN
+
+        # Get the galaxy distance
+        distance = self.galaxy_parameters.distance
+
+        # Get pixelscale and wavelength
+        pixelscale = self.mips24.average_pixelscale
+        wavelength = self.mips24.filter.pivotwavelength() * Unit("micron")
+
+        # Conversion from MJy / sr to Jy / sr
+        conversion_factor = 1e6
+
+        # Conversion from Jy / sr to Jy / pix(2)
+        conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
+
+        # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
+        conversion_factor *= 1e-26
+
+        # Conversion from W / (m2 * Hz) (per pixel) to W / (m2 * m) (per pixel)
+        conversion_factor *= (speed_of_light / wavelength ** 2).to("Hz/m").value
+
+        # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
+        conversion_factor *= (4. * np.pi * distance ** 2).to("m2").value
+
+        # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
+        conversion_factor *= wavelength.to("m").value
+
+        # Conversion from W to Lsun
+        conversion_factor *= 1. / solar_luminosity.to("W").value
+
+        ## DO THE CONVERSION
+
+        self.mips24 *= conversion_factor
+        self.mips24_errors *= conversion_factor
+
+    # -----------------------------------------------------------------
+
+    def load_halpha(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the H-alpha image and converting to solar units ...")
 
         # Get the H-alpha image
         self.halpha = self.halpha_frame
 
-        # Convert to Lsun
+        # Convert from erg/s to Lsun
+        self.halpha.convert_to("Lsun")
 
-        # Load the disk image
+    # -----------------------------------------------------------------
 
+    def load_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the disk image ...")
+
+        # Get disk frame
         self.disk = self.disk_frame
 
-        # CONVERT TO LSUN
+        # Normalize the disk image
+        self.disk.normalize()
+        self.disk.unit = None
 
     # -----------------------------------------------------------------
 
@@ -143,8 +235,10 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the map of ionizing stars ...")
 
+        print([self.config.best_factor])
+
         # Loop over the different colour options
-        for factor in (self.config.factor_range.linear(self.config.factor_nvalues) + [self.config.best_factor]):
+        for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
 
             # Calculate the corrected 24 micron image
             corrected = self.make_corrected_24mu_map(factor)
@@ -174,7 +268,7 @@ class IonizingStellarMapMaker(MapsComponent):
         # ionizing_ratio[ionizing < 0.0] = 0.0
 
         # New
-        ionizing[self.cutoff_masks["Halpha"]] = 0.0
+        #ionizing[self.cutoff_masks["Halpha"]] = 0.0
 
         # Set the ionizing stars map
         self.map = ionizing
@@ -199,15 +293,14 @@ class IonizingStellarMapMaker(MapsComponent):
 
         ## MIPS HAS BEEN CONVERTED TO LSUN (ABOVE)
 
-        flux_mips = self.mips24.sum()
-
         # typisch 20% en 35% respectievelijk
         # 48% voor MIPS 24 komt van Lu et al. 2014
 
-        factor = factor * flux_mips / self.disk.sum()
+        # Total contribution in solar units
+        total_contribution = factor * self.mips24.sum()
 
         # Subtract the disk contribution to the 24 micron image
-        new_mips = self.mips24 - factor * self.disk
+        new_mips = self.mips24 - total_contribution * self.disk # disk image is normalized
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
         new_mips[new_mips < 0.0] = 0.0
@@ -266,10 +359,6 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Writing the maps that have been converted to solar units ...")
-
-        # Save
-        path = fs.join(self.maps_ionizing_solar_path, "disk.fits")
-        self.disk.save(path)
 
         # Save
         path = fs.join(self.maps_ionizing_solar_path, "MIPS 24mu.fits")

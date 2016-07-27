@@ -47,37 +47,44 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def linear(self, npoints):
+    def linear(self, npoints, as_list=False):
 
         """
         This function ...
+        :param as_list:
         """
 
         values = np.linspace(self.min, self.max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
-        return values
+
+        if as_list: return list(values)
+        else: return values
 
     # -----------------------------------------------------------------
 
-    def log(self, npoints):
+    def log(self, npoints, as_list=False):
 
         """
         This function ...
         :param npoints:
+        :param as_list:
         :return:
         """
 
         values = np.logspace(self.min, self.max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
-        return values
+
+        if as_list: return list(values)
+        else: return values
 
     # -----------------------------------------------------------------
 
-    def sqrt(self, npoints):
+    def sqrt(self, npoints, as_list=False):
 
         """
         This function ...
         :param npoints:
+        :param as_list:
         :return:
         """
 
@@ -85,7 +92,9 @@ class Range(object):
         normalized = np.linspace(0.0, 1.0, npoints, endpoint=self.inclusive)
         values = self.min + normalized * width
         if self.invert: values = np.flipud(values)
-        return values
+
+        if as_list: return list(values)
+        else: return values
 
 # -----------------------------------------------------------------
 
@@ -113,44 +122,54 @@ class IntegerRange(Range):
 
     # -----------------------------------------------------------------
 
-    def linear(self, npoints):
+    def linear(self, npoints, as_list=False):
 
         """
         This function ...
+        :param npoints:
+        :param as_list:
         :return:
         """
 
         real = super(IntegerRange, self).linear(npoints)
         integers = list(set(map(int, real)))
-        return np.array(integers)
+
+        if as_list: return integers
+        else: return np.array(integers)
 
     # -----------------------------------------------------------------
 
-    def log(self, npoints):
+    def log(self, npoints, as_list=False):
 
         """
         This function ...
         :param npoints:
+        :param as_list:
         :return:
         """
 
         real = super(IntegerRange, self).log(npoints)
         integers = list(set(map(int, real)))
-        return np.array(integers)
+
+        if as_list: return integers
+        else: return np.array(integers)
 
     # -----------------------------------------------------------------
 
-    def sqrt(self, npoints):
+    def sqrt(self, npoints, as_list=False):
 
         """
         This function ...
         :param npoints:
+        :param as_list:
         :return:
         """
 
         real = super(IntegerRange, self).sqrt(npoints)
         integers = list(set(map(int, real)))
-        return np.array(integers)
+
+        if as_list: return integers
+        else: return np.array(integers)
 
 # -----------------------------------------------------------------
 

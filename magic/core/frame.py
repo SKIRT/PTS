@@ -95,6 +95,10 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Convert string units to Astropy unit objects
+        if isinstance(unit, basestring): unit = Unit(unit)
+
+        # Set the unit
         self._unit = unit
 
     # -----------------------------------------------------------------
@@ -708,15 +712,25 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Convert the data
-        conversion_factor = self.unit / unit
-        frame = self * conversion_factor
+        # Make an Astropy Unit instance
+        if isinstance(unit, basestring): unit = Unit(unit)
+
+        # Inform the user
+        log.debug("Converting the unit of the frame from " + str(self.unit) + " to " + str(unit) + " ...")
+
+        # Calculate the conversion factor
+        a = 1.0 * self.unit
+        b = 1.0 * unit
+        factor = (a / b).decompose().value
+
+        # Debug message
+        log.debug("Conversion factor = " + str(factor))
+
+        # Multiply the frame with the conversion factor
+        self.__imul__(factor)
 
         # Set the new unit
-        frame.unit = unit
-
-        # Return the converted frame
-        return frame
+        self.unit = unit
 
     # -----------------------------------------------------------------
 
