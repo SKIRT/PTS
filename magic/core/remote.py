@@ -100,93 +100,51 @@ def get_first_missing_integer(integers):
 
 # -----------------------------------------------------------------
 
-def get_frame_labels(remote):
+def get_labels(classname, remote):
 
     """
     This function ...
+    :param classname:
     :param remote:
     :return:
     """
 
     variables = remote.python_variables()
 
-    frame_labels = []
+    labels = []
 
     for variable in variables:
-        if variable.startswith("frame"):
-            frame_labels.append(variable)
+        if variable.startswith(classname.lower()):
+            labels.append(variable)
 
-    return frame_labels
+    return labels
 
 # -----------------------------------------------------------------
 
-def get_frame_indices(remote):
+def get_indices(classname, remote):
 
     """
     This function ...
+    :param classname:
     :param remote:
     :return:
     """
 
-    return sorted([int(label.split("frame")[1]) for label in get_frame_labels(remote)])
+    return sorted([int(label.split(classname.lower())[1]) for label in get_labels(classname, remote)])
 
 # -----------------------------------------------------------------
 
-def get_new_frame_label(remote):
+def get_new_label(classname, remote):
 
     """
     This function ...
+    :param classname:
     :param remote:
     :return:
     """
 
-    current_indices = get_frame_indices(remote)
-    return "frame" + str(get_first_missing_integer(current_indices))
-
-# -----------------------------------------------------------------
-
-def get_image_labels(remote):
-
-    """
-    This function ...
-    :param remote:
-    :return:
-    """
-
-    variables = remote.python_variables()
-
-    image_labels = []
-
-    for variable in variables:
-        if variable.startswith("image"):
-            image_labels.append(variable)
-
-    return image_labels
-
-# -----------------------------------------------------------------
-
-def get_image_indices(remote):
-
-    """
-    This function ...
-    :param remote:
-    :return:
-    """
-
-    return sorted([int(label.split("image")[1]) for label in get_image_labels(remote)])
-
-# -----------------------------------------------------------------
-
-def get_new_image_label(remote):
-
-    """
-    This function ...
-    :param remote:
-    :return:
-    """
-
-    current_indices = get_image_indices(remote)
-    return "image" + str(get_first_missing_integer(current_indices))
+    current_indices = get_indices(classname, remote)
+    return classname.lower() + str(get_first_missing_integer(current_indices))
 
 # -----------------------------------------------------------------
 
@@ -195,6 +153,31 @@ class RemoteFrame(object):
     """
     This class ...
     """
+
+    @classmethod
+    def local_class(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        classname = cls.local_classname
+        return globals()[classname]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def local_classname(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return cls.__name__.split("Remote")[1]
+
+    # -----------------------------------------------------------------
 
     def __init__(self, label, remote):
 
@@ -320,13 +303,13 @@ class RemoteFrame(object):
             remote.send_python_line("fs.remove_file(local_path)")
 
         # Find label
-        label = get_new_frame_label(remote)
+        label = get_new_label(cls.local_classname(), remote)
 
         # Create RemoteFrame instance
         remoteframe = cls(label, remote)
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = Frame.from_file(fits_path)")
+        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file(fits_path)")
 
         # Return the remoteframe instance
         return remoteframe
@@ -370,7 +353,7 @@ class RemoteFrame(object):
         remote.upload(path, remote_temp_path, compress=True, show_output=True)
 
         # Find label
-        label = get_new_frame_label(remote)
+        label = get_new_label(cls.local_classname(), remote)
 
         # Create RemoteFrame instance
         remoteframe = cls(label, remote)
@@ -379,7 +362,7 @@ class RemoteFrame(object):
         log.info("Loading the frame on the remote host ...")
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = Frame.from_file('" + remote_frame_path + "')")
+        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_frame_path + "')")
 
         # Return the remoteframe instance
         return remoteframe
@@ -397,13 +380,13 @@ class RemoteFrame(object):
         log.info("Copying the remote frame ...")
 
         # Find new remote label
-        label = get_new_frame_label(self.remote)
+        label = get_new_label(self.local_classname(), self.remote)
 
         # Copy the frame remotely
         self.remote.send_python_line(label + " = " + self.label + ".copy()")
 
         # Create new RemoteFrame instance
-        newremoteframe = RemoteFrame(label, self.remote)
+        newremoteframe = self.__class__(label, self.remote)
 
         # Return the new remoteframe instance
         return newremoteframe
@@ -584,7 +567,7 @@ class RemoteFrame(object):
         self.remote.send_python_line("reference_wcs = CoordinateSystem('" + reference_wcs.to_header_string() + "')")
 
         # Create remote frame label for the footprint
-        footprint_label = get_new_frame_label(self.remote)
+        footprint_label = get_new_label("Frame", self.remote)
 
         # Rebin, get the footprint
         self.remote.send_python_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None)
@@ -808,8 +791,8 @@ class RemoteFrame(object):
         # Save the remote frame locally to the temp path
         self.save(local_path)
 
-        # Create the frame
-        frame = Frame.from_file(local_path)
+        # Create the local frame
+        frame = self.local_class().from_file(local_path)
 
         # Remove the local temporary file
         fs.remove_file(local_path)
@@ -861,6 +844,30 @@ class RemoteImage(object):
     """
     This class ...
     """
+
+    @classmethod
+    def local_class(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        classname = cls.local_classname
+        return globals()[classname]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def local_classname(cls):
+        """
+        This function ...
+        :return:
+        """
+
+        return cls.__name__.split("Remote")[1]
+
+    # -----------------------------------------------------------------
 
     def __init__(self, label, remote):
 
@@ -937,7 +944,7 @@ class RemoteImage(object):
         remote.upload(path, remote_temp_path, compress=True, show_output=True)
 
         # Find label
-        label = get_new_image_label(remote)
+        label = get_new_label(cls.local_classname(), remote)
 
         # Create RemoteImage instance
         remoteimage = cls(label, remote)
@@ -946,10 +953,116 @@ class RemoteImage(object):
         log.info("Loading the image on the remote host ...")
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = Image.from_file('" + remote_image_path + "')")
+        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_image_path + "')")
 
         # Return the remoteimage instance
         return remoteimage
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Copying the remote image ...")
+
+        # Find new remote label
+        label = get_new_label(self.local_classname(), self.remote)
+
+        # Copy the frame remotely
+        self.remote.send_python_line(label + " = " + self.label + ".copy()")
+
+        # Create new RemoteImage instance
+        newremoteimage = self.__class__(label, self.remote)
+
+        # Return the new remoteimage instance
+        return newremoteimage
+
+    # -----------------------------------------------------------------
+
+    @property
+    def primary(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Assign a remote variable to the primary frame of this remote image
+        label = get_new_label("Frame", self.remote)
+
+        # Reference the primary frame to the new variable
+        self.remote.send_python_line(label + " = " + self.label + ".primary")
+
+        # Create a new RemoteFrame instance
+        newremoteframe = RemoteFrame(label, self.remote) # We assume the frame of the remote image is not of a type derived from Frame
+
+        # Return the new remoteframe instance
+        return newremoteframe
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.get_simple_python_property(self.label, "has_frames")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nframes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.get_simple_python_property(self.label, "nframes")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.get_simple_python_property(self.label, "nmasks")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nregions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.get_simple_python_property(self.label, "nregions")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.get_simple_python_property(self.label, "shape")
 
     # -----------------------------------------------------------------
 
@@ -1041,7 +1154,7 @@ class RemoteImage(object):
         self.save(local_path)
 
         # Create the image
-        image = Image.from_file(local_path)
+        image = self.local_class().from_file(local_path)
 
         # Remove the local temporary file
         fs.remove_file(local_path)
