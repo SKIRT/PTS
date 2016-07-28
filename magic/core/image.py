@@ -367,6 +367,8 @@ class Image(object):
         # Get the names of the frames
         frame_names = self.frames.keys()
 
+        last_addition = None
+
         # Export all frames to the specified file
         for frame_name in frame_names:
 
@@ -383,6 +385,8 @@ class Image(object):
 
             # Increment the plane index
             plane_index += 1
+
+            last_addition = "Frame"
 
         # Add the masks
         if add_masks:
@@ -402,6 +406,8 @@ class Image(object):
                 # Increment the plane index
                 plane_index += 1
 
+                last_addition = "Mask"
+
         # Add the segmentation maps
         if add_segments:
 
@@ -412,13 +418,15 @@ class Image(object):
                 log.debug("Exporting the " + segments_name + " segmentation map to " + path)
 
                 # Add this segmentation map to the data cube
-                datacube.append(self.segments[segments_name])
+                datacube.append(self.segments[segments_name].data)
 
                 # Add the name of the segmentation map to the header
                 header["PLANE" + str(plane_index)] = segments_name + " [segments]"
 
                 # Increment the plane index
                 plane_index += 1
+
+                last_addition = "SegmentationMap"
 
         if add_regions:
 
@@ -439,6 +447,7 @@ class Image(object):
         else: # only one plane
             datacube = datacube[0]
             header.remove("PLANE0")
+            header["PTSCLS"] = last_addition # if only one Frame or Mask or SegmentationMap has been added
 
         # Set unit, FWHM and filter description
         if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
@@ -1264,7 +1273,8 @@ class Image(object):
         if name in self.masks and not overwrite: raise RuntimeError("A mask with this name already exists")
 
         # Check if the shape matches the shape of this image
-        if mask.shape != self.shape: raise ValueError("Mask does not have the correct shape for this image")
+        if self.shape is not None:
+            if mask.shape != self.shape: raise ValueError("Mask does not have the correct shape for this image")
 
         # Add the mask to the set of masks
         self.masks[name] = mask
@@ -1340,7 +1350,8 @@ class Image(object):
         if name in self.segments and not overwrite: raise RuntimeError("A segmentation map with this name already exists")
 
         # Check if the shape matches the shape of this image
-        if segments.shape != self.shape: raise ValueError("Segmentation map does not have the correct shape for this image")
+        if self.shape is not None:
+            if segments.shape != self.shape: raise ValueError("Segmentation map does not have the correct shape for this image")
 
         # Add the segmentation map to the set of segmentation maps
         self.segments[name] = segments

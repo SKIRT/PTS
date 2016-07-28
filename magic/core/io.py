@@ -286,13 +286,13 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Look for the first HDU with data
     if hdulist_index is None:
 
-        index = 0
+        _hdulist_index = 0
         while True:
 
-            if hdulist[index].data is not None:
-                hdulist_index = index
+            if hdulist[_hdulist_index].data is not None:
+                hdulist_index = _hdulist_index
                 break
-            index += 1
+            _hdulist_index += 1
 
         if hdulist_index is None: raise ValueError("The FITS file does not contain any data")
 
