@@ -1341,6 +1341,28 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Mask(np.isnan(self._data))
+
+    # -----------------------------------------------------------------
+
+    def infs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Mask(np.isinf(self._data))
+
+    # -----------------------------------------------------------------
+
     def replace_nans(self, value):
 
         """
