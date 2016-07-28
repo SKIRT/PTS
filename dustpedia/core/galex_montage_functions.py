@@ -95,7 +95,12 @@ def level_galex_maps(fitsfile_dir, convfile_dir, target_suffix):
 
         # Fit to level of image; save if first image, otherwise calculate appropriate offset
         level_params = lmfit.Parameters()
-        level_params.add('level', value=np.nanmedian(image_conv), vary=True)
+
+        #level_params.add('level', value=np.nanmedian(image_conv), vary=True) ## FOR NUMPY VERSION 1.9.0 AND ABOVE
+        image_conv_nonans = image_conv[np.logical_not(np.isnan(image_conv))]
+        level_params.add('level', value=np.median(image_conv_nonans), vary=True) # BELOW NUMPY VERSION 1.9.0
+        #
+
         image_conv_clipped = ChrisFuncs.SigmaClip(image_conv, tolerance=0.005, median=False, sigma_thresh=3.0)[2]
         level_result = lmfit.minimize(GALEX_Level_Chisq, level_params, args=(image_conv_clipped.flatten(),))
         level = level_result.params['level'].value
