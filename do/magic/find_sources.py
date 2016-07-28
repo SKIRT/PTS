@@ -58,6 +58,7 @@ parser.add_argument("--downsample", type=float, help="specify the degree of down
 parser.add_argument("--no_saturation", action="store_true", help="don't look for saturated stars")
 parser.add_argument("--no_other", action="store_true", help="don't look for sources outside of the catalogs")
 parser.add_argument("--saturation_dilation_factor", type=float, help="the dilation factor to be used for the detected saturation")
+parser.add_argument("--other_dilation_factor", type=float, help="the dilation factor to be used for the detected other sources")
 
 # Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore (in sky coordinates!)")

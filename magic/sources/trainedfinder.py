@@ -398,6 +398,12 @@ class TrainedFinder(OldConfigurable):
             #log.debug("type image = " + str(type(image)))
             #log.debug("image.shape = " + str(image.shape))
 
+        if self.config.dilate:
+
+            log.debug("dilating the source segments ...")
+
+
+
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxy_finder is not None:
 
