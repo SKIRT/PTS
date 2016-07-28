@@ -26,6 +26,7 @@ from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import headers
 from ..basics.mask import Mask
 from .frame import Frame
+from .segmentationmap import SegmentationMap
 
 # -----------------------------------------------------------------
 
@@ -112,6 +113,8 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
     frames = OrderedDict()
     masks = OrderedDict()
+    segments = OrderedDict()
+
     metadata = dict()
 
     filename = fs.strip_extension(fs.name(path))
@@ -197,7 +200,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                 mask = Mask(hdu.data[i], name=name, description=description)
                 masks[name] = mask
 
-            else: raise ValueError("Unrecognized type (must be frame or mask)")
+            elif plane_type == "segments":
+
+                segments_map = SegmentationMap(hdu.data[i], wcs=wcs, name=name, description=description)
+                segments[name] = segments_map
+
+            else: raise ValueError("Unrecognized type (must be frame, mask or segments)")
 
     else:
 
@@ -230,6 +238,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
             # Add the mask
             masks[name] = mask
 
+        elif plane_type == "segments":
+
+            segments_map = SegmentationMap(hdu.data, wcs=wcs, name=name, description=description)
+            # Add the segmentation map
+            segments[name] = segments_map
+
         else: raise ValueError("Unrecognized type (must be frame or mask)")
 
     # Add meta information
@@ -239,7 +253,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     hdulist.close()
 
     # Frames, masks and meta data
-    return frames, masks, metadata
+    return frames, masks, segments, metadata
 
 # -----------------------------------------------------------------
 
@@ -343,13 +357,18 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                 name, description, plane_type = headers.get_frame_name_and_description(header, i,
                                                                                        always_call_first_primary=False)
 
-                if plane == name and plane_type == "frame":
+                if plane == name:
+
+                    if plane_type != classname_plane: log.warning("The plane with name '" + plane + "' is actually not a " + classname + ", but a " + plane_type)
+
+                    # Choose this plane as the frame
                     index = i
                     break
 
             # If a break is not encountered, a matching plane name is not found
             else: raise ValueError("Plane with name '" + plane + "' not found")
 
+        # A plane index is given
         elif index is not None:
 
             name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary=False)
@@ -358,14 +377,41 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
         else:  # index and plane is None
 
+            # Look for a plane that is named 'primary'
             for i in range(nframes):
 
                 # Get name and description of frame
                 name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
-                if name == "primary": index = i
-                break
+                if name == "primary":
+                    if plane_type != classname_plane:
+                        log.warning("The plane that is called 'primary' is actually not a " + classname + ", but a " + plane_type + ". Make sure that you are working with the correct file or specify the plane you want to use with 'index' or 'plane'")
+                    index = i
+                    break
 
-            if index is None: index = 0  # if index is still None, set it to zero (take the first plane)
+            # No plane is found that is called 'primary'
+            if index is None:
+
+                # index = 0 # if index is still None, set it to zero (take the first plane)
+
+                # Find the first plane of which the type corresponds with the classname_plane
+                for i in range(nframes):
+
+                    name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
+
+                    if plane_type == classname_plane:
+                        index = i
+                        name = name
+                        description = description
+
+                        if index != 0:
+                            log.warning("The first plane in the file that is a " + classname + " is not the first plane in the data, but has index " + str(index) + ". Make sure that you are working with the desired plane or specify the plane you want to use with 'index' or 'plane'")
+
+                        break
+
+                # No single plane had the type 'classname_plane'
+                if index is None:
+                    log.warning("No planes in this file are " + classname_lower + "s. Make sure that you are working with the correct file. Using the first plane in the file and interpreting as a " + classname)
+                    index = 0
 
         # Get the name from the file path
         if name is None: name = fs.name(path[:-5])

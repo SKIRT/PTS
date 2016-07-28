@@ -13,17 +13,43 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import math
-import numpy as np
-from scipy import ndimage
-
 # Import astronomical modules
 from photutils.segmentation import SegmentationImage
 from astropy.io import fits
 
 # Import the relevant PTS classes and modules
-from . import io
+from ...core.tools.logging import log
+
+# -----------------------------------------------------------------
+
+# SEGMENTATIONIMAGE class: (as of version 0.3.dev1880)
+# source: http://photutils.readthedocs.io/en/latest/api/photutils.segmentation.SegmentationImage.html#photutils.segmentation.SegmentationImage
+
+# Attributes Summary
+
+# areas	The areas (in pixel**2) of all labeled regions.
+# array	The 2D segmentation image.
+# data	The 2D segmentation image.
+# data_masked	A MaskedArray version of the segmentation image where the background (label = 0) has been masked.
+# is_sequential	Determine whether or not the non-zero labels in the segmenation image are sequential (with no missing values).
+# labels	The sorted non-zero labels in the segmentation image.
+# max	The maximum non-zero label in the segmentation image.
+# nlabels	The number of non-zero labels in the segmentation image.
+# shape	The shape of the 2D segmentation image.
+# slices	The minimal bounding box slices for each labeled region.
+
+# Methods Summary
+
+# area(labels)	The areas (in pixel**2) of the regions for the input labels.
+# check_label(label[, allow_zero])	Check for a valid label label number within the segmentation image.
+# copy()	Return a deep copy of this class instance.
+# keep_labels(labels[, relabel])	Keep only the specified label numbers.
+# outline_segments([mask_background])	Outline the labeled segments.
+# relabel(labels, new_label)	Relabel one or more label numbers.
+# relabel_sequential([start_label])	Relabel the label numbers sequentially, such that there are no missing label numbers (up to the maximum label number).
+# remove_border_labels(border_width[, ...])	Remove labeled segments near the image border.
+# remove_labels(labels[, relabel])	Remove one or more label numbers.
+# remove_masked_labels(mask[, ...])	Remove labeled segments located within a masked region.
 
 # -----------------------------------------------------------------
 
@@ -66,6 +92,8 @@ class SegmentationMap(SegmentationImage):
         no_filter = True
         fwhm = None
         add_meta = False
+
+        from . import io # Import here because io imports SegmentationMap
 
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
         return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
@@ -131,6 +159,8 @@ class SegmentationMap(SegmentationImage):
 
         # If a header is not specified, created it from the WCS
         if header is None: header = self.header
+
+        from . import io  # Import here because io imports SegmentationMap
 
         # Write to a FITS file
         io.write_frame(self._data, header, path)

@@ -47,9 +47,10 @@ class Image(object):
         :return:
         """
 
-        # Initialize a set of layers to represent image frames, masks and regions
+        # Initialize a set of layers to represent image frames, masks, segmentation maps and regions
         self.frames = Layers()
         self.masks = Layers()
+        self.segments = Layers()
         self.regions = Layers()
 
         # The image name and path
@@ -339,7 +340,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path=None, add_metadata=False, origin=None, add_masks=True, add_regions=False):
+    def save(self, path=None, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
 
         """
         This function exports the image (frames and masks) as a datacube into FITS file.
@@ -347,6 +348,8 @@ class Image(object):
         :param add_metadata:
         :param origin:
         :param add_masks:
+        :param add_segments:
+        :param add_regions:
         :return:
         """
 
@@ -399,12 +402,29 @@ class Image(object):
                 # Increment the plane index
                 plane_index += 1
 
+        # Add the segmentation maps
+        if add_segments:
+
+            # Export all segmentation maps
+            for segments_name in self.segments:
+
+                # Inform the user that this segmentation map will be saved to the image file
+                log.debug("Exporting the " + segments_name + " segmentation map to " + path)
+
+                # Add this segmentation map to the data cube
+                datacube.append(self.segments[segments_name])
+
+                # Add the name of the segmentation map to the header
+                header["PLANE" + str(plane_index)] = segments_name + " [segments]"
+
+                # Increment the plane index
+                plane_index += 1
+
         if add_regions:
 
             # http://docs.astropy.org/en/stable/io/fits/
 
             tbhdu = fits.BinTableHDU.from_columns([fits.Column(name='target', format='20A', array=a1), fits.Column(name='V_mag', format='E', array=a2)])
-
 
         # Add the meta information to the header
         if add_metadata:
@@ -1063,12 +1083,13 @@ class Image(object):
         log.debug("Reading in file '" + path + "' ...")
 
         # Load frames
-        frames, masks, meta = io.load_frames(path, index, name, description, always_call_first_primary,
-                                             rebin_to_wcs, hdulist_index, no_filter)
+        frames, masks, segments, meta = io.load_frames(path, index, name, description, always_call_first_primary,
+                                                       rebin_to_wcs, hdulist_index, no_filter)
 
         # Set frames, masks and meta information
         for frame_name in frames: self.add_frame(frames[frame_name], frame_name)
         for mask_name in masks: self.add_mask(masks[mask_name], mask_name)
+        for segments_name in segments: self.add_segments(segments[segments_name], segments_name)
         for keyword in meta: self.metadata[keyword] = meta[keyword]
 
     # -----------------------------------------------------------------
@@ -1299,5 +1320,81 @@ class Image(object):
 
         # Loop over all masks
         for mask_name in list(self.masks.keys()): self.remove_mask(mask_name)
+
+    # -----------------------------------------------------------------
+
+    def add_segments(self, segments, name, overwrite=False):
+
+        """
+        This function ...
+        :param segments:
+        :param name:
+        :param overwrite:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Adding '" + name + "' to the set of segmentation maps ...")
+
+        # Check whether a segmentation map with this name already exists
+        if name in self.segments and not overwrite: raise RuntimeError("A segmentation map with this name already exists")
+
+        # Check if the shape matches the shape of this image
+        if segments.shape != self.shape: raise ValueError("Segmentation map does not have the correct shape for this image")
+
+        # Add the segmentation map to the set of segmentation maps
+        self.segments[name] = segments
+
+    # -----------------------------------------------------------------
+
+    def remove_segments_except(self, names):
+
+        """
+        This function ...
+        :param names:
+        :return:
+        """
+
+        if isinstance(names, basestring): names = [names]
+
+        # Loop over all segmentation maps
+        for segments_name in list(self.segments.keys()):
+
+            # Don't remove the segmentation map with the specified name
+            if segments_name in names: continue
+
+            # Remove all other segmentation maps
+            self.remove_segments(segments_name)
+
+    # -----------------------------------------------------------------
+
+    def remove_segments(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Removing the '" + name + "' segmentation map ...")
+
+        # Check whether a segmentation map with this name exists
+        if name not in self.segments: raise RuntimeError("A segmentation map with this name does not exist")
+
+        # Delete the segmentation map
+        del self.segments[name]
+
+    # -----------------------------------------------------------------
+
+    def remove_all_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all segmentation maps
+        for segments_name in list(self.segments.keys()): self.remove_segments(segments_name)
 
 # -----------------------------------------------------------------
