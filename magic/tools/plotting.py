@@ -134,6 +134,9 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
 
     plt.close()
 
+    # Return vmin and vmax
+    return vmin, vmax
+
 # -----------------------------------------------------------------
 
 def plot_peak_model(box, x_peak, y_peak, model, title=None, vmin=None, vmax=None):

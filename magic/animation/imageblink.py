@@ -36,11 +36,15 @@ class ImageBlinkAnimation(Animation):
         # Call the constructor of the base class
         super(ImageBlinkAnimation, self).__init__()
 
-        # Maximum value of the frame
-        self.max_frame_value = None
-
         # Set the number of frames per second
         self.fps = 2
+
+        # Properties for the plotting
+        self.scale = "log"
+        self.interval = "pts"
+        self.cmap = "viridis"
+        self.vmin = None
+        self.vmax = None
 
     # -----------------------------------------------------------------
 
@@ -52,12 +56,13 @@ class ImageBlinkAnimation(Animation):
         :return:
         """
 
-        # Create an animation to show the result of the source extraction step
-        if self.max_frame_value is None: self.max_frame_value = np.nanmax(image)
+        # Determine the interval (depends on whether this is the first frame that is added or not)
+        if self.vmin is None and self.vmax is None: interval = self.interval
+        else: interval = (self.vmin, self.vmax)
 
         # Make a plot of the image
         buf = io.BytesIO()
-        plotting.plot_box(image, path=buf, format="png")
+        self.vmin, self.vmax = plotting.plot_box(image, path=buf, format="png", interval=interval, scale=self.scale, cmap=self.cmap)
         buf.seek(0)
         im = imageio.imread(buf)
         buf.close()
