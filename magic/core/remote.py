@@ -1002,7 +1002,7 @@ class RemoteImage(object):
         :return:
         """
 
-        classname = cls.local_classname
+        classname = cls.local_classname()
         return globals()[classname]
 
     # -----------------------------------------------------------------
