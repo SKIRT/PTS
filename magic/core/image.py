@@ -29,7 +29,7 @@ from ..basics.mask import Mask
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from . import io
-from .frame import Frame
+from .frame import Frame, sum_frames
 
 # -----------------------------------------------------------------
 
@@ -956,6 +956,47 @@ class Image(object):
         """
 
         return self.__idiv__(factor)
+
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, item, value):
+
+        """
+        This function ...
+        :param item:
+        :param value:
+        :return:
+        """
+
+        # Loop over the frames, and set the values for each frame
+        for frame_name in self.frames: self.frames[frame_name][item] = value
+
+    # -----------------------------------------------------------------
+
+    def sum_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Summing all frames ...")
+
+        frames = []
+
+        # Loop over the frames and add them to the list
+        for frame_name in self.frames:
+
+            # Debugging
+            log.debug("Adding the '" + frame_name + "' frame ...")
+            frames.append(self.frames[frame_name])
+
+        # Sum the frames
+        result = sum_frames(*frames)
+
+        # Return the resulting frame
+        return result
 
     # -----------------------------------------------------------------
 

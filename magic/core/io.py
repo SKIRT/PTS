@@ -259,6 +259,11 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :return:
     """
 
+    # Class can be Frame, Mask or SegmentationMap
+    classname = cls.__name__
+    classname_lower = classname.lower()
+    classname_plane = classname_lower if classname_lower != "segmentationmap" else "segments"
+
     metadata = dict()
 
     # Open the HDU list for the FITS file
@@ -307,16 +312,12 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         y_isclose = np.isclose(header_pixelscale.y.to("arcsec/pix").value, pixelscale.y.to("arcsec/pix").value)
 
         if not (x_isclose or y_isclose):
-            print("WARNING: the pixel scale defined in the header is WRONG:")
-            print("           - header pixelscale: (", header_pixelscale.x.to("arcsec/pix"),
-                  header_pixelscale.y.to("arcsec/pix"), ")")
-            print("           - actual pixelscale: (", pixelscale.x.to("arcsec/pix"), pixelscale.y.to("arcsec/pix"),
-                  ")")
+            log.warning("The pixel scale defined in the header is WRONG:")
+            log.warning(" - header pixelscale: (" + str(header_pixelscale.x.to("arcsec/pix")) + ", " + str(header_pixelscale.y.to("arcsec/pix")) + ")")
+            log.warning(" - actual pixelscale: (" + str(pixelscale.x.to("arcsec/pix")) + ", " + str(pixelscale.y.to("arcsec/pix")) + ")")
 
-    if no_filter:
-        fltr = None
+    if no_filter: fltr = None
     else:
-
         # Obtain the filter for this image
         fltr = headers.get_filter(fs.name(path[:-5]), header)
 
@@ -347,20 +348,20 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                     break
 
             # If a break is not encountered, a matching plane name is not found
-            else:
-                raise ValueError("Plane with name '" + plane + "' not found")
+            else: raise ValueError("Plane with name '" + plane + "' not found")
 
         elif index is not None:
 
-            name, description, plane_type = headers.get_frame_name_and_description(header, index,
-                                                                                   always_call_first_primary=False)
+            name, description, plane_type = headers.get_frame_name_and_description(header, index, always_call_first_primary=False)
+
+            if plane_type != classname_plane: log.warning("The plane with index " + str(index) + " is actually not a " + classname + ", but a " + plane_type)
 
         else:  # index and plane is None
 
             for i in range(nframes):
+
                 # Get name and description of frame
-                name, description, plane_type = headers.get_frame_name_and_description(header, i,
-                                                                                       always_call_first_primary=False)
+                name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
                 if name == "primary": index = i
                 break
 
