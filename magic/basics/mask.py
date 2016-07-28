@@ -15,7 +15,12 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 from scipy import ndimage
-from skimage import morphology
+from skimage import morphology ###### TODO: this can cause a very weird error: (on Nancy (Ubuntu 14.04.4 LTS) with NUMPY VERSION 1.9.0)
+# *** libmkl_mc3.so *** failed with error : /raid6/home/sjversto/Enthought/Canopy_64bit/User/bin/../lib/libmkl_mc3.so: undefined symbol: i_free
+# *** libmkl_def.so *** failed with error : /raid6/home/sjversto/Enthought/Canopy_64bit/User/bin/../lib/libmkl_def.so: undefined symbol: i_free
+# MKL FATAL ERROR: Cannot load neither libmkl_mc3.so nor libmkl_def.so
+# POTENTIAL FIX HERE: http://stackoverflow.com/questions/14495334/python-matplotlib-mkl-fatal-error-on-ubuntu-12-04
+# IT WORKS WITH NUMPY VERSION 1.8.1 !!!
 
 # Import astronomical modules
 from astropy.io import fits
