@@ -217,6 +217,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
         dummy_name, dummy_description, plane_type = headers.get_frame_name_and_description(original_header, 0)
 
+        pts_class_name = original_header["PTSCLS"] if "PTSCLS" in original_header else None
+        if pts_class_name is not None:
+            if pts_class_name == "Frame": plane_type = "frame"
+            elif pts_class_name == "Mask": plane_type = "mask"
+            elif pts_class_name == "SegmentationMap": plane_type = "segments"
+
         if plane_type == "frame":
 
             # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None

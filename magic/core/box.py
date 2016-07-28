@@ -20,7 +20,7 @@ from scipy import ndimage
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
 from ..basics.geometry import Rectangle
-from ..tools import cropping, fitting, interpolation, plotting, statistics
+from ..tools import cropping, fitting, interpolation, plotting
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 

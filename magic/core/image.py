@@ -170,6 +170,18 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def nsegments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.segments)
+
+    # -----------------------------------------------------------------
+
+    @property
     def shape(self):
 
         """
@@ -336,7 +348,9 @@ class Image(object):
         :return:
         """
 
-        return "<" + self.__class__.__name__ + " '" + self.name + "' with " + str(len(self.frames)) + " frame, " + str(len(self.regions)) + " regions and " + str(len(self.masks)) + " masks>"
+        return "<" + self.__class__.__name__ + " '" + self.name + "' with " + str(self.nframes) + " frames, " \
+               + str(self.nregions) + " regions, " + str(self.nmasks) + " masks, and " + str(self.nsegments) \
+               + " segmentation maps>"
 
     # -----------------------------------------------------------------
 

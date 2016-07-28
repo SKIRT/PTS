@@ -108,6 +108,9 @@ class TrainedFinder(OldConfigurable):
         # 3. Create the region
         self.create_region()
 
+        # 4. Do dilation if requested
+        if self.config.dilate: self.dilate_sources()
+
         # 3. Remove sources
         #if self.config.remove: self.remove_sources()
 
@@ -220,6 +223,58 @@ class TrainedFinder(OldConfigurable):
 
         # Add shapes to region
         for contour in contours: self.region.append(contour)
+
+    # -----------------------------------------------------------------
+
+    def dilate_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("dilating the source segments ...")
+
+        import math
+
+        # Loop over the shapes in the region
+        for shape in self.region:
+
+            # Get the integer label for this shape
+            label = int(shape.meta["text"])
+
+            # Create a source for this label
+            source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+            # Replace the source mask
+            segments_cutout = self.segments[source.y_slice, source.x_slice]
+            source.mask = Mask(segments_cutout == label).fill_holes()
+
+            ## CODE FOR DILATION (FROM SOURCES MODULE)
+
+            source = source.zoom_out(self.config.dilation_factor, self.segments, keep_original_mask=True)
+
+            mask_area = np.sum(source.mask)
+            area_dilation_factor = self.config.dilation_factor ** 2.
+            new_area = mask_area * area_dilation_factor
+
+            ## Circular mask approximation
+
+            # ellipse = find_contour(source.mask.astype(float), source.mask)
+            # radius = ellipse.radius.norm
+
+            mask_radius = math.sqrt(mask_area / math.pi)
+            new_radius = math.sqrt(new_area / math.pi)
+
+            kernel_radius = new_radius - mask_radius
+
+            # Replace mask
+            source.mask = source.mask.disk_dilation(radius=kernel_radius)
+
+            ## SET BACK INTO SEGMENTATION MAP
+
+            self.segments[source.y_slice, source.x_slice][source.mask] = label
 
     # -----------------------------------------------------------------
 
@@ -397,12 +452,6 @@ class TrainedFinder(OldConfigurable):
             #log.debug("image.ndim = " + str(image.ndim))
             #log.debug("type image = " + str(type(image)))
             #log.debug("image.shape = " + str(image.shape))
-
-        if self.config.dilate:
-
-            log.debug("dilating the source segments ...")
-
-
 
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxy_finder is not None:
