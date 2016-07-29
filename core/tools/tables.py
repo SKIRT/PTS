@@ -136,6 +136,15 @@ def find_closest_index(table, value, column_name=None):
     #closest_delta = float("inf")
     closest_index = None
 
+    column_unit = table[column_name].unit
+    value_unit = value.unit if hasattr(value, "unit") else None
+
+    # Check units
+    if value_unit is not None:
+        if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
+        else: value = value.to(column_unit).value # for correct comparison inside loop
+    elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
+
     # Loop over all entries in the column
     for i in range(len(table)):
 
@@ -162,6 +171,15 @@ def find_closest_above_index(table, value, column_name=None):
     # Get first column name if none is given
     if column_name is None: column_name = table.colnames[0]
 
+    column_unit = table[column_name].unit
+    value_unit = value.unit if hasattr(value, "unit") else None
+
+    # Check units
+    if value_unit is not None:
+        if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
+        else: value = value.to(column_unit).value  # for correct comparison inside loop
+    elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
+
     # Loop from beginning, return index of first value that is greater
     for i in range(len(table)):
 
@@ -184,6 +202,15 @@ def find_closest_below_index(table, value, column_name=None):
 
     # Get first column name if none is given
     if column_name is None: column_name = table.colnames[0]
+
+    column_unit = table[column_name].unit
+    value_unit = value.unit if hasattr(value, "unit") else None
+
+    # Check units
+    if value_unit is not None:
+        if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
+        else: value = value.to(column_unit).value  # for correct comparison inside loop
+    elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
 
     # Loop from end (reversed loop), return index of first value that is smaller
     for i in reversed(range(len(table))):
