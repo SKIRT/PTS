@@ -149,6 +149,52 @@ def find_closest_index(table, value, column_name=None):
 
 # -----------------------------------------------------------------
 
+def find_closest_above_index(table, value, column_name=None):
+
+    """
+    This function ...
+    :param table:
+    :param value:
+    :param column_name:
+    :return:
+    """
+
+    # Get first column name if none is given
+    if column_name is None: column_name = table.colnames[0]
+
+    # Loop from beginning, return index of first value that is greater
+    for i in range(len(table)):
+
+        table_value = table[column_name][i]
+        if table_value > value: return i
+
+    return None
+
+# -----------------------------------------------------------------
+
+def find_closest_below_index(table, value, column_name=None):
+
+    """
+    This function ...
+    :param table:
+    :param value:
+    :param column_name:
+    :return:
+    """
+
+    # Get first column name if none is given
+    if column_name is None: column_name = table.colnames[0]
+
+    # Loop from end (reversed loop), return index of first value that is smaller
+    for i in reversed(range(len(table))):
+
+        table_value = table[column_name][i]
+        if table_value < value: return i
+
+    return None
+
+# -----------------------------------------------------------------
+
 def equal_columns(columns):
 
     """

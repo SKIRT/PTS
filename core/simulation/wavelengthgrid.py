@@ -210,7 +210,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return self.table["Wavelength"][index] * Unit("micron")
+        return self.table["Wavelength"][index] * self.table["Wavelength"].unit
 
     # -----------------------------------------------------------------
 
@@ -247,6 +247,46 @@ class WavelengthGrid(object):
         """
 
         return tables.find_closest_index(self.table, wavelength, column_name="Wavelength")
+
+    # -----------------------------------------------------------------
+
+    def closest_wavelength_above_index(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return tables.find_closest_above_index(self.table, wavelength, column_name="Wavelength")
+
+    # -----------------------------------------------------------------
+
+    def closest_wavelength_below_index(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        return tables.find_closest_below_index(self.table, wavelength, column_name="Wavelength")
+
+    # -----------------------------------------------------------------
+
+    def wavelength_indices(self, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
+
+        if min_wavelength is None and max_wavelength is None: return list(range(len(self.table)))
+        elif min_wavelength is None: return list(range(self.closest_wavelength_below_index(max_wavelength)+1))
+        elif max_wavelength is None: return list(range(self.closest_wavelength_above_index(min_wavelength), len(self.table)))
+        else: return list(range(self.closest_wavelength_above_index(min_wavelength), self.closest_wavelength_below_index(max_wavelength)+1))
 
     # -----------------------------------------------------------------
 

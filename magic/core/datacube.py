@@ -141,6 +141,19 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def wavelength_indices(self, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
+
+        return self.wavelength_grid.wavelength_indices(min_wavelength, max_wavelength)
+
+    # -----------------------------------------------------------------
+
     def asarray(self, axis=3):
 
         """
@@ -160,11 +173,13 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def local_sed(self, region):
+    def local_sed(self, region, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
         :param region:
+        :param min_wavelength:
+        :param max_wavelength:
         :return:
         """
 
@@ -175,8 +190,10 @@ class DataCube(Image):
         mask = region.to_mask(self.xsize, self.ysize)
 
         # Loop over the wavelengths
-        index = 0
-        for wavelength in self.wavelengths():
+        for index in self.wavelength_indices(min_wavelength, max_wavelength):
+
+            # Get the wavelength
+            wavelength = self.wavelength_grid[index]
 
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
@@ -195,12 +212,14 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def pixel_sed(self, x, y):
+    def pixel_sed(self, x, y, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
         :param x:
         :param y:
+        :param min_wavelength:
+        :param max_wavelength:
         :return:
         """
 
@@ -209,8 +228,7 @@ class DataCube(Image):
         sed = ObservedSED()
 
         # Loop over the wavelengths
-        index = 0
-        for wavelength in self.wavelengths():
+        for index in self.wavelength_indices(min_wavelength, max_wavelength):
 
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
@@ -231,10 +249,13 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def global_sed(self, mask=None):
+    def global_sed(self, mask=None, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
+        :param mask:
+        :param min_wavelength:
+        :param max_wavelength:
         :return:
         """
 
@@ -248,8 +269,10 @@ class DataCube(Image):
         sed = SED()
 
         # Loop over the wavelengths
-        index = 0
-        for wavelength in self.wavelengths():
+        for index in self.wavelength_indices(min_wavelength, max_wavelength):
+
+            # Get the wavelength
+            wavelength = self.wavelength_grid[index]
 
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
