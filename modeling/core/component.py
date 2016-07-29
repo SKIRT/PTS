@@ -31,6 +31,7 @@ from ...magic.basics.skyregion import SkyRegion
 from ...core.tools import parsing
 from ...core.basics.map import Map
 from ...magic.basics.skygeometry import SkyCoordinate
+from ...magic.basics.region import Region
 
 # -----------------------------------------------------------------
 
@@ -321,6 +322,62 @@ class ModelingComponent(Configurable):
 
         # Return the (sky) ellipse
         return ellipse
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Filter.from_string("PACS 160")
+
+    # -----------------------------------------------------------------
+
+    def sky_annulus_region(self, image_name):
+
+        """
+        This function ...
+        :param image_name:
+        :return:
+        """
+
+        path = fs.join(self.prep_path, image_name, "sky", "annulus.reg")
+        return Region.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def sky_annulus_outer(self, image_name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the sky annulus region for this image
+        region = self.sky_annulus_region(image_name)
+
+        # Return the ellipse with the largest radius
+        return max(region, key=lambda ellipse: ellipse.radius)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sky_annulus_inner(self, image_name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the sky annulus region for this image
+        region = self.sky_annulus_region(image_name)
+
+        # Return the ellipse with the smallest radius
+        return min(region, key=lambda ellipse: ellipse.radius)
 
     # -----------------------------------------------------------------
 

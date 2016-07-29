@@ -290,7 +290,7 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
         for label in self.sky_paths:
 
             # Look for the annulus region file
-            region_path = fs.join(self.sky_paths[label], "sky.reg")
+            region_path = fs.join(self.sky_paths[label], "annulus.reg")
             if not fs.is_file(region_path):
                 log.warning("The annulus region could not be found for " + label)
                 continue

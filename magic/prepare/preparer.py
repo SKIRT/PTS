@@ -539,7 +539,7 @@ class ImagePreparer(OldConfigurable):
         if self.config.write_sky_annuli:
 
             # Write the sky region
-            region_path = fs.join(self.config.sky_annuli_path, "sky.reg")
+            region_path = fs.join(self.config.sky_annuli_path, "annulus.reg")
             self.sky_subtractor.region.save(region_path)
 
             # Write the apertures frame

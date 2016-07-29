@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...magic.core.image import Image
 from .component import PhotometryComponent
 from .sedfetching import SEDFetcher
 from ...core.tools import filesystem as fs
@@ -25,6 +24,8 @@ from ..core.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar
 from ...core.tools import tables
 from ...core.plot.sed import SEDPlotter
+from ...magic.misc.kernels import AnianoKernels
+from ...magic.core.kernel import ConvolutionKernel
 
 # -----------------------------------------------------------------
 
@@ -34,28 +35,37 @@ from ...core.plot.sed import SEDPlotter
 # provides the "official" way of performing aperture corrections; we specifically care about the "Extended source photometry
 # (starting from extended source maps)" part. If you're using arbitrarily-large, non-circular apertures, you basically
 # have to use maps of the beam profile to work out what fraction of the flux is outside your aperture.
-# Those can be retrieved from the SPIRE calibration wiki (http://herschel.esac.esa.int/twiki/bin/view/Public/SpirePhotometerBeamProfile2).
+# Those can be retrieved from the SPIRE calibration wiki
+# (http://herschel.esac.esa.int/twiki/bin/view/Public/SpirePhotometerBeamProfile2).
 
 # In the meantime, I'm working on sensible automated aperture-corrections - current plan is to assume that the underlying
-# flux distribution follows a 2D-sersic profile, and so fit to each source a 2D-sersic convolved with the beam, and hence estimate the amount of flux that gets spread beyond the aperture. Hopefully it will be easily applicable to your work too.
+# flux distribution follows a 2D-sersic profile, and so fit to each source a 2D-sersic convolved with the beam, and
+# hence estimate the amount of flux that gets spread beyond the aperture. Hopefully it will be easily applicable
+# to your work too.
 
-# For PACS: The most up-to-date document on the PACS calibration wiki (http://herschel.esac.esa.int/twiki/pub/Public/PacsCalibrationWeb/bolopsf_22.pdf)
+# For PACS: The most up-to-date document on the PACS calibration wiki
+# (http://herschel.esac.esa.int/twiki/pub/Public/PacsCalibrationWeb/bolopsf_22.pdf)
 # and its accompanying tar.gz (ftp://ftp.sciops.esa.int/pub/hsc-calibration/PACS/PSF/PACSPSF_PICC-ME-TN-033_v2.2.tar.gz)
 # give the most recent PACS beam profiles, and encircled energy fractions (EEFs) for different aperture sizes in the
 # various scanning modes.
 
 # PIETER:
 
-# Zie bijlage voor de tabellen met de correcties voor de enclosed energy fraction (EEF) voor elke aperture size for PACS en SPIRE.
-# Voor de aperture size moet ge mogelijks voor elke band een andere waarde gebruiken (door evt de beamsize in rekening te brengen ofzo).
-# De flux in elke band moet dan gedeeld worden door de correction factor voor die band, gebruik makend van de aperture size in die band.
+# Zie bijlage voor de tabellen met de correcties voor de enclosed energy fraction (EEF) voor elke aperture size
+# for PACS en SPIRE.
+# Voor de aperture size moet ge mogelijks voor elke band een andere waarde gebruiken
+# (door evt de beamsize in rekening te brengen ofzo).
+# De flux in elke band moet dan gedeeld worden door de correction factor voor die band, gebruik
+# makend van de aperture size in die band.
 
 # De Growth_Curve_Final_XXmicron.dat geven de aperture size in arcsec en de correction factor voor de 2 PACS bands.
 
-# De PSF_correction_HATLAS_SPIRE.dat geeft de aperture size in arcsec en dan de correction factors for 250um,350um en 500um.
+# De PSF_correction_HATLAS_SPIRE.dat geeft de aperture size in arcsec en dan de correction factors for
+# 250um, 350um en 500um.
 
 # Deze corrections zijn voor een centrale pointsource en zijn dus een soort minimum correctie voor een extended source.
-# Deze minimum correcties worden doorgaands toegepast op extended sources omdat ze een goed genoege 1ste orde benadering zijn.
+# Deze minimum correcties worden doorgaands toegepast op extended sources omdat ze een goed genoege 1ste orde
+# benadering zijn.
 
 # -----------------------------------------------------------------
 
@@ -233,6 +243,9 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Performing the photometry calculation ...")
 
+        # The object that keeps track of PSFs and convolution kernels
+        kernels = AnianoKernels()
+
         # Loop over all the images
         for name in self.images:
 
@@ -244,6 +257,9 @@ class PhotoMeter(PhotometryComponent):
 
             # Calculate the total flux in Jansky
             flux = self.images[name].sum()
+
+            # Apply correction for EEF of aperture
+            if "Pacs" in name or "SPIRE" in name: flux *= self.get_aperture_correction_factor(self.images[name], kernels)
 
             # Calculate the total flux error in Jansky
             flux_error = self.errors[name].sum()
@@ -431,6 +447,111 @@ class PhotoMeter(PhotometryComponent):
         path = fs.join(self.phot_path, "sed_with_references.pdf")
         plotter.run(path)
 
+    # -----------------------------------------------------------------
+
+    def get_aperture_correction_factor(self, frame, aniano):
+
+        """
+        This function ...
+        :param frame:
+        :param aniano:
+        :return:
+        """
+
+        filter_name = str(frame.filter)
+
+        input_dict = dict()
+
+        # Set cutout
+        input_dict["cutout"] = frame.data
+        input_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec").value
+
+
+        truncation_ellipse_sky = self.truncation_ellipse
+        truncation_ellipse_image = truncation_ellipse_sky.to_pixel(frame.wcs)
+
+
+        # PACS BLUE
+        if filter_name == "Pacs blue":
+
+            ## USE psf.data !!
+            psf_path = aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
+
+            annulus_inner = self.sky_annulus_inner("Pacs blue")
+            annulus_outer = self.sky_annulus_outer("Pacs blue")
+
+        # PACS GREEN
+        elif filter_name == "Pacs green":
+
+            psf_path = aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
+
+            annulus_inner = self.sky_annulus_inner("Pacs green")
+            annulus_outer = self.sky_annulus_outer("Pacs green")
+
+        # PACS RED
+        elif filter_name == "Pacs red":
+
+            psf_path = aniano.get_psf_path(self.reference_filter)  # reference filter = pacs red filter
+
+            annulus_inner = self.sky_annulus_inner("Pacs red")
+            annulus_outer = self.sky_annulus_outer("Pacs red")
+
+        # SPIRE PSW
+        elif filter_name == "SPIRE PSW":
+
+            psf_path = aniano.get_psf_path(frame.filter)
+
+            annulus_inner = self.sky_annulus_inner(filter_name)
+            annulus_outer = self.sky_annulus_outer(filter_name)
+
+        # SPIRE PMW
+        elif filter_name == "SPIRE PMW":
+
+            psf_path = aniano.get_psf_path(frame.filter)
+
+            annulus_inner = self.sky_annulus_inner(filter_name)
+            annulus_outer = self.sky_annulus_outer(filter_name)
+
+        # SPIRE PLW
+        elif filter_name == "SPIRE PLW":
+
+            psf_path = aniano.get_psf_path(frame.filter)
+
+            annulus_inner = self.sky_annulus_inner(filter_name)
+            annulus_outer = self.sky_annulus_outer(filter_name)
+
+        # INVALID FILTER
+        else: raise ValueError("Invalid filter: '" + filter_name + "'")
+
+
+        # Load convolution kernel
+        psf = ConvolutionKernel.from_file(psf_path)
+        psf.prepare_for(frame)
+
+        # SET INPUT DICT
+
+        input_dict["psf"] = psf.data
+
+        annulus_inner_factor = annulus_inner.radius.x / truncation_ellipse_image.radius.x
+        annulus_outer_factor = annulus_outer.radius.x / truncation_ellipse_image.radius.x
+
+        assert annulus_inner_factor == annulus_inner.radius.y / truncation_ellipse_image.radius.y
+        assert annulus_outer_factor == annulus_outer.radius.y / truncation_ellipse_image.radius.y
+
+
+        input_dict["semimaj_pix"] = truncation_ellipse_image.radius.x
+        input_dict["axial_ratio"] = truncation_ellipse_image.radius.x / truncation_ellipse_image.radius.y
+        input_dict["angle"] = truncation_ellipse_image.angle.to("deg").value
+        input_dict["centre_i"] = truncation_ellipse_image.center.x
+        input_dict["centre_j"] = truncation_ellipse_image.center.y
+
+        input_dict["annulus_inner"] = annulus_inner_factor
+        input_dict["annulus_outer"] = annulus_outer_factor
+
+
+        # Calculate the aperture correction factor
+        return calculate_aperture_correction(input_dict)
+
 # -----------------------------------------------------------------
 
 def calculate_aperture_correction(input_dict):
@@ -438,16 +559,26 @@ def calculate_aperture_correction(input_dict):
     """
     # Define function that uses provided beam profile to aperture-correct photometry
     Entries in input_dict:
-    psf_path: Either a string giving the path to FITS file that contains the PSF, or a False boolean (in which case an airy disc PSF will be assumed).
-    cutout: Array upon whcih photometry is being perfomred upon.
-    pix_arcsec: The width, in arscec, of the pixels in the map photometry is being performed upon (this is needed in case there is a pixel size mismatch with PSF).
+
+    psf_path: Either a string giving the path to FITS file that contains the PSF, or a False boolean
+              (in which case an airy disc PSF will be assumed).
+    cutout: Array upon which photometry is being perfomred upon.
+
+    pix_arcsec: The width, in arscec, of the pixels in the map photometry is being performed upon
+                (this is needed in case there is a pixel size mismatch with PSF).
     semimaj_pix: Semi-major axis of photometric aperture, in pixels.
     axial_ratio: Axial ratio of photometryic aperture.
     angle: Position angle of photometric aperture, in degrees.
-    centre_i: Zero-indexed, 0th-axis coordinate (equivalent to y-axis one-indexed coordinates in FITS terms) of centre position of photometric aperture.
-    centre_j: Zero-indexed, 1st-axis coordinate (equivalent to x-axis one-indexed coordinates in FITS terms) of centre position of photometric aperture.
-    annulus_inner: The semi-major axis of the inner edge of the background annulus, in units of the semi-major axis of the source ellipse.
-    annulus_outer: The semi-major axis of the outer edge of the background annulus, in units of the semi-major axis of the source ellipse.
+
+    centre_i: Zero-indexed, 0th-axis coordinate (equivalent to y-axis one-indexed coordinates in FITS terms)
+              of centre position of photometric aperture.
+    centre_j: Zero-indexed, 1st-axis coordinate (equivalent to x-axis one-indexed coordinates in FITS terms) of
+              centre position of photometric aperture.
+
+    annulus_inner: The semi-major axis of the inner edge of the background annulus, in units of the semi-major
+                   axis of the source ellipse.
+    annulus_outer: The semi-major axis of the outer edge of the background annulus, in units of the semi-major axis
+                   of the source ellipse.
     """
 
     # Import things
@@ -460,8 +591,9 @@ def calculate_aperture_correction(input_dict):
     import astropy.wcs
     import astropy.modeling
 
+    ### REBINNING, RECENTERING AND NORMALIZATION OF PSF
 
-
+    """
     # If no PSF given, assume Airy disc; else extract PSF from provided file
     if (str(input_dict['psf_path'])==False) or (input_dict['psf_path'] is None):
         psf = astropy.convolution.kernels.AiryDisk2DKernel(input_dict['psf_path']).array
@@ -494,18 +626,25 @@ def calculate_aperture_correction(input_dict):
         elif ((input_dict['pix_arcsec']/psf_cdelt_arcsec)>=0.999) and ((input_dict['pix_arcsec']/psf_cdelt_arcsec)<=0.001):
             psf = psf_in.copy()
 
-
-
     # Normalise PSF
     psf /= np.nansum(psf)
 
+    """
 
+    psf = input_dict["psf"]
+
+    #####
 
     # Extract cutout
-    cutout = input_dict['cutout']
+    cutout = input_dict["cutout"]
 
     # Produce mask for pixels we care about for fitting (ie, are inside photometric aperture and background annulus)
     mask = ChrisFuncs.Photom.EllipseMask(cutout, input_dict['semimaj_pix'], input_dict['axial_ratio'], input_dict['angle'], input_dict['centre_i'], input_dict['centre_j']) #*band_dict['annulus_outer']
+
+    ##
+    from pts.magic.tools import plotting
+    plotting.plot_mask(mask)
+    ##
 
     # Produce guess values
     initial_sersic_amplitide = cutout[ input_dict['centre_i'], input_dict['centre_j'] ]
@@ -522,14 +661,16 @@ def calculate_aperture_correction(input_dict):
     sersic_map = sersic_model(sersic_x,sersic_y)
 
     # Make sure that PSF array is smaller than sersic model array (as required for convolution); if not, remove its edges such that it is
-    if psf.shape[0] > sersic_map.shape[0] or psf.shape[1]>sersic_map.shape[1]:
+    if psf.shape[0] > sersic_map.shape[0] or psf.shape[1] > sersic_map.shape[1]:
 
-        excess = max( psf.shape[0]-sersic_map.shape[0], psf.shape[1]-sersic_map.shape[1] )
+        excess = max( psf.shape[0]-sersic_map.shape[0], psf.shape[1] - sersic_map.shape[1] )
         border = int( np.round( np.ceil( float(excess) / 2.0 ) - 1.0 ) )
         psf = psf[border:,border:]
         psf = psf[:-border,:-border]
 
-    # Determine wither FFT convolution or direct convolution is faster for this kernel, using sersic model produced with guess parameters
+
+    # Determine whether FFT convolution or direct convolution is faster for this kernel,
+    # using sersic model produced with guess parameters
     time_fft = time.time()
     conv_map = astropy.convolution.convolve_fft(sersic_map, psf, normalize_kernel=True)
     time_fft = time.time() - time_fft
@@ -552,7 +693,7 @@ def calculate_aperture_correction(input_dict):
     params.add('sersic_theta', value=initial_sersic_theta, vary=False)
 
     # Solve with LMfit to find parameters of best-fit sersic profile
-    result = lmfit.minimize(Sersic_LMfit, params, args=(cutout, psf, mask, use_fft), method='leastsq', ftol=1E-5, xtol=1E-5)
+    result = lmfit.minimize(chi_squared_sersic, params, args=(cutout, psf, mask, use_fft), method='leastsq', ftol=1E-5, xtol=1E-5)
 
     # Extract best-fit results
     sersic_amplitide = result.params['sersic_amplitide'].value
@@ -604,7 +745,7 @@ def calculate_aperture_correction(input_dict):
 
 # -----------------------------------------------------------------
 
-def Sersic_LMfit(params, cutout, psf, mask, use_fft, lmfit=True):
+def chi_squared_sersic(params, cutout, psf, mask, use_fft, lmfit=True):
 
     """
     This function defines LMfit convolved-sersic function
@@ -631,7 +772,7 @@ def Sersic_LMfit(params, cutout, psf, mask, use_fft, lmfit=True):
     sersic_ellip = params['sersic_ellip'].value
     sersic_theta = params['sersic_theta'].value
 
-    # Generate sersic model given current paramters
+    # Generate sersic model given current parameters
     sersic_x, sersic_y = np.meshgrid( np.arange(cutout.shape[1]), np.arange(cutout.shape[0]) )
     sersic_model = astropy.modeling.models.Sersic2D(amplitude=sersic_amplitide, r_eff=sersic_r_eff, n=sersic_n, x_0=sersic_x_0, y_0=sersic_y_0, ellip=sersic_ellip, theta=sersic_theta)
     sersic_map = sersic_model( sersic_x, sersic_y )
@@ -649,7 +790,7 @@ def Sersic_LMfit(params, cutout, psf, mask, use_fft, lmfit=True):
 
     # Return residuals
     if lmfit: return residuals**2.0
-    elif lmfit: return residuals, cutout-conv_map
+    else: return residuals, cutout-conv_map
 
 # -----------------------------------------------------------------
 
