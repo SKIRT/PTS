@@ -14,16 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
+from ..component import MapsComponent
 
 # -----------------------------------------------------------------
 
-class OldStellarMapMaker(object):
+class OldStellarMapMaker(MapsComponent):
 
     """
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -31,7 +32,7 @@ class OldStellarMapMaker(object):
         """
 
         # Call the constructor of the base class
-        super(OldStellarMapMaker, self).__init__()
+        super(OldStellarMapMaker, self).__init__(config)
 
         # -- Attributes --
 
@@ -63,7 +64,8 @@ class OldStellarMapMaker(object):
         :return:
         """
 
-        pass
+        # Call the setup function of the base class
+        super(OldStellarMapMaker, self).setup()
 
     # -----------------------------------------------------------------
 

@@ -63,6 +63,209 @@ def get_mask_names(path):
 
 # -----------------------------------------------------------------
 
+class MaskBase(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, data, **kwargs):
+
+        """
+        The constructor ...
+        :param data:
+        :param kwargs:
+        """
+
+        # Set data
+        self._data = data.astype(bool)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._data
+
+    # -----------------------------------------------------------------
+
+    @property
+    def shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._data.shape
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.shape[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.shape[0]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def empty(cls, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        return cls(np.zeros((y_size, x_size)))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def empty_like(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(np.zeros(frame.shape))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def full(cls, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        return cls(np.ones((y_size, x_size)))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def full_like(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(np.ones(frame.shape))
+
+    # -----------------------------------------------------------------
+
+    def dilate_rc(self, rank, connectivity, iterations=1):
+
+        """
+        This function ...
+        :param rank: 2?
+        :param connectivity:
+        :param iterations:
+        :return:
+        """
+
+        # Define the structure for the expansion
+        structure = ndimage.generate_binary_structure(rank, connectivity=connectivity)
+
+        # Dilate
+        self.dilate(structure, iterations)
+
+    # -----------------------------------------------------------------
+
+    def dilate(self, structure, iterations=1):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Dilate
+        self._data = ndimage.binary_dilation(self._data, structure, iterations)
+
+    # -----------------------------------------------------------------
+
+    def erode_rc(self, rank, connectivity, iterations=1):
+
+        """
+        This function ...
+        :param rank: 2?
+        :param connectivity:
+        :param iterations:
+        :return:
+        """
+
+        # Create structure
+        structure = ndimage.generate_binary_structure(rank, connectivity=connectivity)
+
+        # Erode
+        self.erode(structure, iterations)
+
+    # -----------------------------------------------------------------
+
+    def erode(self, structure, iterations):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Erode
+        self._data = ndimage.binary_erosion(self._data, structure, iterations)
+
+    # -----------------------------------------------------------------
+
+    def open(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def close(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
 class Mask(np.ndarray):
 
     """

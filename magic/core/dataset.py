@@ -78,6 +78,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.paths.keys()
+
+    # -----------------------------------------------------------------
+
     def add_path(self, name, path):
 
         """

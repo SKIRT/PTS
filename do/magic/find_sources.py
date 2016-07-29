@@ -60,6 +60,7 @@ parser.add_argument("--no_other", action="store_true", help="don't look for sour
 parser.add_argument("--saturation_dilation_factor", type=float, help="the dilation factor to be used for the detected saturation")
 parser.add_argument("--other_dilation_factor", type=float, help="the dilation factor to be used for the detected other sources")
 parser.add_argument("--saturation_sigma_level", type=float, help="the sigma level to be used for the segmentation step in saturation detection")
+parser.add_argument("--other_sigma_level", type=float, help="the sigma level to be used for the segmentation step in finding the other sources")
 
 # Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore (in sky coordinates!)")

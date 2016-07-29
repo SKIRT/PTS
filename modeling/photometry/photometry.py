@@ -76,8 +76,11 @@ class PhotoMeter(PhotometryComponent):
         # Call the constructor of the base class
         super(PhotoMeter, self).__init__(config)
 
-        # The list of images
-        self.images = []
+        # The list of image frames
+        self.images = dict()
+
+        # The corresponding error maps
+        self.errors = dict()
 
         # The disk ellipse
         self.disk_ellipse = None
@@ -169,30 +172,20 @@ class PhotoMeter(PhotometryComponent):
         """
 
         # Inform the user
-        log.info("Loading the images ...")
+        log.info("Loading the images and error maps ...")
 
-        # Loop over all files found in the truncation directory
-        for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
+        # Load all data
+        for name in self.dataset.names:
 
-            # Skip the H alpha image
-            if "Halpha" in name: continue
+            # Load the frame
+            frame = self.dataset.get_frame(name)
 
-            # Debugging
-            log.debug("Loading the " + name + " image ...")
+            # Load the error map
+            errors = self.dataset.get_errors(name)
 
-            # Open the truncated image
-            image = Image.from_file(path)
-
-            # Check that the image has a primary and and errors frame
-            if "primary" not in image.frames:
-                log.warning("The " + name + " image does not contain a primary frame: skipping")
-                continue
-            if "errors" not in image.frames:
-                log.warning("The " + name + " image does not contain an errors frame: skipping")
-                continue
-
-            # Add the image to the list
-            self.images.append(image)
+            # Add to the appropriate dictionary
+            self.images[name] = frame
+            self.errors[name] = errors
 
     # -----------------------------------------------------------------
 

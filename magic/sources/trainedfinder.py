@@ -410,14 +410,14 @@ class TrainedFinder(OldConfigurable):
         # Create the sigma-clipped mask
         if self.bad_mask is not None: mask += self.bad_mask
 
-        clipped_mask = statistics.sigma_clip_mask(data, 3.0, mask)
+        clipped_mask = statistics.sigma_clip_mask(data, self.config.detection.segmentation.clipping_sigma_level, mask)
 
         # Calculate the median sky value and the standard deviation
         median = np.median(np.ma.masked_array(data, mask=clipped_mask).compressed())
         stddev = np.ma.masked_array(data, mask=clipped_mask).std()
 
         # Calculate the detection threshold
-        threshold = median + (3.0 * stddev)
+        threshold = median + (self.config.detection.segmentation.sigma_level * stddev)
 
         #kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
         if self.star_finder.config.use_frame_fwhm and self.frame.fwhm is not None:
