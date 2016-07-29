@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 
 # Import astronomical modules
@@ -24,7 +25,6 @@ from ..basics.geometry import Ellipse, Coordinate
 from ..core.source import Source
 from ...core.tools.logging import log
 from ...core.basics.configurable import OldConfigurable
-from ..tools import plotting
 from ..tools import masks
 
 # -----------------------------------------------------------------
@@ -312,6 +312,34 @@ class SourceExtractor(OldConfigurable):
 
             if saturation_source is not None:
 
+                ## DILATION
+
+                if self.config.dilate_saturation:
+
+                    # factor = saturation_dilation_factor
+                    dilation_factor = self.config.saturation_dilation_factor
+
+                    saturation_source = saturation_source.zoom_out(dilation_factor, self.frame, keep_original_mask=True)
+
+                    mask_area = np.sum(saturation_source.mask)
+                    area_dilation_factor = dilation_factor ** 2.
+                    new_area = mask_area * area_dilation_factor
+
+                    ## Circular mask approximation
+
+                    # ellipse = find_contour(source.mask.astype(float), source.mask)
+                    # radius = ellipse.radius.norm
+
+                    mask_radius = math.sqrt(mask_area / math.pi)
+                    new_radius = math.sqrt(new_area / math.pi)
+
+                    kernel_radius = new_radius - mask_radius
+
+                    # Replace mask
+                    saturation_source.mask = saturation_source.mask.disk_dilation(radius=kernel_radius)
+
+                ## END DILATION CODE
+
                 # Set special
                 saturation_source.special = special
 
@@ -355,6 +383,38 @@ class SourceExtractor(OldConfigurable):
                 # Replace the source mask
                 segments_cutout = self.other_segments[source.y_slice, source.x_slice]
                 source.mask = Mask(segments_cutout == label).fill_holes()
+
+                ## DILATION
+
+                if self.config.dilate_other:
+
+                    # DILATE SOURCE
+                    # factor = other_dilation_factor
+
+                    dilation_factor = self.config.other_dilation_factor
+
+                    ## CODE FOR DILATION (FROM SOURCES MODULE)
+
+                    source = source.zoom_out(dilation_factor, self.frame, keep_original_mask=True)
+
+                    mask_area = np.sum(source.mask)
+                    area_dilation_factor = dilation_factor ** 2.
+                    new_area = mask_area * area_dilation_factor
+
+                    ## Circular mask approximation
+
+                    # ellipse = find_contour(source.mask.astype(float), source.mask)
+                    # radius = ellipse.radius.norm
+
+                    mask_radius = math.sqrt(mask_area / math.pi)
+                    new_radius = math.sqrt(new_area / math.pi)
+
+                    kernel_radius = new_radius - mask_radius
+
+                    # Replace mask
+                    source.mask = source.mask.disk_dilation(radius=kernel_radius)
+
+                ## END DILATION CODE
 
             # This is a shape drawn by the user and added to the other sources region
             else:

@@ -37,7 +37,7 @@ import time as _time
 # Import the relevant PTS modules
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
-from pts.core.tools import time
+from pts.core.tools import time, parsing
 from pts.do.commandline import show_all_available, show_possible_matches
 
 # -----------------------------------------------------------------
@@ -49,6 +49,8 @@ parser.add_argument("--interactive", action="store_true", help="use interactive 
 parser.add_argument("--arguments", action="store_true", help="use argument mode for the configuration")
 parser.add_argument("--configfile", type=str, help="use a configuration file")
 parser.add_argument("--remote", type=str, help="launch the PTS command remotely")
+parser.add_argument("--input", type=parsing.directory_path, help="the name/path of the input directory")
+parser.add_argument("--output", type=parsing.directory_path, help="the name/path of the output directory")
 parser.add_argument("options", nargs=argparse.REMAINDER, help="options for the specific do command")
 
 # -----------------------------------------------------------------

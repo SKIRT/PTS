@@ -110,6 +110,9 @@ class SourceFinder(OldConfigurable):
             finder.config.other_sources.dilate = True
             finder.config.other_sources.dilation_factor = arguments.other_dilation_factor
 
+        # Set the saturation sigma level
+        if arguments.saturation_sigma_level is not None: finder.config.stars.saturation.sigma_level = arguments.saturation_sigma_level
+
         # Return the new instance
         return finder
 

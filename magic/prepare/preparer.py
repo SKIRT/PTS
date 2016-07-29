@@ -129,6 +129,14 @@ class ImagePreparer(OldConfigurable):
         if arguments.error_frames is not None: preparer.config.error_frame_names = arguments.error_frames
         if arguments.rebinning_exact: preparer.config.rebinning.exact = True
 
+        if arguments.saturation_dilation_factor is not None:
+            preparer.config.extraction.dilate_saturation = True
+            preparer.config.extraction.saturation_dilation_factor = arguments.saturation_dilation_factor
+
+        if arguments.other_dilation_factor is not None:
+            preparer.config.extraction.dilate_other = True
+            preparer.config.extraction.other_dilation_factor = arguments.other_dilation_factor
+
         # Return the new instance
         return preparer
 

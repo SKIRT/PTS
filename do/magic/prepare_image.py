@@ -46,6 +46,9 @@ parser.add_argument("--rebinning_exact", action="store_true", help="use the 'exa
 parser.add_argument("--sky_region", type=str, help="the name/path of a file with manually selected regions for the sky estimation (not apertures but extended regions of any shape and number) (in sky coordinates!)")
 parser.add_argument("--error_frames", type=parsing.string_list, help="the names of planes in the input image which have to be regarded as error maps (seperated by commas)")
 
+parser.add_argument("--saturation_dilation_factor", type=float, help="the factor with which to dilate the saturation sources (on top of the dilation done by the source finder)")
+parser.add_argument("--other_dilation_factor", type=float, help="the factor with which to dilate the other sources (on top of the dilation done by the source finder)")
+
 # Input and output
 parser.add_argument("--input", type=str, help="the input path (output of find_sources step)")
 parser.add_argument("--output", type=str, help="the output path")
