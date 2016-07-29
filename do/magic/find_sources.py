@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from pts.magic.misc.imageimporter import ImageImporter
 from pts.magic.sources.finder import SourceFinder
@@ -61,6 +64,8 @@ parser.add_argument("--saturation_dilation_factor", type=float, help="the dilati
 parser.add_argument("--other_dilation_factor", type=float, help="the dilation factor to be used for the detected other sources")
 parser.add_argument("--saturation_sigma_level", type=float, help="the sigma level to be used for the segmentation step in saturation detection")
 parser.add_argument("--other_sigma_level", type=float, help="the sigma level to be used for the segmentation step in finding the other sources")
+
+parser.add_argument("--fwhm", type=float, help="the FWHM of the image in arcseconds")
 
 # Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore (in sky coordinates!)")
@@ -119,9 +124,12 @@ image_path = fs.absolute(arguments.image)
 # Determine the full path to the bad region file
 bad_region_path = fs.join(input_path, arguments.bad) if arguments.bad is not None else None
 
+# Set FWHM
+fwhm = arguments.fwhm * Unit("arcsec") if arguments.fwhm is not None else None
+
 # Import the image
 importer = ImageImporter()
-importer.run(image_path, bad_region_path=bad_region_path)
+importer.run(image_path, bad_region_path=bad_region_path, fwhm=fwhm)
 
 # Get the image
 image = importer.image
