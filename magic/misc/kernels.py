@@ -23,7 +23,7 @@ from scipy import ndimage
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..core.frame import Frame
+from ..core.kernel import ConvolutionKernel
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
@@ -34,54 +34,6 @@ from ...core.basics.filter import Filter
 
 # The path to the PTS kernels directory
 kernels_path = fs.join(introspection.pts_user_dir, "kernels")
-
-# -----------------------------------------------------------------
-
-def rebin_kernel(kernel, pixelscale):
-
-    """
-    This function ...
-    :param kernel:
-    :param pixelscale:
-    :return:
-    """
-
-    # Calculate the zooming factor
-    factor = (pixelscale / kernel.average_pixelscale).to("").value
-
-    # Rebin to the pixelscale
-    data = ndimage.interpolation.zoom(kernel, zoom=1.0 / factor)
-    rebinned = Frame(data)
-
-    # Return the rebinned kernel
-    rebinned.fwhm = kernel.fwhm
-    return rebinned
-
-# -----------------------------------------------------------------
-
-def rebin_kernel_for_image(kernel, image):
-
-    """
-    This function ...
-    :param kernel:
-    :param image:
-    :return:
-    """
-
-    return rebin_kernel(kernel, image.average_pixelscale)
-
-# -----------------------------------------------------------------
-
-def rebin_kernel_for_frame(kernel, frame):
-
-    """
-    This function ...
-    :param kernel:
-    :param frame:
-    :return:
-    """
-
-    return rebin_kernel(kernel, frame.average_pixelscale)
 
 # -----------------------------------------------------------------
 
@@ -185,7 +137,7 @@ class AnianoKernels(object):
         kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, fwhm=fwhm, return_name=True)
 
         # Load the kernel frame
-        kernel = Frame.from_file(kernel_path)
+        kernel = ConvolutionKernel.from_file(kernel_path)
 
         # Get the FWHM of the kernel (should have been done already!)
         if kernel.fwhm is None:
@@ -248,8 +200,8 @@ class AnianoKernels(object):
             else: fwhm = None
 
             # Set the FWHM of the kernel
-            kernel = Frame.from_file(kernel_file_path)
-            kernel.fwhm = fwhm
+            kernel = ConvolutionKernel.from_file(kernel_file_path, fwhm=fwhm)
+            #kernel.fwhm = fwhm
             kernel.save(kernel_file_path)
 
         # Return
@@ -270,7 +222,7 @@ class AnianoKernels(object):
         psf_path, psf_name = self.get_psf_path(fltr, return_name=True)
 
         # Load the PSF frame
-        psf = Frame.from_file(psf_path)
+        psf = ConvolutionKernel.from_file(psf_path)
 
         # Get the FWHM of the PSF
         if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * Unit("arcsec")
@@ -313,8 +265,8 @@ class AnianoKernels(object):
             else: fwhm = None
 
             # Set the FWHM of the PSF
-            psf = Frame.from_file(psf_file_path)
-            psf.fwhm = fwhm
+            psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm)
+            #psf.fwhm = fwhm
             psf.save(psf_file_path)
 
         if return_name: return psf_file_path, psf_name
@@ -550,10 +502,10 @@ class HerschelKernels(object):
         else: raise ValueError("Invalid option for 'band'")
 
         # Load the PSF frame
-        psf = Frame.from_file(psf_path)
+        psf = ConvolutionKernel.from_file(psf_path, fwhm=fwhm)
 
         # Set the FWHM of the PSF
-        if psf.fwhm is None: psf.fwhm = fwhm
+        #if psf.fwhm is None: psf.fwhm = fwhm
 
         # Return the PSF frame
         return psf
@@ -586,10 +538,10 @@ class HerschelKernels(object):
         else: raise ValueError("Invalid option for 'band'")
 
         # Load the PSF frame
-        psf = Frame.from_file(psf_path)
+        psf = ConvolutionKernel.from_file(psf_path, fwhm=fwhm)
 
         # Set the FWHM of the PSF
-        if psf.fwhm is None: psf.fwhm = fwhm
+        #if psf.fwhm is None: psf.fwhm = fwhm
 
         # Return the PSF frame
         return psf

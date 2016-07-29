@@ -24,7 +24,7 @@ from ..core.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar
 from ...core.tools import tables
 from ...core.plot.sed import SEDPlotter
-from ...magic.misc.kernels import AnianoKernels
+from ...magic.misc.kernels import AnianoKernels, HerschelKernels
 from ...magic.core.kernel import ConvolutionKernel
 
 # -----------------------------------------------------------------
@@ -206,7 +206,7 @@ class PhotoMeter(PhotometryComponent):
             conversion_factor *= 1e6
 
             # Conversion from Jy / sr to Jy / pixel
-            pixelscale = self.images[name].average_pixelscale
+            pixelscale = frame.average_pixelscale
             pixel_factor = (1.0 / pixelscale ** 2).to("pix2/sr").value
             conversion_factor /= pixel_factor
 
@@ -244,7 +244,8 @@ class PhotoMeter(PhotometryComponent):
         log.info("Performing the photometry calculation ...")
 
         # The object that keeps track of PSFs and convolution kernels
-        kernels = AnianoKernels()
+        aniano = AnianoKernels()
+        herschel = HerschelKernels()
 
         # Loop over all the images
         for name in self.images:
@@ -259,7 +260,7 @@ class PhotoMeter(PhotometryComponent):
             flux = self.images[name].sum()
 
             # Apply correction for EEF of aperture
-            if "Pacs" in name or "SPIRE" in name: flux *= self.get_aperture_correction_factor(self.images[name], kernels)
+            if "Pacs" in name or "SPIRE" in name: flux *= self.get_aperture_correction_factor(self.images[name], aniano, herschel)
 
             # Calculate the total flux error in Jansky
             flux_error = self.errors[name].sum()
@@ -449,22 +450,26 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def get_aperture_correction_factor(self, frame, aniano):
+    def get_aperture_correction_factor(self, frame, aniano, herschel):
 
         """
         This function ...
         :param frame:
         :param aniano:
+        :param herschel
         :return:
         """
 
         filter_name = str(frame.filter)
 
+        # Inform the user
+        log.info("Calculating the aperture correction factor for " + filter_name + " ...")
+
         input_dict = dict()
 
         # Set cutout
         input_dict["cutout"] = frame.data
-        input_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec").value
+        input_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec/pix").value
 
 
         truncation_ellipse_sky = self.truncation_ellipse
@@ -476,6 +481,7 @@ class PhotoMeter(PhotometryComponent):
 
             ## USE psf.data !!
             psf_path = aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
+            psf = ConvolutionKernel.from_file(psf_path)
 
             annulus_inner = self.sky_annulus_inner("Pacs blue")
             annulus_outer = self.sky_annulus_outer("Pacs blue")
@@ -484,6 +490,7 @@ class PhotoMeter(PhotometryComponent):
         elif filter_name == "Pacs green":
 
             psf_path = aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
+            psf = ConvolutionKernel.from_file(psf_path)
 
             annulus_inner = self.sky_annulus_inner("Pacs green")
             annulus_outer = self.sky_annulus_outer("Pacs green")
@@ -492,6 +499,7 @@ class PhotoMeter(PhotometryComponent):
         elif filter_name == "Pacs red":
 
             psf_path = aniano.get_psf_path(self.reference_filter)  # reference filter = pacs red filter
+            psf = ConvolutionKernel.from_file(psf_path)
 
             annulus_inner = self.sky_annulus_inner("Pacs red")
             annulus_outer = self.sky_annulus_outer("Pacs red")
@@ -499,7 +507,7 @@ class PhotoMeter(PhotometryComponent):
         # SPIRE PSW
         elif filter_name == "SPIRE PSW":
 
-            psf_path = aniano.get_psf_path(frame.filter)
+            psf = herschel.get_spire_psf("PSW")
 
             annulus_inner = self.sky_annulus_inner(filter_name)
             annulus_outer = self.sky_annulus_outer(filter_name)
@@ -507,7 +515,7 @@ class PhotoMeter(PhotometryComponent):
         # SPIRE PMW
         elif filter_name == "SPIRE PMW":
 
-            psf_path = aniano.get_psf_path(frame.filter)
+            psf = herschel.get_spire_psf("PMW")
 
             annulus_inner = self.sky_annulus_inner(filter_name)
             annulus_outer = self.sky_annulus_outer(filter_name)
@@ -515,7 +523,7 @@ class PhotoMeter(PhotometryComponent):
         # SPIRE PLW
         elif filter_name == "SPIRE PLW":
 
-            psf_path = aniano.get_psf_path(frame.filter)
+            psf = herschel.get_spire_psf("PLW")
 
             annulus_inner = self.sky_annulus_inner(filter_name)
             annulus_outer = self.sky_annulus_outer(filter_name)
@@ -523,34 +531,66 @@ class PhotoMeter(PhotometryComponent):
         # INVALID FILTER
         else: raise ValueError("Invalid filter: '" + filter_name + "'")
 
+        # Debugging
+        log.debug("Preparing the PSF kernel ...")
 
-        # Load convolution kernel
-        psf = ConvolutionKernel.from_file(psf_path)
-        psf.prepare_for(frame)
+        # PREPARE THE CONVOLUTION KERNEL
+        #psf.prepare_for(frame)
+
+        psf.prepare_chris(frame.pixelscale) ### PREPARE USING CHRIS'S METHOD (WHICH ALSO MAKES SURE THE KERNEL HAS UNEVEN NPIXELS)
+
+        from pts.magic.tools import plotting
+        plotting.plot_box(psf.data, title="prepared PSF kernel for " + filter_name)
 
         # SET INPUT DICT
 
         input_dict["psf"] = psf.data
 
-        annulus_inner_factor = annulus_inner.radius.x / truncation_ellipse_image.radius.x
-        annulus_outer_factor = annulus_outer.radius.x / truncation_ellipse_image.radius.x
+        #annulus_inner_factor_x = annulus_inner.radius.x / truncation_ellipse_image.radius.x
+        #annulus_outer_factor_x = annulus_outer.radius.x / truncation_ellipse_image.radius.x
 
-        assert annulus_inner_factor == annulus_inner.radius.y / truncation_ellipse_image.radius.y
-        assert annulus_outer_factor == annulus_outer.radius.y / truncation_ellipse_image.radius.y
+        #annulus_inner_factor_y = annulus_inner.radius.y / truncation_ellipse_image.radius.y
+        #annulus_outer_factor_y = annulus_outer.radius.y / truncation_ellipse_image.radius.y
 
+        #if annulus_inner_factor_x != annulus_inner_factor_y: print("DIFFERENCE INNER", annulus_inner_factor_x, annulus_inner_factor_y)
+        #if annulus_outer_factor_x != annulus_outer_factor_y: print("DIFFERENCE OUTER", annulus_outer_factor_x, annulus_outer_factor_y)
 
         input_dict["semimaj_pix"] = truncation_ellipse_image.radius.x
         input_dict["axial_ratio"] = truncation_ellipse_image.radius.x / truncation_ellipse_image.radius.y
         input_dict["angle"] = truncation_ellipse_image.angle.to("deg").value
-        input_dict["centre_i"] = truncation_ellipse_image.center.x
-        input_dict["centre_j"] = truncation_ellipse_image.center.y
+        input_dict["centre_i"] = truncation_ellipse_image.center.y
+        input_dict["centre_j"] = truncation_ellipse_image.center.x
 
-        input_dict["annulus_inner"] = annulus_inner_factor
-        input_dict["annulus_outer"] = annulus_outer_factor
+        # ANNULUS PROPERTIES
 
+        input_dict["semimaj_pix_annulus_outer"] = annulus_outer.radius.x
+        input_dict["semimaj_pix_annulus_inner"] = annulus_inner.radius.x
+
+        axratio_annulus_outer = annulus_outer.radius.x / annulus_outer.radius.y
+        axratio_annulus_inner = annulus_inner.radius.x / annulus_inner.radius.y
+
+        if axratio_annulus_outer != axratio_annulus_inner: print("DIFFERENCE AX RATIO", axratio_annulus_outer, axratio_annulus_inner)
+
+        input_dict["axial_ratio_annulus"] = axratio_annulus_outer
+
+        annulus_angle_outer = annulus_outer.angle.to("deg").value
+        annulus_angle_inner = annulus_inner.angle.to("deg").value
+
+        if annulus_angle_outer != annulus_angle_inner: print("DIFFERENCE ANNULUS ANGLE", annulus_angle_outer, annulus_angle_inner)
+
+        input_dict["annulus_angle"] = annulus_angle_inner
+
+        input_dict["annulus_centre_i"] = annulus_outer.center.y
+        input_dict["annulus_centre_j"] = annulus_outer.center.x
 
         # Calculate the aperture correction factor
-        return calculate_aperture_correction(input_dict)
+        factor = calculate_aperture_correction(input_dict)
+
+        # Debugging
+        log.debug("The aperture correction factor for " + filter_name + " is " + repr(factor))
+
+        # Return the correction factor
+        return factor
 
 # -----------------------------------------------------------------
 
@@ -647,7 +687,7 @@ def calculate_aperture_correction(input_dict):
     ##
 
     # Produce guess values
-    initial_sersic_amplitide = cutout[ input_dict['centre_i'], input_dict['centre_j'] ]
+    initial_sersic_amplitide = cutout[int(round(input_dict['centre_i'])), int(round(input_dict['centre_j']))]
     initial_sersic_r_eff = input_dict['semimaj_pix'] / 10.0
     initial_sersic_n = 1.0
     initial_sersic_x_0 = input_dict['centre_j']
@@ -714,26 +754,35 @@ def calculate_aperture_correction(input_dict):
 
 
     # Determine annulus properties before proceeding with photometry
-    bg_inner_semimaj_pix = input_dict['semimaj_pix'] * input_dict['annulus_inner']
-    bg_width = (input_dict['semimaj_pix'] * input_dict['annulus_outer']) - bg_inner_semimaj_pix
+    # bg_inner_semimaj_pix = input_dict['semimaj_pix'] * input_dict['annulus_inner'] # number of pixels of semimajor axis of inner annulus ellipse
+    # bg_width = (input_dict['semimaj_pix'] * input_dict['annulus_outer']) - bg_inner_semimaj_pix # number of pixels of difference between outer major axis and minor major axis
 
-    # Evaluate pixels in source aperture and background annulus  unconvoled sersic map
+    bg_inner_semimaj_pix = input_dict["semimaj_pix_annulus_inner"]
+    bg_width = input_dict["semimaj_pix_annulus_outer"] - bg_inner_semimaj_pix
+    axial_ratio_annulus = input_dict["axial_ratio_annulus"]
+    angle_annulus = input_dict["annulus_angle"]
+    centre_i_annulus = input_dict["annulus_centre_i"]
+    centre_j_annulus = input_dict["annulus_centre_j"]
+
+    # Evaluate pixels in source aperture and background annulus in UNCONVOLVED sersic map
     sersic_ap_calc = ChrisFuncs.Photom.EllipseSum(sersic_map, input_dict['semimaj_pix'], input_dict['axial_ratio'], input_dict['angle'], input_dict['centre_i'], input_dict['centre_j'])
-    sersic_bg_calc = ChrisFuncs.Photom.AnnulusSum(sersic_map, bg_inner_semimaj_pix, bg_width, input_dict['axial_ratio'], input_dict['angle'], input_dict['centre_i'], input_dict['centre_j'])
+    sersic_bg_calc = ChrisFuncs.Photom.AnnulusSum(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
 
-    # Background-subtract and measure unconvoled sersic source flux
+    # Background-subtract and measure UNCONVOLVED sersic source flux
     sersic_bg_clip = ChrisFuncs.SigmaClip(sersic_bg_calc[2], median=False, sigma_thresh=3.0)
     sersic_bg_avg = sersic_bg_clip[1]
-    sersic_ap_sum = sersic_ap_calc[0] - (sersic_ap_calc[1] * sersic_bg_avg)
+    sersic_ap_sum = sersic_ap_calc[0] - (sersic_ap_calc[1] * sersic_bg_avg) # sersic_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
 
-    # Evaluate pixels in source aperture and background annulus in convolved sersic map
+
+
+    # Evaluate pixels in source aperture and background annulus in CONVOLVED sersic map
     conv_ap_calc = ChrisFuncs.Photom.EllipseSum(conv_map, input_dict['semimaj_pix'], input_dict['axial_ratio'], input_dict['angle'], input_dict['centre_i'], input_dict['centre_j'])
-    conv_bg_calc = ChrisFuncs.Photom.AnnulusSum(conv_map, bg_inner_semimaj_pix, bg_width, input_dict['axial_ratio'], input_dict['angle'], input_dict['centre_i'], input_dict['centre_j'])
+    conv_bg_calc = ChrisFuncs.Photom.AnnulusSum(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
 
-    # Background-subtract and measure convolved sersic source flux
+    # Background-subtract and measure CONVOLVED sersic source flux
     conv_bg_clip = ChrisFuncs.SigmaClip(conv_bg_calc[2], median=False, sigma_thresh=3.0)
     conv_bg_avg = conv_bg_clip[1]
-    conv_ap_sum = conv_ap_calc[0] - (conv_ap_calc[1] * conv_bg_avg)
+    conv_ap_sum = conv_ap_calc[0] - (conv_ap_calc[1] * conv_bg_avg)  # conv_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
 
 
 

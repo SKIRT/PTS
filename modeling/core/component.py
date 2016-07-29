@@ -361,11 +361,12 @@ class ModelingComponent(Configurable):
         region = self.sky_annulus_region(image_name)
 
         # Return the ellipse with the largest radius
-        return max(region, key=lambda ellipse: ellipse.radius)
+        #return max(region, key=lambda ellipse: ellipse.radius)
+
+        return region[0].base
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
     def sky_annulus_inner(self, image_name):
 
         """
@@ -377,7 +378,9 @@ class ModelingComponent(Configurable):
         region = self.sky_annulus_region(image_name)
 
         # Return the ellipse with the smallest radius
-        return min(region, key=lambda ellipse: ellipse.radius)
+        #return min(region, key=lambda ellipse: ellipse.radius)
+
+        return region[0].exclude
 
     # -----------------------------------------------------------------
 
