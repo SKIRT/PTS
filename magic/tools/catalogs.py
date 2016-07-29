@@ -764,7 +764,7 @@ def galaxies_in_box(center, ra_span, dec_span):
     # Thus, it seems that the query goes wrong with specific values of the width (and/or height), in which
     # case changing the value very slightly resolves the problem...
     # I am baffled by this and I see no reasonable explanation.
-    if len(result) == 0:
+    if result is None or len(result) == 0:
 
         ra_span *= 1.0 + 1e-5
         result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=["VII/237"])
