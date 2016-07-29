@@ -87,6 +87,12 @@ class ModelingComponent(Configurable):
         self.free_parameters_path = None
         self.fitting_filters_path = None
 
+        # The path to the maps
+        self.old_stellar_map_path = None
+        self.young_stellar_map_path = None
+        self.ionizing_stellar_map_path = None
+        self.dust_map_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -143,6 +149,12 @@ class ModelingComponent(Configurable):
         # Set the path to the free parameter file and the fitting filters file
         self.free_parameters_path = fs.join(self.fit_path, "free_parameters.txt")
         self.fitting_filters_path = fs.join(self.fit_path, "fitting_filters.txt")
+
+        # Set the paths to the input maps
+        self.old_stellar_map_path = fs.join(self.maps_path, "old_stars.fits")
+        self.young_stellar_map_path = fs.join(self.maps_path, "young_stars.fits")
+        self.ionizing_stellar_map_path = fs.join(self.maps_path, "ionizing_stars.fits")
+        self.dust_map_path = fs.join(self.maps_path, "dust.fits")
 
     # -----------------------------------------------------------------
 
@@ -341,6 +353,58 @@ class ModelingComponent(Configurable):
 
         # Return the parameter map
         return parameters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_stars_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open and return the frame of the old stellar distribution
+        return Frame.from_file(self.old_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_stars_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open and return the frame of the young stellar distribution
+        return Frame.from_file(self.young_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_stars_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open and return the frame of the ionizing stellar distribution
+        return Frame.from_file(self.ionizing_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open and return the frame of the dust distribution
+        return Frame.from_file(self.dust_map_path)
 
 # -----------------------------------------------------------------
 

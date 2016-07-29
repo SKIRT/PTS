@@ -28,4 +28,6 @@ definition.add_flag("make_emission", "make dust map based on emission", True)
 definition.add_flag("make_buat", "make dust map based on Buat", True)
 definition.add_flag("make_cortese", "make dust map based on Cortese", True)
 
+definition.add_optional("best_method", "string", "the method of which to use the resul as the final dust map", "cortese")
+
 # -----------------------------------------------------------------

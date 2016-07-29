@@ -205,7 +205,7 @@ class DustMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Writing the dust maps ...")
+        log.info("Writing the dust maps (with different methods) ...")
 
         # Loop over the maps
         for label in self.maps:
@@ -215,5 +215,20 @@ class DustMapMaker(MapsComponent):
 
             # Save the dust map
             self.maps[label].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the final dust map ...")
+
+        # Write the final dust map
+        self.maps[self.config.best_method].save(self.maps_dust_path)
 
 # -----------------------------------------------------------------

@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ..component import MapsComponent
+from ....core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,13 @@ class OldStellarMapMaker(MapsComponent):
 
         # -- Attributes --
 
+        # The IRAC I1 frame in Jy
+        self.i1_jy = None
+
+        # The IRAC I1 frame with the bulge subtracted
+        self.i1_jy_minus_bulge = None
+
+        # The map of the old stars
         self.map = None
 
     # -----------------------------------------------------------------
@@ -50,10 +58,17 @@ class OldStellarMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
-        # ...
+        # 2. Load the necessary frames
+        self.load_frames()
 
-        #
+        # 3. Make the map of old stars
         self.make_map()
+
+        # 4. Normalize the map
+        self.normalize_map()
+
+        # 5. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -69,12 +84,47 @@ class OldStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def load_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the necessary data ...")
+
+        # Load the IRAC I1 frame and convert to Jansky
+
+        frame = self.dataset.get_frame("IRAC I1")
+
+        # Convert the 3.6 micron image from MJy/sr to Jy/sr
+        conversion_factor = 1.0
+        conversion_factor *= 1e6
+
+        # Convert the 3.6 micron image from Jy / sr to Jy / pixel
+        pixelscale = frame.average_pixelscale
+        pixel_factor = (1.0 / pixelscale ** 2).to("pix2/sr").value
+        conversion_factor /= pixel_factor
+
+        # DO THE CONVERSION
+        frame *= conversion_factor
+        frame.unit = "Jy"
+
+        # Set the frame
+        self.i1_jy = frame
+
+    # -----------------------------------------------------------------
+
     def make_map(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Making the map of old stars ...")
 
         # Old stars = IRAC3.6 - bulge
         # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
@@ -91,38 +141,92 @@ class OldStellarMapMaker(MapsComponent):
         # Create the old stars map
         #old_stars = self.images["3.6mu"].frames.primary - factor * self.bulge
 
-        # Convert the 3.6 micron image from MJy/sr to Jy/sr
-        conversion_factor = 1.0
-        conversion_factor *= 1e6
+        assert str(self.bulge_frame.unit) == "Jy"
 
-        # Convert the 3.6 micron image from Jy / sr to Jy / pixel
-        pixelscale = self.images["3.6mu"].average_pixelscale
-        pixel_factor = (1.0/pixelscale**2).to("pix2/sr").value
-        conversion_factor /= pixel_factor
-        self.images["3.6mu"] *= conversion_factor
-        self.images["3.6mu"].unit = "Jy"
+        # Subtract bulge from the IRAC I1 image
+        self.i1_jy_minus_bulge = self.i1_jy - self.bulge_frame
 
-        i1_jy_path = fs.join(self.maps_intermediate_path, "i1_jy.fits")
-        self.images["3.6mu"].save(i1_jy_path)
-
-        # Subtract bulge
-        #old_stars = self.images["3.6mu"].frames.primary - (self.bulge * 1.5)
-        old_stars = self.images["3.6mu"].frames.primary - self.bulge
-
-        bulge_residual = self.images["3.6mu"].frames.primary - self.disk
-        bulge_residual_path = fs.join(self.maps_intermediate_path, "bulge_residual.fits")
-        bulge_residual.save(bulge_residual_path)
+        #bulge_residual = self.images["3.6mu"].frames.primary - self.disk
+        #bulge_residual_path = fs.join(self.maps_intermediate_path, "bulge_residual.fits")
+        #bulge_residual.save(bulge_residual_path)
 
         # Set the old stars map zero for pixels with low signal-to-noise in the 3.6 micron image
         #old_stars[self.irac < self.config.old_stars.irac_snr_level*self.irac_errors] = 0.0
 
+        # Create copy
+        self.map = self.i1_jy_minus_bulge.copy()
+
         # Make sure all pixel values are larger than or equal to zero
-        old_stars[old_stars < 0.0] = 0.0
+        self.map[self.map < 0.0] = 0.0
 
         # Mask pixels outside of the low signal-to-noise contour
         #old_stars[self.mask] = 0.0
 
-        # Set the old stars map
-        self.map = old_stars
+    # -----------------------------------------------------------------
+
+    def normalize_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Normalizing the map of old stars ...")
+
+        # Normalize the old stellar map
+        self.map.normalize()
+        self.map.unit = None
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the IRAC I1 image with the bulge subtracted
+        self.write_i1_minus_bulge()
+
+        # Write the map of old stars
+        self.write_map()
+
+    # -----------------------------------------------------------------
+
+    def write_i1_minus_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the IRAC I1 image with the bulge subtracted ...")
+
+        # Determine path
+        path = fs.join(self.maps_old_path, "IRAC I1 min bulge.fits")
+
+        # Write
+        self.i1_jy_minus_bulge.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map of old stars ...")
+
+        # Write
+        self.map.save(self.old_stellar_map_path)
 
 # -----------------------------------------------------------------

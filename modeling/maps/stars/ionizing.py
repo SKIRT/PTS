@@ -23,6 +23,8 @@ from astropy.units import Unit
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....core.tools import filesystem as fs
+from ....core.basics.distribution import Distribution
+from ....core.plot.distribution import DistributionPlotter
 
 # -----------------------------------------------------------------
 
@@ -57,7 +59,7 @@ class IonizingStellarMapMaker(MapsComponent):
         # The Halpha map IN SOLAR UNITS
         self.halpha = None
 
-        # The disk image IN SOLAR UNITS
+        # The NORMALIZED (to unity) DISK IMAGE
         self.disk = None
 
         # The maps of the corrected 24 micron emission
@@ -69,6 +71,7 @@ class IonizingStellarMapMaker(MapsComponent):
         # The path to the maps/ionizing/24mu directory
         self.maps_ionizing_24mu_path = None
 
+        # The path to the maps/ionizing/solar directory
         self.maps_ionizing_solar_path = None
 
     # -----------------------------------------------------------------
@@ -235,8 +238,6 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the map of ionizing stars ...")
 
-        print([self.config.best_factor])
-
         # Loop over the different colour options
         for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
 
@@ -345,6 +346,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # Write the maps
         self.write_24mu_maps()
 
+        # Write the terms in the equation to make the map, normalized
+        self.write_terms()
+
         # Write the ionizing stars map
         self.write_map()
 
@@ -391,6 +395,46 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def write_terms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # BOTH TERMS ARE JUST SUMMMED WITH EQUAL WEIGHT (AFTER 0.031 FACTOR), SO IT MAKES SENSE TO COMPARE THE HISTOGRAMS
+
+        # Calculate the terms
+
+        # H alpha
+        term_halpha = self.halpha
+
+        # 24 micron
+        term_24mu = 0.031 * self.corrected_24mu_maps[self.config.best_factor]
+
+        # Determine paths
+        halpha_path = fs.join(self.maps_ionizing_path, "halpha_term.fits")
+        mips_24_path = fs.join(self.maps_ionizing_path, "MIPS24_term.fits")
+
+        # Save the terms
+        term_halpha.save(halpha_path)
+        term_24mu.save(mips_24_path)
+
+        # Distributions
+        halpha_distribution = Distribution.from_values(term_halpha.data.flatten())
+        mips24_distribution = Distribution.from_values(term_24mu.data.flatten())
+
+        plotter = DistributionPlotter()
+
+        plotter.add_distribution(halpha_distribution, "H alpha contribution")
+        plotter.add_distribution(mips24_distribution, "corrected MIPS 24 contribution")
+
+        # Run the plotter
+        path = fs.join(self.maps_ionizing_path, "histograms.pdf")
+        plotter.run(path)
+
+    # -----------------------------------------------------------------
+
     def write_map(self):
 
         """
@@ -401,10 +445,7 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Write the ionizing stars map ...")
 
-        # Determine path
-        path = fs.join(self.maps_ionizing_path, "ionizing.fits")
-
         # Write
-        self.map.save(path)
+        self.map.save(self.ionizing_stellar_map_path)
 
 # -----------------------------------------------------------------

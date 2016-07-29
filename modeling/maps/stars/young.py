@@ -41,6 +41,9 @@ class YoungStellarMapMaker(MapsComponent):
         self.fuv = None
         self.fuv_errors = None
 
+        # The NORMALIZED (to unity) DISK IMAGE
+        self.disk = None
+
         # The maps of the corrected FUV emission
         self.corrected_fuv_maps = dict()
 
@@ -69,7 +72,7 @@ class YoungStellarMapMaker(MapsComponent):
         self.make_map()
 
         # 4. Normalize the map
-        self.normalize()
+        self.normalize_map()
 
         # 5. Writing
         self.write()
@@ -101,9 +104,43 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the necessary data ...")
 
+        # Load the GALEX FUV image and error map
+        self.load_fuv()
+
+        # Load the disk image and normalize to unity
+        self.load_disk()
+
+    # -----------------------------------------------------------------
+
+    def load_fuv(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get FUV frame and error map
         self.fuv = self.dataset.get_frame("GALEX FUV") # in original MJy/sr units
         self.fuv_errors = self.dataset.get_errors("GALEX FUV") # in original MJy/sr units
+
+    # -----------------------------------------------------------------
+
+    def load_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the disk image ...")
+
+        # Get disk frame
+        self.disk = self.disk_frame
+
+        # Normalize the disk image
+        self.disk.normalize()
+        self.disk.unit = None
 
     # -----------------------------------------------------------------
 
@@ -152,10 +189,10 @@ class YoungStellarMapMaker(MapsComponent):
 
         # typisch 20% en 35% respectievelijk
 
-        factor = factor * flux_fuv / self.disk_frame.sum()
+        total_contribution = factor * flux_fuv
 
         # Subtract the disk contribution to the FUV image
-        new_fuv = self.fuv - factor * self.disk_frame
+        new_fuv = self.fuv - total_contribution * self.disk_frame
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
         new_fuv[new_fuv < 0.0] = 0.0
@@ -233,10 +270,7 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing the map of young stars ...")
 
-        # Determine the path
-        path = fs.join(self.maps_young_path, "young.fits")
-
         # Write
-        self.map.save(path)
+        self.map.save(self.young_stellar_map_path)
 
 # -----------------------------------------------------------------
