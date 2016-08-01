@@ -736,13 +736,13 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Writing regions file with disk ellipse ...")
 
-        minor = (1.0 - self.parameters.ellipticity) * self.parameters.major_arcsec
+        minor = (1.0 - self.galaxy_properties.ellipticity) * self.galaxy_properties.major_arcsec
 
         # Ellipse radius
-        radius = Extent(self.parameters.major_arcsec, minor)
+        radius = Extent(self.galaxy_properties.major_arcsec, minor)
 
         # Create sky ellipse
-        sky_ellipse = SkyEllipse(self.parameters.center, radius, self.parameters.position_angle)
+        sky_ellipse = SkyEllipse(self.galaxy_properties.center, radius, self.disk_pa)
 
         # Create region
         region = SkyRegion()

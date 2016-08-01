@@ -311,8 +311,8 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        from ..tools import plotting
-        plotting.plot_box(self._data)
+        #from ..tools import plotting
+        #plotting.plot_box(self._data)
         return centroid_2dg(self._data)
 
     # -----------------------------------------------------------------
