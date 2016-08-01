@@ -139,7 +139,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         data_names = ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
 
         # Get the galaxy distance
-        distance = self.galaxy_parameters.distance
+        distance = self.galaxy_properties.distance
 
         # Load all the frames and error maps
         for name in data_names:
@@ -213,7 +213,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         conversion_factor *= solar_luminosity.to("W").value
 
         # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-        distance = self.galaxy_parameters.distance
+        distance = self.galaxy_properties.distance
         conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
 
         # FUV in W/M2
@@ -255,7 +255,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         conversion_factor *= solar_luminosity.to("W").value
 
         # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-        distance = self.galaxy_parameters.distance
+        distance = self.galaxy_properties.distance
         conversion_factor /= (4. * np.pi * distance**2).to("m2").value
 
         ## CONVERT AND SET NEW UNIT

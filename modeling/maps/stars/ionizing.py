@@ -155,7 +155,7 @@ class IonizingStellarMapMaker(MapsComponent):
         ## CONVERT TO LSUN
 
         # Get the galaxy distance
-        distance = self.galaxy_parameters.distance
+        distance = self.galaxy_properties.distance
 
         # Get pixelscale and wavelength
         pixelscale = self.mips24.average_pixelscale

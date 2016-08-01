@@ -5,60 +5,46 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.decomposition.component Contains the DecompositionComponent class.
+## \package pts.modeling.decomposition TO DO
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.modeling.models import Sersic2D
+
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
-from ...core.tools import filesystem as fs
+from .component import DecompositionComponent
 
 # -----------------------------------------------------------------
 
-class DecompositionComponent(ModelingComponent):
-    
+class FittingDecompositionParameters(DecompositionComponent):
+
     """
-    This class...
+    This class ...
     """
 
     def __init__(self, config=None):
 
         """
         The constructor ...
-        :param config:
-        :return:
         """
 
         # Call the constructor of the base class
-        super(DecompositionComponent, self).__init__(config)
-
-        # -- Attributes --
-
-        # The path to the components/parameters directory
-        self.components_parameters_path = None
-
-        # The path to the components/images directory
-        self.components_images_path = None
+        super(FittingDecompositionParameters, self).__init__(config)
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def run(self):
 
         """
         This function ...
         :return:
         """
 
-        # Call the setup function of the base class
-        super(DecompositionComponent, self).setup()
-
-        # Set ...
-        self.components_parameters_path = fs.create_directory_in(self.components_path, "parameters")
-
-        # Set ...
-        self.components_images_path = fs.create_directory_in(self.components_path, "images")
+        sersic_model = Sersic2D(amplitude=sersic_amplitide, r_eff=sersic_r_eff, n=sersic_n, x_0=sersic_x_0, y_0=sersic_y_0, ellip=sersic_ellip, theta=sersic_theta)
+        sersic_map = sersic_model(sersic_x, sersic_y)
 
 # -----------------------------------------------------------------

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.data.fetching Contains the DataFetcher class.
+## \package pts.modeling.data.images Contains the ImageFetcher class.
 
 # -----------------------------------------------------------------
 
@@ -16,13 +16,11 @@ from __future__ import absolute_import, division, print_function
 from .component import DataComponent
 from ...dustpedia.core.database import DustPediaDatabase, get_account
 from ...core.tools.logging import log
-from ...magic.tools import catalogs
-from ...core.tools import tables
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class DataFetcher(DataComponent):
+class ImageFetcher(DataComponent):
     
     """
     This class...
@@ -37,44 +35,15 @@ class DataFetcher(DataComponent):
         """
 
         # Call the constructor of the base class
-        super(DataFetcher, self).__init__(config)
+        super(ImageFetcher, self).__init__(config)
 
         # -- Attributes --
-
-        # The NGC id of the galaxy
-        self.ngc_id = None
 
         # The DustPedia database
         self.database = DustPediaDatabase()
 
-        # The galaxy info
-        self.info = None
-
         # The images
         self.images = []
-
-        # The SED
-        self.sed = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new DataFetcher instance
-        fetcher = cls()
-
-        # Set the modeling path
-        fetcher.config.path = arguments.path
-
-        # Return the data fetcher
-        return fetcher
 
     # -----------------------------------------------------------------
 
@@ -88,16 +57,10 @@ class DataFetcher(DataComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Get the galaxy info
-        self.fetch_galaxy_info()
-
         # 2. Fetch the images
         self.fetch_images()
 
-        # 3. Fetch the SED
-        self.fetch_sed()
-
-        # 4. Writing
+        # 3. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -110,34 +73,16 @@ class DataFetcher(DataComponent):
         """
 
         # Call the setup function of the base class
-        super(DataFetcher, self).setup()
+        super(ImageFetcher, self).setup()
 
+        # Get username and password for the DustPedia database
         if self.config.database.username is not None:
             username = self.config.database.username
             password = self.config.database.password
-        else:
-            username, password = get_account()
+        else: username, password = get_account()
 
         # Login to the DustPedia database
         self.database.login(username, password)
-
-        # Determine the NGC id of the galaxy
-        self.ngc_id = catalogs.get_ngc_name(self.galaxy_name, delimiter="")
-
-    # -----------------------------------------------------------------
-
-    def fetch_galaxy_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Fetching galaxy info ...")
-
-        # Get the info
-        self.info = self.database.get_galaxy_info(self.ngc_id)
 
     # -----------------------------------------------------------------
 
@@ -152,7 +97,7 @@ class DataFetcher(DataComponent):
         log.info("Fetching the images ...")
 
         # Get the image names
-        image_names = self.database.get_image_names(self.ngc_id)
+        image_names = self.database.get_image_names(self.ngc_id_nospaces)
 
         # Download the images
         for image_name in image_names:
@@ -161,22 +106,7 @@ class DataFetcher(DataComponent):
             path = fs.join(self.data_path, image_name)
 
             # Download the image
-            self.database.download_image(self.ngc_id, image_name, path)
-
-    # -----------------------------------------------------------------
-
-    def fetch_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Fetching the SED ...")
-
-        # Get the SED
-        self.sed = self.database.get_sed(self.ngc_id)
+            self.database.download_image(self.ngc_id_nospaces, image_name, path)
 
     # -----------------------------------------------------------------
 
@@ -189,38 +119,5 @@ class DataFetcher(DataComponent):
 
         # Inform the user
         log.info("Writing ...")
-
-        # Write the galaxy info
-        self.write_info()
-
-        # Write the SED
-        self.write_sed()
-
-    # -----------------------------------------------------------------
-
-    def write_info(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Infom the user
-        log.info("Writing the galaxy info ...")
-
-        # Write the galaxy info table
-        tables.write(self.info, self.galaxy_info_path, format="ascii.ecsv")
-
-    # -----------------------------------------------------------------
-
-    def write_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the SED ...")
 
 # -----------------------------------------------------------------

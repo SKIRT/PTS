@@ -65,7 +65,7 @@ class SersicModel(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_galfit(cls, parameters, inclination, position_angle):
+    def from_2d(cls, parameters, inclination, position_angle):
 
         """
         :param parameters:
@@ -180,7 +180,7 @@ class ExponentialDiskModel(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_galfit(cls, parameters, inclination, position_angle):
+    def from_2d(cls, parameters, inclination, position_angle):
 
         """
         This function ...

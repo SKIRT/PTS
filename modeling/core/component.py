@@ -30,8 +30,11 @@ from ...magic.core.frame import Frame
 from ...magic.basics.skyregion import SkyRegion
 from ...core.tools import parsing
 from ...core.basics.map import Map
-from ...magic.basics.skygeometry import SkyCoordinate
 from ...magic.basics.region import Region
+from ..basics.models import load_model
+from ..basics.projection import GalaxyProjection
+from ..basics.properties import GalaxyProperties
+from ...magic.tools import catalogs
 
 # -----------------------------------------------------------------
 
@@ -93,6 +96,24 @@ class ModelingComponent(Configurable):
         self.young_stellar_map_path = None
         self.ionizing_stellar_map_path = None
         self.dust_map_path = None
+
+        # The path to the galaxy properties file
+        self.galaxy_properties_path = None
+
+        # The path to the components/models directory
+        self.components_models_path = None
+
+        # The path to the components/projections directory
+        self.components_projections_path = None
+
+        # The paths to the bulge and disk models
+        self.bulge_model_path = None
+        self.disk_model_path = None
+
+        # The paths to the different galaxy projections
+        self.earth_projection_path = None
+        self.edgeon_projection_path = None
+        self.faceon_projection_path = None
 
     # -----------------------------------------------------------------
 
@@ -156,6 +177,58 @@ class ModelingComponent(Configurable):
         self.young_stellar_map_path = fs.join(self.maps_path, "young_stars.fits")
         self.ionizing_stellar_map_path = fs.join(self.maps_path, "ionizing_stars.fits")
         self.dust_map_path = fs.join(self.maps_path, "dust.fits")
+
+        # Set the path to the galaxy properties file
+        self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
+
+        # Set the path to the components/models directory
+        self.components_models_path = fs.create_directory_in(self.components_path, "models")
+
+        # Set the path to the components/projections directory
+        self.components_projections_path = fs.create_directory_in(self.components_path, "projections")
+
+        # Set the paths to the bulge and disk models
+        self.bulge_model_path = fs.join(self.components_models_path, "bulge.mod")
+        self.disk_model_path = fs.join(self.components_models_path, "disk.mod")
+
+        # The paths to the different galaxy projections
+        self.earth_projection_path = fs.join(self.components_projections_path, "earth.proj")
+        self.edgeon_projection_path = fs.join(self.components_projections_path, "edgeon.proj")
+        self.faceon_projection_path = fs.join(self.components_projections_path, "faceon.proj")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ngc_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the galaxy properties file has not been created yet
+        if not fs.is_file(self.galaxy_properties_path):
+
+            # Determine the NGC id of the galaxy
+            ngc_id = catalogs.get_ngc_name(self.galaxy_name)
+
+            # Return the ID
+            return ngc_id
+
+        # If the galaxy properties file has been created
+        else: return self.galaxy_properties.ngc_id
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ngc_id_nospaces(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ngc_id.replace(" ", "")
 
     # -----------------------------------------------------------------
 
@@ -398,21 +471,92 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def galaxy_parameters(self):
+    def galaxy_properties(self):
 
         """
         This function ...
         :return:
         """
 
-        # Determine the path to the parameters file
-        path = fs.join(self.components_path, "parameters.dat")
+        # Load the properties
+        properties = GalaxyProperties.from_file(self.galaxy_properties_path)
 
-        # Load the galaxy parameters
-        parameters = load_galaxy_parameters(path)
+        # Return the property map
+        return properties
 
-        # Return the parameter map
-        return parameters
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def earth_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the projection
+        projection = GalaxyProjection.from_file(self.earth_projection_path)
+
+        # Return the projection
+        return projection
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the projection
+        projection = GalaxyProjection.from_file(self.edgeon_projection_path)
+
+        # Return the projection
+        return projection
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the projection
+        projection = GalaxyProjection.from_file(self.faceon_projection_path)
+
+        # Return the projection
+        return projection
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge_model(self):
+
+        """
+        This function returns the bulge model
+        :return:
+        """
+
+        # Load the model
+        return load_model(self.bulge_model_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_model(self):
+
+        """
+        This function returns the disk model
+        :return:
+        """
+
+        # Load the model
+        return load_model(self.disk_model_path)
 
     # -----------------------------------------------------------------
 
@@ -493,9 +637,6 @@ def load_galaxy_parameters(path):
     parameters.bulge = Map()
     parameters.disk = Map()
 
-    ra = None
-    dec = None
-
     # Read the parameter file
     with open(path, 'r') as parameter_file:
 
@@ -525,24 +666,7 @@ def load_galaxy_parameters(path):
                 elif splitted[1] == "Exponential scale length": parameters.disk.hr = parsing.quantity(splitted[2])
 
             # Other parameters
-            elif len(splitted) == 2:
-
-                if splitted[0] == "Name": parameters.galaxy_name = splitted[1]
-                elif splitted[0] == "Center RA": ra = parsing.quantity(splitted[1])
-                elif splitted[0] == "Center DEC": dec = parsing.quantity(splitted[1])
-                elif splitted[0] == "Major axis length": parameters.major = parsing.quantity(splitted[1])
-                elif splitted[0] == "Ellipticity": parameters.ellipticity = float(splitted[1])
-                elif splitted[0] == "Position angle": parameters.position_angle = parsing.angle(splitted[1])
-                elif splitted[0] == "Distance": parameters.distance = parsing.quantity(splitted[1])
-                elif splitted[0] == "Distance error": parameters.distance_error = parsing.quantity(splitted[1])
-                elif splitted[0] == "Inclination": parameters.inclination = parsing.angle(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density": parameters.i1_fluxdensity = parsing.quantity(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density error": parameters.i1_error = parsing.quantity(splitted[1])
-                elif splitted[0] == "IRAC 4.5um flux density": parameters.i2_fluxdensity = parsing.quantity(splitted[1])
-                elif splitted[0] == "IRAC 4.5um flux density error": parameters.i2_error = parsing.quantity(splitted[1])
-
-    # Add the center coordinate
-    parameters.center = SkyCoordinate(ra=ra, dec=dec)
+            else: raise RuntimeError("Invalid line: " + line)
 
     # Return the parameters
     return parameters
