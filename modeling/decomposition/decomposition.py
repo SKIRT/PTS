@@ -32,12 +32,12 @@ from ...magic.basics.skygeometry import SkyEllipse
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ..basics.models import SersicModel, ExponentialDiskModel
+from ..basics.models import SersicModel3D, ExponentialDiskModel3D
 from ..basics.instruments import SimpleInstrument
 from ...magic.misc.kernels import AnianoKernels
 from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
-from .s4g import S4GDecompositionParameters
-from .fitting import FittingDecompositionParameters
+from .s4g import S4GDecomposer
+from .fitting import FittingDecomposer
 
 # -----------------------------------------------------------------
 
@@ -63,11 +63,14 @@ class GalaxyDecomposer(DecompositionComponent):
         # Call the constructor of the base class
         super(GalaxyDecomposer, self).__init__(config)
 
-        # The decomposition parameters
-        self.parameters = None
-
         # The SKIRT execution context
         self.skirt = SkirtExec()
+
+        # The 2D components
+        self.components = None
+
+        # The position angle of the disk of the galaxy (used as the position angle of the galaxy)
+        self.disk_pa = None
 
         # The bulge and disk model
         self.bulge = None
@@ -84,11 +87,14 @@ class GalaxyDecomposer(DecompositionComponent):
         # The instruments
         self.instruments = dict()
 
-        # The reference coordinate system
-        self.reference_wcs = None
-
         # The PSF (of the reference image) for convolution with the simulated images
         self.psf = None
+
+        # Paths to ...
+        self.images_bulge2d_path = None
+        self.images_bulge_path = None
+        self.images_disk_path = None
+        self.images_model_path = None
 
     # -----------------------------------------------------------------
 
@@ -103,9 +109,9 @@ class GalaxyDecomposer(DecompositionComponent):
         self.setup()
 
         # 2. Get the decomposition parameters
-        self.get_parameters()
+        self.decompose()
 
-        # 3. Create the models
+        # 3. Create the 3D models (deproject the 2D models)
         self.create_models()
 
         # 4. Create the projection systems
@@ -136,17 +142,25 @@ class GalaxyDecomposer(DecompositionComponent):
         self.config.bulge_packages = 1e7
         self.config.disk_packages = 1e8
 
-        # Get the coordinate system describing the pixel grid of the prepared images
-        reference_path = fs.join(self.prep_path, self.reference_image, "result.fits")
-        self.reference_wcs = CoordinateSystem.from_file(reference_path)
-
         # Load the PSF
         aniano = AnianoKernels()
-        self.psf = aniano.get_psf("PACS_160")
+        self.psf = aniano.get_psf(self.reference_filter)
+
+        # Create the directory to simulate the bulge (2D method)
+        self.images_bulge2d_path = fs.create_directory_in(self.components_images_path, "bulge2D")
+
+        # Create the directory to simulate the bulge (3D)
+        self.images_bulge_path = fs.create_directory_in(self.components_images_path, "bulge")
+
+        # Create the directory to simulate the disk (3D)
+        self.images_disk_path = fs.create_directory_in(self.components_images_path, "disk")
+
+        # Create the directory to simulate the model (3D bulge + disk)
+        self.images_model_path = fs.create_directory_in(self.components_images_path, "model")
 
     # -----------------------------------------------------------------
 
-    def get_parameters(self):
+    def decompose(self):
 
         """
         This function ...
@@ -156,8 +170,47 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Getting the decomposition parameters ...")
 
-        #parameters = S4GDecompositionParameters()
+        self.decompose_s4g()
+
+        #self.decompose_fit()
+
+    # -----------------------------------------------------------------
+
+    def decompose_s4g(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create ...
+        decomposer = S4GDecomposer()
         #parameters = FittingDecompositionParameters()
+
+        # Run ...
+        decomposer.run()
+
+        # Add the models
+        self.components = decomposer.components
+
+        # Set the disk position angle
+        self.disk_pa = self.components["disk"].position_angle
+
+    # -----------------------------------------------------------------
+
+    def decompose_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        decomposer = FittingDecomposer()
+
+        decomposer.run()
+
+        # Add the components
+        #self.components = decomposer.components
 
     # -----------------------------------------------------------------
 
@@ -166,6 +219,9 @@ class GalaxyDecomposer(DecompositionComponent):
         """
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the 3D bulge and disk models ...")
 
         # Create the bulge model
         self.create_bulge_model()
@@ -185,7 +241,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the bulge model ...")
 
         # Create a Sersic model for the bulge
-        self.bulge = SersicModel.from_2d(self.parameters.bulge, self.parameters.inclination, self.parameters.disk.PA)
+        self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.galaxy_properties.inclination, self.disk_pa)
 
     # -----------------------------------------------------------------
 
@@ -199,7 +255,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the disk model ...")
 
         # Create an exponential disk model for the disk
-        self.disk = ExponentialDiskModel.from_2d(self.parameters.disk, self.parameters.inclination, self.parameters.disk.PA)
+        self.disk = ExponentialDiskModel3D.from_2d(self.components["disk"], self.galaxy_properties.inclination, self.disk_pa)
 
     # -----------------------------------------------------------------
 
@@ -215,14 +271,17 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Create the 'earth' projection system
         azimuth = 0.0
-        self.projections["earth"] = GalaxyProjection.from_wcs(self.reference_wcs, self.parameters.center, self.parameters.distance,
-                                                              self.parameters.inclination, azimuth, self.parameters.disk.PA)
+        self.projections["earth"] = GalaxyProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,
+                                                              self.galaxy_properties.distance,
+                                                              self.galaxy_properties.inclination, azimuth, self.disk_pa)
 
         # Create the face-on projection system
-        self.projections["faceon"] = FaceOnProjection.from_wcs(self.reference_wcs, self.parameters.center, self.parameters.distance)
+        self.projections["faceon"] = FaceOnProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,
+                                                               self.galaxy_properties.distance)
 
         # Create the edge-on projection system
-        self.projections["edgeon"] = EdgeOnProjection.from_wcs(self.reference_wcs, self.parameters.center, self.parameters.distance)
+        self.projections["edgeon"] = EdgeOnProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,
+                                                               self.galaxy_properties.distance)
 
     # -----------------------------------------------------------------
 
@@ -255,7 +314,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the images of the bulge, disk and bulge+disk model ...")
 
         # Simulate the stellar bulge without deprojection
-        self.simulate_bulge_simple()
+        self.simulate_bulge2d()
 
         # Simulate the stellar bulge
         self.simulate_bulge()
@@ -268,7 +327,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def simulate_bulge_simple(self):
+    def simulate_bulge2d(self):
 
         """
         :return:
@@ -286,20 +345,20 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Change the ski file parameters
         # component_id, index, radius, y_flattening=1, z_flattening=1
-        ski.set_stellar_component_sersic_geometry(0, self.parameters.bulge.n, self.parameters.bulge.Re, y_flattening=self.parameters.bulge.q)
+        ski.set_stellar_component_sersic_geometry(0, self.components["bulge"].index, self.components["bulge"].effective_radius, y_flattening=self.components["bulge"].axial_ratio)
 
         # Remove all existing instruments
         ski.remove_all_instruments()
 
         # Create the instrument
-        distance = self.parameters.distance
+        distance = self.galaxy_properties.distance
         inclination = 0.0
         azimuth = Angle(90., "deg")
         #position_angle = self.parameters.bulge.PA + Angle(90., "deg") # + 90° because we can only do y_flattening and not x_flattening
-        position_angle = self.parameters.bulge.PA
+        position_angle = self.components["bulge"].position_angle
         pixels_x = self.reference_wcs.xsize
         pixels_y = self.reference_wcs.ysize
-        pixel_center = self.parameters.center.to_pixel(self.reference_wcs)
+        pixel_center = self.galaxy_properties.center.to_pixel(self.reference_wcs)
         center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
         center_x = center.x * Unit("pix")
         center_y = center.y * Unit("pix")
@@ -314,21 +373,14 @@ class GalaxyDecomposer(DecompositionComponent):
         # Add the instrument
         ski.add_instrument("earth", fake)
 
-        # Create the directory to simulate the bulge
-        simple_bulge_directory = fs.join(self.components_path, "bulge_simple")
-        fs.create_directory(simple_bulge_directory)
-
         # Determine the path to the ski file
-        ski_path = fs.join(simple_bulge_directory, "bulge.ski")
+        ski_path = fs.join(self.images_bulge2d_path, "bulge.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
         # Determine the path to the simulation output directory
-        out_path = fs.join(simple_bulge_directory, "out")
-
-        # Create the output directory
-        fs.create_directory(out_path)
+        out_path = fs.create_directory_in(self.images_bulge2d_path, "out")
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -348,8 +400,7 @@ class GalaxyDecomposer(DecompositionComponent):
         bulge_image_path = fs.join(out_path, "bulge_earth_total.fits")
 
         # Check if the output contains the "bulge_earth_total.fits" file
-        if not fs.is_file(bulge_image_path):
-            raise RuntimeError("Something went wrong with the simple bulge simulation: output FITS file missing")
+        if not fs.is_file(bulge_image_path): raise RuntimeError("Something went wrong with the simple bulge simulation: output FITS file missing")
 
     # -----------------------------------------------------------------
 
@@ -380,16 +431,13 @@ class GalaxyDecomposer(DecompositionComponent):
         for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = fs.join(self.bulge_path, "bulge.ski")
+        ski_path = fs.join(self.images_bulge_path, "bulge.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
-        # Determine the path to the simulation output directory
-        out_path = fs.join(self.bulge_path, "out")
-
-        # Create the output directory
-        fs.create_directory(out_path)
+        # Determine the path to the simulation output directory and create it
+        out_path = fs.create_directory_in(self.images_bulge_path, "out")
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -422,7 +470,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.debug("Rescaling the bulge image to the bulge flux density at 3.6 micron ...")
 
         # Rescale to the 3.6um flux density
-        fluxdensity = self.parameters.bulge.fluxdensity
+        fluxdensity = self.components["bulge"].fluxdensity
         self.bulge_image *= fluxdensity.to("Jy").value / np.sum(self.bulge_image)
         self.bulge_image.unit = "Jy"
 
@@ -461,16 +509,13 @@ class GalaxyDecomposer(DecompositionComponent):
         for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = fs.join(self.disk_path, "disk.ski")
+        ski_path = fs.join(self.images_disk_path, "disk.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
-        # Determine the path to the simulation output directory
-        out_path = fs.join(self.disk_path, "out")
-
-        # Create the output directory
-        fs.create_directory(out_path)
+        # Determine the path to the simulation output directory and create it
+        out_path = fs.create_directory_in(self.images_disk_path, "out")
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -503,7 +548,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.debug("Rescaling the disk image to the disk flux density at 3.6 micron ...")
 
         # Rescale to the 3.6um flux density
-        fluxdensity = self.parameters.disk.fluxdensity
+        fluxdensity = self.components["disk"].fluxdensity
         self.disk_image *= fluxdensity.to("Jy").value / np.sum(self.disk_image)
         self.disk_image.unit = "Jy"
 
@@ -536,8 +581,8 @@ class GalaxyDecomposer(DecompositionComponent):
         ski.set_stellar_component_geometry(1, self.bulge)
 
         # Set the luminosities of the two components
-        ski.set_stellar_component_luminosities(0, [self.parameters.disk.f])
-        ski.set_stellar_component_luminosities(1, [self.parameters.bulge.f])
+        ski.set_stellar_component_luminosities(0, [self.components["disk"].rel_contribution])
+        ski.set_stellar_component_luminosities(1, [self.components["bulge"].rel_contribution])
 
         # Remove all existing instruments
         ski.remove_all_instruments()
@@ -546,16 +591,13 @@ class GalaxyDecomposer(DecompositionComponent):
         for name in self.instruments: ski.add_instrument(name, self.instruments[name])
 
         # Determine the path to the ski file
-        ski_path = fs.join(self.model_path, "model.ski")
+        ski_path = fs.join(self.images_model_path, "model.ski")
 
         # Save the ski file to the new path
         ski.saveto(ski_path)
 
-        # Determine the path to the simulation output directory
-        out_path = fs.join(self.model_path, "out")
-
-        # Create the output directory
-        fs.create_directory(out_path)
+        # Determine the path to the simulation output directory and create it
+        out_path = fs.create_directory_in(self.images_model_path, "out")
 
         # Create a SkirtArguments object
         arguments = SkirtArguments()
@@ -588,7 +630,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.debug("Rescaling the model image to the bulge+disk flux density at 3.6 micron ...")
 
         # Rescale to the 3.6um flux density
-        fluxdensity = self.parameters.bulge.fluxdensity + self.parameters.disk.fluxdensity # sum of bulge and disk component flux density
+        fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity # sum of bulge and disk component flux density
         self.model_image *= fluxdensity.to("Jy").value / np.sum(self.model_image)
         self.model_image.unit = "Jy"
 

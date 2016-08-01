@@ -37,8 +37,8 @@ class DecompositionComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # The path to the components/parameters directory
-        self.components_parameters_path = None
+        # The path to the components/2D directory
+        self.components_2d_path = None
 
         # The path to the components/images directory
         self.components_images_path = None
@@ -56,7 +56,7 @@ class DecompositionComponent(ModelingComponent):
         super(DecompositionComponent, self).setup()
 
         # Set ...
-        self.components_parameters_path = fs.create_directory_in(self.components_path, "parameters")
+        self.components_2d_path = fs.create_directory_in(self.components_path, "2D")
 
         # Set ...
         self.components_images_path = fs.create_directory_in(self.components_path, "images")

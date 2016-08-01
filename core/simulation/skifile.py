@@ -1385,7 +1385,7 @@ class SkiFile:
     def set_stellar_component_geometry(self, component_id, model):
 
         from astropy.coordinates import Angle
-        from ...modeling.basics.models import SersicModel, ExponentialDiskModel, DeprojectionModel
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
 
         # Rotation:
         #  alpha: 0 to 360 degrees
@@ -1393,7 +1393,7 @@ class SkiFile:
         #  gamma: 0 to 360 degrees
 
         # Sersic model
-        if isinstance(model, SersicModel):
+        if isinstance(model, SersicModel3D):
 
             # Set the Sersic geometry (with flattening)
             self.set_stellar_component_sersic_geometry(component_id, model.index, model.effective_radius, z_flattening=model.flattening)
@@ -1408,7 +1408,7 @@ class SkiFile:
             self.rotate_stellar_component(component_id, alpha, beta, gamma)
 
         # Exponential Disk
-        elif isinstance(model, ExponentialDiskModel):
+        elif isinstance(model, ExponentialDiskModel3D):
 
             # Set the exponential disk geometry
             radial_scale = model.radial_scale
@@ -1430,7 +1430,7 @@ class SkiFile:
             self.rotate_stellar_component(component_id, alpha, beta, gamma)
 
         # Deprojection model
-        elif isinstance(model, DeprojectionModel):
+        elif isinstance(model, DeprojectionModel3D):
 
             # Set the ReadFitsGeometry
             filename = model.filename
@@ -1445,13 +1445,13 @@ class SkiFile:
             self.set_stellar_component_fits_geometry(component_id, filename, scale, pa, i, nx, ny, xc, yc, hz)
 
         # Unsupported model
-        else: raise ValueError("Models other than SersicModel, ExponentialDiskModel and DeprojectionModel are not supported yet")
+        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet")
 
     ## This function sets the geometry of the specified dust component
     def set_dust_component_geometry(self, component_id, model):
 
         from astropy.coordinates import Angle
-        from ...modeling.basics.models import SersicModel, ExponentialDiskModel, DeprojectionModel
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
 
         # Rotation:
         #  alpha: 0 to 360 degrees
@@ -1459,7 +1459,7 @@ class SkiFile:
         #  gamma: 0 to 360 degrees
 
         # Sersic model
-        if isinstance(model, SersicModel):
+        if isinstance(model, SersicModel3D):
 
             # Set the Sersic geometry (with flattening)
             self.set_dust_component_sersic_geometry(component_id, model.index, model.effective_radius, z_flattening=model.flattening)
@@ -1474,7 +1474,7 @@ class SkiFile:
             self.rotate_dust_component(component_id, alpha, beta, gamma)
 
         # Exponential Disk
-        elif isinstance(model, ExponentialDiskModel):
+        elif isinstance(model, ExponentialDiskModel3D):
 
             # Set the exponential disk geometry
             radial_scale = model.radial_scale
@@ -1496,7 +1496,7 @@ class SkiFile:
             self.rotate_dust_component(component_id, alpha, beta, gamma)
 
         # Deprojection model
-        elif isinstance(model, DeprojectionModel):
+        elif isinstance(model, DeprojectionModel3D):
 
             # Set the ReadFitsGeometry
             filename = model.filename
@@ -1511,7 +1511,7 @@ class SkiFile:
             self.set_dust_component_fits_geometry(component_id, filename, scale, pa, i, nx, ny, xc, yc, hz)
 
         # Unsupported model
-        else: raise ValueError("Models other than SersicModel, ExponentialDiskModel and DeprojectionModel are not supported yet")
+        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet")
 
     ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):

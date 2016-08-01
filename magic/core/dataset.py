@@ -26,6 +26,7 @@ from .io import get_frame_names
 from ...core.tools.logging import log
 from .datacube import DataCube
 from .image import Image
+from ..basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -143,6 +144,18 @@ class DataSet(object):
 
         # Open the frame and return it
         return Frame.from_file(self.paths[name])
+
+    # -----------------------------------------------------------------
+
+    def get_wcs(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.paths[name])
 
     # -----------------------------------------------------------------
 

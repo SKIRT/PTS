@@ -20,7 +20,7 @@ from .component import DecompositionComponent
 
 # -----------------------------------------------------------------
 
-class FittingDecompositionParameters(DecompositionComponent):
+class FittingDecomposer(DecompositionComponent):
 
     """
     This class ...
@@ -33,7 +33,10 @@ class FittingDecompositionParameters(DecompositionComponent):
         """
 
         # Call the constructor of the base class
-        super(FittingDecompositionParameters, self).__init__(config)
+        super(FittingDecomposer, self).__init__(config)
+
+        # The dictionary of components
+        self.components = dict()
 
     # -----------------------------------------------------------------
 
@@ -46,5 +49,17 @@ class FittingDecompositionParameters(DecompositionComponent):
 
         sersic_model = Sersic2D(amplitude=sersic_amplitide, r_eff=sersic_r_eff, n=sersic_n, x_0=sersic_x_0, y_0=sersic_y_0, ellip=sersic_ellip, theta=sersic_theta)
         sersic_map = sersic_model(sersic_x, sersic_y)
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(FittingDecomposer, self).setup()
 
 # -----------------------------------------------------------------

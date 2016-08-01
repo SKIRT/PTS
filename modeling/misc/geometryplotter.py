@@ -20,7 +20,7 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from ..basics.models import SersicModel, ExponentialDiskModel, DeprojectionModel
+from ..basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
 
 # -----------------------------------------------------------------
 
@@ -116,19 +116,19 @@ class GeometryPlotter(object):
             minor = None # 2 * minor axis radius
             angle = None # in degrees
 
-            if isinstance(geometry, SersicModel):
+            if isinstance(geometry, SersicModel3D):
 
                 major = 2.0 * geometry.effective_radius.to("pc").value
                 minor = geometry.flattening * major
                 angle = geometry.tilt.to("deg").value
 
-            elif isinstance(geometry, ExponentialDiskModel):
+            elif isinstance(geometry, ExponentialDiskModel3D):
 
                 major = 2.0 * geometry.radial_scale.to("pc").value
                 minor = 2.0 * geometry.axial_scale.to("pc").value
                 angle = geometry.tilt.to("deg").value
 
-            elif isinstance(geometry, DeprojectionModel):
+            elif isinstance(geometry, DeprojectionModel3D):
 
                 minor = 2.0 * geometry.scale_height.to("pc").value
                 major = 0.3 * (geometry.pixelscale * geometry.x_size).to("pc").value

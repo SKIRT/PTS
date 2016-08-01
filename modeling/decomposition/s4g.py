@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.decomposition.s4g Contains the S4GDecompositionParameters class.
+## \package pts.modeling.decomposition.s4g Contains the S4GDecomposer class.
 
 # -----------------------------------------------------------------
 
@@ -24,6 +24,7 @@ from ...core.tools import tables, introspection
 from astroquery.vizier import Vizier
 from ...core.basics.map import Map
 from ..preparation import unitconversion
+from ..basics.models import SersicModel2D, ExponentialDiskModel2D
 
 # -----------------------------------------------------------------
 
@@ -35,7 +36,7 @@ local_table_path = fs.join(introspection.pts_dat_dir("modeling"), "s4g", "s4g_p4
 
 # -----------------------------------------------------------------
 
-class S4GDecompositionParameters(DecompositionComponent):
+class S4GDecomposer(DecompositionComponent):
 
     """
     This class ...
@@ -48,17 +49,17 @@ class S4GDecompositionParameters(DecompositionComponent):
         """
 
         # Call the constructor of the base class
-        super(S4GDecompositionParameters, self).__init__(config)
+        super(S4GDecomposer, self).__init__(config)
 
         # The Vizier querying object
         self.vizier = Vizier()
         self.vizier.ROW_LIMIT = -1
 
-        # Thed decomposition parameters
-        self.parameters = Map()
+        # The path for the S4G decomposition models
+        self.components_2d_s4g_path = None
 
-        # The path for the S4G decomposition parameters
-        self.parameters_s4g_path = None
+        # The dictionary of components
+        self.components = dict()
 
     # -----------------------------------------------------------------
 
@@ -86,7 +87,7 @@ class S4GDecompositionParameters(DecompositionComponent):
         #    b/a = 0.52
         #    PA = −28.3°
 
-        self.get_p4()  # currently (writing on the 31th of march 2016) there is a problem with the effective radius values
+        #self.get_p4()  # currently (writing on the 31th of march 2016) there is a problem with the effective radius values
 
         # (at least for M81) on Vizier as well as in the PDF version of table 7 (S4G models homepage).
 
@@ -117,10 +118,10 @@ class S4GDecompositionParameters(DecompositionComponent):
         """
 
         # Call the setup function of the base class
-        super(S4GDecompositionParameters, self).setup()
+        super(S4GDecomposer, self).setup()
 
         # Set the path
-        self.parameters_s4g_path = fs.join(self.components_parameters_path, "s4g.dat")
+        self.components_2d_s4g_path = fs.join(self.components_2d_path, "S4G")
 
     # -----------------------------------------------------------------
 
@@ -335,39 +336,53 @@ class S4GDecompositionParameters(DecompositionComponent):
                 # Only look at the line corresponding to the galaxy
                 if name != self.ngc_id_nospaces: continue
 
-                self.parameters.model_type = splitted[2]
-                self.parameters.number_of_components = splitted[3]
-                self.parameters.quality = splitted[4]
+                #self.parameters.model_type = splitted[2]
+                #self.parameters.number_of_components = splitted[3]
+                #self.parameters.quality = splitted[4]
 
-                # BULGE
-                self.parameters.bulge = Map()
+                ## BULGE
+
                 #self.parameters.bulge.interpretation = splitted[sersic_1_index].split("|")[1]
-                self.parameters.bulge.f = float(splitted[sersic_1_index + 1])
+                bulge_f = float(splitted[sersic_1_index + 1])
                 mag = float(splitted[sersic_1_index + 2])
-                self.parameters.bulge.fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
+                bulge_fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
 
                 # Effective radius in pc
                 re_arcsec = float(splitted[sersic_1_index + 3]) * Unit("arcsec")
-                self.parameters.bulge.Re = (self.parameters.distance * re_arcsec).to("pc", equivalencies=dimensionless_angles())
+                bulge_re = (self.galaxy_properties.distance * re_arcsec).to("pc", equivalencies=dimensionless_angles())
 
-                self.parameters.bulge.q = float(splitted[sersic_1_index + 4])
-                self.parameters.bulge.PA = Angle(float(splitted[sersic_1_index + 5]) - 90., "deg")
-                self.parameters.bulge.n = float(splitted[sersic_1_index + 6])
+                bulge_q = float(splitted[sersic_1_index + 4])
+                bulge_pa = Angle(float(splitted[sersic_1_index + 5]) - 90., "deg")
+                bulge_n = float(splitted[sersic_1_index + 6])
 
-                # DISK
-                self.parameters.disk = Map()
+                # Create the bulge component
+                bulge = SersicModel2D(rel_contribution=bulge_f, fluxdensity=bulge_fluxdensity, effective_radius=bulge_re,
+                                      axial_ratio=bulge_q, position_angle=bulge_pa, index=bulge_n)
+
+                # Add the bulge to the components dictionary
+                self.components["bulge"] = bulge
+
+                ## DISK
+
                 #self.parameters.disk.interpretation = splitted[disk_1_index].split("|")[1]
-                self.parameters.disk.f = float(splitted[disk_1_index + 1])
+                disk_f = float(splitted[disk_1_index + 1])
                 mag = float(splitted[disk_1_index + 2])
-                self.parameters.disk.fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
+                disk_fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
 
                 # Scale length in pc
                 hr_arcsec = float(splitted[disk_1_index + 3]) * Unit("arcsec")
-                self.parameters.disk.hr = (self.parameters.distance * hr_arcsec).to("pc", equivalencies=dimensionless_angles())
+                disk_hr = (self.galaxy_properties.distance * hr_arcsec).to("pc", equivalencies=dimensionless_angles())
 
-                self.parameters.disk.q = float(splitted[disk_1_index + 4]) # axial ratio
-                self.parameters.disk.PA = Angle(float(splitted[disk_1_index + 5]) - 90., "deg")
-                self.parameters.disk.mu0 = float(splitted[disk_1_index + 6]) * Unit("mag/arcsec2")
+                disk_q = float(splitted[disk_1_index + 4]) # axial ratio
+                disk_pa = Angle(float(splitted[disk_1_index + 5]) - 90., "deg")
+                disk_mu0 = float(splitted[disk_1_index + 6]) * Unit("mag/arcsec2")
+
+                # Create the disk component
+                disk = ExponentialDiskModel2D(relative_contribution=disk_f, fluxdensity=disk_fluxdensity, scalelength=disk_hr,
+                                              axial_ratio=disk_q, position_angle=disk_pa, mu0=disk_mu0)
+
+                # Add the disk to the components dictionary
+                self.components["disk"] = disk
 
     # -----------------------------------------------------------------
 
@@ -381,59 +396,26 @@ class S4GDecompositionParameters(DecompositionComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the decomposition parameters
-        self.write_parameters()
+        # Write the components
+        self.write_components()
 
     # -----------------------------------------------------------------
 
-    def write_parameters(self):
+    def write_components(self):
 
         """
         This function ...
         :return:
         """
 
-        # Write
-        write_parameters(self.parameters, self.parameters_s4g_path)
+        # Loop over the components
+        for name in self.components:
 
-# -----------------------------------------------------------------
+            # Determine the path
+            path = fs.join(self.components_2d_s4g_path, name + ".mod")
 
-def write_parameters(parameters, path):
-
-    """
-    This function ...
-    :param parameters:
-    :param path:
-    :return:
-    """
-
-    # Create the parameters file
-    with open(path, 'w') as parameter_file:
-
-        # Add general info
-
-        #print("Model type:", parameters.model_type, file=parameter_file)
-        #print("Number of components:", parameters.number_of_components, file=parameter_file)
-        #print("Quality:", parameters.quality, file=parameter_file)
-
-        # Add components parameters
-        for component in ["bulge", "disk"]:
-
-            #print(component.title() + ": Interpretation:", parameters[component].interpretation, file=parameter_file)
-            print(component.title() + ": Relative contribution:", parameters[component].f, file=parameter_file)
-            print(component.title() + ": IRAC 3.6um flux density:", parameters[component].fluxdensity, file=parameter_file)
-            print(component.title() + ": Axial ratio:", parameters[component].q, file=parameter_file)
-            print(component.title() + ": Position angle:", str(parameters[component].PA.to("deg").value) + " deg", file=parameter_file) # (degrees ccw from North)
-
-            if component == "bulge":
-
-                print(component.title() + ": Effective radius:", str(parameters[component].Re), file=parameter_file)
-                print(component.title() + ": Sersic index:", parameters[component].n, file=parameter_file)
-
-            elif component == "disk":
-
-                print(component.title() + ": Central surface brightness:", parameters[component].mu0, file=parameter_file) # (mag/arcsec2)
-                print(component.title() + ": Exponential scale length:", str(parameters[component].hr), file=parameter_file)
+            # Save the model
+            self.components[name].save(path)
 
 # -----------------------------------------------------------------
 

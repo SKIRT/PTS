@@ -22,11 +22,10 @@ from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import introspection, tables
+from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile, LabeledSkiFile
 from ...core.basics.filter import Filter
-from ..basics.models import SersicModel, DeprojectionModel
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.basics.skyregion import SkyRegion
 from ..basics.instruments import SEDInstrument, FrameInstrument

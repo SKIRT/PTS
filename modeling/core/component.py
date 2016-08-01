@@ -28,13 +28,12 @@ from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
 from ...magic.core.frame import Frame
 from ...magic.basics.skyregion import SkyRegion
-from ...core.tools import parsing
-from ...core.basics.map import Map
 from ...magic.basics.region import Region
-from ..basics.models import load_model
+from ..basics.models import load_3d_model
 from ..basics.projection import GalaxyProjection
 from ..basics.properties import GalaxyProperties
 from ...magic.tools import catalogs
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -406,7 +405,21 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter.from_string("PACS 160")
+        return Filter.from_string(self.reference_image)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.dataset.get_wcs(self.reference_image)
+        reference_path = fs.join(self.prep_path, self.reference_image, "result.fits")
+        return CoordinateSystem.from_file(reference_path)
 
     # -----------------------------------------------------------------
 
@@ -543,7 +556,7 @@ class ModelingComponent(Configurable):
         """
 
         # Load the model
-        return load_model(self.bulge_model_path)
+        return load_3d_model(self.bulge_model_path)
 
     # -----------------------------------------------------------------
 
@@ -556,7 +569,7 @@ class ModelingComponent(Configurable):
         """
 
         # Load the model
-        return load_model(self.disk_model_path)
+        return load_3d_model(self.disk_model_path)
 
     # -----------------------------------------------------------------
 
@@ -621,54 +634,5 @@ def get_free_parameter_labels(table_path):
     """
 
     return dict(np.genfromtxt(table_path, delimiter=" | ", dtype=str)) if fs.is_file(table_path) else None
-
-# -----------------------------------------------------------------
-
-def load_galaxy_parameters(path):
-
-    """
-    This function ...
-    :param path:
-    :return:
-    """
-
-    # Create parameters structure
-    parameters = Map()
-    parameters.bulge = Map()
-    parameters.disk = Map()
-
-    # Read the parameter file
-    with open(path, 'r') as parameter_file:
-
-        # Loop over all lines in the file
-        for line in parameter_file:
-
-            splitted = line.split(": ")
-
-            # Bulge parameters
-            if splitted[0] == "Bulge":
-
-                if splitted[1] == "Relative contribution": parameters.bulge.f = float(splitted[2])
-                elif splitted[1] == "IRAC 3.6um flux density": parameters.bulge.fluxdensity = parsing.quantity(splitted[2])
-                elif splitted[1] == "Axial ratio": parameters.bulge.q = float(splitted[2])
-                elif splitted[1] == "Position angle": parameters.bulge.PA = parsing.angle(splitted[2])
-                elif splitted[1] == "Effective radius": parameters.bulge.Re = parsing.quantity(splitted[2])
-                elif splitted[1] == "Sersic index": parameters.bulge.n = float(splitted[2])
-
-            # Disk parameters
-            elif splitted[0] == "Disk":
-
-                if splitted[1] == "Relative contribution": parameters.disk.f = float(splitted[2])
-                elif splitted[1] == "IRAC 3.6um flux density": parameters.disk.fluxdensity = parsing.quantity(splitted[2])
-                elif splitted[1] == "Axial ratio": parameters.disk.q = float(splitted[2])
-                elif splitted[1] == "Position angle": parameters.disk.PA = parsing.angle(splitted[2])
-                elif splitted[1] == "Central surface brightness": parameters.disk.mu0 = parsing.quantity(splitted[2])
-                elif splitted[1] == "Exponential scale length": parameters.disk.hr = parsing.quantity(splitted[2])
-
-            # Other parameters
-            else: raise RuntimeError("Invalid line: " + line)
-
-    # Return the parameters
-    return parameters
 
 # -----------------------------------------------------------------

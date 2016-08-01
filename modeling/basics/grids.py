@@ -117,7 +117,7 @@ class BinaryTreeDustGrid(object):
                 elif first == "Max level": max_level = int(second)
                 elif first == "Search method": search_method = second
 
-        # Creaete the SersicModel and return it
+        # Create the dust grid instance and return it
         return cls(effective_radius, index, flattening, tilt)
 
     # -----------------------------------------------------------------

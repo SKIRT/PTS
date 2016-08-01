@@ -25,9 +25,8 @@ from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
-from ..basics.models import SersicModel, DeprojectionModel
+from ..basics.models import SersicModel3D, DeprojectionModel3D
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ..decomposition.decomposition import load_parameters
 from ...magic.basics.skyregion import SkyRegion
 from ..basics.instruments import SEDInstrument, FrameInstrument
 from ..core.sun import Sun
