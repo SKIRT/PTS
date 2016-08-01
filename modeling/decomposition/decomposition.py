@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
 from astropy.coordinates import Angle
@@ -31,7 +28,6 @@ from ...magic.basics.vector import Extent, Position
 from ...magic.basics.skygeometry import SkyEllipse
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.core.frame import Frame
-from ...magic.basics.coordinatesystem import CoordinateSystem
 from ..basics.models import SersicModel3D, ExponentialDiskModel3D
 from ..basics.instruments import SimpleInstrument
 from ...magic.misc.kernels import AnianoKernels
@@ -142,9 +138,10 @@ class GalaxyDecomposer(DecompositionComponent):
         self.config.bulge_packages = 1e7
         self.config.disk_packages = 1e8
 
-        # Load the PSF
+        # Load the PSF kernel and prepare
         aniano = AnianoKernels()
         self.psf = aniano.get_psf(self.reference_filter)
+        self.psf.prepare_for(self.reference_wcs)
 
         # Create the directory to simulate the bulge (2D method)
         self.images_bulge2d_path = fs.create_directory_in(self.components_images_path, "bulge2D")
@@ -471,7 +468,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Rescale to the 3.6um flux density
         fluxdensity = self.components["bulge"].fluxdensity
-        self.bulge_image *= fluxdensity.to("Jy").value / np.sum(self.bulge_image)
+        self.bulge_image *= fluxdensity.to("Jy").value / self.bulge_image.sum()
         self.bulge_image.unit = "Jy"
 
         # Debugging
@@ -549,7 +546,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Rescale to the 3.6um flux density
         fluxdensity = self.components["disk"].fluxdensity
-        self.disk_image *= fluxdensity.to("Jy").value / np.sum(self.disk_image)
+        self.disk_image *= fluxdensity.to("Jy").value / self.disk_image.sum()
         self.disk_image.unit = "Jy"
 
         # Debugging
@@ -631,7 +628,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Rescale to the 3.6um flux density
         fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity # sum of bulge and disk component flux density
-        self.model_image *= fluxdensity.to("Jy").value / np.sum(self.model_image)
+        self.model_image *= fluxdensity.to("Jy").value / self.model_image.sum()
         self.model_image.unit = "Jy"
 
         # Debugging

@@ -1421,12 +1421,12 @@ class SkiFile:
             # Rotate the exponential disk geometry with the tilt angle
             alpha = Angle(0.0, "deg")
             beta = model.tilt
-            print("beta", beta)
+            #print("beta", beta)
             gamma = Angle(0.0, "deg")
             if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
                 alpha = Angle(180, "deg")
                 beta = - beta
-            print(alpha, beta, gamma)
+            #print(alpha, beta, gamma)
             self.rotate_stellar_component(component_id, alpha, beta, gamma)
 
         # Deprojection model

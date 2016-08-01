@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add settings
-definition.add_section("database")
+definition.add_section("database", "options for the DustPedia database connection")
 definition.sections["database"].add_optional("username", "string", "the username")
 definition.sections["database"].add_optional("password", "string", "the password")
 

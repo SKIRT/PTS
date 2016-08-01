@@ -62,10 +62,13 @@ class GalaxyProperties(object):
             # Loop over all lines in the file
             for line in parameter_file:
 
+                line = line.rstrip("\n")
                 splitted = line.split(": ")
 
                 if splitted[0] == "Name":
                     properties.name = splitted[1]
+                elif splitted[0] == "NGC ID":
+                    properties.ngc_id = splitted[1]
                 elif splitted[0] == "Center RA":
                     ra = parsing.quantity(splitted[1])
                 elif splitted[0] == "Center DEC":

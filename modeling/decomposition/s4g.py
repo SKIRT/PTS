@@ -121,7 +121,7 @@ class S4GDecomposer(DecompositionComponent):
         super(S4GDecomposer, self).setup()
 
         # Set the path
-        self.components_2d_s4g_path = fs.join(self.components_2d_path, "S4G")
+        self.components_2d_s4g_path = fs.create_directory_in(self.components_2d_path, "S4G")
 
     # -----------------------------------------------------------------
 
@@ -333,8 +333,14 @@ class S4GDecomposer(DecompositionComponent):
 
                 name = splitted[1]
 
+                #print(list(name))
+
                 # Only look at the line corresponding to the galaxy
                 if name != self.ngc_id_nospaces: continue
+
+                #if self.ngc_id_nospaces not in name: continue
+
+
 
                 #self.parameters.model_type = splitted[2]
                 #self.parameters.number_of_components = splitted[3]

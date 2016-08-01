@@ -12,9 +12,9 @@ analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Ana
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating in the best fitting model
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residuals of the best fitting model
 decompose | -- | decomposition.decomposition.GalaxyDecomposer | arguments | Run the bulge-disk decomposition for the galaxy as part of the radiative transfer modeling
-fetch_properties | -- | data.parameters.PropertyFetcher | arguments | Fetch the galaxy properties
-fetch_images | -- | data.images.ImageFetcher | arguments | Fetch the images from the DustPedia database
-fetch_sed | -- | data.sed.SEDFetcher | arguments | Fetch the galaxy SED
+fetch_properties | fetch_from_database | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
+fetch_images | fetch_from_database | data.images.ImageFetcher | interactive | Fetch the images from the DustPedia database
+fetch_sed | fetch_from_database | data.sed.SEDFetcher | interactive | Fetch the galaxy SED
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 initialize_fit | -- | fitting.initialization.FittingInitializer | arguments | Do the initialization before starting the fitting
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure

@@ -266,7 +266,6 @@ class AnianoKernels(object):
 
             # Set the FWHM of the PSF
             psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm)
-            #psf.fwhm = fwhm
             psf.save(psf_file_path)
 
         if return_name: return psf_file_path, psf_name

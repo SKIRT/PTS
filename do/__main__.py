@@ -131,7 +131,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     # Import things
     from pts.core.tools import logging
-    from pts.core.basics.configuration import ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
+    from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
 
     ## GET THE CONFIGURATION DEFINITION
 
@@ -139,9 +139,14 @@ elif len(table_matches) == 1 and len(matches) == 0:
     if configuration_name == "--": configuration_name = command_name
     configuration_module_path = "pts." + subproject + ".config." + configuration_name
 
-    configuration_module = importlib.import_module(configuration_module_path)
-
-    definition = getattr(configuration_module, "definition")
+    try:
+        configuration_module = importlib.import_module(configuration_module_path)
+        #has_configuration = True
+        definition = getattr(configuration_module, "definition")
+    except ImportError:
+        logging.log.warning("No configuration definition found for the " + class_name + " class")
+        #has_configuration = False
+        definition = ConfigurationDefinition() # Create new configuration definition
 
     ## CREATE THE CONFIGURATION
 

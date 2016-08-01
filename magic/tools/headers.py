@@ -26,6 +26,7 @@ from ..basics.vector import Extent
 from ...core.basics.filter import Filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
+from ..basics.pixelscale import Pixelscale
 
 # -----------------------------------------------------------------
 
@@ -83,19 +84,19 @@ def get_pixelscale(header):
             scale = scale * unit
 
             # Return the scale
-            return Extent(scale, scale)
+            return Pixelscale(scale)
 
     # Search for the 'PXSCAL1' and 'PXSCAL2' keywords
     for keyword_combination in (("PXSCAL1", "PXSCAL2"), ("XPIXSIZE", "YPIXSIZE")):
 
         if keyword_combination[0] in header and keyword_combination[1] in header:
 
-            scale1 = header[keyword_combination[0]]
+            scale1 = float(header[keyword_combination[0]])
             if scale1 == "N/A": continue
             try: unit1 = header.comments[keyword_combination[0]].split("[")[1].split("]")[0]
             except IndexError: unit1 = None
 
-            scale2 = header[keyword_combination[1]]
+            scale2 = float(header[keyword_combination[1]])
             if scale2 == "N/A": continue
             try: unit2 = header.comments[keyword_combination[1]].split("[")[1].split("]")[0]
             except IndexError: unit2 = None
@@ -125,7 +126,7 @@ def get_pixelscale(header):
             scale2 = scale2 * unit2
 
             # Return the pixelscale
-            return Extent(scale1, scale2)
+            return Pixelscale(scale1, scale2)
 
     # If none of the above keywords were found, return None
     else: return None

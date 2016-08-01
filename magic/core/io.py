@@ -138,7 +138,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     flattened_header = headers.flattened(original_header)
 
     # Obtain the world coordinate system
-    wcs = CoordinateSystem(flattened_header)
+    try:
+        wcs = CoordinateSystem(flattened_header)
+        pixelscale = None
+    except ValueError:
+        wcs = None
+        pixelscale = headers.get_pixelscale(original_header)
 
     # Set the filter
     if no_filter: fltr = None
@@ -191,7 +196,8 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                               zero_point=zero_point,
                               filter=fltr,
                               sky_subtracted=subtracted,
-                              fwhm=fwhm)
+                              fwhm=fwhm,
+                              pixelscale=pixelscale)
                 frames[name] = frame
 
             elif plane_type == "mask":
@@ -318,15 +324,19 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Remove references to a potential third axis
     flat_header = headers.flattened(header)
 
-    # Obtain the world coordinate system from the 'flattened' header
-    wcs = CoordinateSystem(flat_header)
-
     # Load the frames
     header_pixelscale = headers.get_pixelscale(header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
-    pixelscale = wcs.pixelscale
 
-    # Check whether pixelscale defined in the header is correct
-    if header_pixelscale is not None:
+    # Obtain the world coordinate system from the 'flattened' header
+    try:
+        wcs = CoordinateSystem(flat_header)
+        pixelscale = wcs.pixelscale
+    except ValueError:
+        wcs = None
+        pixelscale = None
+
+    # Check whether pixelscale as defined by header keyword and pixelscale derived from WCS match!
+    if header_pixelscale is not None and pixelscale is not None:
 
         x_isclose = np.isclose(header_pixelscale.x.to("arcsec/pix").value, pixelscale.x.to("arcsec/pix").value)
         y_isclose = np.isclose(header_pixelscale.y.to("arcsec/pix").value, pixelscale.y.to("arcsec/pix").value)
@@ -335,6 +345,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
             log.warning("The pixel scale defined in the header is WRONG:")
             log.warning(" - header pixelscale: (" + str(header_pixelscale.x.to("arcsec/pix")) + ", " + str(header_pixelscale.y.to("arcsec/pix")) + ")")
             log.warning(" - actual pixelscale: (" + str(pixelscale.x.to("arcsec/pix")) + ", " + str(pixelscale.y.to("arcsec/pix")) + ")")
+
+    if wcs is None: pixelscale = header_pixelscale
+    else: pixelscale = None
 
     if no_filter: fltr = None
     else:
@@ -431,7 +444,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    zero_point=zero_point,
                    filter=fltr,
                    sky_subtracted=sky_subtracted,
-                   fwhm=fwhm, meta=metadata)
+                   fwhm=fwhm,
+                   pixelscale=pixelscale,
+                   meta=metadata)
 
     else:
 
@@ -450,7 +465,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    zero_point=zero_point,
                    filter=fltr,
                    sky_subtracted=sky_subtracted,
-                   fwhm=fwhm, meta=metadata)
+                   fwhm=fwhm,
+                   pixelscale=pixelscale,
+                   meta=metadata)
 
 # -----------------------------------------------------------------
 

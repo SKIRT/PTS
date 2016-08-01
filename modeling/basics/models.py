@@ -70,24 +70,24 @@ class SersicModel3D(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_2d(cls, parameters, inclination, position_angle):
+    def from_2d(cls, sersic2d, inclination, position_angle):
 
         """
-        :param parameters:
+        :param sersic2d:
         :param inclination:
         :param position_angle:
         :return:
         """
 
         # Get effective radius and Sersic index
-        effective_radius = parameters.Re
-        index = parameters.n
+        effective_radius = sersic2d.effective_radius
+        index = sersic2d.index
 
         # Calculate the intrinsic flattening
-        flattening = intrinsic_flattening(parameters.q, inclination)
+        flattening = intrinsic_flattening(sersic2d.axial_ratio, inclination)
 
         # Calculate the tilt angle of the bulge (tilt w.r.t. the x-axis)
-        tilt = deproject_pa_to_tilt(parameters.PA - position_angle, inclination)
+        tilt = deproject_pa_to_tilt(sersic2d.position_angle - position_angle, inclination)
         tilt = Angle(90., "deg") - tilt
 
         # Create a new Sersic model and return it
@@ -185,28 +185,28 @@ class ExponentialDiskModel3D(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_2d(cls, parameters, inclination, position_angle):
+    def from_2d(cls, exponentialdiskmodel2d, inclination, position_angle):
 
         """
         This function ...
-        :param parameters:
+        :param exponentialdiskmodel2d:
         :param inclination:
         :param position_angle:
         :return:
         """
 
         # Get the radial scale
-        radial_scale = parameters.hr
+        radial_scale = exponentialdiskmodel2d.scalelength
 
         # Calculate the intrinsic flattening
-        flattening = intrinsic_flattening(parameters.q, inclination)
+        flattening = intrinsic_flattening(exponentialdiskmodel2d.axial_ratio, inclination)
 
         # Calculate the axial scale
         axial_scale = flattening * radial_scale
 
         # Calculate the tilt angle of the disk (tilt w.r.t. the x-axis)
         #tilt = deproject_pa_to_tilt(parameters.PA - position_angle, inclination)
-        tilt = deproject_pa_to_tilt(position_angle - parameters.PA, inclination)
+        tilt = deproject_pa_to_tilt(position_angle - exponentialdiskmodel2d.position_angle, inclination)
         tilt = Angle(90., "deg") - tilt
 
         # Create a new exponential disk model and return it

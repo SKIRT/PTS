@@ -56,6 +56,7 @@ class ConvolutionKernel(Frame):
             elif not np.isclose(self._pixelscale, self.wcs.pixelscale): raise ValueError("Pixelscale in the header does not correspond to the specified pixelscale")
             self._wcs = None
 
+        # If the WCS is not defined, the pixelscale must
         elif self._pixelscale is None: raise ValueError("Pixelscale must be specified if not present in header")
 
         # Prepared
@@ -63,7 +64,7 @@ class ConvolutionKernel(Frame):
 
         if "prepared" in self.meta: self._prepared = self.meta["prepared"]
 
-        # Make sure that the data is in 64 bit floating-point precision
+        # Make sure that the data is in 64 bit floating-point precision (the reason is the precision of Astropy's normalization criterion)
         self._data = self._data.astype("float64")
 
     # -----------------------------------------------------------------
@@ -88,7 +89,8 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        #return np.abs(self.sum() - 1.) < 1e-7  # criterion as in astropy.convolution module = 1e-8, BUT I HAD A PROBLEM OF THE SAME FITS FILE HAVING A SLIGHTLY DIFFERNENT SOME ON DIFFERENT SYSTEMS !!! (laptop and nancy)
+        #return np.abs(self.sum() - 1.) < 1e-7  # criterion as in astropy.convolution module = 1e-8,
+        # BUT I HAD A PROBLEM OF THE SAME FITS FILE HAVING A SLIGHTLY DIFFERNENT SOME ON DIFFERENT SYSTEMS !!! (laptop and nancy)
 
         # NOW I KNOW WHERE THIS PROBLEM WAS COMING FROM (SEE ASTROPY ISSUE #5176)
         # the magical number of 32-bit precision floats is 1.1920928955078125e-07
@@ -309,6 +311,8 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
+        from ..tools import plotting
+        plotting.plot_box(self._data)
         return centroid_2dg(self._data)
 
     # -----------------------------------------------------------------

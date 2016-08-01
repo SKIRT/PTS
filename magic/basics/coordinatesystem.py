@@ -46,6 +46,13 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
+        # Check header
+        coordinates_keywords = ["PC1_1", "PC1_2", "PC2_1", "PC2_2", "PC1", "PC2", "CDELT1", "CDELT2", "CD1_1", "CD1_2", "CD2_2", "CD2_1"]
+        if header is not None:
+            for keyword in coordinates_keywords:
+                if keyword in header: break
+            else: raise ValueError("Header does not contain coordinate information")
+
         # Call the constructor of the base class
         super(CoordinateSystem, self).__init__(header)
 
