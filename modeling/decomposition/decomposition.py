@@ -73,6 +73,7 @@ class GalaxyDecomposer(DecompositionComponent):
         self.disk = None
 
         # The bulge and disk image
+        self.bulge2d_image = None
         self.bulge_image = None
         self.disk_image = None
         self.model_image = None
@@ -399,6 +400,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Check if the output contains the "bulge_earth_total.fits" file
         if not fs.is_file(bulge_image_path): raise RuntimeError("Something went wrong with the simple bulge simulation: output FITS file missing")
 
+        # Load the image
+        self.bulge2d_image = Frame.from_file(bulge_image_path)
+
     # -----------------------------------------------------------------
 
     def simulate_bulge(self):
@@ -690,6 +694,10 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Inform the user
         log.info("Writing the images ...")
+
+        # Determine the path to the bulge 2D image and save it
+        bulge_2d_path = fs.join(self.components_images_path, "bulge2D.fits")
+        self.bulge2d_image.save(bulge_2d_path)
 
         # Determine the path to the bulge image and save it
         final_bulge_path = fs.join(self.components_images_path, "bulge.fits")

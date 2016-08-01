@@ -34,6 +34,7 @@ class GalaxyProperties(object):
         self.ngc_id = None
         self.center = None
         self.major = None
+        self.major_arcsec = None
         self.ellipticity = None
         self.position_angle = None
         self.distance = None
@@ -75,6 +76,8 @@ class GalaxyProperties(object):
                     dec = parsing.quantity(splitted[1])
                 elif splitted[0] == "Major axis length":
                     properties.major = parsing.quantity(splitted[1])
+                elif splitted[0] == "Angular major axis length":
+                    properties.major_arcsec = parsing.quantity(splitted[1])
                 elif splitted[0] == "Ellipticity":
                     properties.ellipticity = float(splitted[1])
                 elif splitted[0] == "Position angle":
@@ -119,6 +122,7 @@ class GalaxyProperties(object):
             print("Center RA:", str(self.center.ra.to("deg").value) + " deg", file=parameter_file)
             print("Center DEC:", str(self.center.dec.to("deg").value) + " deg", file=parameter_file)
             print("Major axis length:", str(self.major), file=parameter_file)
+            print("Angular major axis length:", str(self.major_arcsec), file=parameter_file)
             print("Ellipticity:", self.ellipticity, file=parameter_file)
             print("Position angle:", str(self.position_angle.to("deg").value) + " deg", file=parameter_file)
             print("Distance:", str(self.distance), file=parameter_file)
