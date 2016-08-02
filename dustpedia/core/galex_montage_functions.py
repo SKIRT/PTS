@@ -236,8 +236,8 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     kernel = astropy.convolution.kernels.Tophat2DKernel(10)
     conv_image = astropy.convolution.convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True) #, interpolate_nan=True, normalize_kernel=True)
     # Write
-    temp_convolve_image_path = fs.join(temp_convolve_path, raw_file)
-    if fs.is_file(temp_convolve_image_path): fs.remove_file(temp_convolve_image_path)
+    temp_convolve_image_path = fs.join(temp_convolve_path, raw_file)                  ## NEW
+    if fs.is_file(temp_convolve_image_path): fs.remove_file(temp_convolve_image_path) ## NEW
     fits.writeto(temp_convolve_image_path, conv_image, in_header)
 
     # Load and align exposure time to create weight maps
@@ -247,8 +247,8 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     exp_hdulist = fits.HDUList([exp_hdu])
 
     # Write
-    temp_reproject_image_path = fs.join(temp_reproject_path, raw_file.replace('.fits','.wgt.fits'))
-    if fs.is_file(temp_reproject_image_path): fs.remove_file(temp_reproject_image_path)
+    temp_reproject_image_path = fs.join(temp_reproject_path, raw_file.replace('.fits','.wgt.fits'))  ## NEW
+    if fs.is_file(temp_reproject_image_path): fs.remove_file(temp_reproject_image_path)              ## NEW
     exp_hdulist.writeto(temp_reproject_image_path)
 
 # -----------------------------------------------------------------
@@ -397,12 +397,12 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         # Count image files, and move to reprojection directory
         mosaic_count = 0
-        for listfile in os.listdir(temp_raw_path):
-            if '.fits' in listfile:
+        for filename in os.listdir(temp_raw_path):
+            if '.fits' in filename:
                 mosaic_count += 1
-        for listfile in os.listdir(temp_raw_path):
-            if '.fits' in listfile:
-                shutil.move(listfile, temp_reproject_path)
+                new_path = fs.join(temp_reproject_path, filename)  ## NEW
+                if fs.is_file(new_path): fs.remove_file(new_path)  ## NEW
+                shutil.move(filename, temp_reproject_path)
 
         # If more than one image file, commence background-matching
         if mosaic_count > 1:
