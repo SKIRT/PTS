@@ -96,6 +96,27 @@ class MaskBase(object):
     # -----------------------------------------------------------------
 
     @property
+    def array(self):
+
+        """
+        The underlying array
+        """
+
+        return self._data
+
+    # -----------------------------------------------------------------
+
+    def __array__(self):
+
+        """
+        Array representation of the mask (e.g., for matplotlib).
+        """
+
+        return self._data
+
+    # -----------------------------------------------------------------
+
+    @property
     def shape(self):
 
         """

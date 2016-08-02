@@ -37,6 +37,9 @@ class PhotometryComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # Phot/temp directory
+        self.phot_temp_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -48,5 +51,8 @@ class PhotometryComponent(ModelingComponent):
 
         # Call the setup function of the base class
         super(PhotometryComponent, self).setup()
+
+        # Set ...
+        self.phot_temp_path = fs.create_directory_in(self.phot_path, "temp")
 
 # -----------------------------------------------------------------

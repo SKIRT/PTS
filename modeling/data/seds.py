@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.photometry.sedfetching Contains the SEDFetcher class.
+## \package pts.modeling.data.sedfetching Contains the SEDFetcher class.
 
 # -----------------------------------------------------------------
 
@@ -23,13 +23,13 @@ from ...core.tools import filesystem as fs
 from ...core.basics.filter import Filter
 from ...core.tools.logging import log
 from ...core.basics.errorbar import ErrorBar
-from ...core.basics.configurable import OldConfigurable
 from ..preparation import unitconversion
-from ...magic.tools import catalogs
+from .component import DataComponent
+from ...dustpedia.core.database import DustPediaDatabase, get_account
 
 # -----------------------------------------------------------------
 
-class SEDFetcher(OldConfigurable):
+class SEDFetcher(DataComponent):
 
     """
     This class ...
@@ -42,15 +42,12 @@ class SEDFetcher(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SEDFetcher, self).__init__(config, "modeling")
+        super(SEDFetcher, self).__init__(config)
 
         # -- Attributes --
 
-        # The name of the galaxy
-        self.galaxy_name = None
-
-        # The NGC ID of the galaxy
-        self.ngc_id = None
+        # The DustPedia database
+        self.database = DustPediaDatabase()
 
         # The Vizier querying object
         self.vizier = Vizier(keywords=["galaxies"])
@@ -64,41 +61,17 @@ class SEDFetcher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
+    def run(self):
 
         """
         This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new SEDFetcher instance
-        if arguments.config is not None: fetcher = cls(arguments.config)
-        elif arguments.settings is not None: fetcher = cls(arguments.settings)
-        else: fetcher = cls()
-
-        # Set the output path
-        if arguments.output_path is not None: fetcher.config.output_path = arguments.output_path
-
-        # Run from the command line, so always write out the SEDs
-        fetcher.config.write_seds = True
-        fetcher.config.writing.seds_path = "SEDs"
-
-        # Return the new instance
-        return fetcher
-
-    # -----------------------------------------------------------------
-
-    def run(self, galaxy_name):
-
-        """
-        This function ...
-        :param galaxy_name
         """
 
         # 1. Call the setup function
-        self.setup(galaxy_name)
+        self.setup()
+
+        # 2. Get the dustpedia SED
+        #self.get_dustpedia()
 
         # 2. If requested, query the GALEX ultraviolet atlas of nearby galaxies catalog (Gil de Paz+, 2007)
         if "GALEX" in self.config.catalogs: self.get_galex()
@@ -156,26 +129,45 @@ class SEDFetcher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, galaxy_name):
+    def setup(self):
 
         """
         This function ...
-        :param galaxy_name:
         :return:
         """
 
         # Call the setup function of the base class
         super(SEDFetcher, self).setup()
 
-        # Set the galaxy name
-        self.galaxy_name = galaxy_name
-
-        # Get the NGC ID of the galaxy
-        self.ngc_id = catalogs.get_ngc_name(self.galaxy_name)
-
         # Create a dictionary of filters
         keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
         for key in keys: self.filters[key] = Filter.from_string(key)
+
+        # LOGIN TO DUSTPEDIA DATABASE
+
+        # Get username and password for the DustPedia database
+        if self.config.database.username is not None:
+            username = self.config.database.username
+            password = self.config.database.password
+        else: username, password = get_account()
+
+        # Login to the DustPedia database
+        self.database.login(username, password)
+
+    # -----------------------------------------------------------------
+
+    def get_dustpedia(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the SED
+        sed = self.database.get_sed(self.ngc_id_nospaces)
+
+        # Add the SED
+        self.seds["DustPedia"] = sed
 
     # -----------------------------------------------------------------
 
@@ -1319,8 +1311,8 @@ class SEDFetcher(OldConfigurable):
         # Inform the user
         log.info("Writing ...")
 
-        # If requested, write out the SEDs
-        if self.config.write_seds: self.write_seds()
+        # Write out the SEDs
+        self.write_seds()
 
     # -----------------------------------------------------------------
 
@@ -1334,20 +1326,14 @@ class SEDFetcher(OldConfigurable):
         # Inform the user
         log.info("Writing the SEDs ...")
 
-        # Determine the full path to the SEDs directory
-        path = self.full_output_path(self.config.writing.seds_path)
-
-        # Create the SEDs directory if necessary
-        fs.create_directory(path)
-
         # Loop over the different SEDs
         for label in self.seds:
 
             # Debugging info
-            log.debug("Writing SED from " + label)
+            log.debug("Writing " + label + " SED ...")
 
             # Determine the path to the new SED file
-            sed_path = fs.join(path, label + ".dat")
+            sed_path = fs.join(self.data_seds_path, label + ".dat")
 
             # Save the SED at the specified location
             self.seds[label].save(sed_path)

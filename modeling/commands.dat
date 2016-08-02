@@ -13,9 +13,9 @@ analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeating
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residuals of the best fitting model
 decompose | -- | decomposition.decomposition.GalaxyDecomposer | arguments | Run the bulge-disk decomposition for the galaxy as part of the radiative transfer modeling
 decomposition_residuals | -- | decomposition.residuals.DecompositionResidualsCalculator | arguments | Calculate the residuals between the 3.6 micron image and the simulated bulge and disk images
-fetch_properties | fetch_from_database | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
-fetch_images | fetch_from_database | data.images.ImageFetcher | interactive | Fetch the images from the DustPedia database
-fetch_sed | fetch_from_database | data.sed.SEDFetcher | interactive | Fetch the galaxy SED
+fetch_properties | fetch | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
+fetch_images | fetch | data.images.ImageFetcher | interactive | Fetch the images from the DustPedia database
+fetch_seds | fetch_seds | data.seds.SEDFetcher | interactive | Fetch the galaxy SEDs
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 initialize_fit | -- | fitting.initialization.FittingInitializer | arguments | Do the initialization before starting the fitting
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure

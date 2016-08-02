@@ -17,7 +17,6 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from .component import PhotometryComponent
-from .sedfetching import SEDFetcher
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..core.sed import ObservedSED
@@ -98,31 +97,11 @@ class PhotoMeter(PhotometryComponent):
         # The SED
         self.sed = None
 
-        # The SEDFetcher
-        self.sed_fetcher = None
+        # The reference SEDs
+        self.reference_seds = dict()
 
         # The differences
         self.differences = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new PhotoMeter instance
-        photometer = cls(arguments.config)
-
-        # Set the modeling path
-        photometer.config.path = arguments.path
-
-        # Return the new instance
-        return photometer
 
     # -----------------------------------------------------------------
 
@@ -139,14 +118,11 @@ class PhotoMeter(PhotometryComponent):
         # 2. Load the truncated images
         self.load_images()
 
-        # 3. Calculate the Enclosed Energy Fractions
-        self.calculate_eefs()
+        # 3. Get the photometric flux points from the literature for comparison
+        self.load_reference_seds()
 
-        # 3. Do the photometry
+        # 4. Do the photometry
         self.do_photometry()
-
-        # 4. Get the photometric flux points from the literature for comparison
-        self.get_references()
 
         # 5. Calculate the differences between the calculated photometry and the reference SEDs
         self.calculate_differences()
@@ -168,9 +144,6 @@ class PhotoMeter(PhotometryComponent):
 
         # Create an observed SED
         self.sed = ObservedSED()
-
-        # Create an SEDFetcher instance
-        self.sed_fetcher = SEDFetcher()
 
     # -----------------------------------------------------------------
 
@@ -222,17 +195,6 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_eefs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
     def do_photometry(self):
 
         """
@@ -273,18 +235,24 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def get_references(self):
+    def load_reference_seds(self):
 
         """
         This function ...
         :return:
         """
 
-        # Specify which references should be consulted
-        self.sed_fetcher.config.catalogs = ["GALEX", "2MASS", "SINGS", "LVL", "Spitzer", "Spitzer/IRS", "IRAS", "IRAS-FSC", "S4G", "Brown", "Planck"]
+        # Inform the user
+        log.info("Loading the reference SEDs ...")
 
-        # Fetch the reference SEDs
-        self.sed_fetcher.run(self.galaxy_name)
+        # Loop over the SEDs in the data/SEDs directory
+        for path, name in fs.files_in_path(self.data_seds_path, extension="dat", returns=["path", "name"]):
+
+            # Open the observed SED
+            sed = ObservedSED.from_file(path)
+
+            # Add the SED to the dictionary
+            self.reference_seds[name] = sed
 
     # -----------------------------------------------------------------
 
@@ -304,7 +272,7 @@ class PhotoMeter(PhotometryComponent):
         number_of_points = len(instruments)
 
         # Initialize data and names
-        reference_labels = self.sed_fetcher.seds.keys()
+        reference_labels = self.reference_seds.keys()
         data = [[] for _ in range(len(reference_labels)+3)]
         names = ["Instrument", "Band", "Flux"]
         for label in reference_labels:
@@ -326,11 +294,11 @@ class PhotoMeter(PhotometryComponent):
                 relative_difference = None
 
                 # Loop over the data points in the reference SED
-                for j in range(len(self.sed_fetcher.seds[label].table["Wavelength"])):
+                for j in range(len(self.reference_seds[label].table["Wavelength"])):
 
-                    if self.sed_fetcher.seds[label].table["Instrument"][j] == instruments[i] and self.sed_fetcher.seds[label].table["Band"][j] == bands[i]:
+                    if self.reference_seds[label].table["Instrument"][j] == instruments[i] and self.reference_seds[label].table["Band"][j] == bands[i]:
 
-                        difference = fluxes[i] - self.sed_fetcher.seds[label].table["Flux"][j]
+                        difference = fluxes[i] - self.reference_seds[label].table["Flux"][j]
                         relative_difference = difference / fluxes[i] * 100.
 
                         # Break because a match has been found within this reference SED
@@ -442,7 +410,7 @@ class PhotoMeter(PhotometryComponent):
         plotter.add_observed_sed(self.sed, "PTS")
 
         # Add the reference SEDs
-        for label in self.sed_fetcher.seds: plotter.add_observed_sed(self.sed_fetcher.seds[label], label)
+        for label in self.reference_seds: plotter.add_observed_sed(self.reference_seds[label], label)
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_references.pdf")
@@ -537,10 +505,19 @@ class PhotoMeter(PhotometryComponent):
         # PREPARE THE CONVOLUTION KERNEL
         #psf.prepare_for(frame)
 
+        psf_copy = psf.copy()
+
         psf.prepare_chris(frame.pixelscale) ### PREPARE USING CHRIS'S METHOD (WHICH ALSO MAKES SURE THE KERNEL HAS UNEVEN NPIXELS)
 
+        psf.save(fs.join(self.phot_temp_path, filter_name + "_psf_chris.fits"))
+
         from pts.magic.tools import plotting
-        plotting.plot_box(psf.data, title="prepared PSF kernel for " + filter_name)
+        #plotting.plot_box(psf.data, title="CHRIS' METHOD prepared PSF kernel for " + filter_name)
+
+        psf_copy.prepare_for(frame)
+        #plotting.plot_box(psf_copy.data, title="prepared PSF kernel for " + filter_name)
+
+        psf_copy.save(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
 
         # SET INPUT DICT
 
@@ -682,8 +659,8 @@ def calculate_aperture_correction(input_dict):
     mask = ChrisFuncs.Photom.EllipseMask(cutout, input_dict['semimaj_pix'], input_dict['axial_ratio'], input_dict['angle'], input_dict['centre_i'], input_dict['centre_j']) #*band_dict['annulus_outer']
 
     ##
-    from pts.magic.tools import plotting
-    plotting.plot_mask(mask)
+    #from pts.magic.tools import plotting
+    #plotting.plot_mask(mask)
     ##
 
     # Produce guess values

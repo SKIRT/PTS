@@ -1281,7 +1281,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         choices = definition.required[name][2]
 
         # Give name and description
-        log.success(name + ": " + description + ")")
+        log.success(name + ": " + description + "")
 
         if choices is not None:
 

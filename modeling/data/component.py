@@ -46,9 +46,6 @@ class DataComponent(ModelingComponent):
         # The path to the data/images directory
         self.data_images_path = None
 
-        # The path to the data/seds directory
-        self.data_seds_path = None
-
         # The paths to the data/images/ directories for the different origins
         self.data_images_paths = dict()
 
@@ -69,9 +66,6 @@ class DataComponent(ModelingComponent):
 
         # Set ...
         self.data_images_path = fs.create_directory_in(self.data_path, "images")
-
-        # Set ...
-        self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
 
         # Set ...
         for origin in self.data_origins: self.data_images_paths[origin] = fs.create_directory_in(self.data_images_path, origin)

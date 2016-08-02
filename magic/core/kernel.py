@@ -126,7 +126,8 @@ class ConvolutionKernel(Frame):
         kernel_av_pixelscale_arcsec = self.average_pixelscale.to("arcsec/pix").value
 
         # If PSF pixel size is different to map pixel size, rescale PSF accordingly
-        if (av_pixelscale_arcsec / kernel_av_pixelscale_arcsec) > 1.001 or (av_pixelscale_arcsec / kernel_av_pixelscale_arcsec) < 0.999:
+        if (av_pixelscale_arcsec / kernel_av_pixelscale_arcsec) > 1.001 \
+                or (av_pixelscale_arcsec / kernel_av_pixelscale_arcsec) < 0.999:
 
             psf_in = self._data
 
@@ -135,7 +136,9 @@ class ConvolutionKernel(Frame):
             while psf_even:
 
                 zoom_factor = float(kernel_av_pixelscale_arcsec) / float(av_pixelscale_arcsec)
+
                 psf = zoom(psf_in, (zoom_factor, zoom_factor), mode='nearest')
+
                 if (psf.shape[0] % 2 != 0) and (psf.shape[1] % 2 != 0):
                     psf_even = False
                 else:
@@ -218,13 +221,22 @@ class ConvolutionKernel(Frame):
         # Debugging
         log.debug("Adjusting the pixelscale of the kernel to match that of the image ...")
 
-        average_pixelscale = 0.5 * (pixelscale.x + pixelscale.y)
-
         # Calculate the zooming factor
-        factor = (average_pixelscale / self.average_pixelscale).to("").value
+        x_zoom_factor = (self.pixelscale.x / pixelscale.x).to("").value
+        y_zoom_factor = (self.pixelscale.y / pixelscale.y).to("").value
 
-        # Rebin to the pixelscale
-        new_data = ndimage.interpolation.zoom(self._data, zoom=1.0 / factor)
+        # Loop until xsize and ysize are odd (so that kernel center is at exactly the center pixel)
+        while True:
+
+            # Rebin to the pixelscale
+            new_data = ndimage.interpolation.zoom(self._data, zoom=(y_zoom_factor, x_zoom_factor), mode="nearest") # previously, mode was not specified
+
+            if (new_data.shape[0] % 2 != 0) and (new_data.shape[1] % 2 != 0): break
+            else:
+
+                # 'Trim' the edges of the input PSF until the rescaled PSF has odd dimensions
+                self._data = self._data[1:, 1:]
+                self._data = self._data[:-1, :-1]
 
         # Set the new data and pixelscale
         self._data = new_data

@@ -130,6 +130,9 @@ class ModelingComponent(Configurable):
         # The path to the truncation mask of the reference image (and rebinned images in the dataset)
         self.reference_mask_path = None
 
+        # The path to the data/seds directory
+        self.data_seds_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -224,6 +227,9 @@ class ModelingComponent(Configurable):
 
         # The path to the truncation mask of the reference image (and rebinned images in the dataset)
         self.reference_mask_path = fs.join(self.truncation_masks_path, "reference.fits")
+
+        # Set ...
+        self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
 
     # -----------------------------------------------------------------
 
