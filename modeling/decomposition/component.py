@@ -43,6 +43,9 @@ class DecompositionComponent(ModelingComponent):
         # The path to the components/images directory
         self.components_images_path = None
 
+        # The path to the components/residuals directory
+        self.components_residuals_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -60,5 +63,8 @@ class DecompositionComponent(ModelingComponent):
 
         # Set ...
         self.components_images_path = fs.create_directory_in(self.components_path, "images")
+
+        # Set ...
+        self.components_residuals_path = fs.create_directory_in(self.components_path, "residuals")
 
 # -----------------------------------------------------------------
