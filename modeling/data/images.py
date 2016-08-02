@@ -60,6 +60,12 @@ class ImageFetcher(DataComponent):
         # 2. Fetch the images
         self.fetch_images()
 
+        # 3. Fetch GALEX data and calculate poisson errors
+        self.fetch_galex()
+
+        # 4. Fetch SDSS data and calculate poisson errors
+        self.fetch_sdss()
+
         # 3. Writing
         self.write()
 
@@ -107,6 +113,28 @@ class ImageFetcher(DataComponent):
 
             # Download the image
             self.database.download_image(self.ngc_id_nospaces, image_name, path)
+
+    # -----------------------------------------------------------------
+
+    def fetch_galex(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def fetch_sdss(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

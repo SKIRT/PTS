@@ -344,6 +344,8 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     coverage = False
     for raw_file in raw_files:
 
+        raw_file = raw_file + ".fits"
+
         # Read in map
         in_fitsdata = fits.open(fs.join(temp_raw_path, raw_file))
         in_image = in_fitsdata[0].data
