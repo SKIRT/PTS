@@ -21,7 +21,6 @@ from astropy.units import Unit, dimensionless_angles
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .component import DataComponent
-from ...core.basics.map import Map
 from ..preparation import unitconversion
 from ...core.basics.errorbar import ErrorBar
 from ...magic.basics.skygeometry import SkyCoordinate
@@ -310,7 +309,7 @@ class PropertyFetcher(DataComponent):
         log.info("Writing the galaxy info ...")
 
         # Write the galaxy info table
-        tables.write(self.info, self.galaxy_info_path, format="ascii.ecsv")
+        tables.write(self.info, self.galaxy_info_path)
 
     # -----------------------------------------------------------------
 

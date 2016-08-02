@@ -794,7 +794,15 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         :return:
         """
 
-        add_settings_interactive(self.config, self.definition)
+        # Ask whether optional parameters have to be shown, or to just use the default values
+        log.info("Do you want to configure optional settings (y or n)?")
+        log.info("Press ENTER to use the default (True)")
+
+        answer = raw_input("   : ")
+        if answer == "": value = True
+        else: value = parsing.boolean(answer)
+
+        add_settings_interactive(self.config, self.definition, prompt_optional=value)
 
 # -----------------------------------------------------------------
 
@@ -1239,7 +1247,7 @@ def write_definition(definition, configfile, indent=""):
 
 # -----------------------------------------------------------------
 
-def add_settings_interactive(config, definition):
+def add_settings_interactive(config, definition, prompt_optional=True):
 
     """
     This function ...
@@ -1395,11 +1403,7 @@ def add_settings_interactive(config, definition):
         answer = raw_input("   : ")
 
         if answer == "": value = default
-        elif answer == "y": value = True
-        elif answer == "n": value = False
-        elif answer == "yes": value = True
-        elif answer == "no": value = False
-        else: raise ValueError("Invalid input (must be y or n)")
+        else: value = parsing.boolean(answer)
 
         # Set the value
         config[name] = value
@@ -1418,6 +1422,6 @@ def add_settings_interactive(config, definition):
         log.success(name + ": " + section_description + " (section)")
 
         # Add the settings
-        add_settings_interactive(config[name], section_definition)
+        add_settings_interactive(config[name], section_definition, prompt_optional=prompt_optional)
 
 # -----------------------------------------------------------------

@@ -59,8 +59,8 @@ class GalaxyDecomposer(DecompositionComponent):
         # Call the constructor of the base class
         super(GalaxyDecomposer, self).__init__(config)
 
-        # The SKIRT execution context
-        self.skirt = SkirtExec()
+        # The SKIRT launching environment
+        self.launcher = SimpleSKIRTLauncher()
 
         # The 2D components
         self.components = None
@@ -380,28 +380,12 @@ class GalaxyDecomposer(DecompositionComponent):
         # Determine the path to the simulation output directory
         out_path = fs.create_directory_in(self.images_bulge2d_path, "out")
 
-        # Create a SkirtArguments object
-        arguments = SkirtArguments()
-
-        # Adjust the parameters
-        arguments.ski_pattern = ski_path
-        arguments.output_path = out_path
-        arguments.single = True   # we expect a single simulation from the ski pattern
-
         # Inform the user
-        log.info("Running the bulge simulation ...")
+        log.info("Running the bulge 2D simulation ...")
 
-        # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
-
-        # Determine the path to the output FITS file
-        bulge_image_path = fs.join(out_path, "bulge_earth_total.fits")
-
-        # Check if the output contains the "bulge_earth_total.fits" file
-        if not fs.is_file(bulge_image_path): raise RuntimeError("Something went wrong with the simple bulge simulation: output FITS file missing")
-
-        # Load the image
-        self.bulge2d_image = Frame.from_file(bulge_image_path)
+        # Simulate the bulge image
+        fluxdensity = self.components["bulge"].fluxdensity
+        self.bulge2d_image = self.launcher.run(ski_path, out_path, self.reference_wcs, fluxdensity, self.psf)
 
     # -----------------------------------------------------------------
 
@@ -440,46 +424,12 @@ class GalaxyDecomposer(DecompositionComponent):
         # Determine the path to the simulation output directory and create it
         out_path = fs.create_directory_in(self.images_bulge_path, "out")
 
-        # Create a SkirtArguments object
-        arguments = SkirtArguments()
-
-        # Adjust the parameters
-        arguments.ski_pattern = ski_path
-        arguments.output_path = out_path
-        arguments.single = True   # we expect a single simulation from the ski pattern
-
         # Inform the user
         log.info("Running the bulge simulation ...")
 
-        # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
-
-        # Determine the path to the output FITS file
-        bulge_image_path = fs.join(out_path, "bulge_earth_total.fits")
-
-        # Check if the output contains the "bulge_earth_total.fits" file
-        if not fs.is_file(bulge_image_path):
-            raise RuntimeError("Something went wrong with the bulge simulation: output FITS file missing")
-
-        # Open the bulge image
-        self.bulge_image = Frame.from_file(bulge_image_path)
-
-        # Set the coordinate system of the bulge image
-        self.bulge_image.wcs = self.reference_wcs
-
-        # Debugging
-        log.debug("Rescaling the bulge image to the bulge flux density at 3.6 micron ...")
-
-        # Rescale to the 3.6um flux density
+        # Simulate the bulge image
         fluxdensity = self.components["bulge"].fluxdensity
-        self.bulge_image *= fluxdensity.to("Jy").value / self.bulge_image.sum()
-        self.bulge_image.unit = "Jy"
-
-        # Debugging
-        log.debug("Convolving the bulge image to the PACS 160 resolution ...")
-
-        # Convolve the frame to the PACS 160 resolution
-        self.bulge_image = self.bulge_image.convolved(self.psf)
+        self.bulge_image = self.launcher.run(ski_path, out_path, self.reference_wcs, fluxdensity, self.psf, instrument_name="earth")
 
     # -----------------------------------------------------------------
 
@@ -518,46 +468,12 @@ class GalaxyDecomposer(DecompositionComponent):
         # Determine the path to the simulation output directory and create it
         out_path = fs.create_directory_in(self.images_disk_path, "out")
 
-        # Create a SkirtArguments object
-        arguments = SkirtArguments()
-
-        # Adjust the parameters
-        arguments.ski_pattern = ski_path
-        arguments.output_path = out_path
-        arguments.single = True   # we expect a single simulation from the ski pattern
-
         # Inform the user
         log.info("Running the disk simulation ...")
 
-        # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
-
-        # Determine the path to the output FITS file
-        disk_image_path = fs.join(out_path, "disk_earth_total.fits")
-
-        # Check if the output contains the "disk_earth_total.fits" file
-        if not fs.is_file(disk_image_path):
-            raise RuntimeError("Something went wrong with the disk simulation: output FITS file missing")
-
-        # Open the disk image
-        self.disk_image = Frame.from_file(disk_image_path)
-
-        # Set the coordinate system of the disk image
-        self.disk_image.wcs = self.reference_wcs
-
-        # Debugging
-        log.debug("Rescaling the disk image to the disk flux density at 3.6 micron ...")
-
-        # Rescale to the 3.6um flux density
+        # Simulate the disk image
         fluxdensity = self.components["disk"].fluxdensity
-        self.disk_image *= fluxdensity.to("Jy").value / self.disk_image.sum()
-        self.disk_image.unit = "Jy"
-
-        # Debugging
-        log.debug("Convolving the disk image to the PACS 160 resolution ...")
-
-        # Convolve the frame to the PACS 160 resolution
-        self.disk_image = self.disk_image.convolved(self.psf)
+        self.disk_image = self.launcher.run(ski_path, out_path, self.reference_wcs, fluxdensity, self.psf, instrument_name="earth")
 
     # -----------------------------------------------------------------
 
@@ -600,46 +516,12 @@ class GalaxyDecomposer(DecompositionComponent):
         # Determine the path to the simulation output directory and create it
         out_path = fs.create_directory_in(self.images_model_path, "out")
 
-        # Create a SkirtArguments object
-        arguments = SkirtArguments()
-
-        # Adjust the parameters
-        arguments.ski_pattern = ski_path
-        arguments.output_path = out_path
-        arguments.single = True   # we expect a single simulation from the ski pattern
-
         # Inform the user
-        log.info("Running the disk+bulge simulation ...")
+        log.info("Running the model simulation ...")
 
-        # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
-
-        # Determine the path to the output FITS file
-        model_image_path = fs.join(out_path, "model_earth_total.fits")
-
-        # Check if the output contains the "model_earth_total.fits" file
-        if not fs.is_file(model_image_path):
-            raise RuntimeError("Something went wrong with the disk+bulge simulation: output FITS file missing")
-
-        # Open the model image
-        self.model_image = Frame.from_file(model_image_path)
-
-        # Set the coordinate system of the model image
-        self.model_image.wcs = self.reference_wcs
-
-        # Debugging
-        log.debug("Rescaling the model image to the bulge+disk flux density at 3.6 micron ...")
-
-        # Rescale to the 3.6um flux density
-        fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity # sum of bulge and disk component flux density
-        self.model_image *= fluxdensity.to("Jy").value / self.model_image.sum()
-        self.model_image.unit = "Jy"
-
-        # Debugging
-        log.debug("Convolving the model image to the PACS 160 resolution ...")
-
-        # Convolve the frame to the PACS 160 resolution
-        self.model_image = self.model_image.convolved(self.psf)
+        # Simulate the model image
+        fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity  # sum of bulge and disk component flux density
+        self.model_image = self.launcher.run(ski_path, out_path, self.reference_wcs, fluxdensity, self.psf, instrument_name="earth")
 
     # -----------------------------------------------------------------
 
@@ -757,5 +639,93 @@ class GalaxyDecomposer(DecompositionComponent):
         region.append(sky_ellipse)
         region_path = fs.join(self.components_path, "disk.reg")
         region.save(region_path)
+
+# -----------------------------------------------------------------
+
+class SimpleSKIRTLauncher(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # The SKIRT execution context
+        self.skirt = SkirtExec()
+
+    # -----------------------------------------------------------------
+
+    def run(self, ski_path, out_path, wcs, total_flux, kernel, instrument_name=None):
+
+        """
+        This function ...
+        :param ski_path:
+        :param out_path:
+        :param wcs:
+        :param total_flux:
+        :param kernel:
+        :param instrument_name:
+        :return:
+        """
+
+        # Create a SkirtArguments object
+        arguments = SkirtArguments()
+
+        # Adjust the parameters
+        arguments.ski_pattern = ski_path
+        arguments.output_path = out_path
+        arguments.single = True  # we expect a single simulation from the ski pattern
+
+        # Inform the user
+        log.info("Running a SKIRT simulation with " + str(fs.name(ski_path)) + " ...")
+
+        # Run the simulation
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
+
+        # Get the simulation prefix
+        prefix = simulation.prefix()
+
+        # Get the (frame)instrument name
+        if instrument_name is None:
+
+            # Get the name of the unique instrument (give an error if there are more instruments)
+            instrument_names = simulation.parameters().get_instrument_names()
+            assert len(instrument_names) == 1
+            instrument_name = instrument_names[0]
+
+        # Determine the name of the SKIRT output FITS file
+        fits_name = prefix + "_" + instrument_name + "_total.fits"
+
+        # Determine the path to the output FITS file
+        fits_path = fs.join(out_path, fits_name)
+
+        # Check if the output contains the "disk_earth_total.fits" file
+        if not fs.is_file(fits_path): raise RuntimeError("Something went wrong with the " + prefix + " simulation: output FITS file missing")
+
+        # Open the simulated frame
+        simulated_frame = Frame.from_file(fits_path)
+
+        # Set the coordinate system of the disk image
+        simulated_frame.wcs = wcs
+
+        # Debugging
+        log.debug("Rescaling the " + prefix + " image to a flux density of " + str(total_flux) + " ...")
+
+        # Rescale to the 3.6um flux density
+        simulated_frame *= total_flux.value / simulated_frame.sum()
+        simulated_frame.unit = total_flux.unit
+
+        # Debugging
+        log.debug("Convolving the " + prefix + " image to the PACS 160 resolution ...")
+
+        # Convolve the frame to the PACS 160 resolution
+        simulated_frame.convolve(kernel)
+
+        # Return the frame
+        return simulated_frame
 
 # -----------------------------------------------------------------
