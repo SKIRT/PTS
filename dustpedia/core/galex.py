@@ -37,9 +37,6 @@ class GALEXMosaicMaker(Configurable):
         # The DustPedia data processing instance
         self.dpdp = None
 
-        # The path to the temporary directory
-        self.path = None
-
     # -----------------------------------------------------------------
 
     def run(self):
@@ -83,6 +80,6 @@ class GALEXMosaicMaker(Configurable):
         log.info("Making the GALEX mosaics ...")
 
         # Perform the mosaicing
-        self.dpdp.make_galex_mosaic_and_poisson_frame(self.config.galaxy_name, self.path)
+        self.dpdp.make_galex_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.path)
 
 # -----------------------------------------------------------------

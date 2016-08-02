@@ -16,8 +16,6 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from .dataprocessing import DustPediaDataProcessing
-from ...core.tools import filesystem as fs
-from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -38,9 +36,6 @@ class SDSSMosaicMaker(Configurable):
 
         # The DustPedia data processing instance
         self.dpdp = None
-
-        # The path to the temporary directory
-        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -85,6 +80,6 @@ class SDSSMosaicMaker(Configurable):
         log.info("Making the SDSS " + self.config.band + " mosaic ...")
 
         # Make ...
-        self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.band, self.path)
+        self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.band, self.config.path)
 
 # -----------------------------------------------------------------

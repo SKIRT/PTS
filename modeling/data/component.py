@@ -40,6 +40,15 @@ class DataComponent(ModelingComponent):
         # The path to the galaxy info file
         self.galaxy_info_path = None
 
+        # The paths for the images from different origins
+        self.data_galex_path = None
+        self.data_sdss_path = None
+        self.data_ha_path = None
+        self.data_2mass_path = None
+        self.data_spitzer_path = None
+        self.data_wise_path = None
+        self.data_herschel_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -54,5 +63,14 @@ class DataComponent(ModelingComponent):
 
         # Set the path to the galaxy info file
         self.galaxy_info_path = fs.join(self.data_path, "info.dat")
+
+        # The paths for the images from different origins
+        self.data_galex_path = fs.create_directory_in(self.data_path, "GALEX")
+        self.data_sdss_path = fs.create_directory_in(self.data_path, "SDSS")
+        self.data_ha_path = fs.create_directory_in(self.data_path, "Halpha")
+        self.data_2mass_path = fs.create_directory_in(self.data_path, "2MASS")
+        self.data_spitzer_path = fs.create_directory_in(self.data_path, "Spitzer")
+        self.data_wise_path = fs.create_directory_in(self.data_path, "WISE")
+        self.data_herschel_path = fs.create_directory_in(self.data_path, "Herschel")
 
 # -----------------------------------------------------------------

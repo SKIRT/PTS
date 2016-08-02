@@ -44,8 +44,11 @@ class ImageFetcher(DataComponent):
         # The DustPedia database
         self.database = DustPediaDatabase()
 
+        # The names of the images found on the DustPedia archive
+        self.dustpedia_image_names = None
+
         # The images
-        self.images = []
+        #self.images = []
 
     # -----------------------------------------------------------------
 
@@ -59,8 +62,8 @@ class ImageFetcher(DataComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Fetch the images
-        self.fetch_images()
+        # 2. Fetch the images from the DustPedia archive
+        self.get_dustpedia_names()
 
         # 3. Fetch GALEX data and calculate poisson errors
         self.fetch_galex()
@@ -68,7 +71,22 @@ class ImageFetcher(DataComponent):
         # 4. Fetch SDSS data and calculate poisson errors
         self.fetch_sdss()
 
-        # 3. Writing
+        # 5. Fetch the H-alpha image
+        self.fetch_halpha()
+
+        # 6.
+        self.fetch_2mass()
+
+        # 7.
+        self.fetch_spitzer()
+
+        # 8.
+        self.fetch_wise()
+
+        # 9.
+        self.fetch_herschel()
+
+        # 10. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -94,7 +112,7 @@ class ImageFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def fetch_images(self):
+    def get_dustpedia_names(self):
 
         """
         This function ...
@@ -102,10 +120,28 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the images ...")
+        log.info("Fetching the names of the images on the DustPedia database ...")
 
         # Get the image names
-        image_names = self.database.get_image_names(self.ngc_id_nospaces)
+        self.dustpedia_image_names = self.database.get_image_names(self.ngc_id_nospaces)
+
+    # -----------------------------------------------------------------
+
+    def fetch_galex(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def fetch_sdss(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Download the images
         for image_name in image_names:
@@ -118,25 +154,63 @@ class ImageFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def fetch_galex(self):
+    def fetch_halpha(self):
 
         """
         This function ...
         :return:
         """
 
-        maker = GALEXMosaicMaker()
+        # Inform the user
+        log.info("Fetching the H-alpha image ...")
 
     # -----------------------------------------------------------------
 
-    def fetch_sdss(self):
+    def fetch_2mass(self):
 
         """
         This function ...
         :return:
         """
 
-        maker = SDSSMosaicMaker()
+        # Inform the user
+        log.info("Fetching the ...")
+
+    # -----------------------------------------------------------------
+
+    def fetch_spitzer(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fetching the ...")
+
+    # -----------------------------------------------------------------
+
+    def fetch_wise(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fetching the ...")
+
+    # -----------------------------------------------------------------
+
+    def fetch_herschel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fetching the ...")
 
     # -----------------------------------------------------------------
 
