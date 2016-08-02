@@ -1,2 +1,3 @@
 # Command | Configuration | Class | Configuration method | Description
-calculate_poisson_errors | poisson | core.poisson.PoissonErrorCalculator | interactive | Calculate poisson error maps for DustPedia UV and optical images.
+get_galex | galex | core.galex.GALEXMosaicMaker | interactive | Make the DustPedia mosaics of the GALEX images of a galaxy and make the maps of the Poisson errors.
+get_sdss | sdss | core.sdss.SDSSMosaicMaker | interactive | Make the DustPedia mosaic of the SDSS image of a galaxy in a certain band and make a map of the Poisson errors.

@@ -590,7 +590,6 @@ class ModelingComponent(Configurable):
         if path is None: return None
 
         # Else, return the mask
-        from ...magic.core.mask import Mask
         return Mask.from_file(path)
 
     # -----------------------------------------------------------------

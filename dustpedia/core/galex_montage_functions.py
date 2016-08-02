@@ -341,10 +341,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     # Ensure that at least one of the raw GALEX tiles has actual flux coverage at location of source
     # raw_files = os.listdir(temp_raw_path) ## THERE WAS A 'deg' FILE IN THE DIRECTORY AS WELL WHICH WAS NOT A FITS FILE BUT A PLAIN TEXT HEADER FILE, AND SO THIS WASN'T WORKING
     raw_files = fs.files_in_path(temp_raw_path, extension="fits", returns="name")
+    raw_files = [name + ".fits" for name in raw_files]
     coverage = False
     for raw_file in raw_files:
-
-        raw_file = raw_file + ".fits"
 
         # Read in map
         in_fitsdata = fits.open(fs.join(temp_raw_path, raw_file))

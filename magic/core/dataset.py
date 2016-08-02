@@ -267,6 +267,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def frames_in_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return get_frame_names(self.paths[name])
+
+    # -----------------------------------------------------------------
+
     def masks_in_image(self, name):
 
         """

@@ -17,6 +17,8 @@ from .component import DataComponent
 from ...dustpedia.core.database import DustPediaDatabase, get_account
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
+from ...dustpedia.core.galex import GALEXMosaicMaker
+from ...dustpedia.core.sdss import SDSSMosaicMaker
 
 # -----------------------------------------------------------------
 
@@ -123,7 +125,7 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
-        pass
+        maker = GALEXMosaicMaker()
 
     # -----------------------------------------------------------------
 
@@ -134,7 +136,7 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
-        pass
+        maker = SDSSMosaicMaker()
 
     # -----------------------------------------------------------------
 
