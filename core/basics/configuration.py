@@ -765,11 +765,12 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
 
     # -----------------------------------------------------------------
 
-    def run(self, definition):
+    def run(self, definition, prompt_optional=None):
 
         """
         This function ...
         :param definition:
+        :param prompt_optional:
         :return:
         """
 
@@ -780,29 +781,32 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         self.set_logging_and_cwd()
 
         # Do interactive
-        self.interactive()
+        self.interactive(prompt_optional)
 
         # Return the config
         return self.config
 
     # -----------------------------------------------------------------
 
-    def interactive(self):
+    def interactive(self, prompt_optional):
 
         """
         This function ...
+        :param prompt_optional:
         :return:
         """
 
-        # Ask whether optional parameters have to be shown, or to just use the default values
-        log.info("Do you want to configure optional settings (y or n)?")
-        log.info("Press ENTER to use the default (True)")
+        if prompt_optional is None:
 
-        answer = raw_input("   : ")
-        if answer == "": value = True
-        else: value = parsing.boolean(answer)
+            # Ask whether optional parameters have to be shown, or to just use the default values
+            log.info("Do you want to configure optional settings (y or n)?")
+            log.info("Press ENTER to use the default (True)")
 
-        add_settings_interactive(self.config, self.definition, prompt_optional=value)
+            answer = raw_input("   : ")
+            if answer == "": prompt_optional = True
+            else: prompt_optional = parsing.boolean(answer)
+
+        add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional)
 
 # -----------------------------------------------------------------
 

@@ -35,6 +35,9 @@ class TruncationComponent(ModelingComponent):
         # Call the constructor of the base class
         super(TruncationComponent, self).__init__(config)
 
+        # The path to the truncation/images directory
+        self.truncation_images_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -46,5 +49,8 @@ class TruncationComponent(ModelingComponent):
 
         # Call the setup function of the base class
         super(TruncationComponent, self).setup()
+
+        # Set the path to the truncation/images directory
+        self.truncation_images_path = fs.create_directory_in(self.truncation_path, "images")
 
 # -----------------------------------------------------------------

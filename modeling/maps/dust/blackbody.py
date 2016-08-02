@@ -175,8 +175,11 @@ class BlackBodyDustMapMaker(MapsComponent):
         # Get the list of wavelengths
         wavelengths = self.datacube.wavelengths(unit="micron", asarray=True)
 
+        # Create truncation mask for datacube
+        truncation_mask = self.truncation_ellipse.to_pixel(self.datacube.wcs).to_mask(self.datacube.xsize, self.datacube.ysize)
+
         # Get list of x and y pixels
-        pixels_y, pixels_x = np.where(self.truncation_mask(self.datacube))
+        pixels_y, pixels_x = np.where(truncation_mask)
         npixels = pixels_x.size
 
         #ellipse = self.truncation_ellipse.to_pixel(self.datacube.wcs)

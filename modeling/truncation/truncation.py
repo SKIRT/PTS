@@ -16,10 +16,9 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...magic.core.image import Image
-from ...magic.core.frame import Frame
 from ...magic.basics.skyregion import SkyRegion
-from ...magic.basics.mask import Mask
+from ...magic.basics.mask import Mask as oldMask
+from ...magic.core.mask import Mask as newMask
 from .component import TruncationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
@@ -49,36 +48,18 @@ class Truncator(TruncationComponent):
 
         # --- Attributes ---
 
-        # The list of images
-        self.images = []
+        self.images = dict()
+        self.bad_masks = dict()
+        self.padded_masks = dict()
 
-        # The disk ellipse
-        self.disk_ellipse = None
+        # The truncated images (keys are the different scale factors)
+        self.truncated_images = dict()
 
-        # The disk and bulge frames
-        self.disk = None
-        self.bulge = None
-        self.model = None
+        # Truncation ellipse
+        self.ellipse = None
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new PhotoMeter instance
-        truncator = cls(arguments.config)
-
-        # Set the input and output path
-        truncator.config.path = arguments.path
-
-        # Return the new instance
-        return truncator
+        # The truncation masks
+        self.masks = dict()
 
     # -----------------------------------------------------------------
 
@@ -92,14 +73,17 @@ class Truncator(TruncationComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the prepared images
+        # 2. Load the images
         self.load_images()
 
-        # 3. Get the disk ellipse
-        self.get_disk_ellipse()
-
-        # 4. Truncate the images
+        # 3. Truncate the images
         self.truncate()
+
+        # Create the truncation ellipse
+        self.create_ellipse()
+
+        # 4. Create the masks
+        self.create_masks()
 
         # 5. Writing
         self.write()
@@ -126,45 +110,36 @@ class Truncator(TruncationComponent):
         """
 
         # Inform the user
-        log.info("Loading the images ...")
+        log.info(" ... ")
 
-        # Loop over all directories in the preparation directory
-        for directory_path, directory_name in fs.directories_in_path(self.prep_path, returns=["path", "name"]):
+        # Loop over the test images
+        for name in self.dataset.names:
 
-            # Look for a file called 'result.fits'
-            image_path = fs.join(directory_path, "result.fits")
-            if not fs.is_file(image_path):
-                log.warning("Prepared image could not be found for " + directory_name)
-                continue
+            # Get mask names
+            mask_names = self.dataset.masks_in_image(name)
 
-            # If the truncated image is already present, skip it
-            truncated_path = fs.join(self.truncation_path, directory_name + ".fits")
-            if fs.is_file(truncated_path): continue
+            # Check if 'bad' or 'padded' mask is present
+            if "bad" in mask_names or "padded" in mask_names:
 
-            # Open the prepared image
-            image = Image.from_file(image_path)
+                # Load the image
+                image = self.dataset.get_image(name)
 
-            # Set the image name
-            image.name = directory_name
+                # Add the frame
+                frame = image.frames.primary
+                self.images[name] = frame
 
-            # Add the image to the list
-            self.images.append(image)
+                # Add bad mask
+                if "bad" in image.masks: self.bad_masks[name] = image.masks.bad
 
-        # Load the disk image
-        disk_path = fs.join(self.components_path, "disk.fits")
-        self.disk = Frame.from_file(disk_path)
+                # Add padded mask
+                if "padded" in image.masks: self.padded_masks[name] = image.masks.padded
 
-        # Load the bulge image
-        bulge_path = fs.join(self.components_path, "bulge.fits")
-        self.bulge = Frame.from_file(bulge_path)
-
-        # Load the model image
-        model_path = fs.join(self.components_path, "model.fits")
-        self.model = Frame.from_file(model_path)
+            # No 'bad' or 'padded' mask
+            else: self.images[name] = self.dataset.get_frame(name, masked=False)
 
     # -----------------------------------------------------------------
 
-    def get_disk_ellipse(self):
+    def truncate(self):
 
         """
         This function ...
@@ -172,21 +147,100 @@ class Truncator(TruncationComponent):
         """
 
         # Inform the user
-        log.info("Loading the region that describes the projected disk component ...")
+        log.info(" ...")
 
-        # Get the path to the disk region
-        path = fs.join(self.components_path, "disk.reg")
+        # Loop over the different scale factors
+        for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
 
-        # Open the region
-        region = SkyRegion.from_file(path)
+            # Calculate the corrected 24 micron image
+            truncated = self.make_truncated_images(factor)
 
-        # Get ellipse in sky coordinates
-        scale_factor = 0.82
-        self.disk_ellipse = region[0] * scale_factor
+            # Add the attenuation map to the dictionary
+            self.truncated_images[factor] = truncated
 
     # -----------------------------------------------------------------
 
-    def truncate(self):
+    def make_truncated_images(self, factor):
+
+        """
+        This function ...
+        :param factor:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making ...")
+
+        # Truncated images
+        truncated_images = dict()
+
+        # Loop over the test images
+        for name in self.config.image_names:
+
+            # Create ellipse in image coordinates from ellipse in sky coordinates for this image
+            ellipse = self.disk_ellipse.to_pixel(self.images[name].wcs) * factor
+
+            # Create mask from ellipse
+            mask = oldMask.from_shape(ellipse, self.images[name].xsize, self.images[name].ysize, invert=True)
+
+            # Add masks of padded and bad pixels
+            # for example for WISE, this mask even covers pixels within the elliptical region
+            if name in self.bad_masks: mask += self.bad_masks[name]
+            if name in self.padded_masks: mask += self.padded_masks[name]
+
+            # Truncate the image
+            truncated = self.images[name].copy()
+            truncated[mask] = 0.0
+
+            # Add the image
+            truncated_images[name] = truncated
+
+        # Return the dictionary of truncated images
+        return truncated_images
+
+    # -----------------------------------------------------------------
+
+    def create_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ellipse = self.disk_ellipse * self.config.best_factor
+
+    # -----------------------------------------------------------------
+
+    def create_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info(" ... ")
+
+        # Loop over all images
+        for name in self.images:
+
+            # Create ellipse in image coordinates from ellipse in sky coordinates for this image
+            ellipse = self.disk_ellipse.to_pixel(self.images[name].wcs) * self.config.best_factor
+
+            # Create mask from ellipse
+            mask = newMask(oldMask.from_shape(ellipse, self.images[name].xsize, self.images[name].ysize, invert=True))
+
+            # Add masks of padded and bad pixels
+            # for example for WISE, this mask even covers pixels within the elliptical region
+            if name in self.bad_masks: mask += newMask(self.bad_masks[name])
+            if name in self.padded_masks: mask += newMask(self.padded_masks[name])
+
+            # Add the mask
+            self.masks[name] = mask
+
+    # -----------------------------------------------------------------
+
+    def truncate_old(self):
 
         """
         This function ...
@@ -252,6 +306,9 @@ class Truncator(TruncationComponent):
         # Write the truncation ellipse
         self.write_ellipse()
 
+        # Write the truncation masks
+        self.write_masks()
+
     # -----------------------------------------------------------------
 
     def write_images(self):
@@ -264,32 +321,15 @@ class Truncator(TruncationComponent):
         # Inform the user
         log.info("Writing the truncated images ...")
 
-        # Loop over all images
-        for image in self.images:
+        for factor in self.truncated_images:
 
-            # Determine the path to the truncated image
-            truncated_path = fs.join(self.truncation_path, image.name + ".fits")
+            path = fs.create_directory_in(self.truncation_images_path, str(factor))
 
-            # Debugging
-            log.debug("Writing the truncated " + image.name + " image to '" + truncated_path + "' ...")
+            # Save the images
+            for name in self.truncated_images[factor]:
 
-            # Save the image
-            image.save(truncated_path)
-
-        # Write the disk image
-        disk_path = fs.join(self.truncation_path, "disk.fits")
-        log.debug("Writing the truncated disk image to '" + disk_path + "' ...")
-        self.disk.save(disk_path)
-
-        # Write the bulge image
-        bulge_path = fs.join(self.truncation_path, "bulge.fits")
-        log.debug("Writing the truncated bulge image to '" + bulge_path + "' ...")
-        self.bulge.save(bulge_path)
-
-        # Write the model image
-        model_path = fs.join(self.truncation_path, "model.fits")
-        log.debug("Writing the truncated model image to '" + model_path + "' ...")
-        self.model.save(model_path)
+                image_path = fs.join(path, name + ".fits")
+                self.truncated_images[factor][name].save(image_path)
 
     # -----------------------------------------------------------------
 
@@ -308,7 +348,23 @@ class Truncator(TruncationComponent):
 
         # Write the ellipse region
         region = SkyRegion()
-        region.append(self.disk_ellipse)
+        region.append(self.ellipse)
         region.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the masks
+        for name in self.masks:
+
+            # Save the mask
+            path = fs.join(self.truncation_masks_path, name + ".fits")
+            self.masks[name].save(path)
 
 # -----------------------------------------------------------------

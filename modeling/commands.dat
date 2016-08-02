@@ -1,5 +1,5 @@
 # Command | Configuration | Class | Configuration method | Description
-truncate | -- | truncation.truncation.Truncator | arguments | Create the truncated images
+truncate | -- | truncation.truncation.Truncator | interactive | Determine the truncation region
 explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the parameter space for the radiative transfer modeling
 make_old_map | -- | maps.stars.old.OldStellarMapMaker | arguments | Make the map of the old stellar disk
 make_young_map | -- | maps.stars.young.YoungStellarMapMaker | interactive | Make the map of the young stellar disk

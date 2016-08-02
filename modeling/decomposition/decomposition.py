@@ -582,16 +582,13 @@ class GalaxyDecomposer(DecompositionComponent):
         self.bulge2d_image.save(bulge_2d_path)
 
         # Determine the path to the bulge image and save it
-        final_bulge_path = fs.join(self.components_images_path, "bulge.fits")
-        self.bulge_image.save(final_bulge_path)
+        self.bulge_image.save(self.bulge_image_path)
 
         # Determine the path to the disk image and save it
-        final_disk_path = fs.join(self.components_images_path, "disk.fits")
-        self.disk_image.save(final_disk_path)
+        self.disk_image.save(self.disk_image_path)
 
         # Determine the path to the model image and save it
-        final_model_path = fs.join(self.components_images_path, "model.fits")
-        self.model_image.save(final_model_path)
+        self.model_image.save(self.model_image_path)
 
     # -----------------------------------------------------------------
 

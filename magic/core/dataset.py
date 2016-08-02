@@ -22,10 +22,11 @@ from astropy.io import fits
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .frame import Frame
-from .io import get_frame_names
+from .io import get_frame_names, get_mask_names, get_plane_names
 from ...core.tools.logging import log
 from .datacube import DataCube
 from .image import Image
+from .mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
@@ -50,6 +51,9 @@ class DataSet(object):
 
         # The paths to the error maps
         self.error_paths = dict()
+
+        # The paths to the masks
+        self.mask_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -134,16 +138,55 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frame(self, name):
+    def add_mask_path(self, name, path):
 
         """
         This function ...
         :param name:
+        :param path:
+        :return:
+        """
+
+        # Check if the file exists
+        if not fs.is_file(path): raise IOError("File does not exist: '" + path + "'")
+
+        # Check if the corresponding frame exists
+        if name not in self.paths: raise ValueError("Corresponding image with name " + name + " has not been added")
+
+        # Check if already such a name
+        if name in self.mask_paths: raise ValueError("Already a mask path in the dataset with the name " + name)
+
+        # Add the path
+        self.mask_paths[name] = path
+
+    # -----------------------------------------------------------------
+
+    def get_frame(self, name, masked=True):
+
+        """
+        This function ...
+        :param name:
+        :param masked:
         :return:
         """
 
         # Open the frame and return it
-        return Frame.from_file(self.paths[name])
+        frame = Frame.from_file(self.paths[name])
+
+        # Check if the frame has to be masked
+        if masked:
+
+            # Get the mask and set frame pixels to zero
+            if name in self.mask_paths:
+                mask = self.get_mask(name)
+                frame[mask] = 0.0
+            else: log.warning("No mask available for " + name + " frame")
+
+        # Set the name
+        frame.name = name
+
+        # Return the frame
+        return frame
 
     # -----------------------------------------------------------------
 
@@ -159,11 +202,12 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_errors(self, name):
+    def get_errors(self, name, masked=True):
 
         """
         This function ...
         :param name:
+        :param masked:
         :return:
         """
 
@@ -171,9 +215,24 @@ class DataSet(object):
         if name not in self.paths: raise ValueError("Invalid name: " + name)
 
         # Get the errors frame
-        if name in self.error_paths: return Frame.from_file(self.error_paths[name])
-        elif "errors" in get_frame_names(self.paths[name]): return Frame.from_file(self.paths[name], plane="errors")
+        if name in self.error_paths: errors = Frame.from_file(self.error_paths[name])
+        elif "errors" in get_frame_names(self.paths[name]): errors = Frame.from_file(self.paths[name], plane="errors")
         else: return None
+
+        # Check if the error frame has to be masked
+        if masked:
+
+            # Get the mask and set frame pixels to zero
+            if name in self.mask_paths:
+                mask = self.get_mask(name)
+                errors[mask] = 0.0
+            else: log.warning("No mask available for " + name + " frame")
+
+        # Set the name
+        errors.name = name
+
+        # Return the errors frame
+        return errors
 
     # -----------------------------------------------------------------
 
@@ -186,7 +245,57 @@ class DataSet(object):
         """
 
         # Open the image and return it
-        return Image.from_file(self.paths[name])
+        image = Image.from_file(self.paths[name])
+
+        # Set the name
+        image.name = name
+
+        # Return the image
+        return image
+
+    # -----------------------------------------------------------------
+
+    def planes_in_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return get_plane_names(self.paths[name])
+
+    # -----------------------------------------------------------------
+
+    def masks_in_image(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return get_mask_names(self.paths[name])
+
+    # -----------------------------------------------------------------
+
+    def get_mask(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Check if the name appears in the frames list
+        if name not in self.paths: raise ValueError("Invalid name: " + name)
+
+        # Check if the name appears in the masks list
+        if name not in self.mask_paths: raise ValueError("The " + name + " frame has no mask")
+
+        # Otherwise, return the mask
+        mask = Mask.from_file(self.mask_paths[name])
+        return mask
 
     # -----------------------------------------------------------------
 

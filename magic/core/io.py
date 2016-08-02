@@ -30,11 +30,12 @@ from .segmentationmap import SegmentationMap
 
 # -----------------------------------------------------------------
 
-def get_frame_names(path):
+def get_plane_names(path, ptype=None):
 
     """
     This function ...
     :param path:
+    :param ptype:
     :return:
     """
 
@@ -52,10 +53,46 @@ def get_frame_names(path):
 
         # Get name and description of plane
         name, description, plane_type = headers.get_frame_name_and_description(header, i, always_call_first_primary=False)
-        if plane_type == "frame": frames[name] = description
+        if ptype is None or (plane_type == ptype): frames[name] = description
 
     # Return the frames with their name and description
     return frames
+
+# -----------------------------------------------------------------
+
+def get_frame_names(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return get_plane_names(path, "frame")
+
+# -----------------------------------------------------------------
+
+def get_mask_names(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return get_plane_names(path, "mask")
+
+# -----------------------------------------------------------------
+
+def get_segments_names(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return get_plane_names(path, "segments")
 
 # -----------------------------------------------------------------
 

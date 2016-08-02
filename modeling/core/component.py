@@ -34,6 +34,8 @@ from ..basics.projection import GalaxyProjection
 from ..basics.properties import GalaxyProperties
 from ...magic.tools import catalogs
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.core.mask import Mask
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -113,6 +115,20 @@ class ModelingComponent(Configurable):
         self.earth_projection_path = None
         self.edgeon_projection_path = None
         self.faceon_projection_path = None
+
+        # The path to the components/images directory
+        self.components_images_path = None
+
+        # The paths to the final bulge, disk and model images
+        self.bulge_image_path = None
+        self.disk_image_path = None
+        self.model_image_path = None
+
+        # The path to the truncation/masks directory
+        self.truncation_masks_path = None
+
+        # The path to the truncation mask of the reference image (and rebinned images in the dataset)
+        self.reference_mask_path = None
 
     # -----------------------------------------------------------------
 
@@ -194,6 +210,20 @@ class ModelingComponent(Configurable):
         self.earth_projection_path = fs.join(self.components_projections_path, "earth.proj")
         self.edgeon_projection_path = fs.join(self.components_projections_path, "edgeon.proj")
         self.faceon_projection_path = fs.join(self.components_projections_path, "faceon.proj")
+
+        # Set the path to the components/images directory
+        self.components_images_path = fs.create_directory_in(self.components_path, "images")
+
+        # Set the path to the final bulge, disk and model images
+        self.bulge_image_path = fs.join(self.components_images_path, "bulge.fits")
+        self.disk_image_path = fs.join(self.components_images_path, "disk.fits")
+        self.model_image_path = fs.join(self.components_images_path, "model.fits")
+
+        # Set the path to the truncation/masks directory
+        self.truncation_masks_path = fs.create_directory_in(self.truncation_path, "masks")
+
+        # The path to the truncation mask of the reference image (and rebinned images in the dataset)
+        self.reference_mask_path = fs.join(self.truncation_masks_path, "reference.fits")
 
     # -----------------------------------------------------------------
 
@@ -314,17 +344,21 @@ class ModelingComponent(Configurable):
         # Initialize the dataset
         dataset = DataSet()
 
-        # Loop over all FITS files found in the 'truncated' directory
-        for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
+        # Loop over all directories in the preparation directory
+        for path, name in fs.directories_in_path(self.prep_path, not_contains="Halpha", returns=["path", "name"]):
 
-            # Ignore the bulge, disk and model images
-            if name == "bulge" or name == "disk" or name == "model": continue
-
-            # Ignore the H alpha image
-            if "Halpha" in name: continue
+            # Check whether the 'result' file exists
+            result_path = fs.join(path, "result.fits")
+            if not fs.is_file(result_path): raise RuntimeError("The " + name + " result image does not exist")
 
             # Add the image path to the dataset
-            dataset.add_path(name, path)
+            dataset.add_path(name, result_path)
+
+            # Check whether a truncation mask is available
+            mask_path = self.truncation_mask_path(name)
+
+            # Add the mask path
+            if mask_path is not None: dataset.add_mask_path(name, mask_path)
 
         # Return the dataset
         return dataset
@@ -332,50 +366,103 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def halpha_frame(self):
+    def halpha_frame(self, masked=True):
 
         """
         This function ...
+        :param masked:
         :return:
         """
 
-        # Determine the path
-        path = fs.join(self.truncation_path, "Mosaic Halpha.fits")
+        # Determine the path to the image
+        path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
 
         # Load and return the frame
-        return Frame.from_file(path)
+        frame = Frame.from_file(path)
+
+        # Check if the frame has to be masked
+        if masked:
+
+            if fs.is_file(self.reference_mask_path):
+
+                mask = Mask.from_file(self.reference_mask_path)
+                frame[mask] = 0.0
+
+            else: log.warning("The truncation mask has not been created yet")
+
+        # Return the frame
+        return frame
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def disk_frame(self):
+    def disk_frame(self, masked=True):
 
         """
         This function ...
         :return:
         """
 
-        # Determine the path
-        path = fs.join(self.truncation_path, "disk.fits")
+        # Load the frame
+        frame = Frame.from_file(self.disk_image_path)
 
-        # Open the frame and return it
-        return Frame.from_file(path)
+        # Check if the frame has to be masked
+        if masked:
+
+            if fs.is_file(self.reference_mask_path):
+
+                mask = Mask.from_file(self.reference_mask_path)
+                frame[mask] = 0.0
+
+            else: log.warning("The truncation mask has not been created yet")
+
+        # Return the frame
+        return frame
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def bulge_frame(self):
+    def bulge_frame(self, masked=True):
 
         """
         This function ...
         :return:
         """
 
-        # Determine the path
-        path = fs.join(self.truncation_path, "bulge.fits")
+        # Load the frame
+        frame = Frame.from_file(self.bulge_image_path)
 
-        # Open the frame and return it
-        return Frame.from_file(path)
+        # Check if the frame has to be masked
+        if masked:
+
+            if fs.is_file(self.reference_mask_path):
+
+                mask = Mask.from_file(self.reference_mask_path)
+                frame[mask] = 0.0
+
+            else: log.warning("The truncation mask has not been created yet")
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the path to the disk region
+        path = fs.join(self.components_path, "disk.reg")
+
+        # Open the region
+        region = SkyRegion.from_file(path)
+
+        # Return the first and only shape
+        return region[0]
 
     # -----------------------------------------------------------------
 
@@ -470,16 +557,41 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
-    def truncation_mask(self, frame):
+    def truncation_mask_path(self, image_name):
 
         """
         This function ...
-        :param frame: frame, image, datacube ...
+        :param image_name:
         :return:
         """
 
-        # Convert sky ellipse to pixel ellipse and then to mask
-        return self.truncation_ellipse.to_pixel(frame.wcs).to_mask(frame.xsize, frame.ysize)
+        # Check whether mask is present with image name, or else use the reference mask file
+        path = fs.join(self.truncation_masks_path, image_name + ".fits")
+        if not fs.is_file(path): path = self.reference_mask_path
+
+        # Return None if truncation has not been performed yet
+        if not fs.is_file(path): return None
+        else: return path
+
+    # -----------------------------------------------------------------
+
+    def truncation_mask(self, image_name):
+
+        """
+        This function ...
+        :param image_name:
+        :return:
+        """
+
+        # Get the path to the truncation mask
+        path = self.truncation_mask_path(image_name)
+
+        # Return None if no mask is present
+        if path is None: return None
+
+        # Else, return the mask
+        from ...magic.core.mask import Mask
+        return Mask.from_file(path)
 
     # -----------------------------------------------------------------
 

@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import numpy as np
 from scipy import ndimage
 from skimage import morphology ###### TODO: this can cause a very weird error: (on Nancy (Ubuntu 14.04.4 LTS) with NUMPY VERSION 1.9.0)
@@ -263,6 +264,43 @@ class MaskBase(object):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new = self.copy()
+        new += other
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __iadd__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        self._data += other.data
+        return self
 
 # -----------------------------------------------------------------
 

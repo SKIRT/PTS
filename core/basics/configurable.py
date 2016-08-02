@@ -53,7 +53,7 @@ class Configurable(object):
             setter = InteractiveConfigurationSetter(self.class_name, add_logging=False)
 
             # Create new config
-            self.config = setter.run(definition)
+            self.config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
