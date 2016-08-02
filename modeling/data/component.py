@@ -40,14 +40,18 @@ class DataComponent(ModelingComponent):
         # The path to the galaxy info file
         self.galaxy_info_path = None
 
+        # Different origins
+        self.data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck"]
+
         # The paths for the images from different origins
         self.data_galex_path = None
         self.data_sdss_path = None
-        self.data_ha_path = None
+        self.data_halpha_path = None
         self.data_2mass_path = None
         self.data_spitzer_path = None
         self.data_wise_path = None
         self.data_herschel_path = None
+        self.data_planck_path = None
 
     # -----------------------------------------------------------------
 

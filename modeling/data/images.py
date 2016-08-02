@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import the relevant PTS classes and modules
 from .component import DataComponent
 from ...dustpedia.core.database import DustPediaDatabase, get_account
@@ -44,8 +47,8 @@ class ImageFetcher(DataComponent):
         # The DustPedia database
         self.database = DustPediaDatabase()
 
-        # The names of the images found on the DustPedia archive
-        self.dustpedia_image_names = None
+        # The names of the images found on the DustPedia archive, for each observatory
+        self.dustpedia_image_names = defaultdict(list)
 
         # The images
         #self.images = []
@@ -123,7 +126,12 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the names of the images on the DustPedia database ...")
 
         # Get the image names
-        self.dustpedia_image_names = self.database.get_image_names(self.ngc_id_nospaces)
+        all_names = self.database.get_image_names(self.ngc_id_nospaces)
+
+        # Order the names per origin
+        for origin in self.data_origins:
+            for name in all_names:
+                if origin in name: self.dustpedia_image_names[origin].append(name)
 
     # -----------------------------------------------------------------
 
@@ -134,6 +142,15 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
+        # Loop over all GALEX images
+        for name in self.dustpedia_image_names["GALEX"]:
+
+            # Determine the path to the image file
+            path = fs.join(self.data_path, name)
+
+            # Download the image
+            self.database.download_image(self.ngc_id_nospaces, name, path)
+
     # -----------------------------------------------------------------
 
     def fetch_sdss(self):
@@ -143,14 +160,14 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
-        # Download the images
-        for image_name in image_names:
+        # Loop over all GALEX images
+        for name in self.dustpedia_image_names["SDSS"]:
 
             # Determine the path to the image file
-            path = fs.join(self.data_path, image_name)
+            path = fs.join(self.data_path, name)
 
             # Download the image
-            self.database.download_image(self.ngc_id_nospaces, image_name, path)
+            self.database.download_image(self.ngc_id_nospaces, name, path)
 
     # -----------------------------------------------------------------
 
