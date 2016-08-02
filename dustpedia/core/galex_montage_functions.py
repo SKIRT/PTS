@@ -392,8 +392,16 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         location_string = str(ra_deg) + ' ' + str(dec_deg)
         pix_size = 3.2
 
+        print("")
+        print("")
+        print("")
+        print("")
+        print("TEMP PATH BAND", temp_path_band)
+        print("ID STRING", id_string)
         header_path = fs.join(temp_path_band, id_string + '_HDR')
+        print("HEADER PATH : ", header_path)
         montage.commands.mHdr(location_string, width, header_path, pix_size=pix_size)
+        exit()
 
         # Count image files, and move to reprojection directory
         mosaic_count = 0

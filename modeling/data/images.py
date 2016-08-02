@@ -135,6 +135,24 @@ class ImageFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
+    def fetch_from_dustpedia(self, origin):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all images from this origin
+        for name in self.dustpedia_image_names[origin]:
+
+            # Determine the path to the image file
+            path = fs.join(self.data_images_paths[origin], name)
+
+            # Download the image
+            self.database.download_image(self.ngc_id_nospaces, name, path)
+
+    # -----------------------------------------------------------------
+
     def fetch_galex(self):
 
         """
@@ -142,14 +160,7 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
-        # Loop over all GALEX images
-        for name in self.dustpedia_image_names["GALEX"]:
-
-            # Determine the path to the image file
-            path = fs.join(self.data_path, name)
-
-            # Download the image
-            self.database.download_image(self.ngc_id_nospaces, name, path)
+        self.fetch_from_dustpedia("GALEX")
 
     # -----------------------------------------------------------------
 
@@ -160,14 +171,7 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
-        # Loop over all GALEX images
-        for name in self.dustpedia_image_names["SDSS"]:
-
-            # Determine the path to the image file
-            path = fs.join(self.data_path, name)
-
-            # Download the image
-            self.database.download_image(self.ngc_id_nospaces, name, path)
+        self.fetch_from_dustpedia("SDSS")
 
     # -----------------------------------------------------------------
 
@@ -193,6 +197,9 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Fetching the ...")
 
+        # Fetch
+        self.fetch_from_dustpedia("2MASS")
+
     # -----------------------------------------------------------------
 
     def fetch_spitzer(self):
@@ -204,6 +211,8 @@ class ImageFetcher(DataComponent):
 
         # Inform the user
         log.info("Fetching the ...")
+
+        self.fetch_from_dustpedia("Spitzer")
 
     # -----------------------------------------------------------------
 
@@ -217,6 +226,8 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Fetching the ...")
 
+        self.fetch_from_dustpedia("WISE")
+
     # -----------------------------------------------------------------
 
     def fetch_herschel(self):
@@ -228,6 +239,8 @@ class ImageFetcher(DataComponent):
 
         # Inform the user
         log.info("Fetching the ...")
+
+        self.fetch_from_dustpedia("Herschel")
 
     # -----------------------------------------------------------------
 

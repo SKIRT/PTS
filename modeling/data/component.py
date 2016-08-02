@@ -43,15 +43,14 @@ class DataComponent(ModelingComponent):
         # Different origins
         self.data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck"]
 
-        # The paths for the images from different origins
-        self.data_galex_path = None
-        self.data_sdss_path = None
-        self.data_halpha_path = None
-        self.data_2mass_path = None
-        self.data_spitzer_path = None
-        self.data_wise_path = None
-        self.data_herschel_path = None
-        self.data_planck_path = None
+        # The path to the data/images directory
+        self.data_images_path = None
+
+        # The path to the data/seds directory
+        self.data_seds_path = None
+
+        # The paths to the data/images/ directories for the different origins
+        self.data_images_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -68,13 +67,13 @@ class DataComponent(ModelingComponent):
         # Set the path to the galaxy info file
         self.galaxy_info_path = fs.join(self.data_path, "info.dat")
 
-        # The paths for the images from different origins
-        self.data_galex_path = fs.create_directory_in(self.data_path, "GALEX")
-        self.data_sdss_path = fs.create_directory_in(self.data_path, "SDSS")
-        self.data_ha_path = fs.create_directory_in(self.data_path, "Halpha")
-        self.data_2mass_path = fs.create_directory_in(self.data_path, "2MASS")
-        self.data_spitzer_path = fs.create_directory_in(self.data_path, "Spitzer")
-        self.data_wise_path = fs.create_directory_in(self.data_path, "WISE")
-        self.data_herschel_path = fs.create_directory_in(self.data_path, "Herschel")
+        # Set ...
+        self.data_images_path = fs.create_directory_in(self.data_path, "images")
+
+        # Set ...
+        self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
+
+        # Set ...
+        for origin in self.data_origins: self.data_images_paths[origin] = fs.create_directory_in(self.data_images_path, origin)
 
 # -----------------------------------------------------------------
