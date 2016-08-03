@@ -1,0 +1,2 @@
+# Command | Configuration | Class | Configuration method | Description
+aperture_correction | -- | photometry.aperturecorrector.ApertureCorrector | interactive | Calculate the aperture correction factor on the extended photometry measurement of a Herschel image of a galaxy.
