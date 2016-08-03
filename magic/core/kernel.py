@@ -154,6 +154,30 @@ class ConvolutionKernel(Frame):
 
     # -----------------------------------------------------------------
 
+    @property
+    def odd_xsize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xsize % 2 != 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def odd_ysize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ysize % 2 != 0
+
+    # -----------------------------------------------------------------
+
     def prepare(self, pixelscale, sigma_level=10.0):
 
         """
@@ -166,8 +190,11 @@ class ConvolutionKernel(Frame):
         # Inform the user
         log.info("Preparing the kernel ...")
 
+        # Check the dimensions
+        self.check_dimensions()
+
         # Truncate
-        self.truncate(sigma_level)
+        if sigma_level is not None: self.truncate(sigma_level)
 
         # Adjust pixelscale
         self.adjust_pixelscale(pixelscale)
@@ -180,6 +207,39 @@ class ConvolutionKernel(Frame):
 
         # Set prepared flag to True
         self._prepared = True
+
+    # -----------------------------------------------------------------
+
+    def check_dimensions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the dimensions of the kernel image ...")
+
+        if self.odd_xsize and self.odd_ysize:
+
+            log.info("Dimensions are OK")
+            return # everything normal
+
+        elif (not self.odd_xsize) and self.odd_ysize: # only odd in y direction
+
+            # Trim in x direction
+            self._data = self._data[:, 1:]
+
+        elif not self.odd_xsize and self.odd_ysize: # only odd in x direction
+
+            # Trim in y direction
+            self._data = self._data[1:, :]
+
+        # trim in x and y
+        else: self._data = self._data[1:, 1:]
+
+        # Recentering
+        self.recenter()
 
     # -----------------------------------------------------------------
 
@@ -196,15 +256,23 @@ class ConvolutionKernel(Frame):
         # Determine the radius in number of pixels
         sigma_pix = statistics.fwhm_to_sigma * self.fwhm_pix
         radius = sigma_level * sigma_pix
+        radius_npixels = int(round(radius))
 
         center_x = 0.5 * (self.xsize - 1.)
         center_y = 0.5 * (self.ysize - 1.)
 
-        min_x = int(round(center_x - radius))
-        max_x = int(round(center_x + radius))
+        assert int(center_x) == center_x
+        assert int(center_x) == center_x
 
-        min_y = int(round(center_y - radius))
-        max_y = int(round(center_y + radius))
+        center_x = int(center_x)
+        center_y = int(center_y)
+
+        # Determine limits
+        min_x = center_x - radius_npixels
+        max_x = center_x + radius_npixels + 1
+
+        min_y = center_y - radius_npixels
+        max_y = center_y + radius_npixels + 1
 
         # Crop
         self.crop(min_x, max_x, min_y, max_y)
@@ -224,6 +292,13 @@ class ConvolutionKernel(Frame):
         # Calculate the zooming factor
         x_zoom_factor = (self.pixelscale.x / pixelscale.x).to("").value
         y_zoom_factor = (self.pixelscale.y / pixelscale.y).to("").value
+
+        # If PSF pixel size is different to map pixel size, rescale PSF accordingly
+        if 0.999 < x_zoom_factor < 1.001 and 0.999 < y_zoom_factor < 1.001:
+
+            # Inform the user and return
+            log.info("The pixelscale of the kernel is already (almost) identical to that of the image: no adjustment done")
+            return
 
         # Loop until xsize and ysize are odd (so that kernel center is at exactly the center pixel)
         while True:

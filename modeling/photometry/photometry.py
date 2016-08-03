@@ -546,14 +546,16 @@ class PhotoMeter(PhotometryComponent):
         axratio_annulus_outer = annulus_outer.radius.x / annulus_outer.radius.y
         axratio_annulus_inner = annulus_inner.radius.x / annulus_inner.radius.y
 
-        if axratio_annulus_outer != axratio_annulus_inner: print("DIFFERENCE AX RATIO", axratio_annulus_outer, axratio_annulus_inner)
+        # Check
+        if not np.isclose(axratio_annulus_outer, axratio_annulus_inner): print("DIFFERENCE AX RATIO", axratio_annulus_outer, axratio_annulus_inner)
 
         input_dict["axial_ratio_annulus"] = axratio_annulus_outer
 
         annulus_angle_outer = annulus_outer.angle.to("deg").value
         annulus_angle_inner = annulus_inner.angle.to("deg").value
 
-        if annulus_angle_outer != annulus_angle_inner: print("DIFFERENCE ANNULUS ANGLE", annulus_angle_outer, annulus_angle_inner)
+        # Check
+        if not np.isclose(annulus_angle_outer, annulus_angle_inner): print("DIFFERENCE ANNULUS ANGLE", annulus_angle_outer, annulus_angle_inner)
 
         input_dict["annulus_angle"] = annulus_angle_inner
 
