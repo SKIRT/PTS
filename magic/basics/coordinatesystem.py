@@ -175,6 +175,19 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @property
+    def pixelarea(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        square_pixel = 1.0 * Unit("pix2")
+        return (self.pixelscale.x * self.pixelscale.y * square_pixel).to("sr")
+
+    # -----------------------------------------------------------------
+
+    @property
     def center_pixel(self):
 
         """

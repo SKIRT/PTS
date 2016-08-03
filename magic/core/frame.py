@@ -71,6 +71,9 @@ class Frame(NDDataArray):
         self._wcs = wcs
         self._unit = unit
 
+        # Set the default extension
+        self.default_extension = "fits"
+
     # -----------------------------------------------------------------
 
     @property
@@ -560,6 +563,19 @@ class Frame(NDDataArray):
 
         if self.wcs is not None: return self.wcs.average_pixelscale
         else: return self._pixelscale.average if self._pixelscale is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelarea(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        square_pixel = 1.0 * Unit("pix2")
+        return (self.pixelscale.x * self.pixelscale.y * square_pixel).to("sr")
 
     # -----------------------------------------------------------------
 

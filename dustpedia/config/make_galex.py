@@ -15,6 +15,8 @@ definition = ConfigurationDefinition()
 
 # Galaxy name
 definition.add_required("galaxy_name", "string", "the name of the galaxy")
-definition.add_required("band", "string", "the band (u/g/r/i/z)", choices=["u", "g", "r", "i", "z"])
+
+# Output
+definition.add_optional("output", "string", "the name of the output directory", default="out")
 
 # -----------------------------------------------------------------

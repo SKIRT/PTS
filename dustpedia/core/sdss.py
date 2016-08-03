@@ -16,6 +16,11 @@ from __future__ import absolute_import, division, print_function
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from .dataprocessing import DustPediaDataProcessing
+from ...core.tools import filesystem as fs
+
+# -----------------------------------------------------------------
+
+sdss_bands = ["u", "g", "r", "i", "z"]
 
 # -----------------------------------------------------------------
 
@@ -79,7 +84,24 @@ class SDSSMosaicMaker(Configurable):
         # Inform the user
         log.info("Making the SDSS " + self.config.band + " mosaic ...")
 
-        # Make ...
-        self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.band, self.config.path)
+        # If the band is not specified, do all bands
+        if self.config.band is None:
+
+            # Loop over all bands and make the mosaics and Poisson frames
+            for band in sdss_bands:
+
+                # Create an output directory for the results of this band
+                output_path = fs.join(self.output_path, band)
+                fs.create_directory(output_path)
+
+                # Make the mosaic and Poisson error frame
+                self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, band, output_path)
+
+        # Make
+        else:
+
+            # Make the mosaic for the specified band
+            output_path = self.output_path
+            self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.band, output_path)
 
 # -----------------------------------------------------------------

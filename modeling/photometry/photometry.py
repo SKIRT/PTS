@@ -440,11 +440,22 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Calculating the aperture correction factor for " + filter_name + " ...")
 
+        #####
+
+        # INPUT DICTIONARY
         input_dict = dict()
+
+        # CONFIGURATION DICTIONARY
+        config_dict = dict()
+
+        #####
+
 
         # Set cutout
         input_dict["cutout"] = frame.data
-        input_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec/pix").value
+
+
+        config_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec/pix").value
 
 
         truncation_ellipse_sky = self.truncation_ellipse
@@ -527,16 +538,16 @@ class PhotoMeter(PhotometryComponent):
         #if annulus_inner_factor_x != annulus_inner_factor_y: print("DIFFERENCE INNER", annulus_inner_factor_x, annulus_inner_factor_y)
         #if annulus_outer_factor_x != annulus_outer_factor_y: print("DIFFERENCE OUTER", annulus_outer_factor_x, annulus_outer_factor_y)
 
-        input_dict["semimaj_pix"] = truncation_ellipse_image.radius.x
-        input_dict["axial_ratio"] = truncation_ellipse_image.radius.x / truncation_ellipse_image.radius.y
-        input_dict["angle"] = truncation_ellipse_image.angle.to("deg").value
-        input_dict["centre_i"] = truncation_ellipse_image.center.y
-        input_dict["centre_j"] = truncation_ellipse_image.center.x
+        config_dict["semimaj_pix"] = truncation_ellipse_image.radius.x
+        config_dict["axial_ratio"] = truncation_ellipse_image.radius.x / truncation_ellipse_image.radius.y
+        config_dict["angle"] = truncation_ellipse_image.angle.to("deg").value
+        config_dict["centre_i"] = truncation_ellipse_image.center.y
+        config_dict["centre_j"] = truncation_ellipse_image.center.x
 
         # ANNULUS PROPERTIES
 
-        input_dict["semimaj_pix_annulus_outer"] = annulus_outer.radius.x
-        input_dict["semimaj_pix_annulus_inner"] = annulus_inner.radius.x
+        config_dict["semimaj_pix_annulus_outer"] = annulus_outer.radius.x
+        config_dict["semimaj_pix_annulus_inner"] = annulus_inner.radius.x
 
         axratio_annulus_outer = annulus_outer.radius.x / annulus_outer.radius.y
         axratio_annulus_inner = annulus_inner.radius.x / annulus_inner.radius.y
@@ -544,7 +555,7 @@ class PhotoMeter(PhotometryComponent):
         # Check
         if not np.isclose(axratio_annulus_outer, axratio_annulus_inner): print("DIFFERENCE AX RATIO", axratio_annulus_outer, axratio_annulus_inner)
 
-        input_dict["axial_ratio_annulus"] = axratio_annulus_outer
+        config_dict["axial_ratio_annulus"] = axratio_annulus_outer
 
         annulus_angle_outer = annulus_outer.angle.to("deg").value
         annulus_angle_inner = annulus_inner.angle.to("deg").value
@@ -552,16 +563,16 @@ class PhotoMeter(PhotometryComponent):
         # Check
         if not np.isclose(annulus_angle_outer, annulus_angle_inner): print("DIFFERENCE ANNULUS ANGLE", annulus_angle_outer, annulus_angle_inner)
 
-        input_dict["annulus_angle"] = annulus_angle_inner
+        config_dict["annulus_angle"] = annulus_angle_inner
 
-        input_dict["annulus_centre_i"] = annulus_outer.center.y
-        input_dict["annulus_centre_j"] = annulus_outer.center.x
+        config_dict["annulus_centre_i"] = annulus_outer.center.y
+        config_dict["annulus_centre_j"] = annulus_outer.center.x
 
         # Debugging
         log.debug("Performing the aperture correction calculation remotely ...")
 
         # Calculate the aperture correction factor
-        output_dict = self.launcher.run("aperture_correction", input_dict)
+        output_dict = self.launcher.run("aperture_correction", config_dict, input_dict, wait_and_return=True)
         factor = output_dict["factor"]
 
         # Debugging

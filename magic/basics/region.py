@@ -39,6 +39,9 @@ class Region(list):
         # Call the constructor of the base class
         super(Region, self).__init__()
 
+        # Set the default extension
+        self.default_extension = "reg"
+
     # -----------------------------------------------------------------
 
     @classmethod

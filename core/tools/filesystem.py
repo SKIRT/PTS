@@ -77,6 +77,20 @@ def absolute(path):
 
 # -----------------------------------------------------------------
 
+def absolute_or_in(path, in_path):
+
+    """
+    This function ...
+    :param path:
+    :param in_path:
+    :return:
+    """
+
+    if os.path.isabs(path): return path
+    else: return join(in_path, path)
+
+# -----------------------------------------------------------------
+
 def join(*args):
 
     """

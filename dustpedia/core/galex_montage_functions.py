@@ -14,11 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import math
 import multiprocessing as mp
 import numpy as np
 import scipy.spatial
 import scipy.ndimage
-import matplotlib.path
+import lmfit
+import shutil
+import gc
 
 # Import astronomical modules
 from astropy.io import fits
@@ -26,11 +29,7 @@ import astropy.io.votable
 import astropy.convolution
 import montage_wrapper as montage
 from astropy.wcs import WCS
-
-import lmfit
-import shutil
-import gc
-import time
+from astropy.io.fits import Header, getheader
 
 # Import Chris' package
 import ChrisFuncs
@@ -38,6 +37,8 @@ import ChrisFuncs
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ...magic.core.frame import Frame, sum_frames
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -314,6 +315,10 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     temp_convolve_path = fs.join(temp_path_band, "convolve")
     fs.create_directory(temp_convolve_path)
 
+    # Poisson temp directory in temporary directory
+    temp_poisson_path = fs.join(temp_path_band, "poisson")
+    fs.create_directory(temp_poisson_path)
+
     # Create storage directories for Montage and SWarp (deleting any prior), and set appropriate Python working directory
     #os.mkdir(temp_dir + 'Raw')
     #os.mkdir(temp_dir + 'Diffs_Temp')
@@ -395,7 +400,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         # Make header
         header_path = fs.join(temp_path_band, id_string + ".hdr")
-        print("HEADER PATH : ", header_path)
         montage.commands.mHdr(location_string, width_deg, header_path, pix_size=pix_size)
 
         # Count image files, and move to reprojection directory
@@ -411,19 +415,39 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         if mosaic_count > 1:
 
             # Inform the user
-            log.info("Matching background of "+ id_string + " maps ...")
+            log.info("Matching background of " + id_string + " maps ...")
 
             # ...
             level_galex_maps(temp_reproject_path, temp_convolve_path, 'int.fits')
 
-        #metatable_path = temp_dir + band + '_Image_Metadata_Table.dat'
-
+        # The path to the metadata table
         metatable_path = meta_path
+
+        # Create a dictionary for the exposure times for each image
+        exposure_times = dict()
+
+        # Get the exposure time for each image
+        for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains="-nd-int", returns=["path", "name"]):
+
+            # Open the header
+            header = fits.getheader(path)
+
+            # Search for the exposure time
+            exp_time = get_total_exposure_time(header)
+
+            # Set the exposure time
+            image_name = name.split("-nd-int")[0]
+            exposure_times[image_name] = exp_time
 
         # Reproject image and weight prior to coaddition
         montage.commands.mImgtbl(temp_reproject_path, metatable_path, corners=True)
         proj_stats_path = fs.join(temp_path_band, id_string + "_Proj_Stats.txt")
         montage.commands.mProjExec(metatable_path, header_path, temp_swarp_path, proj_stats_path, raw_dir=temp_reproject_path, debug=False, exact=True, whole=False)
+        # WHOLE IS IMPORTANT HERE
+        # WE ACTUALLY DON'T WANT TO REPROJECT TO THE EXACT PIXELGRID DEFINED BY THE HEADER HERE,
+        # BUT RATHER CUT OFF THE ORIGINAL MAPS WHERE THEY ARE OUTSIDE OF THE FIELD OF VIEW OF THE HEADER DEFINED AREA
+        # SO NO ADDING OF NEW PIXELS IS DONE TO HAVE THE EXACT PIXELGRID DEFINED BY THE HEADER
+        # THIS IS PRESUMABLY DONE JUST TO MAKE THE SWARPING MORE EFFICIENT ??
 
         # Rename reprojected files for SWarp
         for listfile in os.listdir(temp_swarp_path):
@@ -442,7 +466,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         os.system(swarp_command_string)
 
         # Remove null values, and save finalised map to output directory
-        #in_fitsdata = fits.open(temp_dir+'/SWarp_Temp/'+id_string+'_SWarp.fits')
         in_fitsdata = fits.open(fs.join(temp_swarp_path, id_string + "_SWarp.fits"))
         in_image = in_fitsdata[0].data
         in_header = in_fitsdata[0].header
@@ -454,16 +477,166 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         out_hdu = fits.PrimaryHDU(data=out_image, header=in_header)
         out_hdulist = fits.HDUList([out_hdu])
 
-        # Output
-        output_montages_path = fs.join(output_path, "montages")
-        fs.create_directory(output_montages_path)
+
+        #### OUTPUT MOSAIC ####
 
         # Write mosaic
-        out_hdulist.writeto(fs.join(output_montages_path, id_string + '.fits'), clobber=True)
+        mosaic_path = fs.join(output_path, id_string + '.fits')
+        out_hdulist.writeto(mosaic_path, clobber=True)
+
+        #######################
+
+        # Some directories
+        temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
+        temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
+        temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin")
+        temp_poisson_footprint_path = fs.create_directory_in(temp_poisson_path, "footprint")
+        temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
+        temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
+
+        # Load header
+        rebin_header = Header.fromtextfile(header_path)
+
+        # To coordinate system
+        rebin_wcs = CoordinateSystem(rebin_header)
+
+        ## CALCULATION OF POISSON
+
+        ## REBINNING AND CONVERSION TO COUNT
+
+        # Open the -int images in the temp_swarp_path that are used to make the mosaic, convert them to counts
+        nswarp_images = 0
+        for filename in os.listdir(temp_swarp_path):
+
+            if not filename.endswith("-nd-int.fits"): continue
+
+            # Get the image name
+            image_name = filename.split("-nd-int.fits")[0]
+
+            # Increment the counter
+            nswarp_images += 1
+
+            # Determine filepath
+            filepath = fs.join(temp_swarp_path, filename)
+
+            # Debugging
+            log.debug("Loading the " + image_name + " frame ...")
+
+            # Load the frame
+            frame = Frame.from_file(filepath)
+
+            # Debugging
+            log.debug("Converting unit to count / sr ...")
+
+            # Get the exposure time for this image
+            exposure_time = exposure_times[image_name]
+
+            # Debugging
+            log.debug("The exposure time for this image is " + str(exposure_time))
+
+            # Convert the frame FROM COUNT/S to COUNT
+            frame *= exposure_times[image_name]
+            frame.unit = "count" # set the unit to count
+
+            # Save the frame to the count path
+            frame.save(fs.join(temp_poisson_count_path, image_name + ".fits"))
+
+            # CONVERT THE FRAME FROM COUNT TO COUNT/SR
+            frame /= frame.pixelarea.to("sr").value
+            frame.unit = "count/sr"
+
+            # Save the frame to the countsr path
+            frame.save(fs.join(temp_poisson_countsr_path, image_name + ".fits"))
+
+            # REBIN THE FRAME TO THE COMMON PIXEL GRID
+            footprint = frame.rebin(rebin_wcs)
+
+            # CONVERT THE FRAME FROM COUNT/SR TO COUNT
+            frame *= frame.pixelarea.to("sr").value
+            frame.unit = "count"
+
+            # Save the rebinned frame
+            frame.save(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
+
+            # Save the (rebinned) footprint
+            footprint.save(fs.join(temp_poisson_footprint_path, image_name + ".fits"))
+
+        # Initialize a list to contain the frames to be summed
+        ab_frames = []
+        b_frames = []
+        weight_frames = []
+
+        # Loop over the files in the temp poisson rebin directory
+        for path, name in fs.files_in_path(temp_poisson_rebin_path, extension="fits", returns=["path", "name"]):
+
+            # Open the rebinned frame
+            a = Frame.from_file(path)
+
+            # Get footprint
+            footprint_path = fs.join(temp_poisson_footprint_path, name + ".fits")
+            b = Frame.from_file(footprint_path)
+
+            # Add product of primary and footprint and footprint to the appropriate list
+            ab = a * b
+            ab_frames.append(ab)
+            b_frames.append(b)
+
+            # Calculate weight frame
+            weight_frame = b * math.sqrt(exposure_times[name])
+            weight_frames.append(weight_frame)
+
+            # Save weight frame
+            weight_frame.save(fs.join(temp_poisson_weights_path, name + ".fits"))
+
+        # Take the sums
+        ab_sum = sum_frames(ab_frames)
+        b_sum = sum_frames(b_frames)
+
+        # Calculate the relative poisson errors
+        rel_poisson_frame = ab_sum ** (-0.5)
+
+        # Calculate the total weight map
+        total_weight_map = sum_frames(weight_frames)
+
+        # Save rel poisson frame and total weight map
+        rel_poisson_frame.save(fs.join(temp_poisson_result_path, "rel_poisson.fits"))
+        total_weight_map.save(fs.join(temp_poisson_result_path, "weights.fits"))
+
+        # Write the Poisson error frame also to the output directory
+        poisson_path = fs.join(output_path, id_string + "_relpoisson.fits")
+        rel_poisson_frame.save(poisson_path)
+
+        ################
 
         # Clean up
         log.success("Completed Montaging and SWarping of " + id_string)
+
         #gc.collect()
         #shutil.rmtree(temp_dir)
+
+# -----------------------------------------------------------------
+
+def get_total_exposure_time(header):
+
+    """
+    This function ....
+    :param header:
+    :return:
+    """
+
+    # If the 'EXPTIME' keyword is defined in the header, return the value
+    if "EXPTIME" in header: return float(header["EXPTIME"])
+
+    # Otherwise, look at individual 'EXPTIME' keywords
+    else:
+
+        total = 0.0
+        for key in header:
+
+            # Add the values of all keys that state an exposure time (EXPT0001, EXPT0002, ...)
+            if key.startswith("EXPT"): total += float(header[key])
+
+        # Return the total exposure time
+        return total
 
 # -----------------------------------------------------------------

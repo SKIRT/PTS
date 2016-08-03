@@ -43,6 +43,9 @@ class IntrinsicSED(object):
         # Attributes
         self.table = None
 
+        # Set the default extension
+        self.default_extension = "dat"
+
     # -----------------------------------------------------------------
 
     def wavelengths(self, unit=None, asarray=False, add_unit=True):
@@ -138,6 +141,9 @@ class ObservedSED(object):
         self.table["Flux"].unit = Unit("Jy")
         self.table["Error-"].unit = Unit("Jy")
         self.table["Error+"].unit = Unit("Jy")
+
+        # Set the default extension
+        self.default_extension = "dat"
 
     # -----------------------------------------------------------------
 
@@ -524,6 +530,9 @@ class SED(object):
         self.table["Flux"].unit = Unit(flux_unit)
         self.table["Error-"].unit = Unit(flux_unit)
         self.table["Error+"].unit = Unit(flux_unit)
+
+        # Set the default extension
+        self.default_extension = "dat"
 
     # -----------------------------------------------------------------
 

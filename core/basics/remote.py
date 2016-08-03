@@ -356,12 +356,13 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def run_pts(self, command, config, keep_remote_temp=False):
+    def run_pts(self, command, config, input_dict=None, keep_remote_temp=False):
 
         """
         This function ...
         :param command:
         :param config:
+        :param input_dict:
         :param keep_remote_temp:
         :return:
         """
@@ -402,6 +403,30 @@ class Remote(object):
 
         # Remove the original config file
         fs.remove_file(temp_conf_path)
+
+        #### UPLOAD THE INPUT
+
+        if input_dict is not None:
+
+            # Create remote input path
+            input_path = fs.join(remote_temp_path, "input")
+            self.create_directory(input_dict)
+
+            for name in input_dict:
+
+                filename = name + "." + input_dict[name].default_extension
+
+                local_filename = fs.join(temp_path, filename) # local temporary path
+
+                # TODO: save the input item here
+
+                filepath = fs.join(input_path, filename) # remote temporary path
+
+                # TODO: UPLOAD THE INPUT item here
+
+                # TODO: delete the local input item
+
+        ####
 
         # Debugging
         log.debug("Creating a script for remote execution ...")

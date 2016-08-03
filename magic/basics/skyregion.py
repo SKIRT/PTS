@@ -39,6 +39,9 @@ class SkyRegion(list):
         # Call the constructor of the base class
         super(SkyRegion, self).__init__()
 
+        # Set the default extension
+        self.default_extension = "reg"
+
     # -----------------------------------------------------------------
 
     @classmethod

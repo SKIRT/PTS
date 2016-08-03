@@ -19,6 +19,7 @@ from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from ..tools import configuration
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -93,6 +94,38 @@ class Configurable(object):
         name = type(self).__name__.lower()
         if "plotter" in name: return "plotter"
         else: return name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If 'output' is defined in the config
+        if "output" in self.config:
+
+            full_output_path = fs.absolute_or_in(self.config.output, self.config.path)
+            if not fs.is_directory(full_output_path): fs.create_directory(full_output_path)
+            return full_output_path
+
+        # Else, use the working directory as output directory
+        else: return self.config.path
+
+    # -----------------------------------------------------------------
+
+    def output_path_file(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.output_path, name)
 
 # -----------------------------------------------------------------
 

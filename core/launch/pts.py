@@ -56,19 +56,19 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, pts_command, input_dict, config_dict=None):
+    def run(self, pts_command, config_dict, input_dict=None, wait_and_return=False):
 
         """
         This function ...
         :param pts_command:
-        :param input_dict:
         :param config_dict:
+        :param input_dict:
+        :param wait_and_return:
         :return:
         """
 
         # Resolve the PTS command
         subproject, command_name, description, class_name, configuration_module_path, configuration_method = find_match(pts_command)
-
 
         ## GET THE CONFIGURATION DEFINITION
 
@@ -79,15 +79,15 @@ class PTSRemoteLauncher(object):
             log.warning("No configuration definition found for the " + class_name + " class")
             definition = ConfigurationDefinition()  # Create new configuration definition
 
-        ## CREATE THE CONFIGURATION
+        ## SET THE INPUT FILENAMES
 
-        # Create the configuration setter
-        #if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description, log_path="log")
-        #elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description, log_path="log")
-        #elif configuration_method.startswith("file"):
-        #    configuration_filepath = configuration_method.split(":")[1]
-        #    setter = FileConfigurationSetter(configuration_filepath, command_name, description, log_path="log")
-        #else: raise ValueError("Invalid configuration method: " + configuration_method)
+        if input_dict is not None:
+
+            config_dict["input"] = dict()
+            for name in input_dict:
+                config_dict["input"] = name + "." + input_dict[name].default_extension # generate a default filename
+
+        ## CREATE THE CONFIGURATION
 
         # Create the configuration setter
         if config_dict is None: config_dict = dict() # no problem if all options are optional
@@ -104,11 +104,22 @@ class PTSRemoteLauncher(object):
         # Inform the user about starting the PTS command remotely
         log.start("Starting " + exact_command_name + " on remote host " + self.remote.host_id + " ...")
 
-        # Run PTS remotely
-        #task = remote.run_pts(exact_command_name, config, keep_remote_temp=True)
+        # IF WAIT AND RETURN
+        if wait_and_return:
 
-        # Return the output dictionary
-        return output_dict
+            raise NotImplementedError("Wait and return has not been implemented yet")
+
+            # Return the output dictionary
+            #return output_dict
+
+        # ELSE, CREATE TASK
+        else:
+
+            # Run PTS remotely
+            task = self.remote.run_pts(exact_command_name, config, input_dict=input_dict, keep_remote_temp=True)
+
+            # Succesfully submitted
+            log.success("Succesfully submitted the PTS job to the remote host")
 
 # -----------------------------------------------------------------
 

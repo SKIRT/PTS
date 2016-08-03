@@ -168,8 +168,12 @@ class ImageFetcher(DataComponent):
         # Fetch the GALEX data from the DustPedia archive
         self.fetch_from_dustpedia("GALEX")
 
+        # Create the configuration dictionary
+        config_dict = dict()
+        config_dict["galaxy_name"] = self.ngc_id_nospaces
+
         # Create the GALEX mosaic and Poisson errors frame
-        self.launcher.run("make_galex", input)
+        self.launcher.run("make_galex", config_dict)
 
     # -----------------------------------------------------------------
 
@@ -186,8 +190,12 @@ class ImageFetcher(DataComponent):
         # Fetch the SDSS data from the DustPedia archive
         self.fetch_from_dustpedia("SDSS")
 
+        # Create the configuration dictionary
+        config_dict = dict()
+        config_dict["galaxy_name"] = self.ngc_id_nospaces
+
         # Create the SDSS mosaic and Poisson errors frame
-        self.launcher.run("make_sdss", input)
+        self.launcher.run("make_sdss", config_dict)
 
     # -----------------------------------------------------------------
 

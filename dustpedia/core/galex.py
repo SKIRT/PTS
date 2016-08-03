@@ -79,7 +79,10 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Making the GALEX mosaics ...")
 
+        # Determine the output path
+        output_path = self.output_path
+
         # Perform the mosaicing
-        self.dpdp.make_galex_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.path)
+        self.dpdp.make_galex_mosaic_and_poisson_frame(self.config.galaxy_name, output_path)
 
 # -----------------------------------------------------------------

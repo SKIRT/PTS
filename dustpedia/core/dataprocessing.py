@@ -30,7 +30,6 @@ from ...core.tools.logging import log
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
-from ...magic.tools import plotting
 from ...core.tools import network
 from ...core.tools import time
 from ...magic.core.image import Image
@@ -38,8 +37,6 @@ from .galex_montage_functions import mosaic_galex
 from ...core.tools import archive
 from ...magic.core.frame import Frame, sum_frames
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...magic.basics.mask import Mask
-from ...core.basics.remote import Remote, connected_remotes
 
 # -----------------------------------------------------------------
 
@@ -570,8 +567,14 @@ class DustPediaDataProcessing(object):
             # Check band
             band = header["BAND"]
 
-            if band == 1: shutil.copy(path, path_fuv)
-            elif band == 2: shutil.copy(path, path_nuv)
+            # PREVIOUSLY
+            #if band == 1: shutil.copy(path, path_fuv)
+            #elif band == 2: shutil.copy(path, path_nuv)
+            #else: raise RuntimeError("Invalid band: " + str(band))
+
+            # NEW
+            if band == 1: shutil.copy(path, path_nuv)
+            elif band == 2: shutil.copy(path, path_fuv)
             else: raise RuntimeError("Invalid band: " + str(band))
 
     # -----------------------------------------------------------------
@@ -603,8 +606,8 @@ class DustPediaDataProcessing(object):
             image = Image.from_file(path)
 
             # Get the a and b frame
-            a = image.frames.primary
-            b = image.frames.footprint
+            a = image.frames.primary    # in counts
+            b = image.frames.footprint  # between 0 and 1
 
             # Add product of primary and footprint and footprint to the appropriate list
             ab = a * b
@@ -678,17 +681,28 @@ class DustPediaDataProcessing(object):
             nanomaggy_per_count = frame.meta["nmgy"]
 
             # Debugging
-            log.debug("Converting unit to count ...")
+            log.debug("Converting unit to count / sr...")
 
             # Convert the frame to count
             frame /= nanomaggy_per_count
-            frame.unit = Unit("count")
+            frame.unit = "count"
+
+            # Convert the frame to count/sr
+            frame /= frame.pixelarea.to("sr").value
+            frame.unit = "count/sr"
 
             # Debugging
             log.debug("Rebinning to the target coordinate system ...")
 
             # Rebin the frame
             footprint = frame.rebin(rebin_wcs, exact=False)
+
+            # Debugging
+            log.debug("Converting the unit to count ...")
+
+            # Convert the frame from count/sr to count
+            frame *= frame.pixelarea.to("sr").value
+            frame.unit = "count"
 
             # Debugging
             log.debug("Adding the rebinned field and footprint to the same image ...")
