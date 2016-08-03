@@ -19,7 +19,7 @@ import importlib
 from ..basics.remote import Remote
 from ...core.tools import introspection
 from ...core.tools.logging import log
-from ...core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
+from ...core.basics.configuration import ConfigurationDefinition, DictConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -56,12 +56,13 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, pts_command, input):
+    def run(self, pts_command, input_dict, config_dict=None):
 
         """
         This function ...
         :param pts_command:
-        :param input:
+        :param input_dict:
+        :param config_dict:
         :return:
         """
 
@@ -73,32 +74,29 @@ class PTSRemoteLauncher(object):
 
         try:
             configuration_module = importlib.import_module(configuration_module_path)
-            # has_configuration = True
             definition = getattr(configuration_module, "definition")
         except ImportError:
             log.warning("No configuration definition found for the " + class_name + " class")
-            # has_configuration = False
             definition = ConfigurationDefinition()  # Create new configuration definition
 
         ## CREATE THE CONFIGURATION
 
         # Create the configuration setter
-        if configuration_method == "interactive":
-            setter = InteractiveConfigurationSetter(command_name, description, log_path="log")
-        elif configuration_method == "arguments":
-            setter = ArgumentConfigurationSetter(command_name, description, log_path="log")
-        elif configuration_method.startswith("file"):
-            configuration_filepath = configuration_method.split(":")[1]
-            setter = FileConfigurationSetter(configuration_filepath, command_name, description, log_path="log")
-        else:
-            raise ValueError("Invalid configuration method: " + configuration_method)
+        #if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description, log_path="log")
+        #elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description, log_path="log")
+        #elif configuration_method.startswith("file"):
+        #    configuration_filepath = configuration_method.split(":")[1]
+        #    setter = FileConfigurationSetter(configuration_filepath, command_name, description, log_path="log")
+        #else: raise ValueError("Invalid configuration method: " + configuration_method)
 
-        # Create the configuration from the definition and from reading the command line arguments
+        # Create the configuration setter
+        if config_dict is None: config_dict = dict() # no problem if all options are optional
+        setter = DictConfigurationSetter(config_dict, command_name, description)
+
+        # Create the configuration from the definition and from the provided configuration dictionary
         config = setter.run(definition)
 
-
         ###
-
 
         # Exact command name
         exact_command_name = subproject + "/" + command_name

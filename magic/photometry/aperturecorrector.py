@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import lmfit
 import time
-import scipy.ndimage
 
 # Import astronomical modules
 import ChrisFuncs
@@ -43,36 +42,46 @@ class ApertureCorrector(Configurable):
         # Call the constructor of the base class
         super(ApertureCorrector, self).__init__(config)
 
+        # The input
+        self.input = None
+
         # Create the output dictionary
         self.output = dict()
 
     # -----------------------------------------------------------------
 
-    def run(self, input):
+    def run(self, input_dict):
 
         """
         This function ...
-        :param input:
+        :param input_dict:
         :return:
         """
 
+        # Set the input
+        self.input = input_dict
+
         # Calculate the correction factor
-        factor = self.calculate_aperture_correction(input)
+        factor = self.calculate_aperture_correction()
 
         # Add factor to output dict
         self.output["factor"] = factor
 
     # -----------------------------------------------------------------
 
-    def calculate_aperture_correction(self, input_dict):
+    def calculate_aperture_correction(self):
 
         """
         # Define function that uses provided beam profile to aperture-correct photometry
-        Entries in input_dict:
 
-        psf_path: Either a string giving the path to FITS file that contains the PSF, or a False boolean
-                  (in which case an airy disc PSF will be assumed).
+        INPUT_DICT:
+        ----------
+
+        psf:    the PSF, or a False boolean
         cutout: Array upon which photometry is being perfomred upon.
+
+        CONFIG:
+        -------
 
         pix_arcsec: The width, in arscec, of the pixels in the map photometry is being performed upon
                     (this is needed in case there is a pixel size mismatch with PSF).
@@ -85,23 +94,23 @@ class ApertureCorrector(Configurable):
         centre_j: Zero-indexed, 1st-axis coordinate (equivalent to x-axis one-indexed coordinates in FITS terms) of
                   centre position of photometric aperture.
 
-        annulus_inner: The semi-major axis of the inner edge of the background annulus, in units of the semi-major
-                       axis of the source ellipse.
-        annulus_outer: The semi-major axis of the outer edge of the background annulus, in units of the semi-major axis
-                       of the source ellipse.
+        ... and other ... (see configuration definition)
+
         """
 
-        psf = input_dict["psf"]  # PSF MUST BE PREPARED
+        ### INPUT
+
+        psf = self.input.psf  # PSF MUST BE PREPARED
+
+        # Cutout
+        cutout = self.input.cutout
 
         #####
 
-        # Extract cutout
-        cutout = input_dict["cutout"]
-
         # Produce mask for pixels we care about for fitting (ie, are inside photometric aperture and background annulus)
-        mask = ChrisFuncs.Photom.EllipseMask(cutout, input_dict['semimaj_pix'], input_dict['axial_ratio'],
-                                             input_dict['angle'], input_dict['centre_i'],
-                                             input_dict['centre_j'])  # *band_dict['annulus_outer']
+        mask = ChrisFuncs.Photom.EllipseMask(cutout, self.config.semimaj_pix, self.config.axial_ratio,
+                                             self.config.angle, self.config.centre_i,
+                                             self.config.centre_j)  # *band_dict['annulus_outer']
 
         ##
         # from pts.magic.tools import plotting
@@ -109,13 +118,13 @@ class ApertureCorrector(Configurable):
         ##
 
         # Produce guess values
-        initial_sersic_amplitide = cutout[int(round(input_dict['centre_i'])), int(round(input_dict['centre_j']))]
-        initial_sersic_r_eff = input_dict['semimaj_pix'] / 10.0
+        initial_sersic_amplitide = cutout[int(round(self.config.centre_i)), int(round(self.config.centre_j))]
+        initial_sersic_r_eff = self.config.semimaj_pix / 10.0
         initial_sersic_n = 1.0
-        initial_sersic_x_0 = input_dict['centre_j']
-        initial_sersic_y_0 = input_dict['centre_i']
-        initial_sersic_ellip = (input_dict['axial_ratio'] - 1.0) / input_dict['axial_ratio']
-        initial_sersic_theta = np.deg2rad(input_dict['angle'])
+        initial_sersic_x_0 = self.config.centre_j
+        initial_sersic_y_0 = self.config.centre_i
+        initial_sersic_ellip = (self.config.axial_ratio - 1.0) / self.config.axial_ratio
+        initial_sersic_theta = np.deg2rad(self.config.angle)
 
         # Produce sersic model from guess parameters, for time trials
         sersic_x, sersic_y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
@@ -149,7 +158,7 @@ class ApertureCorrector(Configurable):
         # Set up parameters to fit galaxy with 2-dimensional sersic profile
         params = lmfit.Parameters()
         params.add('sersic_amplitide', value=initial_sersic_amplitide, vary=True)
-        params.add('sersic_r_eff', value=initial_sersic_r_eff, vary=True, min=0.0, max=input_dict['semimaj_pix'])
+        params.add('sersic_r_eff', value=initial_sersic_r_eff, vary=True, min=0.0, max=self.config.semimaj_pix)
         params.add('sersic_n', value=initial_sersic_n, vary=True, min=0.1, max=10)
         params.add('sersic_x_0', value=initial_sersic_x_0, vary=False)
         params.add('sersic_y_0', value=initial_sersic_y_0, vary=False)
@@ -184,17 +193,17 @@ class ApertureCorrector(Configurable):
         # bg_inner_semimaj_pix = input_dict['semimaj_pix'] * input_dict['annulus_inner'] # number of pixels of semimajor axis of inner annulus ellipse
         # bg_width = (input_dict['semimaj_pix'] * input_dict['annulus_outer']) - bg_inner_semimaj_pix # number of pixels of difference between outer major axis and minor major axis
 
-        bg_inner_semimaj_pix = input_dict["semimaj_pix_annulus_inner"]
-        bg_width = input_dict["semimaj_pix_annulus_outer"] - bg_inner_semimaj_pix
-        axial_ratio_annulus = input_dict["axial_ratio_annulus"]
-        angle_annulus = input_dict["annulus_angle"]
-        centre_i_annulus = input_dict["annulus_centre_i"]
-        centre_j_annulus = input_dict["annulus_centre_j"]
+        bg_inner_semimaj_pix = self.config.semimaj_pix_annulus_inner
+        bg_width = self.config.semimaj_pix_annulus_outer - bg_inner_semimaj_pix
+        axial_ratio_annulus = self.config.axial_ratio_annulus
+        angle_annulus = self.config.annulus_angle
+        centre_i_annulus = self.config.annulus_centre_i
+        centre_j_annulus = self.config.annulus_centre_j
 
         # Evaluate pixels in source aperture and background annulus in UNCONVOLVED sersic map
-        sersic_ap_calc = ChrisFuncs.Photom.EllipseSum(sersic_map, input_dict['semimaj_pix'], input_dict['axial_ratio'],
-                                                      input_dict['angle'], input_dict['centre_i'],
-                                                      input_dict['centre_j'])
+        sersic_ap_calc = ChrisFuncs.Photom.EllipseSum(sersic_map, self.config.semimaj_pix, self.config.axial_ratio,
+                                                      self.config.angle, self.config.centre_i,
+                                                      self.config.centre_j)
         sersic_bg_calc = ChrisFuncs.Photom.AnnulusSum(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus,
                                                       angle_annulus, centre_i_annulus, centre_j_annulus)
 
@@ -205,8 +214,8 @@ class ApertureCorrector(Configurable):
                                                  1] * sersic_bg_avg)  # sersic_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
 
         # Evaluate pixels in source aperture and background annulus in CONVOLVED sersic map
-        conv_ap_calc = ChrisFuncs.Photom.EllipseSum(conv_map, input_dict['semimaj_pix'], input_dict['axial_ratio'],
-                                                    input_dict['angle'], input_dict['centre_i'], input_dict['centre_j'])
+        conv_ap_calc = ChrisFuncs.Photom.EllipseSum(conv_map, self.config.semimaj_pix, self.config.axial_ratio,
+                                                    self.config.angle, self.config.centre_i, self.config.centre_j)
         conv_bg_calc = ChrisFuncs.Photom.AnnulusSum(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus,
                                                     angle_annulus, centre_i_annulus, centre_j_annulus)
 

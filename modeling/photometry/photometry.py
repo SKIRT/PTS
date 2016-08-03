@@ -149,6 +149,9 @@ class PhotoMeter(PhotometryComponent):
         # Create an observed SED
         self.sed = ObservedSED()
 
+        # Setup the remote PTS launcher
+        #self.launcher.setup(self.config.remote)
+
     # -----------------------------------------------------------------
 
     def load_images(self):

@@ -979,6 +979,66 @@ class FileConfigurationSetter(ConfigurationSetter):
 
 # -----------------------------------------------------------------
 
+class DictConfigurationSetter(ConfigurationSetter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+
+        """
+        The constructor ...
+        :param dictionary:
+        :param name:
+        :param description:
+        :param add_logging:
+        :param add_cwd:
+        :param log_path:
+        """
+
+        # Call the constructor of the base class
+        super(DictConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+
+        # Set the user-provided dictionary
+        self.dictionary = dictionary
+
+    # -----------------------------------------------------------------
+
+    def run(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set definition
+        self.definition = definition
+
+        # Set logging and cwd
+        self.set_logging_and_cwd()
+
+        # Create the configuration
+        self.create_config()
+
+        # Return the config
+        return self.config
+
+    # -----------------------------------------------------------------
+
+    def create_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add the settings to the configuration
+        add_settings_from_dict(self.config, self.dictionary)
+
+# -----------------------------------------------------------------
+
 class GraphicalConfigurationSetter(ConfigurationSetter):
 
     """
@@ -1251,6 +1311,121 @@ def write_definition(definition, configfile, indent=""):
 
 # -----------------------------------------------------------------
 
+def add_settings_from_dict(config, definition, dictionary):
+
+    """
+    This function ...
+    :param config:
+    :param definition:
+    :param dictionary:
+    :return:
+    """
+
+    # Fixed
+    for name in definition.fixed:
+
+        value = definition.fixed[name][1]
+        config[name] = value
+
+    # Required
+    for name in definition.required:
+
+        if not name in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
+
+        choices = definition.required[name][2]
+
+        # Get the value specified in the dictionary
+        value = dictionary[name]
+
+        # TODO: check type?
+
+        # Check with choices
+        if choices is not None:
+            if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+
+        # Set the value
+        config[name] = value
+
+    # Positional optional
+    for name in definition.pos_optional:
+
+        default = definition.pos_optional[name][2]
+        choices = definition.pos_optional[name][3]
+
+        # Check if this option is specified in the dictionary
+        if name in dictionary:
+
+            value = dictionary[name]
+
+            # TODO: check type?
+
+            # Check with choices
+            if choices is not None:
+                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+
+        # Use the default value otherwise
+        else: value = default
+
+        # Set the value
+        config[name] = value
+
+    # Optional
+    for name in definition.optional:
+
+        # (real_type, description, default, letter)
+        default = definition.optional[name][2]
+        choices = definition.optional[name][3]
+
+        # Check if this option is specified in the dictionary
+        if name in dictionary:
+
+            value = dictionary[name]
+
+            # TODO: check type?
+
+            # Check with choices
+            if choices is not None:
+                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+
+        # Use the default value otherwise
+        else: value = default
+
+        # Set the value
+        config[name] = value
+
+    # Flags
+    for name in definition.flags:
+
+        # (description, letter, default)
+        #letter = definition.flags[name][1]
+        default = definition.flags[name][2]  # True or False
+
+        # Check if this option is specified in the dictionary
+        if name in dictionary: value = dictionary[name]
+
+        # Use the default value otherwise
+        else: value = default
+
+        # Set the boolean value
+        config[name] = value
+
+    # Add the configuration settings of the various sections
+    for name in definition.sections:
+
+        # Create a map for the settings
+        config[name] = Map()
+
+        # Recursively add the settings
+        section_definition = definition.sections[name]
+
+        if name in dictionary: section_dictionary = dictionary[name]
+        else: section_dictionary = dict() # new empty dict
+
+        # Add the settings
+        add_settings_from_dict(config[name], section_definition, section_dictionary)
+
+# -----------------------------------------------------------------
+
 def add_settings_interactive(config, definition, prompt_optional=True):
 
     """
@@ -1390,7 +1565,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # Set the value
         config[name] = value
 
-    # Flag
+    # Flags
     for name in definition.flags:
 
         # (description, letter)

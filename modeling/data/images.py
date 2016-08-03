@@ -20,8 +20,7 @@ from .component import DataComponent
 from ...dustpedia.core.database import DustPediaDatabase, get_account
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...dustpedia.core.galex import GALEXMosaicMaker
-from ...dustpedia.core.sdss import SDSSMosaicMaker
+from ...core.launch.pts import PTSRemoteLauncher
 
 # -----------------------------------------------------------------
 
@@ -50,8 +49,8 @@ class ImageFetcher(DataComponent):
         # The names of the images found on the DustPedia archive, for each observatory
         self.dustpedia_image_names = defaultdict(list)
 
-        # The images
-        #self.images = []
+        # Create the PTS remote environment
+        self.launcher = PTSRemoteLauncher()
 
     # -----------------------------------------------------------------
 
@@ -77,16 +76,16 @@ class ImageFetcher(DataComponent):
         # 5. Fetch the H-alpha image
         self.fetch_halpha()
 
-        # 6.
+        # 6. Fetch the 2MASS images
         self.fetch_2mass()
 
-        # 7.
+        # 7. Fetch the Spitzer images
         self.fetch_spitzer()
 
-        # 8.
+        # 8. Fetch the WISE images
         self.fetch_wise()
 
-        # 9.
+        # 9. Fetch the Herschel images
         self.fetch_herschel()
 
         # 10. Writing
@@ -112,6 +111,9 @@ class ImageFetcher(DataComponent):
 
         # Login to the DustPedia database
         self.database.login(username, password)
+
+        # Setup the remote PTS launcher
+        self.launcher.setup(self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -160,7 +162,14 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Fetching the GALEX data ...")
+
+        # Fetch the GALEX data from the DustPedia archive
         self.fetch_from_dustpedia("GALEX")
+
+        # Create the GALEX mosaic and Poisson errors frame
+        self.launcher.run("make_galex", input)
 
     # -----------------------------------------------------------------
 
@@ -171,7 +180,14 @@ class ImageFetcher(DataComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Fetching the SDSS data ...")
+
+        # Fetch the SDSS data from the DustPedia archive
         self.fetch_from_dustpedia("SDSS")
+
+        # Create the SDSS mosaic and Poisson errors frame
+        self.launcher.run("make_sdss", input)
 
     # -----------------------------------------------------------------
 
@@ -197,7 +213,7 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Fetching the ...")
 
-        # Fetch
+        # Fetch the 2MASS data from the DustPedia archive
         self.fetch_from_dustpedia("2MASS")
 
     # -----------------------------------------------------------------
@@ -210,8 +226,9 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the ...")
+        log.info("Fetching the Spitzer data ...")
 
+        # Fetch the Spitzer data from the DustPedia archive
         self.fetch_from_dustpedia("Spitzer")
 
     # -----------------------------------------------------------------
@@ -226,6 +243,7 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Fetching the ...")
 
+        # Fetch the WISE data from the DustPedia archive
         self.fetch_from_dustpedia("WISE")
 
     # -----------------------------------------------------------------
@@ -240,6 +258,7 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Fetching the ...")
 
+        # Fetch the Herschel data from the DustPedia archive
         self.fetch_from_dustpedia("Herschel")
 
     # -----------------------------------------------------------------

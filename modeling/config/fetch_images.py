@@ -6,15 +6,11 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.basics.host import find_host_ids
+from .fetch import definition
+from ...core.basics.host import find_host_ids
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition()
-
-# Add option for the remote host ID
-definition.add_required("remote", "string", "remote host to use for the aperture correction calculation", find_host_ids())
+definition.add_required("remote", "string", "the remote host to use for creating the GALEX and SDSS data", choices=find_host_ids())
 
 # -----------------------------------------------------------------
