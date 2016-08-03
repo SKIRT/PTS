@@ -115,45 +115,6 @@ class ConvolutionKernel(Frame):
 
     # -----------------------------------------------------------------
 
-    def prepare_chris(self, pixelscale):
-
-        """
-        This function ...
-        :return:
-        """
-
-        av_pixelscale_arcsec = pixelscale.average.to("arcsec/pix").value
-        kernel_av_pixelscale_arcsec = self.average_pixelscale.to("arcsec/pix").value
-
-        # If PSF pixel size is different to map pixel size, rescale PSF accordingly
-        if (av_pixelscale_arcsec / kernel_av_pixelscale_arcsec) > 1.001 \
-                or (av_pixelscale_arcsec / kernel_av_pixelscale_arcsec) < 0.999:
-
-            psf_in = self._data
-
-            # 'Trim' the edges of the input PSF until the rescaled PSF has odd dimensions
-            psf_even = True
-            while psf_even:
-
-                zoom_factor = float(kernel_av_pixelscale_arcsec) / float(av_pixelscale_arcsec)
-
-                psf = zoom(psf_in, (zoom_factor, zoom_factor), mode='nearest')
-
-                if (psf.shape[0] % 2 != 0) and (psf.shape[1] % 2 != 0):
-                    psf_even = False
-                else:
-                    psf_in = psf_in[1:, 1:]
-                    psf_in = psf_in[:-1, :-1]
-
-            self._data = psf_in
-
-        # Else, if pixel sizes are already the same, leave as-is
-
-        # Normalise PSF
-        self._data /= np.nansum(self._data)
-
-    # -----------------------------------------------------------------
-
     @property
     def odd_xsize(self):
 

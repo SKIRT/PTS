@@ -282,6 +282,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
     ra_deg = ra.to("deg").value
     dec_deg = dec.to("deg").value
+    with_deg = width.to("deg").value
 
     # Declare directories
     id_string = name + '_GALEX_' + band_dict['band_long']
@@ -332,7 +333,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     overlap_path = fs.join(temp_path_band, "overlap_table.dat")
 
     # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)
-    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra.to("deg").value, dec=dec.to("deg").value, radius=(0.5*width)*(2.0**0.5))
+    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra.to("deg").value, dec=dec.to("deg").value, radius=(0.5*width_deg)*(2.0**0.5))
 
     # Get file paths of overlapping observations
     overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
@@ -392,16 +393,10 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         location_string = str(ra_deg) + ' ' + str(dec_deg)
         pix_size = 3.2
 
-        print("")
-        print("")
-        print("")
-        print("")
-        print("TEMP PATH BAND", temp_path_band)
-        print("ID STRING", id_string)
-        header_path = fs.join(temp_path_band, id_string + '_HDR')
+        # Make header
+        header_path = fs.join(temp_path_band, id_string + ".hdr")
         print("HEADER PATH : ", header_path)
-        montage.commands.mHdr(location_string, width, header_path, pix_size=pix_size)
-        exit()
+        montage.commands.mHdr(location_string, width_deg, header_path, pix_size=pix_size)
 
         # Count image files, and move to reprojection directory
         mosaic_count = 0
@@ -439,7 +434,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         # Use SWarp to co-add images weighted by their error maps
         log.info("Co-adding " + id_string + " maps ...")
-        image_width_pixels = str(int((float(width)*3600.)/pix_size))
+        image_width_pixels = str(int((float(width_deg)*3600.)/pix_size))
         os.chdir(temp_swarp_path)
 
         # EXECUTE SWARP

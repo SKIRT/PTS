@@ -505,19 +505,17 @@ class PhotoMeter(PhotometryComponent):
         # PREPARE THE CONVOLUTION KERNEL
         #psf.prepare_for(frame)
 
-        psf_copy = psf.copy()
+        #psf.prepare_chris(frame.pixelscale) ### PREPARE USING CHRIS'S METHOD (WHICH ALSO MAKES SURE THE KERNEL HAS UNEVEN NPIXELS)
 
-        psf.prepare_chris(frame.pixelscale) ### PREPARE USING CHRIS'S METHOD (WHICH ALSO MAKES SURE THE KERNEL HAS UNEVEN NPIXELS)
-
-        psf.save(fs.join(self.phot_temp_path, filter_name + "_psf_chris.fits"))
+        #psf.save(fs.join(self.phot_temp_path, filter_name + "_psf_chris.fits"))
 
         from pts.magic.tools import plotting
         #plotting.plot_box(psf.data, title="CHRIS' METHOD prepared PSF kernel for " + filter_name)
 
-        psf_copy.prepare_for(frame)
+        psf.prepare_for(frame)
         #plotting.plot_box(psf_copy.data, title="prepared PSF kernel for " + filter_name)
 
-        psf_copy.save(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
+        psf.save(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
 
         # SET INPUT DICT
 
@@ -610,47 +608,7 @@ def calculate_aperture_correction(input_dict):
     import astropy.wcs
     import astropy.modeling
 
-    ### REBINNING, RECENTERING AND NORMALIZATION OF PSF
-
-    """
-    # If no PSF given, assume Airy disc; else extract PSF from provided file
-    if (str(input_dict['psf_path'])==False) or (input_dict['psf_path'] is None):
-        psf = astropy.convolution.kernels.AiryDisk2DKernel(input_dict['psf_path']).array
-    else:
-
-        # Read in PSF, and establish pixel size
-        psf_in, psf_header = astropy.io.fits.getdata(input_dict['psf_path'], header=True)
-        psf_wcs = astropy.wcs.WCS(psf_header)
-        if psf_wcs.wcs.has_cd():
-            psf_cdelt = psf_wcs.wcs.cd.max()
-        else:
-            psf_cdelt = psf_wcs.wcs.cdelt.max()
-        psf_cdelt_arcsec = abs( psf_cdelt * 3600.0 )
-
-        # If PSF pixel size is different to map pixel size, rescale PSF accordingly
-        if (input_dict['pix_arcsec']/psf_cdelt_arcsec)>1.001 or (input_dict['pix_arcsec']/psf_cdelt_arcsec)<0.999:
-
-            # 'Trim' the edges of the input PSF until the rescaled PSF has odd dimensions
-            psf_even = True
-            while psf_even:
-                zoom_factor = float(psf_cdelt_arcsec) / float(input_dict['pix_arcsec'])
-                psf = scipy.ndimage.zoom(psf_in, (zoom_factor,zoom_factor), mode='nearest')
-                if (psf.shape[0]%2!=0) and (psf.shape[1]%2!=0):
-                    psf_even = False
-                else:
-                    psf_in = psf_in[1:,1:]
-                    psf_in = psf_in[:-1,:-1]
-
-        # Else, if pixel sizes are already the same, leave as-is
-        elif ((input_dict['pix_arcsec']/psf_cdelt_arcsec)>=0.999) and ((input_dict['pix_arcsec']/psf_cdelt_arcsec)<=0.001):
-            psf = psf_in.copy()
-
-    # Normalise PSF
-    psf /= np.nansum(psf)
-
-    """
-
-    psf = input_dict["psf"]
+    psf = input_dict["psf"] # PSF MUST BE PREPARED
 
     #####
 
@@ -686,7 +644,6 @@ def calculate_aperture_correction(input_dict):
         border = int( np.round( np.ceil( float(excess) / 2.0 ) - 1.0 ) )
         psf = psf[border:,border:]
         psf = psf[:-border,:-border]
-
 
     # Determine whether FFT convolution or direct convolution is faster for this kernel,
     # using sersic model produced with guess parameters
