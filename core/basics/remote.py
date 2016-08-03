@@ -384,6 +384,14 @@ class Remote(object):
 
         ##
 
+        # DETERMINE REMOTE OUTPUT PATH
+
+        # If the 'output' parameter is specified in the configuration, get the full absolute path to the corresponding output directory
+        if "output" in config: remote_output_path = fs.absolute_or_in(config.output, config.path)
+        else: remote_output_path = config.path # else, the output directory is the remote working directory
+
+        ###
+
         # Debugging
         log.debug("Saving the configuration file locally ...")
 
@@ -453,7 +461,7 @@ class Remote(object):
         fs.remove_file(temp_script_path)
 
         # Remove the remote temporary directory
-        if keep_remote_temp: log.info("Remote output will be placed in '" + remote_temp_path + "'")
+        if keep_remote_temp: log.info("Remote output will be placed in '" + remote_output_path + "'")
 
         # Create a new Task object
         task = Task(command, config.to_string())
@@ -470,6 +478,7 @@ class Remote(object):
         task.name = unique_session_name
         task.screen_name = unique_session_name
         task.remote_screen_output_path = remote_temp_path
+        task.remote_output_path = remote_output_path
         task.keep_remote_output = keep_remote_temp
 
         # Save the task

@@ -286,6 +286,19 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def pixelarea(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the pixelarea of the primary frame
+        return self.primary.pixelarea if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def fwhm(self):
 
         """

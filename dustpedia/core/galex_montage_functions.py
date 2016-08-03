@@ -29,7 +29,7 @@ import astropy.io.votable
 import astropy.convolution
 import montage_wrapper as montage
 from astropy.wcs import WCS
-from astropy.io.fits import Header, getheader
+from astropy.io.fits import Header
 
 # Import Chris' package
 import ChrisFuncs
@@ -42,7 +42,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
-def GALEX_Level_Chisq(level_params, image):
+def level_chi_squared(level_params, image):
 
     """
     Fit flat plane to the image to find level
@@ -90,7 +90,7 @@ def level_galex_maps(fitsfile_dir, convfile_dir, target_suffix):
         log.info('Matching background of map ' + fitsfile_list[i] + " ...")
 
         # Read in corresponding map from directory containing convolved images
-        fitsdata_conv = fits.open(convfile_dir+'/'+fitsfile_list[i])
+        fitsdata_conv = fits.open(convfile_dir + '/' + fitsfile_list[i])
         image_conv = fitsdata_conv[0].data
         fitsdata_conv.close()
 
@@ -103,7 +103,7 @@ def level_galex_maps(fitsfile_dir, convfile_dir, target_suffix):
         #
 
         image_conv_clipped = ChrisFuncs.SigmaClip(image_conv, tolerance=0.005, median=False, sigma_thresh=3.0)[2]
-        level_result = lmfit.minimize(GALEX_Level_Chisq, level_params, args=(image_conv_clipped.flatten(),))
+        level_result = lmfit.minimize(level_chi_squared, level_params, args=(image_conv_clipped.flatten(),))
         level = level_result.params['level'].value
         if i==0:
             level_ref = level
