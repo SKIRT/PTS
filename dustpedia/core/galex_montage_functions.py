@@ -282,7 +282,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
     ra_deg = ra.to("deg").value
     dec_deg = dec.to("deg").value
-    with_deg = width.to("deg").value
+    width_deg = width.to("deg").value
 
     # Declare directories
     id_string = name + '_GALEX_' + band_dict['band_long']
