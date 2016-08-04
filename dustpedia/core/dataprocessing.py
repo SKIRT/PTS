@@ -404,7 +404,7 @@ class DustPediaDataProcessing(object):
         # Determine the path to the temporary directory for downloading the images
         working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
-        #working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-07-26--12-15-35-426")
+        working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
 
         # Create the working directory
         fs.create_directory(working_path)
@@ -412,46 +412,46 @@ class DustPediaDataProcessing(object):
         # DOWNLOAD PATH
         download_path = fs.join(working_path, "download")
         # Create download directory
-        fs.create_directory(download_path)
+        #fs.create_directory(download_path)
 
         # RESPONSE AND BACKGROUND PATH
         response_path = fs.join(working_path, "response")
         background_path = fs.join(working_path, "background")
-        fs.create_directories(response_path, background_path)
+        #fs.create_directories(response_path, background_path)
 
         # RAW PATH
         raw_path = fs.join(working_path, "raw")
         # Create raw directory
-        fs.create_directory(raw_path)
+        #fs.create_directory(raw_path)
 
         # TEMP PATH
         temp_path = fs.join(working_path, "temp")
         temp_fuv_path = fs.join(temp_path, "FUV")
         temp_nuv_path = fs.join(temp_path, "NUV")
         # Create temp directory
-        fs.create_directory(temp_path)
-        fs.create_directories(temp_fuv_path, temp_nuv_path)
+        #fs.create_directory(temp_path)
+        #fs.create_directories(temp_fuv_path, temp_nuv_path)
 
         # 1 and 2 RAW directories
         raw_fuv_path = fs.join(raw_path, "FUV")
         raw_nuv_path = fs.join(raw_path, "NUV")
-        fs.create_directories(raw_fuv_path, raw_nuv_path)
+        #fs.create_directories(raw_fuv_path, raw_nuv_path)
 
         # download/images, download/response and download/background
         download_images_path = fs.join(download_path, "images")
         download_response_path = fs.join(download_path, "reponse")
         download_background_path = fs.join(download_path, "background")
-        fs.create_directories(download_images_path, download_response_path, download_background_path)
+        #fs.create_directories(download_images_path, download_response_path, download_background_path)
 
 
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path)
+        #self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path)
 
 
         # FUV and NUV response directories
         response_fuv_path = fs.join(response_path, "FUV")
         response_nuv_path = fs.join(response_path, "NUV")
-        fs.create_directories(response_fuv_path, response_nuv_path)
+        #fs.create_directories(response_fuv_path, response_nuv_path)
 
         # FUV and NUV background directories
         background_fuv_path = fs.join(background_path, "FUV")
@@ -464,13 +464,13 @@ class DustPediaDataProcessing(object):
         log.info("Splitting observations into FUV and NUV ...")
 
         # Split downloaded images into FUV and NUV
-        self.split_galex_observations(download_images_path, raw_fuv_path, raw_nuv_path)
+        #self.split_galex_observations(download_images_path, raw_fuv_path, raw_nuv_path)
 
         # Split response maps into FUV and NUV
-        self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
+        #self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
 
         # Split background maps into FUV and NUV
-        self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
+        #self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
 
         ###
 
@@ -615,8 +615,8 @@ class DustPediaDataProcessing(object):
             b_frames.append(b)
 
         # Take the sums
-        ab_sum = sum_frames(ab_frames)
-        b_sum = sum_frames(b_frames)
+        ab_sum = sum_frames(*ab_frames)
+        b_sum = sum_frames(*b_frames)
 
         # Calculate the relative poisson errors
         rel_poisson_frame = ab_sum**(-0.5)

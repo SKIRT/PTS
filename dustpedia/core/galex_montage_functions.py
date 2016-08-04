@@ -267,6 +267,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     :param working_path:
     :param temp_path:
     :param meta_path:
+    :param output_path:
     :return:
     """
 
@@ -590,14 +591,14 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             weight_frame.save(fs.join(temp_poisson_weights_path, name + ".fits"))
 
         # Take the sums
-        ab_sum = sum_frames(ab_frames)
-        b_sum = sum_frames(b_frames)
+        ab_sum = sum_frames(*ab_frames)
+        b_sum = sum_frames(*b_frames)
 
         # Calculate the relative poisson errors
         rel_poisson_frame = ab_sum ** (-0.5)
 
         # Calculate the total weight map
-        total_weight_map = sum_frames(weight_frames)
+        total_weight_map = sum_frames(*weight_frames)
 
         # Save rel poisson frame and total weight map
         rel_poisson_frame.save(fs.join(temp_poisson_result_path, "rel_poisson.fits"))

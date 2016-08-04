@@ -1954,11 +1954,25 @@ class Remote(object):
             # Finished task
             elif task_status == "finished":
 
-                # Warning
-                log.warning("Retrieving PTS task output is not implemented yet, look on the remote filesystem for the results")
-
                 # Open the simulation file
                 task = Task.from_file(path)
+
+                # CHECK WHETHER OUTPUT HAS TO BE DOWNLOADED
+                if task.local_output_path is not None:
+
+                    # Debug info
+                    log.debug("Retrieving the complete remote output directory ...")
+                    log.debug("Local output directory: " + task.local_output_path)
+                    log.debug("Remote output directory: " + task.remote_output_path)
+
+                    # Check whether the output directory exists; if not, create it
+                    if not fs.is_directory(task.local_output_path): fs.create_directory(task.local_output_path)
+
+                    # Download the PTS task output
+                    self.download(task.remote_output_path, task.local_output_path)
+
+                # Local output path not defined
+                else: log.warning("Local output path not defined: remote PTS task output will not be retrieved (look on the remote filesystem for the results in '" + task.remote_output_path + "')")
 
                 # Add the retrieved task to the list
                 tasks.append(task)

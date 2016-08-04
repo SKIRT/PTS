@@ -51,7 +51,8 @@ class Task(object):
         # Flag indicating whether the output of this task has been retrieved or not
         self.retrieved = False
 
-        # The path to the remote output directory
+        # The path to the local and remote output directory
+        self.local_output_path = None
         self.remote_output_path = None
 
         # Flag indicating whether we want to keep remote output (not used yet)
