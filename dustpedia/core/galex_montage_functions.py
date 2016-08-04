@@ -255,7 +255,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
 
 # -----------------------------------------------------------------
 
-def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_path, output_path):
+def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_path, output_path, nprocesses=6):
 
     """
     Function to SWarp together GALEX tiles of a given source
@@ -268,6 +268,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     :param temp_path:
     :param meta_path:
     :param output_path:
+    :param nprocesses: number of parallel processes
     :return:
     """
 
@@ -393,8 +394,22 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
         log.info('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string + " ...")
 
-        # CLEAN
-        for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
+        if nprocesses == 1:
+
+            # CLEAN
+            for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
+
+        else:
+
+            # Create process pool
+            pool = mp.Pool(processes=nprocesses)
+
+            # EXECUTE THE LOOP IN PARALLEL
+            for raw_file in raw_files: pool.apply_async(clean_galex_tile, args=(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict,))
+
+            # CLOSE AND JOIN THE PROCESS POOL
+            pool.close()
+            pool.join()
 
         # Create Montage FITS header
         location_string = str(ra_deg) + ' ' + str(dec_deg)

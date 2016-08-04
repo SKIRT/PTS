@@ -229,7 +229,7 @@ class PhotoMeter(PhotometryComponent):
             flux = self.images[name].sum()
 
             # Apply correction for EEF of aperture
-            #if "Pacs" in name or "SPIRE" in name: flux *= self.get_aperture_correction_factor(self.images[name], aniano, herschel)
+            if "Pacs" in name or "SPIRE" in name: flux *= self.get_aperture_correction_factor(self.images[name], aniano, herschel)
 
             # Calculate the total flux error in Jansky
             flux_error = self.errors[name].sum()
@@ -571,9 +571,11 @@ class PhotoMeter(PhotometryComponent):
         # Debugging
         log.debug("Performing the aperture correction calculation remotely ...")
 
+        print("CONFIG", config_dict)
+        print("INPUT", input_dict)
+
         # Calculate the aperture correction factor
-        output_dict = self.launcher.run("aperture_correction", config_dict, input_dict, wait_and_return=True)
-        factor = output_dict["factor"]
+        factor = self.launcher.run_attached("aperture_correction", config_dict, input_dict, return_output_names=["factor"], unpack=True)
 
         # Debugging
         log.debug("The aperture correction factor for " + filter_name + " is " + repr(factor))

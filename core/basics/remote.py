@@ -395,6 +395,9 @@ class Remote(object):
             # Determine the local output path that is desired by the user
             local_output_path = fs.absolute_or_in(config.output, local_cwd)
 
+            # Create the local output path if necessary
+            if not fs.is_directory(local_output_path): fs.create_directory(local_output_path)
+
             # Set the remote output path
             remote_output_path = fs.join(config.path, "out")
 

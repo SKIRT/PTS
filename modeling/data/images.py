@@ -173,7 +173,7 @@ class ImageFetcher(DataComponent):
         config_dict["galaxy_name"] = self.ngc_id_nospaces
 
         # Create the GALEX mosaic and Poisson errors frame
-        self.launcher.run("make_galex", config_dict)
+        self.launcher.run_detached("make_galex", config_dict)
 
     # -----------------------------------------------------------------
 
@@ -195,7 +195,7 @@ class ImageFetcher(DataComponent):
         config_dict["galaxy_name"] = self.ngc_id_nospaces
 
         # Create the SDSS mosaic and Poisson errors frame
-        self.launcher.run("make_sdss", config_dict)
+        self.launcher.run_detached("make_sdss", config_dict)
 
     # -----------------------------------------------------------------
 

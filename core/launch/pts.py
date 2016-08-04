@@ -58,37 +58,127 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run_detached(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def run_attached(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def run(self, pts_command, config_dict, input_dict=None, wait_and_return=False, return_output_names=None):
+    def run_detached(self, pts_command, config_dict, input_dict=None):
 
         """
         This function ...
         :param pts_command:
         :param config_dict:
         :param input_dict:
-        :param wait_and_return:
+        :return:
+        """
+
+        # Initialize
+        subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
+
+        # Run PTS remotely
+        task = self.remote.run_pts(exact_command_name, config, input_dict=input_dict, keep_remote_temp=True)
+
+        # Succesfully submitted
+        log.success("Succesfully submitted the PTS job to the remote host")
+
+    # -----------------------------------------------------------------
+
+    def run_attached(self, pts_command, config_dict, input_dict=None, return_output_names=None, unpack=False):
+
+        """
+        This function ...
+        :param pts_command:
+        :param config_dict:
+        :param input_dict:
         :param return_output_names:
+        :param unpack:
+        :return:
+        """
+
+        # Initialize
+        subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
+
+        # START REMOTE PYTHON SESSION
+        self.remote.start_python_session()
+
+        # Import the class from which to make an instance
+        self.remote.import_python_package("importlib")
+        self.remote.send_python_line("module = importlib.import_module('" + class_module_path + "')")  # get the module of the class
+        self.remote.send_python_line("cls = getattr(module, '" + class_name + "')")  # get the class
+
+        log.start("Starting " + exact_command_name + " ...")
+
+        # Create a remote temporary directory (for the config and input)
+        remote_temp_path = self.remote.new_temp_directory()
+
+        # Always create a log file while executing remotely
+        config.report = True
+        config.log_path = remote_temp_path
+        config.path = remote_temp_path
+
+        #### UPLOADING THE CONFIG TO THE REMOTE ####
+
+        # Debugging
+        log.debug("Saving the configuration file locally ...")
+
+        # Determine path to the temporarily saved local configuration file
+        temp_path = tempfile.gettempdir()
+        temp_conf_path = fs.join(temp_path, "config.cfg")
+
+        # Save the configuration file to the temporary directory
+        config.save(temp_conf_path)
+
+        # Debugging
+        log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
+
+        # Upload the config file
+        remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
+        self.remote.upload(temp_conf_path, remote_temp_path)
+
+        # Remove the original config file
+        fs.remove_file(temp_conf_path)
+
+        #####
+
+        #### UPLOAD THE INPUT : TODO
+
+        # Import the Configuration class remotely
+        self.remote.import_python_package("Configuration", from_name="pts.core.basics.configuration")
+
+        # Load the config into the remote python session
+        self.remote.send_python_line("config = Configuration.from_file('" + remote_conf_path + "')")
+
+        # Create the class instance, configure it with the configuration settings
+        self.remote.send_python_line("inst = cls(config)")
+
+        # Run the instance
+        self.remote.send_python_line("inst.run()", show_output=True)  # TODO: pass input dictionary?
+
+        # Set the output
+        output_list = None
+        if return_output_names is not None:
+
+            # Initialize output list
+            output_list = []
+
+            # Fill in the values in the dict
+            for name in return_output_names: output_list.append(self.remote.get_simple_python_property("inst", name))
+
+        ######
+
+        # Now END THE PYTHON SESSION
+        self.remote.end_python_session()
+
+        # Return the output(can be None if return_output_names was None)
+        if output_list is None: return
+        if unpack:
+            if len(output_list) == 1: return output_list[0]
+            else: return output_list
+        else: return dict(zip(return_output_names, output_list))
+
+    # -----------------------------------------------------------------
+
+    def _initialize(self, pts_command, config_dict, input_dict):
+
+        """
+        This function ...
+        :param pts_command:
         :return:
         """
 
@@ -110,12 +200,12 @@ class PTSRemoteLauncher(object):
 
             config_dict["input"] = dict()
             for name in input_dict:
-                config_dict["input"] = name + "." + input_dict[name].default_extension # generate a default filename
+                config_dict["input"] = name + "." + input_dict[name].default_extension  # generate a default filename
 
         ## CREATE THE CONFIGURATION
 
         # Create the configuration setter
-        if config_dict is None: config_dict = dict() # no problem if all options are optional
+        if config_dict is None: config_dict = dict()  # no problem if all options are optional
         setter = DictConfigurationSetter(config_dict, command_name, description)
 
         # Create the configuration from the definition and from the provided configuration dictionary
@@ -129,97 +219,8 @@ class PTSRemoteLauncher(object):
         # Inform the user about starting the PTS command remotely
         log.start("Starting " + exact_command_name + " on remote host " + self.remote.host_id + " ...")
 
-        # IF WAIT AND RETURN
-        if wait_and_return:
-
-            #raise NotImplementedError("Wait and return has not been implemented yet")
-
-            # Return the output dictionary
-            #return output_dict
-
-            # START REMOTE PYTHON SESSION
-            self.remote.start_python_session()
-
-            # Import the class from which to make an instance
-            self.remote.import_python_package("importlib")
-            self.remote.send_python_line("module = importlib.import_module('" + class_module_path + "')") # get the module of the class
-            self.remote.send_python_line("cls = getattr(module, '" + class_name + "')") # get the class
-
-            log.start("Starting " + command_name + " ...")
-
-            # Create a remote temporary directory (for the config and input)
-            remote_temp_path = self.remote.new_temp_directory()
-
-            # Always create a log file while executing remotely
-            config.report = True
-            config.log_path = remote_temp_path
-            config.path = remote_temp_path
-
-            #### UPLOADING THE CONFIG TO THE REMOTE ####
-
-            # Debugging
-            log.debug("Saving the configuration file locally ...")
-
-            # Determine path to the temporarily saved local configuration file
-            temp_path = tempfile.gettempdir()
-            temp_conf_path = fs.join(temp_path, "config.cfg")
-
-            # Save the configuration file to the temporary directory
-            config.save(temp_conf_path)
-
-            # Debugging
-            log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
-
-            # Upload the config file
-            remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
-            self.remote.upload(temp_conf_path, remote_temp_path)
-
-            # Remove the original config file
-            fs.remove_file(temp_conf_path)
-
-            #####
-
-            #### UPLOAD THE INPUT : TODO
-
-            # Import the Configuration class remotely
-            self.remote.import_python_package("Configuration", from_name="pts.core.basics.configuration")
-
-            # Load the config into the remote python session
-            self.remote.send_python_line("config = Configuration.from_file('" + remote_conf_path + "')")
-
-            # Create the class instance, configure it with the configuration settings
-            self.remote.send_python_line("inst = cls(config)")
-
-            # Run the instance
-            self.remote.send_python_line("inst.run()", show_output=True) # TODO: pass input dictionary?
-
-            # Set the output
-            output_dict = None
-            if return_output_names is not None:
-
-                # Initialize output as dictionary
-                output_dict = dict()
-
-                # Fill in the values in the dict
-                for name in return_output_names:
-                    output_dict[name] = self.remote.get_simple_python_property("inst", name)
-
-            ######
-
-            # Now END THE PYTHON SESSION
-            self.remote.end_python_session()
-
-            # Return the output dictionary (can be None if return_output_names was None)
-            return output_dict
-
-        # ELSE, CREATE TASK
-        else:
-
-            # Run PTS remotely
-            task = self.remote.run_pts(exact_command_name, config, input_dict=input_dict, keep_remote_temp=True)
-
-            # Succesfully submitted
-            log.success("Succesfully submitted the PTS job to the remote host")
+        # Return
+        return subproject, exact_command_name, class_name, class_module_path, config
 
 # -----------------------------------------------------------------
 
