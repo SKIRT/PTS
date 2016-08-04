@@ -236,6 +236,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
 
     kernel = astropy.convolution.kernels.Tophat2DKernel(10)
     conv_image = astropy.convolution.convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True) #, interpolate_nan=True, normalize_kernel=True)
+
     # Write
     temp_convolve_image_path = fs.join(temp_convolve_path, raw_file)                  ## NEW
     if fs.is_file(temp_convolve_image_path): fs.remove_file(temp_convolve_image_path) ## NEW
@@ -243,7 +244,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
 
     # Load and align exposure time to create weight maps
     exp_image = out_image.copy()
-    exp_image[ np.where( np.isnan(out_image)==False ) ] = (float(in_header['exptime']))**0.5
+    exp_image[ np.where( np.isnan(out_image)==False ) ] = (float(in_header['exptime']))**0.5 # SQUARE ROOT OF THE EXPOSURE TIME
     exp_hdu = fits.PrimaryHDU(data=exp_image, header=in_header)
     exp_hdulist = fits.HDUList([exp_hdu])
 

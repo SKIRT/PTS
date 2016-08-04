@@ -1474,7 +1474,8 @@ def sum_frames(*args):
     :return:
     """
 
-    arrays = [np.array(arg) for arg in args]
+    #arrays = [np.array(arg) for arg in args] # how it used to be
+    arrays = [arg.data for arg in args]
     return Frame(np.sum(arrays, axis=0))
 
 # -----------------------------------------------------------------
@@ -1487,7 +1488,8 @@ def sum_frames_quadratically(*args):
     :return:
     """
 
-    arrays = [np.array(arg)**2 for arg in args]
+    #arrays = [np.array(arg)**2 for arg in args]
+    arrays = [arg.data**2 for arg in args]
     return Frame(np.sqrt(np.sum(arrays, axis=0)))
 
 # -----------------------------------------------------------------
