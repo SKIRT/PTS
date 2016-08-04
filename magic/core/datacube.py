@@ -13,8 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import threading
-import multiprocessing as mp
+from multiprocessing import Pool, Process, Manager
 import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -25,6 +24,10 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.tools.logging import log
 from ..basics.mask import Mask, MaskBase
 from ...core.basics.errorbar import ErrorBar
+from ...core.tools import introspection
+from ...core.tools import filesystem as fs
+from ...core.tools import time
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -342,27 +345,19 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters, nprocesses=8):
+    def convolve_with_filters(self, filters, nprocesses=8, shared_memory=False):
 
         """
         This function ...
         :param filters:
         :param nprocesses:
+        :param shared_memory:
         :return:
         """
 
         # Inform the user
-        parallel_info = " in parallel with " + str(len(filters)) + " processes" if nprocesses > 1 else "" # REPLACE THIS LATER BY THE NUMBER OF ACTUAL THREADS
+        parallel_info = " in parallel with " + str(len(filters)) + " processes" if nprocesses > 1 else ""
         log.info("Convolving the datacube with " + str(len(filters)) + " different filters" + parallel_info + " ...")
-
-        # Debugging
-        log.debug("Converting the datacube into a single 3D array ...")
-
-        # Convert the datacube to a numpy array where wavelength is the third dimension
-        array = self.asarray()
-
-        # Get the array of wavelengths
-        wavelengths = self.wavelengths(asarray=True, unit="micron")
 
         # Initialize list to contain the output frames per filter
         nfilters = len(filters)
@@ -371,25 +366,87 @@ class DataCube(Image):
         # PARALLEL EXECUTION
         if nprocesses > 1:
 
-            # Create process pool
-            pool = mp.Pool(processes=nprocesses)
+            # EXPERIMENTAL
+            if shared_memory:
 
-            # EXECUTE THE LOOP IN PARALLEL
-            for index in range(nfilters):
+                # Create process pool
+                pool = Pool(processes=nprocesses)
 
-                # Get the current filter
-                fltr = filters[index]
+                # EXECUTE THE LOOP IN PARALLEL
+                for index in range(nfilters):
 
-                # Run the filter convolution in parallel
-                pool.apply_async(_do_one_filter_convolution, args=(fltr, wavelengths, array, frames, index, self.unit, self.wcs,))
+                    # Get the current filter
+                    fltr = filters[index]
 
-            # CLOSE AND JOIN THE PROCESS POOL
-            pool.close()
-            pool.join()
+                    # Run the filter convolution in parallel
+                    pool.apply_async(_do_one_filter_convolution, args=(fltr, wavelengths, array, frames, index, self.unit, self.wcs,))
+
+                # CLOSE AND JOIN THE PROCESS POOL
+                pool.close()
+                pool.join()
+
+            #
+            else:
+
+                # Save the datacube to a temporary directory
+                temp_dir_path = fs.join(introspection.pts_temp_dir, time.unique_name("datacube-parallel-filter-convolution"))
+                fs.create_directory(temp_dir_path)
+
+                # Save the datacube
+                temp_datacube_path = fs.join(temp_dir_path, "datacube.fits")
+                self.save(temp_datacube_path)
+
+                # Save the wavelength grid
+                temp_wavelengthgrid_path = fs.join(temp_dir_path, "wavelengthgrid.dat")
+                self.wavelength_grid.save(temp_wavelengthgrid_path)
+
+                # Create process pool
+                pool = Pool(processes=nprocesses)
+
+                # Get string for the unit of the datacube
+                unitstring = str(self.unit)
+
+                # EXECUTE THE LOOP IN PARALLEL
+                for index in range(nfilters):
+
+                    # Get filtername
+                    fltrname = str(filters[index])
+
+                    # Determine path for resulting frame
+                    result_path = fs.join(temp_dir_path, str(index) + ".fits")
+
+                    # Get the current filter
+                    pool.apply_async(_do_one_filter_convolution_from_file, args=(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname,)) # All simple types (strings)
+
+                # CLOSE AND JOIN THE PROCESS POOL
+                pool.close()
+                pool.join()
+
+                # Load the resulting frames
+                for path, name in fs.files_in_path(temp_dir_path, extension="fits", returns=["path", "name"]):
+
+                    # Skip the datacube FITS file
+                    if "datacube" in name: continue
+
+                    # Get the frame index
+                    index = int(name)
+
+                    # Load the frame and add to the list
+                    frames[index] = Frame.from_file(path)
 
         # SERIAL EXECUTION
         else:
 
+            # Debugging
+            log.debug("Converting the datacube into a single 3D array ...")
+
+            # Convert the datacube to a numpy array where wavelength is the third dimension
+            array = self.asarray()
+
+            # Get the array of wavelengths
+            wavelengths = self.wavelengths(asarray=True, unit="micron")
+
+            # Loop over the filters
             for index in range(nfilters):
 
                 # Get the current filter
@@ -432,6 +489,63 @@ class DataCube(Image):
 
         # Set the new unit of the datacube
         self.unit = new_unit
+
+# -----------------------------------------------------------------
+
+def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, result_path, unit, fltrname):
+
+    """
+    This function ...
+    :param datacube_path:
+    :param wavelengthgrid_path:
+    :param result_path:
+    :param unit:
+    :param fltrname:
+    :return:
+    """
+
+    print("Loading filter ...")
+
+    # Resurrect the filter
+    fltr = Filter.from_string(fltrname)
+
+    print("Loading wavelength grid ...")
+
+    # Resurrect the wavelength grid
+    wavelength_grid = WavelengthGrid.from_file(wavelengthgrid_path)
+
+    print("Loading datacube ...")
+
+    # Resurrect the datacube
+    datacube = DataCube.from_file(datacube_path, wavelength_grid)
+
+    print("Getting wavelength array ...")
+
+    # Get the array of wavelengths
+    wavelengths = datacube.wavelengths(asarray=True, unit="micron")
+
+    print("Converting datacube to 3D array ...")
+
+    # Convert the datacube to a numpy array where wavelength is the third dimension
+    array = datacube.asarray()
+
+    print("Convolving the datacube with the " + fltrname + " filter ...")
+
+    # Do the convolution
+    data = fltr.convolve(wavelengths, array)
+
+    print("Convolution completed")
+
+    # Create frame
+    frame = Frame(data)
+    frame.unit = unit
+    frame.filter = fltr
+    frame.wcs = datacube.wcs
+
+    print("Saving result to " + result_path + " ...")
+
+    # Save the frame with the index as name
+    frame.save(result_path)
 
 # -----------------------------------------------------------------
 

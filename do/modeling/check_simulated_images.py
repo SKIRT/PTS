@@ -65,22 +65,22 @@ log.start("Starting check_simulated_images ...")
 
 # -----------------------------------------------------------------
 
+# Modeling path and galaxy name
 modeling_path = config.path
-
 galaxy_name = fs.name(modeling_path)
 
+
+"""
 fit_best_images_path = fs.join(modeling_path, "fit_before_new", "best", "images", "test")
 
 simulated = dict()
-
 for path, name in fs.files_in_path(fit_best_images_path, extension="fits", returns=["path", "name"]):
-    
     if name == galaxy_name + "_earth_total": continue
-    
     frame = Frame.from_file(path)
     if frame.filter is None: raise ValueError("No filter for " + name)
-
     simulated[str(frame.filter)] = frame
+"""
+
 
 trunc_path = fs.join(modeling_path, "truncated")
 prep_path = fs.join(modeling_path, "prep")
@@ -102,15 +102,17 @@ for path, name in fs.directories_in_path(prep_path, returns=["path", "name"]):
 
     observed[str(frame.filter)] = frame
 
+# Sort the filter names on wavelength
+sorted_filter_names = sorted(observed.keys(), key=lambda key: observed[key].filter.pivotwavelength())
 
 ##### CAN BE REMOVED ########
-
+"""
 plt.figure()
 
 x = []
 y = []
 
-sorted_filter_names = sorted(simulated.keys(), key=lambda key: simulated[key].filter.pivotwavelength())
+
 
 for filter_name in sorted_filter_names:
 
@@ -130,7 +132,7 @@ plt.xscale('log')
 plt.yscale('log')
 
 plt.show()
-
+"""
 ##############################
 
 # -----------------------------------------------------------------
@@ -165,7 +167,7 @@ datacube.to_wavelength_density(new_unit, wavelength_unit)
 filters = [Filter.from_string(filter_name) for filter_name in sorted_filter_names]
 
 # Do the filter convolution
-frames = datacube.convolve_with_filters(filters, parallel=True, nprocesses=config.nprocesses)
+frames = datacube.convolve_with_filters(filters, nprocesses=config.nprocesses)
 
 # Put frames in dictionary
 images = dict()
@@ -210,7 +212,7 @@ for filter_name in images:
 
     ratio = sum_simulated / sum_observed
 
-    wavelength = simulated[filter_name].filter.pivotwavelength()
+    wavelength = observed[filter_name].filter.pivotwavelength()
 
     x.append(wavelength)
     y.append(ratio)
