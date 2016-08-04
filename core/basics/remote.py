@@ -401,6 +401,9 @@ class Remote(object):
             # Set the remote output path
             remote_output_path = fs.join(config.path, "out")
 
+            # Change the out path for running on the remote
+            config.output = remote_output_path
+
         # else, the output directory is the remote working directory
         # THIS IS FOR 'OLDER' CONFIGURABLE DERIVED CLASSES THAT DON'T USE THE 'OUTPUT_PATH' and 'OUTPUT_PATH_FILE' MECHANICS ...
         else:
@@ -1026,11 +1029,11 @@ class Remote(object):
         if isinstance(origin, basestring):
 
             # Check if the origin represents a file
-            if self.is_file(origin): copy_command += origin.replace(" ", "\ ") + " "
+            if self.is_file(origin): copy_command += origin.replace(" ", "\\\ ") + " "
 
             # Check if it represents a directory
-            #elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* " + "-r "
-            elif self.is_directory(origin): copy_command += origin.replace(" ", "\ ") + "/* "
+            #elif self.is_directory(origin): copy_command += origin.replace(" ", "\\ ") + "/* " + "-r "
+            elif self.is_directory(origin): copy_command += origin.replace(" ", "\\\ ") + "/* "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file on the remote host")
@@ -1043,7 +1046,7 @@ class Remote(object):
                 if not self.is_file(file_path): raise ValueError("The file " + file_path + " does not exist on the remote host")
 
             # Escape possible space characters
-            origin = [path.replace(" ", "\ ") for path in origin]
+            origin = [path.replace(" ", "\\\ ") for path in origin]
 
             # Add a quotation mark character because the seperate file paths are going to be separated by spaces
             # (the command is going to be of the form scp username@ip.of.server.copyfrom:"file1.log file2.log" "~/yourpathtocopy")
@@ -1056,7 +1059,7 @@ class Remote(object):
             copy_command += '" '
 
         # Add the destination path to the command
-        copy_command += destination.replace(" ", "\ ") + "/"
+        copy_command += destination.replace(" ", "\\\ ") + "/"
         if new_name is not None: copy_command += new_name
 
         # Debugging
@@ -1124,10 +1127,10 @@ class Remote(object):
         if isinstance(origin, basestring):
 
             # Check if the origin represents a file
-            if os.path.isfile(origin): copy_command += origin.replace(" ", "\ ") + " "
+            if os.path.isfile(origin): copy_command += origin.replace(" ", "\\\ ") + " "
 
             # Check if it represents a directory
-            elif os.path.isdir(origin): copy_command += "-r " + origin.replace(" ", "\ ") + "/ "
+            elif os.path.isdir(origin): copy_command += "-r " + origin.replace(" ", "\\\ ") + "/ "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file")
@@ -1140,7 +1143,7 @@ class Remote(object):
                 if not os.path.isfile(file_path): raise ValueError("The file " + file_path + " does not exist")
 
             # Escape possible space characters
-            origin = [path.replace(" ", "\ ") for path in origin]
+            origin = [path.replace(" ", "\\\ ") for path in origin]
 
             # Add the file paths to the command string
             copy_command += " ".join(origin) + " "
@@ -1149,7 +1152,7 @@ class Remote(object):
         else: raise ValueError("The origin must be a string or a list of strings")
 
         # Add the host address and the destination directory
-        copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\ ") + "/"
+        copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\\\ ") + "/"
         if new_name is not None: copy_command += new_name
 
         # Debugging
