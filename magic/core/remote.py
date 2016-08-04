@@ -1635,22 +1635,15 @@ class RemoteDataCube(RemoteImage):
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):
 
-            print("filter ii " + str(i))
-
             # Assign a remote label to this result frame
             label_i = get_new_label("Frame", self.remote)
 
             # Do the assignment remotely
             self.remote.send_python_line(label_i + " = filterconvolvedframes[" + str(i) + "]")
 
-            print("label ii " + label_i)
-
             # Create remoteframe and add it to the list
             remoteframe = RemoteFrame(label_i, self.remote)
-            print("remote frame ii " + str(remoteframe))
             remoteframes.append(remoteframe)
-
-        print(remoteframes)
 
         # Return the list of remoteframes
         return remoteframes

@@ -531,15 +531,10 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
             if not filename.endswith("-int.fits"): continue
 
-            print(filename_ends, filename, exposure_times.keys())
+            #print(filename_ends, filename, exposure_times.keys())
 
             # Get the image name
             image_name = filename.split(filename_ends)[0]
-
-            #if "-fd" in filename:
-            #    image_name = filename.split("-fd-int")[0]
-            #elif "-nd" in filename:
-            #    image_name = filename.split("-nd-int")[0]
 
             # Increment the counter
             nswarp_images += 1

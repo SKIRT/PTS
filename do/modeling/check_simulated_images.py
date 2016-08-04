@@ -171,20 +171,14 @@ filters = [Filter.from_string(filter_name) for filter_name in sorted_filter_name
 # Do the filter convolution
 frames = datacube.convolve_with_filters(filters, nprocesses=config.nprocesses)
 
-print("frames xx", frames)
-
 # Put frames in dictionary
 images = dict()
 for filter_name, frame in zip(sorted_filter_names, frames): images[filter_name] = frame
-
-print("images xx", images)
 
 # Loop over the frames, convert them to MJy/sr again
 for filter_name in images:
 
     frame = images[filter_name]
-
-    print(filter_name, "  ---- 111 ---- ", frame)
 
     # Get the wavelength
     wavelength = frame.filter.pivotwavelength() * Unit("micron")
@@ -205,9 +199,9 @@ for filter_name in images:
     # Set the new unit
     frame.unit = "MJy/sr"
 
-    print(frame.unit)
-    print(frame.remote.get_python_string("str(" + frame.label + ".filter)"))
-    print(frame.filter)
+    #print(frame.unit)
+    #print(frame.remote.get_python_string("str(" + frame.label + ".filter)"))
+    #print(frame.filter)
 
 # Save the frames
 for filter_name in images:
