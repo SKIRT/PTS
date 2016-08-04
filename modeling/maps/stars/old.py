@@ -141,10 +141,10 @@ class OldStellarMapMaker(MapsComponent):
         # Create the old stars map
         #old_stars = self.images["3.6mu"].frames.primary - factor * self.bulge
 
-        assert str(self.bulge_frame.unit) == "Jy"
+        assert str(self.masked_bulge_frame.unit) == "Jy"
 
         # Subtract bulge from the IRAC I1 image
-        self.i1_jy_minus_bulge = self.i1_jy - self.bulge_frame
+        self.i1_jy_minus_bulge = self.i1_jy - self.masked_bulge_frame
 
         #bulge_residual = self.images["3.6mu"].frames.primary - self.disk
         #bulge_residual_path = fs.join(self.maps_intermediate_path, "bulge_residual.fits")

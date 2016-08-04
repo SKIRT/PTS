@@ -309,6 +309,9 @@ class Truncator(TruncationComponent):
         # Write the truncation masks
         self.write_masks()
 
+        # Write the reference truncation mask
+        self.write_reference_mask()
+
     # -----------------------------------------------------------------
 
     def write_images(self):
@@ -360,11 +363,29 @@ class Truncator(TruncationComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the masks ...")
+
         # Loop over the masks
         for name in self.masks:
 
             # Save the mask
             path = fs.join(self.truncation_masks_path, name + ".fits")
             self.masks[name].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_reference_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the reference truncation mask ...")
+
+        # Save the mask created for the reference image as a seperate file ("reference.fits")
+        self.masks[self.reference_image].save(self.reference_mask_path)
 
 # -----------------------------------------------------------------

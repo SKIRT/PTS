@@ -22,7 +22,7 @@ from .frame import Frame
 from ...modeling.core.sed import SED, ObservedSED
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.tools.logging import log
-from ..basics.mask import Mask
+from ..basics.mask import Mask, MaskBase
 from ...core.basics.errorbar import ErrorBar
 
 # -----------------------------------------------------------------
@@ -170,6 +170,29 @@ class DataCube(Image):
         elif axis == 1: return np.vstack(frame_list)
         elif axis == 0: return np.stack(frame_list)
         else: raise ValueError("'axis' parameter should be integer 0-3")
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, item):
+
+        """
+        This function ...
+        :param item:
+        :return:
+        """
+
+        # If the slicing item is a mask
+        if isinstance(item, MaskBase) or isinstance(item, Mask):
+
+            # Create a 3D Numpy array containing
+            stack = []
+            for frame_name in self.frames:
+                stack.append(self.frames[frame_name][item])
+            #return np.array(stack)
+            return stack # return the list of frame slices
+
+        # Not implemented
+        elif isinstance(item, slice): raise NotImplementedError("Not implemented yet")
 
     # -----------------------------------------------------------------
 

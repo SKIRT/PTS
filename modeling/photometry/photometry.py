@@ -253,7 +253,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Loading the reference SEDs ...")
 
         # Loop over the SEDs in the data/SEDs directory
-        for path, name in fs.files_in_path(self.data_seds_path, extension="dat", returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.data_seds_path, extension="dat", returns=["path", "name"], not_contains="Lines"):
 
             # Open the observed SED
             sed = ObservedSED.from_file(path)

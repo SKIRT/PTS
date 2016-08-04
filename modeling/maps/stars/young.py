@@ -136,7 +136,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Loading the disk image ...")
 
         # Get disk frame
-        self.disk = self.disk_frame
+        self.disk = self.masked_disk_frame
 
         # Normalize the disk image
         self.disk.normalize()
@@ -192,7 +192,7 @@ class YoungStellarMapMaker(MapsComponent):
         total_contribution = factor * flux_fuv
 
         # Subtract the disk contribution to the FUV image
-        new_fuv = self.fuv - total_contribution * self.disk_frame
+        new_fuv = self.fuv - total_contribution * self.masked_disk_frame
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
         new_fuv[new_fuv < 0.0] = 0.0

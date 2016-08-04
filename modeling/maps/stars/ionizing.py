@@ -200,7 +200,7 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Loading the H-alpha image and converting to solar units ...")
 
         # Get the H-alpha image
-        self.halpha = self.halpha_frame
+        self.halpha = self.masked_halpha_frame
 
         # Convert from erg/s to Lsun
         self.halpha.convert_to("Lsun")
@@ -218,7 +218,7 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Loading the disk image ...")
 
         # Get disk frame
-        self.disk = self.disk_frame
+        self.disk = self.masked_disk_frame
 
         # Normalize the disk image
         self.disk.normalize()

@@ -372,29 +372,44 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def halpha_frame(self, masked=True):
+    def masked_halpha_frame(self):
 
         """
         This function ...
-        :param masked:
+        :return:
+        """
+
+        # Get the frame
+        frame = self.halpha_frame.copy()
+
+        # Check whether the reference truncation mask is present
+        if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
+
+        # Mask the image
+        mask = Mask.from_file(self.reference_mask_path)
+        frame[mask] = 0.0
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def halpha_frame(self):
+
+        """
+        This function ...
         :return:
         """
 
         # Determine the path to the image
         path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
 
+        # Check whether the Halpha image is present
+        if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
+
         # Load and return the frame
         frame = Frame.from_file(path)
-
-        # Check if the frame has to be masked
-        if masked:
-
-            if fs.is_file(self.reference_mask_path):
-
-                mask = Mask.from_file(self.reference_mask_path)
-                frame[mask] = 0.0
-
-            else: log.warning("The truncation mask has not been created yet")
 
         # Return the frame
         return frame
@@ -402,25 +417,64 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def disk_frame(self, masked=True):
+    def masked_disk_frame(self):
 
         """
         This function ...
         :return:
         """
+
+        # Get the disk frame
+        frame = self.disk_frame.copy()
+
+        # Check whether the reference truncation mask is present
+        if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
+
+        # Mask the disk frame
+        mask = Mask.from_file(self.reference_mask_path)
+        frame[mask] = 0.0
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the file is present
+        if not fs.is_file(self.disk_image_path): raise IOError("The disk image is not present. Run the 'decompose' step to create it")
 
         # Load the frame
         frame = Frame.from_file(self.disk_image_path)
 
-        # Check if the frame has to be masked
-        if masked:
+        # Return the frame
+        return frame
 
-            if fs.is_file(self.reference_mask_path):
+    # -----------------------------------------------------------------
 
-                mask = Mask.from_file(self.reference_mask_path)
-                frame[mask] = 0.0
+    @lazyproperty
+    def masked_bulge_frame(self):
 
-            else: log.warning("The truncation mask has not been created yet")
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the bulge frame
+        frame = self.bulge_frame.copy()
+
+        # Check whether the reference truncation mask is present
+        if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
+
+        # Mask the bulge frame
+        mask = Mask.from_file(self.reference_mask_path)
+        frame[mask] = 0.0
 
         # Return the frame
         return frame
@@ -428,25 +482,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def bulge_frame(self, masked=True):
+    def bulge_frame(self):
 
         """
         This function ...
         :return:
         """
 
+        # Check whether the file is present
+        if not fs.is_file(self.bulge_image_path): raise IOError("The bulge image is not present. Run the 'decompose' step to create it")
+
         # Load the frame
         frame = Frame.from_file(self.bulge_image_path)
-
-        # Check if the frame has to be masked
-        if masked:
-
-            if fs.is_file(self.reference_mask_path):
-
-                mask = Mask.from_file(self.reference_mask_path)
-                frame[mask] = 0.0
-
-            else: log.warning("The truncation mask has not been created yet")
 
         # Return the frame
         return frame
