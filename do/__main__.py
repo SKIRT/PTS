@@ -125,8 +125,8 @@ elif len(table_matches) == 1 and len(matches) == 0:
     sys.argv[0] = fs.join(introspection.pts_root_dir, module_path.replace(".", "/") + ".py") # this is actually not necessary (and not really correct, it's not like we are calling the module where the class is..)
     del sys.argv[1] # but this is important
 
+    # Get the class of the configurable of which an instance has to be created
     module = importlib.import_module(module_path)
-
     cls = getattr(module, class_name)
 
     # Import things

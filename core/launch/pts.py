@@ -14,12 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import importlib
+import tempfile
 
 # Import the relevant PTS classes and modules
 from ..basics.remote import Remote
-from ...core.tools import introspection
-from ...core.tools.logging import log
-from ...core.basics.configuration import ConfigurationDefinition, DictConfigurationSetter
+from ..tools import introspection
+from ..tools.logging import log
+from ..basics.configuration import ConfigurationDefinition, DictConfigurationSetter
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -56,7 +58,7 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, pts_command, config_dict, input_dict=None, wait_and_return=False):
+    def run(self, pts_command, config_dict, input_dict=None, wait_and_return=False, return_output_names=None):
 
         """
         This function ...
@@ -68,7 +70,7 @@ class PTSRemoteLauncher(object):
         """
 
         # Resolve the PTS command
-        subproject, command_name, description, class_name, configuration_module_path, configuration_method = find_match(pts_command)
+        subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(pts_command)
 
         ## GET THE CONFIGURATION DEFINITION
 
@@ -107,10 +109,80 @@ class PTSRemoteLauncher(object):
         # IF WAIT AND RETURN
         if wait_and_return:
 
-            raise NotImplementedError("Wait and return has not been implemented yet")
+            #raise NotImplementedError("Wait and return has not been implemented yet")
 
             # Return the output dictionary
             #return output_dict
+
+            # START REMOTE PYTHON SESSION
+            self.remote.start_python_session()
+
+            # Import the class from which to make an instance
+            self.remote.import_python_package("importlib")
+            self.remote.send_python_line("module = importlib.import_module('" + class_module_path + "')") # get the module of the class
+            self.remote.send_python_line("cls = getattr(module, '" + class_name + "')") # get the class
+
+            log.start("Starting " + command_name + " ...")
+
+            # Create a remote temporary directory (for the config and input)
+            remote_temp_path = self.remote.new_temp_directory()
+
+            # Always create a log file while executing remotely
+            config.report = True
+            config.log_path = remote_temp_path
+            config.path = remote_temp_path
+
+            #### UPLOADING THE CONFIG TO THE REMOTE ####
+
+            # Debugging
+            log.debug("Saving the configuration file locally ...")
+
+            # Determine path to the temporarily saved local configuration file
+            temp_path = tempfile.gettempdir()
+            temp_conf_path = fs.join(temp_path, "config.cfg")
+
+            # Save the configuration file to the temporary directory
+            config.save(temp_conf_path)
+
+            # Debugging
+            log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
+
+            # Upload the config file
+            remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
+            self.remote.upload(temp_conf_path, remote_temp_path)
+
+            # Remove the original config file
+            fs.remove_file(temp_conf_path)
+
+            #####
+
+            #### UPLOAD THE INPUT : TODO
+
+            # Import the Configuration class remotely
+            self.remote.import_python_package("Configuration", from_name="pts.core.basics.configuration")
+
+            # Load the config into the remote python session
+            self.remote.send_python_line("config = Configuration.from_file('" + remote_conf_path + "')")
+
+            # Create the class instance, configure it with the configuration settings
+            self.remote.send_python_line("inst = cls(config)")
+
+            # Run the instance
+            self.remote.send_python_line("inst.run()")
+
+            # Set the output
+            output_dict = None
+            if return_output_names is not None:
+
+                # Initialize output as dictionary
+                output_dict = dict()
+
+                # Fill in the values in the dict
+                for name in return_output_names:
+                    output_dict[name] = self.remote.get_simple_python_property("inst", name)
+
+            # Return the output dictionary (can be None if return_output_names was None)
+            return output_dict
 
         # ELSE, CREATE TASK
         else:
@@ -163,16 +235,13 @@ def find_match(pts_command):
         configuration_method_table = tables[subproject]["Configuration method"][index]
 
     # Show possible matches if there are more than just one
-    else:
-
-        #show_possible_matches(matches, table_matches, tables)
-        raise ValueError("The PTS command '" + pts_command + "' is ambigious")
+    else: raise ValueError("The PTS command '" + pts_command + "' is ambigious")
 
     configuration_name = tables[subproject]["Configuration"][index]
     if configuration_name == "--": configuration_name = command_name
     configuration_module_path = "pts." + subproject + ".config." + configuration_name
 
     # Return
-    return subproject, command_name, description, class_name, configuration_module_path, configuration_method_table
+    return subproject, command_name, description, class_name, module_path, configuration_module_path, configuration_method_table
 
 # -----------------------------------------------------------------
