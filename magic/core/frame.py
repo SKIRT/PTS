@@ -33,7 +33,8 @@ from ..basics.geometry import Rectangle
 from ..basics.skygeometry import SkyCoordinate
 from ..tools import cropping
 from ...core.tools.logging import log
-from ..basics.mask import Mask
+from ..basics.mask import Mask, MaskBase
+#from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
 
@@ -126,7 +127,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return self._data[item]
+        if isinstance(item, MaskBase): return self._data[item.data]
+        else: return self._data[item]
 
     # -----------------------------------------------------------------
 
@@ -138,7 +140,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        self._data[item] = value
+        if isinstance(item, MaskBase): self._data[item.data] = value
+        else: self._data[item] = value
 
     # -----------------------------------------------------------------
 

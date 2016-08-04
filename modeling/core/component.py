@@ -608,6 +608,9 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Check whether the file is present
+        if not fs.is_file(self.galaxy_properties_path): raise IOError("The galaxy properties file is not present. Perform 'fetch_properties' to create this file'")
+
         # Load the properties
         properties = GalaxyProperties.from_file(self.galaxy_properties_path)
 
@@ -623,6 +626,9 @@ class ModelingComponent(Configurable):
         This function ...
         :return:
         """
+
+        # Check whether the file is present
+        if not fs.is_file(self.earth_projection_path): raise IOError("The earth projection file is not present. Run the 'decompose' step to create it")
 
         # Load the projection
         projection = GalaxyProjection.from_file(self.earth_projection_path)
@@ -640,6 +646,9 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Check whether the file is present
+        if not fs.is_file(self.edgeon_projection_path): raise IOError("The edgeon projection file is not present. Run the 'decompose' step to create it")
+
         # Load the projection
         projection = GalaxyProjection.from_file(self.edgeon_projection_path)
 
@@ -655,6 +664,9 @@ class ModelingComponent(Configurable):
         This function ...
         :return:
         """
+
+        # Check whether the file is present
+        if not fs.is_file(self.faceon_projection_path): raise IOError("The faceon projection file is not present. Run the 'decompose' step to create it")
 
         # Load the projection
         projection = GalaxyProjection.from_file(self.faceon_projection_path)
@@ -672,6 +684,9 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Check whether the file is present
+        if not fs.is_file(self.bulge_model_path): raise IOError("The bulge model file is not present. Run the 'decompose' step to create it")
+
         # Load the model
         return load_3d_model(self.bulge_model_path)
 
@@ -684,6 +699,9 @@ class ModelingComponent(Configurable):
         This function returns the disk model
         :return:
         """
+
+        # Check whether the file is present
+        if not fs.is_file(self.disk_model_path): raise IOError("The disk model file is not present. Run the 'decompose' step to create it")
 
         # Load the model
         return load_3d_model(self.disk_model_path)
@@ -698,6 +716,9 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Check whether the file is present
+        if not fs.is_file(self.old_stellar_map_path): raise IOError("The map of old stars is not present. Run 'make_old_map' to create it")
+
         # Open and return the frame of the old stellar distribution
         return Frame.from_file(self.old_stellar_map_path)
 
@@ -710,6 +731,9 @@ class ModelingComponent(Configurable):
         This function ...
         :return:
         """
+
+        # Check whether the file is present
+        if not fs.is_file(self.young_stellar_map_path): raise IOError("The map of young stars is not present. Run 'make_young_map' to create it")
 
         # Open and return the frame of the young stellar distribution
         return Frame.from_file(self.young_stellar_map_path)
@@ -724,6 +748,9 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Check whether the file is present
+        if not fs.is_file(self.ionizing_stellar_map_path): raise IOError("The map of ionizing stars is not present. Run 'make_ionizing_map' to create it")
+
         # Open and return the frame of the ionizing stellar distribution
         return Frame.from_file(self.ionizing_stellar_map_path)
 
@@ -736,6 +763,9 @@ class ModelingComponent(Configurable):
         This function ...
         :return:
         """
+
+        # Check whether the file is present
+        if not fs.is_file(self.dust_map_path): raise IOError("The dust map is not present. Run 'make_dust_map' to create it")
 
         # Open and return the frame of the dust distribution
         return Frame.from_file(self.dust_map_path)

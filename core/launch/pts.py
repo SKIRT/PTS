@@ -58,6 +58,28 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
+    def run_detached(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def run_attached(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def run(self, pts_command, config_dict, input_dict=None, wait_and_return=False, return_output_names=None):
 
         """
@@ -66,6 +88,7 @@ class PTSRemoteLauncher(object):
         :param config_dict:
         :param input_dict:
         :param wait_and_return:
+        :param return_output_names:
         :return:
         """
 
@@ -168,7 +191,7 @@ class PTSRemoteLauncher(object):
             self.remote.send_python_line("inst = cls(config)")
 
             # Run the instance
-            self.remote.send_python_line("inst.run()")
+            self.remote.send_python_line("inst.run()", show_output=True) # TODO: pass input dictionary?
 
             # Set the output
             output_dict = None
@@ -180,6 +203,11 @@ class PTSRemoteLauncher(object):
                 # Fill in the values in the dict
                 for name in return_output_names:
                     output_dict[name] = self.remote.get_simple_python_property("inst", name)
+
+            ######
+
+            # Now END THE PYTHON SESSION
+            self.remote.end_python_session()
 
             # Return the output dictionary (can be None if return_output_names was None)
             return output_dict

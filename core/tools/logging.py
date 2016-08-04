@@ -13,16 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import warnings
-
-# Import astronomical modules
-from astropy.utils.exceptions import AstropyWarning
-
-# Import standard modules
 import os
 import sys
 import types
 import logging
+import warnings
+
+# Import astronomical modules
+from astropy.utils.exceptions import AstropyWarning
 
 # -----------------------------------------------------------------
 
@@ -50,6 +48,25 @@ logging.Logger.success = success
 
 # The global log = a singleton of this module
 log = None
+
+# -----------------------------------------------------------------
+
+#def exception_handler(type, value, tb):
+#    log.exception(str(type.__name__) + ": {0}".format(str(value)))
+#    print(tb)
+
+# Set exception handler
+#sys.excepthook = exception_handler
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    #log.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+    log.error(str(exc_type.__name__) + ": {0}".format(str(exc_value)), exc_info=(exc_type, exc_value, exc_traceback))
+
+sys.excepthook = handle_exception
 
 # -----------------------------------------------------------------
 

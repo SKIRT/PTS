@@ -46,7 +46,10 @@ class ApertureCorrector(Configurable):
         self.input = None
 
         # Create the output dictionary
-        self.output = dict()
+        #self.output = dict()
+
+        # The aperture correction factor
+        self.factor = None
 
     # -----------------------------------------------------------------
 
@@ -65,7 +68,9 @@ class ApertureCorrector(Configurable):
         factor = self.calculate_aperture_correction()
 
         # Add factor to output dict
-        self.output["factor"] = factor
+        #self.output["factor"] = factor
+
+        self.factor = factor
 
     # -----------------------------------------------------------------
 

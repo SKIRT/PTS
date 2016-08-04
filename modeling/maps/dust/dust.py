@@ -117,6 +117,9 @@ class DustMapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making a dust map based on black-body fitting to the FIR/submm SED ...")
+
         # Create the black body dust map maker
         maker = BlackBodyDustMapMaker()
 
@@ -134,6 +137,9 @@ class DustMapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Making a dust map based on the emission in a certain FIR/submm band ...")
 
         # Create the emission dust map maker
         maker = EmissionDustMapMaker()
@@ -153,6 +159,9 @@ class DustMapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making a dust map based on Buat et al. ...")
+
         # Create the Buat dust map maker
         maker = BuatDustMapMaker()
 
@@ -170,6 +179,9 @@ class DustMapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Making a dust map based on Cortese et al. ...")
 
         # Create the Cortese dust map maker
         maker = CorteseDustMapMaker()
@@ -194,6 +206,9 @@ class DustMapMaker(MapsComponent):
 
         # Write the maps
         self.write_maps()
+
+        # Write the final dust map
+        self.write_map()
 
     # -----------------------------------------------------------------
 
@@ -229,6 +244,6 @@ class DustMapMaker(MapsComponent):
         log.info("Writing the final dust map ...")
 
         # Write the final dust map
-        self.maps[self.config.best_method].save(self.maps_dust_path)
+        self.maps[self.config.best_method].save(self.dust_map_path)
 
 # -----------------------------------------------------------------

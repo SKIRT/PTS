@@ -170,6 +170,10 @@ class CorteseDustMapMaker(MapsComponent):
             frame = self.dataset.get_frame(name)
             errors = self.dataset.get_errors(name)
 
+            #from pts.magic.tools import plotting
+            #plotting.plot_box(frame)
+            #plotting.plot_box(errors)
+
             # Add the frame and error map to the appropriate dictionary
             self.frames[name] = frame # in original MJy/sr units
             self.errors[name] = errors # in original MJy/sr units
