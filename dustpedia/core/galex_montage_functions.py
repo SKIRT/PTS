@@ -444,8 +444,8 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         exposure_times = dict()
 
         # Determine how the files are named
-        filename_ends = "-" + band_dict['band_long'] + "-int"   # -fd-int for FUV, -nd-int for NUV
-        filename_ends_no_int = "-" + band_dict['band_long'] # -fd for FUV, -nd for NUV
+        filename_ends = "-" + band_dict['band_short'] + "-int"   # -fd-int for FUV, -nd-int for NUV
+        filename_ends_no_int = "-" + band_dict['band_short'] # -fd for FUV, -nd for NUV
 
         # Get the exposure time for each image
         for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains=filename_ends, returns=["path", "name"]):
@@ -534,12 +534,12 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             print(filename_ends, filename, exposure_times.keys())
 
             # Get the image name
-            #image_name = filename.split(filename_ends)[0]
+            image_name = filename.split(filename_ends)[0]
 
-            if "-fd" in filename:
-                image_name = filename.split("-fd-int")[0]
-            elif "-nd" in filename:
-                image_name = filename.split("-nd-int")[0]
+            #if "-fd" in filename:
+            #    image_name = filename.split("-fd-int")[0]
+            #elif "-nd" in filename:
+            #    image_name = filename.split("-nd-int")[0]
 
             # Increment the counter
             nswarp_images += 1

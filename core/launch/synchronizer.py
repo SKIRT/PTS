@@ -467,8 +467,17 @@ class RemoteSynchronizer(OldConfigurable):
                 prefix = " - "
                 tag = "[" + str(task.id) + "]"
 
+                # Tasks with invalid state
+                if "invalid" in task_status:
+
+                    formatter = fmt.red + fmt.bold
+
+                elif "crashed" in task_status:
+
+                    formatter = fmt.lightred
+
                 # Retrieved tasks (remote output has already been removed, if requested)
-                if task_status == "retrieved":
+                elif task_status == "retrieved":
 
                 #if (self.config.ids is not None and (
                 #        remote.host.id in self.config.ids and simulation.id in self.config.ids[remote.host.id])) \
@@ -491,11 +500,6 @@ class RemoteSynchronizer(OldConfigurable):
                 elif "running" in task_status:
 
                     formatter = fmt.reset
-
-                # Crashed task
-                elif task_status == "crashed":
-
-                    formatter = fmt.lightred
 
                 # Cancelled task
                 elif task_status == "cancelled":

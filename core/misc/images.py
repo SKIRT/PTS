@@ -326,7 +326,7 @@ class ObservedImageMaker(object):
             frames = self.datacubes[datacube_name].convolve_with_filters(filters)
 
             # Add the observed images to the dictionary
-            for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame
+            for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube
 
             # Add the observed image dictionary for this datacube to the total dictionary (with the datacube name as a key)
             self.images[datacube_name] = images
