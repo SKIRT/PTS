@@ -23,7 +23,7 @@ from astropy import constants
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
@@ -40,10 +40,15 @@ speed_of_light = constants.c
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-definition.add_optional("remote", str, "remote host")
+# Do the filter convolution remotely
+definition.add_optional("remote", "string", "remote host")
+
+# Specify the number of processes for the remote filter convolution
+definition.add_optional("nprocesses", "integer", "number of processes to use for the filter convolution calculation", 8)
 
 # Get configuration
-setter = ArgumentConfigurationSetter("check_simulated_images")
+#setter = ArgumentConfigurationSetter("check_simulated_images")
+setter = InteractiveConfigurationSetter("check_simulated_images")
 config = setter.run(definition)
 
 # -----------------------------------------------------------------
@@ -73,32 +78,32 @@ for path, name in fs.files_in_path(fit_best_images_path, extension="fits", retur
     if name == galaxy_name + "_earth_total": continue
     
     frame = Frame.from_file(path)
-
-    if "2MASS" in str(frame.filter): continue
-    if "I4" in str(frame.filter): continue
-    if "W3" in str(frame.filter): continue
-
     if frame.filter is None: raise ValueError("No filter for " + name)
 
     simulated[str(frame.filter)] = frame
 
 trunc_path = fs.join(modeling_path, "truncated")
+prep_path = fs.join(modeling_path, "prep")
 
 observed = dict()
 
-for path, name in fs.files_in_path(trunc_path, extension="fits", returns=["path", "name"]):
+# Loop over the directories in the preparation directory
+for path, name in fs.directories_in_path(prep_path, returns=["path", "name"]):
 
-    if name == "bulge" or name == "disk" or name == "model": continue
+    # Skip Halpha
+    if "Halpha" in name: continue
 
-    frame = Frame.from_file(path)
+    # Determine the path to the prepared image
+    result_path = fs.join(path, "result.fits")
 
-    if "2MASS" in str(frame.filter) or "656_1" in str(frame.filter): continue
-    if "I4" in str(frame.filter): continue
-    if "W3" in str(frame.filter): continue
-
+    # Load the frame
+    frame = Frame.from_file(result_path)
     if frame.filter is None: raise ValueError("No filter for " + name)
 
     observed[str(frame.filter)] = frame
+
+
+##### CAN BE REMOVED ########
 
 plt.figure()
 
@@ -125,6 +130,8 @@ plt.xscale('log')
 plt.yscale('log')
 
 plt.show()
+
+##############################
 
 # -----------------------------------------------------------------
 
@@ -158,7 +165,7 @@ datacube.to_wavelength_density(new_unit, wavelength_unit)
 filters = [Filter.from_string(filter_name) for filter_name in sorted_filter_names]
 
 # Do the filter convolution
-frames = datacube.convolve_with_filters(filters, parallel=True)
+frames = datacube.convolve_with_filters(filters, parallel=True, nprocesses=config.nprocesses)
 
 # Put frames in dictionary
 images = dict()

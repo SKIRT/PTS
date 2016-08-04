@@ -1599,12 +1599,12 @@ class RemoteDataCube(RemoteImage):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters, parallel=False):
+    def convolve_with_filters(self, filters, nprocesses=8):
 
         """
         This function ...
         :param filters:
-        :param parallel:
+        :param nprocesses:
         :return:
         """
 
@@ -1618,7 +1618,7 @@ class RemoteDataCube(RemoteImage):
         remoteframes = []
 
         # Do the convolution remotely
-        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, parallel=" + str(parallel) + ")", timeout=None, show_output=True)
+        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ")", timeout=None, show_output=True)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):

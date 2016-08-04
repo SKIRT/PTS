@@ -1440,7 +1440,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         value = definition.fixed[name][1]
 
         # Give name and description
-        log.success(name + ": " + description + "")
+        log.success(name + ": " + description)
 
         # Inform the user
         log.info("Using fixed value for " + str(value))
@@ -1456,7 +1456,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         choices = definition.required[name][2]
 
         # Give name and description
-        log.success(name + ": " + description + "")
+        log.success(name + ": " + description)
 
         if choices is not None:
 
@@ -1490,7 +1490,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         choices = definition.pos_optional[name][3]
 
         # Give name and description
-        log.success(name + ": " + description + ")")
+        log.success(name + ": " + description)
 
         #
         log.info("Press ENTER to use the default value (" + str(default) + ")")
@@ -1533,7 +1533,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         letter = definition.optional[name][4]
 
         # Give name and description
-        log.success(name + ": " + description + ")")
+        log.success(name + ": " + description)
 
         #
         log.info("Press ENTER to use the default value (" + str(default) + ")")

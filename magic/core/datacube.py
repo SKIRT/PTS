@@ -342,18 +342,17 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters, parallel=False, nthreads=10):
+    def convolve_with_filters(self, filters, nprocesses=8):
 
         """
         This function ...
         :param filters:
-        :param parallel:
-        :param nthreads:
+        :param nprocesses:
         :return:
         """
 
         # Inform the user
-        parallel_info = " in parallel with " + str(len(filters)) + " threads" if parallel else "" # REPLACE THIS LATER BY THE NUMBER OF ACTUAL THREADS
+        parallel_info = " in parallel with " + str(len(filters)) + " processes" if nprocesses > 1 else "" # REPLACE THIS LATER BY THE NUMBER OF ACTUAL THREADS
         log.info("Convolving the datacube with " + str(len(filters)) + " different filters" + parallel_info + " ...")
 
         # Debugging
@@ -370,23 +369,23 @@ class DataCube(Image):
         frames = [None] * nfilters
 
         # PARALLEL EXECUTION
-        if parallel:
+        if nprocesses > 1:
 
-            # The list of threads
-            threads = []
+            # Create process pool
+            pool = mp.Pool(processes=nprocesses)
 
-            for index in range(nfilters): # REPLACE THIS BY A LOOP OVER NTHREADS
+            # EXECUTE THE LOOP IN PARALLEL
+            for index in range(nfilters):
 
                 # Get the current filter
                 fltr = filters[index]
 
-                # Create and start thread
-                t = threading.Thread(target=_do_one_filter_convolution, args=(fltr, wavelengths, array, frames, index, self.unit, self.wcs,))
-                threads.append(t)
-                t.start()
+                # Run the filter convolution in parallel
+                pool.apply_async(_do_one_filter_convolution, args=(fltr, wavelengths, array, frames, index, self.unit, self.wcs,))
 
-            # Wait for all threads to finish
-            for t in threads: t.join()
+            # CLOSE AND JOIN THE PROCESS POOL
+            pool.close()
+            pool.join()
 
         # SERIAL EXECUTION
         else:
