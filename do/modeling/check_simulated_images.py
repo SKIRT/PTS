@@ -105,6 +105,8 @@ for path, name in fs.directories_in_path(prep_path, returns=["path", "name"]):
 # Sort the filter names on wavelength
 sorted_filter_names = sorted(observed.keys(), key=lambda key: observed[key].filter.pivotwavelength())
 
+sorted_filter_names = sorted_filter_names[0:6]
+
 ##### CAN BE REMOVED ########
 """
 plt.figure()
@@ -169,14 +171,20 @@ filters = [Filter.from_string(filter_name) for filter_name in sorted_filter_name
 # Do the filter convolution
 frames = datacube.convolve_with_filters(filters, nprocesses=config.nprocesses)
 
+print("frames xx", frames)
+
 # Put frames in dictionary
 images = dict()
 for filter_name, frame in zip(sorted_filter_names, frames): images[filter_name] = frame
+
+print("images xx", images)
 
 # Loop over the frames, convert them to MJy/sr again
 for filter_name in images:
 
     frame = images[filter_name]
+
+    print(filter_name, "  ---- 111 ---- ", frame)
 
     # Get the wavelength
     wavelength = frame.filter.pivotwavelength() * Unit("micron")

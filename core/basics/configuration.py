@@ -1582,7 +1582,13 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         answer = raw_input("   : ")
 
         if answer == "": value = default
-        else: value = parsing.boolean(answer)
+        else:
+            try: value = parsing.boolean(answer)
+            except:
+                log.warning("Invalid input, try again")
+                answer = raw_input("   : ")
+                if answer == "": value = default
+                else: value = parsing.boolean(answer)
 
         # Set the value
         config[name] = value
