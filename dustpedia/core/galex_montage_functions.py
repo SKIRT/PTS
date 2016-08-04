@@ -443,8 +443,11 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         # Create a dictionary for the exposure times for each image
         exposure_times = dict()
 
+        # Determine how the files are named
+        filename_ends = "-" + band_dict['band_long'] + "-int"   # -fd-int for FUV, -nd-int for NUV
+
         # Get the exposure time for each image
-        for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains="-nd-int", returns=["path", "name"]):
+        for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains=filename_ends, returns=["path", "name"]):
 
             # Open the header
             header = fits.getheader(path)
@@ -453,7 +456,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             exp_time = get_total_exposure_time(header)
 
             # Set the exposure time
-            image_name = name.split("-nd-int")[0]
+            image_name = name.split(filename_ends)[0]
             exposure_times[image_name] = exp_time
 
         # Reproject image and weight prior to coaddition
@@ -525,10 +528,10 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         nswarp_images = 0
         for filename in os.listdir(temp_swarp_path):
 
-            if not filename.endswith("-nd-int.fits"): continue
+            if not filename.endswith("-int.fits"): continue
 
             # Get the image name
-            image_name = filename.split("-nd-int.fits")[0]
+            image_name = filename.split("-int.fits")[0]
 
             # Increment the counter
             nswarp_images += 1
