@@ -377,6 +377,9 @@ class Remote(object):
 
         ## CHANGE THE LOG PATH TO A REMOTE PATH AND CHANGE THE CWD
 
+        # Get the local working directory path
+        local_cwd = config.path
+
         # Always create a log file while executing remotely
         config.report = True
         config.log_path = remote_temp_path
@@ -387,8 +390,21 @@ class Remote(object):
         # DETERMINE REMOTE OUTPUT PATH
 
         # If the 'output' parameter is specified in the configuration, get the full absolute path to the corresponding output directory
-        if "output" in config: remote_output_path = fs.absolute_or_in(config.output, config.path)
-        else: remote_output_path = config.path # else, the output directory is the remote working directory
+        if "output" in config:
+
+            # Determine the local output path that is desired by the user
+            local_output_path = fs.absolute_or_in(config.output, local_cwd)
+
+            # Set the remote output path
+            remote_output_path = fs.join(config.path, "out")
+
+        # else, the output directory is the remote working directory
+        # THIS IS FOR 'OLDER' CONFIGURABLE DERIVED CLASSES THAT DON'T USE THE 'OUTPUT_PATH' and 'OUTPUT_PATH_FILE' MECHANICS ...
+        else:
+
+            # Set local output path and remote output path
+            local_output_path = local_cwd
+            remote_output_path = config.path
 
         ###
 
@@ -478,7 +494,12 @@ class Remote(object):
         task.name = unique_session_name
         task.screen_name = unique_session_name
         task.remote_screen_output_path = remote_temp_path
+
+        # Set local and remote output path
+        task.local_output_path = local_output_path
         task.remote_output_path = remote_output_path
+
+        # Other
         task.keep_remote_output = keep_remote_temp
 
         # Save the task
