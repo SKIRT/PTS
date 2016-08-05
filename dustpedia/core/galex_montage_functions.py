@@ -30,6 +30,7 @@ import astropy.convolution
 import montage_wrapper as montage
 from astropy.wcs import WCS
 from astropy.io.fits import Header
+from astropy.units import Unit
 
 # Import Chris' package
 import ChrisFuncs
@@ -39,6 +40,15 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame, sum_frames
 from ...magic.basics.coordinatesystem import CoordinateSystem
+
+# -----------------------------------------------------------------
+
+# Flux zero point for converting AB magnitudes to Jansky
+ab_mag_zero_point = 3631. * Unit("Jy")
+
+# Zero points for conversion from GALEX count/s to AB magnitude system
+galex_fuv_zero_point = 18.82
+galex_nuv_zero_point = 20.08
 
 # -----------------------------------------------------------------
 
@@ -486,24 +496,65 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME '+ id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
         os.system(swarp_command_string)
 
-        # Remove null values, and save finalised map to output directory
-        in_fitsdata = fits.open(fs.join(temp_swarp_path, id_string + "_SWarp.fits"))
-        in_image = in_fitsdata[0].data
-        in_header = in_fitsdata[0].header
-        in_fitsdata.close()
-        out_image = in_image.copy()
-        out_image[ np.where( out_image==0 ) ] = np.NaN
-        out_image[ np.where( out_image<-1E3 ) ] = np.NaN
-        out_image[ np.where( out_image<=1E-8 ) ] = 0
-        out_hdu = fits.PrimaryHDU(data=out_image, header=in_header)
-        out_hdulist = fits.HDUList([out_hdu])
+        # Swarp result path
+        swarp_result_path = fs.join(temp_swarp_path, id_string + "_SWarp.fits")
 
+        # BEFORE:
+        # Remove null values, and save finalised map to output directory
+        #in_fitsdata = fits.open()
+        #in_image = in_fitsdata[0].data
+        #in_header = in_fitsdata[0].header
+        #in_fitsdata.close()
+        #out_image = in_image.copy()
+        #out_image[ np.where( out_image == 0 ) ] = np.NaN
+        #out_image[ np.where( out_image < -1E3 ) ] = np.NaN
+        #out_image[ np.where( out_image <= 1E-8 ) ] = 0
+
+        # NEW:
+        #out_image = Frame(in_image, unit="count/s")
+        out_image = Frame.from_file(swarp_result_path)
+        out_image.unit = "count/s"
+
+        out_image[out_image == 0] = np.NaN
+        out_image[out_image < -1E3] = np.NaN
+        out_image[out_image <= 1E-8] = 0
+
+        # CONVERT TO JANSKY / PIX
+
+        # FROM COUNT / S TO AB MAG:
+        # mag_AB = ZP - (2.5 * log10(CpS))
+        # FROM AB MAG TO FLUX (JANSKY):
+        # mag_AB = -2.5 log (Fv / 3631 Jy) => Fv[Jy] = ...
+
+        # Calculate the conversion factor
+        conversion_factor = 1.0
+        conversion_factor *= ab_mag_zero_point.to("Jy").value
+
+        if band_dict['band_long'] == "FUV": conversion_factor *= 10.**(galex_fuv_zero_point/2.5)
+        elif band_dict['band_long'] == "NUV": conversion_factor *= 10.**(galex_nuv_zero_point/2.5)
+        else: raise ValueError("Invalid band name: " + band_dict['band_long'])
+
+        # DO THE CONVERSION
+
+        # Convert and set the new unit
+        out_image *= conversion_factor
+        out_image.unit = "Jy/pix"
+
+        # BEFORE:
+        #out_hdu = fits.PrimaryHDU(data=out_image, header=in_header)
+        #out_hdulist = fits.HDUList([out_hdu])
 
         #### OUTPUT MOSAIC ####
 
         # Write mosaic
-        mosaic_path = fs.join(output_path, id_string + '.fits')
-        out_hdulist.writeto(mosaic_path, clobber=True)
+        #mosaic_path = fs.join(output_path, id_string + '.fits')
+        #out_hdulist.writeto(mosaic_path, clobber=True)
+
+        ## WRITE THE OUTPUT FRAME
+
+        # Determine path and write mosaic
+        out_image_path = fs.join(output_path, id_string + ".fits")
+        out_image.save(out_image_path)
 
         #######################
 
