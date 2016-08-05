@@ -385,6 +385,9 @@ class Remote(object):
         config.log_path = remote_temp_path
         config.path = remote_temp_path
 
+        # Don't save the config remotely again (we will upload it explicitly)
+        config.config_path = None
+
         ##
 
         # DETERMINE REMOTE OUTPUT PATH
