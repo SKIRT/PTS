@@ -272,7 +272,7 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def download_galex_observations_for_galaxy(self, galaxy_name, images_path, response_path, background_path):
+    def download_galex_observations_for_galaxy(self, galaxy_name, images_path, response_path, background_path, counts_path):
 
         """
         This function ...
@@ -280,6 +280,7 @@ class DustPediaDataProcessing(object):
         :param images_path:
         :param response_path:
         :param background_path:
+        :param counts_path:
         :return:
         """
 
@@ -293,13 +294,15 @@ class DustPediaDataProcessing(object):
         log.debug("Number of observations that will be downloaded: " + str(len(urls)))
 
         # Download the files
-        paths = network.download_files(urls, images_path)
+        #paths = network.download_files(urls, images_path)
 
         # Debugging
         log.debug("Decompressing the files ...")
 
         # Decompress the files and remove the originals
-        archive.decompress_files(paths, remove=True)
+        #archive.decompress_files(paths, remove=True)
+
+        ## RESPONSE
 
         # Inform the user
         log.info("Downloading the GALEX response maps for " + galaxy_name + " to '" + response_path + "' ...")
@@ -308,13 +311,15 @@ class DustPediaDataProcessing(object):
         response_urls = [url.replace("-int.fits.gz", "-rr.fits.gz") for url in urls]
 
         # Download the response maps
-        response_paths = network.download_files(response_urls, response_path)
+        #response_paths = network.download_files(response_urls, response_path)
 
         # Debugging
         log.debug("Decompressing the response files ...")
 
         # Decompress
-        archive.decompress_files(response_paths, remove=True)
+        #archive.decompress_files(response_paths, remove=True)
+
+        ## BACKGROUND
 
         # Inform the user
         log.info("Downloading the GALEX background maps for " + galaxy_name + " to '" + background_path + "' ...")
@@ -323,13 +328,30 @@ class DustPediaDataProcessing(object):
         background_urls = [url.replace("-int.fits.gz", "-skybg.fits.gz") for url in urls]
 
         # Download the background maps
-        background_paths = network.download_files(background_urls, background_path)
+        #background_paths = network.download_files(background_urls, background_path)
 
         # Debugging
         log.debug("Decompressing the background files ...")
 
         # Decompress
-        archive.decompress_files(background_paths, remove=True)
+        #archive.decompress_files(background_paths, remove=True)
+
+        ## COUNTS
+
+        # Inform the user
+        log.info("Downloading the GALEX maps in counts for " + galaxy_name + " to '" + counts_path + "' ...")
+
+        # Determine the URLS for the maps in original detector counts
+        counts_urls = [url.replace("-int_fits.gz", "-cnt.fits.gz") for url in urls]
+
+        # Download the count maps
+        counts_paths = network.download_files(counts_urls, counts_path)
+
+        # Debugging
+        log.debug("Decompressing the count maps ...")
+
+        # Decompress
+        archive.decompress_files(counts_paths, remove=True)
 
     # -----------------------------------------------------------------
 
@@ -397,7 +419,6 @@ class DustPediaDataProcessing(object):
         # Inform the user
         log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
 
-
         # Inform the user
         log.info("Creating directories ...")
 
@@ -418,6 +439,10 @@ class DustPediaDataProcessing(object):
         response_path = fs.join(working_path, "response")
         background_path = fs.join(working_path, "background")
         #fs.create_directories(response_path, background_path)
+
+        # COUNT PATH
+        counts_path = fs.join(working_path, "counts")
+        fs.create_directory(counts_path)
 
         # RAW PATH
         raw_path = fs.join(working_path, "raw")
@@ -441,11 +466,17 @@ class DustPediaDataProcessing(object):
         download_images_path = fs.join(download_path, "images")
         download_response_path = fs.join(download_path, "reponse")
         download_background_path = fs.join(download_path, "background")
+
+        download_counts_path = fs.join(download_path, "counts")
+        fs.create_directory(download_counts_path)
+
         #fs.create_directories(download_images_path, download_response_path, download_background_path)
 
 
+        #
+
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        #self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path)
+        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
 
 
         # FUV and NUV response directories
@@ -456,7 +487,12 @@ class DustPediaDataProcessing(object):
         # FUV and NUV background directories
         background_fuv_path = fs.join(background_path, "FUV")
         background_nuv_path = fs.join(background_path, "NUV")
-        fs.create_directories(background_fuv_path, background_nuv_path)
+        #fs.create_directories(background_fuv_path, background_nuv_path)
+
+        # FUV AND NUV counts directories
+        counts_fuv_path = fs.join(counts_path, "FUV")
+        counts_nuv_path = fs.join(counts_path, "NUV")
+        fs.create_directories(counts_fuv_path, counts_nuv_path)
 
         ####
 
@@ -471,6 +507,9 @@ class DustPediaDataProcessing(object):
 
         # Split background maps into FUV and NUV
         #self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
+
+        # Split count maps into FUV and NUV
+        self.split_galex_observations(download_counts_path, counts_fuv_path, counts_nuv_path)
 
         ###
 

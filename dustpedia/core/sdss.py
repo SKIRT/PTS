@@ -106,9 +106,9 @@ class SDSSMosaicMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Making the SDSS " + self.config.band + " mosaic ...")
+        log.info("Making the SDSS " + band + " mosaic ...")
 
         # Make the mosaic for the specified band
-        self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.band, self.output_path)
+        self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, band, self.output_path)
 
 # -----------------------------------------------------------------

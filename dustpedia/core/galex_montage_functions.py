@@ -559,6 +559,10 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         #######################
 
+        # Poisson temp directory in temporary directory
+        temp_poisson_path = fs.join(temp_path_band, "poisson2")
+        fs.create_directory(temp_poisson_path)
+
         # Some directories
         temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
         temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
@@ -579,9 +583,14 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         ## REBINNING AND CONVERSION TO COUNT
 
+        counts_path_band = fs.join(working_path, "counts", band_dict["band_long"])
+
+        print(fs.files_in_path(counts_path_band))
+
         # Open the -int images in the temp_swarp_path that are used to make the mosaic, convert them to counts
         nswarp_images = 0
         for filename in os.listdir(temp_swarp_path):
+        #for filename in os.listdir(counts_path_band):
 
             if not filename.endswith("-int.fits"): continue
 
@@ -594,7 +603,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             nswarp_images += 1
 
             # Determine filepath
-            filepath = fs.join(temp_swarp_path, filename)
+            #filepath = fs.join(temp_swarp_path, filename)
+
+            filepath = fs.join(counts_path_band, filename + "-cnt.fits")
 
             # Debugging
             log.debug("Loading the " + image_name + " frame ...")
@@ -612,7 +623,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             log.debug("The exposure time for this image is " + str(exposure_time))
 
             # Convert the frame FROM COUNT/S to COUNT
-            frame *= exposure_times[image_name]
+            #frame *= exposure_times[image_name]
             frame.unit = "count" # set the unit to count
 
             # Save the frame to the count path
