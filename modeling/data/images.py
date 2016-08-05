@@ -46,8 +46,9 @@ class ImageFetcher(DataComponent):
         # The DustPedia database
         self.database = DustPediaDatabase()
 
-        # The names of the images found on the DustPedia archive, for each observatory
-        self.dustpedia_image_names = defaultdict(list)
+        # The urls of the images found on the DustPedia archive, for each observatory
+        #self.dustpedia_image_names = defaultdict(list)
+        self.dustpedia_image_urls = defaultdict(list)
 
         # Create the PTS remote environment
         self.launcher = PTSRemoteLauncher()
@@ -64,8 +65,8 @@ class ImageFetcher(DataComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Fetch the images from the DustPedia archive
-        self.get_dustpedia_names()
+        # 2. Fetch the images urls from the DustPedia archive
+        self.get_dustpedia_urls()
 
         # 3. Fetch GALEX data and calculate poisson errors
         self.fetch_galex()
@@ -128,14 +129,15 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the names of the images on the DustPedia database ...")
 
         # Get the image names
-        all_names = self.database.get_image_names(self.ngc_id_nospaces)
+        all_urls = self.database.get_image_names_and_urls(self.ngc_id_nospaces)
 
         # Order the names per origin
         for origin in self.data_origins:
-            for name in all_names:
+
+            for name in all_urls:
 
                 if not self.config.errors and "_Error" in name: continue # Skip error frames unless the 'errors' flag has been enabled
-                if origin in name: self.dustpedia_image_names[origin].append(name)
+                if origin in name: self.dustpedia_image_urls[origin].append(all_urls[name])
 
     # -----------------------------------------------------------------
 
@@ -147,13 +149,14 @@ class ImageFetcher(DataComponent):
         """
 
         # Loop over all images from this origin
-        for name in self.dustpedia_image_names[origin]:
+        for name in self.dustpedia_image_urls[origin]:
 
             # Determine the path to the image file
             path = fs.join(self.data_images_paths[origin], name)
 
             # Download the image
-            self.database.download_image(self.ngc_id_nospaces, name, path)
+            url = self.dustpedia_image_urls[origin][name]
+            self.database.download_url(self.ngc_id_nospaces, url, path)
 
     # -----------------------------------------------------------------
 

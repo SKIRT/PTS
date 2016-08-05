@@ -405,6 +405,24 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def download_url(self, galaxy_name, image_url, path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param image_url:
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Downloading '" + image_url + "' for galaxy '" + galaxy_name + "' to '" + path + " ...")
+
+        # Download
+        self.download_file(image_url, path)
+
+    # -----------------------------------------------------------------
+
     def download_image(self, galaxy_name, image_name, path):
 
         """
