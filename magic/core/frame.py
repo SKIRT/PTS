@@ -69,8 +69,8 @@ class Frame(NDDataArray):
         super(Frame, self).__init__(data, *args, **kwargs)
 
         # Set the WCS and unit
-        self._wcs = wcs
-        self._unit = unit
+        self.wcs = wcs # go through the setter
+        self.unit = unit # go through the setter
 
         # Set the default extension
         self.default_extension = "fits"
