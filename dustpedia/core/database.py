@@ -354,6 +354,28 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_image_names_and_urls(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Initialize a dictionary for the urls
+        urls = dict()
+
+        # Loop over all the urls
+        for url in self.get_image_urls(galaxy_name):
+
+            name = url.split("imageName=")[1].split("&instrument")[0]
+            urls[name] = url
+
+        # Return the dictionary of urls
+        return urls
+
+    # -----------------------------------------------------------------
+
     def get_image(self, galaxy_name, image_name):
 
         """

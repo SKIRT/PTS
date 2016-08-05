@@ -343,6 +343,7 @@ def stringify_not_list(value):
     elif isinstance(value, basestring): return "string", value
     elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit)
     elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit)
+    elif isinstance(value, NoneType): return "None", "None"
     else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------
@@ -1042,7 +1043,8 @@ class DictConfigurationSetter(ConfigurationSetter):
         """
 
         # Add the settings to the configuration
-        add_settings_from_dict(self.config, self.dictionary)
+        #config, definition, dictionary
+        add_settings_from_dict(self.config, self.definition, self.dictionary)
 
 # -----------------------------------------------------------------
 

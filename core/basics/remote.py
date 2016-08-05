@@ -2061,7 +2061,6 @@ class Remote(object):
                         # Check whether the log file is present
                         log_path = None
                         for filename in self.files_in_path(output_path):
-                            print(filename)
                             if "log" in filename:
                                 log_path = fs.join(output_path, filename)
                                 break
