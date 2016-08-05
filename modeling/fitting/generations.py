@@ -44,7 +44,7 @@ class GenerationsTable(Table):
             dtypes.append(float)
 
         # Call the constructor of the base class
-        table = cls(names=names, masked=True)
+        table = cls(names=names, masked=True, dtype=dtypes)
 
         # Set the column units
         #table["a"].unit = "a_unit"
@@ -77,7 +77,26 @@ class GenerationsTable(Table):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, index, wavelength_grid_level, dust_grid_level, nsimuations, selfabsorption, ranges):
+    @property
+    def parameter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+
+        for name in self.colnames:
+
+            if name.startswith("Minimum value for "):
+                names.append(name.split("value for ")[1])
+
+        return names
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, name, index, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
 
         """
         This function ...
@@ -85,13 +104,21 @@ class GenerationsTable(Table):
         :param index:
         :param wavelength_grid_level:
         :param dust_grid_level:
-        :param nsimuations:
+        :param nsimulations:
         :param selfabsorption:
         :param ranges:
         :return:
         """
 
-        pass
+        values = [name, index, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption]
+
+        for name in self.parameter_names:
+
+            values.append(ranges[name].min)
+            values.append(ranges[name].max)
+
+        # Add row
+        self.add_row(values)
 
     # -----------------------------------------------------------------
 

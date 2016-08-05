@@ -12,33 +12,19 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import the relevant PTS classes and modules
-from ..tools import tables
-from ..tools import filesystem as fs
+# Import astronomical modules
+from astropy.table import Table
 
 # -----------------------------------------------------------------
 
-class MemoryTable(object):
+class MemoryTable(Table):
 
     """
     This class ...
     """
 
-    def __init__(self, path):
-
-        """
-        This function ...
-        """
-
-        # Set the path of the memory table
-        self.path = path
-
-        # If the file does not exist yet, create it
-        if not fs.is_file(self.path): self.initialize()
-
-    # -----------------------------------------------------------------
-
-    def initialize(self):
+    @classmethod
+    def initialize(cls):
 
         """
         This function ...
@@ -48,37 +34,44 @@ class MemoryTable(object):
         # Create the table
         names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
                  "Processes", "Wavelengths", "Dust cells", "Self-absorption", "Transient heating", "Data-parallel",
-                 "Peak memory usage"]
-        data = [[] for _ in names]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "bool", "bool", "bool", "float64"]
-        table = tables.new(data, names, dtypes=dtypes)
+                 "Number of pixels", "Peak memory usage"]
+        dtypes = [str, str, str, str, int, int, int, int, int, bool, bool, bool, int, float]
+
+        # Call the constructor of the base class
+        table = cls(names=names, dtype=dtypes, masked=True)
 
         # Set the column units
-        table["Peak memory usage"] = "GB"  # memory usage is expressed in gigabytes
+        table["Peak memory usage"].unit = "GB" # memory usage is expressed in gigabytes
 
-        # Write the (empty) table
-        tables.write(table, self.path, format="ascii.ecsv")
+        # Set the path
+        table.path = None
+
+        # Return the memory table instance
+        return table
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def read(cls, path):
+    def from_file(cls, path):
 
         """
         This function ...
         :return:
         """
 
-        # Load the memory table
-        memory_table = tables.from_file(path, format="ascii.ecsv")
+        # Open the table
+        table = super(MemoryTable, cls).read(path, format="ascii.ecsv")
+
+        # Set the path
+        table.path = path
 
         # Return the table
-        return memory_table
+        return table
 
     # -----------------------------------------------------------------
 
     def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
-                  dust_cells, selfabsorption, transient_heating, data_parallel, peak_memory_usage):
+                  dust_cells, selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage):
 
         """
         This function ...
@@ -94,50 +87,44 @@ class MemoryTable(object):
         :param selfabsorption:
         :param transient_heating:
         :param data_parallel:
+        :param npixels
         :param peak_memory_usage:
         :return:
         """
 
-        if cluster_name is None: cluster_name = "--"
+        #if cluster_name is None: cluster_name = "--"
 
-        # Open the memory file in 'append' mode
-        memory_file = open(self.path, 'a')
+        values = [name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
+                  dust_cells, selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage]
 
-        # Initialize a list to contain the values of the row
-        row = []
+        self.add_row(values)
 
-        # (12) Columns:
-        # "Simulation name"
-        # "Timestamp"
-        # "Host id"
-        # "Cluster name"
-        # "Cores"
-        # "Hyperthreads per core"
-        # "Processes"
-        # "Wavelengths"
-        # "Dust cells"
-        # "Self-absorption"
-        # "Transient heating"
-        # "Data-parallel"
-        # "Peak memory usage"
-        row.append(name)
-        row.append(timestamp)
-        row.append(host_id)
-        row.append(cluster_name)
-        row.append(str(cores))
-        row.append(str(threads_per_core))
-        row.append(str(processes))
-        row.append(str(wavelengths))
-        row.append(str(dust_cells))
-        row.append(str(selfabsorption))
-        row.append(str(transient_heating))
-        row.append(str(data_parallel))
-        row.append(str(peak_memory_usage))
+    # -----------------------------------------------------------------
 
-        # Add the row to the runtime file
-        memory_file.write(" ".join(row) + "\n")
+    def save(self):
 
-        # Close the file
-        memory_file.close()
+        """
+        This function ...
+        :return:
+        """
+
+        # Save to the current path
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Write the table in ECSV format
+        self.write(path, format="ascii.ecsv")
+
+        # Set the path
+        self.path = path
 
 # -----------------------------------------------------------------

@@ -46,9 +46,8 @@ class ImageFetcher(DataComponent):
         # The DustPedia database
         self.database = DustPediaDatabase()
 
-        # The urls of the images found on the DustPedia archive, for each observatory
-        #self.dustpedia_image_names = defaultdict(list)
-        self.dustpedia_image_urls = defaultdict(list)
+        # The urls of the images found on the DustPedia archive, for each origin
+        self.dustpedia_image_urls = defaultdict(dict)
 
         # Create the PTS remote environment
         self.launcher = PTSRemoteLauncher()
@@ -137,7 +136,7 @@ class ImageFetcher(DataComponent):
             for name in all_urls:
 
                 if not self.config.errors and "_Error" in name: continue # Skip error frames unless the 'errors' flag has been enabled
-                if origin in name: self.dustpedia_image_urls[origin].append(all_urls[name])
+                if origin in name: self.dustpedia_image_urls[origin][name] = all_urls[name]
 
     # -----------------------------------------------------------------
 
