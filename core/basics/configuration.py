@@ -1466,17 +1466,27 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 log.info(" - [" + str(index) + "] " + label)
             log.info("")
 
-            # Get the number of the choice
-            answer = raw_input("   : ")
-            index = int(answer)
-            value = choices[index]
+            value = None  # to remove warning from IDE that value could be referenced (below) without assignment
+            while True:
+                # Get the number of the choice
+                answer = raw_input("   : ")
+                try:
+                    index = parsing.integer(answer)
+                    value = choices[index]
+                    break
+                except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         else:
 
             log.info("Provide a value")
 
-            answer = raw_input("   : ")
-            value = real_type(answer)
+            value = None # to remove warning from IDE that value could be referenced (below) without assignment
+            while True:
+                answer = raw_input("   : ")
+                try:
+                    value = real_type(answer)
+                    break
+                except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Set the value
         config[name] = value
@@ -1503,21 +1513,31 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 log.info(" - [" + str(index) + "] " + label)
             log.info("")
 
-            # Get the number of the choice
-            answer = raw_input("   : ")
-
-            if answer == "": value = default
-            else:
-                index = int(answer)
-                value = choices[index]
+            value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+            while True:
+                # Get the number of the choice
+                answer = raw_input("   : ")
+                if answer == "": value = default
+                else:
+                    try:
+                        index = parsing.integer(answer)
+                        value = choices[index]
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         else:
 
             log.info("or provide another value")
 
-            answer = raw_input("   : ")
-            if answer == "": value = default
-            else: value = real_type(answer)
+            value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+            while True:
+                answer = raw_input("   : ")
+                if answer == "": value = default
+                else:
+                    try:
+                        value = real_type(answer)
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Set the value
         config[name] = value
@@ -1546,21 +1566,33 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 log.info(" - [" + str(index) + "] " + label)
             log.info("")
 
-            # Get the number of the choice
-            answer = raw_input("   : ")
+            value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+            while True:
 
-            if answer == "": value = default
-            else:
-                index = int(answer)
-                value = choices[index]
+                # Get the number of the choice
+                answer = raw_input("   : ")
+                if answer == "": value = default
+                else:
+                    try:
+                        index = parsing.integer(answer)
+                        value = choices[index] # if we are here, no error was raised
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         else:
 
             log.info("or provide another value")
 
-            answer = raw_input("   : ")
-            if answer == "": value = default
-            else: value = real_type(answer)
+            value = default # to remove warning from IDE that value could be referenced (below) without assignment
+            while True:
+                # Get the input
+                answer = raw_input("   : ")
+                if answer == "": value = default
+                else:
+                    try:
+                        value = real_type(answer)
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Set the value
         config[name] = value
@@ -1579,16 +1611,17 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # Ask the question
         log.info("Do you want '" + name + "' to be enabled or not (y or n) or press ENTER for the default (" + str(default) + ")")
 
-        answer = raw_input("   : ")
-
-        if answer == "": value = default
-        else:
-            try: value = parsing.boolean(answer)
-            except:
-                log.warning("Invalid input, try again")
-                answer = raw_input("   : ")
-                if answer == "": value = default
-                else: value = parsing.boolean(answer)
+        value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+        while True:
+            answer = raw_input("   : ")
+            if answer == "": value = default
+            else:
+                try:
+                    value = parsing.boolean(answer) # if this passes without error, we have valid input
+                    break
+                except ValueError, e:
+                    # Give warning and go to the next iteration
+                    log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Set the value
         config[name] = value

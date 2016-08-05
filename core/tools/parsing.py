@@ -19,9 +19,6 @@ import os
 from astropy.coordinates import Angle
 from astropy.units import Unit
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
 from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
@@ -216,7 +213,7 @@ def integer_tuple(argument):
     try:
         a, b = map(int, argument.split(','))
         return a, b
-    except: raise argparse.ArgumentTypeError("Tuple must be of format a,b")
+    except: raise ValueError("Tuple must be of format a,b")
 
 # -----------------------------------------------------------------
 
@@ -231,7 +228,7 @@ def real_tuple(argument):
     try:
         a, b = map(float, argument.split(","))
         return a, b
-    except: raise argparse.ArgumentTypeError("Tuple must be of format a,b")
+    except: raise ValueError("Tuple must be of format a,b")
 
 # -----------------------------------------------------------------
 
@@ -246,7 +243,7 @@ def quantity_tuple(argument):
     try:
         a, b = map(quantity, argument.split(","))
         return a, b
-    except: raise argparse.ArgumentTypeError("Tuple must be of format a unit_a, b unit_b")
+    except: raise ValueError("Tuple must be of format a unit_a, b unit_b")
 
 # -----------------------------------------------------------------
 
@@ -317,24 +314,24 @@ def integer_list(string, name="ids"):
     # Split the string
     splitted = string.split('-')
 
-    if len(splitted) == 0: raise argparse.ArgumentError(name, "No range given")
+    if len(splitted) == 0: raise ValueError("No range given")
     elif len(splitted) == 1:
 
         splitted = splitted[0].split(",")
 
         # Check if the values are valid
         for value in splitted:
-            if not value.isdigit(): raise argparse.ArgumentError(name, "Argument contains unvalid characters")
+            if not value.isdigit(): raise ValueError("Argument contains unvalid characters")
 
         # Only leave unique values
         return list(set([int(value) for value in splitted]))
 
     elif len(splitted) == 2:
 
-        if not (splitted[0].isdigit() and splitted[1].isdigit()): raise argparse.ArgumentError(name, "Not a valid integer range")
+        if not (splitted[0].isdigit() and splitted[1].isdigit()): ValueError("Not a valid integer range")
         return range(int(splitted[0]), int(splitted[1])+1)
 
-    else: raise argparse.ArgumentError(name, "Values must be seperated by commas or by a '-' in the case of a range")
+    else: raise ValueError("Values must be seperated by commas or by a '-' in the case of a range")
 
 # -----------------------------------------------------------------
 
@@ -350,7 +347,7 @@ def simulation_ids(string):
     delete = dict()
 
     # If the string is empty, raise an error
-    if not string.strip(): raise argparse.ArgumentError("ids", "No input for argument")
+    if not string.strip(): raise ValueError("No input for argument")
 
     # Split the string by the ';' character, so that each part represents a different remote host
     for entry in string.split(";"):
@@ -421,23 +418,42 @@ def quantity(argument):
 
 # -----------------------------------------------------------------
 
-def angle(entry, default_unit=None):
+def angle(argument, default_unit=None):
 
     """
     An Astropy Angle
-    :param entry:
+    :param argument:
     :param default_unit:
     :return:
     """
 
-    splitted = entry.split()
-    value = float(splitted[0])
-    try: unit = splitted[1]
-    except IndexError: unit = default_unit
-
+    # OLD IMPLEMENTATION
+    #splitted = entry.split()
+    #value = float(splitted[0])
+    #try: unit = splitted[1]
+    #except IndexError: unit = default_unit
     # Create an Angle object and return it
-    if unit is not None: value = Angle(value, unit)
-    return value
+    #if unit is not None: value = Angle(value, unit)
+    #return value
+
+    # NEW IMPLEMENTATION
+    units = ""
+    number = 1.0
+    while argument:
+        try:
+            number = float(argument)
+            break
+        except ValueError:
+            units = argument[-1:] + units
+            argument = argument[:-1]
+
+    if not units: # if string is empty
+
+        if default_unit is None: raise ValueError("Unit not specified")
+        else: units = default_unit
+
+    # Create and return the Angle object
+    return Angle(number, units)
 
 # -----------------------------------------------------------------
 
