@@ -1523,7 +1523,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
             while True:
                 # Get the number of the choice
                 answer = raw_input("   : ")
-                if answer == "": value = default
+                if answer == "":
+                    value = default
+                    break
                 else:
                     try:
                         index = parsing.integer(answer)
@@ -1538,7 +1540,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
             value = default  # to remove warning from IDE that value could be referenced (below) without assignment
             while True:
                 answer = raw_input("   : ")
-                if answer == "": value = default
+                if answer == "":
+                    value = default
+                    break
                 else:
                     try:
                         value = real_type(answer)
@@ -1577,7 +1581,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 # Get the number of the choice
                 answer = raw_input("   : ")
-                if answer == "": value = default
+                if answer == "":
+                    value = default
+                    break
                 else:
                     try:
                         index = parsing.integer(answer)
@@ -1593,7 +1599,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
             while True:
                 # Get the input
                 answer = raw_input("   : ")
-                if answer == "": value = default
+                if answer == "":
+                    value = default
+                    break
                 else:
                     try:
                         value = real_type(answer)
@@ -1620,7 +1628,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         value = default  # to remove warning from IDE that value could be referenced (below) without assignment
         while True:
             answer = raw_input("   : ")
-            if answer == "": value = default
+            if answer == "":
+                value = default
+                break
             else:
                 try:
                     value = parsing.boolean(answer) # if this passes without error, we have valid input
