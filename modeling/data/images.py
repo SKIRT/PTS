@@ -170,7 +170,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the GALEX data ...")
 
         # Fetch the GALEX data from the DustPedia archive
-        self.fetch_from_dustpedia("GALEX")
+        #self.fetch_from_dustpedia("GALEX")
 
         # Create the configuration dictionary
         config_dict = dict()
@@ -198,7 +198,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the SDSS data ...")
 
         # Fetch the SDSS data from the DustPedia archive
-        self.fetch_from_dustpedia("SDSS")
+        #self.fetch_from_dustpedia("SDSS")
 
         # Create the configuration dictionary
         config_dict = dict()

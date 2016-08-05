@@ -460,6 +460,22 @@ class SkiFile:
                 pixels.append([name, type, npixels])
         return pixels
 
+    ## This function returns the total number of spatial pixels from all the instruments (an SED counts for one pixel)
+    def nspatialpixels(self):
+
+        npixels = 0
+
+        # Loop over the instruments
+        for instrument in self.get_instruments():
+
+            # Count SEDInstrument as one pixel, get the number of x and y pixels for other types of instrument and calculate the area
+            instrument_type = instrument.tag
+            if instrument_type == "SEDInstrument": npixels += 1
+            else: npixels += int(instrument.attrib["pixelsX"]) * int(instrument.attrib["pixelsY"])
+
+        # Return the total amount of spatial pixels
+        return npixels
+
     ## This function returns a list of the wavelengths specified in the ski file for an oligochromatic simulation,
     # in micron. If the ski file specifies a panchromatic simulation, the function returns an empty list.
     # The current implementation requires that the wavelengths in the ski file are specified in micron.

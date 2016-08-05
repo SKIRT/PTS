@@ -82,28 +82,33 @@ class SDSSMosaicMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Making the SDSS " + self.config.band + " mosaic ...")
+        log.info("Making SDSS mosaic(s) ...")
 
         # If the band is not specified, do all bands
         if self.config.band is None:
 
             # Loop over all bands and make the mosaics and Poisson frames
             for band in sdss_bands:
+                #output_path = self.output_path # just place all the images in the same output directory, but specifiy the band in the filename
+                self.mosaic_band(band)
 
-                # Create an output directory for the results of this band
-                #output_path = fs.join(self.output_path, band)
-                #fs.create_directory(output_path)
+        # Do just the specified band otherwise
+        else: self.mosaic_band(self.config.band)
 
-                output_path = self.output_path # just place all the images in the same output directory, but specifiy the band in the filename
+    # -----------------------------------------------------------------
 
-                # Make the mosaic and Poisson error frame
-                self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, band, output_path)
+    def mosaic_band(self, band):
 
-        # Make
-        else:
+        """
+        This function ...
+        :param band:
+        :return:
+        """
 
-            # Make the mosaic for the specified band
-            output_path = self.output_path
-            self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.band, output_path)
+        # Inform the user
+        log.info("Making the SDSS " + self.config.band + " mosaic ...")
+
+        # Make the mosaic for the specified band
+        self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, self.config.band, self.output_path)
 
 # -----------------------------------------------------------------

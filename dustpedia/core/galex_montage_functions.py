@@ -567,11 +567,13 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
         temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
 
+        #### NO, BECAUSE SWARP DECIDES ITS OWN COORDINATE SYSTEM BASED ON WHAT IT HAS AS INPUT IMAGES, SO
+        #### THE SWARP MOSAIC MAY NOT CORRESPOND EXACTLY TO THE TARGET HEADER OR WCS THAT WE CREATED TO
         # Load header
-        rebin_header = Header.fromtextfile(header_path)
-
+        #rebin_header = Header.fromtextfile(header_path)
         # To coordinate system
-        rebin_wcs = CoordinateSystem(rebin_header)
+        #rebin_wcs = CoordinateSystem(rebin_header)
+        rebin_wcs = out_image.wcs
 
         ## CALCULATION OF POISSON
 

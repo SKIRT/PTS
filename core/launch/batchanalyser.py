@@ -279,12 +279,15 @@ class BatchAnalyser(OldConfigurable):
         # Check whether data parallelization was enabled for the simulation
         data_parallel = self.ski.dataparallel()
 
+        # Determine the total number of pixels from all the instruments defined in the ski file
+        npixels = self.ski.nspatialpixels()
+
         # Open the memory table
-        memory_table = MemoryTable(self.memory_table_path)
+        memory_table = MemoryTable.from_file(self.memory_table_path)
 
         # Add an entry to the memory table
         memory_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
                                hyperthreads, processes, wavelengths, dust_cells, selfabsorption, transient_heating,
-                               data_parallel, peak_memory_usage)
+                               data_parallel, npixels, peak_memory_usage)
 
 # -----------------------------------------------------------------
