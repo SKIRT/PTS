@@ -5,12 +5,14 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = ConfigurationDefinition()
+
+# Add required settings
+definition.add_required("galaxy_name", "string", "the name of the galaxy for which to initiate the radiative transfer modeling")
 
 # -----------------------------------------------------------------

@@ -353,15 +353,21 @@ class ConfigurationDefinition(object):
     This function ...
     """
 
-    def __init__(self, prefix=None):
+    def __init__(self, prefix=None, log_path=None, config_path=None):
 
         """
         This function ...
         :param prefix:
+        :param log_path:
+        :param config_path:
         """
 
         # Prefix
         self.prefix = prefix
+
+        # Log path and config path
+        self.log_path = log_path
+        self.config_path = config_path
 
         # Dictionary of sections
         self.sections = OrderedDict()
@@ -682,7 +688,7 @@ class ConfigurationSetter(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -690,7 +696,6 @@ class ConfigurationSetter(object):
         :param description:
         :param add_logging:
         :param add_cwd:
-        :param log_path:
         """
 
         # Set the name and description
@@ -703,7 +708,6 @@ class ConfigurationSetter(object):
         # Set options
         self.add_logging = add_logging
         self.add_cwd = add_cwd
-        self.log_path = log_path
 
         # The configuration
         self.config = Configuration()
@@ -729,17 +733,24 @@ class ConfigurationSetter(object):
         :return:
         """
 
+        cwd_path = fs.cwd()
+
         # Add logging options
         if self.add_logging:
 
             # Log path to absolute path
-            log_path = fs.absolute(self.log_path) if self.log_path is not None else fs.cwd()
+            log_path = fs.absolute_or_in(self.definition.log_path, cwd_path) if self.definition.log_path is not None else cwd_path # set absolute log path
+
             self.definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
             self.definition.add_flag("debug", "enable debug output")
             self.definition.add_flag("report", "write a report file")
 
+        # Set the path to the directory where the configuration file should be saved
+        config_path = fs.absolute_or_in(self.definition.config_path, cwd_path) if self.definition.config_path is not None else cwd_path # set absolute config path
+        self.definition.add_fixed("config_path", "the directory for the configuration file to be written to", config_path)
+
         # Add the path to the current working directory
-        if self.add_cwd: self.definition.add_fixed("path", "the working directory", fs.cwd())
+        if self.add_cwd: self.definition.add_fixed("path", "the working directory", cwd_path)
 
 # -----------------------------------------------------------------
 
@@ -749,7 +760,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
 
         """
         The constructor ...
@@ -757,11 +768,10 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
-        :param log_path:
         """
 
         # Call the constructor of the base class
-        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
     # -----------------------------------------------------------------
 
@@ -816,7 +826,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -824,11 +834,10 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
-        :param log_path:
         """
 
         # Call the constructor of the base class
-        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
         # Create the command-line parser
         self.parser = argparse.ArgumentParser(prog=name, description=description)
@@ -908,7 +917,7 @@ class FileConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -916,11 +925,10 @@ class FileConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
-        :param log_path:
         """
 
         # Call the constructor of the base class
-        super(FileConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+        super(FileConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
         # Set the path to the specified configuration file
         self.path = path
@@ -985,7 +993,7 @@ class DictConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True):
 
         """
         The constructor ...
@@ -994,11 +1002,10 @@ class DictConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
-        :param log_path:
         """
 
         # Call the constructor of the base class
-        super(DictConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+        super(DictConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
         # Set the user-provided dictionary
         self.dictionary = dictionary
@@ -1045,7 +1052,7 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, log_path=None):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -1053,13 +1060,12 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
-        :param log_path:
         """
 
         # Call the constructor of the base class
-        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, log_path)
+        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
-
+        # ...
 
     # -----------------------------------------------------------------
 

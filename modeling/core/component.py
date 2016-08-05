@@ -63,6 +63,9 @@ class ModelingComponent(Configurable):
         # Attributes
         self.galaxy_name = None
 
+        # The modeling meta file
+        self.meta_file_path = None
+
         # Modeling directories
         self.data_path = None
         self.prep_path = None
@@ -76,6 +79,7 @@ class ModelingComponent(Configurable):
         self.visualisation_path = None
         self.plot_path = None
         self.log_path = None
+        self.config_path = None
         self.show_path = None
 
         # PTS directories
@@ -150,35 +154,30 @@ class ModelingComponent(Configurable):
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = fs.name(self.config.path)
 
-        # Get the full paths to the necessary subdirectories
-        self.data_path = fs.join(self.config.path, "data")
-        self.prep_path = fs.join(self.config.path, "prep")
-        self.truncation_path = fs.join(self.config.path, "truncated")
-        self.phot_path = fs.join(self.config.path, "phot")
-        self.maps_path = fs.join(self.config.path, "maps")
-        self.components_path = fs.join(self.config.path, "components")
-        self.fit_path = fs.join(self.config.path, "fit")
-        self.analysis_path = fs.join(self.config.path, "analysis")
-        self.reports_path = fs.join(self.config.path, "reports")
-        self.visualisation_path = fs.join(self.config.path, "visualisation")
-        self.plot_path = fs.join(self.config.path, "plot")
-        self.log_path = fs.join(self.config.path, "log")
-        self.show_path = fs.join(self.config.path, "show")
+        # Determine the path to the modeling meta file
+        self.meta_file_path = fs.join(self.config.path, "modeling.meta")
+
+        # Check for the presence of the meta file
+        if not fs.is_file(self.meta_file_path): raise ValueError("The current working directory is not a radiative transfer modeling directory (the meta file is missing)")
+
+        # Get the full paths to the necessary subdirectories and CREATE THEM
+        self.data_path = fs.create_directory_in(self.config.path, "data")
+        self.prep_path = fs.create_directory_in(self.config.path, "prep")
+        self.truncation_path = fs.create_directory_in(self.config.path, "truncated")
+        self.phot_path = fs.create_directory_in(self.config.path, "phot")
+        self.maps_path = fs.create_directory_in(self.config.path, "maps")
+        self.components_path = fs.create_directory_in(self.config.path, "components")
+        self.fit_path = fs.create_directory_in(self.config.path, "fit")
+        self.analysis_path = fs.create_directory_in(self.config.path, "analysis")
+        self.reports_path = fs.create_directory_in(self.config.path, "reports")
+        self.visualisation_path = fs.create_directory_in(self.config.path, "visualisation")
+        self.plot_path = fs.create_directory_in(self.config.path, "plot")
+        self.log_path = fs.create_directory_in(self.config.path, "log")
+        self.config_path = fs.create_directory_in(self.config.path, "config")
+        self.show_path = fs.create_directory_in(self.config.path, "show")
 
         # Determine the path to the kernels user directory
         self.kernels_path = fs.join(introspection.pts_user_dir, "kernels")
-
-        # Check whether the 'data' directory exists, otherwise exit with an error
-        if fs.is_directory(self.data_path):
-
-            # Create the prep path if it does not exist yet
-            fs.create_directories(self.prep_path, self.truncation_path, self.maps_path, self.phot_path,
-                                  self.maps_path, self.components_path, self.fit_path, self.analysis_path,
-                                  self.reports_path, self.visualisation_path, self.plot_path, self.log_path,
-                                  self.show_path)
-
-        # Exit with an error
-        else: raise ValueError("The current working directory is not a radiative transfer modeling directory (the data directory is missing)")
 
         # Set the path to the observed SED
         self.observed_sed_path = fs.join(self.phot_path, "fluxes.dat")

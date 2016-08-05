@@ -12,7 +12,7 @@ from pts.core.basics.host import find_host_ids
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition()
+definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add option for the remote host ID
 definition.add_required("remote", "string", "remote host to use for the aperture correction calculation", find_host_ids())

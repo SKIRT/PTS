@@ -11,7 +11,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition()
+definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 definition.add_optional("image_names", "string_list", "The image names for which to make the truncated images", ["GALEX FUV", "SDSS g", "IRAC I1", "MIPS 24mu", "Pacs red", "SPIRE PLW"])
 

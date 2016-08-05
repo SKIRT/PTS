@@ -11,7 +11,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition()
+definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 #definition.add_section("cutoff", "options for cutting off the maps at certain noise levels")
 #definition.sections["cutoff"].add_optional("reference_path", "string", "...", None)

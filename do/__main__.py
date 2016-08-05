@@ -154,15 +154,20 @@ elif len(table_matches) == 1 and len(matches) == 0:
     if configuration_method is None: configuration_method = configuration_method_table
 
     # Create the configuration setter
-    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description, log_path="log")
-    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description, log_path="log")
+    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description)
+    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description)
     elif configuration_method.startswith("file"):
         configuration_filepath = configuration_method.split(":")[1]
-        setter = FileConfigurationSetter(configuration_filepath, command_name, description, log_path="log")
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
     else: raise ValueError("Invalid configuration method: " + configuration_method)
 
     # Create the configuration from the definition and from reading the command line arguments
     config = setter.run(definition)
+
+    ## SAVE THE CONFIG
+    config_file_path = fs.join(config.config_path, command_name + ".cfg")
+    config.save(config_file_path)
+    ##
 
     # If the PTS command has to be executed remotely
     if args.remote is not None:
