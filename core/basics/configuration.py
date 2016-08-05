@@ -259,7 +259,7 @@ def write_mapping(mappingfile, mapping, indent=""):
 
         else:
             ptype, string = stringify(mapping[name])
-            print(indent + name + "[" + ptype + "]: " + string, file=mappingfile)
+            print(indent + name + " [" + ptype + "]: " + string, file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
         index += 1

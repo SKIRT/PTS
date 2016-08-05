@@ -118,7 +118,7 @@ class ImageFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def get_dustpedia_names(self):
+    def get_dustpedia_urls(self):
 
         """
         This function ...
