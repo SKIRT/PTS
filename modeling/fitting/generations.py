@@ -12,12 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.table import Table
+# Import the relevant PTS classes and modules
+from ...core.basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
-class GenerationsTable(Table):
+class GenerationsTable(SmartTable):
 
     """
     This class ...
@@ -117,6 +117,9 @@ class GenerationsTable(Table):
             values.append(ranges[name].min)
             values.append(ranges[name].max)
 
+        # Resize string columns for the new values
+        self._resize_string_columns(values)
+
         # Add row
         self.add_row(values)
 
@@ -128,6 +131,8 @@ class GenerationsTable(Table):
         This function ...
         :return:
         """
+
+        if self.path is None: raise RuntimeError("Path has not been set yet")
 
         # Save to the current path
         self.saveto(self.path)

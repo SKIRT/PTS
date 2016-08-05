@@ -12,12 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.table import Table
+# Import the relevant PTS classes and modules
+from ..basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
-class MemoryTable(Table):
+class MemoryTable(SmartTable):
 
     """
     This class ...
@@ -92,10 +92,10 @@ class MemoryTable(Table):
         :return:
         """
 
-        #if cluster_name is None: cluster_name = "--"
-
         values = [name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
                   dust_cells, selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage]
+
+        self._resize_string_columns(values)
 
         self.add_row(values)
 
@@ -107,6 +107,8 @@ class MemoryTable(Table):
         This function ...
         :return:
         """
+
+        if self.path is None: raise RuntimeError("Path has not been set yet")
 
         # Save to the current path
         self.saveto(self.path)

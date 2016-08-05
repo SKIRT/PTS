@@ -1982,13 +1982,20 @@ class Remote(object):
         # Loop over the different entries of the status list
         for path, task_status in self.get_task_status():
 
-            # Skip already retrieved tasks
-            if task_status == "retrieved": continue
+            # If a task has been retrieved earlier, but is not yet analysed, also add it to the list of retrieved
+            # tasks (again) so that its results can be analysed
+            if task_status == "retrieved":
+
+                # Open the task file
+                task = Task.from_file(path)
+
+                # Add the task to the list
+                tasks.append(task)
 
             # Finished task
             elif task_status == "finished":
 
-                # Open the simulation file
+                # Open the task file
                 task = Task.from_file(path)
 
                 # CHECK WHETHER OUTPUT HAS TO BE DOWNLOADED

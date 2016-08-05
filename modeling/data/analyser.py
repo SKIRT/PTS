@@ -102,7 +102,7 @@ class MosaicAnalyser(DataComponent):
         """
 
         # Loop over the FITS files found in the output directory
-        for path, name in fs.files_in_path(self.task.output_path, extension="fits", contains=self.ngc_id_nospaces):
+        for path, name in fs.files_in_path(self.task.local_output_path, extension="fits", contains=self.ngc_id_nospaces, returns=["path", "name"]):
 
             # Split
             splitted = name.split("_")
@@ -147,14 +147,13 @@ class MosaicAnalyser(DataComponent):
         """
 
         # Convert relative poisson frames into absolute poisson errors in Jansky
-
         for band_id in self.poisson_frames:
 
             # Calculate absolute poisson frame
             self.poisson_frames[band_id] *= self.references[band_id]
 
             # Set the unit of the poisson frame
-            self.poisson_frames.unit = self.references[band_id].unit
+            self.poisson_frames[band_id].unit = self.references[band_id].unit
 
     # -----------------------------------------------------------------
 
@@ -214,7 +213,7 @@ class MosaicAnalyser(DataComponent):
         for band_id in self.poisson_frames:
 
             # Determine path
-            path = fs.join(self.data_images_path[self.origin], self.ngc_id_nospaces + "_" + band_id + "_poisson.fits")
+            path = fs.join(self.data_images_paths[self.origin], self.ngc_id_nospaces + "_" + band_id + "_poisson.fits")
 
             # Save the poisson error frame
             self.poisson_frames[band_id].save(path)
