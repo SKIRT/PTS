@@ -113,12 +113,12 @@ class MosaicAnalyser(DataComponent):
             else: assert self.origin == splitted[1]
             band = splitted[2]
 
+            # Determine band id
             band_id = self.origin + "_" + band
 
-            if len(splitted) > 3:
-                assert "relpoisson" in name
-                self.poisson_frames[band_id] = Frame.from_file(path)
-            else: self.mosaics[band_id] = Frame.from_file(path)
+            # Load the mosaic and relative poisson error plane
+            self.mosaics[band_id] = Frame.from_file(path, plane="primary")
+            self.poisson_frames[band_id] = Frame.from_file(path, plane="rel_poisson")
 
     # -----------------------------------------------------------------
 

@@ -91,8 +91,10 @@ class SDSSMosaicMaker(Configurable):
             for band in sdss_bands:
 
                 # Create an output directory for the results of this band
-                output_path = fs.join(self.output_path, band)
-                fs.create_directory(output_path)
+                #output_path = fs.join(self.output_path, band)
+                #fs.create_directory(output_path)
+
+                output_path = self.output_path # just place all the images in the same output directory, but specifiy the band in the filename
 
                 # Make the mosaic and Poisson error frame
                 self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, band, output_path)

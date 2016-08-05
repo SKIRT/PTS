@@ -629,10 +629,11 @@ class DustPediaDataProcessing(object):
 
         # Add frames
         image.add_frame(mosaic_frame, "primary")
-        image.add_frame(rel_poisson_frame, "rel_poisson")
+        image.add_frame(rel_poisson_frame, "rel_poisson") # has no unit, but Image will be saved with unit. Problem?
 
         # Save the image
-        path = fs.join(output_path, "result.fits")
+        filename = galaxy_name + "_SDSS_" + band + ".fits"
+        path = fs.join(output_path, filename)
         image.save(path)
 
     # -----------------------------------------------------------------

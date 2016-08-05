@@ -173,6 +173,8 @@ class ImageFetcher(DataComponent):
         # Create the configuration dictionary
         config_dict = dict()
         config_dict["galaxy_name"] = self.ngc_id_nospaces
+        config_dict["output"] = fs.join(self.data_images_paths["GALEX"], "temp")
+        fs.create_directory(config_dict["output"])
 
         # Set the analysis info and analyser class
         analysis_info = {"modeling_path": self.config.path}
@@ -199,6 +201,8 @@ class ImageFetcher(DataComponent):
         # Create the configuration dictionary
         config_dict = dict()
         config_dict["galaxy_name"] = self.ngc_id_nospaces
+        config_dict["output"] = fs.join(self.data_images_paths["SDSS"], "temp")
+        fs.create_directory(config_dict["output"])
 
         # Set the analysis info and analyser class
         analysis_info = {"modeling_path": self.config.path}

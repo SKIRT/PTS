@@ -39,6 +39,7 @@ import ChrisFuncs
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame, sum_frames
+from ...magic.core.image import Image
 from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
@@ -552,9 +553,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         ## WRITE THE OUTPUT FRAME
 
-        # Determine path and write mosaic
-        out_image_path = fs.join(output_path, id_string + ".fits")
-        out_image.save(out_image_path)
+        # Determine path and write mosaic: NOW DONE AT THE END TOGETHER IN AN IMAGE WITH THE REL POISSON FRAME
+        #out_image_path = fs.join(output_path, id_string + ".fits")
+        #out_image.save(out_image_path)
 
         #######################
 
@@ -680,8 +681,20 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         total_weight_map.save(fs.join(temp_poisson_result_path, "weights.fits"))
 
         # Write the Poisson error frame also to the output directory
-        poisson_path = fs.join(output_path, id_string + "_relpoisson.fits")
-        rel_poisson_frame.save(poisson_path)
+        #poisson_path = fs.join(output_path, id_string + "_relpoisson.fits")
+        #rel_poisson_frame.save(poisson_path)
+
+        ################ WRITE RESULT
+
+        # Determine output image path
+        out_image_path = fs.join(output_path, id_string + ".fits")
+
+        image = Image()
+        image.add_frame(out_image, "primary") # the mosaic
+        image.add_frame(rel_poisson_frame, "rel_poisson") # has no unit, but Image will be saved with unit. Problem?
+
+        # Save the image
+        image.save(out_image_path)
 
         ################
 
