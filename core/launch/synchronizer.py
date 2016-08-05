@@ -165,6 +165,9 @@ class RemoteSynchronizer(OldConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Retrieving finished SKIRT simulations and PTS tasks ...")
+
         # Retrieve SKIRT simulations
         self.retrieve_simulations()
 
@@ -201,6 +204,9 @@ class RemoteSynchronizer(OldConfigurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Retrieving tasks ...")
+
         # Loop over the different remotes
         for remote in self.remotes:
 
@@ -220,7 +226,25 @@ class RemoteSynchronizer(OldConfigurable):
         """
 
         # Inform the user
-        log.info("Analysing the output of retrieved simulations ...")
+        log.info("Analysing the output of retrieved SKIRT simulations and PTS tasks ...")
+
+        # Analyse the output of the retrieved simulations
+        self.analyse_simulations()
+
+        # Analyse the output of the retrieved tasks
+        self.analyse_tasks()
+
+    # -----------------------------------------------------------------
+
+    def analyse_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing simulations ...")
 
         # Loop over the list of simulations and analyse them
         for simulation in self.simulations:
@@ -230,6 +254,34 @@ class RemoteSynchronizer(OldConfigurable):
 
             # Clear the analyser
             self.analyser.clear()
+
+    # -----------------------------------------------------------------
+
+    def analyse_tasks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Analysing tasks ...")
+
+        # Loop over the list of retrieved tasks
+        for task in self.tasks:
+
+            # Loop over the analyser classes that are defined for this task
+            for analyser_class in task.analyser_classes:
+
+                # Create an instance of the analyser class
+                analyser = analyser_class.for_task(task)
+
+                # Run the analyser
+                analyser.run()
+
+            # Set analysed flag to True
+            task.analysed = True
+            task.save()
 
     # -----------------------------------------------------------------
 
@@ -475,6 +527,13 @@ class RemoteSynchronizer(OldConfigurable):
                 elif "crashed" in task_status:
 
                     formatter = fmt.lightred
+
+                # Finished, retrieved and analysed simulation (remote output has already been removed, if requested)
+                elif task_status == "analysed":
+
+                    # ...
+
+                    formatter = fmt.green
 
                 # Retrieved tasks (remote output has already been removed, if requested)
                 elif task_status == "retrieved":

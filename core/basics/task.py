@@ -9,6 +9,9 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
+import importlib
+
 # Import astronomical modules
 from astropy.utils import lazyproperty
 
@@ -51,12 +54,21 @@ class Task(object):
         # Flag indicating whether the output of this task has been retrieved or not
         self.retrieved = False
 
+        # Flag indicating whether the task has been analysed or not
+        self.analysed = False
+
         # The path to the local and remote output directory
         self.local_output_path = None
         self.remote_output_path = None
 
         # Flag indicating whether we want to keep remote output (not used yet)
         self.keep_remote_output = False
+
+        # The paths to the task analysers
+        self.analyser_paths = []
+
+        # The analysis info
+        self.analysis_info = dict()
 
     # -----------------------------------------------------------------
 
@@ -117,6 +129,46 @@ class Task(object):
             path = fs.join(self.remote_screen_output_path, name)
             return path
         else: return None
+
+    # -----------------------------------------------------------------
+
+    def add_analyser(self, clspath):
+
+        """
+        This function ...
+        :param clspath:
+        :return:
+        """
+
+        self.analyser_paths.append(clspath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analyser_classes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # The list of classes
+        classes = []
+
+        # Loop over the class paths
+        for class_path in self.analyser_paths:
+
+            module_path, class_name = class_path.rsplit('.', 1)
+
+            # Get the class of the configurable of which an instance has to be created
+            module = importlib.import_module(module_path)
+            cls = getattr(module, class_name)
+
+            # Add the class to the list of classes
+            classes.append(cls)
+
+        # Return the list of classes
+        return classes
 
     # -----------------------------------------------------------------
 

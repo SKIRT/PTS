@@ -646,6 +646,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             # Open the rebinned frame
             a = Frame.from_file(path)
 
+            # Set NaNs to zero
+            a.replace_nans(0.0) # if we don't do this the entire combined poisson error frame is NaN
+
             # Get footprint
             footprint_path = fs.join(temp_poisson_footprint_path, name + ".fits")
             b = Frame.from_file(footprint_path)

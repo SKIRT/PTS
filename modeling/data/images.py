@@ -74,19 +74,19 @@ class ImageFetcher(DataComponent):
         self.fetch_sdss()
 
         # 5. Fetch the H-alpha image
-        self.fetch_halpha()
+        #self.fetch_halpha()
 
         # 6. Fetch the 2MASS images
-        self.fetch_2mass()
+        #self.fetch_2mass()
 
         # 7. Fetch the Spitzer images
-        self.fetch_spitzer()
+        #self.fetch_spitzer()
 
         # 8. Fetch the WISE images
-        self.fetch_wise()
+        #self.fetch_wise()
 
         # 9. Fetch the Herschel images
-        self.fetch_herschel()
+        #self.fetch_herschel()
 
         # 10. Writing
         self.write()
@@ -133,6 +133,8 @@ class ImageFetcher(DataComponent):
         # Order the names per origin
         for origin in self.data_origins:
             for name in all_names:
+
+                if not self.config.errors and "_Error" in name: continue # Skip error frames unless the 'errors' flag has been enabled
                 if origin in name: self.dustpedia_image_names[origin].append(name)
 
     # -----------------------------------------------------------------
@@ -172,8 +174,12 @@ class ImageFetcher(DataComponent):
         config_dict = dict()
         config_dict["galaxy_name"] = self.ngc_id_nospaces
 
+        # Set the analysis info and analyser class
+        analysis_info = {"modeling_path": self.config.path}
+        analysers = ["pts.modeling.data.analyser.MosaicAnalyser"]
+
         # Create the GALEX mosaic and Poisson errors frame
-        self.launcher.run_detached("make_galex", config_dict)
+        self.launcher.run_detached("make_galex", config_dict, analysers=analysers, analysis_info=analysis_info)
 
     # -----------------------------------------------------------------
 
@@ -194,8 +200,12 @@ class ImageFetcher(DataComponent):
         config_dict = dict()
         config_dict["galaxy_name"] = self.ngc_id_nospaces
 
+        # Set the analysis info and analyser class
+        analysis_info = {"modeling_path": self.config.path}
+        analysers = ["pts.modeling.data.analyser.MosaicAnalyser"]
+
         # Create the SDSS mosaic and Poisson errors frame
-        self.launcher.run_detached("make_sdss", config_dict)
+        self.launcher.run_detached("make_sdss", config_dict, analysers=analysers, analysis_info=analysis_info)
 
     # -----------------------------------------------------------------
 

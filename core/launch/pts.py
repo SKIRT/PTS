@@ -58,13 +58,15 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run_detached(self, pts_command, config_dict, input_dict=None):
+    def run_detached(self, pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None):
 
         """
         This function ...
         :param pts_command:
         :param config_dict:
         :param input_dict:
+        :param analysers:
+        :param analysis_info:
         :return:
         """
 
@@ -73,6 +75,16 @@ class PTSRemoteLauncher(object):
 
         # Run PTS remotely
         task = self.remote.run_pts(exact_command_name, config, input_dict=input_dict, keep_remote_temp=True)
+
+        # Set the analysers
+        if analysers is not None:
+            for analyser in analysers: task.add_analyser(analyser)
+
+        # Set the analysis info
+        if analysis_info is not None: task.analysis_info = analysis_info
+
+        # Save the task
+        task.save()
 
         # Succesfully submitted
         log.success("Succesfully submitted the PTS job to the remote host")

@@ -2039,48 +2039,54 @@ class Remote(object):
                 # Open the task file
                 task = Task.from_file(path)
 
-                # Get screen name and output path
-                screen_name = task.screen_name
-                output_path = task.output_path
+                # Check whether the task has already been analysed
+                if task.analysed: task_status = "analysed"
 
-                # Check whether the remote output path exists
-                if not self.is_directory(output_path): task_status = "invalid: remote output directory has been deleted"
+                # Check whether the task has already been retrieved
+                elif task.retrieved: task_status = "retrieved"
 
-                # The remote output path exists
+                # Not yet retrieved, could be any other state ...
                 else:
 
-                    # Check whether the log file is present
-                    log_path = None
-                    for filename in self.files_in_path(output_path):
-                        print(filename)
-                        if "log" in filename:
-                            log_path = fs.join(output_path, filename)
-                            break
+                    # Get screen name and output path
+                    screen_name = task.screen_name
+                    output_path = task.output_path
 
-                    # Check whether the task has already been retrieved
-                    if task.retrieved: task_status = "retrieved"
+                    # Check whether the remote output path exists
+                    if not self.is_directory(output_path): task_status = "invalid: remote output directory has been deleted"
 
-                    # Check whether the report file exists
-                    elif log_path is not None:
-
-                        if self.is_active_screen(screen_name): task_status = "running"
-                        else:
-
-                            # Get the last two lines of the remote log file
-                            output = self.execute("tail -2 " + log_path)
-                            last_line = output[1]
-
-                            # Check whether the last line states that the task has finished
-                            if "Finished" in last_line: task_status = "finished"
-                            elif "Error:" in last_line: task_status = "crashed: " + last_line
-                            else: task_status = "aborted"
-
-                    # If the log file does not exist, the task has not started yet or has been cancelled
+                    # The remote output path exists
                     else:
 
-                        # The task has not started or it's screen session has been cancelled
-                        if self.is_active_screen(screen_name): task_status = "queued"
-                        else: task_status = "cancelled"
+                        # Check whether the log file is present
+                        log_path = None
+                        for filename in self.files_in_path(output_path):
+                            print(filename)
+                            if "log" in filename:
+                                log_path = fs.join(output_path, filename)
+                                break
+
+                        # Check whether the report file exists
+                        if log_path is not None:
+
+                            if self.is_active_screen(screen_name): task_status = "running"
+                            else:
+
+                                # Get the last two lines of the remote log file
+                                output = self.execute("tail -2 " + log_path)
+                                last_line = output[1]
+
+                                # Check whether the last line states that the task has finished
+                                if "Finished" in last_line: task_status = "finished"
+                                elif "Error:" in last_line: task_status = "crashed: " + last_line
+                                else: task_status = "aborted"
+
+                        # If the log file does not exist, the task has not started yet or has been cancelled
+                        else:
+
+                            # The task has not started or it's screen session has been cancelled
+                            if self.is_active_screen(screen_name): task_status = "queued"
+                            else: task_status = "cancelled"
 
                 # Add the task properties to the list
                 entries.append((path, task_status))

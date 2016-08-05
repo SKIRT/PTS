@@ -25,10 +25,14 @@ from pts.core.tools import filesystem as fs
 
 nlines = 0
 
+nlines_per_file = dict()
+
 for path in fs.files_in_path(introspection.pts_package_dir, extension="py", recursive=True):
 
     # Open the module file
     with open(path, 'r') as pyfile:
+
+        nlines_per_file[path] = 0
 
         for line in pyfile:
 
@@ -39,7 +43,13 @@ for path in fs.files_in_path(introspection.pts_package_dir, extension="py", recu
 
             nlines += 1
 
+            nlines_per_file[path] += 1
+
 # State the number of lines
 print("PTS contains " + str(nlines) + " lines of python code")
+
+# State the number of lines for each module
+for path in nlines_per_file:
+    print(" - " + path + ": " + str(nlines_per_file[path]) + " lines")
 
 # -----------------------------------------------------------------
