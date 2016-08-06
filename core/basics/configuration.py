@@ -74,6 +74,39 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
+    @property
+    def config_dir_path(self):
+
+        """
+        The directory where the config file should be saved
+        :return:
+        """
+
+        if "config_path" in self: return fs.absolute_or_in(self.config_path, self.path) # absolute path or relative to the working directory
+        else: return self.output_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If 'output' is defined in the config
+        if "output" in self:
+
+            full_output_path = fs.absolute_or_in(self.config.output, self.config.path)
+            if not fs.is_directory(full_output_path): fs.create_directory(full_output_path)
+            return full_output_path
+
+        # Else, use the working directory as output directory
+        else: return self.path
+
+    # -----------------------------------------------------------------
+
     def to_string(self):
 
         """
@@ -747,8 +780,8 @@ class ConfigurationSetter(object):
             self.definition.add_flag("report", "write a report file")
 
         # Set the path to the directory where the configuration file should be saved
-        config_path = fs.absolute_or_in(self.definition.config_path, cwd_path) if self.definition.config_path is not None else cwd_path # set absolute config path
-        self.definition.add_fixed("config_path", "the directory for the configuration file to be written to", config_path)
+        if self.definition.config_path is not None: self.definition.add_fixed("config_path", "the directory for the configuration file to be written to", self.definition.config_path)
+        else: self.definition.add_optional("config_path", "directory_path", "the directory for the configuration file to be written to (relative to the working directory or absolute) (if None, the output directory is used)")
 
         # Add the path to the current working directory
         if self.add_cwd: self.definition.add_fixed("path", "the working directory", cwd_path)
