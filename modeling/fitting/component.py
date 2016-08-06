@@ -198,13 +198,15 @@ class FittingComponent(ModelingComponent):
         self.timing_table_path = fs.join(self.fit_path, "timing.dat")
 
         # Initialize the timing table
-        timing_table = TimingTable(self.timing_table_path)
+        timing_table = TimingTable.initialize()
+        timing_table.saveto(self.timing_table_path)
 
         # Set the path to the memory table file
         self.memory_table_path = fs.join(self.fit_path, "memory.dat")
 
         # Initialize the memory table
-        memory_table = MemoryTable(self.memory_table_path)
+        memory_table = MemoryTable.initialize()
+        memory_table.saveto(self.memory_table_path)
 
         # Set the paths to the probability distribution tables
         if self.free_parameter_labels is not None:

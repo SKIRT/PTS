@@ -13,33 +13,18 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..tools import tables
-from ..tools import filesystem as fs
+from ..basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
-class TimingTable(object):
+class TimingTable(SmartTable):
 
     """
     This class ...
     """
 
-    def __init__(self, path):
-
-        """
-        This function ...
-        :param path:
-        """
-
-        # Set the path of the timing table
-        self.path = path
-
-        # If the file does not exist yet, create it
-        if not fs.is_file(self.path): self.initialize()
-
-    # -----------------------------------------------------------------
-
-    def initialize(self):
+    @classmethod
+    def initialize(cls):
 
         """
         This function ...
@@ -61,11 +46,15 @@ class TimingTable(object):
                  "Processes", "Wavelengths", "Packages", "Dust cells", "Self-absorption", "Transient heating",
                  "Data-parallel", "Total runtime", "Setup time", "Stellar emission time", "Spectra calculation time",
                  "Dust emission time", "Writing time", "Waiting time", "Communication time", "Intermediate time"]
-        data = [[] for _ in names]
-        dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "int64", "bool", "bool",
-                  "bool", "float64", "float64", "float64", "float64", "float64", "float64", "float64", "float64",
-                  "float64"]
-        table = tables.new(data, names, dtypes=dtypes)
+        #data = [[] for _ in names]
+        #dtypes = ["S24", "S23", "S15", "S15", "int64", "int64", "int64", "int64", "int64", "int64", "bool", "bool",
+        #          "bool", "float64", "float64", "float64", "float64", "float64", "float64", "float64", "float64",
+        #          "float64"]
+        dtypes = [str, str, str, str, int, int, int, int, int, int, bool, bool, bool, float, float, float, float, float, float, float, float]
+        #table = tables.new(data, names, dtypes=dtypes)
+
+        # Create the table
+        table = cls(names=names, dtype=dtypes, masked=True)
 
         # Set the column units
         table["Total runtime"] = "s"  # runtimes are expressed in seconds
@@ -78,13 +67,10 @@ class TimingTable(object):
         table["Communication time"] = "s"
         table["Intermediate time"] = "s"
 
-        # Write the (empty) table
-        tables.write(table, self.path, format="ascii.ecsv")
-
     # -----------------------------------------------------------------
 
     @classmethod
-    def read(cls, path):
+    def from_file(cls, path):
 
         """
         This function ...
@@ -92,10 +78,12 @@ class TimingTable(object):
         """
 
         # Load the timing table
-        timing_table = tables.from_file(path, format="ascii.ecsv")
+        #timing_table = tables.from_file(path, format="ascii.ecsv")
+
+
 
         # Return the table
-        return timing_table
+        return table
 
     # -----------------------------------------------------------------
 

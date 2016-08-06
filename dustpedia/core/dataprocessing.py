@@ -342,7 +342,7 @@ class DustPediaDataProcessing(object):
         log.info("Downloading the GALEX maps in counts for " + galaxy_name + " to '" + counts_path + "' ...")
 
         # Determine the URLS for the maps in original detector counts
-        counts_urls = [url.replace("-int_fits.gz", "-cnt.fits.gz") for url in urls]
+        counts_urls = [url.replace("-int.fits.gz", "-cnt.fits.gz") for url in urls]
 
         # Download the count maps
         counts_paths = network.download_files(counts_urls, counts_path)
@@ -468,7 +468,7 @@ class DustPediaDataProcessing(object):
         download_background_path = fs.join(download_path, "background")
 
         download_counts_path = fs.join(download_path, "counts")
-        #fs.create_directory(download_counts_path)
+        fs.create_directory(download_counts_path)
 
         #fs.create_directories(download_images_path, download_response_path, download_background_path)
 
@@ -476,7 +476,7 @@ class DustPediaDataProcessing(object):
         #
 
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        #self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
+        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
 
 
         # FUV and NUV response directories
@@ -492,7 +492,7 @@ class DustPediaDataProcessing(object):
         # FUV AND NUV counts directories
         counts_fuv_path = fs.join(counts_path, "FUV")
         counts_nuv_path = fs.join(counts_path, "NUV")
-        #fs.create_directories(counts_fuv_path, counts_nuv_path)
+        fs.create_directories(counts_fuv_path, counts_nuv_path)
 
         ####
 
