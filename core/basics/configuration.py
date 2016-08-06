@@ -74,7 +74,7 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
     def config_dir_path(self):
 
         """
@@ -82,12 +82,12 @@ class Configuration(Map):
         :return:
         """
 
-        if "config_path" in self: return fs.absolute_or_in(self.config_path, self.path) # absolute path or relative to the working directory
-        else: return self.output_path
+        if "config_path" in self and self["config_path"] is not None: return fs.absolute_or_in(self["config_path"], self["path"]) # absolute path or relative to the working directory
+        else: return self.output_path()
 
     # -----------------------------------------------------------------
 
-    @property
+    #@property
     def output_path(self):
 
         """
@@ -98,12 +98,12 @@ class Configuration(Map):
         # If 'output' is defined in the config
         if "output" in self:
 
-            full_output_path = fs.absolute_or_in(self.config.output, self.config.path)
+            full_output_path = fs.absolute_or_in(self["output"], self["path"])
             if not fs.is_directory(full_output_path): fs.create_directory(full_output_path)
             return full_output_path
 
         # Else, use the working directory as output directory
-        else: return self.path
+        else: return self["path"]
 
     # -----------------------------------------------------------------
 
