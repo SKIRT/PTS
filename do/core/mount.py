@@ -19,11 +19,11 @@ import pexpect
 import subprocess
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.core.basics.host import Host
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -57,8 +57,10 @@ if not fs.is_directory(path): fs.create_directory(path)
 # If not yet mounted
 if len(fs.files_in_path(path)) == 0:
 
-    #sshfs xxx@nancy.ugent.be: ~/Remotes/nancy -C -o volname=nancy
-    command = "sshfs " + host.user + "@" + host.name + ": " + path + " -C -o volname=" + host.id
+    debug_flags = "-f -d " if log.is_debug() else ""
+
+    #e.g. sshfs xxx@nancy.ugent.be: ~/PTS/remotes/nancy -C -o volname=nancy
+    command = "sshfs " + debug_flags + host.user + "@" + host.name + ": " + path + " -C -o volname=" + host.id
 
     # Create the pexpect child instance
     child = pexpect.spawn(command, timeout=30)

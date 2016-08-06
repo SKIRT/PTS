@@ -2057,7 +2057,8 @@ class Remote(object):
 
                     # Get screen name and output path
                     screen_name = task.screen_name
-                    output_path = task.output_path
+                    output_path = task.remote_output_path
+                    log_output_path = task.remote_log_path
 
                     # Check whether the remote output path exists
                     if not self.is_directory(output_path): task_status = "invalid: remote output directory has been deleted"
@@ -2067,9 +2068,9 @@ class Remote(object):
 
                         # Check whether the log file is present
                         log_path = None
-                        for filename in self.files_in_path(output_path):
+                        for filename in self.files_in_path(log_output_path):
                             if "log" in filename:
-                                log_path = fs.join(output_path, filename)
+                                log_path = fs.join(log_output_path, filename)
                                 break
 
                         # Check whether the report file exists

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..simulation.simulation import RemoteSimulation
 from ..basics.host import find_host_ids, has_simulations, has_tasks
 from .analyser import SimulationAnalyser
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -25,7 +25,7 @@ from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
-class RemoteSynchronizer(OldConfigurable):
+class RemoteSynchronizer(Configurable):
 
     """
     This class ...
@@ -40,7 +40,7 @@ class RemoteSynchronizer(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(RemoteSynchronizer, self).__init__(config, "core")
+        super(RemoteSynchronizer, self).__init__(config)
 
         # -- Attributes --
 

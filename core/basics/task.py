@@ -105,14 +105,14 @@ class Task(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def output_path(self):
+    def remote_log_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.config.path
+        return self.config.log_dir_path()
 
     # -----------------------------------------------------------------
 

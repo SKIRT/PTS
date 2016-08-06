@@ -94,6 +94,17 @@ skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None el
 
 # -----------------------------------------------------------------
 
+def operating_system():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return subprocess.check_output(["uname", "-a"])
+
+# -----------------------------------------------------------------
+
 def host_name():
 
     """

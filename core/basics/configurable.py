@@ -51,7 +51,7 @@ class Configurable(object):
             from .configuration import InteractiveConfigurationSetter
 
             definition = ConfigurationDefinition()
-            setter = InteractiveConfigurationSetter(self.class_name, add_logging=False)
+            setter = InteractiveConfigurationSetter(self.class_name, add_logging=False, add_config_path=False)
 
             # Create new config
             self.config = setter.run(definition, prompt_optional=False)

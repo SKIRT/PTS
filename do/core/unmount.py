@@ -13,13 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import platform
-import sys
-import pexpect
 import subprocess
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
+from pts.core.tools.logging import log
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.core.basics.host import Host
 from pts.core.tools import filesystem as fs
@@ -50,8 +47,6 @@ if not fs.is_directory(path): fs.create_directory(path)
 
 # If not yet mounted
 if len(fs.files_in_path(path)) == 0: log.warning(host.id + " was not mounted")
-else:
-
-    subprocess.call(["umount", path])
+else: subprocess.call(["umount", path])
 
 # -----------------------------------------------------------------
