@@ -605,7 +605,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             # Determine filepath
             #filepath = fs.join(temp_swarp_path, filename)
 
-            filepath = fs.join(counts_path_band, filename + "-cnt.fits")
+            filepath = fs.join(counts_path_band, image_name + "-cnt.fits")
 
             # Debugging
             log.debug("Loading the " + image_name + " frame ...")
