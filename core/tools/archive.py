@@ -26,6 +26,34 @@ from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
+def decompress_file_in_place(path, remove=False):
+
+    """
+    This function ...
+    :param path:
+    :param remove:
+    :return:
+    """
+
+    if path.endswith(".bz2"):
+        new_path = path.rstrip(".bz2")
+        decompress_bz2(path, new_path)
+    elif path.endswith(".gz"):
+        new_path = path.rstrip(".gz")
+        decompress_gz(path, new_path)
+    elif path.endswith(".zip"):
+        new_path = path.rstrip(".zip")
+        decompress_zip(path, new_path)
+    else: raise ValueError("Unrecognized archive type (must be bz2, gz or zip)")
+
+    # Remove the original file if requested
+    if remove: fs.remove_file(path)
+
+    # Return the new path
+    return new_path
+
+# -----------------------------------------------------------------
+
 def decompress_file(path, new_path):
 
     """

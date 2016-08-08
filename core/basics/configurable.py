@@ -50,8 +50,8 @@ class Configurable(object):
             from .configuration import ConfigurationDefinition
             from .configuration import InteractiveConfigurationSetter
 
-            definition = ConfigurationDefinition()
-            setter = InteractiveConfigurationSetter(self.class_name, add_logging=False, add_config_path=False)
+            definition = ConfigurationDefinition(write_config=False)
+            setter = InteractiveConfigurationSetter(self.class_name, add_logging=False)
 
             # Create new config
             self.config = setter.run(definition, prompt_optional=False)
@@ -126,6 +126,97 @@ class Configurable(object):
         """
 
         return fs.join(self.output_path, name)
+
+# -----------------------------------------------------------------
+
+class HierarchicConfigurable(Configurable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(HierarchicConfigurable, self).__init__(config)
+
+        # The children
+        self.children = dict()
+
+    # -----------------------------------------------------------------
+
+    def __getattr__(self, attr):
+
+        """
+        This function ...
+        Overriding __getattr__ should be fine (will not break the default behaviour) -- __getattr__ is only called
+        as a last resort i.e. if there are no attributes in the instance that match the name.
+        :param attr:
+        :return:
+        """
+
+        if attr.startswith("__") and attr.endswith("__"): raise AttributeError("Can't delegate this attribute")
+        return self.children[attr]
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Delete its children
+        self.children = dict()
+
+    # -----------------------------------------------------------------
+
+    def add_child(self, name, type, config=None):
+
+        """
+        This function ...
+        :param name:
+        :param type:
+        :param config:
+        :return:
+        """
+
+        if name in self.children: raise ValueError("Child with this name already exists")
+
+        # new ...
+        if config is None: config = {}
+        config["output_path"] = self.config.output_path
+        config["input_path"] = self.config.input_path
+
+        self.children[name] = type(config)
+
+    # -----------------------------------------------------------------
+
+    def setup_before(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def setup_after(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 

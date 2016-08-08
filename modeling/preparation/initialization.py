@@ -65,12 +65,6 @@ fwhms = {"GALEX FUV": 4.48 * Unit("arcsec"),
 
 # -----------------------------------------------------------------
 
-# The total H-alpha flux (reference: FAR-ULTRAVIOLET AND Ha IMAGING OF NEARBY SPIRAL GALAXIES: THE OB STELLAR,
-# POPULATION IN THE DIFFUSE IONIZED GAS (Hoopes et. al 2001)
-halpha_flux = 7.8e40 * Unit("erg/s")
-
-# -----------------------------------------------------------------
-
 class PreparationInitializer(PreparationComponent):
     
     """
@@ -295,13 +289,6 @@ class PreparationInitializer(PreparationComponent):
 
             # Remove all frames except for the primary frame
             image.remove_frames_except("primary")
-
-            # -----------------------------------------------------------------
-
-            # Normalize the Halpha image to the published flux
-            if "Halpha" in prep_name:
-                image.frames.primary.normalize(halpha_flux.to("erg/s").value)
-                image.unit = "erg/s"
 
             # -----------------------------------------------------------------
 

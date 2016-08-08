@@ -165,8 +165,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
     config = setter.run(definition)
 
     ## SAVE THE CONFIG
-    config_file_path = fs.join(config.config_dir_path(), command_name + ".cfg")
-    config.save(config_file_path)
+    if config.write_config:
+        config_file_path = fs.join(config.config_dir_path(), command_name + ".cfg")
+        config.save(config_file_path)
     ##
 
     # If the PTS command has to be executed remotely

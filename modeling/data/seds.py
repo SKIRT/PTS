@@ -29,6 +29,10 @@ from ...dustpedia.core.database import DustPediaDatabase, get_account
 
 # -----------------------------------------------------------------
 
+# INTERESTING LINK FOR HALPHA IMAGES AND FLUXES for CERTAIN GALAXIES: http://vizier.u-strasbg.fr/viz-bin/VizieR?-source=J/A+AS/137/495&-to=3
+
+# -----------------------------------------------------------------
+
 class SEDFetcher(DataComponent):
 
     """

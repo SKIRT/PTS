@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
+import re
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -481,5 +481,26 @@ def calibration_error(argument):
 
     from ...magic.misc.calibration import CalibrationError
     return CalibrationError.from_string(argument)
+
+# -----------------------------------------------------------------
+
+def url(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+    if not regex.match(argument): raise ValueError("Invalid URL")
+    else: return argument
 
 # -----------------------------------------------------------------

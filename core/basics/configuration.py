@@ -403,13 +403,14 @@ class ConfigurationDefinition(object):
     This function ...
     """
 
-    def __init__(self, prefix=None, log_path=None, config_path=None):
+    def __init__(self, prefix=None, log_path=None, config_path=None, write_config=True):
 
         """
         This function ...
         :param prefix:
         :param log_path:
         :param config_path:
+        :param write_config:
         """
 
         # Prefix
@@ -418,6 +419,7 @@ class ConfigurationDefinition(object):
         # Log path and config path
         self.log_path = log_path
         self.config_path = config_path
+        self.write_config = write_config
 
         # Dictionary of sections
         self.sections = OrderedDict()
@@ -738,7 +740,7 @@ class ConfigurationSetter(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -758,7 +760,6 @@ class ConfigurationSetter(object):
         # Set options
         self.add_logging = add_logging
         self.add_cwd = add_cwd
-        self.add_config_path = add_config_path
 
         # The configuration
         self.config = Configuration()
@@ -797,7 +798,7 @@ class ConfigurationSetter(object):
             self.definition.add_flag("report", "write a report file")
 
         # Add config path
-        if self.add_config_path:
+        if self.definition.write_config:
 
             # Set the path to the directory where the configuration file should be saved
             if self.definition.config_path is not None: self.definition.add_fixed("config_path", "the directory for the configuration file to be written to", self.definition.config_path)
@@ -814,7 +815,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
 
         """
         The constructor ...
@@ -826,7 +827,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         """
 
         # Call the constructor of the base class
-        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, add_config_path)
+        super(InteractiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
     # -----------------------------------------------------------------
 
@@ -881,7 +882,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -892,7 +893,7 @@ class ArgumentConfigurationSetter(ConfigurationSetter):
         """
 
         # Call the constructor of the base class
-        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, add_config_path)
+        super(ArgumentConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
         # Create the command-line parser
         self.parser = argparse.ArgumentParser(prog=name, description=description)
@@ -972,7 +973,7 @@ class FileConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -983,7 +984,7 @@ class FileConfigurationSetter(ConfigurationSetter):
         """
 
         # Call the constructor of the base class
-        super(FileConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, add_config_path)
+        super(FileConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
         # Set the path to the specified configuration file
         self.path = path
@@ -1048,7 +1049,7 @@ class DictConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, dictionary, name, description=None, add_logging=True, add_cwd=True):
 
         """
         The constructor ...
@@ -1060,7 +1061,7 @@ class DictConfigurationSetter(ConfigurationSetter):
         """
 
         # Call the constructor of the base class
-        super(DictConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, add_config_path)
+        super(DictConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
         # Set the user-provided dictionary
         self.dictionary = dictionary
@@ -1108,7 +1109,7 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
     This class ...
     """
 
-    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True, add_config_path=True):
+    def __init__(self, path, name, description=None, add_logging=True, add_cwd=True):
 
         """
         This function ...
@@ -1119,7 +1120,7 @@ class GraphicalConfigurationSetter(ConfigurationSetter):
         """
 
         # Call the constructor of the base class
-        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging, add_cwd, add_config_path)
+        super(GraphicalConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
 
         # ...
 

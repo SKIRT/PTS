@@ -388,6 +388,8 @@ class Remote(object):
         # Don't save the config remotely again (we will upload it explicitly)
         config.config_path = None
 
+        config.write_config = False
+
         ##
 
         # DETERMINE REMOTE OUTPUT PATH

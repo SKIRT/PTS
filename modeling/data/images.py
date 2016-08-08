@@ -21,6 +21,8 @@ from ...dustpedia.core.database import DustPediaDatabase, get_account
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.launch.pts import PTSRemoteLauncher
+from ...core.tools import network, archive
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -68,25 +70,25 @@ class ImageFetcher(DataComponent):
         self.get_dustpedia_urls()
 
         # 3. Fetch GALEX data and calculate poisson errors
-        self.fetch_galex()
+        #self.fetch_galex()
 
         # 4. Fetch SDSS data and calculate poisson errors
-        self.fetch_sdss()
+        #self.fetch_sdss()
 
         # 5. Fetch the H-alpha image
-        #self.fetch_halpha()
+        self.fetch_halpha()
 
         # 6. Fetch the 2MASS images
-        #self.fetch_2mass()
+        self.fetch_2mass()
 
         # 7. Fetch the Spitzer images
-        #self.fetch_spitzer()
+        self.fetch_spitzer()
 
         # 8. Fetch the WISE images
-        #self.fetch_wise()
+        self.fetch_wise()
 
         # 9. Fetch the Herschel images
-        #self.fetch_herschel()
+        self.fetch_herschel()
 
         # 10. Writing
         self.write()
@@ -150,6 +152,9 @@ class ImageFetcher(DataComponent):
         # Loop over all images from this origin
         for name in self.dustpedia_image_urls[origin]:
 
+            # Debugging
+            log.debug("Fetching the '" + name + "' image from the DustPedia archive ...")
+
             # Determine the path to the image file
             path = fs.join(self.data_images_paths[origin], name)
 
@@ -167,10 +172,10 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the GALEX data ...")
+        log.info("Fetching the GALEX images ...")
 
         # Fetch the GALEX data from the DustPedia archive
-        #self.fetch_from_dustpedia("GALEX")
+        self.fetch_from_dustpedia("GALEX")
 
         # Create the configuration dictionary
         config_dict = dict()
@@ -195,10 +200,10 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the SDSS data ...")
+        log.info("Fetching the SDSS images ...")
 
         # Fetch the SDSS data from the DustPedia archive
-        #self.fetch_from_dustpedia("SDSS")
+        self.fetch_from_dustpedia("SDSS")
 
         # Create the configuration dictionary
         config_dict = dict()
@@ -225,6 +230,30 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Fetching the H-alpha image ...")
 
+        # Download the Halpha image
+        image_path = network.download_file(self.config.halpha_url, self.data_images_paths["Halpha"])
+
+        # Unpack the image file if necessary
+        if not image_path.endswith("fits"): image_path = archive.decompress_file_in_place(image_path, remove=True)
+
+        # Rescale the image to have a certain flux value, if specified
+        if self.config.halpha_flux is not None:
+
+            # Inform the user
+            log.info("Rescaling the H-alpha image to a flux value of " + str(self.config.halpha_flux) + " ...")
+
+            # Open the image
+            frame = Frame.from_file(image_path)
+
+            # Normalize to the flux value
+            frame.normalize(self.config.halpha_flux.value)
+
+            # Set the unit
+            frame.unit = self.config.halpha_flux.unit
+
+            # Save the image
+            frame.save(image_path)
+
     # -----------------------------------------------------------------
 
     def fetch_2mass(self):
@@ -235,7 +264,7 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the ...")
+        log.info("Fetching the 2MASS images ...")
 
         # Fetch the 2MASS data from the DustPedia archive
         self.fetch_from_dustpedia("2MASS")
@@ -250,7 +279,7 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the Spitzer data ...")
+        log.info("Fetching the Spitzer images ...")
 
         # Fetch the Spitzer data from the DustPedia archive
         self.fetch_from_dustpedia("Spitzer")
@@ -265,7 +294,7 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the ...")
+        log.info("Fetching the WISE images ...")
 
         # Fetch the WISE data from the DustPedia archive
         self.fetch_from_dustpedia("WISE")
@@ -280,7 +309,7 @@ class ImageFetcher(DataComponent):
         """
 
         # Inform the user
-        log.info("Fetching the ...")
+        log.info("Fetching the Herschel images ...")
 
         # Fetch the Herschel data from the DustPedia archive
         self.fetch_from_dustpedia("Herschel")
