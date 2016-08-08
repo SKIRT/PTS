@@ -143,6 +143,9 @@ class ModelingComponent(Configurable):
         # The path to the data/images directory
         self.data_images_path = None
 
+        # The path to the disk region file
+        self.disk_region_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -241,6 +244,9 @@ class ModelingComponent(Configurable):
 
         # Set ...
         self.data_images_path = fs.create_directory_in(self.data_path, "images")
+
+        # Set the path to the disk region file
+        self.disk_region_path = fs.join(self.components_path, "disk.reg")
 
     # -----------------------------------------------------------------
 
@@ -519,11 +525,8 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        # Get the path to the disk region
-        path = fs.join(self.components_path, "disk.reg")
-
         # Open the region
-        region = SkyRegion.from_file(path)
+        region = SkyRegion.from_file(self.disk_region_path)
 
         # Return the first and only shape
         return region[0]

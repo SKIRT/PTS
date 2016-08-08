@@ -634,8 +634,7 @@ class GalaxyDecomposer(DecompositionComponent):
         # Create region
         region = SkyRegion()
         region.append(sky_ellipse)
-        region_path = fs.join(self.components_path, "disk.reg")
-        region.save(region_path)
+        region.save(self.disk_region_path)
 
 # -----------------------------------------------------------------
 

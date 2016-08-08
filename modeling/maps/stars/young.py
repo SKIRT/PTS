@@ -16,6 +16,10 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....core.tools import filesystem as fs
+from ....core.basics.distribution import Distribution
+from ....core.plot.distribution import DistributionPlotter
+from ....magic.basics.geometry import Composite
+from ....magic.basics.region import Region
 
 # -----------------------------------------------------------------
 
@@ -47,11 +51,17 @@ class YoungStellarMapMaker(MapsComponent):
         # The maps of the corrected FUV emission
         self.corrected_fuv_maps = dict()
 
+        # The distributions of corrected FUV pixel values
+        self.corrected_fuv_distributions = dict()
+
         # The map of young stars
         self.map = None
 
         # The path to the maps/young/fuv directory
         self.maps_young_fuv_path = None
+
+        # Region of area taken for calculating distribution of pixel values
+        self.distribution_region = None
 
     # -----------------------------------------------------------------
 
@@ -70,6 +80,10 @@ class YoungStellarMapMaker(MapsComponent):
 
         # 3. Make the map of young stars
         self.make_map()
+
+        # ...
+        self.create_distribution_region()
+        self.make_distributions()
 
         # 4. Normalize the map
         self.normalize_map()
@@ -163,8 +177,12 @@ class YoungStellarMapMaker(MapsComponent):
             # Add the attenuation map to the dictionary
             self.corrected_fuv_maps[factor] = non_ionizing_stars
 
+        best_corrected_fuv_map = self.corrected_fuv_maps[self.config.best_factor].copy()
+        # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
+        best_corrected_fuv_map[best_corrected_fuv_map < 0.0] = 0.0
+
         # Set the best estimate of the young stars map
-        self.map = self.corrected_fuv_maps[self.config.best_factor]
+        self.map = best_corrected_fuv_map
 
     # -----------------------------------------------------------------
 
@@ -195,13 +213,57 @@ class YoungStellarMapMaker(MapsComponent):
         new_fuv = self.fuv - total_contribution * self.masked_disk_frame
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-        new_fuv[new_fuv < 0.0] = 0.0
+        #new_fuv[new_fuv < 0.0] = 0.0
 
         # Set zero where low signal-to-noise ratio
         # new_fuv[self.fuv < self.config.non_ionizing_stars.fuv_snr_level*self.fuv_errors] = 0.0
 
         # Return the new FUV frame
         return new_fuv
+
+    # -----------------------------------------------------------------
+
+    def create_distribution_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        disk_ellipse = self.disk_ellipse.to_pixel(self.fuv.wcs)
+        inner_ellipse = disk_ellipse * self.config.histograms_annulus_range.min
+        outer_ellipse = disk_ellipse * self.config.histograms_annulus_range.max
+        composite = Composite(outer_ellipse, inner_ellipse)
+        region = Region()
+        region.append(composite)
+        self.distribution_region = region
+
+    # -----------------------------------------------------------------
+
+    def make_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making distributions of the pixel values of the corrected FUV maps ...")
+
+        # Create mask
+        mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
+
+        # Loop over the different maps
+        for factor in self.corrected_fuv_maps:
+
+            # Get the values
+            values = self.corrected_fuv_maps[factor][mask]
+
+            # Make a distribution of the pixel values indicated by the mask
+            distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
+
+            # Add the distribution to the dictionary
+            self.corrected_fuv_distributions[factor] = distribution
 
     # -----------------------------------------------------------------
 
@@ -234,6 +296,12 @@ class YoungStellarMapMaker(MapsComponent):
         # Write the corrected FUV maps
         self.write_fuv_maps()
 
+        # Write distribution region
+        self.write_distribution_region()
+
+        # Write histograms of corrected 24 micron pixels
+        self.write_24mu_histograms()
+
         # Write the final young stellar map
         self.write_map()
 
@@ -257,6 +325,49 @@ class YoungStellarMapMaker(MapsComponent):
 
             # Write
             self.corrected_fuv_maps[factor].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_distribution_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the distribution region ...")
+
+        path = fs.join(self.maps_young_fuv_path, "histogram.reg")
+        self.distribution_region.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_24mu_histograms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the histograms of the corrected 24 micron pixels in the specified region ...")
+
+        # Create a distribution plotter
+        plotter = DistributionPlotter()
+
+        # Loop over the distributions
+        for factor in self.corrected_fuv_distributions:
+
+            # Determine path
+            path = fs.join(self.maps_young_fuv_path, str(factor) + " histogram.pdf")
+
+            # Plot the distribution as a histogram
+            plotter.add_distribution(self.corrected_fuv_distributions[factor], "Correction factor of " + str(factor))
+            plotter.run(path)
+
+            # Clear the distribution plotter
+            plotter.clear()
 
     # -----------------------------------------------------------------
 

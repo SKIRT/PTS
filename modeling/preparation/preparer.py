@@ -285,28 +285,25 @@ class DataPreparer(PreparationComponent):
             # 2. Extract stars and galaxies from the image
             # extract_sources
 
-            # 3. If requested, calculate the poisson noise
-            # calculate_poisson_noise
-
-            # 4. If requested, correct for galactic extinction
+            # 3. If requested, correct for galactic extinction
             # correct_for_extinction
 
-            # 5. If requested, convert the unit
+            # 4. If requested, convert the unit
             # convert_unit
 
-            # 6. If requested, convolve
+            # 5. If requested, convolve
             # convolve
 
-            # 7. If requested, rebin
+            # 6. If requested, rebin
             # rebin
 
-            # 8. If requested, subtract the sky
+            # 7. If requested, subtract the sky
             # subtract_sky
 
-            # 9. Calculate the calibration uncertainties
+            # 8. Calculate the calibration uncertainties
             # calculate_calibration_uncertainties
 
-            # 10. If requested, set the uncertainties
+            # 9. If requested, set the uncertainties
             # set_uncertainties
 
             ##
@@ -316,7 +313,6 @@ class DataPreparer(PreparationComponent):
 
                 # Disable all steps preceeding and including the sky subtraction
                 self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
@@ -336,7 +332,6 @@ class DataPreparer(PreparationComponent):
 
                 # Disable all steps preceeding and including the rebinning
                 self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
@@ -355,7 +350,6 @@ class DataPreparer(PreparationComponent):
 
                 # Disable all steps preceeding and including the convolution
                 self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
                 self.image_preparer.config.convolve = False
@@ -373,7 +367,6 @@ class DataPreparer(PreparationComponent):
 
                 # Disable all steps preceeding and including the unit conversion
                 self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
                 self.image_preparer.config.convert_unit = False
 
@@ -390,7 +383,6 @@ class DataPreparer(PreparationComponent):
 
                 # Disable all steps preceeding and including the correction for extinction
                 self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.calculate_poisson_noise = False
                 self.image_preparer.config.correct_for_extinction = False
 
                 # Set the principal ellipse and saturation region in sky coordinates
@@ -420,8 +412,8 @@ class DataPreparer(PreparationComponent):
             # Write out sky annuli frames
             sky_path = fs.join(output_path, "sky")
             if not fs.is_directory(sky_path): fs.create_directory(sky_path)
-            self.image_preparer.config.write_sky_annuli = True
-            self.image_preparer.config.sky_annuli_path = sky_path
+            self.image_preparer.config.write_sky_apertures = True
+            self.image_preparer.config.sky_apertures_path = sky_path
 
             # Set the visualisation path for the image preparer
             visualisation_path = self.visualisation_path if self.config.visualise else None

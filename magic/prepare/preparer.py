@@ -164,34 +164,31 @@ class ImagePreparer(OldConfigurable):
         # 2. Extract stars and galaxies from the image
         if self.config.extract_sources: self.extract_sources()
 
-        # 3. If requested, calculate the poisson noise
-        if self.config.calculate_poisson_noise: self.calculate_poisson_noise()
-
-        # 4. If requested, correct for galactic extinction
+        # 3. If requested, correct for galactic extinction
         if self.config.correct_for_extinction: self.correct_for_extinction()
 
-        # 5. If requested, convert the unit
+        # 4. If requested, convert the unit
         if self.config.convert_unit: self.convert_unit()
 
-        # 6. If requested, convolve
+        # 5. If requested, convolve
         if self.config.convolve: self.convolve()
 
-        # 7. If requested, rebin
+        # 6. If requested, rebin
         if self.config.rebin: self.rebin()
 
-        # 8. If requested, subtract the sky
+        # 7. If requested, subtract the sky
         if self.config.subtract_sky: self.subtract_sky()
 
-        # 9. Calculate the calibration uncertainties
+        # 8. Calculate the calibration uncertainties
         if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
 
-        # 10. If requested, set the uncertainties
+        # 9. If requested, set the uncertainties
         if self.config.set_uncertainties: self.set_uncertainties()
 
-        # 11. If requested, crop to a smaller coordinate grid
+        # 10. If requested, crop to a smaller coordinate grid
         if self.config.crop: self.crop()
 
-        # 12. Save the result
+        # 11. Save the result
         self.save_result()
 
     # -----------------------------------------------------------------
@@ -310,18 +307,6 @@ class ImagePreparer(OldConfigurable):
 
         # Inform the user
         log.success("Sources extracted")
-
-    # -----------------------------------------------------------------
-
-    def calculate_poisson_noise(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the poisson noise on the image pixels ... (but not really)")
 
     # -----------------------------------------------------------------
 
@@ -536,22 +521,22 @@ class ImagePreparer(OldConfigurable):
         if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 
         # Write sky annuli maps if requested
-        if self.config.write_sky_annuli:
+        if self.config.write_sky_apertures:
 
             # Write the sky region
-            region_path = fs.join(self.config.sky_annuli_path, "annulus.reg")
+            region_path = fs.join(self.config.sky_apertures_path, "annulus.reg")
             self.sky_subtractor.region.save(region_path)
 
             # Write the apertures frame
-            apertures_frame_path = fs.join(self.config.sky_annuli_path, "apertures.fits")
+            apertures_frame_path = fs.join(self.config.sky_apertures_path, "apertures.fits")
             self.sky_subtractor.apertures_frame.save(apertures_frame_path)
 
             # Write the apertures mean frame
-            apertures_mean_path = fs.join(self.config.sky_annuli_path, "apertures_mean.fits")
+            apertures_mean_path = fs.join(self.config.sky_apertures_path, "apertures_mean.fits")
             self.sky_subtractor.apertures_mean_frame.save(apertures_mean_path)
 
             # Write the apertures noise frame
-            apertures_noise_path = fs.join(self.config.sky_annuli_path, "apertures_noise.fits")
+            apertures_noise_path = fs.join(self.config.sky_apertures_path, "apertures_noise.fits")
             self.sky_subtractor.apertures_noise_frame.save(apertures_noise_path)
 
         # Write the animation

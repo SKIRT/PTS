@@ -25,6 +25,8 @@ from ..component import MapsComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.distribution import Distribution
 from ....core.plot.distribution import DistributionPlotter
+from ....magic.basics.geometry import Composite
+from ....magic.basics.region import Region
 
 # -----------------------------------------------------------------
 
@@ -65,6 +67,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # The maps of the corrected 24 micron emission
         self.corrected_24mu_maps = dict()
 
+        # The distributions of the pixel values of the corrected 24mu maps
+        self.corrected_24mu_distributions = dict()
+
         # The map of ionizing stars
         self.map = None
 
@@ -73,6 +78,9 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # The path to the maps/ionizing/solar directory
         self.maps_ionizing_solar_path = None
+
+        # The region of the pixels used for plotting the distributions of pixel values
+        self.distribution_region = None
 
     # -----------------------------------------------------------------
 
@@ -91,6 +99,10 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # 3. Make the map
         self.make_map()
+
+        # ...
+        self.create_distribution_region()
+        self.make_distributions()
 
         # 4. Normalize the map
         self.normalize_map()
@@ -249,8 +261,12 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Young ionizing stars = Ha + 0.031 x MIPS24_corrected
 
+        best_corrected_24mu_map = self.corrected_24mu_maps[self.config.best_factor].copy()
+        # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
+        best_corrected_24mu_map[best_corrected_24mu_map < 0.0] = 0.0
+
         # Calculate ionizing stars map and ratio
-        ionizing = self.halpha + 0.031 * self.corrected_24mu_maps[self.config.best_factor]
+        ionizing = self.halpha + 0.031 * best_corrected_24mu_map
 
         # ionizing_ratio = self.ha / (0.031*mips_young_stars)
 
@@ -304,13 +320,57 @@ class IonizingStellarMapMaker(MapsComponent):
         new_mips = self.mips24 - total_contribution * self.disk # disk image is normalized
 
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-        new_mips[new_mips < 0.0] = 0.0
+        #new_mips[new_mips < 0.0] = 0.0
 
         # Set zero where low signal-to-noise ratio
         # new_mips[self.mips < self.config.ionizing_stars.mips_young_stars.mips_snr_level*self.mips_errors] = 0.0
 
         # Return the new 24 micron frame
         return new_mips
+
+    # -----------------------------------------------------------------
+
+    def create_distribution_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        disk_ellipse = self.disk_ellipse.to_pixel(self.mips24.wcs)
+        inner_ellipse = disk_ellipse * self.config.histograms_annulus_range.min
+        outer_ellipse = disk_ellipse * self.config.histograms_annulus_range.max
+        composite = Composite(outer_ellipse, inner_ellipse)
+        region = Region()
+        region.append(composite)
+        self.distribution_region = region
+
+    # -----------------------------------------------------------------
+
+    def make_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making distributions of the pixel values of the corrected 24 micron maps ...")
+
+        # Create mask
+        mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
+
+        # Loop over the different maps
+        for factor in self.corrected_24mu_maps:
+
+            # Get the values
+            values = self.corrected_24mu_maps[factor][mask]
+
+            # Make a distribution of the pixel values indicated by the mask
+            distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
+
+            # Add the distribution to the dictionary
+            self.corrected_24mu_distributions[factor] = distribution
 
     # -----------------------------------------------------------------
 
@@ -345,6 +405,12 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Write the maps
         self.write_24mu_maps()
+
+        # Write distribution region
+        self.write_distribution_region()
+
+        # Write histograms of corrected 24 micron pixels
+        self.write_24mu_histograms()
 
         # Write the terms in the equation to make the map, normalized
         self.write_terms()
@@ -382,7 +448,7 @@ class IonizingStellarMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Write the corrected 24 micron images ...")
+        log.info("Writing the corrected 24 micron images ...")
 
         # Loop over the corrected 24 micron maps
         for factor in self.corrected_24mu_maps:
@@ -392,6 +458,49 @@ class IonizingStellarMapMaker(MapsComponent):
 
             # Write
             self.corrected_24mu_maps[factor].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_distribution_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the distribution region ...")
+
+        path = fs.join(self.maps_ionizing_24mu_path, "histogram.reg")
+        self.distribution_region.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_24mu_histograms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the histograms of the corrected 24 micron pixels in the specified region ...")
+
+        # Create a distribution plotter
+        plotter = DistributionPlotter()
+
+        # Loop over the distributions
+        for factor in self.corrected_24mu_distributions:
+
+            # Determine path
+            path = fs.join(self.maps_ionizing_24mu_path, str(factor) + " histogram.pdf")
+
+            # Plot the distribution as a histogram
+            plotter.add_distribution(self.corrected_24mu_distributions[factor], "Correction factor of " + str(factor))
+            plotter.run(path)
+
+            # Clear the distribution plotter
+            plotter.clear()
 
     # -----------------------------------------------------------------
 

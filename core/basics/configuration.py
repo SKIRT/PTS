@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 from abc import ABCMeta, abstractmethod
 from types import NoneType
 import sys
@@ -626,6 +627,23 @@ class ConfigurationDefinition(object):
 
         # Add the section
         self.sections[name] = ConfigurationDefinition(prefix=name)
+        self.section_descriptions[name] = description
+
+    # -----------------------------------------------------------------
+
+    def import_section(self, name, description, definition):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param definition:
+        :return:
+        """
+
+        # Add the section
+        self.sections[name] = copy.deepcopy(definition)
+        self.sections[name].prefix = name
         self.section_descriptions[name] = description
 
     # -----------------------------------------------------------------

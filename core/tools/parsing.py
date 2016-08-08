@@ -504,3 +504,18 @@ def url(argument):
     else: return argument
 
 # -----------------------------------------------------------------
+
+def image_path(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    path = file_path(argument)
+
+    if path.endswith("fits"): raise ValueError("Unrecognized file type")
+    else: return path
+
+# -----------------------------------------------------------------

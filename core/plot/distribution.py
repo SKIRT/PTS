@@ -151,6 +151,7 @@ class DistributionPlotter(object):
         self.max_value = None
         self.min_count = None
         self.max_count = None
+        self._figure = None
 
     # -----------------------------------------------------------------
 
