@@ -594,16 +594,12 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
             if not filename.endswith("-int.fits"): continue
 
-
             # Determine the path to the cleaned rebinned image inside temp_swarp_path
             # Setting the frame NAN where the corresponding cleaned image is also NAN
             cleaned_path = fs.join(temp_swarp_path, filename)
 
             # Determine the path to the corresponding weight map
             weight_path = cleaned_path.replace("-int", "-int.wgt")
-
-            #cleaned_frame = Frame.from_file(cleaned_path)
-            #frame[cleaned_frame.nans()] = np.NaN
 
             #print(filename_ends, filename, exposure_times.keys())
 
@@ -654,15 +650,17 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             frame *= frame.pixelarea.to("sr").value
             frame.unit = "count"
 
-            # SET NANS IN THE REBINNED FRAME WHERE THE CLEANED AND REBINNED IMAGE IN THE TEMP SWARP PATH IS ALSO NAN
-            cleaned_frame = Frame.from_file(cleaned_path)
-            frame[cleaned_frame.nans()] = np.NaN
+            # SET NANS IN THE REBINNED FRAME WHERE THE CLEANED IMAGE IN THE TEMP SWARP PATH IS ALSO NAN
+            ## FIRST REBIN THE CLEANED IMAGE ALSO TO THE FINAL WCS AS DETERMINED BY SWARP
+            #cleaned_frame = Frame.from_file(cleaned_path)
+            weight_map = Frame.from_file(weight_path)
+            weight_map.rebin(rebin_wcs)
+            frame[weight_map.nans()] = np.NaN
 
             # Save the rebinned frame
             frame.save(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
 
             # SET NANS IN THE FOOTPRINT WHERE THE WEIGHT MAP IN THE TEMP SWARP PATH IS ALSO NAN
-            weight_map = Frame.from_file(weight_path)
             footprint[weight_map.nans()] = np.NaN
 
             # Save the (rebinned) footprint
