@@ -137,6 +137,9 @@ class ModelingComponent(Configurable):
         # The path to the data/seds directory
         self.data_seds_path = None
 
+        # The path to the DustPedia observed SED for the galaxy
+        self.dustpedia_sed_path = None
+
         # The path to the data/images directory
         self.data_images_path = None
 
@@ -232,6 +235,9 @@ class ModelingComponent(Configurable):
 
         # Set ...
         self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
+
+        # The DustPedia SED path
+        self.dustpedia_sed_path = fs.join(self.data_seds_path, "DustPedia.dat")
 
         # Set ...
         self.data_images_path = fs.create_directory_in(self.data_path, "images")
@@ -821,6 +827,22 @@ class ModelingComponent(Configurable):
 
         # Open and return the frame of the dust distribution
         return Frame.from_file(self.dust_map_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustpedia_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the SED
+        sed = ObservedSED.from_file(self.dustpedia_sed_path)
+
+        # Return the SED
+        return sed
 
 # -----------------------------------------------------------------
 

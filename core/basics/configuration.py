@@ -823,7 +823,6 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
         :param description:
         :param add_logging:
         :param add_cwd:
-        :param add_config_path:
         """
 
         # Call the constructor of the base class

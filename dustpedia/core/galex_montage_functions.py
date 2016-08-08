@@ -560,7 +560,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         #######################
 
         # Poisson temp directory in temporary directory
-        temp_poisson_path = fs.join(temp_path_band, "poisson2")
+        temp_poisson_path = fs.join(temp_path_band, "poisson")
         fs.create_directory(temp_poisson_path)
 
         # Some directories
@@ -684,6 +684,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             # Get footprint
             footprint_path = fs.join(temp_poisson_footprint_path, name + ".fits")
             b = Frame.from_file(footprint_path)
+
+            # Set NaNs to zero
+            b.replace_nans(0.0)
 
             # Add product of primary and footprint and footprint to the appropriate list
             ab = a * b
