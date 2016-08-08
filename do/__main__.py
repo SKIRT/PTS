@@ -192,7 +192,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
         remote.setup(args.remote)
 
         # Run PTS remotely
-        task = remote.run_pts(exact_command_name, config, keep_remote_temp=True)
+        task = remote.run_pts(exact_command_name, config)
 
         # Succesfully submitted
         log.success("Succesfully submitted the PTS job to the remote host")

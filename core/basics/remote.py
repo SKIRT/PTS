@@ -356,14 +356,15 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def run_pts(self, command, config, input_dict=None, keep_remote_temp=False):
+    def run_pts(self, command, config, input_dict=None, keep_remote_output=False, remove_local_output=False):
 
         """
         This function ...
         :param command:
         :param config:
         :param input_dict:
-        :param keep_remote_temp:
+        :param keep_remote_output:
+        :param remove_local_output:
         :return:
         """
 
@@ -482,13 +483,13 @@ class Remote(object):
 
         # Execute the script
         # name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False
-        self.start_screen(unique_session_name, temp_script_path, remote_temp_path, screen_output_path=remote_temp_path, keep_remote_script=keep_remote_temp)
+        self.start_screen(unique_session_name, temp_script_path, remote_temp_path, screen_output_path=remote_temp_path, keep_remote_script=keep_remote_output)
 
         # Remove the local script file
         fs.remove_file(temp_script_path)
 
         # Remove the remote temporary directory
-        if keep_remote_temp: log.info("Remote output will be placed in '" + remote_output_path + "'")
+        if keep_remote_output: log.info("Remote output will be placed in '" + remote_output_path + "'")
 
         # Create a new Task object
         task = Task(command, config.to_string())
@@ -502,6 +503,7 @@ class Remote(object):
 
         # Set properties such as the task ID and name and the screen name
         task.id = task_id
+        task.remote_temp_pts_path = remote_temp_path
         task.name = unique_session_name
         task.screen_name = unique_session_name
         task.remote_screen_output_path = remote_temp_path
@@ -511,7 +513,8 @@ class Remote(object):
         task.remote_output_path = remote_output_path
 
         # Other
-        task.keep_remote_output = keep_remote_temp
+        task.remove_remote_output = not keep_remote_output
+        task.remove_local_output = remove_local_output
 
         # Save the task
         task.save()
@@ -1826,6 +1829,22 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def evaluate_boolean_expression(self, expression):
+
+        """
+        This function ...
+        :param expression:
+        :return:
+        """
+
+        # Launch a bash command to check whether the path exists as a directory on the remote file system
+        output = self.execute("if [ " + expression + " ]; then echo True; else echo False; fi")
+
+        # Return the result
+        return bool(output[0])
+
+    # -----------------------------------------------------------------
+
     def is_directory(self, path):
 
         """
@@ -1834,15 +1853,11 @@ class Remote(object):
         :return:
         """
 
+        # Call the corresponding PTS function
         if self.in_python_session: return self.get_simple_python_variable("fs.is_directory('" + path + "')")
 
-        else:
-
-            # Launch a bash command to check whether the path exists as a directory on the remote file system
-            output = self.execute("if [ -d " + path + " ]; then echo True; else echo False; fi")
-
-            # Return the result
-            return output[0] == "True"
+        # Launch a bash command to check whether the path exists as a directory on the remote file system
+        else: return self.evaluate_boolean_expression("-d " + path)
 
     # -----------------------------------------------------------------
 
@@ -1854,15 +1869,31 @@ class Remote(object):
         :return:
         """
 
+        # Call the corresponding PTS function
         if self.in_python_session: return self.get_simple_python_variable("fs.is_file('" + path + "')")
 
+        # Launch a bash command to check whether the path exists as a regular file on the remote file system
+        else: return self.evaluate_boolean_expression("-f " + path)
+
+    # -----------------------------------------------------------------
+
+    def is_subdirectory(self, path, parent_path):
+
+        """
+        This function ...
+        :param path:
+        :param parent_path:
+        :return:
+        """
+
+        if self.in_python_session: return self.get_simple_python_variable("fs.is_subdirectory('" + path + "', '" + parent_path + "')")
         else:
 
-            # Launch a bash command to check whether the path exists as a regular file on the remote file system
-            output = self.execute("if [ -f " + path + " ]; then echo True; else echo False; fi")
+            if not self.is_directory(path): raise ValueError("Not a directory: " + path)
 
-            # Return the result
-            return output[0] == "True"
+            path = self.expand_user_path(path)
+            parent_path = self.expand_user_path(parent_path)
+            return path.startswith(parent_path)
 
     # -----------------------------------------------------------------
 
@@ -2023,6 +2054,16 @@ class Remote(object):
                 # If retrieval was succesful, add this information to the task file
                 task.retrieved = True
                 task.save()
+
+                ## REMOVE REMOTE OUTPUT IF REQUESTED
+                if task.remove_remote_output:
+
+                    # Remove the temporary PTS directory if it contains the output directory
+                    if self.is_subdirectory(task.remote_output_path, task.remote_pts): self.remove_directory(task.remote_temp_pts_path)
+                    else:
+                        # Remove the output directory and the temporary directory seperately
+                        self.remove_directory(task.remote_output_path)
+                        self.remove_directory(task.remote_temp_pts_path)
 
         # Return the list of retrieved tasks
         return tasks

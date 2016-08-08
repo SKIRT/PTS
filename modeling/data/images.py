@@ -70,10 +70,10 @@ class ImageFetcher(DataComponent):
         self.get_dustpedia_urls()
 
         # 3. Fetch GALEX data and calculate poisson errors
-        #self.fetch_galex()
+        self.fetch_galex()
 
         # 4. Fetch SDSS data and calculate poisson errors
-        #self.fetch_sdss()
+        self.fetch_sdss()
 
         # 5. Fetch the H-alpha image
         self.fetch_halpha()
@@ -90,7 +90,10 @@ class ImageFetcher(DataComponent):
         # 9. Fetch the Herschel images
         self.fetch_herschel()
 
-        # 10. Writing
+        # 10. Fetch the Planck images
+        self.fetch_planck()
+
+        # 11. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -188,7 +191,7 @@ class ImageFetcher(DataComponent):
         analysers = ["pts.modeling.data.analyser.MosaicAnalyser"]
 
         # Create the GALEX mosaic and Poisson errors frame
-        self.launcher.run_detached("make_galex", config_dict, analysers=analysers, analysis_info=analysis_info)
+        self.launcher.run_detached("make_galex", config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)
 
     # -----------------------------------------------------------------
 
@@ -216,7 +219,7 @@ class ImageFetcher(DataComponent):
         analysers = ["pts.modeling.data.analyser.MosaicAnalyser"]
 
         # Create the SDSS mosaic and Poisson errors frame
-        self.launcher.run_detached("make_sdss", config_dict, analysers=analysers, analysis_info=analysis_info)
+        self.launcher.run_detached("make_sdss", config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)
 
     # -----------------------------------------------------------------
 
@@ -313,6 +316,21 @@ class ImageFetcher(DataComponent):
 
         # Fetch the Herschel data from the DustPedia archive
         self.fetch_from_dustpedia("Herschel")
+
+    # -----------------------------------------------------------------
+
+    def fetch_planck(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fetching the Planck images ...")
+
+        # Fetch the Planck data from the DustPedia archive
+        self.fetch_from_dustpedia("Planck")
 
     # -----------------------------------------------------------------
 

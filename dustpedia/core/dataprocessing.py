@@ -294,13 +294,13 @@ class DustPediaDataProcessing(object):
         log.debug("Number of observations that will be downloaded: " + str(len(urls)))
 
         # Download the files
-        #paths = network.download_files(urls, images_path)
+        paths = network.download_files(urls, images_path)
 
         # Debugging
         log.debug("Decompressing the files ...")
 
         # Decompress the files and remove the originals
-        #archive.decompress_files(paths, remove=True)
+        archive.decompress_files(paths, remove=True)
 
         ## RESPONSE
 
@@ -311,13 +311,13 @@ class DustPediaDataProcessing(object):
         response_urls = [url.replace("-int.fits.gz", "-rr.fits.gz") for url in urls]
 
         # Download the response maps
-        #response_paths = network.download_files(response_urls, response_path)
+        response_paths = network.download_files(response_urls, response_path)
 
         # Debugging
         log.debug("Decompressing the response files ...")
 
         # Decompress
-        #archive.decompress_files(response_paths, remove=True)
+        archive.decompress_files(response_paths, remove=True)
 
         ## BACKGROUND
 
@@ -328,13 +328,13 @@ class DustPediaDataProcessing(object):
         background_urls = [url.replace("-int.fits.gz", "-skybg.fits.gz") for url in urls]
 
         # Download the background maps
-        #background_paths = network.download_files(background_urls, background_path)
+        background_paths = network.download_files(background_urls, background_path)
 
         # Debugging
         log.debug("Decompressing the background files ...")
 
         # Decompress
-        #archive.decompress_files(background_paths, remove=True)
+        archive.decompress_files(background_paths, remove=True)
 
         ## COUNTS
 
@@ -425,42 +425,42 @@ class DustPediaDataProcessing(object):
         # Determine the path to the temporary directory for downloading the images
         working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
-        working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
+        #working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
 
         # Create the working directory
-        #fs.create_directory(working_path)
+        fs.create_directory(working_path)
 
         # DOWNLOAD PATH
         download_path = fs.join(working_path, "download")
         # Create download directory
-        #fs.create_directory(download_path)
+        fs.create_directory(download_path)
 
         # RESPONSE AND BACKGROUND PATH
         response_path = fs.join(working_path, "response")
         background_path = fs.join(working_path, "background")
-        #fs.create_directories(response_path, background_path)
+        fs.create_directories(response_path, background_path)
 
         # COUNT PATH
         counts_path = fs.join(working_path, "counts")
-        #fs.create_directory(counts_path)
+        fs.create_directory(counts_path)
 
         # RAW PATH
         raw_path = fs.join(working_path, "raw")
         # Create raw directory
-        #fs.create_directory(raw_path)
+        fs.create_directory(raw_path)
 
         # TEMP PATH
         temp_path = fs.join(working_path, "temp")
         temp_fuv_path = fs.join(temp_path, "FUV")
         temp_nuv_path = fs.join(temp_path, "NUV")
         # Create temp directory
-        #fs.create_directory(temp_path)
-        #fs.create_directories(temp_fuv_path, temp_nuv_path)
+        fs.create_directory(temp_path)
+        fs.create_directories(temp_fuv_path, temp_nuv_path)
 
         # 1 and 2 RAW directories
         raw_fuv_path = fs.join(raw_path, "FUV")
         raw_nuv_path = fs.join(raw_path, "NUV")
-        #fs.create_directories(raw_fuv_path, raw_nuv_path)
+        fs.create_directories(raw_fuv_path, raw_nuv_path)
 
         # download/images, download/response and download/background
         download_images_path = fs.join(download_path, "images")
@@ -468,31 +468,31 @@ class DustPediaDataProcessing(object):
         download_background_path = fs.join(download_path, "background")
 
         download_counts_path = fs.join(download_path, "counts")
-        #fs.create_directory(download_counts_path)
+        fs.create_directory(download_counts_path)
 
-        #fs.create_directories(download_images_path, download_response_path, download_background_path)
+        fs.create_directories(download_images_path, download_response_path, download_background_path)
 
 
         #
 
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        #self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
+        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
 
 
         # FUV and NUV response directories
         response_fuv_path = fs.join(response_path, "FUV")
         response_nuv_path = fs.join(response_path, "NUV")
-        #fs.create_directories(response_fuv_path, response_nuv_path)
+        fs.create_directories(response_fuv_path, response_nuv_path)
 
         # FUV and NUV background directories
         background_fuv_path = fs.join(background_path, "FUV")
         background_nuv_path = fs.join(background_path, "NUV")
-        #fs.create_directories(background_fuv_path, background_nuv_path)
+        fs.create_directories(background_fuv_path, background_nuv_path)
 
         # FUV AND NUV counts directories
         counts_fuv_path = fs.join(counts_path, "FUV")
         counts_nuv_path = fs.join(counts_path, "NUV")
-        #fs.create_directories(counts_fuv_path, counts_nuv_path)
+        fs.create_directories(counts_fuv_path, counts_nuv_path)
 
         ####
 
@@ -500,25 +500,26 @@ class DustPediaDataProcessing(object):
         log.info("Splitting observations into FUV and NUV ...")
 
         # Split downloaded images into FUV and NUV
-        #self.split_galex_observations(download_images_path, raw_fuv_path, raw_nuv_path)
+        self.split_galex_observations(download_images_path, raw_fuv_path, raw_nuv_path)
 
         # Split response maps into FUV and NUV
-        #self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
+        self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
 
         # Split background maps into FUV and NUV
-        #self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
+        self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
 
         # Split count maps into FUV and NUV
-        #self.split_galex_observations(download_counts_path, counts_fuv_path, counts_nuv_path)
+        self.split_galex_observations(download_counts_path, counts_fuv_path, counts_nuv_path)
 
         ###
 
         # AFTER SPLIT, THIS CAN BE DONE:
 
-        #fs.remove_directory(download_images_path)
-        #fs.remove_directory(download_response_path)
-        #fs.remove_directory(download_background_path)
-        #fs.remove_directory(download_path)
+        fs.remove_directory(download_images_path)
+        fs.remove_directory(download_response_path)
+        fs.remove_directory(download_background_path)
+        fs.remove_directory(download_counts_path)
+        fs.remove_directory(download_path)
 
         ###
 

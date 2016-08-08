@@ -58,7 +58,8 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run_detached(self, pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None):
+    def run_detached(self, pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None,
+                     keep_remote_output=False, remove_local_output=False):
 
         """
         This function ...
@@ -67,6 +68,8 @@ class PTSRemoteLauncher(object):
         :param input_dict:
         :param analysers:
         :param analysis_info:
+        :param keep_remote_output:
+        :param remove_local_output:
         :return:
         """
 
@@ -74,7 +77,7 @@ class PTSRemoteLauncher(object):
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
 
         # Run PTS remotely
-        task = self.remote.run_pts(exact_command_name, config, input_dict=input_dict, keep_remote_temp=True)
+        task = self.remote.run_pts(exact_command_name, config, input_dict=input_dict, keep_remote_output=keep_remote_output, remove_local_output=remove_local_output)
 
         # Set the analysers
         if analysers is not None:

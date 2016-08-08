@@ -283,6 +283,9 @@ class RemoteSynchronizer(Configurable):
             task.analysed = True
             task.save()
 
+            # Remove the local output if requested
+            if task.remove_local_output: fs.remove_directory(task.local_output_path)
+
     # -----------------------------------------------------------------
 
     def announce(self):

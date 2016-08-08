@@ -47,6 +47,9 @@ class Task(object):
         # The task file path
         self.path = None
 
+        # The remote temporary PTS directory made for this task
+        self.remote_temp_pts_path = None
+
         # Screen session name and remote screen output path
         self.screen_name = None
         self.remote_screen_output_path = None
@@ -61,8 +64,9 @@ class Task(object):
         self.local_output_path = None
         self.remote_output_path = None
 
-        # Flag indicating whether we want to keep remote output (not used yet)
-        self.keep_remote_output = False
+        # Flag indicating whether we want to remove remote and local output (not used yet)
+        self.remove_remote_output = True # AFTER RETRIEVAL
+        self.remove_local_output = False # AFTER ANALYSIS
 
         # The paths to the task analysers
         self.analyser_paths = []

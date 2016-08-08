@@ -84,12 +84,16 @@ class MosaicAnalyser(DataComponent):
         # 1. Call the setup function
         self.setup()
 
+        # 2. Load the results from the mosaicing
         self.load_results()
 
+        # 3. Load the image as obtained from other source
         self.load_references()
 
+        # 4. Verify the mosaicing result with the reference
         self.verify()
 
+        # 5. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -100,6 +104,9 @@ class MosaicAnalyser(DataComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the result of the mosaicing procedure ...")
 
         # Loop over the FITS files found in the output directory
         for path, name in fs.files_in_path(self.task.local_output_path, extension="fits", contains=self.ngc_id_nospaces, returns=["path", "name"]):
@@ -129,6 +136,9 @@ class MosaicAnalyser(DataComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the reference mosaics ...")
+
         for band_id in self.mosaics:
 
             # Determine the path to the image downloaded from the DustPedia archive
@@ -145,6 +155,9 @@ class MosaicAnalyser(DataComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Verifying the mosaiced images and poisson frame ...")
 
         # Convert relative poisson frames into absolute poisson errors in Jansky
         for band_id in self.poisson_frames:

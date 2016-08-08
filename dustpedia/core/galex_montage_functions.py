@@ -333,19 +333,8 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     temp_poisson_path = fs.join(temp_path_band, "poisson")
     fs.create_directory(temp_poisson_path)
 
-    # Create storage directories for Montage and SWarp (deleting any prior), and set appropriate Python working directory
-    #os.mkdir(temp_dir + 'Raw')
-    #os.mkdir(temp_dir + 'Diffs_Temp')
-    #os.mkdir(temp_dir + 'Backsub_Temp')
-    #os.mkdir(temp_dir + 'SWarp_Temp')
-    #os.mkdir(temp_dir + 'Reproject_Temp')
-    #os.mkdir(temp_dir + 'Convolve_Temp')
-    #os.chdir(temp_dir + 'Raw')
-
     ### CHANGE WORKING DIRECTORY TO RAW
-
     os.chdir(temp_raw_path)
-
     ###
 
     # Path to the overlap table
@@ -500,17 +489,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         # Swarp result path
         swarp_result_path = fs.join(temp_swarp_path, id_string + "_SWarp.fits")
 
-        # BEFORE:
-        # Remove null values, and save finalised map to output directory
-        #in_fitsdata = fits.open()
-        #in_image = in_fitsdata[0].data
-        #in_header = in_fitsdata[0].header
-        #in_fitsdata.close()
-        #out_image = in_image.copy()
-        #out_image[ np.where( out_image == 0 ) ] = np.NaN
-        #out_image[ np.where( out_image < -1E3 ) ] = np.NaN
-        #out_image[ np.where( out_image <= 1E-8 ) ] = 0
-
         # NEW:
         #out_image = Frame(in_image, unit="count/s")
         out_image = Frame.from_file(swarp_result_path)
@@ -540,22 +518,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         # Convert and set the new unit
         out_image *= conversion_factor
         out_image.unit = "Jy/pix"
-
-        # BEFORE:
-        #out_hdu = fits.PrimaryHDU(data=out_image, header=in_header)
-        #out_hdulist = fits.HDUList([out_hdu])
-
-        #### OUTPUT MOSAIC ####
-
-        # Write mosaic
-        #mosaic_path = fs.join(output_path, id_string + '.fits')
-        #out_hdulist.writeto(mosaic_path, clobber=True)
-
-        ## WRITE THE OUTPUT FRAME
-
-        # Determine path and write mosaic: NOW DONE AT THE END TOGETHER IN AN IMAGE WITH THE REL POISSON FRAME
-        #out_image_path = fs.join(output_path, id_string + ".fits")
-        #out_image.save(out_image_path)
 
         #######################
 
