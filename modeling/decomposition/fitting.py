@@ -47,8 +47,17 @@ class FittingDecomposer(DecompositionComponent):
         :return:
         """
 
-        sersic_model = Sersic2D(amplitude=sersic_amplitide, r_eff=sersic_r_eff, n=sersic_n, x_0=sersic_x_0, y_0=sersic_y_0, ellip=sersic_ellip, theta=sersic_theta)
-        sersic_map = sersic_model(sersic_x, sersic_y)
+        # 1. Call the setup function
+        self.setup()
+
+        # 2. Load the input images
+        self.load_images()
+
+        # 3. Do the fitting
+        self.fit()
+
+        # 4. Create the component models
+        self.create_components()
 
     # -----------------------------------------------------------------
 
@@ -61,5 +70,35 @@ class FittingDecomposer(DecompositionComponent):
 
         # Call the setup function of the base class
         super(FittingDecomposer, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def load_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        sersic_model = Sersic2D(amplitude=sersic_amplitide, r_eff=sersic_r_eff, n=sersic_n, x_0=sersic_x_0, y_0=sersic_y_0, ellip=sersic_ellip, theta=sersic_theta)
+        sersic_map = sersic_model(sersic_x, sersic_y)
+
+    # -----------------------------------------------------------------
+
+    def create_components(self):
+
+        """
+        This function ...
+        :return:
+        """
 
 # -----------------------------------------------------------------

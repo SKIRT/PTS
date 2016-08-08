@@ -23,7 +23,7 @@ configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Confi
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | arguments | Launch simulations to inspect the current best RT model
 launch_analysis | -- | analysis.launch.AnalysisLauncher | arguments | Launch a simulation for analysis
 launch_heating | -- | analysis.heating.launch.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
-make_report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
+report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
 plot_data | plot | plotting.data.DataPlotter | arguments | Make plots of the data
 plot_preparation | plot | plotting.preparation.PreparationPlotter | arguments | Make plots of the preparation step

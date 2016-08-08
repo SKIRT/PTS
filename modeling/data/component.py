@@ -43,9 +43,6 @@ class DataComponent(ModelingComponent):
         # Different origins
         self.data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck"]
 
-        # The path to the data/images directory
-        self.data_images_path = None
-
         # The paths to the data/images/ directories for the different origins
         self.data_images_paths = dict()
 
@@ -63,9 +60,6 @@ class DataComponent(ModelingComponent):
 
         # Set the path to the galaxy info file
         self.galaxy_info_path = fs.join(self.data_path, "info.dat")
-
-        # Set ...
-        self.data_images_path = fs.create_directory_in(self.data_path, "images")
 
         # Set ...
         for origin in self.data_origins: self.data_images_paths[origin] = fs.create_directory_in(self.data_images_path, origin)

@@ -21,6 +21,10 @@ from ...magic.core.image import Image
 
 # -----------------------------------------------------------------
 
+steps = ["data", "preparation_initialization", "preparation", "decomposition", "photometry", "maps", "input_initialization", "exploration", "fitting", "analysis"]
+
+# -----------------------------------------------------------------
+
 class Reporter(ReportingComponent):
 
     """
@@ -42,26 +46,6 @@ class Reporter(ReportingComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new Reporter instance
-        reporter = cls(arguments.config)
-
-        # Set the modeling path
-        reporter.config.path = arguments.path
-
-        # Return the new instance
-        return reporter
-
-    # -----------------------------------------------------------------
-
     def run(self):
 
         """
@@ -73,34 +57,34 @@ class Reporter(ReportingComponent):
         self.setup()
 
         # 2. Make a report for the data
-        self.report_data()
+        if self.config.step == steps[0]: self.report_data()
 
         # 3. Make a report for the preparation initialization step
-        self.report_preparation_initialization()
+        elif self.config.step == steps[1]: self.report_preparation_initialization()
 
         # 4. Make a report for the data preparation step
-        self.report_preparation()
+        elif self.config.steps == steps[2]: self.report_preparation()
 
         # 5. Make a report for the decomposition step
-        self.report_decomposition()
+        elif self.config.steps == steps[3]: self.report_decomposition()
 
         # 6. Make a report for the photometry step
-        self.report_photometry()
+        elif self.config.steps == steps[4]: self.report_photometry()
 
         # 7. Make a report for the map making step
-        self.report_map_making()
+        elif self.config.steps == steps[5]: self.report_map_making()
 
         # 8. Make a report for the input initialization step
-        self.report_input_initialization()
+        elif self.config.steps == steps[6]: self.report_input_initialization()
 
         # 9. Make a report for the parameter exploration step
-        self.report_exploration()
+        elif self.config.steps == steps[7]: self.report_exploration()
 
         # 10. Make a report for the SED fitting step
-        self.report_fitting()
+        elif self.config.steps == steps[8]: self.report_fitting()
 
         # 11. Make a report for the analysis step
-        self.report_analysis()
+        elif self.config.steps == steps[9]: self.report_analysis()
 
     # -----------------------------------------------------------------
 
@@ -140,14 +124,10 @@ class Reporter(ReportingComponent):
                  "Preparation name"]
 
         # Loop over all subdirectories of the data directory
-        for path, name in fs.directories_in_path(self.data_path, not_contains="bad", returns=["path", "name"]):
-
-            # Get the name of the observatory
-            # observatory = name
+        for path, origin in fs.directories_in_path(self.data_images_path, returns=["path", "name"]):
 
             # Loop over all FITS files found in the current subdirectory
-            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="_Error",
-                                                                   returns=["path", "name"]):
+            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="Error", returns=["path", "name"]):
 
                 # Open the image
                 image = Image.from_file(image_path)
@@ -182,7 +162,7 @@ class Reporter(ReportingComponent):
         table = tables.new(data, names)
 
         # Debugging
-        log.debug("Writing the data report to '" + self.data_initialization_report_path + "'...")
+        log.debug("Writing the data report to '" + self.data_report_path + "'...")
 
         # Save the table
         tables.write(table, self.data_report_path, format="ascii.ecsv")

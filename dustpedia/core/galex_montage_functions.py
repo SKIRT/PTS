@@ -566,7 +566,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         # Some directories
         temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
         temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
-        temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin")
+        temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin-count")
         temp_poisson_footprint_path = fs.create_directory_in(temp_poisson_path, "footprint")
         temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
         temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
@@ -585,7 +585,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         counts_path_band = fs.join(working_path, "counts", band_dict["band_long"])
 
-        print(fs.files_in_path(counts_path_band))
+        #print(fs.files_in_path(counts_path_band))
 
         # Open the -int images in the temp_swarp_path that are used to make the mosaic, convert them to counts
         nswarp_images = 0
@@ -593,6 +593,17 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         #for filename in os.listdir(counts_path_band):
 
             if not filename.endswith("-int.fits"): continue
+
+
+            # Determine the path to the cleaned rebinned image inside temp_swarp_path
+            # Setting the frame NAN where the corresponding cleaned image is also NAN
+            cleaned_path = fs.join(temp_swarp_path, filename)
+
+            # Determine the path to the corresponding weight map
+            weight_path = cleaned_path.replace("-int", "-int.wgt")
+
+            #cleaned_frame = Frame.from_file(cleaned_path)
+            #frame[cleaned_frame.nans()] = np.NaN
 
             #print(filename_ends, filename, exposure_times.keys())
 
@@ -643,21 +654,30 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             frame *= frame.pixelarea.to("sr").value
             frame.unit = "count"
 
+            # SET NANS IN THE REBINNED FRAME WHERE THE CLEANED AND REBINNED IMAGE IN THE TEMP SWARP PATH IS ALSO NAN
+            cleaned_frame = Frame.from_file(cleaned_path)
+            frame[cleaned_frame.nans()] = np.NaN
+
             # Save the rebinned frame
             frame.save(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
+
+            # SET NANS IN THE FOOTPRINT WHERE THE WEIGHT MAP IN THE TEMP SWARP PATH IS ALSO NAN
+            weight_map = Frame.from_file(weight_path)
+            footprint[weight_map.nans()] = np.NaN
 
             # Save the (rebinned) footprint
             footprint.save(fs.join(temp_poisson_footprint_path, image_name + ".fits"))
 
         # Initialize a list to contain the frames to be summed
+        a_frames = [] # the rebinned maps in counts
         ab_frames = []
-        b_frames = []
+        #b_frames = []
         weight_frames = []
 
         # Loop over the files in the temp poisson rebin directory
         for path, name in fs.files_in_path(temp_poisson_rebin_path, extension="fits", returns=["path", "name"]):
 
-            # Open the rebinned frame
+            # Open the rebinned frame IN COUNTS
             a = Frame.from_file(path)
 
             # Set NaNs to zero
@@ -669,8 +689,9 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
             # Add product of primary and footprint and footprint to the appropriate list
             ab = a * b
+            a_frames.append(a)
             ab_frames.append(ab)
-            b_frames.append(b)
+            #b_frames.append(b)
 
             # Calculate weight frame
             weight_frame = b * math.sqrt(exposure_times[name])
@@ -681,7 +702,12 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         # Take the sums
         ab_sum = sum_frames(*ab_frames)
-        b_sum = sum_frames(*b_frames)
+        #b_sum = sum_frames(*b_frames)
+
+        # AB SUM SHOULD ACTUALLY BE THE SAME AS A SUM
+        a_sum = sum_frames(*a_frames) # SUM ALL THE COUNT MAPS
+        # Save the total count map (a_sum)
+        a_sum.save(fs.join(temp_poisson_result_path, "total_counts.fits"))
 
         # Calculate the relative poisson errors
         rel_poisson_frame = ab_sum ** (-0.5)

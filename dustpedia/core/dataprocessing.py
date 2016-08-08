@@ -428,7 +428,7 @@ class DustPediaDataProcessing(object):
         working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
 
         # Create the working directory
-        fs.create_directory(working_path)
+        #fs.create_directory(working_path)
 
         # DOWNLOAD PATH
         download_path = fs.join(working_path, "download")
@@ -468,7 +468,7 @@ class DustPediaDataProcessing(object):
         download_background_path = fs.join(download_path, "background")
 
         download_counts_path = fs.join(download_path, "counts")
-        fs.create_directory(download_counts_path)
+        #fs.create_directory(download_counts_path)
 
         #fs.create_directories(download_images_path, download_response_path, download_background_path)
 
@@ -476,7 +476,7 @@ class DustPediaDataProcessing(object):
         #
 
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
+        #self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
 
 
         # FUV and NUV response directories
@@ -492,7 +492,7 @@ class DustPediaDataProcessing(object):
         # FUV AND NUV counts directories
         counts_fuv_path = fs.join(counts_path, "FUV")
         counts_nuv_path = fs.join(counts_path, "NUV")
-        fs.create_directories(counts_fuv_path, counts_nuv_path)
+        #fs.create_directories(counts_fuv_path, counts_nuv_path)
 
         ####
 
@@ -509,7 +509,7 @@ class DustPediaDataProcessing(object):
         #self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
 
         # Split count maps into FUV and NUV
-        self.split_galex_observations(download_counts_path, counts_fuv_path, counts_nuv_path)
+        #self.split_galex_observations(download_counts_path, counts_fuv_path, counts_nuv_path)
 
         ###
 

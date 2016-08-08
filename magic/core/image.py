@@ -483,6 +483,9 @@ class Image(object):
         if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
+        if self.wcs is None and self.pixelscale is not None:
+            header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec/pix").value), "[arcsec/pix] Pixelscale for x axis")
+            header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec/pix").value), "[arcsec/pix] Pixelscale for y axis")
 
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin

@@ -137,6 +137,9 @@ class ModelingComponent(Configurable):
         # The path to the data/seds directory
         self.data_seds_path = None
 
+        # The path to the data/images directory
+        self.data_images_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -229,6 +232,9 @@ class ModelingComponent(Configurable):
 
         # Set ...
         self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
+
+        # Set ...
+        self.data_images_path = fs.create_directory_in(self.data_path, "images")
 
     # -----------------------------------------------------------------
 
