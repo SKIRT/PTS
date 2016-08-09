@@ -57,6 +57,26 @@ dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit
 
 # -----------------------------------------------------------------
 
+boss_photoobj_url =	"https://data.sdss.org/sas/dr13/eboss/photoObj"
+
+# photoField	$BOSS_PHOTOOBJ/RERUN/RUN
+# frame	        $BOSS_PHOTOOBJ/frames/RERUN/RUN/CAMCOL
+
+
+# frame naming convention:
+
+# frame-[ugriz]-[0-9]{6}-[1-6]-[0-9]{4}\.fits\.bz2, where [ugriz] is the filter, [0-9]{6} is a zero-padded six-digit number containing the run number, [1-6] is the camera column ('camcol') and [0-9]{4} is the zero-padded, four-digit frame sequence number.
+# OR THUS:
+# frame-[ugriz]-RUN-CAMCOL-FRAMESEQ.fits.bz2
+
+# photoField naming convention:
+
+# photoField-[0-9]{6}-[1-6]\.fits, where [0-9]{6} is the zero-padded, six digit run number and [1-6] is the camcol number.
+# OR THUS:
+# photoField-RUN-CAMCOL.fits  ## NO .BZ2 !!
+
+# -----------------------------------------------------------------
+
 # GALEX:
 
 # For GALEX, I should be able to give you exactly what you're after immediately.
@@ -807,8 +827,58 @@ class DustPediaDataProcessing(object):
         # Create the temporary directory
         fs.create_directory(temp_path)
 
+        # )
+
+        # RAW PATH
+        raw_path = fs.join(temp_path, "raw")
+        fs.create_directory(raw_path)
+
+        # COUNTS PATH
+        counts_path = fs.join(temp_path, "counts")
+        fs.create_directory(counts_path)
+
+        # FIELDS PATH
+        fields_path = fs.join(temp_path, "fields")
+        fs.create_directory(fields_path)
+
+        # ----
+
         # Download the FITS files to be used for mosaicing
-        self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_path)
+        urls = self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, raw_path)
+
+        #### NEW: DOWNLOAD THE FIELD TABLES
+
+        #dr10 / boss / photoObj / frames
+
+        field_url_start = "http://data.sdss3.org/sas/dr12/env/BOSS_PHOTOOBJ" # = $BOSS_PHOTOOBJ/RERUN/RUN
+        # NOT WORKING WITH DR13 : BECAUSE OF PERMISSION ISSUES (PASSWORD IS ASKED WHEN ENTERED IN BROWSER !!)
+
+        # FIELD URL = field_url_start / RERUN / RUN    + / photoField-6digits-CAMCOL.fits
+        # example: http://data.sdss3.org/sas/dr12/env/BOSS_PHOTOOBJ/301/4294/photoField-004294-5.fits
+
+        # FRAME URL = $BOSS_PHOTOOBJ / frames / RERUN / RUN / CAMCOL    +   /frame-[ugriz]-6digits-CAMCOL-FRAMESEQ.fits.bz2
+        # example: http://data.sdss3.org/sas/dr10/boss/photoObj/frames/301/4294/5/frame-i-004294-5-0229.fits.bz2
+
+        field_urls = []
+        for url in urls:
+
+            rerun_run_camcol = url.split("frames/")[1].split("/frame-")[0]
+            rerun, run, camcol = rerun_run_camcol.split("/")
+            rerun_run = rerun + "/" + run
+
+            band, digits, camcol, frameseq = url.split("frame-")[1].split(".fits")[0].split("-")
+
+            field_url = field_url_start + "/" + rerun_run + "/photoField-" + digits + "-" + camcol + ".fits"
+            field_urls.append(field_url)
+
+        # DOWNLOAD THE FIELD FITS FILES
+
+        # Debugging
+        log.debug("Downloading the photoField data files ...")
+
+        # Download the files
+        paths = network.download_files(field_urls, fields_path)
+
 
         ## CONVERT THE IMAGES TO COUNT (DECALIBRATE)
 
@@ -1016,7 +1086,7 @@ class DustPediaDataProcessing(object):
         # overlap_files = np.genfromtxt('Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
 
         # Download the SDSS primary fields
-        self.download_sdss_primary_fields_for_galaxy(galaxy_name, band, temp_path)
+        urls = self.download_sdss_primary_fields_for_galaxy(galaxy_name, band, temp_path)
 
         # Get the coordinate range first for this galaxy
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
@@ -1035,6 +1105,9 @@ class DustPediaDataProcessing(object):
 
                 log.debug("Removing the '" + fs.name(path) + "' image since it does not overlap with the target area ...")
                 fs.remove_file(path)
+
+        # Return the original urls from which the images were downloaded
+        return urls
 
     # -----------------------------------------------------------------
 
@@ -1106,8 +1179,11 @@ class DustPediaDataProcessing(object):
         log.debug("Number of primary fields that will be downloaded: " + str(len(urls)))
 
         ## NEW: USE DR13 INSTEAD OF DR10  (BETTER CALIBRATION?)
-        new_urls = [url.replace("dr10/boss", "dr13/eboss") for url in urls]
+        #new_urls = [url.replace("dr10/boss", "dr13/eboss") for url in urls] # DOESN'T WORK: RESTRICTED ACCESS: ASKS FOR USERNAME AND PASSWORD!!
         ###
+
+        # USE DR12
+        new_urls = [url.replace("dr10/boss", "dr12/boss") for url in urls]
 
         # Download the files
         paths = network.download_files(new_urls, path)
@@ -1117,6 +1193,9 @@ class DustPediaDataProcessing(object):
 
         # Decompress the files and remove the originals
         archive.decompress_files(paths, remove=True)
+
+        # Return the URLS
+        return new_urls
 
     # -----------------------------------------------------------------
 

@@ -18,6 +18,7 @@ import urllib
 import httplib
 from . import filesystem as fs
 from .logging import log
+from . import archive
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,25 @@ def exists(url):
     conn.request('HEAD', p.path)
     resp = conn.getresponse()
     return resp.status < 400
+
+# -----------------------------------------------------------------
+
+def download_and_decompress_file(url, path):
+
+    """
+    This function ...
+    :param url:
+    :param path:
+    :return:
+    """
+
+    # Check if path is a directory
+    if not fs.is_directory(path): raise ValueError("Second argument must be an existing directory")
+
+    # Download the file and decompress
+    filepath = download_file(url, path)
+    decompressed_filepath = archive.decompress_file_in_place(filepath, remove=True)
+    return decompressed_filepath
 
 # -----------------------------------------------------------------
 
