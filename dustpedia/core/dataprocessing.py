@@ -78,6 +78,10 @@ boss_photoobj_url =	"https://data.sdss.org/sas/dr13/eboss/photoObj"
 
 # -----------------------------------------------------------------
 
+sdss_filter_number = {"u": 0, "g": 1, "r": 2, "i": 3, "z": 4}
+
+# -----------------------------------------------------------------
+
 # GALEX:
 
 # For GALEX, I should be able to give you exactly what you're after immediately.
@@ -918,11 +922,12 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def get_gain_and_dark_variance_from_photofield(self, path):
+    def get_gain_and_dark_variance_from_photofield(self, path, band):
 
         """
         This function ...
         :param path:
+        :param band:
         :return:
         """
 
@@ -934,11 +939,23 @@ class DustPediaDataProcessing(object):
 
         # Data Model: photoField: https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/RERUN/RUN/photoField.html
 
-        table = hdulist[1]
+        column_names = hdulist[1].columns
 
-        gain = table["gain"]
-        dark_variance = table["dark_variance"]
+        tbdata = hdulist[1].data
 
+        gain_2d = tbdata.field("gain")
+        dark_variance_2d = tbdata.field("dark_variance")
+
+        gain_1d = gain_2d[:, sdss_filter_number[band]]
+        dark_variance_1d = dark_variance_2d[:, sdss_filter_number[band]]
+
+        if not is_constant_array(gain_1d): raise ValueError("Gain 1D not constant: " + str(gain_1d))
+        if not is_constant_array(dark_variance_1d): raise ValueError("Dark variance 1D not constant: " + str(dark_variance_1d))
+
+        gain = gain_1d[0]
+        dark_variance = dark_variance_1d[0]
+
+        # Return the values
         return gain, dark_variance
 
     # -----------------------------------------------------------------
@@ -1429,5 +1446,17 @@ def filter_sdss_urls_for_primary_frames(urls, index):
         if check_string in index:
             urls_pri.append(url)
     return urls_pri
+
+# -----------------------------------------------------------------
+
+def is_constant_array(array):
+
+    """
+    This function ...
+    :param array:
+    :return:
+    """
+
+    return np.min(array) == np.max(array)
 
 # -----------------------------------------------------------------
