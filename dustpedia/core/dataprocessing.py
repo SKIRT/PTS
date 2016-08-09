@@ -24,6 +24,7 @@ from astropy.utils import lazyproperty
 from astropy.units import Unit
 from astropy.io.fits import Header, getheader
 #from astroquery.sdss import SDSS
+from astropy.io.fits import open as open_fits
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -917,6 +918,31 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
+    def get_gain_and_dark_variance_from_photofield(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get the hdulist
+        hdulist = open_fits(path)
+
+        # HDU0: Empty Header
+        # HDU1: photoField Table
+
+        # Data Model: photoField: https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/RERUN/RUN/photoField.html
+
+        table = hdulist[1]
+
+        gain = table["gain"]
+        dark_variance = table["dark_variance"]
+
+        return gain, dark_variance
+
+    # -----------------------------------------------------------------
+
     def make_sdss_rebinned_frames_in_counts(self, galaxy_name, band, output_path):
 
         """
@@ -1224,7 +1250,7 @@ class DustPediaDataProcessing(object):
             dr12_pri.append(entry)
 
         # Get the URLS of the primary fields
-        sdss_urls_pri = SDSS_Primary_Check(sdss_urls, dr12_pri)
+        sdss_urls_pri = filter_sdss_urls_for_primary_frames(sdss_urls, dr12_pri)
 
         # Return the list of URLS
         return sdss_urls_pri
@@ -1392,14 +1418,14 @@ def get_galex_observations_table():
 
 # -----------------------------------------------------------------
 
-def SDSS_Primary_Check(urls, index):
+def filter_sdss_urls_for_primary_frames(urls, index):
 
     urls_pri = []
     for url in urls:
         run = url.split('/')[9].lstrip('0')
         camcol = url.split('/')[10].lstrip('0')
         field = url.split('/')[11].split('.')[0].split('-')[4].lstrip('0')
-        check_string = run+' '+camcol+' '+field
+        check_string = run + ' ' + camcol + ' ' + field
         if check_string in index:
             urls_pri.append(url)
     return urls_pri
