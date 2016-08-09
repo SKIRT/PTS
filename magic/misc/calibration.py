@@ -19,12 +19,18 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       "UVOT UVW2": "2.18%",
                       "UVOT UVM2": "0.63%",
                       "UVOT UVW1": "3.09%",
-                      "SDSS u": "2%",
-                      "SDSS g": "2%", # maybe less for DR12? (1%) http://www.sdss.org/dr12/algorithms/fluxcal/
-                      "SDSS r": "2%", # maybe less for DR12? (1%)
+                      #"SDSS u": "2%",
+                      #"SDSS g": "2%", # maybe less for DR12? (1%) http://www.sdss.org/dr12/algorithms/fluxcal/
+                      #"SDSS r": "2%", # maybe less for DR12? (1%)
                       "Mosaic Halpha": "5%",
-                      "SDSS i": "2%", # maybe less for DR12? (1%)
-                      "SDSS z": "2%", # maybe less for DR12? (1%)
+                      #"SDSS i": "2%", # maybe less for DR12? (1%)
+                      #"SDSS z": "2%", # maybe less for DR12? (1%)
+                      # SDSS:
+                      "SDSS u": "1.3%", # source: http://www.sdss.org/dr12/scope/
+                      "SDSS g": "0.8%", # source: http://www.sdss.org/dr12/scope/
+                      "SDSS r": "0.8%", # source: http://www.sdss.org/dr12/scope/
+                      "SDSS i": "0.7%", # source: http://www.sdss.org/dr12/scope/
+                      "SDSS z": "0.8%", # source: http://www.sdss.org/dr12/scope/
                       "2MASS J": "0.03 mag",
                       "2MASS H": "0.03 mag",
                       "2MASS Ks": "0.03 mag",

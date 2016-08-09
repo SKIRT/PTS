@@ -629,11 +629,120 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
+        # FROM DR7 page: (http://classic.sdss.org/dr7/algorithms/fluxcal.html#counts2mag)
+
+        # Computing errors on counts (converting counts to photo-electrons)
+        # The fpC (corrected frames) and fpObjc (object tables with counts for each object instead of magnitudes)
+        # files report counts (or "data numbers", DN). However, it is the number of photo-electrons which is really
+        # counted by the CCD detectors and which therefore obeys Poisson statistics. The number of photo-electrons
+        # is related to the number of counts through the gain (which is really an inverse gain):
+        #
+        #      photo-electrons = counts * gain
+        #
+        # The gain is reported in the headers of the tsField and fpAtlas files (and hence also in the field table in
+        # the CAS). The total noise contributed by dark current and read noise (in units of DN2) is also reported in
+        # the tsField files in header keyword dark_variance (and correspondingly as darkVariance in the field table in
+        # the CAS), and also as dark_var in the fpAtlas header.
+        #
+        # Thus, the error in DN is given by the following expression:
+        #
+        #      error(counts) = sqrt([counts+sky]/gain + Npix*(dark_variance+skyErr)),
+        #
+        # where counts is the number of object counts, sky is the number of sky counts summed over the same area as
+        # the object counts, Npix is the area covered by the object in pixels, gain and dark_variance and skyErr are
+        # the gain, dark variance, and the error on the estimate of the average sky level in the frame, respectively,
+        # from the corresponding tsField file.
+
+        ####
+        # BUT: Note: fpC files are no longer produced as of DR8. Instead, equivalent data is stored in frame files.
+        # (https://data.sdss.org/datamodel/files/PHOTO_REDUX/RERUN/RUN/objcs/CAMCOL/fpC.html)
+        ###
+
+        # EXPLANATION OF (POISSON) NOISE CALCULATION FROM DR8 ONWARDS !!!:
+
+        # on DATA MODEL page for 'frame': https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/frames/RERUN/RUN/CAMCOL/frame.html
+        #
+        # Frame = The calibrated, sky-subtracted corrected frame plus associated calibration meta-data.
+        # The units of the images are in nanomaggies. It is kept compressed under "bzip2", which we have found is
+        # the most efficient compressor of this format. In addition, there is a lossy compression applied to the
+        # floating point values (which retains accuracy at the 0.1 percent level). The IDL routine "read_frame.pro"
+        # in photoop will back out the calibration and sky-subtraction from this file if necessary, in steps explained
+        #  below. Also explained below is how to calculate the noise in the image.
+        #
+
+        # HDU0: the corrected frame, what is normally in the "fpC" files
+        #
+        #  The "image", a 2048x1489 array of floating point values, the calibrated and sky-subtracted version
+        #  of the fpC "corrected frame" files produced by photo. Units are in nanomaggies.
+        #
+        # HDU1: the flat-field and calibration vector
+        #
+        #  The "calibvec", a 2048-element array of "float32" values, encompassing the flat-field correction to
+        #  apply, multiplied by the calibration. Translates the counts in the original image into nanomaggies.
+        #
+        # HDU2: the sky image
+        #
+        #
+
+        # ;; 0. find filename of the frame file
+        # framename = (sdss_name('frame', run, camcol, field, $
+        #               filter=filternum(filter), rerun=rerun))[0]+'.bz2'
+        #
+        # ;; 1. read in the FITS image from HDU0; the resulting image will be
+        # ;;    sky-subtracted as well as calibrated in nanomaggies/pixel
+        # img = mrdfits(framename,0,hdr)
+        # nrowc= (size(img,/dim))[1]
+        #
+        # ;; 2. read in sky, and interpolate to full image size; this returns a
+        #;;    sky image the same size as the frame image, in units of counts
+        # sky = mrdfits(framename,2)
+        # simg = interpolate(sky.allsky, sky.xinterp, sky.yinterp, /grid)
+        #
+        # ;; 3. read in calibration, and expand to full image size; this returns
+        # ;;    a calibration image the same size as the frame image, in units of
+        # ;;    nanomaggies per count
+        # calib= mrdfits(framename,1)
+        # cimg= calib#replicate(1.,nrowc)
+        #
+
+        # DATA MODEL DIRECTORIES: https://data.sdss.org/datamodel/files/
+
+        #   BOSS_PHOTOOBJ  https://data.sdss.org/sas/dr13/eboss/photoObj
+        #   PHOTO_CALIB    https://data.sdss.org/sas/dr13/eboss/calib/dr13_final
+        #   PHOTO_SKY      https://data.sdss.org/sas/dr13/eboss/photo/sky
+
+        # DATA MODEL: frame : https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/frames/RERUN/RUN/CAMCOL/frame.html  (DR13?)
+
+        # DATA MODEL: photoField table (GAIN AND DARKVARIANCE) : https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/RERUN/RUN/photoField.html  (DR13?)
+
+        # SKY FRAMES: https://data.sdss.org/datamodel/files/PHOTO_SKY/RERUN/RUN/sky/skyframes.html
+
+        #
+
+        # MAKING SQL QUERY: http://skyserver.sdss.org/dr12/en/help/docs/realquery.aspx
+
+        # SDSS SOFTWARE UTILS: http://www.sdss.org/dr13/software/products/
+
+        # PHOTOOP IDL PACKAGE LATEST VERSION: https://svn.sdss.org/public/repo/sdss/photoop/tags/v1_9_9/
+        # svn export https://svn.sdss.org/public/repo/sdss/photoop/tags/v1_9_9/ photoop
+
+        # IDLUTILS IDL PACKAGE LATEST VERSION: https://svn.sdss.org/public/repo/sdss/idlutils/tags/v5_5_9/
+        # svn export https://svn.sdss.org/public/repo/sdss/idlutils/tags/v5_5_9/ idlutils
+
+        ##
+        # PyIDL installation: https://pypi.python.org/pypi/pyIDL/
+
+        ###
+
         # Inform the user
         log.info("Making SDSS mosaic and map of relative poisson errors ...")
 
         # Make rebinned frames in counts (and footprints)
-        self.make_sdss_rebinned_frames_in_counts(galaxy_name, band, output_path)
+        #self.make_sdss_rebinned_frames_in_counts(galaxy_name, band, output_path)
+
+        self.make_sdss_frames_in_counts(galaxy_name, band, output_path)
+
+        exit()
 
         # Initialize a list to contain the frames to be summed
         ab_frames = []
@@ -678,6 +787,66 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
+    ## NEW
+    def make_sdss_frames_in_counts(self, galaxy_name, band, output_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :param output_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making SDSS frames in counts for " + galaxy_name + " for SDSS " + band + " band ...")
+
+        # Determine the path to the temporary directory for downloading the images
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_primary_fields_" + galaxy_name + "_" + band))
+
+        # Create the temporary directory
+        fs.create_directory(temp_path)
+
+        # Download the FITS files to be used for mosaicing
+        self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_path)
+
+        ## CONVERT THE IMAGES TO COUNT (DECALIBRATE)
+
+        log.warning("The frames now have to be converted to counts (DN) manually!")
+
+        log.warning("Execute the following IDL commands to convert a frame:")
+
+        # 1. read in the FITS image from HDU0; the resulting image will be
+        # sky-subtracted as well as calibrated in nanomaggies/pixel
+        log.info("IDL > img= mrdfits(framename,0,hdr)")
+        log.info("IDL > nrowc= (size(img,/dim))[1]")
+        log.info("")
+
+        # 2. read in sky, and interpolate to full image size; this returns a
+        # sky image the same size as the frame image, in units of counts
+        log.info("IDL > sky= mrdfits(framename,2)")
+        log.info("IDL > simg= interpolate(sky.allsky, sky.xinterp, sky.yinterp, /grid)")
+        log.info("")
+
+        # 3. read in calibration, and expand to full image size; this returns
+        # a calibration image the same size as the frame image, in units of
+        # nanomaggies per count
+        log.info("IDL > calib= mrdfits(framename,1)")
+        log.info("IDL > cimg= calib#replicate(1.,nrowc)")
+        log.info("")
+
+        ##
+
+        # If you have performed the above calculations, you can return the image to very close to the state it
+        # was in when input into the photometric pipeline, as follows:
+
+        log.info("IDL > dn= img/cimg+simg")
+        log.info("")
+
+        log.warning("Then save the DN image as a FITS file!")
+
+    # -----------------------------------------------------------------
+
     def make_sdss_rebinned_frames_in_counts(self, galaxy_name, band, output_path):
 
         """
@@ -699,6 +868,8 @@ class DustPediaDataProcessing(object):
 
         # Download the FITS files to be used for mosaicing
         self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_path)
+
+        # ----
 
         # Get the target header
         header = self.get_header_for_galaxy(galaxy_name, "SDSS")
@@ -765,7 +936,7 @@ class DustPediaDataProcessing(object):
             image.save(new_path)
 
         # Remove the temporary directory
-        fs.remove_directory(temp_path)
+        #fs.remove_directory(temp_path)
 
     # -----------------------------------------------------------------
 
@@ -934,8 +1105,12 @@ class DustPediaDataProcessing(object):
         # Debugging
         log.debug("Number of primary fields that will be downloaded: " + str(len(urls)))
 
+        ## NEW: USE DR13 INSTEAD OF DR10  (BETTER CALIBRATION?)
+        new_urls = [url.replace("dr10/boss", "dr13/eboss") for url in urls]
+        ###
+
         # Download the files
-        paths = network.download_files(urls, path)
+        paths = network.download_files(new_urls, path)
 
         # Debugging
         log.debug("Decompressing the files ...")

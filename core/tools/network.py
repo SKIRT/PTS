@@ -15,8 +15,27 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from subprocess import call, check_output
 import urllib
+import httplib
 from . import filesystem as fs
 from .logging import log
+
+# -----------------------------------------------------------------
+
+def exists(url):
+
+    """
+    This function ...
+    :param url:
+    :return:
+    """
+
+    from urlparse import urlparse
+
+    p = urlparse(url)
+    conn = httplib.HTTPConnection(p.netloc)
+    conn.request('HEAD', p.path)
+    resp = conn.getresponse()
+    return resp.status < 400
 
 # -----------------------------------------------------------------
 
