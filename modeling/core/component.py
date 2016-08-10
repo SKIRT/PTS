@@ -36,6 +36,7 @@ from ...magic.tools import catalogs
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.mask import Mask
 from ...core.tools.logging import log
+from ...core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
@@ -92,9 +93,8 @@ class ModelingComponent(Configurable):
         self.observed_sed_path = None
         self.observed_sed_dustpedia_path = None
 
-        # The path to the free parameter file and the fitting filters file
-        self.free_parameters_path = None
-        self.fitting_filters_path = None
+        # The path to the fitting configuration file
+        self.fitting_configuration_path = None
 
         # The path to the maps
         self.old_stellar_map_path = None
@@ -194,9 +194,8 @@ class ModelingComponent(Configurable):
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
 
-        # Set the path to the free parameter file and the fitting filters file
-        self.free_parameters_path = fs.join(self.fit_path, "free_parameters.txt")
-        self.fitting_filters_path = fs.join(self.fit_path, "fitting_filters.txt")
+        # Set the path to the fitting configuration file
+        self.fitting_configuration_path = fs.join(self.fit_path, "configuration.cfg")
 
         # Set the paths to the input maps
         self.old_stellar_map_path = fs.join(self.maps_path, "old_stars.fits")
@@ -333,6 +332,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def fitting_configuration(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Configuration.from_file(self.fitting_configuration_path) if fs.is_file(self.fitting_configuration_path) else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def fitting_filter_names(self):
 
         """
@@ -340,7 +351,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return list(np.loadtxt(self.fitting_filters_path, dtype=str))
+        return self.fitting_configuration.filters if self.fitting_configuration is not None else None
 
     # -----------------------------------------------------------------
 
@@ -352,7 +363,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return get_free_parameter_labels(self.free_parameters_path)
+        return self.fitting_configuration.free_parameters if self.fitting_configuration is not None else None
 
     # -----------------------------------------------------------------
 
@@ -846,17 +857,5 @@ class ModelingComponent(Configurable):
 
         # Return the SED
         return sed
-
-# -----------------------------------------------------------------
-
-def get_free_parameter_labels(table_path):
-
-    """
-    This function ...
-    :param table_path:
-    :return:
-    """
-
-    return dict(np.genfromtxt(table_path, delimiter=" | ", dtype=str)) if fs.is_file(table_path) else None
 
 # -----------------------------------------------------------------

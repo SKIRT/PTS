@@ -142,7 +142,7 @@ def real_range(argument):
     :return:
     """
 
-    min_value, max_value = real_tuple(argument)
+    min_value, max_value = real_tuple(argument.replace(":", ","))
     return RealRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -155,7 +155,7 @@ def integer_range(argument):
     :return:
     """
 
-    min_value, max_value = integer_tuple(argument)
+    min_value, max_value = integer_tuple(argument.replace(":", ","))
     return IntegerRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -168,7 +168,7 @@ def quantity_range(argument):
     :return:
     """
 
-    min_quantity, max_quantity = quantity_tuple(argument)
+    min_quantity, max_quantity = quantity_tuple(argument.replace(":", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------
@@ -294,13 +294,12 @@ def duration(argument):
 
 # -----------------------------------------------------------------
 
-def integer_list(string, name="ids"):
+def integer_list(string):
 
     """
     A list of integer values, based on a string denoting a certain range (e.g. '3-9') or a
     set of integer values seperated by commas ('2,14,20')
     :param string:
-    :param name:
     :return:
     """
 

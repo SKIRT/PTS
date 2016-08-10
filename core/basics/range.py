@@ -105,7 +105,7 @@ class Range(object):
         :return:
         """
 
-        return "(" + str(self.min) + "," + str(self.max) + ")"
+        return str(self.min) + ":" + str(self.max) + ")"
 
     # -----------------------------------------------------------------
 
@@ -116,7 +116,7 @@ class Range(object):
         :return:
         """
 
-        return "Range(" + str(self.min) + ": " + str(self.max) + ")"
+        return repr(self.min) + ": " + repr(self.max)
 
 # -----------------------------------------------------------------
 

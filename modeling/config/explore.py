@@ -29,9 +29,9 @@ definition.add_positional_optional("generation_method", "string", "the model gen
 # Optional parameters
 definition.add_optional("remote", "string", "the remote host on which to run the parameters exploration", "nancy")
 definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
-definition.add_optional("young", "real_range", "the range of the FUV luminosity of the young stellar population", (0.0, 4.e16))
-definition.add_optional("ionizing", "real_range", "the range of the FUV luminosity of the ionizing stellar population", (0.0, 5.e10))
-definition.add_optional("dust", "quantity_range", "the range of the dust mass", (0.5e7, 3.e7))
+definition.add_optional("young", "real_range", "the range of the FUV luminosity of the young stellar population", "0.0:4.e16", convert_default=True)
+definition.add_optional("ionizing", "real_range", "the range of the FUV luminosity of the ionizing stellar population", "0.0:5.e10", convert_default=True)
+definition.add_optional("dust", "quantity_range", "the range of the dust mass", "0.5e7:3.e7", convert_default=True)
 
 # Flags
 definition.add_flag("relative", "whether the range values are relative to the best (or initial) parameter value")

@@ -21,16 +21,14 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
-from ...core.tools import parsing
 from .generations import GenerationsTable
-from ..config.parameters import definition, descriptions, types_and_ranges
-from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ..config.parameters import descriptions, types_and_ranges
+from ..config.parameters import definition as parameters_definition
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
 
 # -----------------------------------------------------------------
 
 template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
-labels_description_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labels_description.dat")
-labels_types_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labels_types.dat")
 
 # -----------------------------------------------------------------
 
@@ -56,20 +54,13 @@ class FittingConfigurer(FittingComponent):
         # The ski file template
         self.ski = None
 
-        # The names of the free parameters
-        self.parameters = []
+        # The individual configurations
+        self.parameters_config = None
+        self.ranges_config = None
+        self.filters_config = None
 
-        # The descriptions for the free parameters
-        self.descriptions = dict()
-
-        # The types for the free parameters
-        self.types = dict()
-
-        # The specified ranges for the free parameters
-        self.ranges = dict()
-
-        # The names of the filter names
-        self.filter_names = []
+        # The final fitting config
+        self.fitting_config = None
 
     # -----------------------------------------------------------------
 
@@ -129,7 +120,7 @@ class FittingConfigurer(FittingComponent):
         #self.load_descriptions()
 
         # Load the parameter types
-        self.load_types()
+        #self.load_types()
 
     # -----------------------------------------------------------------
 
@@ -186,22 +177,13 @@ class FittingConfigurer(FittingComponent):
         """
 
         # Get all the labels
-        labels = self.ski.labels()
-
-        # Get the choices
-        #indices = get_choices(labels, "free parameters", self.descriptions)
+        #labels = self.ski.labels()
 
         # Create configuration setter
         setter = InteractiveConfigurationSetter("free parameters", add_logging=False, add_cwd=False)
 
         # Create config
-        config = setter.run(definition, prompt_optional=False)
-
-        # Set parameter labels
-        for label in config.free_parameters: self.parameters.append(label)
-
-        # Set the chosen free parameters
-        #for index in indices: self.parameters.append(labels[index])
+        self.parameters_config = setter.run(parameters_definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
@@ -216,19 +198,14 @@ class FittingConfigurer(FittingComponent):
         definition = ConfigurationDefinition(write_config=False)
 
         # Add the options
-        for label in self.parameters:
+        for label in self.parameters_config.free_parameters:
             definition.add_optional(label + "_range", types_and_ranges[label][0] + "_range", "range of the " + descriptions[label], default=types_and_ranges[label][1], convert_default=True)
 
         # Create configuration setter
         setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)
 
         # Create config, get the range for each chosen free parameter
-        config = setter.run(definition, prompt_optional=False)
-
-        # Set the ranges
-        for label in self.parameters:
-            range_label = label + "_range"
-            self.ranges[label] = config[range_label]
+        self.ranges_config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
@@ -239,14 +216,17 @@ class FittingConfigurer(FittingComponent):
         :return:
         """
 
-        # Get all the possible filter names
-        filter_names = self.observed_filter_names
+        # Create the configuration
+        definition = ConfigurationDefinition(write_config=False)
 
-        # Get the choices
-        indices = get_choices(filter_names, "filters")
+        # Choose from all the possible filter names
+        definition.add_required("filters", "string_list", "the filters for which to use the observed flux as reference for the fitting procedure", choices=self.observed_filter_names)
 
-        # Set the chosen filter names
-        for index in indices: self.filter_names.append(filter_names[index])
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
+
+        # Create config, get the filter choices
+        self.filters_config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
@@ -264,7 +244,7 @@ class FittingConfigurer(FittingComponent):
         for label in self.ski.labels():
 
             # If the label is in the list of free parameter labels, skip (don't remove)
-            if label in self.parameters: continue
+            if label in self.parameters_config.free_parameters: continue
 
             # Otherwise, delabel
             self.ski.delabel(label)
@@ -281,11 +261,8 @@ class FittingConfigurer(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the fit parameters
-        self.write_parameters()
-
-        # Write the reference filter names
-        self.write_filter_names()
+        # Write the fitting configuration
+        self.write_config()
 
         # Write the ski file template
         self.write_ski()
@@ -295,7 +272,7 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_parameters(self):
+    def write_config(self):
 
         """
         This function ...
@@ -303,27 +280,13 @@ class FittingConfigurer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the free parameter labels ...")
+        log.info("Writing the fitting configuration file ...")
 
-        # Write
-        with open(self.free_parameters_path, 'w') as f:
-            for label in self.parameters: print(label + " | " + str(self.ranges[label].min) + " | " + str(self.ranges[label].max) + " | " + self.descriptions[label], file=f)
+        # Combine configs
+        self.fitting_config = combine_configs(self.parameters_config, self.ranges_config, self.filters_config)
 
-    # -----------------------------------------------------------------
-
-    def write_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the fitting filter names ...")
-
-        # Write
-        with open(self.fitting_filters_path, 'w') as f:
-            for name in self.filter_names: print(name, file=f)
+        # Write the configuration
+        self.fitting_config.save(self.fitting_configuration_path)
 
     # -----------------------------------------------------------------
 
@@ -347,36 +310,28 @@ class FittingConfigurer(FittingComponent):
         """
 
         # Initialize the generations table
-        generations_table = GenerationsTable.initialize(self.parameters)
+        generations_table = GenerationsTable.initialize(self.parameters_config.free_parameters)
 
         # Save the generations table
         generations_table.saveto(self.generations_table_path)
 
 # -----------------------------------------------------------------
 
-def get_choices(options, feature, descriptions=None):
+def combine_configs(*args):
 
     """
     This function ...
-    :param options:
-    :param feature:
-    :param descriptions:
+    :param args:
     :return:
     """
 
-    log.info("Possible " + feature + ":")
-    for index, label in enumerate(options):
-        description = "  " + descriptions[label] if descriptions is not None else ""
-        log.info(" - [" + str(index) + "] " + label + description)
-    log.info("")
+    # Initialize a new configuration
+    config = Configuration()
 
-    log.info("Give the numbers of the " + feature + " that should be used for the fitting:")
+    for cfg in args:
+        for label in cfg: config[label] = cfg[label]
 
-    # Get the numbers
-    answer = raw_input("   : ")
-    indices = parsing.integer_list(answer)
-
-    # Return the chosen indices
-    return indices
+    # Return the resulting configuration
+    return config
 
 # -----------------------------------------------------------------
