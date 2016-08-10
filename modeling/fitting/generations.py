@@ -112,45 +112,15 @@ class GenerationsTable(SmartTable):
 
         values = [name, index, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption]
 
+        # Add the boundaries (min, max) of the parameter ranges as seperate column values
         for name in self.parameter_names:
-
             values.append(ranges[name].min)
             values.append(ranges[name].max)
 
         # Resize string columns for the new values
         self._resize_string_columns(values)
 
-        # Add row
+        # Add a row to the table
         self.add_row(values)
-
-    # -----------------------------------------------------------------
-
-    def save(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.path is None: raise RuntimeError("Path has not been set yet")
-
-        # Save to the current path
-        self.saveto(self.path)
-
-    # -----------------------------------------------------------------
-
-    def saveto(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Write the table in ECSV format
-        self.write(path, format="ascii.ecsv")
-
-        # Set the path
-        self.path = path
 
 # -----------------------------------------------------------------

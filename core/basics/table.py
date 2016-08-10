@@ -7,6 +7,11 @@
 
 ## \package pts.core.basics.table Contains the SmartTable class.
 
+# -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
 # Import astronomical modules
 from astropy.table import Table
 
@@ -47,5 +52,35 @@ class SmartTable(Table):
 
             current_resized = self[colname].astype("S" + str(new_sizes[colname]))
             self.replace_column(colname, current_resized)
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.path is None: raise RuntimeError("Path has not been set yet")
+
+        # Save to the current path
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Write the table in ECSV format
+        self.write(path, format="ascii.ecsv")
+
+        # Set the path
+        self.path = path
 
 # -----------------------------------------------------------------
