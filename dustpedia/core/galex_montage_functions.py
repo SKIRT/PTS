@@ -631,7 +631,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         # Initialize a list to contain the frames to be summed
         a_frames = [] # the rebinned maps in counts
         ab_frames = []
-        #b_frames = []
         weight_frames = []
 
         # Loop over the files in the temp poisson rebin directory
@@ -654,7 +653,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             ab = a * b
             a_frames.append(a)
             ab_frames.append(ab)
-            #b_frames.append(b)
 
             # Calculate weight frame
             weight_frame = b * math.sqrt(exposure_times[name])
@@ -665,7 +663,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
         # Take the sums
         ab_sum = sum_frames(*ab_frames)
-        #b_sum = sum_frames(*b_frames)
 
         # AB SUM SHOULD ACTUALLY BE THE SAME AS A SUM
         a_sum = sum_frames(*a_frames) # SUM ALL THE COUNT MAPS

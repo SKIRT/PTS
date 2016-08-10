@@ -876,6 +876,9 @@ class DustPediaDataProcessing(object):
             field_url = field_url_start + "/" + rerun_run + "/photoField-" + digits + "-" + camcol + ".fits"
             field_urls.append(field_url)
 
+        # Remove duplicates (one field table contains the info for all 5 SDSS bands!)
+        field_urls = list(set(field_urls))
+
         # DOWNLOAD THE FIELD FITS FILES
 
         # Debugging
@@ -893,21 +896,21 @@ class DustPediaDataProcessing(object):
 
         # 1. read in the FITS image from HDU0; the resulting image will be
         # sky-subtracted as well as calibrated in nanomaggies/pixel
-        log.info("IDL > img= mrdfits(framename,0,hdr)")
-        log.info("IDL > nrowc= (size(img,/dim))[1]")
+        log.info("IDL> img= mrdfits(framename,0,hdr)")
+        log.info("IDL> nrowc= (size(img,/dim))[1]")
         log.info("")
 
         # 2. read in sky, and interpolate to full image size; this returns a
         # sky image the same size as the frame image, in units of counts
-        log.info("IDL > sky= mrdfits(framename,2)")
-        log.info("IDL > simg= interpolate(sky.allsky, sky.xinterp, sky.yinterp, /grid)")
+        log.info("IDL> sky= mrdfits(framename,2)")
+        log.info("IDL> simg= interpolate(sky.allsky, sky.xinterp, sky.yinterp, /grid)")
         log.info("")
 
         # 3. read in calibration, and expand to full image size; this returns
         # a calibration image the same size as the frame image, in units of
         # nanomaggies per count
-        log.info("IDL > calib= mrdfits(framename,1)")
-        log.info("IDL > cimg= calib#replicate(1.,nrowc)")
+        log.info("IDL> calib= mrdfits(framename,1)")
+        log.info("IDL> cimg= calib#replicate(1.,nrowc)")
         log.info("")
 
         ##
@@ -915,10 +918,27 @@ class DustPediaDataProcessing(object):
         # If you have performed the above calculations, you can return the image to very close to the state it
         # was in when input into the photometric pipeline, as follows:
 
-        log.info("IDL > dn= img/cimg+simg")
+        # 4. Convert to
+
+        log.info("IDL> dn= img/cimg+simg")
         log.info("")
 
         log.warning("Then save the DN image as a FITS file!")
+
+        log.info("IDL> writefits,'path',dn")
+
+
+        # Loop over the downloaded files
+        for path in paths:
+
+            # Open the HDUList
+            hdulist = open_fits(path)
+
+            # Get calibrated image in nanomaggies/pixel
+            img = hdulist[0]
+
+            # Get
+
 
     # -----------------------------------------------------------------
 
