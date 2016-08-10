@@ -886,10 +886,10 @@ class Frame(NDDataArray):
 
         # Replace the data and WCS
         self._data = new_data
-        self._wcs = reference_wcs
+        self._wcs = reference_wcs.copy()
 
         # Return the footprint
-        return Frame(footprint)
+        return Frame(footprint, wcs=reference_wcs.copy())
 
     # -----------------------------------------------------------------
 

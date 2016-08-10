@@ -37,7 +37,7 @@ from ...core.tools import time
 from ...magic.core.image import Image
 from .galex_montage_functions import mosaic_galex
 from ...core.tools import archive
-from ...magic.core.frame import Frame, sum_frames
+from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.tools.general import split_xyz
 
@@ -791,6 +791,18 @@ class DustPediaDataProcessing(object):
         rebinned_path = fs.join(temp_path, "rebinned") # images with frame and corresponding error map in NANOMAGGIES, REBINNED
         fs.create_directory(rebinned_path)
 
+        # FOOTPRINTS PATH
+        footprints_path = fs.join(temp_path, "footprints")
+        fs.create_directory(footprints_path)
+
+        # MOSAIC PATH
+        mosaics_path = fs.join(temp_path, "mosaics")
+        fs.create_directory(mosaics_path)
+
+        # RESULT PATH
+        results_path = fs.join(temp_path, "results")
+        fs.create_directory(results_path)
+
         ###
 
         # GET AND DECALIBRATE FRAMES
@@ -854,8 +866,6 @@ class DustPediaDataProcessing(object):
             replicate = np.ones(nrowc)
             cimg = np.outer(replicate, calib)
 
-
-
             # IMAGE ERROR MAP IN NANOMAGGIES PER PIXEL
             img_error = dn_error * cimg
             error_map = Frame(img_error)
@@ -873,6 +883,30 @@ class DustPediaDataProcessing(object):
         # To coordinate system
         rebin_wcs = CoordinateSystem(header)
 
+        # DO REBINNING, CREATE IMAGES WITH REBINNED PRIMARY AND ERROR FRAME IN NANOMAGGIES PER PIXEL, AND FOOTPRINT FILES
+        self.rebin_sdss_frames_and_error_maps(rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path)
+
+        # DO THE COMBINING
+        # rebinned_path, footprints_path, mosaics_path, wcs
+        self.combine_sdss_frames_and_error_maps(rebinned_path, footprints_path, mosaics_path, rebin_wcs)
+
+        # CONVERT TO JY/PIX
+        self.convert_sdss_mosaic_and_error_map_to_jansky(galaxy_name, band, mosaics_path, results_path)
+
+    # -----------------------------------------------------------------
+
+    def rebin_sdss_frames_and_error_maps(self, rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path):
+
+        """
+        This function ...
+        :param rebin_wcs:
+        :param raw_path:
+        :param poisson_path:
+        :param rebinned_path:
+        :param footprints_path
+        :return:
+        """
+
         # Inform the user
         log.info("Rebinning primary SDSS frames and corresponding error maps to the target coordinate system ...")
 
@@ -880,7 +914,7 @@ class DustPediaDataProcessing(object):
         for path, name in fs.files_in_path(raw_path, extension="fits", returns=["path", "name"]):
 
             # Open the frame IN NANOMAGGIES PER PIXEL
-            frame = Frame.from_file(path) # HDU 0 is used
+            frame = Frame.from_file(path)  # HDU 0 is used
 
             # Open the corresponding error map IN NANOMAGGIES PER PIXEL
             error_path = fs.join(poisson_path, name + ".fits")
@@ -893,16 +927,16 @@ class DustPediaDataProcessing(object):
             pixelsr = frame.pixelarea.to("sr").value
 
             # CONVERT FRAME
-            frame /= pixelsr # IN NANOMAGGIES PER SR NOW
+            frame /= pixelsr  # IN NANOMAGGIES PER SR NOW
 
             # CONVERT ERROR MAP
-            errormap /= pixelsr # IN NANOMAGGIES PER SR NOW
+            errormap /= pixelsr  # IN NANOMAGGIES PER SR NOW
 
             # Debugging
             log.debug("Rebinning " + name + " frame and error map to the target coordinate system ...")
 
             # Rebin the frame
-            frame.rebin(rebin_wcs, exact=False)
+            footprint = frame.rebin(rebin_wcs, exact=False)
 
             # REBIN THE ERROR MAP
             errormap.rebin(rebin_wcs, exact=False)
@@ -928,6 +962,130 @@ class DustPediaDataProcessing(object):
             # Determine path for the image
             image_path = fs.join(rebinned_path, name + ".fits")
             image.save(image_path)
+
+            # SAVE THE FOOTPRINT
+            footprint_path = fs.join(footprints_path, name + ".fits")
+            footprint.save(footprint_path)
+
+    # -----------------------------------------------------------------
+
+    def combine_sdss_frames_and_error_maps(self, rebinned_path, footprints_path, mosaics_path, wcs):
+
+        """
+        This function ...
+        :param rebinned_path:
+        :param footprints_path:
+        :param mosaics_path:
+        :param wcs:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Combining the frames and error maps of the different SDSS fields ...")
+
+        # MOSAIC[x,y](nanoMaggy) = SUM_i^n_overlapping_frames[x,y] ( d[x,y]_i ) / n_overlapping_frames[x,y]
+
+        # where n_overlapping_frames[x,y] = SUM_i^m ( footprint[x,y]_i )
+
+        # where m = the total number of fields
+
+        # BUT BECAUSE d[x,y]_i = 0 for field that doesn't overlap in pixel [x,y], we can replace the sum from i=0 to n_overlapping_frames[x,y]
+        # to a sum over ALL FIELDS; the contribution of the other fields will just be zero
+
+        primary_frames = []
+        error_frames = []
+        n_overlapping_frames = []
+
+        # Loop over the images in the 'rebinned' directory
+        for path, name in fs.files_in_path(rebinned_path, extension="fits", returns=["path", "name"]):
+
+            # Determine the path to the footprint
+            footprint_path = fs.join(footprints_path, name + ".fits")
+
+            # Open the footprint
+            footprint = Frame.from_file(footprint_path)
+
+            # Open the image
+            image = Image.from_file(path)
+
+            # Get the a and b frame
+            a = image.frames.primary    # IN NANOMAGGIES PER PIXEL
+            b = image.frames.noise      # IN NANOMAGGIES PER PIXEL
+
+            # SET NANS TO ZERO
+            a.replace_nans(0.0)
+            b.replace_nans(0.0)
+
+            # Add to the list
+            primary_frames.append(a)
+            error_frames.append(b)
+            n_overlapping_frames.append(footprint)
+
+        # Calculate n_overlapping_frames array
+        n_overlapping = sum_frames(*n_overlapping_frames) # = n_overlapping_frames[x,y] = 2D ARRAY !
+
+        # CALCULATE THE MOSAIC FRAME IN NANOMAGGIES
+        mosaic_frame = sum_frames(*primary_frames) / n_overlapping
+        mosaic_frame.wcs = wcs
+
+        # CALCULATE THE MOSAIC ERROR MAP IN NANOMAGGIES
+        mosaic_errormap = sum_frames_quadratically(*error_frames) / n_overlapping
+        mosaic_errormap.wcs = wcs
+
+        # SAVE THE MOSAIC IN NANOMAGGIES
+        mosaic_path = fs.join(mosaics_path, "mosaic.fits")
+        mosaic_frame.save(mosaic_path)
+
+        # SAVE THE MOSAIC ERROR MAP IN NANOMAGGIES
+        mosaic_error_path = fs.join(mosaics_path, "mosaic_errors.fits")
+        mosaic_errormap.save(mosaic_error_path)
+
+    # -----------------------------------------------------------------
+
+    def convert_sdss_mosaic_and_error_map_to_jansky(self, galaxy_name, band, mosaics_path, results_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :param mosaics_path:
+        :param results_path:
+        :return:
+        """
+
+        # DETERMINE ID STRING TO SAVE THE RESULT
+        id_string = galaxy_name + '_SDSS_' + band
+
+        # Inform the user
+        log.info("Converting the SDSS mosaic and error map to Jansky per pixel ...")
+
+        # 1 nanomaggy = approximately 3.613e-6 Jy
+
+        # Open the mosaic
+        mosaic_path = fs.join(mosaics_path, "mosaic.fits")
+        mosaic = Frame.from_file(mosaic_path)
+
+        # Open the mosaic error map
+        mosaic_error_path = fs.join(mosaics_path, "mosaic_errors.fits")
+        mosaic_errors = Frame.from_file(mosaic_error_path)
+
+        # DO THE CONVERSION FOR THE MOSAIC, SET NEW UNIT
+        mosaic *= 3.613e-6
+        mosaic.unit = "Jy / pix"
+
+        # DO THE CONVERSION FOR THE MOSAIC ERROR MAP, SET NEW UNIT
+        mosaic_errors *= 3.613e-6
+        mosaic_errors.unit = "Jy / pix"
+
+
+        # CREATE IMAGE
+        image = Image()
+        image.add_frame(mosaic, "primary")
+        image.add_frame(mosaic_errors, "errors")
+
+        # SAVE THE MOSAIC IMAGE (with error map) IN JANSKY
+        result_path = fs.join(results_path, id_string + ".fits")
+        image.save(result_path)
 
     # -----------------------------------------------------------------
 
