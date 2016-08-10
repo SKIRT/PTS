@@ -23,6 +23,8 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
 from ...core.tools import parsing
 from .generations import GenerationsTable
+from ..config.parameters import definition
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -124,7 +126,7 @@ class FittingConfigurer(FittingComponent):
         self.load_template()
 
         # Load the parameter descriptions
-        self.load_descriptions()
+        #self.load_descriptions()
 
         # Load the parameter types
         self.load_types()
@@ -187,10 +189,19 @@ class FittingConfigurer(FittingComponent):
         labels = self.ski.labels()
 
         # Get the choices
-        indices = get_choices(labels, "free parameters", self.descriptions)
+        #indices = get_choices(labels, "free parameters", self.descriptions)
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("free parameters", add_logging=False, add_cwd=False)
+
+        # Create config
+        config = setter.run(definition, prompt_optional=False)
+
+        # Set parameter labels
+        for label in config.free_parameters: self.parameters.append(label)
 
         # Set the chosen free parameters
-        for index in indices: self.parameters.append(labels[index])
+        #for index in indices: self.parameters.append(labels[index])
 
     # -----------------------------------------------------------------
 

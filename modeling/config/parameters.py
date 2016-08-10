@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+# Import the relevant PTS classes and modules
+from pts.core.basics.configuration import ConfigurationDefinition
+
+# -----------------------------------------------------------------
+
+# Choices for free parameters
+choices = ["distance", "ionizing_scaleheight", "sfr_compactness", "fuv_young", "old_scaleheight", "position_angle",
+           "dust_mass", "fuv_ionizing", "metallicity", "young_scaleheight", "sfr_covering", "dust_scaleheight",
+           "i1_old", "sfr_pressure", "inclination"]
+
+# Descriptions of the different parameters
+descriptions = dict()
+descriptions["distance"] = "distance of the galaxy"
+descriptions["ionizing_scaleheight"] = "scale height of the ionizing stellar component"
+descriptions["sfr_compactness"] = "compactness parameter of the star formation regions"
+descriptions["fuv_young"] = "FUV luminosity of the young stellar component"
+descriptions["old_scaleheight"] = "scale height of the old stellar disk component"
+descriptions["position_angle"] = "position angle of the galaxy"
+descriptions["dust_mass"] = "dust mass"
+descriptions["fuv_ionizing"] = "FUV luminosity of the ionizing stellar component"
+descriptions["metallicity"] = "metallicity"
+descriptions["young_scaleheight"] = "scale height of the young stellar component"
+descriptions["sfr_covering"] = "covering factor of the star formation regions"
+descriptions["dust_scaleheight"] = "scale height of the dust component"
+descriptions["i1_old"] = "I1 luminosity of the old stellar component"
+descriptions["sfr_pressure"] = "pressure on the star formation regions"
+descriptions["inclination"] = "inclination of the galactic plane"
+
+# -----------------------------------------------------------------
+
+# Create the configuration
+definition = ConfigurationDefinition(write_config=False)
+
+# Add the required setting of the list of free parameters
+definition.add_required("free_parameters", "string_list", "the parameters to be used as free parameters during the fitting", choices=choices, choice_descriptions=descriptions)
+
+# -----------------------------------------------------------------

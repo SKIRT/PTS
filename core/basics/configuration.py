@@ -494,6 +494,9 @@ class ConfigurationDefinition(object):
             # Add prefix
             if self.prefix is not None: name = self.prefix + "/" + name
 
+            # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
+            if real_type.__name__.endswith("_list"): choices = None
+
             # Add argument to argument parser
             parser.add_argument(name, type=real_type, help=description, choices=choices)
 
@@ -508,6 +511,9 @@ class ConfigurationDefinition(object):
             # Add prefix
             if self.prefix is not None: name = self.prefix + "/" + name
 
+            # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
+            if real_type.__name__.endswith("_list"): choices = None
+
             # Add argument to argument parser
             parser.add_argument(name, type=real_type, help=description, default=default, nargs='?', choices=choices)
 
@@ -519,10 +525,13 @@ class ConfigurationDefinition(object):
             description = self.optional[name][1]
             default = self.optional[name][2]
             choices = self.optional[name][3]
-            letter = self.optional[name][4]
+            letter = self.optional[name][5]
 
             # Add prefix
             if self.prefix is not None: name = self.prefix + "/" + name
+
+            # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
+            if real_type.__name__.endswith("_list"): choices = None
 
             # Add the argument
             if letter is None: parser.add_argument("--" + name, type=real_type, help=description, default=default, choices=choices)
@@ -662,7 +671,7 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, choices=None):
+    def add_required(self, name, user_type, description, choices=None, choice_descriptions=None):
 
         """
         This function ...
@@ -670,6 +679,7 @@ class ConfigurationDefinition(object):
         :param user_type:
         :param description:
         :param choices:
+        :param choice_descriptions:
         :return:
         """
 
@@ -677,11 +687,12 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Add
-        self.required[name] = (real_type, description, choices)
+        self.required[name] = (real_type, description, choices, choice_descriptions)
 
     # -----------------------------------------------------------------
 
-    def add_positional_optional(self, name, user_type, description, default=None, choices=None, convert_default=False):
+    def add_positional_optional(self, name, user_type, description, default=None, choices=None,
+                                choice_descriptions=None, convert_default=False):
 
         """
         This function ...
@@ -690,6 +701,7 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param choices:
+        :param choice_descriptions:
         :param convert_default:
         :return:
         """
@@ -701,11 +713,12 @@ class ConfigurationDefinition(object):
         if convert_default: default = get_real_value(default, real_type)
 
         # Add
-        self.pos_optional[name] = (real_type, description, default, choices)
+        self.pos_optional[name] = (real_type, description, default, choices, choice_descriptions)
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False):
+    def add_optional(self, name, user_type, description, default=None, choices=None, choice_descriptions=None,
+                     letter=None, convert_default=False):
 
         """
         This function ...
@@ -714,6 +727,7 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param choices:
+        :param choice_descriptions:
         :param letter:
         :param convert_default:
         :return:
@@ -728,7 +742,7 @@ class ConfigurationDefinition(object):
         if convert_default: default = get_real_value(default, real_type)
 
         # Add
-        self.optional[name] = (real_type, description, default, choices, letter)
+        self.optional[name] = (real_type, description, default, choices, choice_descriptions, letter)
 
     # -----------------------------------------------------------------
 
@@ -1244,20 +1258,38 @@ def load_definition(configfile, definition):
                 name = before.split("[")[0].strip()
                 specification = before.split("[")[1].split("]")[0].strip().split(", ")
 
-                # value = eval(after)
-                value = after
+                choices_string = None
+                if " #" in after:
+                    value = after.split(" #")[0]
+                    comment_string = after.split("#")[1].strip()
+                    if "choices = " in comment_string:
+                        choices_string = comment_string.split("choices = ")[1]
+                else: value = after
 
                 kind = specification[0]
                 user_type = specification[1] if kind != "flag" else None
 
-                if user_type == "str": user_type = str
-                elif user_type == "int": user_type = int
-                elif user_type == "float": user_type = float
-                elif user_type == "bool": user_type = bool # for fixed flags ...
-                elif user_type == "None": # for fixed things that should be None
+                #if user_type == "str": user_type = str
+                #elif user_type == "int": user_type = int
+                #elif user_type == "float": user_type = float
+                #elif user_type == "bool": user_type = bool # for fixed flags ...
+                #elif user_type == "None": # for fixed things that should be None
+                #    user_type = NoneType
+                #    value = None
 
+                if user_type == "None":
                     user_type = NoneType
                     value = None
+                else: user_type = getattr(parsing, user_type)
+
+
+                # Convert choices to real list of the user_type-'list' type
+                choices = None
+                if choices_string is not None:
+
+                    user_type_list_name = user_type.__name__ + "_list"
+                    user_type_list = getattr(parsing, user_type_list_name)
+                    choices = user_type_list(choices_string)
 
                 if kind == "fixed":
 
@@ -1267,22 +1299,21 @@ def load_definition(configfile, definition):
 
                 elif kind == "required":
 
-                    definition.add_required(name, user_type, description, choices=None)
+                    definition.add_required(name, user_type, description, choices=choices)
 
                 elif kind == "pos_optional":
 
-                    definition.add_positional_optional(name, user_type, description, default=value, choices=None, convert_default=True)
+                    definition.add_positional_optional(name, user_type, description, default=value, choices=choices, convert_default=True)
 
                 elif kind == "optional":
 
-                    definition.add_optional(name, user_type, description, default=value, choices=None, letter=None, convert_default=True)
+                    definition.add_optional(name, user_type, description, default=value, choices=choices, letter=None, convert_default=True)
 
                 elif kind == "flag":
 
                     definition.add_flag(name, description, default=value, letter=None)
 
-                else:
-                    raise ValueError("Invalid kind of argument: " + kind)
+                else: raise ValueError("Invalid kind of argument: " + kind)
 
                 description = None
 
@@ -1336,9 +1367,13 @@ def write_definition(definition, configfile, indent=""):
         real_type = definition.required[name][0]
         description = definition.required[name][1]
         choices = definition.required[name][2]
+        choice_descriptions = definition.required[name][3]
+
+        choices_string = ""
+        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [required, " + str(real_type) + "]: None", file=configfile)
+        print(indent + name + " [required, " + str(real_type) + "]: None" + choices_string, file=configfile)
 
     # Positional optional
     for name in definition.pos_optional:
@@ -1347,9 +1382,13 @@ def write_definition(definition, configfile, indent=""):
         description = definition.pos_optional[name][1]
         default = definition.pos_optional[name][2]
         choices = definition.pos_optional[name][3]
+        choice_descriptions = definition.pos_optional[name][4]
+
+        choices_string = ""
+        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [pos_optional, " + str(real_type) + "]: " + str(default), file=configfile)
+        print(indent + name + " [pos_optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
 
     # Optional
     for name in definition.optional:
@@ -1358,10 +1397,14 @@ def write_definition(definition, configfile, indent=""):
         description = definition.optional[name][1]
         default = definition.optional[name][2]
         choices = definition.optional[name][3]
-        letter = definition.optional[name][4]
+        choice_descriptions = definition.optional[name][4]
+        letter = definition.optional[name][5]
+
+        choices_string = ""
+        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [optional, " + str(real_type) + "]: " + str(default), file=configfile)
+        print(indent + name + " [optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
 
     # Flag
     for name in definition.flags:
@@ -1534,27 +1577,48 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         real_type = definition.required[name][0]
         description = definition.required[name][1]
         choices = definition.required[name][2]
+        choice_descriptions = definition.required[name][3]
 
         # Give name and description
         log.success(name + ": " + description)
 
         if choices is not None:
 
-            log.info("Choose one of the options")
+            if real_type.__name__.endswith("_list"): # list-type setting
 
-            for index, label in enumerate(choices):
-                log.info(" - [" + str(index) + "] " + label)
-            log.info("")
+                log.info("Choose one or more of the following options (separated only by commas)")
 
-            value = None  # to remove warning from IDE that value could be referenced (below) without assignment
-            while True:
-                # Get the number of the choice
-                answer = raw_input("   : ")
-                try:
-                    index = parsing.integer(answer)
-                    value = choices[index]
-                    break
-                except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                for index, label in enumerate(choices):
+                    choice_description = ": " + choice_descriptions[label] if label in choice_descriptions else ""
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = None # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    # Get the numbers of the choice
+                    answer = raw_input("   : ")
+                    try:
+                        indices = parsing.integer_list(answer)
+                        value = [choices[index] for index in indices] # value is a list
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            else:
+
+                log.info("Choose one of the following options")
+
+                for index, label in enumerate(choices):
+                    choice_description = ": " + choice_descriptions[label] if label in choice_descriptions else ""
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = None  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    # Get the number of the choice
+                    answer = raw_input("   : ")
+                    try:
+                        index = parsing.integer(answer)
+                        value = choices[index]
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         else:
 
@@ -1578,6 +1642,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         description = definition.pos_optional[name][1]
         default = definition.pos_optional[name][2]
         choices = definition.pos_optional[name][3]
+        choice_descriptions = definition.pos_optional[name][4]
 
         # Give name and description
         log.success(name + ": " + description)
@@ -1587,25 +1652,49 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
         if choices is not None:
 
-            log.info("or choose one of the options")
+            if real_type.__name__.endswith("_list"):  # list-type setting
 
-            for index, label in enumerate(choices):
-                log.info(" - [" + str(index) + "] " + label)
-            log.info("")
+                log.info("or choose one or more of the following options (separated only by commas)")
 
-            value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-            while True:
-                # Get the number of the choice
-                answer = raw_input("   : ")
-                if answer == "":
-                    value = default
-                    break
-                else:
-                    try:
-                        index = parsing.integer(answer)
-                        value = choices[index]
+                for index, label in enumerate(choices):
+                    choice_description = ": " + choice_descriptions[label] if label in choice_descriptions else ""
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = default # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    # Get the numbers of the choice
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    else:
+                        try:
+                            indices = parsing.integer_list(answer)
+                            value = [choices[index] for index in indices] # value is a list
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            else:
+
+                log.info("or choose one of the following options")
+
+                for index, label in enumerate(choices):
+                    choice_description = ": " + choice_descriptions[label] if label in choice_descriptions else ""
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    # Get the number of the choice
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
+                        break
+                    else:
+                        try:
+                            index = parsing.integer(answer)
+                            value = choices[index]
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         else:
 
@@ -1634,7 +1723,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         description = definition.optional[name][1]
         default = definition.optional[name][2]
         choices = definition.optional[name][3]
-        letter = definition.optional[name][4]
+        choice_descriptions = definition.optional[name][4]
+        letter = definition.optional[name][5]
 
         # Give name and description
         log.success(name + ": " + description)
@@ -1644,26 +1734,51 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
         if choices is not None:
 
-            log.info("or choose one of the options")
+            if real_type.__name__.endswith("_list"):  # list-type setting
 
-            for index, label in enumerate(choices):
-                log.info(" - [" + str(index) + "] " + label)
-            log.info("")
+                log.info("or choose one or more of the following options (separated only by commas)")
 
-            value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-            while True:
+                for index, label in enumerate(choices):
+                    choice_description = ": " + choice_descriptions[label] if label in choice_descriptions else ""
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
 
-                # Get the number of the choice
-                answer = raw_input("   : ")
-                if answer == "":
-                    value = default
-                    break
-                else:
-                    try:
-                        index = parsing.integer(answer)
-                        value = choices[index] # if we are here, no error was raised
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+
+                    # Get the numbers of the choice
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    else:
+                        try:
+                            indices = parsing.integer_list(answer)
+                            value = [choices[index] for index in indices] # value is a list here
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            else:
+
+                log.info("or choose one of the following options")
+
+                for index, label in enumerate(choices):
+                    choice_description = ": " + choice_descriptions[label] if label in choice_descriptions else ""
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+
+                    # Get the number of the choice
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
+                        break
+                    else:
+                        try:
+                            index = parsing.integer(answer)
+                            value = choices[index] # if we are here, no error was raised
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         else:
 

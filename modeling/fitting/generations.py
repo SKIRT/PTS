@@ -30,6 +30,8 @@ class GenerationsTable(SmartTable):
                    ("Number of simulations", int, None, "number of simulations (individuals) in the generation"),
                    ("Self-absorption", bool, None, "dust self-absorption enabled")]
 
+    # -----------------------------------------------------------------
+
     @classmethod
     def initialize(cls, parameters):
 
