@@ -23,6 +23,13 @@ class GenerationsTable(SmartTable):
     This class ...
     """
 
+    column_info = [("Generation name", str, None, "Name for the generation"),
+                   ("Generation index", int, None, "Index of the generation"),
+                   ("Wavelength grid level", int, None, "level of the wavelength gid"),
+                   ("Dust grid level", int, None, "level of the dust grid"),
+                   ("Number of simulations", int, None, "number of simulations (individuals) in the generation"),
+                   ("Self-absorption", bool, None, "dust self-absorption enabled")]
+
     @classmethod
     def initialize(cls, parameters):
 
@@ -32,29 +39,13 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
-        # Create the table
-        names = ["Generation name", "Generation index", "Wavelength grid level", "Dust grid level",
-                 "Number of simulations", "Self-absorption"]
-        dtypes = [str, int, int, int, int, bool]
-
         for label in parameters:
-            names.append("Minimum value for " + label)
-            names.append("Maximum value for " + label)
-            dtypes.append(float)
-            dtypes.append(float)
 
-        # Call the constructor of the base class
-        table = cls(names=names, masked=True, dtype=dtypes)
+            cls.column_info.append(("Minimum value for " + label, float, None, "minimum value for " + label))
+            cls.column_info.append(("Maximum value for " + label, float, None, "Maximum value for " + label))
 
-        # Set the column units
-        #table["a"].unit = "a_unit"
-        #table["b"].unit = "b_unit"
-
-        # Set the path
-        table.path = None
-
-        # Return the generations table instance
-        return table
+        # Call the initialize function of the generations table function
+        return super(GenerationsTable, cls).initialize()
 
     # -----------------------------------------------------------------
 

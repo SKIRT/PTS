@@ -23,6 +23,66 @@ class SmartTable(Table):
     This class ...
     """
 
+    # column_info defined in the sublasses
+
+    @classmethod
+    def initialize(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the table names and types lists
+        names = []
+        dtypes = []
+        for entry in cls.column_info:
+            name = entry[0]
+            dtype = entry[1]
+            names.append(name)
+            dtypes.append(dtype)
+
+        # Call the constructor of the base class
+        table = cls(names=names, dtype=dtypes, masked=True)
+
+        # Set the column units
+        for entry in cls.column_info:
+
+            name = entry[0]
+            unit = entry[2]
+
+            if unit is None: continue
+
+            # Set the column unit
+            table[name].unit = unit
+
+        # Add the path attribute
+        table.path = None
+
+        # Return the smart table instance
+        return table
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the table
+        table = super(SmartTable, cls).read(path, format="ascii.ecsv")
+
+        # Set the path
+        table.path = path
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
     def _resize_string_columns(self, values):
 
         """

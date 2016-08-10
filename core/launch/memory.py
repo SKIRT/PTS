@@ -23,50 +23,20 @@ class MemoryTable(SmartTable):
     This class ...
     """
 
-    @classmethod
-    def initialize(cls):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the table
-        names = ["Simulation name", "Timestamp", "Host id", "Cluster name", "Cores", "Threads per core",
-                 "Processes", "Wavelengths", "Dust cells", "Self-absorption", "Transient heating", "Data-parallel",
-                 "Number of pixels", "Peak memory usage"]
-        dtypes = [str, str, str, str, int, int, int, int, int, bool, bool, bool, int, float]
-
-        # Call the constructor of the base class
-        table = cls(names=names, dtype=dtypes, masked=True)
-
-        # Set the column units
-        table["Peak memory usage"].unit = "GB" # memory usage is expressed in gigabytes
-
-        # Set the path
-        table.path = None
-
-        # Return the memory table instance
-        return table
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Open the table
-        table = super(MemoryTable, cls).read(path, format="ascii.ecsv")
-
-        # Set the path
-        table.path = path
-
-        # Return the table
-        return table
+    column_info = [("Simulation name", str, None, "name of the simulation"),
+                   ("Timestamp", str, None, "timestamp"),
+                   ("Host id", str, None, "remote host ID"),
+                   ("Cluster name", str, None, "remote cluster name"),
+                   ("Cores", int, None, "number of cores"),
+                   ("Threads per core", int, None, "number of threads per core"),
+                   ("Processes", int, None, "number of processes"),
+                   ("Wavelengths", int, None, "number of wavelengths"),
+                   ("Dust cells", int, None, "number of dust cells"),
+                   ("Self-absorption", bool, None, "self-absorption enabled"),
+                   ("Transient heating", bool, None, "transient (non-LTE) heating enabled"),
+                   ("Data-parallel", bool, None, "data parallelization enabled"),
+                   ("Number of pixels", int, None, "total number of spatial pixels for all instruments"),
+                   ("Peak memory usage", float, "GB", "peak memory usage")]
 
     # -----------------------------------------------------------------
 
