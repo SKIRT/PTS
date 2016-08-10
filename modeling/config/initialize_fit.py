@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add optional arguments
-definition.add_section("wavelengths")
+definition.add_section("wavelengths", "settings for the wavelength grid")
 definition.sections["wavelengths"].add_optional("unit", "string", "the unit of the wavelengths", "micron")
 definition.sections["wavelengths"].add_optional("min", "real", "the minimum wavelength", 0.09)
 definition.sections["wavelengths"].add_optional("max", "real", "the maximum wavelength", 2000)

@@ -593,6 +593,8 @@ class SersicModel2D(object):
 
             for line in modelfile:
 
+                if "Type:" in line: continue
+
                 name, rest = line.split(": ")
                 value, dtype = rest.split("[")
                 dtype = dtype.split("]")[0]
@@ -671,6 +673,8 @@ class ExponentialDiskModel2D(object):
         with open(path, 'r') as modelfile:
 
             for line in modelfile:
+
+                if "Type:" in line: continue
 
                 name, rest = line.split(": ")
                 value, dtype = rest.split("[")

@@ -1461,7 +1461,7 @@ class SkiFile:
             self.set_stellar_component_fits_geometry(component_id, filename, scale, pa, i, nx, ny, xc, yc, hz)
 
         # Unsupported model
-        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet")
+        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet. This model is of type " + str(type(model)))
 
     ## This function sets the geometry of the specified dust component
     def set_dust_component_geometry(self, component_id, model):

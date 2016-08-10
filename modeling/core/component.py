@@ -29,7 +29,7 @@ from ...magic.core.dataset import DataSet
 from ...magic.core.frame import Frame
 from ...magic.basics.skyregion import SkyRegion
 from ...magic.basics.region import Region
-from ..basics.models import load_3d_model
+from ..basics.models import load_3d_model, load_2d_model
 from ..basics.projection import GalaxyProjection
 from ..basics.properties import GalaxyProperties
 from ...magic.tools import catalogs
@@ -777,6 +777,32 @@ class ModelingComponent(Configurable):
 
         # Load the model
         return load_3d_model(self.disk_model_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bulge2d_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.components_path, "2D", "S4G", "bulge.mod")
+        return load_2d_model(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk2d_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.components_path, "2D", "S4G", "disk.mod")
+        return load_2d_model(path)
 
     # -----------------------------------------------------------------
 

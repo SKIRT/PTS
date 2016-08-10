@@ -24,20 +24,19 @@ from astropy.table import Table
 from .component import FittingComponent
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import SkiFile, LabeledSkiFile
+from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.filter import Filter
-from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.basics.skyregion import SkyRegion
 from ..basics.instruments import SEDInstrument, FrameInstrument
 from ..core.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
 from ...core.tools.logging import log
-from ..basics.projection import GalaxyProjection
 from ..core.sed import ObservedSED
 from .wavelengthgrids import WavelengthGridGenerator
 from .dustgrids import DustGridGenerator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
+from ..basics.models import DeprojectionModel3D, load_2d_model
 
 # -----------------------------------------------------------------
 
@@ -63,14 +62,8 @@ class FittingInitializer(FittingComponent):
         # The ski file
         self.ski = None
 
-        # The projection system
-        self.projection = None
-
         # The truncation ellipse
         self.ellipse = None
-
-        # The geometric bulge model
-        self.bulge = None
 
         # The deprojection model
         self.deprojection = None
@@ -92,9 +85,6 @@ class FittingInitializer(FittingComponent):
         # Solar luminosity units
         self.sun_fuv = None
         self.sun_i1 = None
-
-        # Coordinate system
-        self.reference_wcs = None
 
         # The ski files for simulating the contributions of the various stellar components
         self.ski_contributions = dict()
@@ -124,31 +114,28 @@ class FittingInitializer(FittingComponent):
         # 3. Create the wavelength grid
         self.create_wavelength_grids()
 
-        # 4. Create the bulge model
-        #self.create_bulge_model()
-
-        # 5. Create the deprojection model
+        # 4. Create the deprojection model
         self.create_deprojection_model()
 
-        # 6. Create the instrument
+        # 5. Create the instrument
         self.create_instrument()
 
-        # 7. Create the dust grids
+        # 6. Create the dust grids
         self.create_dust_grids()
 
-        # 8. Adjust the ski file
+        # 7. Adjust the ski file
         self.adjust_ski()
 
-        # 9. Adjust the ski files for simulating the contributions of the various stellar components
+        # 8. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
 
-        # 10. Adjust the ski file for generating simulated images
+        # 9. Adjust the ski file for generating simulated images
         self.adjust_ski_images()
 
-        # 11. Calculate the weight factor to give to each band
+        # 10. Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 12. Writing
+        # 11. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -172,10 +159,6 @@ class FittingInitializer(FittingComponent):
         self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv) # Get the luminosity of the Sun in the FUV band
         self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1)   # Get the luminosity of the Sun in the IRAC I1 band
 
-        # Reference coordinate system
-        reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
-        self.reference_wcs = CoordinateSystem.from_file(reference_path)
-
         # Create a WavelengthGridGenerator
         self.wg_generator = WavelengthGridGenerator()
 
@@ -197,9 +180,6 @@ class FittingInitializer(FittingComponent):
         # 1. Load the template ski file
         self.load_template()
 
-        # 2. Load the projection system
-        self.load_projection()
-
         # 3. Load the truncation ellipse
         self.load_truncation_ellipse()
 
@@ -220,24 +200,6 @@ class FittingInitializer(FittingComponent):
 
         # Open the template ski file
         self.ski = LabeledSkiFile(self.template_ski_path)
-
-    # -----------------------------------------------------------------
-
-    def load_projection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the projection system ...")
-
-        # Determine the path to the projection file
-        path = fs.join(self.components_path, "earth.proj")
-
-        # Load the projection system
-        self.projection = GalaxyProjection.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -328,7 +290,7 @@ class FittingInitializer(FittingComponent):
         y_size = self.reference_wcs.ysize
 
         # Create the deprojection model
-        self.deprojection = DeprojectionModel(filename, pixelscale, pa, inclination, x_size, y_size, xc, yc, hz)
+        self.deprojection = DeprojectionModel3D(filename, pixelscale, pa, inclination, x_size, y_size, xc, yc, hz)
 
     # -----------------------------------------------------------------
 
@@ -343,7 +305,7 @@ class FittingInitializer(FittingComponent):
         log.info("Creating the instrument ...")
 
         # Create an SED instrument
-        self.instrument = SEDInstrument.from_projection(self.projection)
+        self.instrument = SEDInstrument.from_projection(self.earth_projection)
 
     # -----------------------------------------------------------------
 
@@ -484,7 +446,7 @@ class FittingInitializer(FittingComponent):
         bulge_metallicity = 0.03
 
         # Get the flux density of the bulge
-        fluxdensity = self.galaxy_parameters.bulge.fluxdensity # In Jy
+        fluxdensity = self.bulge2d_model.fluxdensity
 
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
@@ -493,7 +455,7 @@ class FittingInitializer(FittingComponent):
         #luminosity = luminosity.to(self.sun_i1).value
 
         # Set the parameters of the bulge
-        self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge)
+        self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
         self.ski.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
         self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1.centerwavelength() * Unit("micron"))
@@ -518,11 +480,12 @@ class FittingInitializer(FittingComponent):
 
         # Get the scale height
         #scale_height = 521. * Unit("pc") # first models
-        scale_height = self.galaxy_parameters.disk.hr / 8.26 # De Geyter et al. 2014
+        scale_height = self.disk2d_model.scalelength / 8.26 # De Geyter et al. 2014
+        bulge_fluxdensity = self.bulge2d_model.fluxdensity
 
         # Get the 3.6 micron flux density with the bulge subtracted
         i1_index = tables.find_index(self.observed_sed.table, "I1", "Band")
-        fluxdensity = self.observed_sed.table["Flux"][i1_index] * Unit("Jy") - self.galaxy_parameters.bulge.fluxdensity
+        fluxdensity = self.observed_sed.table["Flux"][i1_index] * Unit("Jy") - bulge_fluxdensity
 
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
@@ -705,7 +668,7 @@ class FittingInitializer(FittingComponent):
         self.ski_images.remove_all_instruments()
 
         # Create frame instrument to generate datacube
-        frame_instrument = FrameInstrument.from_projection(self.projection)
+        frame_instrument = FrameInstrument.from_projection(self.earth_projection)
 
         # Add the frame instrument
         self.ski_images.add_instrument("earth", frame_instrument)
@@ -737,7 +700,7 @@ class FittingInitializer(FittingComponent):
         number_of_groups = 6
 
         # Loop over the observed SED filters
-        for fltr in self.observed_filters:
+        for fltr in self.fitting_filters:
 
             # Get the central wavelength
             wavelength = fltr.centerwavelength() * Unit("micron")
@@ -805,8 +768,8 @@ class FittingInitializer(FittingComponent):
         # Write the weights table
         self.write_weights()
 
-        # Write the geometries
-        self.write_geometries()
+        # Write the deprojection models
+        self.write_deprojection_models()
 
         # Write the wavelength grids
         self.write_wavelength_grids()
@@ -885,7 +848,7 @@ class FittingInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_geometries(self):
+    def write_deprojection_models(self):
 
         """
         This function ...
@@ -893,11 +856,7 @@ class FittingInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the Sersic model for the bulge and the deprojection model for the other components ...")
-
-        # Write the bulge model
-        bulge_path = fs.join(self.fit_geometries_path, "bulge.mod")
-        self.bulge.save(bulge_path)
+        log.info("Writing the deprojection model for the other components ...")
 
         # Write the deprojection models
         for label in self.deprojections:
