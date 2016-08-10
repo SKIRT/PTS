@@ -22,14 +22,15 @@ from pts.core.tools import filesystem as fs
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# Add required
+# Add required settings
 definition.add_required("contains", "string", "a string that should be contained in the file names")
 
-# Add optional
+# Add optional settings
 definition.add_optional("extension", "string", "the file extension")
 
-# Add flag
+# Add flags
 definition.add_flag("recursive", "search recursively")
+definition.add_flag("full", "show the full paths")
 
 # -----------------------------------------------------------------
 
@@ -52,6 +53,7 @@ log.start("Starting find_files ...")
 # -----------------------------------------------------------------
 
 for path in fs.files_in_path(fs.cwd(), contains=config.contains, extension=config.extension, recursive=config.recursive): 
-    print(path.split(fs.cwd())[1])
+    if config.full: print(path)
+    else: print(path.split(fs.cwd())[1])
 
 # -----------------------------------------------------------------

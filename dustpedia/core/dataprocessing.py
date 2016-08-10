@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import shutil
 import tempfile
 import numpy as np
+from scipy.interpolate import interpn, interp2d
 
 # Import astronomical modules
 import montage_wrapper as montage
@@ -38,6 +39,7 @@ from .galex_montage_functions import mosaic_galex
 from ...core.tools import archive
 from ...magic.core.frame import Frame, sum_frames
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.tools.general import split_xyz
 
 # -----------------------------------------------------------------
 
@@ -759,15 +761,188 @@ class DustPediaDataProcessing(object):
 
         ###
 
+        # MAKE PATHS
+
+        # Determine the path to the temporary directory for downloading the images
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_primary_fields_" + galaxy_name + "_" + band))
+
+        # Create the temporary directory
+        fs.create_directory(temp_path)
+
+        ###
+
+        # RAW PATH
+        raw_path = fs.join(temp_path, "raw") # frames with HDU0, HDU1, HDU2 .. (primary, calib, sky, ...) IN NANOMAGGIES PER PIXEL
+        fs.create_directory(raw_path)
+
+        # FIELDS PATH
+        fields_path = fs.join(temp_path, "fields") # photoField files
+        fs.create_directory(fields_path)
+
+        # COUNTS PATH
+        counts_path = fs.join(temp_path, "counts") # frames IN COUNTS (DN)
+        fs.create_directory(counts_path)
+
+        # POISSON PATH
+        poisson_path = fs.join(temp_path, "poisson_nmgy")  # error maps in NANOMAGGIES PER PIXEL
+        fs.create_directory(poisson_path)
+
+        # REBINNED PATH
+        rebinned_path = fs.join(temp_path, "rebinned") # images with frame and corresponding error map in NANOMAGGIES, REBINNED
+        fs.create_directory(rebinned_path)
+
+        ###
+
+        # GET AND DECALIBRATE FRAMES
+
+        # Inform the user
+        log.info("Getting SDSS frames in nanomaggies (per pixel) and converting to counts (DN) ...")
+
+        # Make SDSS frames in counts
+        self.make_sdss_frames_in_counts(galaxy_name, band, raw_path, fields_path, counts_path)
+
+        # Inform the user
+        log.info("Computing error maps for each SDSS frame in nanomaggies per pixel ...")
+
+        # Loop over the files in the counts path
+        for path, name in fs.files_in_path(counts_path, extension="fits", returns=["path", "name"]):
+
+            # EXAMPLE FILE NAME: frame-u-004294-4-0231.fits
+
+            # FIELD URL = field_url_start / RERUN / RUN    + / photoField-6digits-CAMCOL.fits
+            # example: http://data.sdss3.org/sas/dr12/env/BOSS_PHOTOOBJ/301/4294/photoField-004294-5.fits
+
+            # FRAME URL = $BOSS_PHOTOOBJ / frames / RERUN / RUN / CAMCOL    +   /frame-[ugriz]-6digits-CAMCOL-FRAMESEQ.fits.bz2
+            # example: http://data.sdss3.org/sas/dr10/boss/photoObj/frames/301/4294/5/frame-i-004294-5-0229.fits.bz2
+
+            splitted = name.split("-")
+
+            band = splitted[1]
+            digits = splitted[2]
+            camcol = splitted[3]
+            frameseq = splitted[4]
+
+            # Determine the path to the corresponding field file
+            field_file_path = fs.join(fields_path, "photoField-" + digits + "-" + camcol + ".fits")
+
+            # Get the gain and dark variance
+            gain, dark_variance = self.get_gain_and_dark_variance_from_photofield(field_file_path, band)
+
+
+            # Calculate the error
+
+            # dn_err = sqrt(dn/gain+darkVariance)   # NOISE IN DN
+
+            # img_err = dn_err*cimg                 # NOISE IN NANOMAGGIES / PIXEL
+
+
+            # Load the image in DN
+            dn_frame = Frame.from_file(path)
+
+            # COMPUTE THE DN ERROR
+            dn_error = np.sqrt(dn_frame.data / gain + dark_variance)
+
+            # CONVERT ERROR MAP IN DN TO ERROR MAP IN NANOMAGGIES PER PIXEL
+
+            # COMPUTE THE CALIBRATION FRAME AGAIN
+            raw_frame_path = fs.join(raw_path, name + ".fits")
+            hdulist = open_fits(raw_frame_path)
+            img = hdulist[0].data
+            nrowc = img.shape[0]  # ysize    (x = columns, y = rows)
+            # Get the calibration HDU (header)
+            calib = hdulist[1].data
+            replicate = np.ones(nrowc)
+            cimg = np.outer(replicate, calib)
+
+
+
+            # IMAGE ERROR MAP IN NANOMAGGIES PER PIXEL
+            img_error = dn_error * cimg
+            error_map = Frame(img_error)
+
+            # SAVE the error map
+            poisson_error_map_path = fs.join(poisson_path, name + ".fits")
+            error_map.save(poisson_error_map_path)
+
+        # Get the target header
+        header = self.get_header_for_galaxy(galaxy_name, "SDSS")
+
+        # To coordinate system
+        rebin_wcs = CoordinateSystem(header)
+
+        # Inform the user
+        log.info("Rebinning primary SDSS frames and corresponding error maps to the target coordinate system ...")
+
+        # Loop over the files in the raw directory
+        for path, name in fs.files_in_path(raw_path, extension="fits", returns=["path", "name"]):
+
+            # Open the frame IN NANOMAGGIES PER PIXEL
+            frame = Frame.from_file(path) # HDU 0 is used
+
+            # Open the corresponding error map IN NANOMAGGIES PER PIXEL
+            error_path = fs.join(poisson_path, name + ".fits")
+            errormap = Frame.from_file(error_path)
+
+            # Debugging
+            log.debug("Converting " + name + " frame and error map to nanomaggy / sr...")
+
+            # NUMBER OF SR PER PIXEL
+            pixelsr = frame.pixelarea.to("sr").value
+
+            # CONVERT FRAME
+            frame /= pixelsr # IN NANOMAGGIES PER SR NOW
+
+            # CONVERT ERROR MAP
+            errormap /= pixelsr # IN NANOMAGGIES PER SR NOW
+
+            # Debugging
+            log.debug("Rebinning " + name + " frame and error map to the target coordinate system ...")
+
+            # Rebin the frame
+            frame.rebin(rebin_wcs, exact=False)
+
+            # REBIN THE ERROR MAP
+            errormap.rebin(rebin_wcs, exact=False)
+
+            # Debugging
+            log.debug("Converting " + name + " frame and error map back to nanomaggy ...")
+
+            # NUMBER OF SR PER PIXEL
+            new_pixelsr = frame.pixelarea.to("sr").value
+
+            # CONVERT THE REBINNED FRAME BACK TO NANOMAGGY (PER PIXEL)
+            frame *= new_pixelsr
+
+            # CONVERT THE REBINNED ERROR MAP BACK TO NANOMAGGY
+            errormap *= new_pixelsr
+
+            # CREATE IMAGE
+            image = Image()
+
+            image.add_frame(frame, "primary")
+            image.add_frame(errormap, "noise")
+
+            # Determine path for the image
+            image_path = fs.join(rebinned_path, name + ".fits")
+            image.save(image_path)
+
+    # -----------------------------------------------------------------
+
+    def sdss_mosaic_old_function_things(self, galaxy_name, band, output_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param band:
+        :param output_path:
+        :return:
+        """
+
         # Inform the user
         log.info("Making SDSS mosaic and map of relative poisson errors ...")
 
         # Make rebinned frames in counts (and footprints)
-        #self.make_sdss_rebinned_frames_in_counts(galaxy_name, band, output_path)
-
-        self.make_sdss_frames_in_counts(galaxy_name, band, output_path)
-
-        exit()
+        self.make_sdss_rebinned_frames_in_counts(galaxy_name, band, output_path)
 
         # Initialize a list to contain the frames to be summed
         ab_frames = []
@@ -812,39 +987,20 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    ## NEW
-    def make_sdss_frames_in_counts(self, galaxy_name, band, output_path):
+    def make_sdss_frames_in_counts(self, galaxy_name, band, raw_path, fields_path, counts_path):
 
         """
         This function ...
         :param galaxy_name:
         :param band:
-        :param output_path:
+        :param raw_path:
+        :param fields_path:
+        :param counts_path:
         :return:
         """
 
         # Inform the user
         log.info("Making SDSS frames in counts for " + galaxy_name + " for SDSS " + band + " band ...")
-
-        # Determine the path to the temporary directory for downloading the images
-        temp_path = fs.join(fs.home(), time.unique_name("SDSS_primary_fields_" + galaxy_name + "_" + band))
-
-        # Create the temporary directory
-        fs.create_directory(temp_path)
-
-        # )
-
-        # RAW PATH
-        raw_path = fs.join(temp_path, "raw")
-        fs.create_directory(raw_path)
-
-        # COUNTS PATH
-        counts_path = fs.join(temp_path, "counts")
-        fs.create_directory(counts_path)
-
-        # FIELDS PATH
-        fields_path = fs.join(temp_path, "fields")
-        fs.create_directory(fields_path)
 
         # ----
 
@@ -885,7 +1041,7 @@ class DustPediaDataProcessing(object):
         log.debug("Downloading the photoField data files ...")
 
         # Download the files
-        paths = network.download_files(field_urls, fields_path)
+        field_paths = network.download_files(field_urls, fields_path)
 
 
         ## CONVERT THE IMAGES TO COUNT (DECALIBRATE)
@@ -928,17 +1084,48 @@ class DustPediaDataProcessing(object):
         log.info("IDL> writefits,'path',dn")
 
 
-        # Loop over the downloaded files
-        for path in paths:
+        # Loop over the downloaded "frame" files
+        for path in fs.files_in_path(raw_path):
 
             # Open the HDUList
             hdulist = open_fits(path)
 
             # Get calibrated image in nanomaggies/pixel
-            img = hdulist[0]
+            img = hdulist[0].data
+            nrowc = img.shape[0] # ysize    (x = columns, y = rows)
 
-            # Get
+            # Get the sky HDU (header)
+            sky = hdulist[2].data
+            allsky = sky.field("allsky")[0] # for some reason, "allsky" has 3 axes (1, 192, 256), therefore [0]
+            xinterp = sky.field("xinterp")[0] # columns (xsize = 2048)    # for some reason, "xinterp" has 2 axes (1, 2048)
+            yinterp = sky.field("yinterp")[0] # rows    (ysize = 1489)    # for some reason, "yinterp" has 2 axes (1, 1489)
 
+            # Split x, y and z values that are not masked
+            #x_values, y_values, z_values = split_xyz(allsky, arrays=True)
+
+            allsky_xrange = np.arange(allsky.shape[1], dtype=float)
+            allsky_yrange = np.arange(allsky.shape[0], dtype=float)
+
+            # INTERPOLATE SKY
+            skyf = interp2d(allsky_xrange, allsky_yrange, allsky)
+            simg = skyf(xinterp, yinterp)
+
+            # Get the calibration HDU (header)
+            calib = hdulist[1].data
+            replicate = np.ones(nrowc)
+            cimg = np.outer(replicate, calib)
+
+            # DECALIBRATE
+            dn = img / cimg + simg
+
+            # CREATE FRAME AND SAVE
+
+            dn_frame = Frame(dn)
+            dn_frame.unit = "count"
+
+            name = fs.name(path)
+            dn_path = fs.join(counts_path, name)
+            dn_frame.save(dn_path)
 
     # -----------------------------------------------------------------
 
