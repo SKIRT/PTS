@@ -860,6 +860,9 @@ class DustPediaDataProcessing(object):
             img_error = dn_error * cimg
             error_map = Frame(img_error)
 
+            # SET THE WCS OF THE IMAGE ERROR MAP
+            error_map.wcs = dn_frame.wcs
+
             # SAVE the error map
             poisson_error_map_path = fs.join(poisson_path, name + ".fits")
             error_map.save(poisson_error_map_path)
@@ -1122,6 +1125,9 @@ class DustPediaDataProcessing(object):
 
             dn_frame = Frame(dn)
             dn_frame.unit = "count"
+
+            # Set the WCS of THE DN FRAME
+            dn_frame.wcs = CoordinateSystem(hdulist[0].header)
 
             name = fs.name(path)
             dn_path = fs.join(counts_path, name)
