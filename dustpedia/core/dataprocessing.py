@@ -763,8 +763,8 @@ class DustPediaDataProcessing(object):
 
         # MAKE PATHS
 
-        # Determine the path to the temporary directory for downloading the images
-        temp_path = fs.join(fs.home(), time.unique_name("SDSS_primary_fields_" + galaxy_name + "_" + band))
+        # Determine the path to the temporary directory
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
 
         # Create the temporary directory
         fs.create_directory(temp_path)
@@ -1085,7 +1085,7 @@ class DustPediaDataProcessing(object):
 
 
         # Loop over the downloaded "frame" files
-        for path in fs.files_in_path(raw_path):
+        for path in fs.files_in_path(raw_path, extension="fits"): # extension must be specified because there is also the meta.dat and overlap.dat files!!
 
             # Open the HDUList
             hdulist = open_fits(path)
