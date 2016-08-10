@@ -18,6 +18,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
+from .tables import ParametersTable, GenerationsTable, ChiSquaredTable
 
 # -----------------------------------------------------------------
 
@@ -71,8 +72,8 @@ class FittingComponent(ModelingComponent):
         # The path to the generations table
         self.generations_table_path = None
 
-        # The path to the parameter table
-        self.parameter_table_path = None
+        # The path to the parameters table
+        self.parameters_table_path = None
 
         # The path to the chi squared table
         self.chi_squared_table_path = None
@@ -100,9 +101,6 @@ class FittingComponent(ModelingComponent):
 
         # The paths to the probability distribution tables
         self.distribution_table_paths = dict()
-
-        # The path to the reference image
-        self.reference_path = None
 
     # -----------------------------------------------------------------
 
@@ -153,64 +151,68 @@ class FittingComponent(ModelingComponent):
         # Set the path to the fit/best/images directory
         self.fit_best_images_path = fs.create_directory_in(self.fit_best_path, "images")
 
-        # Set the path to the generations table
-        self.generations_table_path = fs.join(self.fit_path, "generations.dat")
-
         # -----------------------------------------------------------------
-
-        # Set the path to the parameter file
-        self.parameter_table_path = fs.join(self.fit_path, "parameters.dat")
-
-        # Initialize the parameter file if that hasn't been done yet
-        if not fs.is_file(self.parameter_table_path):
-
-            # Create the table
-            names = ["Simulation name", "FUV young", "FUV ionizing", "Dust mass"]
-            data = [[], [], [], []]
-            dtypes = ["S24", "float64", "float64", "float64"]
-            table = tables.new(data, names, dtypes=dtypes)
-
-            # Create the (empty) table
-            tables.write(table, self.parameter_table_path, format="ascii.ecsv")
 
         # Determine the path to the ski file
         self.fit_ski_path = fs.join(self.fit_path, self.galaxy_name + ".ski")
+
+        ## PARAMETERS TABLE
+
+        # Set the path to the parameter file
+        self.parameters_table_path = fs.join(self.fit_path, "parameters.dat")
+
+        # Initialize the parameters table if necessary
+        if not fs.is_file(self.parameters_table_path) and self.free_parameter_labels is not None:
+            parameters_table = ParametersTable.initialize(self.free_parameter_labels)
+            parameters_table.saveto(self.parameters_table_path)
+
+        # CHI SQUARED TABLE
 
         # Set the path to the chi squared table file
         self.chi_squared_table_path = fs.join(self.fit_path, "chi_squared.dat")
 
         # Initialize the chi squared file if that hasn't been done yet
         if not fs.is_file(self.chi_squared_table_path):
+            chi_squared_table = ChiSquaredTable.initialize()
+            chi_squared_table.saveto(self.chi_squared_table_path)
 
-            # Create the table
-            names = ["Simulation name", "Chi squared"]
-            data = [[], []]
-            dtypes = ["S24", "float64"]
-            table = tables.new(data, names, dtypes=dtypes)
-
-            # Write the (empty) table
-            tables.write(table, self.chi_squared_table_path, format="ascii.ecsv")
+        ## WEIGHTS TABLE
 
         # Set the path to the weights table file
         self.weights_table_path = fs.join(self.fit_path, "weights.dat")
 
+        ## TIMING TABLE
+
         # Set the path to the timing table file
         self.timing_table_path = fs.join(self.fit_path, "timing.dat")
 
-        # Initialize the timing table
-        timing_table = TimingTable.initialize()
-        timing_table.saveto(self.timing_table_path)
+        # Initialize the timing table if necessary
+        if not fs.is_file(self.timing_table_path):
+            timing_table = TimingTable.initialize()
+            timing_table.saveto(self.timing_table_path)
+
+        ## MEMORY TABLE
 
         # Set the path to the memory table file
         self.memory_table_path = fs.join(self.fit_path, "memory.dat")
 
-        # Initialize the memory table
-        memory_table = MemoryTable.initialize()
-        memory_table.saveto(self.memory_table_path)
+        # Initialize the memory table if necessary
+        if not fs.is_file(self.memory_table_path):
+            memory_table = MemoryTable.initialize()
+            memory_table.saveto(self.memory_table_path)
+
+        ## GENERATIONS TABLE
+
+        # Set the path to the generations table
+        self.generations_table_path = fs.join(self.fit_path, "generations.dat")
+
+        # Initialize the generations table if necessary
+        if not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
+            generations_table = GenerationsTable.initialize(self.free_parameter_labels)
+            generations_table.saveto(self.generations_table_path)
 
         # Set the paths to the probability distribution tables
         if self.free_parameter_labels is not None:
-
             for label in self.free_parameter_labels:
 
                 # Determine the path to the table
@@ -218,8 +220,5 @@ class FittingComponent(ModelingComponent):
 
                 # Set the path
                 self.distribution_table_paths[label] = path
-
-        # Set the path to the reference image
-        self.reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
 
 # -----------------------------------------------------------------

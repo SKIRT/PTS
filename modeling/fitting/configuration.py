@@ -21,7 +21,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
-from .generations import GenerationsTable
+from .tables import GenerationsTable
 from ..config.parameters import descriptions, types_and_ranges
 from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
@@ -267,9 +267,6 @@ class FittingConfigurer(FittingComponent):
         # Write the ski file template
         self.write_ski()
 
-        # Write generations table
-        self.write_generations_table()
-
     # -----------------------------------------------------------------
 
     def write_config(self):
@@ -299,21 +296,6 @@ class FittingConfigurer(FittingComponent):
 
         # Save the ski file template
         self.ski.saveto(self.template_ski_path)
-
-    # -----------------------------------------------------------------
-
-    def write_generations_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize the generations table
-        generations_table = GenerationsTable.initialize(self.parameters_config.free_parameters)
-
-        # Save the generations table
-        generations_table.saveto(self.generations_table_path)
 
 # -----------------------------------------------------------------
 

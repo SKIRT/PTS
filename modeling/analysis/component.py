@@ -76,9 +76,6 @@ class AnalysisComponent(ModelingComponent):
         # The path to the memory table
         self.memory_table_path = None
 
-        # The path to the reference image
-        self.reference_path = None
-
         # The path to the analysis/scripts directory
         self.analysis_scripts_path = None
 
@@ -128,19 +125,24 @@ class AnalysisComponent(ModelingComponent):
         self.analysis_ski_path = fs.join(self.analysis_path, self.galaxy_name + ".ski")
         self.analysis_wavelengths_path = fs.join(self.analysis_in_path, "wavelengths.txt")
 
+        ## TIMING TABLE
+
         # Set the path to the timing table
         self.timing_table_path = fs.join(self.analysis_path, "timing.dat")
 
-        # Initialize the timing table
-        timing_table = TimingTable(self.timing_table_path)
+        # Initialize the timing table if necessary
+        if not fs.is_file(self.timing_table_path):
+            timing_table = TimingTable.initialize()
+            timing_table.saveto(self.timing_table_path)
+
+        ## MEMORY TABLE
 
         # Set the path to the memory table
         self.memory_table_path = fs.join(self.analysis_path, "memory.dat")
 
-        # Initialize the memory table
-        memory_table = MemoryTable(self.memory_table_path)
-
-        # Set the path to the reference image
-        self.reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
+        # Initialize the memory table if necessary
+        if not fs.is_file(self.memory_table_path):
+            memory_table = MemoryTable.initialize()
+            memory_table.saveto(self.memory_table_path)
 
 # -----------------------------------------------------------------
