@@ -710,7 +710,7 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default: default = get_real_value(default, real_type)
+        if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
         self.pos_optional[name] = (real_type, description, default, choices, choice_descriptions)
@@ -739,7 +739,7 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default: default = get_real_value(default, real_type)
+        if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
         self.optional[name] = (real_type, description, default, choices, choice_descriptions, letter)

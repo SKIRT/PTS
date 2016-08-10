@@ -23,7 +23,7 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
 from ...core.tools import parsing
 from .generations import GenerationsTable
-from ..config.parameters import definition
+from ..config.parameters import definition, descriptions, types_and_ranges
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 
 # -----------------------------------------------------------------
@@ -212,30 +212,23 @@ class FittingConfigurer(FittingComponent):
         :return:
         """
 
-        # Get the range for each chosen free parameter
+        # Create the configuration
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add the options
         for label in self.parameters:
+            definition.add_optional(label + "_range", types_and_ranges[label][0] + "_range", "range of the " + descriptions[label], default=types_and_ranges[label][1], convert_default=True)
 
-            # Get the type of the parameter
-            parameter_type = self.types[label][0]
-            default_range = self.types[label][1]
-            if default_range == "--": default_range = None
-            range_type = parameter_type + "_range"
-            parsing_function = getattr(parsing, range_type)
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)
 
-            log.info("Give a valid physical range for the '" + label + "' parameter:")
-            if default_range is not None: log.info("Press ENTER to use the default value (" + str(default_range) + ")")
+        # Create config, get the range for each chosen free parameter
+        config = setter.run(definition, prompt_optional=False)
 
-            # Get the numbers
-            answer = raw_input("   : ")
-
-            # Check if default must be used
-            if default_range is not None and answer == "": answer = default_range
-
-            # Get the value
-            range = parsing_function(answer)
-
-            # Set the range
-            self.ranges[label] = range
+        # Set the ranges
+        for label in self.parameters:
+            range_label = label + "_range"
+            self.ranges[label] = config[range_label]
 
     # -----------------------------------------------------------------
 

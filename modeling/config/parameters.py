@@ -33,6 +33,24 @@ descriptions["i1_old"] = "I1 luminosity of the old stellar component"
 descriptions["sfr_pressure"] = "pressure on the star formation regions"
 descriptions["inclination"] = "inclination of the galactic plane"
 
+# Types and ranges of the different parameters
+types_and_ranges = dict()
+types_and_ranges["distance"] = ("quantity", None)
+types_and_ranges["ionizing_scaleheight"] = ("quantity", None)
+types_and_ranges["sfr_compactness"] = ("quantity", None)
+types_and_ranges["fuv_young"] = ("real", "0.0,4.e16")
+types_and_ranges["old_scaleheight"] = ("quantity", None)
+types_and_ranges["position_angle"] = ("angle", None)
+types_and_ranges["dust_mass"] = ("quantity", "0.5e7 Msun,3.e7 Msun")
+types_and_ranges["fuv_ionizing"] = ("real", "0.0,5.e10")
+types_and_ranges["metallicity"] = ("real", None)
+types_and_ranges["young_scaleheight"] = ("quantity", None)
+types_and_ranges["sfr_covering"] = ("real", None)
+types_and_ranges["dust_scaleheight"] = ("quantity", None)
+types_and_ranges["i1_old"] = ("real", None)
+types_and_ranges["sfr_pressure"] = ("quantity", None)
+types_and_ranges["inclination"] = ("angle", None)
+
 # -----------------------------------------------------------------
 
 # Create the configuration

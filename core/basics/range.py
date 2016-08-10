@@ -96,6 +96,28 @@ class Range(object):
         if as_list: return list(values)
         else: return values
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "(" + str(self.min) + "," + str(self.max) + ")"
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "Range(" + str(self.min) + ": " + str(self.max) + ")"
+
 # -----------------------------------------------------------------
 
 class IntegerRange(Range):
