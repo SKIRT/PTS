@@ -96,29 +96,6 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new PreparationInitializer instance
-        initializer = cls()
-
-        # Set the modeling path
-        initializer.config.path = arguments.path
-
-        # Make visualisations
-        initializer.config.visualise = arguments.visualise
-
-        # Return the data initializer
-        return initializer
-
-    # -----------------------------------------------------------------
-
     def run(self):
 
         """
@@ -128,6 +105,9 @@ class PreparationInitializer(PreparationComponent):
 
         # 1. Call the setup function
         self.setup()
+
+        # 2. Create the preparation info table
+        self.create_info_table()
 
         # 2. Load the images
         self.load_reference_image()
@@ -160,6 +140,54 @@ class PreparationInitializer(PreparationComponent):
 
         # Call the setup function of the base class
         super(PreparationInitializer, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def create_info_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names_column = []
+        paths_column = []
+        prep_names_column = []
+        names = ["Image name", "Image path", "Preparation name"]
+
+        # Loop over all subdirectories of the data directory
+        for path, name in fs.directories_in_path(fs.join(config.path, "data"), not_contains="bad",
+                                                 returns=["path", "name"]):
+
+            # Loop over all FITS files found in the current subdirectory
+            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="_Error",
+                                                           returns=["path", "name"]):
+
+                # Open the image frame
+                frame = Frame.from_file(image_path)
+
+                # Determine the preparation name
+                if frame.filter is not None:
+                    prep_name = str(frame.filter)
+                else:
+                    prep_name = image_name
+
+                # Set the row entries
+                names_column.append(image_name)
+                paths_column.append(image_path)
+                prep_names_column.append(prep_name)
+
+        # Create the table
+        data = [names_column, paths_column, prep_names_column]
+        table = tables.new(data, names)
+
+        # Check whether the preparation directory exists
+        prep_path = fs.join(config.path, "prep")
+        if not fs.is_directory(prep_path): fs.create_directory(prep_path)
+
+        # Save the table
+        prep_info_table_path = fs.join(prep_path, "prep_info.dat")
+        tables.write(table, prep_info_table_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 

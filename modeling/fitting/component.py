@@ -12,13 +12,16 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
-from ...core.tools import tables
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .tables import ParametersTable, GenerationsTable, ChiSquaredTable
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -220,5 +223,29 @@ class FittingComponent(ModelingComponent):
 
                 # Set the path
                 self.distribution_table_paths[label] = path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def generations_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return GenerationsTable.from_file(self.generations_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ski_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkiFile(self.fit_ski_path)
 
 # -----------------------------------------------------------------

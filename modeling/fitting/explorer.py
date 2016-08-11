@@ -24,11 +24,10 @@ from .modelgenerators.grid import GridModelGenerator
 from .modelgenerators.initial import InitialModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
 from .modelgenerators.instinctive import InstinctiveModelGenerator
-from ...core.simulation.skifile import SkiFile
 from ...core.basics.filter import Filter
-from .generations import GenerationsTable
 from ...core.tools import time
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
+from ...core.simulation.definition import SingleSimulationDefinition
 
 # -----------------------------------------------------------------
 
@@ -64,9 +63,6 @@ class ParameterExplorer(FittingComponent):
         # The model generator
         self.generator = None
 
-        # The generations table
-        self.generations_table = None
-
         # The ski file
         self.ski = None
 
@@ -84,9 +80,6 @@ class ParameterExplorer(FittingComponent):
 
         # 1. Call the setup function
         self.setup()
-
-        # 2. Load the necessary input
-        self.load_input()
 
         # 3. Set the parameter ranges
         self.set_ranges()
@@ -211,51 +204,6 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def load_input(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load the ski file
-        self.load_ski()
-
-        # Load the generations table
-        self.load_generations_table()
-
-    # -----------------------------------------------------------------
-
-    def load_generations_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the generations table ...")
-
-        # Load the generations table
-        self.generations_table = GenerationsTable.read(self.generations_table_path, format="ascii.ecsv")
-
-    # -----------------------------------------------------------------
-
-    def load_ski(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ski file ...")
-
-        # Open the ski file (created by InputInitializer)
-        self.ski = SkiFile(self.fit_ski_path)
-
-    # -----------------------------------------------------------------
-
     def set_ranges(self):
 
         """
@@ -307,6 +255,9 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Generating the model parameters ...")
+
         # Run the model generator
         self.generator.run()
 
@@ -340,6 +291,9 @@ class ParameterExplorer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Launching the simulations ...")
 
         # Set the paths to the directories to contain the launch scripts (job scripts) for the different remote hosts
         for host_id in self.launcher.host_ids:

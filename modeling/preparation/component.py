@@ -38,6 +38,9 @@ class PreparationComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # The path to the preparation info table
+        self.prep_info_path = None
+
         # The names of the different images for the preparation components
         self.prep_names = dict()
 
@@ -62,23 +65,26 @@ class PreparationComponent(ModelingComponent):
         # Call the setup function of the base class
         super(PreparationComponent, self).setup()
 
-        # Determine the path to the preparation info table
-        info_path = fs.join(self.prep_path, "prep_info.dat")
+        # Set the path to the preparation info table
+        self.prep_info_path = fs.join(self.prep_path, "prep_info.dat")
 
-        # Load the info table
-        info = tables.from_file(info_path, format="ascii.ecsv")
+        # If the table has already been created, load the info
+        if fs.is_file(self.prep_info_path):
 
-        # Set the image names
-        for i in range(len(info)):
+            # Load the info table
+            info = tables.from_file(self.prep_info_path, format="ascii.ecsv")
 
-            original_name = info["Image name"][i]
-            original_path = info["Image path"][i]
-            prep_name = info["Preparation name"][i]
+            # Set the image names
+            for i in range(len(info)):
 
-            self.prep_names[original_name] = prep_name
-            self.original_names[prep_name] = original_name
-            self.prep_paths[prep_name] = fs.join(self.prep_path, prep_name)
-            self.original_paths[prep_name] = original_path
+                original_name = info["Image name"][i]
+                original_path = info["Image path"][i]
+                prep_name = info["Preparation name"][i]
+
+                self.prep_names[original_name] = prep_name
+                self.original_names[prep_name] = original_name
+                self.prep_paths[prep_name] = fs.join(self.prep_path, prep_name)
+                self.original_paths[prep_name] = original_path
 
         # Create the preparation subdirectories for each image
         fs.create_directories(self.prep_paths.values())
