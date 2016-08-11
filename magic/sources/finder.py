@@ -116,6 +116,9 @@ class SourceFinder(OldConfigurable):
         # Set the other sources sigma level
         if arguments.other_sigma_level is not None: finder.config.other_sources.detection.segmentation.sigma_level = arguments.other_sigma_level
 
+        # Set the saturation_box_sigmas
+        if arguments.saturation_box_sigmas is not None: finder.config.stars.saturation.sigmas = arguments.saturation_box_sigmas
+
         # Return the new instance
         return finder
 

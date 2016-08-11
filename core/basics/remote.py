@@ -2059,7 +2059,7 @@ class Remote(object):
                 if task.remove_remote_output:
 
                     # Remove the temporary PTS directory if it contains the output directory
-                    if self.is_subdirectory(task.remote_output_path, task.remote_pts): self.remove_directory(task.remote_temp_pts_path)
+                    if self.is_subdirectory(task.remote_output_path, task.remote_temp_pts_path): self.remove_directory(task.remote_temp_pts_path)
                     else:
                         # Remove the output directory and the temporary directory seperately
                         self.remove_directory(task.remote_output_path)

@@ -67,6 +67,8 @@ parser.add_argument("--other_sigma_level", type=float, help="the sigma level to 
 
 parser.add_argument("--fwhm", type=float, help="the FWHM of the image in arcseconds")
 
+parser.add_argument("--saturation_box_sigmas", type=float, help="ask Sam")
+
 # Input regions
 parser.add_argument("--ignore", type=str, help="the name of the file specifying regions to ignore (in sky coordinates!)")
 parser.add_argument("--special", type=str, help="the name of the file specifying regions with objects needing special attention (in sky coordinates!)")
