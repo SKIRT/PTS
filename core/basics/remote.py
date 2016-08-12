@@ -162,13 +162,14 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Logging out from the remote environment ...")
+        if log is not None: log.info("Logging out from the remote environment ...")
 
         # Disconnect
         if self.connected:
 
             self.ssh.logout()
-            connected_remotes[self.host.id] = None
+            #connected_remotes[self.host.id] = None
+            if connected_remotes is not None: del connected_remotes[self.host.id]
             self.connected = False
 
         # Disconnect from the VPN service if necessary
