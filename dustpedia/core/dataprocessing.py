@@ -831,8 +831,8 @@ class DustPediaDataProcessing(object):
         # DO REBINNING, CREATE IMAGES WITH REBINNED PRIMARY AND ERROR FRAME IN NANOMAGGIES PER PIXEL, AND FOOTPRINT FILES
         #self.rebin_sdss_frames_and_error_maps(rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path)
 
-        # Make the footprints
-        #self.make_sdss_footprints(rebinned_path, footprints_path)
+        ## Make the footprints: WAS ONLY NECESSARY FOR WHEN FOOTPRINTS WERE NOT CREATED DURING FUNCTION ABOVE
+        ##self.make_sdss_footprints(rebinned_path, footprints_path)
 
         # DO THE COMBINING
         # rebinned_path, footprints_path, mosaics_path, wcs
@@ -854,6 +854,8 @@ class DustPediaDataProcessing(object):
 
         # Calculate the relative error map
         relerrors = mosaic_errors / mosaic
+        relerrors[relerrors < 0.] = 0.0 # set negative values for relative error map to zero
+        relerrors.replace_nans(0.0)     # set NaN values (because mosaic was zero) to zero
 
         # Save mosaic as FITS file
         mosaic_output_path = fs.join(output_path, id_string + ".fits")
