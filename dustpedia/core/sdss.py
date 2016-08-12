@@ -88,9 +88,7 @@ class SDSSMosaicMaker(Configurable):
         if self.config.band is None:
 
             # Loop over all bands and make the mosaics and Poisson frames
-            for band in sdss_bands:
-                #output_path = self.output_path # just place all the images in the same output directory, but specifiy the band in the filename
-                self.mosaic_band(band)
+            for band in sdss_bands: self.mosaic_band(band)
 
         # Do just the specified band otherwise
         else: self.mosaic_band(self.config.band)
@@ -109,6 +107,7 @@ class SDSSMosaicMaker(Configurable):
         log.info("Making the SDSS " + band + " mosaic ...")
 
         # Make the mosaic for the specified band
+        # just place all the images (for the different bands) in the same output directory, but specifiy the band in the filename
         self.dpdp.make_sdss_mosaic_and_poisson_frame(self.config.galaxy_name, band, self.output_path)
 
 # -----------------------------------------------------------------

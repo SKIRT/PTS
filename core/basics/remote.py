@@ -10,12 +10,12 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import os
 import re
 import sys
 import pexpect
 from pexpect import pxssh
 import tempfile
+import StringIO
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
@@ -194,9 +194,9 @@ class Remote(object):
         self.upload(local_script_path, script_destination)
 
         # Rename the remote script
-        local_script_name = os.path.basename(local_script_path)
+        local_script_name = fs.name(local_script_path)
         remote_script_name = name + ".sh"
-        remote_script_path = os.path.join(script_destination, remote_script_name)
+        remote_script_path = fs.join(script_destination, remote_script_name)
         self.rename_file(script_destination, local_script_name, remote_script_name)
 
         # Make the shell script executable
@@ -861,8 +861,8 @@ class Remote(object):
         else:
 
             # Determine the old and new file path
-            old_path = os.path.join(directory, old_name)
-            new_path = os.path.join(directory, new_name)
+            old_path = fs.join(directory, old_name)
+            new_path = fs.join(directory, new_name)
 
             # Use the 'mv' command to rename the file
             self.execute("mv " + old_path + " " + new_path)
@@ -1085,8 +1085,12 @@ class Remote(object):
         if not show_output:
 
             # Temporary file for output of the scp command
-            temp_file_path = tempfile.mktemp()
-            temp_file = open(temp_file_path, 'w')
+            #temp_file_path = tempfile.mktemp()
+            #temp_file = open(temp_file_path, 'w')
+
+            # New way: use a string stream
+            temp_file = StringIO.StringIO()
+            child.logfile = temp_file
 
         # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
         else: child.logfile = sys.stdout
@@ -1097,19 +1101,22 @@ class Remote(object):
 
         if not show_output:
 
-            # Close the temporary output file
-            temp_file.close()
-
-            # Open the output file again and read the contents
-            temp_file = open(temp_file_path, 'r')
-            stdout = temp_file.read()
-            temp_file.close()
+            # Retrieve file contents -- this will be
+            # 'First line.\nSecond line.\n'
+            stdout = child.logfile.getvalue()
 
             # Raise an error if something went wrong
             if child.exitstatus != 0: raise RuntimeError(stdout)
 
+            # Get the output lines
+            lines = stdout.split("\n")
+
+            # Check for messages that signal an error that has occured
+            for line in lines:
+                if "not a regular file" in line: raise ValueError(line)
+
             # Debugging: show the output of the scp command
-            log.debug("Copy stdout: " + str(stdout).replace("\n", " "))
+            log.debug("Copy stdout: " + str(" ".join(lines)))
 
     # -----------------------------------------------------------------
 
@@ -1137,10 +1144,10 @@ class Remote(object):
         if isinstance(origin, basestring):
 
             # Check if the origin represents a file
-            if os.path.isfile(origin): copy_command += origin.replace(" ", "\\\ ") + " "
+            if fs.is_file(origin): copy_command += origin.replace(" ", "\\\ ") + " "
 
             # Check if it represents a directory
-            elif os.path.isdir(origin): copy_command += "-r " + origin.replace(" ", "\\\ ") + "/ "
+            elif fs.is_directory(origin): copy_command += "-r " + origin.replace(" ", "\\\ ") + "/ "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file")
@@ -1150,7 +1157,7 @@ class Remote(object):
 
             # Check whether the files exist locally
             for file_path in origin:
-                if not os.path.isfile(file_path): raise ValueError("The file " + file_path + " does not exist")
+                if not fs.is_file(file_path): raise ValueError("The file " + file_path + " does not exist")
 
             # Escape possible space characters
             origin = [path.replace(" ", "\\\ ") for path in origin]
@@ -1178,9 +1185,11 @@ class Remote(object):
         if not show_output:
 
             # Temporary file for output of the scp command
-            temp_file_path = tempfile.mktemp()
-            temp_file = open(temp_file_path, 'w')
+            #temp_file_path = tempfile.mktemp()
+            #temp_file = open(temp_file_path, 'w')
 
+            # New way: use a string stream
+            temp_file = StringIO.StringIO()
             child.logfile = temp_file
 
         # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
@@ -1195,19 +1204,22 @@ class Remote(object):
 
         if not show_output:
 
-            # Close the temporary output file
-            temp_file.close()
-
-            # Open the output file again and read the contents
-            temp_file = open(temp_file_path, 'r')
-            stdout = temp_file.read()
-            temp_file.close()
+            # Retrieve file contents -- this will be
+            # 'First line.\nSecond line.\n'
+            stdout = child.logfile.getvalue()
 
             # Raise an error if something went wrong
             if child.exitstatus != 0: raise RuntimeError(stdout)
 
+            # Get the output lines
+            lines = stdout.split("\n")
+
+            # Check for messages that signal an error that has occured
+            for line in lines:
+                if "not a regular file" in line: raise ValueError(line)
+
             # Debugging: show the output of the scp command
-            log.debug("Copy stdout: " + str(stdout).replace("\n", " "))
+            log.debug("Copy stdout: " + str(" ".join(lines)))
 
     # -----------------------------------------------------------------
 
@@ -1357,7 +1369,7 @@ class Remote(object):
         """
 
         if not path.startswith("~"): return path
-        else: return os.path.join(self.home_directory, path.split("~/")[1])
+        else: return fs.join(self.home_directory, path.split("~/")[1])
 
     # -----------------------------------------------------------------
 
