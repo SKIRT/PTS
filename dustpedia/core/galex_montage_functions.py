@@ -266,11 +266,11 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
 
 # -----------------------------------------------------------------
 
-def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_path, output_path, nprocesses=6):
+def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path, meta_path, output_path, nprocesses=6):
 
     """
     Function to SWarp together GALEX tiles of a given source
-    :param name:
+    :param galaxy_name:
     :param ra:
     :param dec:
     :param width:
@@ -285,7 +285,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
     # Inform the user
     log.info("Starting the 'mosaic_galex' function for: ")
-    log.info(" - name = " + name)
+    log.info(" - galaxy name = " + galaxy_name)
     log.info(" - ra = " + str(ra))
     log.info(" - dec = " + str(dec))
     log.info(" - width = " + str(width))
@@ -300,7 +300,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     width_deg = width.to("deg").value
 
     # Declare directories
-    id_string = name + '_GALEX_' + band_dict['band_long']
+    id_string = galaxy_name + '_GALEX_' + band_dict['band_long']
 
     # Temporary directory
     temp_path_band = fs.join(temp_path, band_dict["band_long"])
@@ -329,10 +329,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     temp_convolve_path = fs.join(temp_path_band, "convolve")
     fs.create_directory(temp_convolve_path)
 
-    # Poisson temp directory in temporary directory
-    temp_poisson_path = fs.join(temp_path_band, "poisson")
-    fs.create_directory(temp_poisson_path)
-
     ### CHANGE WORKING DIRECTORY TO RAW
     os.chdir(temp_raw_path)
     ###
@@ -340,75 +336,14 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     # Path to the overlap table
     overlap_path = fs.join(temp_path_band, "overlap_table.dat")
 
-    # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)
-    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra.to("deg").value, dec=dec.to("deg").value, radius=(0.5*width_deg)*(2.0**0.5))
 
-    # Get file paths of overlapping observations
-    overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
+    # FILTER GALEX tiles for this band
+    raw_files = filter_galex_tiles(galaxy_name, meta_path, overlap_path, ra, dec, width_deg, temp_raw_path, band_dict)
 
-    if len(overlapping_file_paths.shape) == 0:
-        overlapping_file_paths = [overlapping_file_paths.tolist()]
-    for overlapping_file_path in overlapping_file_paths:
-        shutil.copy(overlapping_file_path, temp_raw_path)
 
-    # Uncompress .fits.gz files
-    #[os.system('gunzip '+ listfile) for listfile in os.listdir(raw_in_temp_dir)]
+    # CLEAN GALEX TILES
+    clean_galex_tiles(raw_files, id_string, nprocesses, working_path, temp_path_band, temp_reproject_path, band_dict)
 
-    # Ensure that at least one of the raw GALEX tiles has actual flux coverage at location of source
-    # raw_files = os.listdir(temp_raw_path) ## THERE WAS A 'deg' FILE IN THE DIRECTORY AS WELL WHICH WAS NOT A FITS FILE BUT A PLAIN TEXT HEADER FILE, AND SO THIS WASN'T WORKING
-    raw_files = fs.files_in_path(temp_raw_path, extension="fits", returns="name")
-    raw_files = [name + ".fits" for name in raw_files]
-    coverage = False
-    for raw_file in raw_files:
-
-        # Read in map
-        in_fitsdata = fits.open(fs.join(temp_raw_path, raw_file))
-        in_image = in_fitsdata[0].data
-        in_header = in_fitsdata[0].header
-        in_fitsdata.close()
-
-        # Locate pixel coords
-        in_wcs = WCS(in_header)
-        location_pix = in_wcs.wcs_world2pix( np.array([[ np.float(ra.to("deg").value), np.float(dec.to("deg").value) ]]), 0 )[0]
-        pix_i, pix_j = location_pix[1], location_pix[0]
-
-        # Evalulate coverage at location, and proceed accordingly
-        if True in [ coord <= 0 for coord in [ pix_i-10, pix_i+11, pix_j-10, pix_j+11 ] ]:
-            continue
-        try:
-            image_slice = in_image[pix_i-10:pix_i+11, pix_j-10:pix_j+11]
-        except:
-            continue
-        if np.where(image_slice>0)[0].shape[0]>0:
-            coverage = True
-
-    if not coverage:
-
-        # Warning message
-        log.warning('No GALEX '+ band_dict['band_long'] + ' coverage for ' + name)
-        gc.collect()
-        shutil.rmtree(temp_path_band)
-        return
-
-    # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
-    log.info('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string + " ...")
-
-    if nprocesses == 1:
-
-        # CLEAN
-        for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
-
-    else:
-
-        # Create process pool
-        pool = mp.Pool(processes=nprocesses)
-
-        # EXECUTE THE LOOP IN PARALLEL
-        for raw_file in raw_files: pool.apply_async(clean_galex_tile, args=(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict,))
-
-        # CLOSE AND JOIN THE PROCESS POOL
-        pool.close()
-        pool.join()
 
     # Create Montage FITS header
     location_string = str(ra_deg) + ' ' + str(dec_deg)
@@ -477,7 +412,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
             os.rename(fs.join(temp_swarp_path, listfile), fs.join(temp_swarp_path, listfile.replace('hdu0_','')))
 
     # MOSAIC WITH SWARP
-    swarp_result_path = mosaic_with_swarp()
+    swarp_result_path = mosaic_with_swarp(id_string, width_deg, pix_size, temp_swarp_path, ra_deg, dec_deg)
 
 
     ####################### IMAGE NAMES
@@ -554,6 +489,93 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     # Write the swarped image
     swarp_output_path = fs.join(output_path, id_string + "_swarp.fits")
     out_image.save(swarp_output_path)
+
+# -----------------------------------------------------------------
+
+def filter_galex_tiles(galaxy_name, meta_path, overlap_path, ra, dec, width_deg, temp_raw_path, band_dict):
+
+    """
+    This fucntion ...
+    :return:
+    """
+
+    # Use Montage image metadata table to identify and retrieve which raw GALEX tiles overlap with entire region of interest (handling the case of only a single file)
+    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode='circle', ra=ra.to("deg").value, dec=dec.to("deg").value, radius=(0.5 * width_deg) * (2.0 ** 0.5))
+
+    # Get file paths of overlapping observations
+    overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
+
+    if len(overlapping_file_paths.shape) == 0:
+        overlapping_file_paths = [overlapping_file_paths.tolist()]
+    for overlapping_file_path in overlapping_file_paths:
+        shutil.copy(overlapping_file_path, temp_raw_path)
+
+    # Uncompress .fits.gz files
+    # [os.system('gunzip '+ listfile) for listfile in os.listdir(raw_in_temp_dir)]
+
+    # Ensure that at least one of the raw GALEX tiles has actual flux coverage at location of source
+    # raw_files = os.listdir(temp_raw_path) ## THERE WAS A 'deg' FILE IN THE DIRECTORY AS WELL WHICH WAS NOT A FITS FILE BUT A PLAIN TEXT HEADER FILE, AND SO THIS WASN'T WORKING
+    raw_files = fs.files_in_path(temp_raw_path, extension="fits", returns="name")
+    raw_files = [name + ".fits" for name in raw_files]
+    coverage = False
+    for raw_file in raw_files:
+
+        # Read in map
+        in_fitsdata = fits.open(fs.join(temp_raw_path, raw_file))
+        in_image = in_fitsdata[0].data
+        in_header = in_fitsdata[0].header
+        in_fitsdata.close()
+
+        # Locate pixel coords
+        in_wcs = WCS(in_header)
+        location_pix = \
+        in_wcs.wcs_world2pix(np.array([[np.float(ra.to("deg").value), np.float(dec.to("deg").value)]]), 0)[0]
+        pix_i, pix_j = location_pix[1], location_pix[0]
+
+        # Evalulate coverage at location, and proceed accordingly
+        if True in [coord <= 0 for coord in [pix_i - 10, pix_i + 11, pix_j - 10, pix_j + 11]]:
+            continue
+        try:
+            image_slice = in_image[pix_i - 10:pix_i + 11, pix_j - 10:pix_j + 11]
+        except:
+            continue
+        if np.where(image_slice > 0)[0].shape[0] > 0:
+            coverage = True
+
+    # No coverage
+    if not coverage: raise RuntimeError('No GALEX ' + band_dict['band_long'] + ' coverage for ' + galaxy_name)
+
+    # Return ...
+    return raw_files
+
+# -----------------------------------------------------------------
+
+def clean_galex_tiles(raw_files, id_string, nprocesses, working_path, temp_path_band, temp_reproject_path, band_dict):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
+    log.info('Cleaning ' + str(len(raw_files)) + ' raw maps for ' + id_string + " ...")
+
+    if nprocesses == 1:
+
+        # CLEAN
+        for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
+
+    else:
+
+        # Create process pool
+        pool = mp.Pool(processes=nprocesses)
+
+        # EXECUTE THE LOOP IN PARALLEL
+        for raw_file in raw_files: pool.apply_async(clean_galex_tile, args=(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict,))
+
+        # CLOSE AND JOIN THE PROCESS POOL
+        pool.close()
+        pool.join()
 
 # -----------------------------------------------------------------
 
@@ -1081,7 +1103,7 @@ def convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output
 
 # -----------------------------------------------------------------
 
-def mosaic_with_swarp():
+def mosaic_with_swarp(id_string, width_deg, pix_size, temp_swarp_path, ra_deg, dec_deg):
 
     """
     This function ...
@@ -1090,13 +1112,15 @@ def mosaic_with_swarp():
 
     # Use SWarp to co-add images weighted by their error maps
     log.info("Co-adding " + id_string + " maps ...")
+
+    # Determine image width in pixels
     image_width_pixels = str(int((float(width_deg) * 3600.) / pix_size))
+
+    # Change directories
     os.chdir(temp_swarp_path)
 
     # EXECUTE SWARP
-    swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME ' + id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(
-        ra_deg) + ',' + str(
-        dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
+    swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME ' + id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
     os.system(swarp_command_string)
 
     # Swarp result path

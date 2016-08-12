@@ -76,25 +76,25 @@ class ImageFetcher(DataComponent):
         self.fetch_sdss()
 
         # 5. Fetch the H-alpha image
-        self.fetch_halpha()
+        #self.fetch_halpha()
 
         # 6. Fetch the 2MASS images
-        self.fetch_2mass()
+        #self.fetch_2mass()
 
         # 7. Fetch the Spitzer images
-        self.fetch_spitzer()
+        #self.fetch_spitzer()
 
         # 8. Fetch the WISE images
-        self.fetch_wise()
+        #self.fetch_wise()
 
         # 9. Fetch the Herschel images
-        self.fetch_herschel()
+        #self.fetch_herschel()
 
         # 10. Fetch the Planck images
-        self.fetch_planck()
+        #self.fetch_planck()
 
         # 11. Writing
-        self.write()
+        #self.write()
 
     # -----------------------------------------------------------------
 

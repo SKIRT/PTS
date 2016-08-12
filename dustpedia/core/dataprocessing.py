@@ -447,7 +447,7 @@ class DustPediaDataProcessing(object):
         log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
 
         # Create directories
-        working_path, download_path, response_path, background_path, counts_path, raw_path, temp_path = self.create_base_directories(galaxy_name)
+        working_path, download_path, response_path, background_path, counts_path, raw_path, temp_path = self.create_base_directories(galaxy_name, create=False)
 
         # Create temp subdirectories
         temp_fuv_path = fs.join(temp_path, "FUV")
@@ -455,10 +455,10 @@ class DustPediaDataProcessing(object):
         fs.create_directories(temp_fuv_path, temp_nuv_path)
 
         # Create download subdirectories
-        download_images_path, download_response_path, download_background_path, download_counts_path = self.create_download_directories(download_path)
+        download_images_path, download_response_path, download_background_path, download_counts_path = self.create_download_directories(download_path, create=False)
 
         # Download data and split into FUV and NUV
-        self.download_and_split(galaxy_name, download_path, download_images_path, download_response_path, download_background_path, download_counts_path, raw_path, response_path, background_path, counts_path)
+        #self.download_and_split(galaxy_name, download_path, download_images_path, download_response_path, download_background_path, download_counts_path, raw_path, response_path, background_path, counts_path)
 
         raw_fuv_path = fs.join(raw_path, "FUV")
         raw_nuv_path = fs.join(raw_path, "NUV")
@@ -480,11 +480,12 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def create_base_directories(self, galaxy_name):
+    def create_base_directories(self, galaxy_name, create=True):
 
         """
         This function ...
         :param galaxy_name:
+        :param create:
         :return:
         """
 
@@ -492,48 +493,50 @@ class DustPediaDataProcessing(object):
         log.info("Creating directories ...")
 
         # Determine the path to the temporary directory for downloading the images
-        working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
+        #working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
-        # working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
+        working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
 
         # Create the working directory
-        fs.create_directory(working_path)
+        if create: fs.create_directory(working_path)
 
         # DOWNLOAD PATH
         download_path = fs.join(working_path, "download")
+
         # Create download directory
-        fs.create_directory(download_path)
+        if create: fs.create_directory(download_path)
 
         # RESPONSE AND BACKGROUND PATH
         response_path = fs.join(working_path, "response")
         background_path = fs.join(working_path, "background")
-        fs.create_directories(response_path, background_path)
+        if create: fs.create_directories(response_path, background_path)
 
         # COUNT PATH
         counts_path = fs.join(working_path, "counts")
-        fs.create_directory(counts_path)
+        if create: fs.create_directory(counts_path)
 
         # RAW PATH
         raw_path = fs.join(working_path, "raw")
         # Create raw directory
-        fs.create_directory(raw_path)
+        if create: fs.create_directory(raw_path)
 
         # TEMP PATH
         temp_path = fs.join(working_path, "temp")
 
         # Create temp directory
-        fs.create_directory(temp_path)
+        if create: fs.create_directory(temp_path)
 
         # Return ...
         return working_path, download_path, response_path, background_path, counts_path, raw_path, temp_path
 
     # -----------------------------------------------------------------
 
-    def create_download_directories(self, download_path):
+    def create_download_directories(self, download_path, create=True):
 
         """
         This function ...
         :param download_path:
+        :param create:
         :return:
         """
 
@@ -544,7 +547,7 @@ class DustPediaDataProcessing(object):
         download_counts_path = fs.join(download_path, "counts")
 
         # Create
-        fs.create_directories(download_images_path, download_response_path, download_background_path, download_counts_path)
+        if create: fs.create_directories(download_images_path, download_response_path, download_background_path, download_counts_path)
 
         # Return
         return download_images_path, download_response_path, download_background_path, download_counts_path
@@ -552,7 +555,7 @@ class DustPediaDataProcessing(object):
     # -----------------------------------------------------------------
 
     def download_and_split(self, galaxy_name, download_path, download_images_path, download_response_path, download_background_path,
-                           download_counts_path, raw_path, response_path, background_path, counts_path):
+                           download_counts_path, raw_path, response_path, background_path, counts_path, create=True):
 
         """
         This function ...
@@ -564,43 +567,43 @@ class DustPediaDataProcessing(object):
         # 1 and 2 RAW directories
         raw_fuv_path = fs.join(raw_path, "FUV")
         raw_nuv_path = fs.join(raw_path, "NUV")
-        fs.create_directories(raw_fuv_path, raw_nuv_path)
+        if create: fs.create_directories(raw_fuv_path, raw_nuv_path)
 
         # FUV and NUV response directories
         response_fuv_path = fs.join(response_path, "FUV")
         response_nuv_path = fs.join(response_path, "NUV")
-        fs.create_directories(response_fuv_path, response_nuv_path)
+        if create: fs.create_directories(response_fuv_path, response_nuv_path)
 
         # FUV and NUV background directories
         background_fuv_path = fs.join(background_path, "FUV")
         background_nuv_path = fs.join(background_path, "NUV")
-        fs.create_directories(background_fuv_path, background_nuv_path)
+        if create: fs.create_directories(background_fuv_path, background_nuv_path)
 
         # FUV AND NUV counts directories
         counts_fuv_path = fs.join(counts_path, "FUV")
         counts_nuv_path = fs.join(counts_path, "NUV")
-        fs.create_directories(counts_fuv_path, counts_nuv_path)
+        if create: fs.create_directories(counts_fuv_path, counts_nuv_path)
 
         ###
 
         # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path,
+        if create: self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path,
                                                     download_background_path, download_counts_path)
 
         # Inform the user
         log.info("Splitting observations into FUV and NUV ...")
 
         # Split downloaded images into FUV and NUV
-        self.split_galex_observations(download_images_path, raw_fuv_path, raw_nuv_path)
+        if create: self.split_galex_observations(download_images_path, raw_fuv_path, raw_nuv_path)
 
         # Split response maps into FUV and NUV
-        self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
+        if create: self.split_galex_observations(download_response_path, response_fuv_path, response_nuv_path)
 
         # Split background maps into FUV and NUV
-        self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
+        if create: self.split_galex_observations(download_background_path, background_fuv_path, background_nuv_path)
 
         # Split count maps into FUV and NUV
-        self.split_galex_observations(download_counts_path, counts_fuv_path, counts_nuv_path)
+        if create: self.split_galex_observations(download_counts_path, counts_fuv_path, counts_nuv_path)
 
         ###
 
@@ -646,6 +649,7 @@ class DustPediaDataProcessing(object):
 
         # If not yet done, produce Montage image table of raw tiles
         for band in bands_dict.keys():
+
             # Inform the user
             log.info("Creating " + band + " image metadata table ...")
 
