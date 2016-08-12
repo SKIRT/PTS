@@ -49,6 +49,7 @@ parser.add_argument("--interactive", action="store_true", help="use interactive 
 parser.add_argument("--arguments", action="store_true", help="use argument mode for the configuration")
 parser.add_argument("--configfile", type=str, help="use a configuration file")
 parser.add_argument("--remote", type=str, help="launch the PTS command remotely")
+parser.add_argument("--keep", action="store_true", help="keep the remote output")
 parser.add_argument("--input", type=parsing.directory_path, help="the name/path of the input directory")
 parser.add_argument("--output", type=parsing.directory_path, help="the name/path of the output directory")
 parser.add_argument("options", nargs=argparse.REMAINDER, help="options for the specific do command")
@@ -192,7 +193,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
         remote.setup(args.remote)
 
         # Run PTS remotely
-        task = remote.run_pts(exact_command_name, config)
+        task = remote.run_pts(exact_command_name, config, keep_remote_output=args.keep)
 
         # Succesfully submitted
         log.success("Succesfully submitted the PTS job to the remote host")

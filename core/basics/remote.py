@@ -1855,7 +1855,7 @@ class Remote(object):
         output = self.execute("if [ " + expression + " ]; then echo True; else echo False; fi")
 
         # Return the result
-        return bool(output[0])
+        return output[0] == "True"
 
     # -----------------------------------------------------------------
 
