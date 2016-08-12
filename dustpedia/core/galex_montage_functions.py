@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.dustpedia.galex_montage_functions Functions for ...
+## \package pts.dustpedia.galex_montage_functions Functions for the mosaicing of GALEX tiles.
 
 # -----------------------------------------------------------------
 
@@ -388,323 +388,411 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         log.warning('No GALEX '+ band_dict['band_long'] + ' coverage for ' + name)
         gc.collect()
         shutil.rmtree(temp_path_band)
+        return
 
-    elif coverage:
+    # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
+    log.info('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string + " ...")
 
-        # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
-        log.info('Cleaning '+ str(len(raw_files)) + ' raw maps for ' + id_string + " ...")
+    if nprocesses == 1:
 
-        if nprocesses == 1:
+        # CLEAN
+        for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
 
-            # CLEAN
-            for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
+    else:
 
-        else:
+        # Create process pool
+        pool = mp.Pool(processes=nprocesses)
 
-            # Create process pool
-            pool = mp.Pool(processes=nprocesses)
+        # EXECUTE THE LOOP IN PARALLEL
+        for raw_file in raw_files: pool.apply_async(clean_galex_tile, args=(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict,))
 
-            # EXECUTE THE LOOP IN PARALLEL
-            for raw_file in raw_files: pool.apply_async(clean_galex_tile, args=(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict,))
+        # CLOSE AND JOIN THE PROCESS POOL
+        pool.close()
+        pool.join()
 
-            # CLOSE AND JOIN THE PROCESS POOL
-            pool.close()
-            pool.join()
+    # Create Montage FITS header
+    location_string = str(ra_deg) + ' ' + str(dec_deg)
+    pix_size = 3.2
 
-        # Create Montage FITS header
-        location_string = str(ra_deg) + ' ' + str(dec_deg)
-        pix_size = 3.2
+    # Make header
+    header_path = fs.join(temp_path_band, id_string + ".hdr")
+    montage.commands.mHdr(location_string, width_deg, header_path, pix_size=pix_size)
 
-        # Make header
-        header_path = fs.join(temp_path_band, id_string + ".hdr")
-        montage.commands.mHdr(location_string, width_deg, header_path, pix_size=pix_size)
+    # Count image files, and move to reprojection directory
+    mosaic_count = 0
+    for filename in os.listdir(temp_raw_path):
+        if '.fits' in filename:
+            mosaic_count += 1
+            new_path = fs.join(temp_reproject_path, filename)  ## NEW
+            if fs.is_file(new_path): fs.remove_file(new_path)  ## NEW
+            shutil.move(filename, temp_reproject_path)
 
-        # Count image files, and move to reprojection directory
-        mosaic_count = 0
-        for filename in os.listdir(temp_raw_path):
-            if '.fits' in filename:
-                mosaic_count += 1
-                new_path = fs.join(temp_reproject_path, filename)  ## NEW
-                if fs.is_file(new_path): fs.remove_file(new_path)  ## NEW
-                shutil.move(filename, temp_reproject_path)
+    # If more than one image file, commence background-matching
+    if mosaic_count > 1:
 
-        # If more than one image file, commence background-matching
-        if mosaic_count > 1:
+        # Inform the user
+        log.info("Matching background of " + id_string + " maps ...")
 
-            # Inform the user
-            log.info("Matching background of " + id_string + " maps ...")
+        # ...
+        level_galex_maps(temp_reproject_path, temp_convolve_path, 'int.fits')
 
-            # ...
-            level_galex_maps(temp_reproject_path, temp_convolve_path, 'int.fits')
+    # The path to the metadata table
+    metatable_path = meta_path
 
-        # The path to the metadata table
-        metatable_path = meta_path
+    # Create a dictionary for the exposure times for each image
+    exposure_times = dict()
 
-        # Create a dictionary for the exposure times for each image
-        exposure_times = dict()
+    # Determine how the files are named
+    filename_ends = "-" + band_dict['band_short'] + "-int"   # -fd-int for FUV, -nd-int for NUV
+    filename_ends_no_int = "-" + band_dict['band_short'] # -fd for FUV, -nd for NUV
 
-        # Determine how the files are named
-        filename_ends = "-" + band_dict['band_short'] + "-int"   # -fd-int for FUV, -nd-int for NUV
-        filename_ends_no_int = "-" + band_dict['band_short'] # -fd for FUV, -nd for NUV
+    # Get the exposure time for each image
+    for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains=filename_ends, returns=["path", "name"]):
 
-        # Get the exposure time for each image
-        for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains=filename_ends, returns=["path", "name"]):
+        # Open the header
+        header = fits.getheader(path)
 
-            # Open the header
-            header = fits.getheader(path)
+        # Search for the exposure time
+        exp_time = get_total_exposure_time(header)
 
-            # Search for the exposure time
-            exp_time = get_total_exposure_time(header)
+        # Set the exposure time
+        image_name = name.split(filename_ends)[0]
+        exposure_times[image_name] = exp_time
 
-            # Set the exposure time
-            image_name = name.split(filename_ends)[0]
-            exposure_times[image_name] = exp_time
+    # Reproject image and weight prior to coaddition
+    montage.commands.mImgtbl(temp_reproject_path, metatable_path, corners=True)
+    proj_stats_path = fs.join(temp_path_band, id_string + "_Proj_Stats.txt")
+    montage.commands.mProjExec(metatable_path, header_path, temp_swarp_path, proj_stats_path, raw_dir=temp_reproject_path, debug=False, exact=True, whole=False)
+    # WHOLE IS IMPORTANT HERE
+    # WE ACTUALLY DON'T WANT TO REPROJECT TO THE EXACT PIXELGRID DEFINED BY THE HEADER HERE,
+    # BUT RATHER CUT OFF THE ORIGINAL MAPS WHERE THEY ARE OUTSIDE OF THE FIELD OF VIEW OF THE HEADER DEFINED AREA
+    # SO NO ADDING OF NEW PIXELS IS DONE TO HAVE THE EXACT PIXELGRID DEFINED BY THE HEADER
+    # THIS IS PRESUMABLY DONE JUST TO MAKE THE SWARPING MORE EFFICIENT ??
 
-        # Reproject image and weight prior to coaddition
-        montage.commands.mImgtbl(temp_reproject_path, metatable_path, corners=True)
-        proj_stats_path = fs.join(temp_path_band, id_string + "_Proj_Stats.txt")
-        montage.commands.mProjExec(metatable_path, header_path, temp_swarp_path, proj_stats_path, raw_dir=temp_reproject_path, debug=False, exact=True, whole=False)
-        # WHOLE IS IMPORTANT HERE
-        # WE ACTUALLY DON'T WANT TO REPROJECT TO THE EXACT PIXELGRID DEFINED BY THE HEADER HERE,
-        # BUT RATHER CUT OFF THE ORIGINAL MAPS WHERE THEY ARE OUTSIDE OF THE FIELD OF VIEW OF THE HEADER DEFINED AREA
-        # SO NO ADDING OF NEW PIXELS IS DONE TO HAVE THE EXACT PIXELGRID DEFINED BY THE HEADER
-        # THIS IS PRESUMABLY DONE JUST TO MAKE THE SWARPING MORE EFFICIENT ??
+    # Rename reprojected files for SWarp
+    for listfile in os.listdir(temp_swarp_path):
+        if '_area.fits' in listfile:
+            os.remove(fs.join(temp_swarp_path, listfile))
+        elif 'hdu0_' in listfile:
+            os.rename(fs.join(temp_swarp_path, listfile), fs.join(temp_swarp_path, listfile.replace('hdu0_','')))
 
-        # Rename reprojected files for SWarp
-        for listfile in os.listdir(temp_swarp_path):
-            if '_area.fits' in listfile:
-                os.remove(fs.join(temp_swarp_path, listfile))
-            elif 'hdu0_' in listfile:
-                os.rename(fs.join(temp_swarp_path, listfile), fs.join(temp_swarp_path, listfile.replace('hdu0_','')))
+    # MOSAIC WITH SWARP
+    swarp_result_path = mosaic_with_swarp()
 
-        # Use SWarp to co-add images weighted by their error maps
-        log.info("Co-adding " + id_string + " maps ...")
-        image_width_pixels = str(int((float(width_deg)*3600.)/pix_size))
-        os.chdir(temp_swarp_path)
 
-        # EXECUTE SWARP
-        swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME '+ id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
-        os.system(swarp_command_string)
+    #######################
 
-        # Swarp result path
-        swarp_result_path = fs.join(temp_swarp_path, id_string + "_SWarp.fits")
+    # Make noise maps in count/s
+    make_noise_maps_in_cps()
 
-        # NEW:
-        out_image = Frame.from_file(swarp_result_path)
-        out_image.unit = "count/s"
+    # Rebin frames and error maps
+    rebin_frames_and_error_maps()
 
-        out_image[out_image == 0] = np.NaN
-        out_image[out_image < -1E3] = np.NaN
-        out_image[out_image <= 1E-8] = 0
 
-        # CONVERT TO JANSKY / PIX
 
-        # FROM COUNT / S TO AB MAG:
-        # mag_AB = ZP - (2.5 * log10(CpS))
-        # FROM AB MAG TO FLUX (JANSKY):
-        # mag_AB = -2.5 log (Fv / 3631 Jy) => Fv[Jy] = ...
 
-        # Calculate the conversion factor
-        conversion_factor = 1.0
-        conversion_factor *= ab_mag_zero_point.to("Jy").value
+    #######################
 
-        if band_dict['band_long'] == "FUV": conversion_factor *= 10.**(galex_fuv_zero_point/2.5)
-        elif band_dict['band_long'] == "NUV": conversion_factor *= 10.**(galex_nuv_zero_point/2.5)
-        else: raise ValueError("Invalid band name: " + band_dict['band_long'])
+    # Poisson temp directory in temporary directory
+    temp_poisson_path = fs.join(temp_path_band, "poisson")
+    fs.create_directory(temp_poisson_path)
 
-        # DO THE CONVERSION
+    # Some directories
+    temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
+    temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
+    temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin-count")
+    temp_poisson_footprint_path = fs.create_directory_in(temp_poisson_path, "footprint")
+    temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
+    temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
 
-        # Convert and set the new unit
-        out_image *= conversion_factor
-        out_image.unit = "Jy/pix"
+    #### LOAD SWARP RESULT, PRESUMABLY IN COUNT/S
 
-        #######################
+    # Load the resulting frame
+    out_image = Frame.from_file(swarp_result_path)
+    out_image.unit = "count/s"
 
+    out_image[out_image == 0] = np.NaN
+    out_image[out_image < -1E3] = np.NaN
+    out_image[out_image <= 1E-8] = 0
 
+    # CONVERT TO JANSKY / PIX
 
+    # FROM COUNT / S TO AB MAG:
+    # mag_AB = ZP - (2.5 * log10(CpS))
+    # FROM AB MAG TO FLUX (JANSKY):
+    # mag_AB = -2.5 log (Fv / 3631 Jy) => Fv[Jy] = ...
 
-        #######################
+    # Calculate the conversion factor
+    conversion_factor = 1.0
+    conversion_factor *= ab_mag_zero_point.to("Jy").value
 
-        # Poisson temp directory in temporary directory
-        temp_poisson_path = fs.join(temp_path_band, "poisson")
-        fs.create_directory(temp_poisson_path)
+    if band_dict['band_long'] == "FUV":
+        conversion_factor *= 10. ** (galex_fuv_zero_point / 2.5)
+    elif band_dict['band_long'] == "NUV":
+        conversion_factor *= 10. ** (galex_nuv_zero_point / 2.5)
+    else: raise ValueError("Invalid band name: " + band_dict['band_long'])
 
-        # Some directories
-        temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
-        temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
-        temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin-count")
-        temp_poisson_footprint_path = fs.create_directory_in(temp_poisson_path, "footprint")
-        temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
-        temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
+    # DO THE CONVERSION
 
-        #### NO, BECAUSE SWARP DECIDES ITS OWN COORDINATE SYSTEM BASED ON WHAT IT HAS AS INPUT IMAGES, SO
-        #### THE SWARP MOSAIC MAY NOT CORRESPOND EXACTLY TO THE TARGET HEADER OR WCS THAT WE CREATED TO
-        # Load header
-        #rebin_header = Header.fromtextfile(header_path)
-        # To coordinate system
-        #rebin_wcs = CoordinateSystem(rebin_header)
-        rebin_wcs = out_image.wcs
+    # Convert and set the new unit
+    out_image *= conversion_factor
+    out_image.unit = "Jy/pix"
 
-        ## CALCULATION OF POISSON
+    #######################
 
-        ## REBINNING AND CONVERSION TO COUNT
+    #### NO, BECAUSE SWARP DECIDES ITS OWN COORDINATE SYSTEM BASED ON WHAT IT HAS AS INPUT IMAGES, SO
+    #### THE SWARP MOSAIC MAY NOT CORRESPOND EXACTLY TO THE TARGET HEADER OR WCS THAT WE CREATED TO
+    # Load header
+    #rebin_header = Header.fromtextfile(header_path)
+    # To coordinate system
+    #rebin_wcs = CoordinateSystem(rebin_header)
+    rebin_wcs = out_image.wcs
 
-        counts_path_band = fs.join(working_path, "counts", band_dict["band_long"])
+    ## CALCULATION OF POISSON
 
-        #print(fs.files_in_path(counts_path_band))
+    ## REBINNING AND CONVERSION TO COUNT
 
-        # Open the -int images in the temp_swarp_path that are used to make the mosaic, convert them to counts
-        nswarp_images = 0
-        for filename in os.listdir(temp_swarp_path):
-        #for filename in os.listdir(counts_path_band):
+    counts_path_band = fs.join(working_path, "counts", band_dict["band_long"])
 
-            if not filename.endswith("-int.fits"): continue
+    #print(fs.files_in_path(counts_path_band))
 
-            # Determine the path to the cleaned rebinned image inside temp_swarp_path
-            # Setting the frame NAN where the corresponding cleaned image is also NAN
-            cleaned_path = fs.join(temp_swarp_path, filename)
+    # Open the -int images in the temp_swarp_path that are used to make the mosaic, convert them to counts
+    nswarp_images = 0
+    for filename in os.listdir(temp_swarp_path):
+    #for filename in os.listdir(counts_path_band):
 
-            # Determine the path to the corresponding weight map
-            weight_path = cleaned_path.replace("-int", "-int.wgt")
+        if not filename.endswith("-int.fits"): continue
 
-            #print(filename_ends, filename, exposure_times.keys())
+        # Determine the path to the cleaned rebinned image inside temp_swarp_path
+        # Setting the frame NAN where the corresponding cleaned image is also NAN
+        cleaned_path = fs.join(temp_swarp_path, filename)
 
-            # Get the image name
-            image_name = filename.split(filename_ends)[0]
+        # Determine the path to the corresponding weight map
+        weight_path = cleaned_path.replace("-int", "-int.wgt")
 
-            # Increment the counter
-            nswarp_images += 1
+        #print(filename_ends, filename, exposure_times.keys())
 
-            # Determine filepath
-            #filepath = fs.join(temp_swarp_path, filename)
+        # Get the image name
+        image_name = filename.split(filename_ends)[0]
 
-            filepath = fs.join(counts_path_band, image_name + "-" + band_dict["band_short"] + "-cnt.fits")
+        # Increment the counter
+        nswarp_images += 1
 
-            # Debugging
-            log.debug("Loading the " + image_name + " frame ...")
+        # Determine filepath
+        #filepath = fs.join(temp_swarp_path, filename)
 
-            # Load the frame
-            frame = Frame.from_file(filepath)
+        filepath = fs.join(counts_path_band, image_name + "-" + band_dict["band_short"] + "-cnt.fits")
 
-            # Debugging
-            log.debug("Converting unit to count / sr ...")
+        # Debugging
+        log.debug("Loading the " + image_name + " frame ...")
 
-            # Get the exposure time for this image
-            exposure_time = exposure_times[image_name]
+        # Load the frame
+        frame = Frame.from_file(filepath)
 
-            # Debugging
-            log.debug("The exposure time for this image is " + str(exposure_time))
+        # Debugging
+        log.debug("Converting unit to count / sr ...")
 
-            # Convert the frame FROM COUNT/S to COUNT
-            #frame *= exposure_times[image_name]
-            frame.unit = "count" # set the unit to count
+        # Get the exposure time for this image
+        exposure_time = exposure_times[image_name]
 
-            # Save the frame to the count path
-            frame.save(fs.join(temp_poisson_count_path, image_name + ".fits"))
+        # Debugging
+        log.debug("The exposure time for this image is " + str(exposure_time))
 
-            # CONVERT THE FRAME FROM COUNT TO COUNT/SR
-            frame /= frame.pixelarea.to("sr").value
-            frame.unit = "count/sr"
+        # Convert the frame FROM COUNT/S to COUNT
+        #frame *= exposure_times[image_name]
+        frame.unit = "count" # set the unit to count
 
-            # Save the frame to the countsr path
-            frame.save(fs.join(temp_poisson_countsr_path, image_name + ".fits"))
+        # Save the frame to the count path
+        frame.save(fs.join(temp_poisson_count_path, image_name + ".fits"))
 
-            # REBIN THE FRAME TO THE COMMON PIXEL GRID
-            footprint = frame.rebin(rebin_wcs)
+        # CONVERT THE FRAME FROM COUNT TO COUNT/SR
+        frame /= frame.pixelarea.to("sr").value
+        frame.unit = "count/sr"
 
-            # CONVERT THE FRAME FROM COUNT/SR TO COUNT
-            frame *= frame.pixelarea.to("sr").value
-            frame.unit = "count"
+        # Save the frame to the countsr path
+        frame.save(fs.join(temp_poisson_countsr_path, image_name + ".fits"))
 
-            # SET NANS IN THE REBINNED FRAME WHERE THE CLEANED IMAGE IN THE TEMP SWARP PATH IS ALSO NAN
-            ## FIRST REBIN THE CLEANED IMAGE ALSO TO THE FINAL WCS AS DETERMINED BY SWARP
-            #cleaned_frame = Frame.from_file(cleaned_path)
-            weight_map = Frame.from_file(weight_path)
-            weight_map.rebin(rebin_wcs)
-            frame[weight_map.nans()] = np.NaN
+        # REBIN THE FRAME TO THE COMMON PIXEL GRID
+        footprint = frame.rebin(rebin_wcs)
 
-            # Save the rebinned frame
-            frame.save(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
+        # CONVERT THE FRAME FROM COUNT/SR TO COUNT
+        frame *= frame.pixelarea.to("sr").value
+        frame.unit = "count"
 
-            # SET NANS IN THE FOOTPRINT WHERE THE WEIGHT MAP IN THE TEMP SWARP PATH IS ALSO NAN
-            footprint[weight_map.nans()] = np.NaN
+        # SET NANS IN THE REBINNED FRAME WHERE THE CLEANED IMAGE IN THE TEMP SWARP PATH IS ALSO NAN
+        ## FIRST REBIN THE CLEANED IMAGE ALSO TO THE FINAL WCS AS DETERMINED BY SWARP
+        #cleaned_frame = Frame.from_file(cleaned_path)
+        weight_map = Frame.from_file(weight_path)
+        weight_map.rebin(rebin_wcs)
+        frame[weight_map.nans()] = np.NaN
 
-            # Save the (rebinned) footprint
-            footprint.save(fs.join(temp_poisson_footprint_path, image_name + ".fits"))
+        # Save the rebinned frame
+        frame.save(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
 
-        # Initialize a list to contain the frames to be summed
-        a_frames = [] # the rebinned maps in counts
-        ab_frames = []
-        weight_frames = []
+        # SET NANS IN THE FOOTPRINT WHERE THE WEIGHT MAP IN THE TEMP SWARP PATH IS ALSO NAN
+        footprint[weight_map.nans()] = np.NaN
 
-        # Loop over the files in the temp poisson rebin directory
-        for path, name in fs.files_in_path(temp_poisson_rebin_path, extension="fits", returns=["path", "name"]):
+        # Save the (rebinned) footprint
+        footprint.save(fs.join(temp_poisson_footprint_path, image_name + ".fits"))
 
-            # Open the rebinned frame IN COUNTS
-            a = Frame.from_file(path)
+    # Initialize a list to contain the frames to be summed
+    a_frames = [] # the rebinned maps in counts
+    ab_frames = []
+    weight_frames = []
 
-            # Set NaNs to zero
-            a.replace_nans(0.0) # if we don't do this the entire combined poisson error frame is NaN
+    # Loop over the files in the temp poisson rebin directory
+    for path, name in fs.files_in_path(temp_poisson_rebin_path, extension="fits", returns=["path", "name"]):
 
-            # Get footprint
-            footprint_path = fs.join(temp_poisson_footprint_path, name + ".fits")
-            b = Frame.from_file(footprint_path)
+        # Open the rebinned frame IN COUNTS
+        a = Frame.from_file(path)
 
-            # Set NaNs to zero
-            b.replace_nans(0.0)
+        # Set NaNs to zero
+        a.replace_nans(0.0) # if we don't do this the entire combined poisson error frame is NaN
 
-            # Add product of primary and footprint and footprint to the appropriate list
-            ab = a * b
-            a_frames.append(a)
-            ab_frames.append(ab)
+        # Get footprint
+        footprint_path = fs.join(temp_poisson_footprint_path, name + ".fits")
+        b = Frame.from_file(footprint_path)
 
-            # Calculate weight frame
-            weight_frame = b * math.sqrt(exposure_times[name])
-            weight_frames.append(weight_frame)
+        # Set NaNs to zero
+        b.replace_nans(0.0)
 
-            # Save weight frame
-            weight_frame.save(fs.join(temp_poisson_weights_path, name + ".fits"))
+        # Add product of primary and footprint and footprint to the appropriate list
+        ab = a * b
+        a_frames.append(a)
+        ab_frames.append(ab)
 
-        # Take the sums
-        ab_sum = sum_frames(*ab_frames)
+        # Calculate weight frame
+        weight_frame = b * math.sqrt(exposure_times[name])
+        weight_frames.append(weight_frame)
 
-        # AB SUM SHOULD ACTUALLY BE THE SAME AS A SUM
-        a_sum = sum_frames(*a_frames) # SUM ALL THE COUNT MAPS
-        # Save the total count map (a_sum)
-        a_sum.save(fs.join(temp_poisson_result_path, "total_counts.fits"))
+        # Save weight frame
+        weight_frame.save(fs.join(temp_poisson_weights_path, name + ".fits"))
 
-        # Calculate the relative poisson errors
-        rel_poisson_frame = ab_sum ** (-0.5)
+    # Take the sums
+    ab_sum = sum_frames(*ab_frames)
 
-        # Calculate the total weight map
-        total_weight_map = sum_frames(*weight_frames)
+    # AB SUM SHOULD ACTUALLY BE THE SAME AS A SUM
+    a_sum = sum_frames(*a_frames) # SUM ALL THE COUNT MAPS
+    # Save the total count map (a_sum)
+    a_sum.save(fs.join(temp_poisson_result_path, "total_counts.fits"))
 
-        # Save rel poisson frame and total weight map
-        rel_poisson_frame.save(fs.join(temp_poisson_result_path, "rel_poisson.fits"))
-        total_weight_map.save(fs.join(temp_poisson_result_path, "weights.fits"))
+    # Calculate the relative poisson errors
+    rel_poisson_frame = ab_sum ** (-0.5)
 
-        # Write the Poisson error frame also to the output directory
-        #poisson_path = fs.join(output_path, id_string + "_relpoisson.fits")
-        #rel_poisson_frame.save(poisson_path)
+    # Calculate the total weight map
+    total_weight_map = sum_frames(*weight_frames)
 
-        ################ WRITE RESULT
+    # Save rel poisson frame and total weight map
+    rel_poisson_frame.save(fs.join(temp_poisson_result_path, "rel_poisson.fits"))
+    total_weight_map.save(fs.join(temp_poisson_result_path, "weights.fits"))
 
-        # Determine output image path
-        out_image_path = fs.join(output_path, id_string + ".fits")
+    # Write the Poisson error frame also to the output directory
+    #poisson_path = fs.join(output_path, id_string + "_relpoisson.fits")
+    #rel_poisson_frame.save(poisson_path)
 
-        image = Image()
-        image.add_frame(out_image, "primary") # the mosaic
-        image.add_frame(rel_poisson_frame, "rel_poisson") # has no unit, but Image will be saved with unit. Problem?
+    ################ WRITE RESULT
 
-        # Save the image
-        image.save(out_image_path)
+    # Determine output image path
+    out_image_path = fs.join(output_path, id_string + ".fits")
 
-        ################
+    image = Image()
+    image.add_frame(out_image, "primary") # the mosaic
+    image.add_frame(rel_poisson_frame, "rel_poisson") # has no unit, but Image will be saved with unit. Problem?
 
-        # Clean up
-        log.success("Completed creating the mosaic and poisson noise map for " + id_string)
-        #gc.collect()
-        #shutil.rmtree(temp_dir)
+    # Save the image
+    image.save(out_image_path)
+
+    ################
+
+    # Clean up
+    log.success("Completed creating the mosaic and poisson noise map for " + id_string)
+    #gc.collect()
+    #shutil.rmtree(temp_dir)
+
+# -----------------------------------------------------------------
+
+def make_noise_maps_in_cps():
+
+    """
+    This function ...
+    :return:
+    """
+
+    for filename in os.listdir(temp_swarp_path):
+
+        filepath = fs.join(temp_swarp_path, filename)
+
+        # Get the image name
+        image_name = filename.split(filename_ends)[0]
+
+        # Get the path to the file in counts
+        counts_filepath = fs.join(counts_path_band, image_name + "-" + band_dict["band_short"] + "-cnt.fits")
+
+# -----------------------------------------------------------------
+
+def rebin_frames_and_error_maps():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Temp directory for own mosaicing
+    temp_mosaic_path = fs.create_directory_in(temp_path, "mosaic")
+
+    # Temp directory for the images in count/s/sr
+    temp_mosaic_converted_path = fs.create_directory_in(temp_mosaic_path, "converted")
+
+    # Temp directory for the images rebinned to the target WCS, in count/s/sr
+    temp_mosaic_rebinned_path = fs.create_directory_in(temp_mosaic_path, "rebinned")
+
+    # DO THE UNIT CONVERSION
+    for path, name in fs.files_in_path(temp_reproject_path, extension="fits", returns=["path", "name"]):
+        # Debugging
+        log.debug("Converting " + name + " frame and error map to count / s / sr...")
+
+        # Load the frame
+        frame = Frame.from_file(path)
+        frame.unit = ""
+
+        # NUMBER OF SR PER PIXEL
+        pixelsr = frame.pixelarea.to("sr").value
+
+        # CONVERT FRAME
+        frame /= pixelsr  # IN NANOMAGGIES PER SR NOW
+
+        # CONVERT ERROR MAP
+        errormap /= pixelsr  # IN NANOMAGGIES PER SR NOW
+
+    # REPROJECT ALL INPUT MAPS TO TARGET HEADER
+    montage.commands.mProjExec(metatable_path, header_path, temp_mosaic_path, proj_stats_path,
+                               raw_dir=temp_reproject_path, debug=False, exact=True, whole=True)
+
+# -----------------------------------------------------------------
+
+def mosaic_with_swarp():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Use SWarp to co-add images weighted by their error maps
+    log.info("Co-adding " + id_string + " maps ...")
+    image_width_pixels = str(int((float(width_deg) * 3600.) / pix_size))
+    os.chdir(temp_swarp_path)
+
+    # EXECUTE SWARP
+    swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME ' + id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(
+        ra_deg) + ',' + str(
+        dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
+    os.system(swarp_command_string)
+
+    # Swarp result path
+    swarp_result_path = fs.join(temp_swarp_path, id_string + "_SWarp.fits")
+
+    # Return the path to the resulting mosaic
+    return swarp_result_path
 
 # -----------------------------------------------------------------
 

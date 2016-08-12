@@ -832,14 +832,42 @@ class DustPediaDataProcessing(object):
         #self.rebin_sdss_frames_and_error_maps(rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path)
 
         # Make the footprints
-        self.make_sdss_footprints(rebinned_path, footprints_path)
+        #self.make_sdss_footprints(rebinned_path, footprints_path)
 
         # DO THE COMBINING
         # rebinned_path, footprints_path, mosaics_path, wcs
-        self.combine_sdss_frames_and_error_maps(rebinned_path, footprints_path, mosaics_path, rebin_wcs)
+        #self.combine_sdss_frames_and_error_maps(rebinned_path, footprints_path, mosaics_path, rebin_wcs)
 
         # CONVERT TO JY/PIX
-        self.convert_sdss_mosaic_and_error_map_to_jansky(galaxy_name, band, mosaics_path, results_path)
+        #self.convert_sdss_mosaic_and_error_map_to_jansky(galaxy_name, band, mosaics_path, results_path)
+
+        ## WRITE RESULT TO OUTPUT DIRECTORY
+
+        # Load the image
+        id_string = galaxy_name + '_SDSS_' + band
+        result_path = fs.join(results_path, id_string + ".fits")
+        image = Image.from_file(result_path)
+
+        # Get mosaic and error map
+        mosaic = image.frames.primary
+        mosaic_errors = image.frames.errors
+
+        # Calculate the relative error map
+        relerrors = mosaic_errors / mosaic
+
+        # Save mosaic as FITS file
+        mosaic_output_path = fs.join(output_path, id_string + ".fits")
+        mosaic.save(mosaic_output_path)
+
+        # Save error map as FITS file
+        errors_output_path = fs.join(output_path, id_string + "_errors.fits")
+        mosaic_errors.save(errors_output_path)
+
+        # Save relative error map as FITS file
+        relerrors_output_path = fs.join(output_path, id_string + "_relerrors.fits")
+        relerrors.save(relerrors_output_path)
+
+        ## END
 
     # -----------------------------------------------------------------
 
