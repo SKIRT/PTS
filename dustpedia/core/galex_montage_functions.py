@@ -490,7 +490,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         swarp_result_path = fs.join(temp_swarp_path, id_string + "_SWarp.fits")
 
         # NEW:
-        #out_image = Frame(in_image, unit="count/s")
         out_image = Frame.from_file(swarp_result_path)
         out_image.unit = "count/s"
 
@@ -518,6 +517,11 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         # Convert and set the new unit
         out_image *= conversion_factor
         out_image.unit = "Jy/pix"
+
+        #######################
+
+
+
 
         #######################
 
@@ -698,8 +702,7 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
         ################
 
         # Clean up
-        log.success("Completed Montaging and SWarping of " + id_string)
-
+        log.success("Completed creating the mosaic and poisson noise map for " + id_string)
         #gc.collect()
         #shutil.rmtree(temp_dir)
 

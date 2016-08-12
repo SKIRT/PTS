@@ -163,13 +163,14 @@ class Remote(object):
 
         # Inform the user
         if log is not None: log.info("Logging out from the remote environment ...")
+        # the conditional statement is because of this error message during destruction at the end of a script:
+        # Exception AttributeError: "'NoneType' object has no attribute 'info'" in <bound method SkirtRemote.__del__ of <pts.core.simulation.remote.SkirtRemote object at 0x118628d50>> ignored
 
         # Disconnect
         if self.connected:
 
             self.ssh.logout()
-            #connected_remotes[self.host.id] = None
-            if connected_remotes is not None: del connected_remotes[self.host.id]
+            if connected_remotes is not None: del connected_remotes[self.host.id] # the conditional statement is because 'connected_remotes' is set to None during destruction at the end of a script
             self.connected = False
 
         # Disconnect from the VPN service if necessary
