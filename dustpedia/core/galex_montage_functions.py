@@ -819,6 +819,7 @@ def make_noise_maps_in_cps(band_dict, image_names_for_mosaic, counts_path_band, 
 
         # Calculate the poisson frame
         poisson = Frame(np.sqrt(counts_frame.data))   # calculate the poisson error (in counts) in every pixel
+        poisson.wcs = counts_frame.wcs
         poisson.unit = "ct"
 
         # Get the exposure time in seconds
