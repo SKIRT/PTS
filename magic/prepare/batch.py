@@ -5,14 +5,15 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
+## \package pts.magic.prepare.batch Contains the BatchImagePreparer class.
+
 # -----------------------------------------------------------------
 
-# Import standard modules
-
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from ..core.datacube import DataCube
 from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
@@ -32,20 +33,8 @@ class BatchImagePreparer(Configurable):
         # Call the constructor of the base class
         super(BatchImagePreparer, self).__init__(config)
 
-        # Frames / or do we want a datacube ...
-        self.frames = []
-
-    # -----------------------------------------------------------------
-
-    def add_frame(self, frame):
-
-        """
-        This function ...
-        :param frame:
-        :return:
-        """
-
-        self.frames = []
+        # The input dataset
+        self.dataset = None
 
     # -----------------------------------------------------------------
 
@@ -56,7 +45,17 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
+        # 1. Call the setup function
         self.setup()
+
+        # 2. Get the galactic attenuation
+        self.get_extinction()
+
+        # 3. Prepare the images
+        self.prepare()
+
+        # 4. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -66,5 +65,44 @@ class BatchImagePreparer(Configurable):
         This function ...
         :return:
         """
+
+        # Call the setup function of the base class
+        super(BatchImagePreparer, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def get_extinction(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("")
+
+    # -----------------------------------------------------------------
+
+    def prepare(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("")
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
 
 # -----------------------------------------------------------------

@@ -66,6 +66,9 @@ class ParameterExplorer(FittingComponent):
         # The ski file
         self.ski = None
 
+        # The paths to the simulation input files
+        self.input_paths = None
+
         # Initial generation is present
         self.has_initial = False
 
@@ -86,6 +89,9 @@ class ParameterExplorer(FittingComponent):
 
         # 4. Generate the model parameters
         self.generate_models()
+
+        # 5. Set the paths to the input files
+        self.set_input()
 
         # 5. Set the parallelization schemes for the different remote hosts
         self.set_parallelization()
@@ -263,6 +269,22 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the input paths ...")
+
+        # Set the paths to the input maps and appropriate wavelength grid file
+        self.input_paths = self.input_map_paths
+        self.input_paths.append() # add the path to the wavelength grid
+
+    # -----------------------------------------------------------------
+
     def set_parallelization(self):
 
         """
@@ -338,7 +360,7 @@ class ParameterExplorer(FittingComponent):
             self.ski.saveto(ski_path)
 
             # Create the SKIRT simulation definition
-            definition = SingleSimulationDefinition(ski_path, self.fit_in_path, output_path)
+            definition = SingleSimulationDefinition(ski_path, self.input_paths, output_path)
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")

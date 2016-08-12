@@ -12,13 +12,8 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
+from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------

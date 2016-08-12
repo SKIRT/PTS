@@ -25,7 +25,7 @@ class SingleSimulationDefinition(object):
         """
         The constructor ...
         :param ski_path:
-        :param input_path:
+        :param input_path: can be path to input directory or list of file paths
         :param output_path:
         :param name:
         :return:
@@ -51,14 +51,14 @@ class SingleSimulationDefinition(object):
 
         properties = []
         properties.append("ski path: " + self.ski_path)
-        properties.append("input path: " + str(self.input_path))
+        properties.append("input path(s): " + str(self.input_path))
         properties.append("output path: " + str(self.output_path))
     
         return_str = self.__class__.__name__ + ":\n"
         for property in properties: return_str += " -" + property + "\n"
         return return_str
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def __repr__(self):
 
@@ -80,6 +80,11 @@ class MultiSimulationDefinition(object):
 
         """
         The constructor ...
+        :param base_path: the directory with the ski files
+        :param pattern: the ski pattern
+        :param input_name: the name of the input directory (or a list of file paths)
+        :param output_name: the name of the output directory
+        :param recursive:
         """
 
         self.base_path = base_path

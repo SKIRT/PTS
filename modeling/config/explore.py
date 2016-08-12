@@ -6,17 +6,17 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.basics.configuration import ConfigurationDefinition, stringify_not_list
 from pts.core.tools import filesystem as fs
-from pts.modeling.core.component import get_free_parameter_labels
+from pts.modeling.core.component import load_fitting_configuration
 
 # -----------------------------------------------------------------
 
-# Determine the path to the free parameters table
-free_parameters_path = fs.join(fs.cwd(), "fit", "free_parameters.txt")
+# Load the fitting configuration
+fitting_configuration = load_fitting_configuration(fs.cwd())
 
-# Get the labels of the free parameters
-free_parameter_labels = get_free_parameter_labels(free_parameters_path)
+# Free parameter labels
+free_parameter_labels = fitting_configuration.free_parameters
 
 # -----------------------------------------------------------------
 
@@ -29,9 +29,17 @@ definition.add_positional_optional("generation_method", "string", "the model gen
 # Optional parameters
 definition.add_optional("remote", "string", "the remote host on which to run the parameters exploration", "nancy")
 definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
-definition.add_optional("young", "real_range", "the range of the FUV luminosity of the young stellar population", "0.0:4.e16", convert_default=True)
-definition.add_optional("ionizing", "real_range", "the range of the FUV luminosity of the ionizing stellar population", "0.0:5.e10", convert_default=True)
-definition.add_optional("dust", "quantity_range", "the range of the dust mass", "0.5e7:3.e7", convert_default=True)
+
+# The ranges of the different free parameters (although the absolute ranges are defined in the fitting configuration,
+# give the option to refine these ranges for each exploration step (generation))
+for label in free_parameter_labels:
+
+    # Get the default range
+    default_range = fitting_configuration[label + "_range"]
+    ptype, string = stringify_not_list(default_range)
+
+    # Add the optional range setting for this free parameter
+    definition.add_optional(label + "_range", ptype, "the range of " + label, default_range)
 
 # Flags
 definition.add_flag("relative", "whether the range values are relative to the best (or initial) parameter value")

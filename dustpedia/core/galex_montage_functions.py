@@ -38,7 +38,7 @@ import ChrisFuncs
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from ...magic.core.frame import Frame, sum_frames
+from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...magic.core.image import Image
 from ...magic.basics.coordinatesystem import CoordinateSystem
 
@@ -480,30 +480,66 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     swarp_result_path = mosaic_with_swarp()
 
 
-    #######################
+    ####################### IMAGE NAMES
+
+    # The list of image names to be used for the mosaic
+    image_names_for_mosaic = []
+
+    # Loop over the files in the temp_swarp_path directory, where the tiles from temp_reproject_path are rebinned and saved to
+    for filename in os.listdir(temp_swarp_path):
+
+        # SKIP WEIGHT FILES
+        if not filename.endswith("-int.fits"): continue
+
+        # Get the image name
+        image_name = filename.split(filename_ends)[0]
+
+        # Add the image name to the list
+        image_names_for_mosaic.append(image_name)
+
+    ####################### DIRECTORIES
+
+    # Create a directory for the noise maps in counts per second
+    temp_noise_path = fs.create_directory_in(temp_path, "noise")
+
+    # Temp directory for the images and poisson noise maps in count/s/sr
+    temp_converted_path = fs.create_directory_in(temp_path, "converted")
+
+    # REBINNED in counts per second PER SR
+    temp_rebinned_path = fs.create_directory_in(temp_path, "rebinned")
+
+    # MOSAICING
+    temp_mosaic_path = fs.create_directory_in(temp_path, "mosaic")
+
+    # RESULT AFTER MOSAICING AND BACK TO COUNTS/S
+    #temp_result_path = fs.create_directory_in(temp_path, "result")
+
+    ######################
+
+    # The path to the directory with all the tiles in counts for the current band (FUV or NUV)
+    counts_path_band = fs.join(working_path, "counts", band_dict["band_long"])
 
     # Make noise maps in count/s
-    make_noise_maps_in_cps()
+    make_noise_maps_in_cps(band_dict, image_names_for_mosaic, counts_path_band, temp_noise_path, exposure_times)
+
+    # Convert to counts/s/sr
+    convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_mosaic, temp_reproject_path, temp_noise_path, temp_converted_path)
 
     # Rebin frames and error maps
-    rebin_frames_and_error_maps()
+    rebin_frames_and_error_maps(temp_converted_path, temp_rebinned_path, header_path, metatable_path, proj_stats_path)
 
+    # Rebin the weight maps
+    rebin_weight_maps(band_dict, image_names_for_mosaic, temp_reproject_path, temp_rebinned_path, header_path)
 
+    # DO THE COMBINING
+    # rebinned_path, footprints_path, mosaics_path, wcs
+    wcs = CoordinateSystem(Header.fromtextfile(header_path))
+    combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs)
 
+    # CONVERT BACK TO JUST COUNTS/S
+    convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output_path)
 
     #######################
-
-    # Poisson temp directory in temporary directory
-    temp_poisson_path = fs.join(temp_path_band, "poisson")
-    fs.create_directory(temp_poisson_path)
-
-    # Some directories
-    temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
-    temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
-    temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin-count")
-    temp_poisson_footprint_path = fs.create_directory_in(temp_poisson_path, "footprint")
-    temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
-    temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
 
     #### LOAD SWARP RESULT, PRESUMABLY IN COUNT/S
 
@@ -514,6 +550,31 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     out_image[out_image == 0] = np.NaN
     out_image[out_image < -1E3] = np.NaN
     out_image[out_image <= 1E-8] = 0
+
+    # Write the swarped image
+    swarp_output_path = fs.join(output_path, id_string + "_swarp.fits")
+    out_image.save(swarp_output_path)
+
+# -----------------------------------------------------------------
+
+def old_end_of_mosaic_galex_function():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Poisson temp directory in temporary directory
+    temp_poisson_path = fs.join(temp_path_band, "poisson2")
+    fs.create_directory(temp_poisson_path)
+
+    # Some directories
+    temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
+    temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
+    temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin-count")
+    temp_poisson_footprint_path = fs.create_directory_in(temp_poisson_path, "footprint")
+    temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
+    temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
 
     # CONVERT TO JANSKY / PIX
 
@@ -551,8 +612,6 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
     ## CALCULATION OF POISSON
 
     ## REBINNING AND CONVERSION TO COUNT
-
-    counts_path_band = fs.join(working_path, "counts", band_dict["band_long"])
 
     #print(fs.files_in_path(counts_path_band))
 
@@ -711,62 +770,314 @@ def mosaic_galex(name, ra, dec, width, band_dict, working_path, temp_path, meta_
 
 # -----------------------------------------------------------------
 
-def make_noise_maps_in_cps():
+def make_noise_maps_in_cps(band_dict, image_names_for_mosaic, counts_path_band, temp_noise_path, exposure_times):
 
     """
     This function ...
+    :param band_dict:
+    :param image_names_for_mosaic:
+    :param counts_path_band:
+    :param temp_noise_path:
+    :param exposure_times:
     :return:
     """
 
-    for filename in os.listdir(temp_swarp_path):
+    # Inform the user
+    log.info("Creating maps of the poisson noise for each GALEX tile in counts per second ...")
 
-        filepath = fs.join(temp_swarp_path, filename)
-
-        # Get the image name
-        image_name = filename.split(filename_ends)[0]
+    # Loop over the file names
+    for image_name in image_names_for_mosaic:
 
         # Get the path to the file in counts
         counts_filepath = fs.join(counts_path_band, image_name + "-" + band_dict["band_short"] + "-cnt.fits")
 
+        # Load the counts map
+        counts_frame = Frame.from_file(counts_filepath)
+        counts_frame.unit = "ct"
+
+        # Calculate the poisson frame
+        poisson = Frame(np.sqrt(counts_frame.data))   # calculate the poisson error (in counts) in every pixel
+        poisson.unit = "ct"
+
+        # Get the exposure time in seconds
+        exposure_time = exposure_times[image_name]
+
+        # Convert the poisson frame to counts/second
+        poisson /= exposure_time
+        poisson.unit = "ct/s"
+
+        # Determine the path to the poisson noise map in counts per second
+        new_path = fs.join(temp_noise_path, image_name + ".fits")
+
+        # Save the poisson noise map in counts per second
+        poisson.save(new_path)
+
 # -----------------------------------------------------------------
 
-def rebin_frames_and_error_maps():
+def convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_mosaic, temp_reproject_path,
+                                                     temp_noise_path, temp_converted_path):
 
     """
     This function ...
+    :param band_dict:
+    :param image_names_for_mosaic:
+    :param temp_reproject_path:
+    :param temp_noise_path:
+    :param temp_converted_path:
     :return:
     """
 
-    # Temp directory for own mosaicing
-    temp_mosaic_path = fs.create_directory_in(temp_path, "mosaic")
+    # Inform the user
+    log.info("Converting the units to luminosity per solid angle ...")
 
-    # Temp directory for the images in count/s/sr
-    temp_mosaic_converted_path = fs.create_directory_in(temp_mosaic_path, "converted")
-
-    # Temp directory for the images rebinned to the target WCS, in count/s/sr
-    temp_mosaic_rebinned_path = fs.create_directory_in(temp_mosaic_path, "rebinned")
+    # Determine how the files are named
+    filename_ends = "-" + band_dict['band_short'] + "-int"  # -fd-int for FUV, -nd-int for NUV
+    filename_ends_no_int = "-" + band_dict['band_short']  # -fd for FUV, -nd for NUV
 
     # DO THE UNIT CONVERSION
-    for path, name in fs.files_in_path(temp_reproject_path, extension="fits", returns=["path", "name"]):
+    for image_name in image_names_for_mosaic:
+
         # Debugging
-        log.debug("Converting " + name + " frame and error map to count / s / sr...")
+        log.debug("Converting " + image_name + " frame and error map to count / s / sr...")
+
+        # Determine the full path to the tile in temp_reproject_path
+        filepath = fs.join(temp_reproject_path, image_name + filename_ends + ".fits")
 
         # Load the frame
-        frame = Frame.from_file(path)
-        frame.unit = ""
+        frame = Frame.from_file(filepath)
+        frame.unit = "count/s"
 
         # NUMBER OF SR PER PIXEL
         pixelsr = frame.pixelarea.to("sr").value
 
         # CONVERT FRAME
-        frame /= pixelsr  # IN NANOMAGGIES PER SR NOW
+        frame /= pixelsr  # IN COUNTS PER SECOND PER SR NOW
+        frame.unit = "count/(s*sr)" # set new unit
 
-        # CONVERT ERROR MAP
-        errormap /= pixelsr  # IN NANOMAGGIES PER SR NOW
+        # Determine the full path to the poisson noise map for this tile
+        poisson_filepath = fs.join(temp_noise_path, image_name + ".fits")
 
-    # REPROJECT ALL INPUT MAPS TO TARGET HEADER
-    montage.commands.mProjExec(metatable_path, header_path, temp_mosaic_path, proj_stats_path,
-                               raw_dir=temp_reproject_path, debug=False, exact=True, whole=True)
+        # Load the poisson noise frame
+        poisson = Frame.from_file(poisson_filepath)
+        # the unit should be set already to count/s
+
+        # normally, this shouldn't be necessary
+        poisson_pixelsr = poisson.pixelarea.to("sr").value
+        assert np.isclose(pixelsr, poisson_pixelsr)
+
+        # CONVERT ERROR MAP TO COUNTS PER SECOND PER SR
+        poisson /= pixelsr  # IN COUNTS PER SECOND PER SR NOW
+        poisson.unit = "count/(s*sr)" # set new unit
+
+        # SAVE THE TILE IN COUNTS/S/SR
+        frame.save(temp_converted_path, image_name + ".fits")
+
+        # SAVE THE ERROR MAP OF THE TILE IN COUNTS/S/SR
+        poisson.save(temp_converted_path, image_name + "_error.fits")
+
+# -----------------------------------------------------------------
+
+def rebin_frames_and_error_maps(temp_converted_path, temp_rebinned_path, header_path, metatable_path, proj_stats_path):
+
+    """
+    This function ...
+    :param temp_converted_path:
+    :param temp_rebinned_path:
+    :param header_path:
+    :param metatable_path:
+    :param proj_stats_path:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Rebinning the frames and poisson noise maps in counts / second to the target coordinate system ...")
+
+    # Rebin the batch of images (tiles and noise maps) in counts/s/sr
+    #rebin_batch_with_montage(temp_converted_path, temp_rebinned_path, metatable_path, header_path, proj_stats_path)
+
+    # GET REBIN WCS
+    rebin_header = Header.fromtextfile(header_path)
+    rebin_wcs = CoordinateSystem(rebin_header)
+
+    # Loop over all FITS files
+    for path, name in fs.files_in_path(temp_converted_path, extension="fits", returns=["path", "name"]):
+
+        # Load the image
+        frame = Frame.from_file(path)
+
+        # Rebin
+        frame.rebin(rebin_wcs)
+
+        # Determine the new path
+        new_path = fs.join(temp_rebinned_path, name + ".fits")
+
+        # Save
+        frame.save(new_path)
+
+# -----------------------------------------------------------------
+
+def rebin_weight_maps(band_dict, image_names_for_mosaic, temp_reproject_path, temp_rebinned_path, header_path):
+
+    """
+    This function ...
+    :param band_dict:
+    :param image_names_for_mosaic:
+    :param temp_reproject_path:
+    :param temp_rebinned_path:
+    :param header_path:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Rebinning weight maps ...")
+
+    # Determine how the files are named
+    filename_ends = "-" + band_dict['band_short'] + "-int"  # -fd-int for FUV, -nd-int for NUV
+    filename_ends_no_int = "-" + band_dict['band_short']  # -fd for FUV, -nd for NUV
+
+    # GET REBIN WCS
+    rebin_header = Header.fromtextfile(header_path)
+    rebin_wcs = CoordinateSystem(rebin_header)
+
+    # Loop over the image_names
+    for image_name in image_names_for_mosaic:
+
+        # Determine the path to the weight map
+        weight_path = fs.join(temp_reproject_path, image_name + filename_ends + ".wgt.fits")
+
+        # Load the weight map
+        weights = Frame.from_file(weight_path)
+
+        # Rebin
+        weights.rebin(rebin_wcs)
+
+        # Determine the new path
+        new_path = fs.join(temp_rebinned_path, image_name + "_weight.fits")
+
+        # Save
+        weights.save(new_path)
+
+# -----------------------------------------------------------------
+
+def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs):
+
+    """
+    This function ...
+    :param image_names_for_mosaic:
+    :param temp_rebinned_path:
+    :param temp_mosaic_path:
+    :param wcs:
+    :return:
+    """
+
+    primary_frames = []
+    error_frames = []
+    weight_frames = []
+
+    for image_name in image_names_for_mosaic:
+
+        # Determine paths
+        filepath = fs.join(temp_rebinned_path, image_name + ".fits")
+        errorpath = fs.join(temp_rebinned_path, image_name + "_error.fits")
+        weightpath = fs.join(temp_rebinned_path, image_name + "_weight.fits")
+
+        # Load the frames
+        frame = Frame.from_file(filepath)
+        errors = Frame.from_file(errorpath)
+        weights = Frame.from_file(weightpath)
+
+        # Create mask where the weights are nans
+        mask = weights.nans()
+
+        # Set zero
+        frame[mask] = 0.0
+        errors[mask] = 0.0
+        weights[mask] = 0.0
+
+        # Add to the list
+        primary_frames.append(frame)
+        error_frames.append(errors)
+        weight_frames.append(weights)
+
+    # Calculate denominator for weighted average (mosaicing)
+    normalization = sum_frames(*weight_frames)
+
+    # CALCULATE THE MOSAIC FRAME IN COUNTS/S/SR
+    mosaic_frame = sum_frames(*primary_frames) / normalization
+    mosaic_frame.wcs = wcs
+
+    # CALCULATE THE MOSAIC ERROR MAP IN NANOMAGGIES
+    mosaic_errormap = sum_frames_quadratically(*error_frames) / normalization
+    mosaic_errormap.wcs = wcs
+
+    ## DONE
+
+    # SAVE THE MOSAIC IN NANOMAGGIES
+    mosaic_path = fs.join(temp_mosaic_path, "mosaic.fits")
+    mosaic_frame.save(mosaic_path)
+
+    # SAVE THE MOSAIC ERROR MAP IN NANOMAGGIES
+    mosaic_error_path = fs.join(temp_mosaic_path, "mosaic_errors.fits")
+    mosaic_errormap.save(mosaic_error_path)
+
+# -----------------------------------------------------------------
+
+def convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output_path):
+
+    """
+    This function ...
+    :param id_string:
+    :param temp_mosaic_path:
+    :param output_path:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Converting the mosaic and error map back to counts per seconds ...")
+
+    mosaic_path = fs.join(temp_mosaic_path, "mosaic.fits")
+    mosaic_error_path = fs.join(temp_mosaic_path, "mosaic_errors.fits")
+
+    mosaic = Frame.from_file(mosaic_path)
+    errors = Frame.from_file(mosaic_error_path)
+
+    # SOME THINGS
+    mosaic[mosaic.data == 0] = np.NaN
+    mosaic[mosaic.data < -1E3] = np.NaN
+    mosaic[mosaic.data <= 1E-8] = 0
+
+    # NUMBER OF SR PER PIXEL
+    pixelsr = mosaic.pixelarea.to("sr").value
+
+    # CONVERT TO COUNTS/S
+    mosaic *= pixelsr
+    mosaic.unit = "count/s"
+
+    # CONVERT TO COUNTS/S
+    errors *= pixelsr
+    errors.unit = "count/s"
+
+
+    # CALCULATE RELATIVE POISSON ERROR MAP
+    relerrors = errors / mosaic
+    relerrors[relerrors < 0.] = 0.0  # set negative values for relative error map to zero
+    relerrors.replace_nans(0.0)  # set NaN values (because mosaic was zero) to zero
+
+    ### SAVE
+
+    # Save mosaic as FITS file
+    mosaic_output_path = fs.join(output_path, id_string + ".fits")
+    mosaic.save(mosaic_output_path)
+
+    # Save error map as FITS file
+    errors_output_path = fs.join(output_path, id_string + "_errors.fits")
+    errors.save(errors_output_path)
+
+    # Save relative error map as FITS file
+    relerrors_output_path = fs.join(output_path, id_string + "_relerrors.fits")
+    relerrors.save(relerrors_output_path)
+
+    ###
 
 # -----------------------------------------------------------------
 
@@ -818,5 +1129,34 @@ def get_total_exposure_time(header):
 
         # Return the total exposure time
         return total
+
+# -----------------------------------------------------------------
+
+def rebin_batch_with_montage(in_path, out_path, metatable_path, header_path, proj_stats_path, remove_area=True):
+
+    """
+    This function ...
+    :param in_path:
+    :param out_path:
+    :param metatable_path:
+    :param header_path:
+    :param proj_stats_path:
+    :param remove_area:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Rebinning a batch of images in " + in_path + " to " + out_path + " ...")
+
+    # REPROJECT ALL INPUT MAPS TO TARGET HEADER
+    montage.commands.mProjExec(metatable_path, header_path, out_path, proj_stats_path, raw_dir=in_path, debug=False, exact=True, whole=True)
+
+    # Rename reprojected files
+    for listfile in os.listdir(out_path):
+
+        if '_area.fits' in listfile:
+            if remove_area: os.remove(fs.join(out_path, listfile)) # remove area if requested
+        elif 'hdu0_' in listfile:
+            os.rename(fs.join(out_path, listfile), fs.join(out_path, listfile.replace('hdu0_', '')))
 
 # -----------------------------------------------------------------

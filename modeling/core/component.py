@@ -806,6 +806,18 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def input_map_paths(self):
+
+        """
+        This function returns the paths to the input maps of stellar and dust distribution
+        :return:
+        """
+
+        return [self.old_stellar_map_path, self.young_stellar_map_path, self.ionizing_stellar_map_path, self.dust_map_path]
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def old_stars_map(self):
 
@@ -883,5 +895,21 @@ class ModelingComponent(Configurable):
 
         # Return the SED
         return sed
+
+# -----------------------------------------------------------------
+
+def load_fitting_configuration(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the path to the fitting configuration file
+    fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
+
+    # Open the configuration and return it
+    return Configuration.from_file(fitting_configuration_path)
 
 # -----------------------------------------------------------------
