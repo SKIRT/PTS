@@ -446,13 +446,55 @@ class DustPediaDataProcessing(object):
         # Inform the user
         log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
 
+        # Create directories
+        working_path, download_path, response_path, background_path, counts_path, raw_path, temp_path = self.create_base_directories(galaxy_name)
+
+        # Create temp subdirectories
+        temp_fuv_path = fs.join(temp_path, "FUV")
+        temp_nuv_path = fs.join(temp_path, "NUV")
+        fs.create_directories(temp_fuv_path, temp_nuv_path)
+
+        # Create download subdirectories
+        download_images_path, download_response_path, download_background_path, download_counts_path = self.create_download_directories(download_path)
+
+        # Download data and split into FUV and NUV
+        self.download_and_split(galaxy_name, download_path, download_images_path, download_response_path, download_background_path, download_counts_path, raw_path, response_path, background_path, counts_path)
+
+        raw_fuv_path = fs.join(raw_path, "FUV")
+        raw_nuv_path = fs.join(raw_path, "NUV")
+
+        # Inform the user
+        log.info("Getting cutout range ...")
+
+        # Get coordinate range for target image
+        ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
+
+        # Check coverage
+        bands_dict, bands_in_dict, metadata_paths = self.check_galex_coverage(galaxy_name, ra, dec, working_path, temp_path, raw_fuv_path, raw_nuv_path)
+
+        # Loop over the two bands, perform the mosaicing
+        for band in bands_in_dict.keys():
+
+            # Make the mosaic for this and
+            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], working_path, temp_path, metadata_paths[band], output_path)
+
+    # -----------------------------------------------------------------
+
+    def create_base_directories(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
         # Inform the user
         log.info("Creating directories ...")
 
         # Determine the path to the temporary directory for downloading the images
         working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
-        #working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
+        # working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
 
         # Create the working directory
         fs.create_directory(working_path)
@@ -478,33 +520,51 @@ class DustPediaDataProcessing(object):
 
         # TEMP PATH
         temp_path = fs.join(working_path, "temp")
-        temp_fuv_path = fs.join(temp_path, "FUV")
-        temp_nuv_path = fs.join(temp_path, "NUV")
+
         # Create temp directory
         fs.create_directory(temp_path)
-        fs.create_directories(temp_fuv_path, temp_nuv_path)
 
-        # 1 and 2 RAW directories
-        raw_fuv_path = fs.join(raw_path, "FUV")
-        raw_nuv_path = fs.join(raw_path, "NUV")
-        fs.create_directories(raw_fuv_path, raw_nuv_path)
+        # Return ...
+        return working_path, download_path, response_path, background_path, counts_path, raw_path, temp_path
+
+    # -----------------------------------------------------------------
+
+    def create_download_directories(self, download_path):
+
+        """
+        This function ...
+        :param download_path:
+        :return:
+        """
 
         # download/images, download/response and download/background
         download_images_path = fs.join(download_path, "images")
         download_response_path = fs.join(download_path, "reponse")
         download_background_path = fs.join(download_path, "background")
-
         download_counts_path = fs.join(download_path, "counts")
-        fs.create_directory(download_counts_path)
 
-        fs.create_directories(download_images_path, download_response_path, download_background_path)
+        # Create
+        fs.create_directories(download_images_path, download_response_path, download_background_path, download_counts_path)
 
+        # Return
+        return download_images_path, download_response_path, download_background_path, download_counts_path
 
-        #
+    # -----------------------------------------------------------------
 
-        # Download the GALEX observations to the temporary directory  # they are decompressed here also
-        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path, download_background_path, download_counts_path)
+    def download_and_split(self, galaxy_name, download_path, download_images_path, download_response_path, download_background_path,
+                           download_counts_path, raw_path, response_path, background_path, counts_path):
 
+        """
+        This function ...
+        :return:
+        """
+
+        ###
+
+        # 1 and 2 RAW directories
+        raw_fuv_path = fs.join(raw_path, "FUV")
+        raw_nuv_path = fs.join(raw_path, "NUV")
+        fs.create_directories(raw_fuv_path, raw_nuv_path)
 
         # FUV and NUV response directories
         response_fuv_path = fs.join(response_path, "FUV")
@@ -521,7 +581,11 @@ class DustPediaDataProcessing(object):
         counts_nuv_path = fs.join(counts_path, "NUV")
         fs.create_directories(counts_fuv_path, counts_nuv_path)
 
-        ####
+        ###
+
+        # Download the GALEX observations to the temporary directory  # they are decompressed here also
+        self.download_galex_observations_for_galaxy(galaxy_name, download_images_path, download_response_path,
+                                                    download_background_path, download_counts_path)
 
         # Inform the user
         log.info("Splitting observations into FUV and NUV ...")
@@ -548,13 +612,21 @@ class DustPediaDataProcessing(object):
         fs.remove_directory(download_counts_path)
         fs.remove_directory(download_path)
 
-        ###
+    # -----------------------------------------------------------------
 
-        # Inform the user
-        log.info("Getting cutout range ...")
+    def check_galex_coverage(self, galaxy_name, ra, dec, working_path, temp_path, raw_fuv_path, raw_nuv_path):
 
-        # Get coordinate range for target image
-        ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
+        """
+        This function ...
+        :param galaxy_name:
+        :param ra:
+        :param dec:
+        :param working_path:
+        :param temp_path:
+        :param raw_fuv_path:
+        :param raw_nuv_path:
+        :return:
+        """
 
         ## Generate the meta and then overlap file
         ##meta_path, overlap_path = self.generate_meta_and_overlap_file(temp_path, ra, dec, width)
@@ -574,7 +646,6 @@ class DustPediaDataProcessing(object):
 
         # If not yet done, produce Montage image table of raw tiles
         for band in bands_dict.keys():
-
             # Inform the user
             log.info("Creating " + band + " image metadata table ...")
 
@@ -595,7 +666,8 @@ class DustPediaDataProcessing(object):
             montage.commands_extra.mCoverageCheck(metadata_paths[band], overlap_path, mode='point', ra=ra.to("deg").value, dec=dec.to("deg").value)
 
             # Check if there is any coverage for this galaxy and band
-            if sum(1 for line in open(overlap_path)) <= 3: log.warning("No GALEX " + band + " coverage for " + galaxy_name)
+            if sum(1 for line in open(overlap_path)) <= 3:
+                log.warning("No GALEX " + band + " coverage for " + galaxy_name)
             else: bands_in_dict[band] = bands_dict[band]
 
             # Remove overlap file
@@ -604,11 +676,8 @@ class DustPediaDataProcessing(object):
         # Check if coverage in any band
         if len(bands_in_dict) == 0: raise RuntimeError("No coverage in any GALEX band")
 
-        # Loop over bands, conducting SWarping function
-        for band in bands_in_dict.keys():
-
-            # Mosaicing
-            mosaic_galex(galaxy_name, ra, dec, width, bands_dict[band], working_path, temp_path, metadata_paths[band], output_path)
+        # Return ...
+        return bands_dict, bands_in_dict, metadata_paths
 
     # -----------------------------------------------------------------
 

@@ -123,9 +123,11 @@ class MosaicAnalyser(DataComponent):
             # Determine band id
             band_id = self.origin + "_" + band
 
-            # Load the mosaic and relative poisson error plane
-            self.mosaics[band_id] = Frame.from_file(path, plane="primary")
-            self.poisson_frames[band_id] = Frame.from_file(path, plane="rel_poisson")
+            # Check type
+            if splitted[-1] == "errors": self.poisson_frames[band_id] = Frame.from_file(path)
+            elif splitted[-1] == "relerrors": continue
+            elif splitted[-1] == "swarp": continue
+            else: self.mosaics[band_id] = Frame.from_file(path) # the mosaic
 
     # -----------------------------------------------------------------
 
