@@ -764,32 +764,34 @@ class DustPediaDataProcessing(object):
         # MAKE PATHS
 
         # Determine the path to the temporary directory
-        temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
+        #temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
 
         # Create the temporary directory
-        fs.create_directory(temp_path)
+        #fs.create_directory(temp_path)
+
+        temp_path = fs.join(fs.home(), "SDSS_NGC3031_u_2016-08-10--16-48-33-775")
 
         ###
 
         # RAW PATH
         raw_path = fs.join(temp_path, "raw") # frames with HDU0, HDU1, HDU2 .. (primary, calib, sky, ...) IN NANOMAGGIES PER PIXEL
-        fs.create_directory(raw_path)
+        #fs.create_directory(raw_path)
 
         # FIELDS PATH
         fields_path = fs.join(temp_path, "fields") # photoField files
-        fs.create_directory(fields_path)
+        #fs.create_directory(fields_path)
 
         # COUNTS PATH
         counts_path = fs.join(temp_path, "counts") # frames IN COUNTS (DN)
-        fs.create_directory(counts_path)
+        #fs.create_directory(counts_path)
 
         # POISSON PATH
         poisson_path = fs.join(temp_path, "poisson_nmgy")  # error maps in NANOMAGGIES PER PIXEL
-        fs.create_directory(poisson_path)
+        #fs.create_directory(poisson_path)
 
         # REBINNED PATH
         rebinned_path = fs.join(temp_path, "rebinned") # images with frame and corresponding error map in NANOMAGGIES, REBINNED
-        fs.create_directory(rebinned_path)
+        #fs.create_directory(rebinned_path)
 
         # FOOTPRINTS PATH
         footprints_path = fs.join(temp_path, "footprints")
@@ -811,7 +813,69 @@ class DustPediaDataProcessing(object):
         log.info("Getting SDSS frames in nanomaggies (per pixel) and converting to counts (DN) ...")
 
         # Make SDSS frames in counts
-        self.make_sdss_frames_in_counts(galaxy_name, band, raw_path, fields_path, counts_path)
+        #self.make_sdss_frames_in_counts(galaxy_name, band, raw_path, fields_path, counts_path)
+
+        # Make (Poisson) noise maps
+        #self.make_sdss_noise_maps_in_nanomaggies(raw_path, counts_path, fields_path, poisson_path)
+
+        ## GET THE TARGET HEADER
+
+        # Get the target header
+        header = self.get_header_for_galaxy(galaxy_name, "SDSS")
+
+        # To coordinate system
+        rebin_wcs = CoordinateSystem(header)
+
+        ##
+
+        # DO REBINNING, CREATE IMAGES WITH REBINNED PRIMARY AND ERROR FRAME IN NANOMAGGIES PER PIXEL, AND FOOTPRINT FILES
+        #self.rebin_sdss_frames_and_error_maps(rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path)
+
+        # Make the footprints
+        self.make_sdss_footprints(rebinned_path, footprints_path)
+
+        # DO THE COMBINING
+        # rebinned_path, footprints_path, mosaics_path, wcs
+        self.combine_sdss_frames_and_error_maps(rebinned_path, footprints_path, mosaics_path, rebin_wcs)
+
+        # CONVERT TO JY/PIX
+        self.convert_sdss_mosaic_and_error_map_to_jansky(galaxy_name, band, mosaics_path, results_path)
+
+    # -----------------------------------------------------------------
+
+    def make_sdss_footprints(self, rebinned_path, footprints_path):
+        
+        """
+        This function was used for when the rebinning was already performed but we forgot to include saving the footprints 
+        back then. Luckily, the footprints are equivalent to the masks of the pixel that are not set to NaN in the rebinned frames
+        """
+        
+        # Loop over the files in the rebinned path
+        for path, name in fs.files_in_path(rebinned_path, extension="fits", returns=["path", "name"]):
+            
+            # Open the rebinned frame
+            frame = Frame.from_file(path)
+            
+            # Create the footprint
+            footprint = Frame(frame.nans().inverse().astype(float))
+            footprint.wcs = frame.wcs
+        
+            # Save the footprint
+            footprint_path = fs.join(footprints_path, name + ".fits")
+            footprint.save(footprint_path)
+        
+    # -----------------------------------------------------------------
+
+    def make_sdss_noise_maps_in_nanomaggies(self, raw_path, counts_path, fields_path, poisson_path):
+
+        """
+        This function ...
+        :param raw_path:
+        :param counts_path:
+        :param fields_path:
+        :param poisson_path:
+        :return:
+        """
 
         # Inform the user
         log.info("Computing error maps for each SDSS frame in nanomaggies per pixel ...")
@@ -839,7 +903,6 @@ class DustPediaDataProcessing(object):
 
             # Get the gain and dark variance
             gain, dark_variance = self.get_gain_and_dark_variance_from_photofield(field_file_path, band)
-
 
             # Calculate the error
 
@@ -876,22 +939,6 @@ class DustPediaDataProcessing(object):
             # SAVE the error map
             poisson_error_map_path = fs.join(poisson_path, name + ".fits")
             error_map.save(poisson_error_map_path)
-
-        # Get the target header
-        header = self.get_header_for_galaxy(galaxy_name, "SDSS")
-
-        # To coordinate system
-        rebin_wcs = CoordinateSystem(header)
-
-        # DO REBINNING, CREATE IMAGES WITH REBINNED PRIMARY AND ERROR FRAME IN NANOMAGGIES PER PIXEL, AND FOOTPRINT FILES
-        self.rebin_sdss_frames_and_error_maps(rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path)
-
-        # DO THE COMBINING
-        # rebinned_path, footprints_path, mosaics_path, wcs
-        self.combine_sdss_frames_and_error_maps(rebinned_path, footprints_path, mosaics_path, rebin_wcs)
-
-        # CONVERT TO JY/PIX
-        self.convert_sdss_mosaic_and_error_map_to_jansky(galaxy_name, band, mosaics_path, results_path)
 
     # -----------------------------------------------------------------
 

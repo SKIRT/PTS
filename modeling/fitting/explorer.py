@@ -319,10 +319,8 @@ class ParameterExplorer(FittingComponent):
             simulation_name = time.unique_name()
 
             # Change the parameter values in the ski file
-            self.ski.set_stellar_component_luminosity("Young stars", young_luminosity,
-                                                      fuv.centerwavelength() * Unit("micron"))
-            self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity,
-                                                      fuv.centerwavelength() * Unit("micron"))
+            self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
+            self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
             self.ski.set_dust_component_mass(0, dust_mass)
 
             # Determine the directory for this simulation
@@ -351,9 +349,7 @@ class ParameterExplorer(FittingComponent):
             self.launcher.add_to_queue(definition, simulation_name)
 
             # Set scheduling options (for the different remote hosts with a scheduling system)
-            for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name,
-                                                                                         self.scheduling_options[
-                                                                                             host_id])
+            for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
             # Add an entry to the parameter table
             self.table.add_row([simulation_name, young_luminosity, ionizing_luminosity, dust_mass])
