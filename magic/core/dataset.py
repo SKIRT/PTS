@@ -28,6 +28,8 @@ from .datacube import DataCube
 from .image import Image
 from .mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem
+from ...core.basics.configurable import Configurable
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -79,6 +81,40 @@ class DataSet(object):
             dataset.add_path(name, path)
 
         # Return the dataset instance
+        return dataset
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Construct a new dataset
+        dataset = cls()
+
+        # Load the table
+        table = tables.from_file(path)
+
+        # Loop over the entries in the table
+        for i in range(len(table)):
+
+            # Get the paths
+            name = table["Name"][i]
+            path = table["Path"][i]
+            error_path = table["Error path"][i]
+            mask_path = table["Mask path"][i]
+
+            # Add the paths to the dataset
+            dataset.add_path(name, path)
+            if error_path is not None: dataset.add_error_path(name, error_path)
+            if mask_path is not None: dataset.add_mask_path(name, mask_path)
+
+        # Return the dataset
         return dataset
 
     # -----------------------------------------------------------------
@@ -390,6 +426,45 @@ class DataSet(object):
     def saveto(self, path):
 
         """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the dataset to " + path + " ...")
+
+        # Create a table
+        column_names = ["Name", "Path", "Error path", "Mask path"]
+
+        # Set the entries
+        names = []
+        paths = []
+        error_paths = []
+        mask_paths = []
+
+        for name in self.paths:
+
+            names.append(name)
+            paths.append(self.paths[name])
+            error_paths.append(self.error_paths[name] if name in self.error_paths else None)
+            mask_paths.append(self.mask_paths[name] if name in self.mask_paths else None)
+
+        # Construct the table
+        data = [names, paths, error_paths, mask_paths]
+        table = tables.new(data, column_names)
+
+        # Save the table
+        tables.write(table, path)
+
+        # Update the path
+        self.path = path
+
+    # -----------------------------------------------------------------
+
+    def save_as_fits(self, path):
+
+        """
         This function saves the dataset as a single FITS files with multiple HDUs
         :return:
         """
@@ -430,7 +505,46 @@ class DataSet(object):
         # Write the HDU list
         hdulist.writeto(path)
 
-        # Update the path
-        self.path = path
+# -----------------------------------------------------------------
+
+class DataSetCreator(Configurable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(DataSetCreator, self).__init__(config)
+
+    # -----------------------------------------------------------------
+
+    def run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(DataSetCreator, self).setup()
 
 # -----------------------------------------------------------------

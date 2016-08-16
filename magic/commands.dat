@@ -2,3 +2,4 @@
 aperture_correction | -- | photometry.aperturecorrector.ApertureCorrector | interactive | Calculate the aperture correction factor on the extended photometry measurement of a Herschel image of a galaxy
 prepare_image | -- | prepare.single.SingleImagePreparer | arguments | Prepare a galaxy image
 prepare_images | -- | prepare.batch.BatchImagePreparer | arguments | Prepare a batch of images of a galaxy
+create_dataset | -- | core.dataset.DataSetCreator | interactive | Create a dataset for prepare_images

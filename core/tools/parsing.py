@@ -142,7 +142,7 @@ def real_range(argument):
     :return:
     """
 
-    min_value, max_value = real_tuple(argument.replace(":", ","))
+    min_value, max_value = real_tuple(argument.replace(">", ","))
     return RealRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -155,7 +155,7 @@ def integer_range(argument):
     :return:
     """
 
-    min_value, max_value = integer_tuple(argument.replace(":", ","))
+    min_value, max_value = integer_tuple(argument.replace(">", ","))
     return IntegerRange(min_value, max_value)
 
 # -----------------------------------------------------------------
@@ -168,7 +168,7 @@ def quantity_range(argument):
     :return:
     """
 
-    min_quantity, max_quantity = quantity_tuple(argument.replace(":", ","))
+    min_quantity, max_quantity = quantity_tuple(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------

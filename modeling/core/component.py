@@ -368,6 +368,35 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def free_parameter_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ranges = dict()
+        for label in self.free_parameter_labels:
+            parameter_range = self.fitting_configuration[label + "_range"]
+            ranges[label] = parameter_range
+        return ranges
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..config.parameters import descriptions
+        return descriptions
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dataset(self):
 
         """

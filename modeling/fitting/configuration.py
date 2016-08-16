@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
@@ -136,36 +133,6 @@ class FittingConfigurer(FittingComponent):
 
         # Load the labeled ski template file
         self.ski = LabeledSkiFile(template_ski_path)
-
-    # -----------------------------------------------------------------
-
-    def load_descriptions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        labels, descriptions = np.genfromtxt(labels_description_path, delimiter=" | ", dtype=str, unpack=True)
-
-        # Set the descriptions
-        for label, description in zip(labels, descriptions):
-            self.descriptions[label] = description
-
-    # -----------------------------------------------------------------
-
-    def load_types(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        labels, types, default_ranges = np.genfromtxt(labels_types_path, delimiter=" | ", dtype=str, unpack=True)
-
-        # Set the types
-        for label, type, default_range in zip(labels, types, default_ranges):
-            self.types[label] = (type, default_range)
 
     # -----------------------------------------------------------------
 

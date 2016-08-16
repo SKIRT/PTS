@@ -73,7 +73,7 @@ class ImageFetcher(DataComponent):
         self.fetch_galex()
 
         # 4. Fetch SDSS data and calculate poisson errors
-        self.fetch_sdss()
+        #self.fetch_sdss()
 
         # 5. Fetch the H-alpha image
         #self.fetch_halpha()
@@ -178,7 +178,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the GALEX images ...")
 
         # Fetch the GALEX data from the DustPedia archive
-        self.fetch_from_dustpedia("GALEX")
+        #self.fetch_from_dustpedia("GALEX")
 
         # Create the configuration dictionary
         config_dict = dict()

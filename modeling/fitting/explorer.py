@@ -84,7 +84,7 @@ class ParameterExplorer(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 3. Set the parameter ranges
+        # 2. Set the parameter ranges
         self.set_ranges()
 
         # 4. Generate the model parameters
@@ -247,10 +247,17 @@ class ParameterExplorer(FittingComponent):
 
         else:
 
-            # Set the ranges directly from the command-line arguments
-            self.ranges["FUV young"] = self.config.young
-            self.ranges["FUV ionizing"] = self.config.ionizing
-            self.ranges["Dust mass"] = self.config.dust
+            for label in self.free_parameter_labels:
+
+                # Get the range
+                parameter_range = self.config[label + "_range"]
+                if parameter_range is None: parameter_range = self.free_parameter_ranges[label] # absolute range
+
+                # Set the range
+                self.ranges[label] = parameter_range
+
+        # Set the ranges for the generator
+        for label in self.ranges: self.generator.add_parameter(label, self.ranges[label])
 
     # -----------------------------------------------------------------
 

@@ -52,6 +52,7 @@ class ModelGenerator(FittingComponent):
 
         # The animations
         self.scatter_animation = None
+        self.scatter_animation_labels = None
         self.parameter_animations = dict()
 
     # -----------------------------------------------------------------
@@ -148,7 +149,7 @@ class ModelGenerator(FittingComponent):
         self.setup()
 
         # 2. Load the necessary input
-        self.load_input()
+        #self.load_input()
 
         # 3. Initialize the animations
         self.initialize_animations()
@@ -194,18 +195,25 @@ class ModelGenerator(FittingComponent):
         # Initialize the scatter animation, if there are exactly 3 free parameters
         if len(self.free_parameter_labels) == 3:
 
-            self.scatter_animation = ScatterAnimation(self.ranges["FUV young"], self.ranges["FUV ionizing"], self.ranges["Dust mass"])
-            self.scatter_animation.x_label = "FUV luminosity of young stars"
-            self.scatter_animation.y_label = "FUV luminosity of ionizing stars"
-            self.scatter_animation.z_label = "Dust mass"
+            label0, label1, label2 = self.free_parameter_labels
+            description0, description1, description2 = [self.parameter_descriptions[label] for label in [label0, label1, label2]]
+
+            # Establish the order of the free parameters in the scatter ani
+            self.scatter_animation_labels = [label0, label1, label2]
+
+            # Initialize the scatter animation
+            self.scatter_animation = ScatterAnimation(self.ranges[label0], self.ranges[label1], self.ranges[label2])
+            self.scatter_animation.x_label = description0
+            self.scatter_animation.y_label = description1
+            self.scatter_animation.z_label = description2
 
         # Loop over the free parameters and create an individual animation for each of them
         for label in self.free_parameter_labels:
 
-            description = self.free_parameter_labels[label]
+            description = self.parameter_descriptions[label]
 
             # Initialize the young FUV luminosity distribution animation
-            animation = DistributionAnimation(self.ranges[label][0], self.ranges[label][1], description, "New models")
+            animation = DistributionAnimation(self.ranges[label].min, self.ranges[label].max, description, "New models")
             animation.add_reference_distribution("Previous models", self.distributions[label])
 
             # Add the animation to the dictionary
@@ -225,29 +233,28 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def update_animations(self, young_luminosity, ionizing_luminosity, dust_mass):
+    def update_animations(self, values_dict):
 
         """
         This function ...
-        :param young_luminosity:
-        :param ionizing_luminosity:
-        :param dust_mass:
+        :param values_dict:
         :return:
         """
 
         # Add the point (and thus a frame) to the animation of parameter points
-        self.scatter_animation.add_point(young_luminosity, ionizing_luminosity, dust_mass)
+        if self.scatter_animation is not None:
+
+            # Set the values
+            values = []
+            for label in self.scatter_animation_labels:
+                values.append(values_dict[label])
+
+            self.scatter_animation.add_point(values[0], values[1], values[2])
 
         # Update the distribution animations
         if self.nmodels > 1:
 
-            # Add a frame to the animation of the distribution of the FUV luminosity of young starss
-            self.fuv_young_animation.add_value(young_luminosity)
-
-            # Add a frame to the animation of the distribution of the FUV luminosity of ionizing stars
-            self.fuv_ionizing_animation.add_value(ionizing_luminosity)
-
-            # Add a frame to the animation of the distribution of the dust mass
-            self.dust_mass_animation.add_value(dust_mass)
+            # Add a point (and thus one frame) to the individual parameter animations
+            for label in values_dict: self.parameter_animations[label].add_value(values_dict[label])
 
 # -----------------------------------------------------------------

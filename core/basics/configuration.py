@@ -210,7 +210,7 @@ def load_mapping(mappingfile, mapping, indent=""):
 
             try:
                 before, after = line.split(":")
-            except ValueError: print(line)
+            except ValueError: print("ERROR processing: ", line)
 
             #print("declaration", before, after)
 
@@ -676,7 +676,7 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, choices=None, choice_descriptions=None):
+    def add_required(self, name, user_type, description, choices=None, choice_descriptions=None, dynamic_list=False):
 
         """
         This function ...
@@ -685,6 +685,7 @@ class ConfigurationDefinition(object):
         :param description:
         :param choices:
         :param choice_descriptions:
+        :param dynamic_list:
         :return:
         """
 
@@ -692,12 +693,12 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Add
-        self.required[name] = (real_type, description, choices, choice_descriptions)
+        self.required[name] = (real_type, description, choices, choice_descriptions, dynamic_list)
 
     # -----------------------------------------------------------------
 
     def add_positional_optional(self, name, user_type, description, default=None, choices=None,
-                                choice_descriptions=None, convert_default=False):
+                                choice_descriptions=None, convert_default=False, dynamic_list=False):
 
         """
         This function ...
@@ -708,6 +709,7 @@ class ConfigurationDefinition(object):
         :param choices:
         :param choice_descriptions:
         :param convert_default:
+        :param dynamic_list:
         :return:
         """
 
@@ -718,12 +720,12 @@ class ConfigurationDefinition(object):
         if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
-        self.pos_optional[name] = (real_type, description, default, choices, choice_descriptions)
+        self.pos_optional[name] = (real_type, description, default, choices, choice_descriptions, dynamic_list)
 
     # -----------------------------------------------------------------
 
     def add_optional(self, name, user_type, description, default=None, choices=None, choice_descriptions=None,
-                     letter=None, convert_default=False):
+                     letter=None, convert_default=False, dynamic_list=False):
 
         """
         This function ...
@@ -735,6 +737,7 @@ class ConfigurationDefinition(object):
         :param choice_descriptions:
         :param letter:
         :param convert_default:
+        :param dynamic_list:
         :return:
         """
 
@@ -747,7 +750,7 @@ class ConfigurationDefinition(object):
         if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
-        self.optional[name] = (real_type, description, default, choices, choice_descriptions, letter)
+        self.optional[name] = (real_type, description, default, choices, choice_descriptions, letter, dynamic_list)
 
     # -----------------------------------------------------------------
 
@@ -1583,6 +1586,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         description = definition.required[name][1]
         choices = definition.required[name][2]
         choice_descriptions = definition.required[name][3]
+        dynamic_list = definition.required[name][4]
 
         # Give name and description
         log.success(name + ": " + description)
@@ -1619,6 +1623,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 value = None  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
+
                     # Get the number of the choice
                     answer = raw_input("   : ")
                     try:
@@ -1629,15 +1634,44 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
         else:
 
-            log.info("Provide a value")
+            if real_type.__name__.endswith("_list"):  # list-type setting
 
-            value = None # to remove warning from IDE that value could be referenced (below) without assignment
-            while True:
-                answer = raw_input("   : ")
-                try:
-                    value = real_type(answer)
-                    break
-                except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                if dynamic_list:
+
+                    log.info("Provide a value for a list item and press ENTER. Leave blank and press ENTER to end the list")
+
+                    value = []
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "": break # end of the list
+                        try:
+                            single_value = real_type(answer)
+                            value.append(single_value)
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+                else:
+
+                    log.info("Provide the values, seperated by commas")
+
+                    value = []  # to remove warning from IDE that value could be referenced (below) without assignment
+                    while True:
+                        answer = raw_input("   : ")
+                        try:
+                            value = real_type(answer)
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            else:
+
+                log.info("Provide a value")
+
+                value = None # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    answer = raw_input("   : ")
+                    try:
+                        value = real_type(answer)
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Set the value
         config[name] = value
@@ -1650,6 +1684,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         default = definition.pos_optional[name][2]
         choices = definition.pos_optional[name][3]
         choice_descriptions = definition.pos_optional[name][4]
+        dynamic_list = definition.pos_optional[name][5]
 
         # Give name and description
         log.success(name + ": " + description)
@@ -1707,19 +1742,53 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
         else:
 
-            log.info("or provide another value")
+            if real_type.__name__.endswith("_list"):  # list-type setting
 
-            value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-            while True:
-                answer = raw_input("   : ")
-                if answer == "":
-                    value = default
-                    break
+                if dynamic_list:
+
+                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+
+                    value = [] # to remove warning
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "": break # end of list
+                        else:
+                            try:
+                                single_value = real_type(answer)
+                                value.append(single_value)
+                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
                 else:
-                    try:
-                        value = real_type(answer)
+
+                    log.info("or provide other values, separated by commas")
+
+                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            value = default
+                            break
+                        else:
+                            try:
+                                value = real_type(answer)
+                                break
+                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            else:
+
+                log.info("or provide another value")
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    else:
+                        try:
+                            value = real_type(answer)
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Set the value
         config[name] = value
@@ -1734,6 +1803,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         choices = definition.optional[name][3]
         choice_descriptions = definition.optional[name][4]
         letter = definition.optional[name][5]
+        dynamic_list = definition.optional[name][6]
 
         # Give name and description
         log.success(name + ": " + description)
@@ -1793,20 +1863,54 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
         else:
 
-            log.info("or provide another value")
+            if real_type.__name__.endswith("_list"):  # list-type setting
 
-            value = default # to remove warning from IDE that value could be referenced (below) without assignment
-            while True:
-                # Get the input
-                answer = raw_input("   : ")
-                if answer == "":
-                    value = default
-                    break
+                if dynamic_list:
+
+                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+
+                    value = [] # to remove warning
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "": break # end of list
+                        else:
+                            try:
+                                single_value = real_type(answer)
+                                value.append(single_value)
+                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
                 else:
-                    try:
-                        value = real_type(answer)
+
+                    log.info("or provide other values, separated by commas")
+
+                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            value = default
+                            break
+                        else:
+                            try:
+                                value = real_type(answer)
+                                break
+                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            else:
+
+                log.info("or provide another value")
+
+                value = default # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    # Get the input
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    else:
+                        try:
+                            value = real_type(answer)
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Set the value
         config[name] = value
