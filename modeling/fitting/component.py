@@ -227,6 +227,18 @@ class FittingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def generation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generations_table.generation_names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def ski_file(self):
 
         """
@@ -288,6 +300,18 @@ class FittingComponent(ModelingComponent):
 
         # Return the highest generation index
         return highest_index
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ngenerations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.generations_table)
 
     # -----------------------------------------------------------------
 

@@ -432,7 +432,7 @@ class SkirtRemote(Remote):
         self.create_directory(remote_output_path)
 
         # Set the remote ski file path
-        local_ski_path = arguments.ski_pattern
+        local_ski_path = definition.ski_path
         ski_name = fs.name(local_ski_path)
         remote_ski_path = fs.join(remote_simulation_path, ski_name)
 

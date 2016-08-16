@@ -70,6 +70,18 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def generation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Generation name"])
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, index, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
 
         """

@@ -843,6 +843,13 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Check whether the FITS files exist
+        if not fs.is_file(self.old_stellar_map_path): raise RuntimeError("The map of old stars is not present. Run make_old_map first.")
+        if not fs.is_file(self.young_stellar_map_path): raise RuntimeError("The map of young stars is not present. Run make_young_map first.")
+        if not fs.is_file(self.ionizing_stellar_map_path): raise RuntimeError("The map of ionizing stars is not present. Run make_ionizing_map first.")
+        if not fs.is_file(self.dust_map_path): raise RuntimeError("The dust map is not present. Run make_dust_map first.")
+
+        # Return the paths to the maps of stars and dust
         return [self.old_stellar_map_path, self.young_stellar_map_path, self.ionizing_stellar_map_path, self.dust_map_path]
 
     # -----------------------------------------------------------------

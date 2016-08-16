@@ -253,6 +253,8 @@ class BatchLauncher(OldConfigurable):
             # Loop over the IDs of all the hosts used by the BatchLauncher
             for host_id in self.host_ids:
 
+                print(host_id)
+
                 # Create Host instance
                 host = Host(host_id)
 
@@ -359,6 +361,18 @@ class BatchLauncher(OldConfigurable):
 
         # If the setup has already been called
         else: return [remote.host for remote in self.remotes if not remote.scheduler]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_schedulers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.scheduler_host_ids) > 0
 
     # -----------------------------------------------------------------
 

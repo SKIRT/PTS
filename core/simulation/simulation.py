@@ -105,7 +105,11 @@ class SkirtSimulation(object):
     #
     def __init__(self, prefix="", inpath="", outpath="", ski_path=None):
 
-        self._inpath = os.path.realpath(os.path.expanduser(inpath)) if inpath is not None else None
+        # Set the full path to the input directory or the paths to the input files
+        if inpath is not None:
+            if isinstance(inpath, list): self._inpath = inpath
+            else: self._inpath = os.path.realpath(os.path.expanduser(inpath))
+        else: self._inpath = None
         self._outpath = os.path.realpath(os.path.expanduser(outpath if outpath is not None else ""))
         self._prefix = prefix
         if self._prefix.endswith(".ski"):

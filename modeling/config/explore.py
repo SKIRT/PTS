@@ -27,7 +27,8 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_positional_optional("generation_method", "string", "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
 
 # Optional parameters
-definition.add_optional("remote", "string", "the remote host on which to run the parameters exploration", "nancy")
+definition.add_optional("remotes", "string", "the remote host on which to run the parameters exploration", ["nancy"])
+definition.add_optional("nodes", "integer", "the number of nodes to use for the simulations", 4)
 definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
 
 # The ranges of the different free parameters (although the absolute ranges are defined in the fitting configuration,

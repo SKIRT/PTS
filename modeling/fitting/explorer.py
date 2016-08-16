@@ -29,6 +29,9 @@ from ...core.tools import time
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.simulation.definition import SingleSimulationDefinition
 from .tables import ParametersTable
+from ...core.launch.options import SchedulingOptions
+from ...core.launch.estimate import RuntimeEstimator
+from ...core.launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -70,14 +73,11 @@ class ParameterExplorer(FittingComponent):
         # The model generator
         self.generator = None
 
-        # The ski file
-        self.ski = None
-
         # The paths to the simulation input files
         self.input_paths = None
 
-        # Initial generation is present
-        self.has_initial = False
+        # A dictionary with the scheduling options for the different remote hosts
+        self.scheduling_options = dict()
 
     # -----------------------------------------------------------------
 
@@ -103,19 +103,19 @@ class ParameterExplorer(FittingComponent):
         # 5. Set the paths to the input files
         self.set_input()
 
-        # Create the generation directory
+        # 6. Create the generation directory
         self.create_generation_directory()
 
-        # 6. Set the parallelization schemes for the different remote hosts
-        self.set_parallelization()
+        # 7. Set the parallelization schemes for the different remote hosts
+        if self.uses_schedulers: self.set_parallelization()
 
-        # 7. Estimate the runtimes for the different remote hosts
-        self.estimate_runtimes()
+        # 8. Estimate the runtimes for the different remote hosts
+        if self.uses_schedulers: self.estimate_runtimes()
 
-        # 8. Launch the simulations for different parameter values
+        # 9. Launch the simulations for different parameter values
         self.launch()
 
-        # 9. Writing
+        # 10. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -130,15 +130,15 @@ class ParameterExplorer(FittingComponent):
         # Call the setup function of the base class
         super(ParameterExplorer, self).setup()
 
-        # Check whether the initial generation has been created
-        initial_generation_path = fs.join(self.fit_generations_path, "initial")
-        self.has_initial = fs.is_directory(initial_generation_path)
-
         # Set options for the batch launcher
         self.set_launcher_options()
 
         # Set the model generator
         self.set_generator()
+
+        # Check whether this is not the first generation so that we can use remotes with a scheduling system
+        if self.ngenerations == 0 and self.uses_schedulers:
+            raise ValueError("The specified remote hosts cannot be used for the first generation: at least one remote uses a scheduling system")
 
     # -----------------------------------------------------------------
 
@@ -152,7 +152,7 @@ class ParameterExplorer(FittingComponent):
         # Set options for the BatchLauncher: basic options
         self.launcher.config.shared_input = True  # The input directories (or files) for the different simulations are shared
         self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
-        self.launcher.config.remotes = self.config.remotes  # the remote hosts on which to run the simulations
+        self.launcher.config.remotes = self.config.remotes  # the remote host(s) on which to run the simulations
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
 
@@ -206,7 +206,7 @@ class ParameterExplorer(FittingComponent):
         # Generate new models using genetic algorithms
         elif self.config.generation_method == "genetic":
 
-            if self.has_initial:
+            if "initial" in self.generation_names:
 
                 # Set index and name
                 self.generation_index = self.last_generation_index + 1
@@ -241,9 +241,9 @@ class ParameterExplorer(FittingComponent):
             # TODO: get parameter values of best fitting model
 
             # Get the current values in the ski file prepared by InputInitializer
-            young_luminosity_guess, young_filter = self.ski.get_stellar_component_luminosity("Young stars")
-            ionizing_luminosity_guess, ionizing_filter = self.ski.get_stellar_component_luminosity("Ionizing stars")
-            dust_mass_guess = self.ski.get_dust_component_mass(0)
+            young_luminosity_guess, young_filter = self.ski_file.get_stellar_component_luminosity("Young stars")
+            ionizing_luminosity_guess, ionizing_filter = self.ski_file.get_stellar_component_luminosity("Ionizing stars")
+            dust_mass_guess = self.ski_file.get_dust_component_mass(0)
 
             # Set the range of the FUV luminosity of the young stellar population
             min_value = self.config.young[0] * young_luminosity_guess
@@ -368,11 +368,42 @@ class ParameterExplorer(FittingComponent):
     def set_parallelization(self):
 
         """
-        This function ...
+        This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
+        a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
+        based on the current load of the corresponding system).
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Setting the parallelization scheme for the remote host(s) that use a scheduling system ...")
+
+        # Loop over the IDs of the hosts used by the batch launcher that use a scheduling system
+        for host in self.launcher.scheduler_hosts:
+
+            # Debugging
+            log.debug("Determining the parallelization scheme for host " + host.id + " ...")
+
+            # Get the number of cores per node for this host
+            cores_per_node = host.clusters[host.cluster_name].cores
+
+            # Determine the number of cores corresponding to the number of requested cores
+            cores = cores_per_node * self.config.nodes
+
+            # Use 1 core for each process (assume there is enough memory)
+            processes = cores
+
+            # Determine the number of threads per core
+            if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
+            else: threads_per_core = 1
+
+            # Create a Parallelization instance
+            parallelization = Parallelization(cores, threads_per_core, processes)
+
+            # Debugging
+            log.debug("Parallelization scheme for host " + host.id + ": " + str(parallelization))
+
+            # Set the parallelization for this host
+            self.launcher.set_parallelization_for_host(host.id, parallelization)
 
     # -----------------------------------------------------------------
 
@@ -383,7 +414,42 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Estimating the runtimes based on the results of previous runs ...")
+
+        # Get the number of photon packages (per wavelength) for this batch of simulations
+        current_packages = self.ski_file.packages()
+
+        # Create a RuntimeEstimator instance
+        estimator = RuntimeEstimator.from_file(self.timing_table_path)
+
+        # Initialize a dictionary to contain the estimated walltimes for the different hosts with scheduling system
+        walltimes = dict()
+
+        # Loop over the hosts which use a scheduling system and estimate the walltime
+        for host_id in self.launcher.scheduler_host_ids:
+
+            # Debugging
+            log.debug("Estimating the runtime for host '" + host_id + "' ...")
+
+            # Get the parallelization scheme that we have defined for this remote host
+            parallelization = self.launcher.parallelization_for_host(host_id)
+
+            # Visualisation of the distribution of estimated runtimes
+            if self.config.visualise: plot_path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_runtime_" + host_id) + ".pdf")
+            else: plot_path = None
+
+            # Estimate the runtime for the current number of photon packages and the current remote host
+            runtime = estimator.runtime_for(host_id, current_packages, parallelization, plot_path=plot_path)
+
+            # Debugging
+            log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
+
+            # Set the estimated walltime
+            walltimes[host_id] = runtime
+
+        # Create and set scheduling options for each host that uses a scheduling system
+        for host_id in walltimes: self.scheduling_options[host_id] = SchedulingOptions.from_dict({"walltime": walltimes[host_id]})
 
     # -----------------------------------------------------------------
 
@@ -409,8 +475,11 @@ class ParameterExplorer(FittingComponent):
         # Create a FUV filter object
         fuv = Filter.from_string("FUV")
 
+        # Set the name of the wavelength grid file
+        self.ski_file.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
+
         # Loop over the different parameter combinations
-        for i in range(self.number_of_models):
+        for i in range(self.nmodels):
 
             # Get the parameter values
             young_luminosity = self.generator.parameters["fuv_young"][i]
@@ -421,9 +490,9 @@ class ParameterExplorer(FittingComponent):
             simulation_name = time.unique_name()
 
             # Change the parameter values in the ski file
-            self.ski.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
-            self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
-            self.ski.set_dust_component_mass(0, dust_mass)
+            self.ski_file.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
+            self.ski_file.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
+            self.ski_file.set_dust_component_mass(0, dust_mass)
 
             # Create a directory for this simulation
             simulation_path = fs.create_directory_in(self.generation_info["Path"], simulation_name)
@@ -433,7 +502,7 @@ class ParameterExplorer(FittingComponent):
 
             # Put the ski file with adjusted parameters into the simulation directory
             ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
-            self.ski.saveto(ski_path)
+            self.ski_file.saveto(ski_path)
 
             # Create the SKIRT simulation definition
             definition = SingleSimulationDefinition(ski_path, self.input_paths, simulation_output_path)
@@ -453,12 +522,6 @@ class ParameterExplorer(FittingComponent):
             parameter_values = {"fuv_young": young_luminosity, "fuv_ionizing": ionizing_luminosity, "dust_mass": dust_mass}
             self.parameters_table.add_entry(simulation_name, parameter_values)
 
-        # Add simulations to the extra queue to calculate the contribution of the various stellar components
-        #self.add_contribution_simulations()
-
-        # Add simulation to the extra queue to create simulated images
-        #self.add_images_simulation()
-
         # Run the launcher, schedules the simulations
         simulations = self.launcher.run()
 
@@ -477,14 +540,26 @@ class ParameterExplorer(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
-    def number_of_models(self):
+    def nmodels(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.generator.number_of_models
+        return self.generator.nmodels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_schedulers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.uses_schedulers
 
     # -----------------------------------------------------------------
 

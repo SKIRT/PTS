@@ -1159,8 +1159,7 @@ class Remote(object):
             for file_path in origin:
                 if not fs.is_file(file_path): raise ValueError("The file " + file_path + " does not exist")
 
-            # Escape possible space characters
-            origin = [path.replace(" ", "\\\ ") for path in origin]
+            origin = ["'" + path + "'" for path in origin]
 
             # Add the file paths to the command string
             copy_command += " ".join(origin) + " "

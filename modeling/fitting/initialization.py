@@ -379,7 +379,7 @@ class FittingInitializer(FittingComponent):
         self.ski.setpackages(self.config.packages)
 
         # Set the name of the wavelength grid file
-        self.ski.set_file_wavelength_grid("wavelengths_lowres.txt")
+        self.ski.set_file_wavelength_grid("wavelengths.txt")
 
         # Set the stellar and dust components
         self.set_components()
