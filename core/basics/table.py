@@ -124,6 +124,7 @@ class SmartTable(Table):
         """
 
         mask = [value is None for value in values]
+        values = [self.column_info[i][1]("0") if values[i] is None else values[i] for i in range(len(values))]
         super(SmartTable, self).add_row(values, mask=mask)
 
     # -----------------------------------------------------------------
