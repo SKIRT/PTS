@@ -18,7 +18,6 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import OldConfigurable
 from ..simulation.remote import SkirtRemote
-from ..simulation.arguments import SkirtArguments
 from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
@@ -630,16 +629,13 @@ class BatchLauncher(OldConfigurable):
                 definition, name, parallelization_item = self.queue.pop()
                 if parallelization_item is None: parallelization_item = parallelization
 
-                # Create the SkirtArguments object
-                arguments = SkirtArguments(definition, self.logging_options, parallelization_item)
-
                 # Check whether scheduling options are defined for this simulation and for this remote host
                 if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
                     scheduling_options = self.scheduling_options[remote.host_id][name]
                 else: scheduling_options = None
 
                 # Queue the simulation
-                simulation = remote.add_to_queue(arguments, name=name, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
+                simulation = remote.add_to_queue(definition, self.logging_options, parallelization_item, name=name, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
                 simulations_remote.append(simulation)
 
                 # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
@@ -664,15 +660,12 @@ class BatchLauncher(OldConfigurable):
                     # Get the last item from the extra queue
                     definition, name, analysis_options, logging_options, share_input = self.extra_queue.pop()
 
-                    # Create the SkirtArguments object
-                    arguments = SkirtArguments(definition, logging_options, parallelization)
-
                     # Set the remote input path
                     if share_input and self.config.shared_input: remote_in_path = remote_input_path
                     else: remote_in_path = None
 
                     # Queue the simulation
-                    simulation = remote.add_to_queue(arguments, name=name, remote_input_path=remote_in_path)
+                    simulation = remote.add_to_queue(definition, logging_options, parallelization, name=name, remote_input_path=remote_in_path)
                     simulations_remote.append(simulation)
 
                     # Set the analysis options for the simulation

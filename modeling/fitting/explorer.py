@@ -28,6 +28,7 @@ from ...core.basics.filter import Filter
 from ...core.tools import time
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.simulation.definition import SingleSimulationDefinition
+from .tables import ParametersTable
 
 # -----------------------------------------------------------------
 
@@ -53,11 +54,17 @@ class ParameterExplorer(FittingComponent):
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
 
+        # The generation info
+        self.generation_info = dict()
+
+        # The parameters table
+        self.parameters_table = None
+
         # The parameter ranges
         self.ranges = dict()
 
         # The generation index and name
-        self.generation = None
+        self.generation_index = None
         self.generation_name = None
 
         # The model generator
@@ -87,22 +94,28 @@ class ParameterExplorer(FittingComponent):
         # 2. Set the parameter ranges
         self.set_ranges()
 
-        # 4. Generate the model parameters
+        # 3. Generate the model parameters
         self.generate_models()
+
+        # 4. Set the generation info
+        self.set_info()
 
         # 5. Set the paths to the input files
         self.set_input()
 
-        # 5. Set the parallelization schemes for the different remote hosts
+        # Create the generation directory
+        self.create_generation_directory()
+
+        # 6. Set the parallelization schemes for the different remote hosts
         self.set_parallelization()
 
-        # 6. Estimate the runtimes for the different remote hosts
+        # 7. Estimate the runtimes for the different remote hosts
         self.estimate_runtimes()
 
-        # 7. Launch the simulations for different parameter values
+        # 8. Launch the simulations for different parameter values
         self.launch()
 
-        # 8. Writing
+        # 9. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -195,14 +208,16 @@ class ParameterExplorer(FittingComponent):
 
             if self.has_initial:
 
-                self.generation = None # Determine from index of last generation
-                self.generation_name = str()
+                # Set index and name
+                self.generation_index = self.last_generation_index + 1
+                self.generation_name = str("Generation " + str(self.generation_index))
 
                 # Create the model generator
                 self.generator = GeneticModelGenerator()
 
             else:
 
+                # Set the generation name
                 self.generation_name = "initial"
 
                 # Create the model generator
@@ -247,6 +262,7 @@ class ParameterExplorer(FittingComponent):
 
         else:
 
+            # Loop over the free parameter labels
             for label in self.free_parameter_labels:
 
                 # Get the range
@@ -276,6 +292,39 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the generation info ...")
+
+        # Get the previous wavelength grid level
+        wavelength_grid_level = self.current_wavelength_grid_level
+        dust_grid_level = self.current_dust_grid_level
+
+        # Increase the wavelength grid or dust grid level if requested
+        if self.config.refine_wavelengths:
+            if wavelength_grid_level == self.highest_wavelength_grid_level: log.warning("Cannot refine wavelength grid: highest level reached (" + str(wavelength_grid_level) + ")")
+            else: wavelength_grid_level += 1
+        if self.config.refine_dust:
+            if dust_grid_level == self.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
+            else: dust_grid_level += 1
+
+        # Set the generation info
+        self.generation_info["Generation name"] = self.generation_name
+        self.generation_info["Generation index"] = self.generation_index
+        self.generation_info["Method"] = self.config.generation_method
+        self.generation_info["Wavelength grid level"] = wavelength_grid_level
+        self.generation_info["Dust grid level"] = dust_grid_level
+        self.generation_info["Number of simulations"] = self.config.simulations
+        self.generation_info["Self-absorption"] = self.config.selfabsorption
+
+    # -----------------------------------------------------------------
+
     def set_input(self):
 
         """
@@ -286,9 +335,33 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting the input paths ...")
 
-        # Set the paths to the input maps and appropriate wavelength grid file
+        # Set the paths to the input maps
         self.input_paths = self.input_map_paths
-        self.input_paths.append() # add the path to the wavelength grid
+
+        # Determine and set the path to the appropriate wavelength grid file
+        wavelength_grid_path = self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])
+        self.input_paths.append(wavelength_grid_path)
+
+    # -----------------------------------------------------------------
+
+    def create_generation_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the generation directory")
+
+        # Determine the path to the generation directory
+        self.generation_info["Path"] = fs.create_directory_in(self.fit_generations_path, self.generation_name)
+
+        # Determine the path to the generation parameters table
+        self.generation_info["Parameter table path"] = fs.join(self.generation_info["Path"], "parameters.dat")
+
+        # Initialize the parameters table
+        self.parameters_table = ParametersTable.initialize(self.free_parameter_labels)
 
     # -----------------------------------------------------------------
 
@@ -340,9 +413,9 @@ class ParameterExplorer(FittingComponent):
         for i in range(self.number_of_models):
 
             # Get the parameter values
-            young_luminosity = self.parameters["FUV young"][i]
-            ionizing_luminosity = self.parameters["FUV ionizing"][i]
-            dust_mass = self.parameters["Dust mass"][i]
+            young_luminosity = self.generator.parameters["fuv_young"][i]
+            ionizing_luminosity = self.generator.parameters["fuv_ionizing"][i]
+            dust_mass = self.generator.parameters["dust_mass"][i]
 
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()
@@ -352,22 +425,18 @@ class ParameterExplorer(FittingComponent):
             self.ski.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
             self.ski.set_dust_component_mass(0, dust_mass)
 
-            # Determine the directory for this simulation
-            simulation_path = fs.join(self.fit_out_path, simulation_name)
+            # Create a directory for this simulation
+            simulation_path = fs.create_directory_in(self.generation_info["Path"], simulation_name)
 
-            # Create the simulation directory
-            fs.create_directory(simulation_path)
-
-            # Create an 'out' directory within the simulation directory
-            output_path = fs.join(simulation_path, "out")
-            fs.create_directory(output_path)
+            # Create an output directory for this simulation
+            simulation_output_path = fs.create_directory_in(simulation_path, "out")
 
             # Put the ski file with adjusted parameters into the simulation directory
             ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
             self.ski.saveto(ski_path)
 
             # Create the SKIRT simulation definition
-            definition = SingleSimulationDefinition(ski_path, self.input_paths, output_path)
+            definition = SingleSimulationDefinition(ski_path, self.input_paths, simulation_output_path)
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
@@ -380,14 +449,15 @@ class ParameterExplorer(FittingComponent):
             # Set scheduling options (for the different remote hosts with a scheduling system)
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
-            # Add an entry to the parameter table
-            self.table.add_row([simulation_name, young_luminosity, ionizing_luminosity, dust_mass])
+            # Add an entry to the parameters table
+            parameter_values = {"fuv_young": young_luminosity, "fuv_ionizing": ionizing_luminosity, "dust_mass": dust_mass}
+            self.parameters_table.add_entry(simulation_name, parameter_values)
 
         # Add simulations to the extra queue to calculate the contribution of the various stellar components
-        self.add_contribution_simulations()
+        #self.add_contribution_simulations()
 
         # Add simulation to the extra queue to create simulated images
-        self.add_images_simulation()
+        #self.add_images_simulation()
 
         # Run the launcher, schedules the simulations
         simulations = self.launcher.run()
@@ -425,6 +495,53 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the generation info
+        self.write_generation()
+
+        # Write the parameters table
+        self.write_parameters()
+
+    # -----------------------------------------------------------------
+
+    def write_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing generation info ...")
+
+        # Add an entry to the generations table
+        name = self.generation_info["Generation name"]
+        index = self.generation_info["Generation index"]
+        method = self.generation_info["Method"]
+        wg_level = self.generation_info["Wavelength grid level"]
+        dg_level = self.generation_info["Dust grid level"]
+        nsimulations = self.generation_info["Number of simulations"]
+        selfabsorption = self.generation_info["Self-absorption"]
+        self.generations_table.add_entry(name, index, method, wg_level, dg_level, nsimulations, selfabsorption, self.ranges)
+
+        # Save the table
+        self.generations_table.save()
+
+    # -----------------------------------------------------------------
+
+    def write_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the parameter values ...")
+
+        # Save the parameters table
+        self.parameters_table.saveto(self.generation_info["Parameter table path"])
 
 # -----------------------------------------------------------------

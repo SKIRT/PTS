@@ -25,6 +25,7 @@ class GenerationsTable(SmartTable):
 
     column_info = [("Generation name", str, None, "Name for the generation"),
                    ("Generation index", int, None, "Index of the generation"),
+                   ("Method", str, None, "Method used for model generation"),
                    ("Wavelength grid level", int, None, "level of the wavelength gid"),
                    ("Dust grid level", int, None, "level of the dust grid"),
                    ("Number of simulations", int, None, "number of simulations (individuals) in the generation"),
@@ -69,12 +70,13 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, index, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
+    def add_entry(self, name, index, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
 
         """
         This function ...
         :param name:
         :param index:
+        :param method:
         :param wavelength_grid_level:
         :param dust_grid_level:
         :param nsimulations:
@@ -83,7 +85,7 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
-        values = [name, index, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption]
+        values = [name, index, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption]
 
         # Add the boundaries (min, max) of the parameter ranges as seperate column values
         for label in self.parameter_labels:

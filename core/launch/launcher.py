@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.launch.launcher Contains the SkirtLauncher class, which can be used to launch SKIRT simulations
+## \package pts.core.launch.launcher Contains the SKIRTLauncher class, which can be used to launch SKIRT simulations
 #  in a convenient way.
 
 # -----------------------------------------------------------------
@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 from .analyser import SimulationAnalyser
 from ..simulation.execute import SkirtExec
 from ..simulation.arguments import SkirtArguments
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ..test.resources import ResourceEstimator
 from ..tools import monitoring
 from ..tools import filesystem as fs
@@ -25,7 +25,7 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SkirtLauncher(OldConfigurable):
+class SKIRTLauncher(Configurable):
 
     """
     This class ...
@@ -40,7 +40,7 @@ class SkirtLauncher(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SkirtLauncher, self).__init__(config, "core")
+        super(SKIRTLauncher, self).__init__(config, "core")
 
         # -- Attributes --
 
@@ -168,7 +168,7 @@ class SkirtLauncher(OldConfigurable):
         """
 
         # Call the setup function of the base class
-        super(SkirtLauncher, self).setup()
+        super(SKIRTLauncher, self).setup()
 
         # Set the paths
         self.base_path = fs.directory_of(self.config.parameters.ski_pattern) if "/" in self.config.parameters.ski_pattern else fs.cwd()
@@ -608,9 +608,10 @@ class SkirtRemoteLauncher(OldConfigurable):
             scheduling_options.walltime = self.config.walltime
         else: scheduling_options = None
 
+        # TODO: adapt this to the new API of remote.run
         # Run the simulation
-        arguments = SkirtArguments.from_config(self.config.arguments)
-        simulation = self.remote.run(arguments, scheduling_options=scheduling_options)
+        #arguments = SkirtArguments.from_config(self.config.arguments)
+        #simulation = self.remote.run(arguments, scheduling_options=scheduling_options)
 
         # Set the analysis options for the simulation
         self.set_analysis_options(simulation)
@@ -674,3 +675,5 @@ class SkirtRemoteLauncher(OldConfigurable):
 
         # Retrieval
         simulation.retrieve_types = self.config.retrieve_types
+
+# -----------------------------------------------------------------

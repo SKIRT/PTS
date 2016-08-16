@@ -52,7 +52,7 @@ class AnalysisLauncher(AnalysisComponent):
         """
 
         # Call the constructor of the base class
-        super(BestModelLauncher, self).__init__(config)
+        super(AnalysisLauncher, self).__init__(config)
 
         # -- Attributes --
 
@@ -548,9 +548,6 @@ class AnalysisLauncher(AnalysisComponent):
         # Create the logging options
         logging = LoggingOptions(verbose=True, memory=True)
 
-        # Create the SKIRT arguments object
-        arguments = SkirtArguments(definition, logging, self.parallelization)
-
         # Debugging: save the screen output in a text file
         remote_skirt_dir_path = self.remote.skirt_dir
         remote_skirt_run_debug_path = fs.join(remote_skirt_dir_path, "run-debug")
@@ -564,7 +561,7 @@ class AnalysisLauncher(AnalysisComponent):
         local_script_path = fs.join(scripts_host_path, time.unique_name() + ".sh")
 
         # Run the simulation
-        simulation = self.remote.run(arguments, scheduling_options=self.scheduling_options,
+        simulation = self.remote.run(definition, logging, self.parallelization, scheduling_options=self.scheduling_options,
                                      analysis_options=self.analysis_options, screen_output_path=screen_output_path,
                                      local_script_path=local_script_path)
 

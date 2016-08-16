@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from abc import abstractmethod, ABCMeta
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
@@ -44,28 +44,22 @@ class ModelGenerator(FittingComponent):
         # Call the constructor of the base class
         super(ModelGenerator, self).__init__()
 
+        # The order of the free parameter labels
+        self.parameter_labels_order = None
+
         # The dictionary with the parameter ranges
         self.ranges = OrderedDict()
 
         # The dictionary with the list of the model parameters
-        self.parameters = OrderedDict()
+        self.parameters = defaultdict(list)
+
+        # The parameter value distributions
+        self.distributions = dict()
 
         # The animations
         self.scatter_animation = None
         self.scatter_animation_labels = None
         self.parameter_animations = dict()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def parameter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ranges.keys()
 
     # -----------------------------------------------------------------
 
@@ -89,7 +83,7 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
-        return len(self.parameters[self.ranges.keys()[0]])
+        return len(self.parameters[self.parameter_labels_order[0]])
 
     # -----------------------------------------------------------------
 
@@ -101,8 +95,11 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
+        # Initialize a list
         minima = []
-        for name in self.ranges: minima.append(self.ranges[name].min)
+
+        # Set the list values
+        for label in self.parameter_labels_order: minima.append(self.ranges[label].min)
 
         # Return the minimal parameter values
         return minima
@@ -117,24 +114,27 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
+        # Initialize a list
         maxima = []
-        for name in self.ranges: maxima.append(self.ranges[name].max)
+
+        # Set the list values
+        for label in self.parameter_labels_order: maxima.append(self.ranges[label].max)
 
         # Return the maximal parameter values
         return maxima
 
     # -----------------------------------------------------------------
 
-    def add_parameter(self, name, par_range):
+    def add_parameter(self, label, parameter_range):
 
         """
         This function ...
-        :param name:
-        :param par_range:
+        :param label:
+        :param parameter_range:
         :return:
         """
 
-        self.ranges[name] = par_range
+        self.ranges[label] = parameter_range
 
     # -----------------------------------------------------------------
 
@@ -148,8 +148,8 @@ class ModelGenerator(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the necessary input
-        #self.load_input()
+        # 3. Load the current parameter value probability distributions
+        self.load_distributions()
 
         # 3. Initialize the animations
         self.initialize_animations()
@@ -169,16 +169,26 @@ class ModelGenerator(FittingComponent):
         # Call the setup of the base class
         super(ModelGenerator, self).setup()
 
+        # Establish the order of the free parameters
+        self.parameter_labels_order = list(self.free_parameter_labels)
+
     # -----------------------------------------------------------------
 
-    def load_input(self):
+    def load_distributions(self):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Loading the current parameter distributions ...")
+
+        # Loop over the free parameters
+        for label in self.free_parameter_labels:
+
+            # Load the distribution
+            if self.has_distribution(label): self.distributions[label] = self.get_parameter_distribution(label)
 
     # -----------------------------------------------------------------
 
@@ -214,7 +224,7 @@ class ModelGenerator(FittingComponent):
 
             # Initialize the young FUV luminosity distribution animation
             animation = DistributionAnimation(self.ranges[label].min, self.ranges[label].max, description, "New models")
-            animation.add_reference_distribution("Previous models", self.distributions[label])
+            if label in self.distributions: animation.add_reference_distribution("Previous models", self.distributions[label])
 
             # Add the animation to the dictionary
             self.parameter_animations[label] = animation

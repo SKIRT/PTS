@@ -20,8 +20,9 @@ from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
-from .tables import ParametersTable, GenerationsTable, ChiSquaredTable
+from .tables import GenerationsTable, ChiSquaredTable
 from ...core.simulation.skifile import SkiFile
+from ...core.basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
@@ -74,9 +75,6 @@ class FittingComponent(ModelingComponent):
 
         # The path to the generations table
         self.generations_table_path = None
-
-        # The path to the parameters table
-        self.parameters_table_path = None
 
         # The path to the chi squared table
         self.chi_squared_table_path = None
@@ -159,16 +157,6 @@ class FittingComponent(ModelingComponent):
         # Determine the path to the ski file
         self.fit_ski_path = fs.join(self.fit_path, self.galaxy_name + ".ski")
 
-        ## PARAMETERS TABLE
-
-        # Set the path to the parameter file
-        self.parameters_table_path = fs.join(self.fit_path, "parameters.dat")
-
-        # Initialize the parameters table if necessary
-        if not fs.is_file(self.parameters_table_path) and self.free_parameter_labels is not None:
-            parameters_table = ParametersTable.initialize(self.free_parameter_labels)
-            parameters_table.saveto(self.parameters_table_path)
-
         # CHI SQUARED TABLE
 
         # Set the path to the chi squared table file
@@ -247,5 +235,134 @@ class FittingComponent(ModelingComponent):
         """
 
         return SkiFile(self.fit_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_distribution(self, label, normalized=True):
+
+        """
+        This function ...
+        :param label:
+        :param normalized:
+        :return:
+        """
+
+        # Load the probability distribution
+        distribution = Distribution.from_file(self.distribution_table_paths[label])
+
+        # Normalize the distribution
+        if normalized: distribution.normalize(value=1.0, method="max")
+
+        # Return the distribution
+        return distribution
+
+    # -----------------------------------------------------------------
+
+    def has_distribution(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return fs.is_file(self.distribution_table_paths[label])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_generation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        highest_index = -1
+
+        # Find the highest index
+        for i in range(len(self.generations_table)):
+            if not self.generations_table["Generation index"].mask[i]:
+                index = self.generations_table["Generation index"][i]
+                if index  > highest_index: highest_index = index
+
+        # Return the highest generation index
+        return highest_index
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highest_wavelength_grid_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the last filename, sorted as integers
+        return int(fs.files_in_path(self.fit_wavelength_grids_path, not_contains="grids", extension="txt", returns="name", sort=int)[-1])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_wavelength_grid_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.generations_table) > 0: return self.generations_table["Wavelength grid level"][-1]
+        else: return 0
+
+    # -----------------------------------------------------------------
+
+    def wavelength_grid_path_for_level(self, level):
+
+        """
+        This function ...
+        :param level:
+        :return:
+        """
+
+        return fs.join(self.fit_wavelength_grids_path, str(level) + ".txt")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def highest_dust_grid_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the last filename, sorted as integers
+        return int(fs.files_in_path(self.fit_dust_grids_path, not_contains="grids", extension="dg", returns="name", sort=int)[-1])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_dust_grid_level(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.generations_table) > 0: return self.generations_table["Dust grid level"][-1]
+        else: return 0
+
+    # -----------------------------------------------------------------
+
+    def dust_grid_path_for_level(self, level):
+
+        """
+        This function ...
+        :param level:
+        :return:
+        """
+
+        return fs.join(self.fit_dust_grids_path, str(level) + ".dg")
 
 # -----------------------------------------------------------------

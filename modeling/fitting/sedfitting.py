@@ -72,29 +72,6 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new SEDFitter instance
-        fitter = cls(arguments.config)
-
-        # Set the modeling path
-        fitter.config.path = arguments.path
-
-        # Make visualisations
-        fitter.config.visualise = arguments.visualise
-
-        # Return the new instance
-        return fitter
-
-    # -----------------------------------------------------------------
-
     def run(self):
 
         """

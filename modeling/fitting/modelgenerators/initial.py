@@ -94,7 +94,6 @@ class InitialModelGenerator(ModelGenerator):
         population = self.engine.get_population()
 
         # Loop over the individuals of the population
-        parameter_names = self.parameter_names
         for individual in population:
 
             # Loop over all the genes (parameters)
@@ -104,7 +103,7 @@ class InitialModelGenerator(ModelGenerator):
                 value = individual[i]
 
                 # Add the parameter value to the dictionary
-                self.parameters[parameter_names[i]].append(value)
+                self.parameters[self.parameter_labels_order[i]].append(value)
 
     # -----------------------------------------------------------------
 

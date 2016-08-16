@@ -25,6 +25,7 @@ from .simulation import RemoteSimulation
 from ..tools.logging import log
 from ..launch.options import SchedulingOptions
 from ..launch.parallelization import Parallelization
+from ..simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
 
@@ -108,11 +109,13 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, arguments, name=None, scheduling_options=None, remote_input_path=None, analysis_options=None):
+    def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None, remote_input_path=None, analysis_options=None):
 
         """
         This function ...
-        :param arguments:
+        :param definition:
+        :param logging_options:
+        :param parallelization:
         :param name: a name given to the simulation
         :param scheduling_options:
         :param remote_input_path:
@@ -123,18 +126,19 @@ class SkirtRemote(Remote):
         # Inform the user
         log.info("Adding simulation to the queue ...")
 
-        # First create a copy of the arguments
-        arguments = arguments.copy()
+        # Get local input and output path
+        local_input_path = definition.input_path
+        local_output_path = definition.output_path
 
         # Create the remote simulation directory
-        remote_simulation_path = self.create_simulation_directory(arguments)
+        remote_simulation_path = self.create_simulation_directory(definition)
         remote_simulation_name = fs.name(remote_simulation_path)
 
         # Set the name if none is given
         if name is None: name = remote_simulation_name
 
-        # Make preparations for this simulation
-        local_ski_path, local_input_path, local_output_path = self.prepare(arguments, remote_simulation_path, remote_input_path)
+        # Make preparations for this simulation, create the SkirtArguments object
+        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path)
 
         # Add the SkirtArguments object to the queue
         self.queue.append((arguments, name))
@@ -146,7 +150,7 @@ class SkirtRemote(Remote):
         simulation_id = self._new_simulation_id()
 
         # Create a simulation object
-        simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, local_ski_path, local_input_path, local_output_path)
+        simulation = self.create_simulation_object(arguments, name, simulation_id, remote_simulation_path, definition.ski_path, local_input_path, local_output_path)
 
         # Set the parallelization properties to the simulation object
         processes = arguments.parallel.processes
@@ -293,11 +297,13 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def run(self, arguments, name=None, scheduling_options=None, analysis_options=None, local_script_path=None, screen_output_path=None):
+    def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None, analysis_options=None, local_script_path=None, screen_output_path=None):
 
         """
         This function ...
-        :param arguments:
+        :param definition:
+        :param logging_options:
+        :param parallelization:
         :param name:
         :param scheduling_options:
         :param analysis_options:
@@ -313,7 +319,7 @@ class SkirtRemote(Remote):
         if len(self.queue) > 0: raise RuntimeError("The simulation queue is not empty")
 
         # Add the simulation arguments to the queue
-        simulation = self.add_to_queue(arguments, name, scheduling_options, analysis_options=analysis_options)
+        simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options)
 
         # Start the queue
         screen_name = self.start_queue(name, local_script_path, screen_output_path)
@@ -325,16 +331,16 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def create_simulation_directory(self, arguments):
+    def create_simulation_directory(self, definition):
 
         """
         This function ...
-        :param arguments:
+        :param definition:
         :return:
         """
 
         # Create a unique name for the simulation directory
-        skifile_name = fs.name(arguments.ski_pattern).split(".ski")[0]
+        skifile_name = fs.name(definition.ski_path).split(".ski")[0]
         remote_simulation_name = time.unique_name(skifile_name, separator="__")
 
         # Determine the full path of the simulation directory on the remote system
@@ -348,15 +354,20 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def prepare(self, arguments, remote_simulation_path, remote_input_path=None):
+    def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None):
 
         """
         This function ...
-        :param arguments:
+        :param definition:
+        :param logging_options:
+        :param parallelization:
         :param remote_simulation_path:
         :param remote_input_path:
         :return:
         """
+
+        # Create the SkirtArguments object
+        arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization)
 
         # If an output path is defined in the remote host configuration file, use it for the simulation output
         if self.host.output_path is not None:
@@ -375,17 +386,11 @@ class SkirtRemote(Remote):
         # If an output path is not specified by the user, place a directory called 'out' next to the simulation's 'in' directory
         else: remote_output_path = fs.join(remote_simulation_path, "out")
 
-        # Change the parameters to accomodate for the fact that we are running remotely
-        # but store the paths to the local output directory because we want to copy the
-        # results later
-        local_input_path = arguments.input_path
-        local_output_path = arguments.output_path
-
         # The simulation does not require input
-        if local_input_path is None: remote_input_path = None
+        if definition.input_path is None: remote_input_path = None
 
         # The simulation input is defined in terms of a single local directory
-        elif isinstance(local_input_path, basestring):
+        elif isinstance(definition.input_path, basestring):
 
             # A remote input path is not specified, this means that we have yet to copy the input
             if remote_input_path is None:
@@ -394,13 +399,15 @@ class SkirtRemote(Remote):
                 remote_input_path = fs.join(remote_simulation_path, "in")
 
                 # Copy the input directory to the remote host
-                self.upload(local_input_path, remote_input_path)
+                self.upload(definition.input_path, remote_input_path)
 
+            # The specified remote input directory (for re-usage of already uploaded input) does not exist
             elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist")
 
-        elif isinstance(local_input_path, list):
+        # If the simulation input is defined as a list of seperate file paths
+        elif isinstance(definition.input_path, list):
 
-            local_input_file_paths = local_input_path
+            local_input_file_paths = definition.input_path # the list of file paths
 
             # A remote input path is not specified, this means that we have yet to copy the input files to a new
             # remote directory
@@ -415,14 +422,11 @@ class SkirtRemote(Remote):
                 # Upload the local input files to the new remote directory
                 self.upload(local_input_file_paths, remote_input_path)
 
+            # The specified remote directory (for re-usage of already uploaded input) does not exist
             elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist")
 
         # Invalid format for arguments.input_path
         else: raise ValueError("Invalid value for 'input_path': must be None, local directory path or list of file paths")
-
-        # Set the remote input and output path
-        arguments.input_path = remote_input_path
-        arguments.output_path = remote_output_path
 
         # Create the remote output directory
         self.create_directory(remote_output_path)
@@ -431,13 +435,17 @@ class SkirtRemote(Remote):
         local_ski_path = arguments.ski_pattern
         ski_name = fs.name(local_ski_path)
         remote_ski_path = fs.join(remote_simulation_path, ski_name)
+
+        # Set the base simulation options such as ski path, input path and output path (remote)
         arguments.ski_pattern = remote_ski_path
+        arguments.input_path = remote_input_path
+        arguments.output_path = remote_output_path
 
         # Copy the input directory and the ski file to the remote host
         self.upload(local_ski_path, remote_simulation_path)
 
-        # Return the paths of the local ski file and the local input and output directories
-        return local_ski_path, local_input_path, local_output_path
+        # Return the SKIRT arguments instance
+        return arguments
 
     # -----------------------------------------------------------------
 
