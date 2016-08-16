@@ -115,6 +115,19 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def add_row(self, values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        mask = [value is None for value in values]
+        super(SmartTable, self).add_row(values, mask=mask)
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """

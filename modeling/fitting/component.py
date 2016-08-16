@@ -20,7 +20,7 @@ from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
-from .tables import GenerationsTable, ChiSquaredTable
+from .tables import GenerationsTable
 from ...core.simulation.skifile import SkiFile
 from ...core.basics.distribution import Distribution
 
@@ -75,9 +75,6 @@ class FittingComponent(ModelingComponent):
 
         # The path to the generations table
         self.generations_table_path = None
-
-        # The path to the chi squared table
-        self.chi_squared_table_path = None
 
         # The path to the weights table
         self.weights_table_path = None
@@ -156,16 +153,6 @@ class FittingComponent(ModelingComponent):
 
         # Determine the path to the ski file
         self.fit_ski_path = fs.join(self.fit_path, self.galaxy_name + ".ski")
-
-        # CHI SQUARED TABLE
-
-        # Set the path to the chi squared table file
-        self.chi_squared_table_path = fs.join(self.fit_path, "chi_squared.dat")
-
-        # Initialize the chi squared file if that hasn't been done yet
-        if not fs.is_file(self.chi_squared_table_path):
-            chi_squared_table = ChiSquaredTable.initialize()
-            chi_squared_table.saveto(self.chi_squared_table_path)
 
         ## WEIGHTS TABLE
 

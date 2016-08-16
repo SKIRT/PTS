@@ -28,7 +28,7 @@ from ...core.basics.filter import Filter
 from ...core.tools import time
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.simulation.definition import SingleSimulationDefinition
-from .tables import ParametersTable
+from .tables import ParametersTable, ChiSquaredTable
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
@@ -62,6 +62,9 @@ class ParameterExplorer(FittingComponent):
 
         # The parameters table
         self.parameters_table = None
+
+        # The chi squared table
+        self.chi_squared_table = None
 
         # The parameter ranges
         self.ranges = dict()
@@ -360,8 +363,14 @@ class ParameterExplorer(FittingComponent):
         # Determine the path to the generation parameters table
         self.generation_info["Parameter table path"] = fs.join(self.generation_info["Path"], "parameters.dat")
 
+        # Determine the path to the chi squared table
+        self.generation_info["Chi squared table path"] = fs.join(self.generation_info["Path"], "chi_squared.dat")
+
         # Initialize the parameters table
         self.parameters_table = ParametersTable.initialize(self.free_parameter_labels)
+
+        # Initialize the chi squared table
+        self.chi_squared_table = ChiSquaredTable.initialize()
 
     # -----------------------------------------------------------------
 
@@ -579,6 +588,9 @@ class ParameterExplorer(FittingComponent):
         # Write the parameters table
         self.write_parameters()
 
+        # Write the (empty) chi squared table
+        self.write_chi_squared()
+
     # -----------------------------------------------------------------
 
     def write_generation(self):
@@ -618,5 +630,20 @@ class ParameterExplorer(FittingComponent):
 
         # Save the parameters table
         self.parameters_table.saveto(self.generation_info["Parameter table path"])
+
+    # -----------------------------------------------------------------
+
+    def write_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the chi squared table ...")
+
+        # Save the chi squared table
+        self.chi_squared_table.saveto(self.generation_info["Chi squared table path"])
 
 # -----------------------------------------------------------------
