@@ -54,8 +54,11 @@ class EmissionDustMapMaker(MapsComponent):
         # 2. Make the map
         self.make_map()
 
+        # 3. Make everything positive
+        self.make_positive()
+
         # 3. Normalize the map
-        self.normalize_map()
+        self.normalize()
 
     # -----------------------------------------------------------------
 
@@ -78,16 +81,36 @@ class EmissionDustMapMaker(MapsComponent):
         :return:
         """
 
+        # Make the map
         self.map = self.dataset.get_frame("Pacs red")
 
     # -----------------------------------------------------------------
 
-    def normalize_map(self):
+    def make_positive(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Replacing NaNs and negative pixels by zeros ...")
+
+        # Set negatives and NaNs to zero
+        self.map.replace_nans(0.0)
+        self.map.replace_negatives(0.0)
+
+    # -----------------------------------------------------------------
+
+    def normalize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Normalizing the dust map ...")
 
         self.map.normalize()
         self.map.unit = None

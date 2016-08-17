@@ -103,7 +103,10 @@ class BlackBodyDustMapMaker(MapsComponent):
         # 4. Make the dust map
         self.make_map(method)
 
-        # 5. Normalize the dust map
+        # 5. Make everything positive
+        self.make_positive()
+
+        # 6. Normalize the dust map
         self.normalize()
 
     # -----------------------------------------------------------------
@@ -265,12 +268,31 @@ class BlackBodyDustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_positive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Replacing NaNs and negative pixels by zeros ...")
+
+        # Set negatives and NaNs to zero
+        self.map.replace_nans(0.0)
+        self.map.replace_negatives(0.0)
+
+    # -----------------------------------------------------------------
+
     def normalize(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Normalizing the dust map ...")
 
         # Normalize the dust map
         self.map.normalize()

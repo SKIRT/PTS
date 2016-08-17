@@ -1420,6 +1420,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def replace_negatives(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._data[self._data < 0] = value
+
+    # -----------------------------------------------------------------
+
     def box_like(self, box):
 
         """

@@ -114,10 +114,13 @@ class CorteseDustMapMaker(MapsComponent):
         # 4. Make the dust map
         self.make_map()
 
-        # 5. Normalize the dust map
+        # 5. Make everything positive
+        self.make_positive()
+
+        # 6. Normalize the dust map
         self.normalize()
 
-        # 6. Writing
+        # 7. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -339,6 +342,22 @@ class CorteseDustMapMaker(MapsComponent):
 
         # Return the A(FUV) map
         return a_fuv_cortese
+
+    # -----------------------------------------------------------------
+
+    def make_positive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Replacing NaNs and negative pixels by zeros ...")
+
+        # Set negatives and NaNs to zero
+        self.map.replace_nans(0.0)
+        self.map.replace_negatives(0.0)
 
     # -----------------------------------------------------------------
 

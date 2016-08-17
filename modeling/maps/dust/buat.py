@@ -64,10 +64,13 @@ class BuatDustMapMaker(MapsComponent):
         # 2. Make the dust map
         self.make_map()
 
-        # 3. Normalize the dust map
+        # 3. Make everything positive
+        self.make_positive()
+
+        # 4. Normalize the dust map
         self.normalize()
 
-        # 4. Writing
+        # 5. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -109,6 +112,22 @@ class BuatDustMapMaker(MapsComponent):
 
         # Set map
         self.map = a_fuv
+
+    # -----------------------------------------------------------------
+
+    def make_positive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Replacing NaNs and negative pixels by zeros ...")
+
+        # Set negatives and NaNs to zero
+        self.map.replace_nans(0.0)
+        self.map.replace_negatives(0.0)
 
     # -----------------------------------------------------------------
 

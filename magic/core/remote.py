@@ -884,7 +884,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".replace_nans(" + str(value) + ")")
+        self.remote.send_python_line(self.label + ".replace_nans(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -896,7 +896,19 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".replace_infs(" + str(value) + ")")
+        self.remote.send_python_line(self.label + ".replace_infs(" + repr(value) + ")")
+
+    # -----------------------------------------------------------------
+
+    def replace_negatives(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.remote.send_python_line(self.label + ".replace_negatives(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 

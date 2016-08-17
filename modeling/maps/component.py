@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta
+
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
@@ -23,6 +26,10 @@ class MapsComponent(ModelingComponent):
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -49,15 +56,6 @@ class MapsComponent(ModelingComponent):
         # The path to the maps/ionizing directory
         self.maps_ionizing_path = None
 
-        # The path to the maps/solar directory
-        #self.maps_solar_path = None
-
-        # The path to the maps/intermediate directory
-        #self.maps_intermediate_path = None
-
-        # The path to the maps/cutoff directory
-        #self.maps_cutoff_path = None
-
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -81,14 +79,5 @@ class MapsComponent(ModelingComponent):
 
         # Set the path to the maps/ionizing directory
         self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
-
-        # Set the path to the maps/solar directory
-        #self.maps_solar_path = fs.create_directory_in(self.maps_path, "solar")
-
-        # Set the path to the maps/intermediate directory
-        #self.maps_intermediate_path = fs.create_directory_in(self.maps_path, "intermediate")
-
-        # Set the path to the maps/cutoff directory
-        #self.maps_cutoff_path = fs.create_directory_in(self.maps_path, "cutoff")
 
 # -----------------------------------------------------------------
