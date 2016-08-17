@@ -12,9 +12,102 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta
+
+# Import the relevant PTS classes and modules
+from ...core.tools import parsing
+from ...core.basics.configuration import stringify_not_list
+from ...core.tools.logging import log
+
 # -----------------------------------------------------------------
 
-class SEDInstrument(object):
+def load_instrument(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Get the first line of the file
+    with open(path, 'r') as f: first_line = f.readline()
+
+    # Create the appropriate model
+    if "SEDInstrument" in first_line: return SEDInstrument.from_file(path)
+    elif "FrameInstrument" in first_line: return FrameInstrument.from_file(path)
+    elif "SimpleInstrument" in first_line: return SimpleInstrument.from_file(path)
+    elif "FullInstrument" in first_line: return FullInstrument.from_file(path)
+    else: raise ValueError("Unrecognized instrument file")
+
+# -----------------------------------------------------------------
+
+class Instrument(object):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading instrument from " + path + " ...")
+
+        properties = dict()
+
+        with open(path, 'r') as instrumentfile:
+
+            for line in instrumentfile:
+
+                if "Type:" in line: continue
+
+                name, rest = line.split(": ")
+                value, dtype = rest.split("[")
+                dtype = dtype.split("]")[0]
+
+                # Set the property value
+                properties[name] = getattr(parsing, dtype)(value)
+
+        # Create the class instance
+        return cls(**properties)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the instrument to " + path + " ...")
+
+        with open(path, 'w') as modelfile:
+
+            # Print the type
+            print("Type:", self.__class__.__name__, file=modelfile)
+
+            # Loop over the variables
+            for name in vars(self):
+
+                dtype, value = stringify_not_list(getattr(self, name))
+                print(name + ":", value + " [" + dtype + "]", file=modelfile)
+
+# -----------------------------------------------------------------
+
+class SEDInstrument(Instrument):
 
     """
     This class ...
@@ -51,7 +144,7 @@ class SEDInstrument(object):
 
 # -----------------------------------------------------------------
 
-class FrameInstrument(object):
+class FrameInstrument(Instrument):
 
     """
     This class ...
@@ -88,6 +181,7 @@ class FrameInstrument(object):
 
     @classmethod
     def from_projection(cls, projection):
+
         """
         This function ...
         :param projection:
@@ -100,7 +194,7 @@ class FrameInstrument(object):
 
 # -----------------------------------------------------------------
 
-class SimpleInstrument(object):
+class SimpleInstrument(Instrument):
 
     """
     This class ...
@@ -150,7 +244,7 @@ class SimpleInstrument(object):
 
 # -----------------------------------------------------------------
 
-class FullInstrument(object):
+class FullInstrument(Instrument):
 
     """
     This class ...

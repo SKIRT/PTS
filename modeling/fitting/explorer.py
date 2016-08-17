@@ -152,6 +152,9 @@ class ParameterExplorer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting options for the batch simulation launcher ...")
+
         # Set options for the BatchLauncher: basic options
         self.launcher.config.shared_input = True  # The input directories (or files) for the different simulations are shared
         self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)

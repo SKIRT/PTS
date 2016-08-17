@@ -24,19 +24,16 @@ from astropy.table import Table
 from .component import FittingComponent
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.filter import Filter
-from ...magic.basics.skyregion import SkyRegion
-from ..basics.instruments import SEDInstrument, FrameInstrument
+from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ..core.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
 from ...core.tools.logging import log
-from ..core.sed import ObservedSED
 from .wavelengthgrids import WavelengthGridGenerator
 from .dustgrids import DustGridGenerator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
-from ..basics.models import DeprojectionModel3D, load_2d_model
+from ..basics.models import DeprojectionModel3D
 
 # -----------------------------------------------------------------
 
@@ -59,24 +56,15 @@ class FittingInitializer(FittingComponent):
 
         # -- Attributes --
 
-        # The ski file
-        self.ski = None
-
-        # The truncation ellipse
-        self.ellipse = None
-
         # The deprojection model
         self.deprojection = None
         self.deprojections = dict()
 
-        # The instrument
-        self.instrument = None
+        # The instruments
+        self.instruments = dict()
 
         # The table of weights for each band
         self.weights = None
-
-        # The observed SED
-        self.observed_sed = None
 
         # Filters
         self.i1 = None
@@ -108,34 +96,25 @@ class FittingInitializer(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the necessary input
-        self.load_input()
-
-        # 3. Create the wavelength grid
+        # 2. Create the wavelength grid
         self.create_wavelength_grids()
 
-        # 4. Create the deprojection model
+        # 3. Create the deprojection model
         self.create_deprojection_model()
 
-        # 5. Create the instrument
-        self.create_instrument()
+        # 4. Create the instruments
+        self.create_instruments()
 
-        # 6. Create the dust grids
+        # 5. Create the dust grids
         self.create_dust_grids()
 
-        # 7. Adjust the ski file
+        # 6. Adjust the ski template
         self.adjust_ski()
 
-        # 8. Adjust the ski files for simulating the contributions of the various stellar components
-        self.adjust_ski_contributions()
-
-        # 9. Adjust the ski file for generating simulated images
-        self.adjust_ski_images()
-
-        # 10. Calculate the weight factor to give to each band
+        # 7. Calculate the weight factor to give to each band
         self.calculate_weights()
 
-        # 11. Writing
+        # 8. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -167,73 +146,6 @@ class FittingInitializer(FittingComponent):
 
         # Create the table to contain the weights
         self.weights = Table(names=["Instrument", "Band", "Weight"], dtype=["S5", "S7", "float64"])
-
-    # -----------------------------------------------------------------
-
-    def load_input(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # 1. Load the template ski file
-        self.load_template()
-
-        # 3. Load the truncation ellipse
-        self.load_truncation_ellipse()
-
-        # 4. Load the observed SED
-        self.load_observed_sed()
-
-    # -----------------------------------------------------------------
-
-    def load_template(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ski file template ...")
-
-        # Open the template ski file
-        self.ski = LabeledSkiFile(self.template_ski_path)
-
-    # -----------------------------------------------------------------
-
-    def load_truncation_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ellipse region used for truncating the observed images ...")
-
-        # Determine the path
-        path = fs.join(self.truncation_path, "ellipse.reg")
-
-        # Get the ellipse
-        region = SkyRegion.from_file(path)
-        self.ellipse = region[0]
-
-    # -----------------------------------------------------------------
-
-    def load_observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the observed SED ...")
-
-        # Load the SED
-        self.observed_sed = ObservedSED.from_file(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 
@@ -294,7 +206,7 @@ class FittingInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_instrument(self):
+    def create_instruments(self):
 
         """
         This function ...
@@ -302,10 +214,16 @@ class FittingInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Creating the instrument ...")
+        log.info("Creating the instruments ...")
 
         # Create an SED instrument
-        self.instrument = SEDInstrument.from_projection(self.earth_projection)
+        self.instruments["SED"] = SEDInstrument.from_projection(self.earth_projection)
+
+        # Create a frame instrument to generate datacube
+        self.instruments["frame"] = FrameInstrument.from_projection(self.earth_projection)
+
+        # Create a simple instrument (SED + frame)
+        self.instruments["simple"] = SimpleInstrument.from_projection(self.earth_projection)
 
     # -----------------------------------------------------------------
 
@@ -320,7 +238,7 @@ class FittingInitializer(FittingComponent):
         log.info("Creating the grids ...")
 
         # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.ellipse.major  # major axis length of the sky ellipse
+        major_angular = self.truncation_ellipse.major  # major axis length of the sky ellipse
         radius_physical = (major_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the pixelscale in physical units
@@ -370,35 +288,35 @@ class FittingInitializer(FittingComponent):
         log.info("Adjusting the ski file parameters ...")
 
         # Remove the existing instruments
-        self.ski.remove_all_instruments()
+        self.ski_template.remove_all_instruments()
 
         # Add the instrument
-        self.ski.add_instrument("earth", self.instrument)
+        self.ski_template.add_instrument("earth", self.instruments["SED"])
 
         # Set the number of photon packages
-        self.ski.setpackages(self.config.packages)
+        self.ski_template.setpackages(self.config.packages)
 
         # Set the name of the wavelength grid file
-        self.ski.set_file_wavelength_grid("wavelengths.txt")
+        self.ski_template.set_file_wavelength_grid("wavelengths.txt")
 
         # Set the stellar and dust components
         self.set_components()
 
         # Set transient dust emissivity
-        self.ski.set_transient_dust_emissivity()
+        self.ski_template.set_transient_dust_emissivity()
 
         # Set the lowest-resolution dust grid
-        self.ski.set_dust_grid(self.dg_generator.grids[0])
+        self.ski_template.set_dust_grid(self.dg_generator.grids[0])
 
         # Set all-cells dust library
-        self.ski.set_allcells_dust_lib()
+        self.ski_template.set_allcells_dust_lib()
 
         # Dust self-absorption
-        if self.config.selfabsorption: self.ski.enable_selfabsorption()
-        else: self.ski.disable_selfabsorption()
+        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
+        else: self.ski_template.disable_selfabsorption()
 
         # Disable all writing options
-        self.ski.disable_all_writing_options()
+        self.ski_template.disable_all_writing_options()
 
     # -----------------------------------------------------------------
 
@@ -455,10 +373,10 @@ class FittingInitializer(FittingComponent):
         #luminosity = luminosity.to(self.sun_i1).value
 
         # Set the parameters of the bulge
-        self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
-        self.ski.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
+        self.ski_template.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
+        self.ski_template.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
-        self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 
@@ -484,8 +402,7 @@ class FittingInitializer(FittingComponent):
         bulge_fluxdensity = self.bulge2d_model.fluxdensity
 
         # Get the 3.6 micron flux density with the bulge subtracted
-        i1_index = tables.find_index(self.observed_sed.table, "I1", "Band")
-        fluxdensity = self.observed_sed.table["Flux"][i1_index] * Unit("Jy") - bulge_fluxdensity
+        fluxdensity = self.observed_flux(self.i1, unit="Jy") - bulge_fluxdensity
 
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
@@ -500,10 +417,10 @@ class FittingInitializer(FittingComponent):
         self.deprojections["Old stars"] = deprojection
 
         # Adjust the ski file
-        self.ski.set_stellar_component_geometry("Evolved stellar disk", deprojection)
-        self.ski.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
+        self.ski_template.set_stellar_component_geometry("Evolved stellar disk", deprojection)
+        self.ski_template.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1) # normalization by band
-        self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 
@@ -528,8 +445,7 @@ class FittingInitializer(FittingComponent):
         scale_height = 100. * Unit("pc") # M51
 
         # Get the FUV flux density
-        fuv_index = tables.find_index(self.observed_sed.table, "FUV", "Band")
-        fluxdensity = 2. * self.observed_sed.table["Flux"][fuv_index] * Unit("Jy")
+        fluxdensity = 2. * self.observed_flux(self.fuv, unit="Jy")
 
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
@@ -544,10 +460,10 @@ class FittingInitializer(FittingComponent):
         self.deprojections["Young stars"] = deprojection
 
         # Adjust the ski file
-        self.ski.set_stellar_component_geometry("Young stars", deprojection)
-        self.ski.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
+        self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
+        self.ski_template.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
-        self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 
@@ -585,10 +501,10 @@ class FittingInitializer(FittingComponent):
         self.deprojections["Ionizing stars"] = deprojection
 
         # Adjust the ski file
-        self.ski.set_stellar_component_geometry("Ionizing stars", deprojection)
-        self.ski.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
+        self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
+        self.ski_template.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
         #self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
-        self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 
@@ -617,64 +533,9 @@ class FittingInitializer(FittingComponent):
         self.deprojections["Dust"] = deprojection
 
         # Adjust the ski file
-        self.ski.set_dust_component_geometry(0, deprojection)
-        self.ski.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
-        self.ski.set_dust_component_mass(0, dust_mass) # dust mass
-
-    # -----------------------------------------------------------------
-
-    def adjust_ski_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Adjusting ski files for simulating the contribution of the various stellar components ...")
-
-        # Loop over the different contributions, create seperate ski file instance
-        contributions = ["old", "young", "ionizing"]
-        component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
-                           "young": "Young stars",
-                           "ionizing": "Ionizing stars"}
-        for contribution in contributions:
-
-            # Create a copy of the ski file instance
-            ski = self.ski.copy()
-
-            # Remove other stellar components
-            ski.remove_stellar_components_except(component_names[contribution])
-
-            # Add the ski file to the dictionary
-            self.ski_contributions[contribution] = ski
-
-    # -----------------------------------------------------------------
-
-    def adjust_ski_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Adjusting ski files for generating simulated images ...")
-
-        # Create a copy of the ski file instance
-        self.ski_images = self.ski.copy()
-
-        # Remove all instruments
-        self.ski_images.remove_all_instruments()
-
-        # Create frame instrument to generate datacube
-        frame_instrument = FrameInstrument.from_projection(self.earth_projection)
-
-        # Add the frame instrument
-        self.ski_images.add_instrument("earth", frame_instrument)
-
-        # Add the SED instrument
-        self.ski_images.add_instrument("earth", self.instrument)
+        self.ski_template.set_dust_component_geometry(0, deprojection)
+        self.ski_template.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
+        self.ski_template.set_dust_component_mass(0, dust_mass) # dust mass
 
     # -----------------------------------------------------------------
 
@@ -721,7 +582,7 @@ class FittingInitializer(FittingComponent):
             else: raise RuntimeError("Unknown wavelength range")
 
         # Determine the weight for each group of filters
-        number_of_data_points = len(self.observed_sed.table)
+        number_of_data_points = len(self.fitting_filters)
         uv_weight = 1. / (len(uv_bands) * number_of_groups) * number_of_data_points
         optical_weight = 1. / (len(optical_bands) * number_of_groups) * number_of_data_points
         nir_weight = 1. / (len(nir_bands) * number_of_groups) * number_of_data_points
@@ -729,12 +590,13 @@ class FittingInitializer(FittingComponent):
         fir_weight = 1. / (len(fir_bands) * number_of_groups) * number_of_data_points
         submm_weight = 1. / (len(submm_bands) * number_of_groups) * number_of_data_points
 
-        #print("UV", len(uv_bands), uv_weight)
-        #print("Optical", len(optical_bands), optical_weight)
-        #print("NIR", len(nir_bands), nir_weight)
-        #print("MIR", len(mir_bands), mir_weight)
-        #print("FIR", len(fir_bands), fir_weight)
-        #print("Submm", len(submm_bands), submm_weight)
+        # Debugging
+        log.debug("UV: number of bands = " + str(len(uv_bands)) + ", weight = " + str(uv_weight))
+        log.debug("Optical: number of bands = " + str(len(optical_bands)) + ", weight = " + str(optical_weight))
+        log.debug("NIR: number of bands = " + str(len(nir_bands)) + ", weight = " + str(nir_weight))
+        log.debug("MIR: number of bands = " + str(len(mir_bands)) + ", weight = " + str(mir_weight))
+        log.debug("FIR: number of bands = " + str(len(fir_bands)) + ", weight = " + str(fir_weight))
+        log.debug("Submm: number of bands = " + str(len(submm_bands)) + ", weight = " + str(submm_weight))
 
         # Loop over the bands in each group and set the weight in the weights table
         for fltr in uv_bands: self.weights.add_row([fltr.instrument, fltr.band, uv_weight])
@@ -756,22 +618,19 @@ class FittingInitializer(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the ski file
-        self.write_ski_file()
+        # 1. Write the instruments
+        self.write_instruments()
 
-        # Write the ski files for simulating the contributions of the various stellar components
-        self.write_ski_files_contributions()
+        # 2. Write the ski file
+        self.write_ski()
 
-        # Write the ski file for generating simulated images
-        self.write_ski_file_images()
-
-        # Write the weights table
+        # 3. Write the weights table
         self.write_weights()
 
-        # Write the deprojection models
+        # 4. Write the deprojection models
         self.write_deprojection_models()
 
-        # Write the wavelength grids
+        # 5. Write the wavelength grids
         self.write_wavelength_grids()
 
         # Write the dust grids
@@ -779,7 +638,7 @@ class FittingInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_ski_file(self):
+    def write_instruments(self):
 
         """
         This function ...
@@ -787,14 +646,20 @@ class FittingInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the ski file to " + self.fit_ski_path + " ...")
+        log.info("Writing the SED, frame and simple instruments ...")
 
-        # Save the ski file to the specified location
-        self.ski.saveto(self.fit_ski_path)
+        # Write the SED instrument
+        self.instruments["SED"].save(self.sed_instrument_path)
+
+        # Write the frame instrument
+        self.instruments["frame"].save(self.frame_instrument_path)
+
+        # Write the simple instrument
+        self.instruments["simple"].save(self.simple_instrument_path)
 
     # -----------------------------------------------------------------
 
-    def write_ski_files_contributions(self):
+    def write_ski(self):
 
         """
         This function ...
@@ -802,34 +667,10 @@ class FittingInitializer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the ski files for simulating the contribution of the various stellar components ...")
+        log.info("Writing the ski file to " + self.template_ski_path + " ...")
 
-        # Loop over the ski files
-        for contribution in self.ski_contributions:
-
-            # Determine the path to the ski file
-            ski_path = fs.join(self.fit_best_contribution_paths[contribution], self.galaxy_name + ".ski")
-
-            # Write the ski file
-            self.ski_contributions[contribution].saveto(ski_path)
-
-    # -----------------------------------------------------------------
-
-    def write_ski_file_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the ski file for creating simulated images ...")
-
-        # Determine the path to the ski file
-        ski_path = fs.join(self.fit_best_images_path, self.galaxy_name + ".ski")
-
-        # Write the ski file
-        self.ski_images.saveto(ski_path)
+        # Save the ski template file
+        self.ski_template.save()
 
     # -----------------------------------------------------------------
 
@@ -844,7 +685,7 @@ class FittingInitializer(FittingComponent):
         log.info("Writing the table with weights to " + self.weights_table_path + " ...")
 
         # Write the table with weights
-        tables.write(self.weights, self.weights_table_path, format="ascii.ecsv")
+        tables.write(self.weights, self.weights_table_path)
 
     # -----------------------------------------------------------------
 

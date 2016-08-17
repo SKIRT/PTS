@@ -83,15 +83,6 @@ class BestModelLauncher(FittingComponent):
         self.deprojection = None
         self.deprojections = dict()
 
-        # The instrument
-        self.instrument = None
-
-        # The table of weights for each band
-        self.weights = None
-
-        # The observed SED
-        self.observed_sed = None
-
         # Filters
         self.i1 = None
         self.fuv = None
@@ -124,32 +115,13 @@ class BestModelLauncher(FittingComponent):
         # 2. Load the necessary input
         self.load_input()
 
-        # 3. Create the wavelength grid
-        self.create_wavelength_grids()
-
-        # 4. Create the bulge model
-        self.create_bulge_model()
-
-        # 5. Create the deprojection model
-        self.create_deprojection_model()
-
-        # 6. Create the instrument
-        self.create_instrument()
-
-        # 7. Create the dust grids
-        self.create_dust_grids()
-
-        # 8. Adjust the ski file
-        self.adjust_ski()
-
         # 9. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
 
         # 10. Adjust the ski file for generating simulated images
         self.adjust_ski_images()
 
-        # 11. Calculate the weight factor to give to each band
-        self.calculate_weights()
+        self.launch()
 
         # 12. Writing
         self.write()
@@ -258,15 +230,23 @@ class BestModelLauncher(FittingComponent):
         # Remove all instruments
         self.ski_images.remove_all_instruments()
 
-        # Create frame instrument to generate datacube
-        frame_instrument = FrameInstrument.from_projection(self.projection)
+        # Add the simple instrument
+        self.ski_images.add_instrument("earth", self.simple_instrument)
 
-        # Add the frame instrument
-        self.ski_images.add_instrument("earth", frame_instrument)
+    # -----------------------------------------------------------------
 
-        # Add the SED instrument
-        self.ski_images.add_instrument("earth", self.instrument)
-        
+    def launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching simulations ...")
+
+
+
     # -----------------------------------------------------------------
 
     def write(self):

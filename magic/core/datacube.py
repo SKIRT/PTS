@@ -37,6 +37,11 @@ class DataCube(Image):
     This class...
     """
 
+    # Set the default extension
+    default_extension = "fits"
+
+    # -----------------------------------------------------------------
+
     def __init__(self, name="untitled"):
 
         """

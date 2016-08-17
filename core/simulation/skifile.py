@@ -2343,8 +2343,12 @@ class LabeledSkiFile(SkiFile):
     This class ...
     """
 
-    ## This function returns all labels
     def labels(self):
+
+        """
+        This function returns all labels
+        :return:
+        """
 
         labels = set()
 
@@ -2414,8 +2418,15 @@ class LabeledSkiFile(SkiFile):
 
     # -----------------------------------------------------------------
 
-    # Overwrite the default implementation in SkiFile to incorporate labeled properties
     def get_quantity(self, element, name, default_unit=None):
+
+        """
+        This function overwrites the default implementation in SkiFile to incorporate labeled properties
+        :param element:
+        :param name:
+        :param default_unit:
+        :return:
+        """
 
         # Import Astropy here to avoid import errors for this module for users without an Astropy installation
         from astropy.units import Unit
@@ -2434,8 +2445,16 @@ class LabeledSkiFile(SkiFile):
 
     # -----------------------------------------------------------------
 
-    # Overwrite the default implementation in SkiFile to incorporate labeled properties
     def set_quantity(self, element, name, value, default_unit=None):
+
+        """
+        This function overwrites the default implementation in SkiFile to incorporate labeled properties
+        :param element:
+        :param name:
+        :param value:
+        :param default_unit:
+        :return:
+        """
 
         pass
 

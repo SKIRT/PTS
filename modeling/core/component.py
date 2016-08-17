@@ -295,6 +295,20 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
+    def observed_flux(self, fltr, unit=None, add_unit=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        return self.observed_sed.flux_for_filter(fltr, unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def observed_filters(self):
 

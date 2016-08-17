@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta
+
 # Import astronomical modules
 from astropy.utils import lazyproperty
 
@@ -21,8 +24,9 @@ from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .tables import GenerationsTable
-from ...core.simulation.skifile import SkiFile
+from ...core.simulation.skifile import SkiFile, LabeledSkiFile
 from ...core.basics.distribution import Distribution
+from ..basics.instruments import load_instrument
 
 # -----------------------------------------------------------------
 
@@ -35,6 +39,10 @@ class FittingComponent(ModelingComponent):
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -64,14 +72,16 @@ class FittingComponent(ModelingComponent):
         # The path to the fit/best directory
         self.fit_best_path = None
 
+        # The path to the fit/instruments directory
+        self.fit_instruments_path = None
+
+        # The paths to the SED and frame instrument files
+        self.sed_instrument_path = None
+        self.frame_instrument_path = None
+        self.simple_instrument_path = None
+
         # The path to the fit/prob directory
         self.fit_prob_path = None
-
-        # The path to the fit/grid directory
-        self.fit_grid_path = None
-
-        # The path to the ski file
-        self.fit_ski_path = None
 
         # The path to the generations table
         self.generations_table_path = None
@@ -130,8 +140,13 @@ class FittingComponent(ModelingComponent):
         # Set the path to the fit/prob directory
         self.fit_prob_path = fs.create_directory_in(self.fit_path, "prob")
 
-        # Set the path to the fit/grid directory
-        self.fit_grid_path = fs.create_directory_in(self.fit_path, "grid")
+        # Set the path to the fit/instruments directory
+        self.fit_instruments_path = fs.create_directory_in(self.fit_path, "instruments")
+
+        # Set the path to the SED and frame instrument
+        self.sed_instrument_path = fs.join(self.fit_instruments_path, "sed.instr")
+        self.frame_instrument_path = fs.join(self.fit_instruments_path, "frame.instr")
+        self.simple_instrument_path = fs.join(self.fit_instruments_path, "simple.instr")
 
         # Set the path to the fit/scripts directory
         self.fit_scripts_path = fs.create_directory_in(self.fit_path, "scripts")
@@ -150,9 +165,6 @@ class FittingComponent(ModelingComponent):
         self.fit_best_images_path = fs.create_directory_in(self.fit_best_path, "images")
 
         # -----------------------------------------------------------------
-
-        # Determine the path to the ski file
-        self.fit_ski_path = fs.join(self.fit_path, self.galaxy_name + ".ski")
 
         ## WEIGHTS TABLE
 
@@ -226,14 +238,14 @@ class FittingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ski_file(self):
+    def ski_template(self):
 
         """
         This function ...
         :return:
         """
 
-        return SkiFile(self.fit_ski_path)
+        return LabeledSkiFile(self.template_ski_path)
 
     # -----------------------------------------------------------------
 
@@ -375,5 +387,53 @@ class FittingComponent(ModelingComponent):
         """
 
         return fs.join(self.fit_dust_grids_path, str(level) + ".dg")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check if the file exists
+        if not fs.is_file(self.sed_instrument_path): raise RuntimeError("The SED instrument file has not been created yet. Run initialize_fit first.")
+
+        # Load the file
+        return load_instrument(self.sed_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frame_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check if the file exists
+        if not fs.is_file(self.frame_instrument_path): raise RuntimeError("The frame instrument file has not been created yet. Run initialize_fit first.")
+
+        # Load the file
+        return load_instrument(self.frame_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simple_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check if the file exists
+        if not fs.is_file(self.simple_instrument_path): raise RuntimeError("The simple instrument file has not been created yet. Run initialize_fit first.")
+
+        # Load the file
+        return load_instrument(self.simple_instrument_path)
 
 # -----------------------------------------------------------------

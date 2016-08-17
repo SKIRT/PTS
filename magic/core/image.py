@@ -39,6 +39,11 @@ class Image(object):
     This class ...
     """
 
+    # Set the default extension
+    default_extension = "fits"
+
+    # -----------------------------------------------------------------
+
     def __init__(self, name="untitled"):
 
         """
@@ -65,9 +70,6 @@ class Image(object):
 
         # Temporary fix because fwhm is sometimes not transferred to a new primary Frame and therefore fwhm information is lost on the complete image
         self._fwhm = None
-
-        # Set the default extension
-        self.default_extension = "fits"
 
     # -----------------------------------------------------------------
 

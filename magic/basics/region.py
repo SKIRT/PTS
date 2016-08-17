@@ -29,6 +29,10 @@ class Region(list):
     This class ...
     """
 
+    default_extension = "reg"
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
@@ -38,9 +42,6 @@ class Region(list):
 
         # Call the constructor of the base class
         super(Region, self).__init__()
-
-        # Set the default extension
-        self.default_extension = "reg"
 
     # -----------------------------------------------------------------
 

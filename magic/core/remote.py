@@ -192,6 +192,11 @@ class RemoteFrame(object):
     This class ...
     """
 
+    # Set the default extension
+    default_extension = "fits"
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def local_class(cls):
 
@@ -1012,6 +1017,11 @@ class RemoteImage(object):
     This class ...
     """
 
+    # Set the default extension
+    default_extension = "fits"
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def local_class(cls):
 
@@ -1522,6 +1532,11 @@ class RemoteDataCube(RemoteImage):
     """
     This function ...
     """
+
+    # Set the default extension
+    default_extension = "fits"
+
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_file(cls, path, wavelength_grid, host_id):

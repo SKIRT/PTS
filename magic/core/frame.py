@@ -46,6 +46,11 @@ class Frame(NDDataArray):
     This class ...
     """
 
+    # Set the default extension
+    default_extension = "fits"
+
+    # -----------------------------------------------------------------
+
     def __init__(self, data, *args, **kwargs):
 
         """
@@ -71,9 +76,6 @@ class Frame(NDDataArray):
         # Set the WCS and unit
         self.wcs = wcs # go through the setter
         self.unit = unit # go through the setter
-
-        # Set the default extension
-        self.default_extension = "fits"
 
     # -----------------------------------------------------------------
 

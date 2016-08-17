@@ -34,6 +34,10 @@ class IntrinsicSED(object):
     This class ...
     """
 
+    default_extension = "dat"
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
@@ -42,9 +46,6 @@ class IntrinsicSED(object):
 
         # Attributes
         self.table = None
-
-        # Set the default extension
-        self.default_extension = "dat"
 
     # -----------------------------------------------------------------
 
@@ -127,6 +128,11 @@ class ObservedSED(object):
     This class ...
     """
 
+    # Set the default extension
+    default_extension = "dat"
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
@@ -142,8 +148,16 @@ class ObservedSED(object):
         self.table["Error-"].unit = Unit("Jy")
         self.table["Error+"].unit = Unit("Jy")
 
-        # Set the default extension
-        self.default_extension = "dat"
+    # -----------------------------------------------------------------
+
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.table)
 
     # -----------------------------------------------------------------
 
@@ -517,6 +531,11 @@ class SED(object):
     This class...
     """
 
+    # Set the default extension
+    default_extension = "dat"
+
+    # -----------------------------------------------------------------
+
     def __init__(self, wavelength_unit="micron", flux_unit="Jy"):
 
         """
@@ -530,9 +549,6 @@ class SED(object):
         self.table["Flux"].unit = Unit(flux_unit)
         self.table["Error-"].unit = Unit(flux_unit)
         self.table["Error+"].unit = Unit(flux_unit)
-
-        # Set the default extension
-        self.default_extension = "dat"
 
     # -----------------------------------------------------------------
 
