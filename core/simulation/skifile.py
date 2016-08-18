@@ -2343,6 +2343,7 @@ class LabeledSkiFile(SkiFile):
     This class ...
     """
 
+    @property
     def labels(self):
 
         """
@@ -2368,30 +2369,15 @@ class LabeledSkiFile(SkiFile):
 
     # -----------------------------------------------------------------
 
-    def labeled_values(self):
+    def delabel_all(self):
 
         """
         This function ...
         :return:
         """
 
-        values = dict()
-
-        # Loop over all elements in the tree
-        for element in self.tree.getiterator():
-
-            # Loop over the settings of the element
-            for setting_name, setting_value in element.items():
-
-                if setting_value.startswith("[") and setting_value.endswith("]"):
-
-                    label = setting_value.split("[")[1].split(":")[0]
-                    value = self.get_quantity(element, setting_name)
-
-                    if label in values and values[label] != value: warnings.warn("The '" + label + "' property has different values throughout the SkiFile (" + str(values[label]) + " and " + str(value) + ")")
-                    else: values[label] = value
-
-        return values
+        # Loop over the labels, delabel
+        for label in self.labels: self.delabel(label)
 
     # -----------------------------------------------------------------
 
@@ -2415,6 +2401,90 @@ class LabeledSkiFile(SkiFile):
                     value_item = setting_value[1:-1].split(":")[1]
 
                     if label == label_item: element.set(setting_name, value_item)
+
+    # -----------------------------------------------------------------
+
+    def set_labeled_values(self, values):
+
+        """
+        This function ...
+        :param values: a dictionary, with the keys a subset of the labels in the ski file
+        :return:
+        """
+
+        from ..basics.configuration import stringify_not_list
+
+        existing_labels = self.labels
+
+        # Loop over the labels
+        for label in values:
+
+            # Check for label existence
+            if label not in existing_labels: raise ValueError("The label '" + label + "' is not present in the ski file")
+
+            # Get the labeled elements
+            elements = self.get_labeled_elements(label)
+
+            # Labeled value
+            labeled_value = "[" + label + ":" + stringify_not_list(values[label])[1] + "]"
+
+            # Set the new value for each corresponding element
+            for element, setting_name in elements:
+                element.set(setting_name, labeled_value)
+
+    # -----------------------------------------------------------------
+
+    def get_labeled_elements(self, label):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # The list of elements
+        elements = []
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Loop over the settings of the element
+            for setting_name, setting_value in element.items():
+
+                if setting_value.startswith("[") and setting_value.endswith("]"):
+                    label_item = setting_value.split("[")[1].split(":")[0]
+                    if label_item == label: elements.append((element, setting_name))
+
+        # Return the list of elements
+        return elements
+
+    # -----------------------------------------------------------------
+
+    def get_labeled_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        values = dict()
+
+        # Loop over all elements in the tree
+        for element in self.tree.getiterator():
+
+            # Loop over the settings of the element
+            for setting_name, setting_value in element.items():
+
+                if setting_value.startswith("[") and setting_value.endswith("]"):
+
+                    label = setting_value.split("[")[1].split(":")[0]
+                    value = self.get_quantity(element, setting_name)
+
+                    if label in values and values[label] != value:
+                        warnings.warn("The '" + label + "' property has different values throughout the SkiFile (" + str(values[label]) + " and " + str(value) + ")")
+                    else: values[label] = value
+
+        # Return the dictionary of values
+        return values
 
     # -----------------------------------------------------------------
 

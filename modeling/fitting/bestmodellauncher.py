@@ -25,6 +25,14 @@ from ...core.basics.filter import Filter
 from .wavelengthgrids import create_one_wavelength_grid
 from .dustgrids import create_one_dust_grid
 from ..core.emissionlines import EmissionLines
+from ...core.simulation.definition import SingleSimulationDefinition
+
+# -----------------------------------------------------------------
+
+contributions = ["total", "old", "young", "ionizing"]
+component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
+                   "young": "Young stars",
+                   "ionizing": "Ionizing stars"}
 
 # -----------------------------------------------------------------
 
@@ -62,9 +70,24 @@ class BestModelLauncher(FittingComponent):
         # The Pacs 160 micron filter
         self.pacs_160 = None
 
+        # The parameter values of the best model
+        self.parameter_values = None
+
         # The wavelength grid and dust grid
         self.wavelength_grid = None
         self.dust_grid = None
+
+        # The path to the directory for the simulations
+        self.best_generation_path = None
+        self.contributions_simulation_paths = dict()
+        self.contributions_output_paths = dict()
+
+        # The path to the wavelength grid file and dust grid file
+        self.wavelength_grid_path = None
+        self.dust_grid_path = None
+
+        # The paths to the simulation input files
+        self.input_paths = None
 
     # -----------------------------------------------------------------
 
@@ -83,6 +106,12 @@ class BestModelLauncher(FittingComponent):
 
         # 3. Create the dust grid
         self.create_dust_grid()
+
+        # 4. Set the paths to the input files
+        self.set_input()
+
+        # Get the best parameter values
+        self.get_parameter_values()
 
         # 4. Adjust the ski template
         self.adjust_ski()
@@ -110,6 +139,31 @@ class BestModelLauncher(FittingComponent):
 
         # Set options for the batch launcher
         self.set_launcher_options()
+
+        # Create a directory for the simulation of the best model of the specified generation
+        self.best_generation_path = fs.join(self.fit_best_path, self.config.generation)
+        if fs.is_directory(self.best_generation_path): raise RuntimeError("The best model has already been launched for this generation (" + self.config.generation + ")")
+        fs.create_directory(self.best_generation_path)
+
+        # Set the paths to the wavelength and dust grid files
+        self.wavelength_grid_path = fs.join(self.best_generation_path, "wavelengths.txt")
+        self.dust_grid_path = fs.join(self.best_generation_path, "dust_grid.dg")
+
+        # Set the paths to the simulation directories for the different contributions
+        for contribution in contributions:
+
+            # Create the directory
+            simulation_path = fs.create_directory_in(self.best_generation_path, contribution)
+
+            # Add to the dictionary
+            self.contributions_simulation_paths[contribution] = simulation_path
+
+            # Create and set the output directory
+            self.contributions_output_paths[contribution] = fs.create_directory_in(simulation_path, "out")
+
+            # Set the ski path
+            ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
+            self.ski_paths[contribution] = ski_path
 
     # -----------------------------------------------------------------
 
@@ -239,6 +293,45 @@ class BestModelLauncher(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the input paths ...")
+
+        # Set the paths to the input maps
+        self.input_paths = self.input_map_paths
+
+        # Determine and set the path to the wavelength grid file
+        self.input_paths.append(self.wavelength_grid_path)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.generation == "first_guess":
+
+            # Get the values for the free parameters from the ski file template
+            labeled_values = self.ski_template.get_labeled_values()
+            self.parameter_values = dict()
+            for label in self.free_parameter_labels:
+                self.parameter_values[label] = labeled_values[label]
+
+        else:
+
+            #
+
+    # -----------------------------------------------------------------
+
     def adjust_ski(self):
 
         """
@@ -249,12 +342,33 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Adjusting the ski template ...")
 
-        # 1. Adjust the ski files for simulating the contributions of the various stellar components
+        # 1. Set basic properties
+        self.set_properties()
+
+        # 2. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
 
-        # 2. Adjust the ski file for generating simulated images
-        self.adjust_ski_images()
+        # 3. Adjust the ski file for generating simulated images
+        self.adjust_ski_total()
     
+    # -----------------------------------------------------------------
+
+    def set_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting ski file properties ...")
+
+        # Set the name of the wavelength grid file
+        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path))
+
+        # Set the dust grid
+        self.ski_template.set_dust_grid(self.dust_grid)
+
     # -----------------------------------------------------------------
 
     def adjust_ski_contributions(self):
@@ -268,31 +382,20 @@ class BestModelLauncher(FittingComponent):
         log.info("Adjusting ski files for simulating the contribution of the various stellar components ...")
 
         # Loop over the different contributions, create seperate ski file instance
-        contributions = ["old", "young", "ionizing"]
-        component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
-                           "young": "Young stars",
-                           "ionizing": "Ionizing stars"}
         for contribution in contributions:
 
             # Create a copy of the ski file instance
             ski = self.ski_template.copy()
 
             # Remove other stellar components
-            ski.remove_stellar_components_except(component_names[contribution])
+            if contribution != "total": ski.remove_stellar_components_except(component_names[contribution])
 
             # Add the ski file to the dictionary
             self.ski_contributions[contribution] = ski
 
-            # Set the ski path
-            ski_path = fs.join(self.fit_best_contribution_paths[contribution], self.galaxy_name + ".ski")
-            self.ski_paths[contribution] = ski_path
-
-        # Set the path to the ski file for the total model
-        self.ski_paths["total"] = fs.join(self.fit_best_total_path, self.galaxy_name + ".ski")
-
     # -----------------------------------------------------------------
 
-    def adjust_ski_images(self):
+    def adjust_ski_total(self):
 
         """
         This function ...
@@ -330,10 +433,7 @@ class BestModelLauncher(FittingComponent):
         self.write_dust_grid()
 
         # Write the ski files for simulating the contributions of the various stellar components
-        self.write_ski_files_contributions()
-
-        # Write the ski file for generating simulated images
-        self.write_ski_file_total()
+        self.write_ski_files()
 
     # -----------------------------------------------------------------
 
@@ -347,6 +447,9 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Writing the wavelength grid ...")
 
+        # Write the wavelength grid
+        self.wavelength_grid.save(self.wavelength_grid_path)
+
     # -----------------------------------------------------------------
 
     def write_dust_grid(self):
@@ -359,9 +462,12 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Writing the dust grid ...")
 
+        # Write the dust grid
+        self.dust_grid.save(self.dust_grid_path)
+
     # -----------------------------------------------------------------
 
-    def write_ski_files_contributions(self):
+    def write_ski_files(self):
 
         """
         This function ...
@@ -376,21 +482,6 @@ class BestModelLauncher(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_ski_file_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the ski file for creating simulated images for the total model ...")
-
-        # Write the ski file
-        self.ski_total.saveto(self.ski_paths["total"])
-
-    # -----------------------------------------------------------------
-
     def launch(self):
 
         """
@@ -400,5 +491,29 @@ class BestModelLauncher(FittingComponent):
 
         # Inform the user
         log.info("Launching the simulations ...")
+
+        # Loop over the ski paths for the different contributions (total, )
+        for contribution in self.ski_paths:
+
+            # Get ski path and output path
+            ski_path = self.ski_paths[contribution]
+            output_path = self.contributions_output_paths[contribution]
+
+            # Set the simulation name
+            simulation_name = self.config.generation + "_" + contribution
+
+            # Create the SKIRT simulation definition
+            definition = SingleSimulationDefinition(ski_path, self.input_paths, output_path)
+
+            # Debugging
+            log.debug("Adding a simulation to the queue with:")
+            log.debug(" - ski path: " + definition.ski_path)
+            log.debug(" - output path: " + definition.output_path)
+
+            # Put the parameters in the queue and get the simulation object
+            self.launcher.add_to_queue(definition, simulation_name)
+
+        # Run the launcher, schedules the simulations
+        simulations = self.launcher.run()
 
 # -----------------------------------------------------------------

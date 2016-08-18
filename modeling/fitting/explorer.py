@@ -215,7 +215,7 @@ class ParameterExplorer(FittingComponent):
             if "initial" in self.generation_names:
 
                 # Set index and name
-                self.generation_index = self.last_generation_index + 1
+                self.generation_index = self.last_genetic_generation_index + 1
                 self.generation_name = str("Generation " + str(self.generation_index))
 
                 # Create the model generator
@@ -419,7 +419,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Estimating the runtimes based on the results of previous runs ...")
 
         # Get the number of photon packages (per wavelength) for this batch of simulations
-        current_packages = self.ski_file.packages()
+        current_packages = self.ski_template.packages()
 
         # Create a RuntimeEstimator instance
         estimator = RuntimeEstimator.from_file(self.timing_table_path)
@@ -526,9 +526,6 @@ class ParameterExplorer(FittingComponent):
 
         # Loop over the scheduled simulations
         for simulation in simulations:
-
-            # Skip simulations for which analysis options are not defined (the contribution simulations and the images simulation)
-            if simulation.analysis is None or simulation.name == "images": continue
 
             # Add the path to the modeling directory to the simulation object
             simulation.analysis.modeling_path = self.config.path

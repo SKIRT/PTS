@@ -98,12 +98,6 @@ class FittingComponent(ModelingComponent):
         # The path to the geometries directory
         self.fit_geometries_path = None
 
-        # The paths of the directories of the simulations that calculate the contributions of the various stellar populations
-        self.fit_best_contribution_paths = dict()
-
-        # The path of the directory to generate simulated images for the best model
-        self.fit_best_total_path = None
-
         # The paths to the probability distribution tables
         self.distribution_table_paths = dict()
 
@@ -147,16 +141,6 @@ class FittingComponent(ModelingComponent):
 
         # Set the path to the fit/geometries directory
         self.fit_geometries_path = fs.create_directory_in(self.fit_path, "geometries")
-
-        # Set and create the paths to the fit/best/ contribution directories
-        for contribution in contributions:
-
-            path = fs.join(self.fit_best_path, contribution)
-            fs.create_directory(path)
-            self.fit_best_contribution_paths[contribution] = path
-
-        # Set the path to the fit/best/total directory
-        self.fit_best_total_path = fs.create_directory_in(self.fit_best_path, "total")
 
         # -----------------------------------------------------------------
 
@@ -293,7 +277,7 @@ class FittingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def last_generation_index(self):
+    def last_genetic_generation_index(self):
 
         """
         This function ...
@@ -310,6 +294,54 @@ class FittingComponent(ModelingComponent):
 
         # Return the highest generation index
         return highest_index
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        highest_index = -1
+        name = None
+
+        # Find the name of the generation with the highest index
+        for i in range(len(self.generations_table)):
+            if not self.generations_table["Generation index"].mask[i]:
+                index = self.generations_table["Generation index"][i]
+                if index > highest_index:
+                    highest_index = index
+                    name = self.generations_table["Generation name"][i]
+
+        # Return the name of the generation with the highest index
+        return name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generations_table["Generation name"][-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ngenetic_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.last_genetic_generation_index + 1
 
     # -----------------------------------------------------------------
 
@@ -465,5 +497,25 @@ def get_generation_names(modeling_path):
 
     # Return the generation names
     return generations_table.generation_names
+
+# -----------------------------------------------------------------
+
+def get_last_generation_name(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the path to the generations table
+    generations_table_path = fs.join(modeling_path, "fit", "generations.dat")
+
+    # Load the generations table
+    generations_table = GenerationsTable.from_file(generations_table_path)
+
+    # Return the name of the last generation
+    if len(generations_table) > 0: return generations_table["Generation name"][-1]
+    else: return None
 
 # -----------------------------------------------------------------
