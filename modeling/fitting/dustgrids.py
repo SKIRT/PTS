@@ -254,16 +254,8 @@ class DustGridGenerator(object):
         :return:
         """
 
-        # Inform the user
-        log.info("Creating a cartesian dust grid with a smallest physical scale of " + str(scale) + " ...")
-
-        # Calculate the number of bins in each direction
-        x_bins = int(math.ceil(self.x_extent.to("pc").value / scale.to("pc").value))
-        y_bins = int(math.ceil(self.y_extent.to("pc").value / scale.to("pc").value))
-        z_bins = int(math.ceil(self.z_extent.to("pc").value / scale.to("pc").value))
-
         # Create the grid
-        grid = CartesianDustGrid(self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, x_bins, y_bins, z_bins)
+        grid = create_one_cartesian_dust_grid(scale, self.x_extent, self.y_extent, self.z_extent, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max)
 
         # Add the grid
         self.grids.append(grid)
@@ -283,16 +275,8 @@ class DustGridGenerator(object):
         :return:
         """
 
-        # Inform the user
-        log.info("Creating a binary tree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
-
-        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
-        extent_x = self.x_extent.to("pc").value
-        smallest_scale = scale.to("pc").value
-        max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
-
-        # Create the dust grid
-        grid = BinaryTreeDustGrid(self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+        # Create the grid
+        grid = create_one_bintree_dust_grid(scale, self.x_extent, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, min_level, max_mass_fraction)
 
         # Add the grid
         self.grids.append(grid)
@@ -312,22 +296,141 @@ class DustGridGenerator(object):
         :return:
         """
 
-        # Inform the user
-        log.info("Creating a octtree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
-
-        # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
-        extent_x = self.x_extent.to("pc").value
-        smallest_scale = scale.to("pc").value
-        max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
-
-        # Create the dust grid
-        grid = OctTreeDustGrid(self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+        # Create the grid
+        grid = create_one_octtree_dust_grid(scale, self.x_extent, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, min_level, max_mass_fraction)
 
         # Add the grid
         self.grids.append(grid)
 
         # Add a row to the table
         self.table.add_row([self.grid_type, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, scale, min_level, max_mass_fraction])
+
+# -----------------------------------------------------------------
+
+def create_one_dust_grid(grid_type, scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction):
+
+    """
+    This function ...
+    :param grid_type:
+    :param scale:
+    :param x_extent:
+    :param y_extent:
+    :param z_extent:
+    :param x_min:
+    :param x_max:
+    :param y_min:
+    :param y_max:
+    :param z_min:
+    :param z_max:
+    :param min_level:
+    :param max_mass_fraction:
+    :return:
+    """
+
+    # Create the specified type of grid
+    if grid_type == "cartesian": return create_one_cartesian_dust_grid(scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max)
+    elif grid_type == "bintree": return create_one_bintree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction)
+    elif grid_type == "octtree": return create_one_octtree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction)
+    else: raise ValueError("Unknown dust grid type: " + grid_type)
+
+# -----------------------------------------------------------------
+
+def create_one_cartesian_dust_grid(scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max):
+
+    """
+    This function ...
+    :param scale:
+    :param x_extent:
+    :param y_extent:
+    :param z_extent:
+    :param x_min:
+    :param x_max:
+    :param y_min:
+    :param y_max:
+    :param z_min:
+    :param z_max:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Creating a cartesian dust grid with a smallest physical scale of " + str(scale) + " ...")
+
+    # Calculate the number of bins in each direction
+    x_bins = int(math.ceil(x_extent.to("pc").value / scale.to("pc").value))
+    y_bins = int(math.ceil(y_extent.to("pc").value / scale.to("pc").value))
+    z_bins = int(math.ceil(z_extent.to("pc").value / scale.to("pc").value))
+
+    # Create the grid
+    grid = CartesianDustGrid(x_min, x_max, y_min, y_max, z_min, z_max, x_bins, y_bins, z_bins)
+
+    # Return the grid
+    return grid
+
+# -----------------------------------------------------------------
+
+def create_one_bintree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction):
+
+    """
+    This function ...
+    :param scale:
+    :param x_extent:
+    :param x_min:
+    :param x_max:
+    :param y_min:
+    :param y_max:
+    :param z_min:
+    :param z_max:
+    :param min_level:
+    :param max_mass_fraction:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Creating a binary tree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
+
+    # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
+    extent_x = x_extent.to("pc").value
+    smallest_scale = scale.to("pc").value
+    max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
+
+    # Create the dust grid
+    grid = BinaryTreeDustGrid(x_min, x_max, y_min, y_max, z_min, z_max, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+
+    # Return the grid
+    return grid
+
+# -----------------------------------------------------------------
+
+def create_one_octtree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction):
+
+    """
+    This function ...
+    :param scale:
+    :param x_extent:
+    :param x_min:
+    :param x_max:
+    :param y_min:
+    :param y_max:
+    :param z_min:
+    :param z_max:
+    :param min_level:
+    :param max_mass_fraction:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Creating a octtree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
+
+    # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
+    extent_x = x_extent.to("pc").value
+    smallest_scale = scale.to("pc").value
+    max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
+
+    # Create the dust grid
+    grid = OctTreeDustGrid(x_min, x_max, y_min, y_max, z_min, z_max, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+
+    # Return the grid
+    return grid
 
 # -----------------------------------------------------------------
 

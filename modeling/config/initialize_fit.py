@@ -13,16 +13,19 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# Add optional arguments
-definition.add_section("wavelengths", "settings for the wavelength grid")
-definition.sections["wavelengths"].add_optional("unit", "string", "the unit of the wavelengths", "micron")
-definition.sections["wavelengths"].add_optional("min", "real", "the minimum wavelength", 0.09)
-definition.sections["wavelengths"].add_optional("max", "real", "the maximum wavelength", 2000)
-definition.sections["wavelengths"].add_optional("npoints", "integer", "the number of wavelength points", 100)
-definition.sections["wavelengths"].add_optional("min_zoom", "real", "the minimum wavelength of the zoomed-in grid", 1)
-definition.sections["wavelengths"].add_optional("max_zoom", "real", "the maximum wavelength of the zoomed-in grid", 30)
-definition.sections["wavelengths"].add_optional("npoints_zoom", "integer", "the number of wavelength points in the zoomed-in grid", 100)
+# Settings for the wavelength grid generation
+definition.add_section("wg", "settings for the wavelength grids")
+definition.sections["wg"].add_optional("npoints_range", "integer_range", "the range of the wavelength grid size", "150>500", convert_default=True)
+definition.sections["wg"].add_optional("ngrids", "integer", "the number of wavelength grids to generate", 10)
 
+# Settings for the dust grid generation
+definition.add_section("dg", "settings for the dust grids")
+definition.sections["dg"].add_optional("grid_type", "string", "the type of dust grid", "bintree", choices=["cartesian", "bintree", "octtree"])
+definition.sections["dg"].add_optional("scale_range", "real_range", "the range of the number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", "0.5>10.", convert_default=True)
+definition.sections["dg"].add_optional("level_range", "integer_range", "the range of the maximum depth level of the tree", "6>9", convert_default=True)
+definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "the range of the maximum mass fraction in each cell", "0.5e-6>1e-5", convert_default=True)
+
+# Add optional arguments
 definition.add_optional("packages", "real", "the number of photon packages per wavelength", 2e5)
 definition.add_flag("selfabsorption", "enable dust self-absorption")
 definition.add_optional("dust_grid", "string", "the type of dust grid to use (bintree, octtree or cartesian)", "bintree")

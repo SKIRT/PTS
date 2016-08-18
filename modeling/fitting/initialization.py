@@ -96,7 +96,7 @@ class FittingInitializer(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Create the wavelength grid
+        # 2. Create the wavelength grids
         self.create_wavelength_grids()
 
         # 3. Create the deprojection model
@@ -159,14 +159,11 @@ class FittingInitializer(FittingComponent):
         # Inform the user
         log.info("Creating the wavelength grids ...")
 
-        # Create the range of npoints for the wavelength grids
-        npoints_range = IntegerRange(150, 500)
-
         # Fixed wavelengths (always in the grid)
         fixed = [self.i1.pivotwavelength(), self.fuv.pivotwavelength()]
 
         # Generate the wavelength grids
-        self.wg_generator.run(npoints_range, 10, fixed=fixed)
+        self.wg_generator.run(self.config.wg.npoints_range, self.config.wg.ngrids, fixed=fixed)
 
     # -----------------------------------------------------------------
 
@@ -256,24 +253,21 @@ class FittingInitializer(FittingComponent):
 
         # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
         # take half of the pixel size to avoid too much interpolation
-        min_scale = 0.5 * pixelscale
-        max_scale = 10. * pixelscale
+        min_scale = self.config.dg.scale_range.min * pixelscale
+        max_scale = self.config.dg.scale_range.max * pixelscale
         scale_range = QuantityRange(min_scale, max_scale, invert=True)
 
-        # The range of the maximum depth level of the tree
-        level_range = IntegerRange(6, 9)
-
         # The range of the max mass fraction
-        mass_fraction_range = RealRange(0.5e-6, 1e-5, invert=True)
+        mass_fraction_range = RealRange(self.config.dg.mass_fraction_range.min, self.config.dg.mass_fraction_range.max, invert=True) # must be inverted
 
         # Set fixed grid properties
-        self.dg_generator.grid_type = "bintree" # set grid type
+        self.dg_generator.grid_type = self.config.dg.grid_type # set grid type
         self.dg_generator.x_radius = radius_physical
         self.dg_generator.y_radius = radius_physical
         self.dg_generator.z_radius = 3. * Unit("kpc")
 
         # Generate the dust grids
-        self.dg_generator.run(scale_range, level_range, mass_fraction_range, 10)
+        self.dg_generator.run(scale_range, self.config.dg.level_range, mass_fraction_range, 10)
 
     # -----------------------------------------------------------------
 

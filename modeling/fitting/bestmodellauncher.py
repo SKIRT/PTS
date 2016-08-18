@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.units import Unit, dimensionless_angles
+
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
@@ -19,6 +22,9 @@ from ...core.tools.logging import log
 from ...core.launch.batchlauncher import BatchLauncher
 from ...magic.misc.kernels import AnianoKernels
 from ...core.basics.filter import Filter
+from .wavelengthgrids import create_one_wavelength_grid
+from .dustgrids import create_one_dust_grid
+from ..core.emissionlines import EmissionLines
 
 # -----------------------------------------------------------------
 
@@ -56,6 +62,10 @@ class BestModelLauncher(FittingComponent):
         # The Pacs 160 micron filter
         self.pacs_160 = None
 
+        # The wavelength grid and dust grid
+        self.wavelength_grid = None
+        self.dust_grid = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -68,13 +78,19 @@ class BestModelLauncher(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Adjust the ski template
+        # 2. Create the wavelength grid
+        self.create_wavelength_grid()
+
+        # 3. Create the dust grid
+        self.create_dust_grid()
+
+        # 4. Adjust the ski template
         self.adjust_ski()
 
-        # 3. Write first, then launch the simulations
+        # 5. Write first, then launch the simulations
         self.write()
 
-        # 4. Launch the simulations
+        # 6. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -154,6 +170,75 @@ class BestModelLauncher(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def create_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the wavelength grid ...")
+
+        # Create the emission lines instance
+        emission_lines = EmissionLines()
+
+        # Fixed wavelengths in the grid
+        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
+
+        # Create the grid
+        grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
+
+        # Set the grid
+        self.wavelength_grid = grid
+
+    # -----------------------------------------------------------------
+
+    def create_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the dust grid ...")
+
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.truncation_ellipse.major  # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Get the pixelscale in physical units
+        distance = self.galaxy_properties.distance
+        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        x_radius = radius_physical
+        y_radius = radius_physical
+        z_radius = 3. * Unit("kpc")
+
+        x_min = - x_radius
+        x_max = x_radius
+        y_min = - y_radius
+        y_max = y_radius
+        z_min = - z_radius
+        z_max = z_radius
+
+        x_extent = x_max - x_min
+        y_extent = y_max - y_min
+        z_extent = z_max - z_min
+
+        # Set the scale
+        scale = self.config.dg.rel_scale * pixelscale
+
+        # Create the grid
+        grid = create_one_dust_grid(self.config.dg.grid_type, scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max, self.config.dg.min_level, self.config.dg.max_mass_fraction)
+
+        # Set the grid
+        self.dust_grid = grid
+
+    # -----------------------------------------------------------------
+
     def adjust_ski(self):
 
         """
@@ -228,20 +313,6 @@ class BestModelLauncher(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def launch(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Launching the simulations ...")
-
-
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -252,11 +323,41 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the wavelength grid
+        self.write_wavelength_grid()
+
+        # Write the dust grid
+        self.write_dust_grid()
+
         # Write the ski files for simulating the contributions of the various stellar components
         self.write_ski_files_contributions()
 
         # Write the ski file for generating simulated images
         self.write_ski_file_total()
+
+    # -----------------------------------------------------------------
+
+    def write_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the wavelength grid ...")
+
+    # -----------------------------------------------------------------
+
+    def write_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust grid ...")
 
     # -----------------------------------------------------------------
 
@@ -287,5 +388,17 @@ class BestModelLauncher(FittingComponent):
 
         # Write the ski file
         self.ski_total.saveto(self.ski_paths["total"])
+
+    # -----------------------------------------------------------------
+
+    def launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching the simulations ...")
 
 # -----------------------------------------------------------------

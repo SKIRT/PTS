@@ -958,6 +958,42 @@ class ModelingComponent(Configurable):
         # Return the SED
         return sed
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fuv_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Filter.from_string("GALEX FUV")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def i1_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Filter.from_string("IRAC I1")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pacs_red_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Filter.from_string("Pacs 160")
+
 # -----------------------------------------------------------------
 
 def load_fitting_configuration(modeling_path):

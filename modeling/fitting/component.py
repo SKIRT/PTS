@@ -448,3 +448,22 @@ class FittingComponent(ModelingComponent):
         return load_instrument(self.simple_instrument_path)
 
 # -----------------------------------------------------------------
+
+def get_generation_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the path to the generations table
+    generations_table_path = fs.join(modeling_path, "fit", "generations.dat")
+
+    # Load the generations table
+    generations_table = GenerationsTable.from_file(generations_table_path)
+
+    # Return the generation names
+    return generations_table.generation_names
+
+# -----------------------------------------------------------------

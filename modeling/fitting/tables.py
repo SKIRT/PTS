@@ -17,6 +17,73 @@ from ...core.basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
+class BestParametersTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    column_info = [("Generation name", str, None, "Name for the generation")]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def initialize(cls, parameters):
+
+        """
+        This function ...
+        :param parameters:
+        :return:
+        """
+
+        # Set the labels
+        for label in parameters: cls.column_info.append((label, float, None, "value for " + label))
+
+        # Call the initialize function of the best parameters table function
+        return super(BestParametersTable, cls).initialize()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        labels = []
+
+        for name in self.colnames:
+            if name == "Generation name": continue
+            labels.append(name)
+
+        return labels
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, generation_name, parameter_values):
+
+        """
+        This function ...
+        :param generation_name:
+        :param parameter_values:
+        :return:
+        """
+
+        values = [generation_name]
+
+        # Add the parameter values
+        for label in self.parameter_labels: values.append(parameter_values[label])
+
+        # Resize string columns for the new values
+        self._resize_string_columns(values)
+
+        # Add a row to the table
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
 class GenerationsTable(SmartTable):
 
     """

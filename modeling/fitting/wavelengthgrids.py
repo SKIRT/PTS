@@ -142,68 +142,9 @@ class WavelengthGridGenerator(object):
         with_without = " with " if add_emission_lines else " without "
         log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
 
-        # A list of the wavelength points
-        wavelengths = []
-
-        # Keep track of the number of points per subgrid
-        subgrid_npoints = dict()
-
-        # Loop over the subgrids
-        for subgrid in subgrids:
-
-            # Debugging
-            log.debug("Adding the " + subgrid + " subgrid ...")
-
-            # Determine minimum, maximum and number of wavelength points for this subgrid
-            min_lambda = limits[subgrid][0]
-            max_lambda = limits[subgrid][1]
-            points = int(round(relpoints[subgrid] * npoints))
-
-            subgrid_npoints[subgrid] = points
-
-            # Generate and add the wavelength points
-            wavelengths += make_grid(min_lambda, max_lambda, points)
-
-        # Add the emission lines
-        emission_npoints = 0
-        if add_emission_lines:
-
-            # Add emission line grid points
-            logdelta = 0.001
-            for line in self.emission_lines:
-
-                center = line.center
-                left = line.left
-                right = line.right
-
-                # logcenter = np.log10(center)
-                logleft = np.log10(left if left > 0 else center) - logdelta
-                logright = np.log10(right if right > 0 else center) + logdelta
-                newgrid = []
-                for w in wavelengths:
-                    logw = np.log10(w)
-                    if logw < logleft or logw > logright:
-                        newgrid.append(w)
-                newgrid.append(center)
-                if left > 0:
-                    newgrid.append(left)
-                if right > 0:
-                    newgrid.append(right)
-                wavelengths = newgrid
-
-            emission_npoints = len(self.emission_lines)
-
-        # Add fixed wavelength points
-        fixed_npoints = 0
-        if fixed is not None:
-            fixed_npoints = len(fixed)
-            for wavelength in fixed: wavelengths.append(wavelength)
-
-        # Sort the wavelength points
-        wavelengths = sorted(wavelengths)
-
-        # Create the wavelength grid
-        grid = WavelengthGrid.from_wavelengths(wavelengths)
+        # Create the grid
+        if add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_wavelength_grid(npoints, self.emission_lines, fixed)
+        else: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_wavelength_grid(npoints, fixed=fixed)
 
         # Add the grid
         self.grids.append(grid)
@@ -215,6 +156,83 @@ class WavelengthGridGenerator(object):
         dust_npoints = subgrid_npoints["dust"]
         extension_npoints = subgrid_npoints["extension"]
         self.table.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints, fixed_npoints, len(grid)])
+
+# -----------------------------------------------------------------
+
+def create_one_wavelength_grid(npoints, emission_lines=None, fixed=None):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Debugging
+    log.debug("Creating wavelength grid with " + str(npoints) + " points ...")
+
+    # A list of the wavelength points
+    wavelengths = []
+
+    # Keep track of the number of points per subgrid
+    subgrid_npoints = dict()
+
+    # Loop over the subgrids
+    for subgrid in subgrids:
+        # Debugging
+        log.debug("Adding the " + subgrid + " subgrid ...")
+
+        # Determine minimum, maximum and number of wavelength points for this subgrid
+        min_lambda = limits[subgrid][0]
+        max_lambda = limits[subgrid][1]
+        points = int(round(relpoints[subgrid] * npoints))
+
+        subgrid_npoints[subgrid] = points
+
+        # Generate and add the wavelength points
+        wavelengths += make_grid(min_lambda, max_lambda, points)
+
+    # Add the emission lines
+    emission_npoints = 0
+    if emission_lines is not None:
+
+        # Add emission line grid points
+        logdelta = 0.001
+        for line in emission_lines:
+
+            center = line.center
+            left = line.left
+            right = line.right
+
+            # logcenter = np.log10(center)
+            logleft = np.log10(left if left > 0 else center) - logdelta
+            logright = np.log10(right if right > 0 else center) + logdelta
+            newgrid = []
+            for w in wavelengths:
+                logw = np.log10(w)
+                if logw < logleft or logw > logright:
+                    newgrid.append(w)
+            newgrid.append(center)
+            if left > 0:
+                newgrid.append(left)
+            if right > 0:
+                newgrid.append(right)
+            wavelengths = newgrid
+
+        emission_npoints = len(emission_lines)
+
+    # Add fixed wavelength points
+    fixed_npoints = 0
+    if fixed is not None:
+        fixed_npoints = len(fixed)
+        for wavelength in fixed: wavelengths.append(wavelength)
+
+    # Sort the wavelength points
+    wavelengths = sorted(wavelengths)
+
+    # Create the wavelength grid
+    grid = WavelengthGrid.from_wavelengths(wavelengths)
+
+    # Return the grid and some information about the subgrids
+    return grid, subgrid_npoints, emission_npoints, fixed_npoints
 
 # -----------------------------------------------------------------
 
