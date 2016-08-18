@@ -18,10 +18,12 @@ from ..basics.host import find_host_ids, has_simulations, has_tasks
 from .analyser import SimulationAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
+from ..basics.remote import Remote
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.task import Task
 from ..tools import formatting as fmt
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -124,7 +126,8 @@ class RemoteSynchronizer(Configurable):
             if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
 
             # Create a remote SKIRT execution context
-            remote = SkirtRemote()
+            if introspection.skirt_is_present(): remote = SkirtRemote()
+            else: remote = Remote()
 
             # Setup the remote execution context
             remote.setup(host_id)
@@ -169,7 +172,7 @@ class RemoteSynchronizer(Configurable):
         log.info("Retrieving finished SKIRT simulations and PTS tasks ...")
 
         # Retrieve SKIRT simulations
-        self.retrieve_simulations()
+        if introspection.skirt_is_present(): self.retrieve_simulations()
 
         # Retrieve PTS tasks
         self.retrieve_tasks()
@@ -229,7 +232,7 @@ class RemoteSynchronizer(Configurable):
         log.info("Analysing the output of retrieved SKIRT simulations and PTS tasks ...")
 
         # Analyse the output of the retrieved simulations
-        self.analyse_simulations()
+        if introspection.skirt_is_present(): self.analyse_simulations()
 
         # Analyse the output of the retrieved tasks
         self.analyse_tasks()
@@ -296,7 +299,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Announce the status of the SKIRT simulations
-        self.announce_simulations()
+        if introspection.skirt_is_present(): self.announce_simulations()
 
         # Announce the status of the PTS tasks
         self.announce_tasks()

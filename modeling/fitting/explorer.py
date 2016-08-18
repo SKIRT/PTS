@@ -26,7 +26,7 @@ from .modelgenerators.genetic import GeneticModelGenerator
 from .modelgenerators.instinctive import InstinctiveModelGenerator
 from ...core.basics.filter import Filter
 from ...core.tools import time
-from ...core.basics.range import IntegerRange, RealRange, QuantityRange
+from ...core.basics.range import range_around
 from ...core.simulation.definition import SingleSimulationDefinition
 from .tables import ParametersTable, ChiSquaredTable
 from ...core.launch.options import SchedulingOptions
