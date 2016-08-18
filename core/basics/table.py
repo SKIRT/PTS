@@ -115,6 +115,33 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def _resize_string_column(self, colname, value):
+
+        """
+        This function ...
+        :param colname:
+        :param value:
+        :return:
+        """
+
+        dtype_str = str(self[colname].dtype)
+
+        if not dtype_str.startswith("|S"): raise ValueError("Column " + colname + " is not a column of strings")
+
+        current_string_length = int(dtype_str.split("S")[1])
+
+        new_string_length = len(value)
+
+        if new_string_length > current_string_length:
+
+            new_size = new_string_length
+
+            # Replace the column by a resized one
+            current_resized = self[colname].astype("S" + str(new_size))
+            self.replace_column(colname, current_resized)
+
+    # -----------------------------------------------------------------
+
     def add_row(self, values):
 
         """

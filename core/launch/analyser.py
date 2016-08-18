@@ -201,7 +201,7 @@ class SimulationAnalyser(OldConfigurable):
         """
 
         # Run the fit model analyser
-        self.fit_model_analyser.config.path = self.simulation.analysis.modeling_path
+        self.fit_model_analyser.config.path = fs.directory_of(fs.directory_of(fs.directory_of(self.simulation.analysis.modeling_generation_path)))
         self.fit_model_analyser.run(self.simulation, self.basic_analyser.flux_calculator)
 
     # -----------------------------------------------------------------

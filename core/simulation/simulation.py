@@ -638,7 +638,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        return self.analysis.modeling_path is not None
+        return self.analysis.modeling_generation_path is not None
 
     # -----------------------------------------------------------------
 

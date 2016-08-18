@@ -192,7 +192,8 @@ class AnalysisOptions(Options):
         self.scaling_run_name = None
 
         # Properties relevant for simulations part of radiative transfer modeling
-        self.modeling_path = None
+        #self.modeling_path = None
+        self.modeling_generation_path = None
 
     # -----------------------------------------------------------------
 

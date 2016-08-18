@@ -92,6 +92,7 @@ class GenerationsTable(SmartTable):
 
     column_info = [("Generation name", str, None, "Name for the generation"),
                    ("Generation index", int, None, "Index of the generation"),
+                   ("Launching time", str, None, "Time of launching the generation simulations"),
                    ("Method", str, None, "Method used for model generation"),
                    ("Wavelength grid level", int, None, "level of the wavelength gid"),
                    ("Dust grid level", int, None, "level of the dust grid"),
@@ -113,6 +114,8 @@ class GenerationsTable(SmartTable):
 
             cls.column_info.append(("Minimum value for " + label, float, None, "minimum value for " + label))
             cls.column_info.append(("Maximum value for " + label, float, None, "Maximum value for " + label))
+
+        cls.column_info.append(("Finishing time", str, None, "Time of finishing the generation"))
 
         # Call the initialize function of the generations table function
         return super(GenerationsTable, cls).initialize()
@@ -149,12 +152,38 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, index, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
+    def set_finishing_time(self, generation_name, timestamp):
+
+        """
+        This function ...
+        :param generation_name:
+        :param timestamp:
+        :return:
+        """
+
+        if generation_name not in self.generation_names: raise ValueError("Generation '" + generation_name + "' does not exist in the table")
+
+        for i in range(len(self)):
+
+            if self["Generation name"][i] == generation_name: # match
+
+                self._resize_string_column("Finishing time", timestamp)
+
+                # Set the value
+                self["Finishing time"].mask[i] = False
+                self["Finishing time"][i] = timestamp
+
+                break
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
 
         """
         This function ...
         :param name:
         :param index:
+        :param timestamp:
         :param method:
         :param wavelength_grid_level:
         :param dust_grid_level:
@@ -164,12 +193,15 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
-        values = [name, index, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption]
+        values = [name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption]
 
         # Add the boundaries (min, max) of the parameter ranges as seperate column values
         for label in self.parameter_labels:
             values.append(ranges[label].min)
             values.append(ranges[label].max)
+
+        # Add None for the finishing time
+        values.append(None)
 
         # Resize string columns for the new values
         self._resize_string_columns(values)

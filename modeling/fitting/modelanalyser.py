@@ -20,8 +20,8 @@ import numpy as np
 from .component import FittingComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.tools import tables
-from ..core.sed import ObservedSED
+from ...core.tools import tables, time
+from .tables import ChiSquaredTable
 
 # -----------------------------------------------------------------
 
@@ -53,14 +53,14 @@ class FitModelAnalyser(FittingComponent):
         # The weights given to each band for the calculation of the chi squared
         self.weights = None
 
-        # The observed SED
-        self.observed_sed = None
-
         # The flux differences table
         self.differences = None
 
         # The calculated chi squared value
         self.chi_squared = None
+
+        # The chi squared table
+        self.chi_squared_table = None
 
     # -----------------------------------------------------------------
 
@@ -76,14 +76,17 @@ class FitModelAnalyser(FittingComponent):
         # 1. Call the setup function
         self.setup(simulation, flux_calculator)
 
-        # 3. Load the observed SED
-        self.load_observed_sed()
-
         # 4. Calculate the differences
         self.calculate_differences()
 
         # 5. Calculate the chi squared for this model
         self.calculate_chi_squared()
+
+        # Load the chi squared table
+        self.load_chi_squared_table()
+
+        # Update the status of the generation if necessary
+        self.update_generation()
 
         # 6. Write
         self.write()
@@ -103,9 +106,9 @@ class FitModelAnalyser(FittingComponent):
         # Set the attributes to default values
         self.simulation = None
         self.flux_calculator = None
-        self.observed_sed = None
         self.differences = None
         self.chi_squared = None
+        self.chi_squared_table = None
 
     # -----------------------------------------------------------------
 
@@ -132,28 +135,13 @@ class FitModelAnalyser(FittingComponent):
 
         # Load the weights table
         #self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
-        self.weights = tables.from_file(self.weights_table_path, format="ascii.ecsv")
+        self.weights = tables.from_file(self.weights_table_path)
 
         # Initialize the differences table
         names = ["Instrument", "Band", "Flux difference", "Relative difference", "Chi squared term"]
         data = [[], [], [], [], []]
         dtypes = ["S5", "S7", "float64", "float64", "float64"]
         self.differences = tables.new(data, names, dtypes=dtypes)
-
-    # -----------------------------------------------------------------
-
-    def load_observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the observed SED ...")
-
-        # Load the observed SED
-        self.observed_sed = ObservedSED.from_file(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 
@@ -231,7 +219,50 @@ class FitModelAnalyser(FittingComponent):
         self.chi_squared = np.sum(self.differences["Chi squared term"]) / dof
 
         # Debugging
-        log.debug("Found a chi squared value of " + str(self.chi_squared))
+        log.debug("Found a (reduced) chi squared value of " + str(self.chi_squared))
+
+    # -----------------------------------------------------------------
+
+    def load_chi_squared_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the appropriate chi squared table
+        chi_squared_table_path = fs.join(self.simulation.analysis.modeling_generation_path, "chi_squared.dat")
+
+        # Open the table
+        self.chi_squared_table = ChiSquaredTable.from_file(chi_squared_table_path)
+
+    # -----------------------------------------------------------------
+
+    def update_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the name of the generation
+        generation_name = fs.name(self.simulation.analysis.modeling_generation_path)
+
+        # Find the index in the table for this generation
+        index = tables.find_index(self.generations_table, generation_name, "Generation name")
+
+        # Get the number of simulations for this generation
+        nsimulations = self.generations_table["Number of simulations"][index]
+
+        # Get the number of entries in the chi squared table
+        nfinished_simulations = len(self.chi_squared_table)
+
+        # if this is the last simulation
+        if nsimulations == nfinished_simulations + 1:
+
+            # Update the generations table
+            self.generations_table.set_finishing_time(generation_name, time.timestamp())
+            self.generations_table.save()
 
     # -----------------------------------------------------------------
 
@@ -264,10 +295,10 @@ class FitModelAnalyser(FittingComponent):
         log.info("Writing the table with the flux-density differences for the current model ...")
 
         # Determine the path to the differences table
-        path = fs.join(self.fit_res_path, self.simulation.name, "differences.dat")
+        path = fs.join(self.simulation.analysis.misc.path, "differences.dat")
 
         # Save the differences table
-        tables.write(self.differences, path, format="ascii.ecsv")
+        tables.write(self.differences, path)
 
     # -----------------------------------------------------------------
 
@@ -281,13 +312,10 @@ class FitModelAnalyser(FittingComponent):
         # Inform the user
         log.info("Adding the chi squared value for the current model to the chi squared data file ...")
 
-        # Open the chi squared file (in 'append' mode)
-        resultfile = open(self.chi_squared_table_path, 'a')
+        # Add entry
+        self.chi_squared_table.add_entry(self.simulation.name, self.chi_squared)
 
-        # Add a line to the chi squared file containing the simulation name and the chi squared value
-        resultfile.write(self.simulation.name + " " + str(self.chi_squared) + "\n")
-
-        # Close the output file
-        resultfile.close()
+        # Save the table
+        self.chi_squared_table.save()
 
 # -----------------------------------------------------------------

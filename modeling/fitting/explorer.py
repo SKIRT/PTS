@@ -481,17 +481,26 @@ class ParameterExplorer(FittingComponent):
         for i in range(self.nmodels):
 
             # Get the parameter values
-            young_luminosity = self.generator.parameters["fuv_young"][i]
-            ionizing_luminosity = self.generator.parameters["fuv_ionizing"][i]
-            dust_mass = self.generator.parameters["dust_mass"][i]
+            #young_luminosity = self.generator.parameters["fuv_young"][i]
+            #ionizing_luminosity = self.generator.parameters["fuv_ionizing"][i]
+            #dust_mass = self.generator.parameters["dust_mass"][i]
+
+            #parameter_values = {"fuv_young": young_luminosity, "fuv_ionizing": ionizing_luminosity, "dust_mass": dust_mass}
+
+            # Set the parameter values as a dictionary for this individual model
+            parameter_values = dict()
+            for label in self.free_parameter_labels: parameter_values[label] = self.generator.parameters[label][i]
 
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()
 
             # Change the parameter values in the ski file
-            self.ski_template.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
-            self.ski_template.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
-            self.ski_template.set_dust_component_mass(0, dust_mass)
+            #self.ski_template.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
+            #self.ski_template.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
+            #self.ski_template.set_dust_component_mass(0, dust_mass)
+
+            # Set the parameter values in the ski file template
+            self.ski_template.set_labeled_values(parameter_values)
 
             # Create a directory for this simulation
             simulation_path = fs.create_directory_in(self.generation_info["Path"], simulation_name)
@@ -518,7 +527,6 @@ class ParameterExplorer(FittingComponent):
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
             # Add an entry to the parameters table
-            parameter_values = {"fuv_young": young_luminosity, "fuv_ionizing": ionizing_luminosity, "dust_mass": dust_mass}
             self.parameters_table.add_entry(simulation_name, parameter_values)
 
         # Run the launcher, schedules the simulations
@@ -528,7 +536,7 @@ class ParameterExplorer(FittingComponent):
         for simulation in simulations:
 
             # Add the path to the modeling directory to the simulation object
-            simulation.analysis.modeling_path = self.config.path
+            simulation.analysis.modeling_generation_path = self.generation_info["Path"]
 
             # Save the simulation object
             simulation.save()

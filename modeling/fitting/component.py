@@ -244,6 +244,18 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def best_parameter_values_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
     def get_parameter_distribution(self, label, normalized=True):
 
         """
