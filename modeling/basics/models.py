@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 import copy
+from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.coordinates import Angle
