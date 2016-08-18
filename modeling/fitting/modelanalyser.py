@@ -47,6 +47,9 @@ class FitModelAnalyser(FittingComponent):
         # The simulation object
         self.simulation = None
 
+        # The name of the generation
+        self.generation_name = None
+
         # The flux calculator
         self.flux_calculator = None
 
@@ -105,6 +108,7 @@ class FitModelAnalyser(FittingComponent):
 
         # Set the attributes to default values
         self.simulation = None
+        self.generation_name = None
         self.flux_calculator = None
         self.differences = None
         self.chi_squared = None
@@ -142,6 +146,9 @@ class FitModelAnalyser(FittingComponent):
         data = [[], [], [], [], []]
         dtypes = ["S5", "S7", "float64", "float64", "float64"]
         self.differences = tables.new(data, names, dtypes=dtypes)
+
+        # Set the name of the generation
+        self.generation_name = fs.name(self.simulation.analysis.modeling_generation_path)
 
     # -----------------------------------------------------------------
 
@@ -230,11 +237,11 @@ class FitModelAnalyser(FittingComponent):
         :return:
         """
 
-        # Determine the path to the appropriate chi squared table
-        chi_squared_table_path = fs.join(self.simulation.analysis.modeling_generation_path, "chi_squared.dat")
+        # Inform the user
+        log.info("Loading the chi squared table ...")
 
         # Open the table
-        self.chi_squared_table = ChiSquaredTable.from_file(chi_squared_table_path)
+        self.chi_squared_table = self.chi_squared_table_for_generation(self.generation_name)
 
     # -----------------------------------------------------------------
 
@@ -245,11 +252,8 @@ class FitModelAnalyser(FittingComponent):
         :return:
         """
 
-        # Get the name of the generation
-        generation_name = fs.name(self.simulation.analysis.modeling_generation_path)
-
         # Find the index in the table for this generation
-        index = tables.find_index(self.generations_table, generation_name, "Generation name")
+        index = tables.find_index(self.generations_table, self.generation_name, "Generation name")
 
         # Get the number of simulations for this generation
         nsimulations = self.generations_table["Number of simulations"][index]
@@ -261,7 +265,7 @@ class FitModelAnalyser(FittingComponent):
         if nsimulations == nfinished_simulations + 1:
 
             # Update the generations table
-            self.generations_table.set_finishing_time(generation_name, time.timestamp())
+            self.generations_table.set_finishing_time(self.generation_name, time.timestamp())
             self.generations_table.save()
 
     # -----------------------------------------------------------------

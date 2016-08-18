@@ -110,16 +110,16 @@ class BestModelLauncher(FittingComponent):
         # 4. Set the paths to the input files
         self.set_input()
 
-        # Get the best parameter values
+        # 5. Get the best parameter values
         self.get_parameter_values()
 
-        # 4. Adjust the ski template
+        # 6. Adjust the ski template
         self.adjust_ski()
 
-        # 5. Write first, then launch the simulations
+        # 7. Write first, then launch the simulations
         self.write()
 
-        # 6. Launch the simulations
+        # 8. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -318,7 +318,14 @@ class BestModelLauncher(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the parameter values ...")
+
+        # If the first guess model should be used
         if self.config.generation == "first_guess":
+
+            # Inform the user
+            log.info("Using the parameter values from the initial guess model ...")
 
             # Get the values for the free parameters from the ski file template
             labeled_values = self.ski_template.get_labeled_values()
@@ -326,9 +333,12 @@ class BestModelLauncher(FittingComponent):
             for label in self.free_parameter_labels:
                 self.parameter_values[label] = labeled_values[label]
 
-        else:
+        # If the best simulation of a generation has to be used
+        else: self.parameter_values = self.best_parameter_values_for_generation(self.config.generation)
 
-            #
+        # Debugging
+        log.debug("The parameter values used for the simulations are: ")
+        for label in self.parameter_values: log.debug(" - " + label + ": " + str(self.parameter_values[label]))
 
     # -----------------------------------------------------------------
 

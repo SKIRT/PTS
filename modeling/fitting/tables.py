@@ -12,8 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -177,6 +181,22 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def is_finished(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Find the index in the table for the specified generation
+        index = tables.find_index(self, generation_name, "Generation name")
+
+        # Return whether the value for the finishing time of the generation is not masked
+        return not self["Finishing time"].mask[index]
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
 
         """
@@ -256,6 +276,27 @@ class ParametersTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def parameter_values_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        values = dict()
+
+        index = tables.find_index(self, simulation_name, "Simulation name")
+
+        for name in self.colnames:
+            if name == "Simulation name": continue
+            values[name] = self[name][index]
+
+        # Return the values
+        return values
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, parameter_values):
 
         """
@@ -286,6 +327,19 @@ class ChiSquaredTable(SmartTable):
 
     column_info = [("Simulation name", str, None, "name of the simulation"),
                    ("Chi squared", float, None, "chi-squared value")]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def best_simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmin(self["Chi squared"])
+        return self["Simulation name"][index]
 
     # -----------------------------------------------------------------
 

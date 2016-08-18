@@ -23,7 +23,7 @@ from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
-from .tables import GenerationsTable
+from .tables import GenerationsTable, ChiSquaredTable, ParametersTable
 from ...core.simulation.skifile import SkiFile, LabeledSkiFile
 from ...core.basics.distribution import Distribution
 from ..basics.instruments import load_instrument
@@ -215,6 +215,66 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def is_finished_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.generations_table.is_finished(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def chi_squared_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.fit_generations_path, generation_name, "chi_squared.dat")
+
+    # -----------------------------------------------------------------
+
+    def chi_squared_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return ChiSquaredTable.from_file(self.chi_squared_table_path_for_generation(generation_name))
+
+    # -----------------------------------------------------------------
+
+    def parameters_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.fit_generations_path, generation_name, "parameters.dat")
+
+    # -----------------------------------------------------------------
+
+    def parameters_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return ParametersTable.from_file(self.parameters_table_for_generation(generation_name))
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def ski_template(self):
 
@@ -235,6 +295,10 @@ class FittingComponent(ModelingComponent):
         :return:
         """
 
+        for generation_name in self.generation_names:
+
+            values =
+
         # TODO: get parameter values of best fitting model
 
         # Get the current values in the ski file prepared by InputInitializer
@@ -252,7 +316,20 @@ class FittingComponent(ModelingComponent):
         :return:
         """
 
+        # Check if the generation is finished
+        if not self.is_finished_generation(generation_name): raise RuntimeError("The generation '" + generation_name + "' is not yet finished, so the best ")
 
+        # Open the chi squared table
+        chi_squared_table = self.chi_squared_table_for_generation(generation_name)
+
+        # Get the name of the simulation with the lowest chi squared value
+        best_simulation_name = chi_squared_table.best_simulation_name
+
+        # Open the parameters table for this generation
+        parameters_table = self.parameters_table_for_generation(generation_name)
+
+        # Return the parameters of the best simulation
+        return parameters_table.parameter_values_for_simulation(best_simulation_name)
 
     # -----------------------------------------------------------------
 
