@@ -95,9 +95,6 @@ class FittingComponent(ModelingComponent):
         # The path to the memory table
         self.memory_table_path = None
 
-        # The path to the scripts directory
-        self.fit_scripts_path = None
-
         # The path to the geometries directory
         self.fit_geometries_path = None
 
@@ -105,7 +102,7 @@ class FittingComponent(ModelingComponent):
         self.fit_best_contribution_paths = dict()
 
         # The path of the directory to generate simulated images for the best model
-        self.fit_best_images_path = None
+        self.fit_best_total_path = None
 
         # The paths to the probability distribution tables
         self.distribution_table_paths = dict()
@@ -148,9 +145,6 @@ class FittingComponent(ModelingComponent):
         self.frame_instrument_path = fs.join(self.fit_instruments_path, "frame.instr")
         self.simple_instrument_path = fs.join(self.fit_instruments_path, "simple.instr")
 
-        # Set the path to the fit/scripts directory
-        self.fit_scripts_path = fs.create_directory_in(self.fit_path, "scripts")
-
         # Set the path to the fit/geometries directory
         self.fit_geometries_path = fs.create_directory_in(self.fit_path, "geometries")
 
@@ -161,8 +155,8 @@ class FittingComponent(ModelingComponent):
             fs.create_directory(path)
             self.fit_best_contribution_paths[contribution] = path
 
-        # Set the path to the fit/best/images directory
-        self.fit_best_images_path = fs.create_directory_in(self.fit_best_path, "images")
+        # Set the path to the fit/best/total directory
+        self.fit_best_total_path = fs.create_directory_in(self.fit_best_path, "total")
 
         # -----------------------------------------------------------------
 
@@ -246,6 +240,23 @@ class FittingComponent(ModelingComponent):
         """
 
         return LabeledSkiFile(self.template_ski_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: get parameter values of best fitting model
+
+        # Get the current values in the ski file prepared by InputInitializer
+        young_luminosity_guess, young_filter = self.ski_template.get_stellar_component_luminosity("Young stars")
+        ionizing_luminosity_guess, ionizing_filter = self.ski_template.get_stellar_component_luminosity("Ionizing stars")
+        dust_mass_guess = self.ski_template.get_dust_component_mass(0)
 
     # -----------------------------------------------------------------
 

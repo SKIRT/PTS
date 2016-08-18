@@ -88,26 +88,6 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new BestModelLauncher instance
-        launcher = cls()
-
-        # Set the modeling path
-        launcher.config.path = arguments.path
-
-        # Return the new instance
-        return launcher
-
-    # -----------------------------------------------------------------
-
     def run(self):
 
         """
@@ -434,7 +414,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.misc.observation_filters = filter_names
         self.analysis_options.misc.observation_instruments = ["earth"]
         self.analysis_options.misc.make_images_remote = "nancy"
-        self.analysis_options.misc.images_wcs = self.reference_path
+        self.analysis_options.misc.images_wcs = self.refere
         self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_unit = "MJy/sr"
 

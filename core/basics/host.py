@@ -65,7 +65,8 @@ def has_simulations(host_id):
     """
 
     # Check whether the SKIRT run directory can be found
-    if introspection.skirt_run_dir is None: raise RuntimeError("The SKIRT run directory could not be located. Missing SKIRT installation?")
+    #if introspection.skirt_run_dir is None: raise RuntimeError("The SKIRT run directory could not be located. Missing SKIRT installation?")
+    if introspection.skirt_run_dir is None: return False
 
     # Check whether there are simulation files corresponding to this host ID
     host_run_dir = fs.join(introspection.skirt_run_dir, host_id)

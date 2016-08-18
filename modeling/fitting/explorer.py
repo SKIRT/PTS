@@ -155,29 +155,29 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting options for the batch simulation launcher ...")
 
-        # Set options for the BatchLauncher: basic options
-        self.launcher.config.shared_input = True  # The input directories (or files) for the different simulations are shared
-        self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
-        self.launcher.config.remotes = self.config.remotes  # the remote host(s) on which to run the simulations
+        # Basic options
+        self.launcher.config.shared_input = True                 # The input directories (or files) for the different simulations are shared
+        self.launcher.config.group_simulations = True            # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
+        self.launcher.config.remotes = self.config.remotes       # the remote host(s) on which to run the simulations
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
 
-        # Set options for the BatchLauncher: simulation analysis options
-        self.launcher.config.analysis.relative = True
-        self.launcher.config.analysis.extraction.path = "res"
-        self.launcher.config.analysis.misc.path = "res"  # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
-        self.launcher.config.analysis.plotting.path = "plot"  # The base directory where all of the simulations will have a seperate directory with the plotting analysis output
-        self.launcher.config.analysis.extraction.timeline = True  # extract the simulation timeline
-        self.launcher.config.analysis.plotting.seds = True  # Plot the output SEDs
-        self.launcher.config.analysis.plotting.reference_sed = self.observed_sed_path  # the path to the reference SED (for plotting the simulated SED against the reference points)
-        # self.launcher.config.analysis.plotting.reference_sed = self.observed_sed_dustpedia_path # the path to the DustPedia SED
-        # self.launcher.config.analysis.misc.fluxes = True  # Calculate observed fluxes
-        # self.launcher.config.analysis.misc.images = True  # Make observed images
-        self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names  # The filters for which to create the observations
-        self.launcher.config.analysis.plotting.format = "png"  # plot in PNG format so that an animation can be made from the fit SEDs
+        # Simulation analysis options
 
-        # Set remote for the 'extra' simulations
-        self.launcher.config.extra_remote = "nancy"
+        ## General
+        self.launcher.config.analysis.relative = True
+
+        ## Extraction
+        self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
+        self.launcher.config.analysis.extraction.progress = True  # extract progress information
+        self.launcher.config.analysis.extraction.timeline = True  # extract the simulation timeline
+        self.launcher.config.analysis.extraction.memory = True    # extract memory information
+
+        ## Plotting
+        self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
+        self.launcher.config.analysis.plotting.seds = True    # Plot the output SEDs
+        self.launcher.config.analysis.plotting.reference_sed = self.observed_sed_path  # the path to the reference SED (for plotting the simulated SED against the reference points)
+        self.launcher.config.analysis.plotting.format = "png"  # plot in PNG format so that an animation can be made from the fit SEDs
 
     # -----------------------------------------------------------------
 
@@ -244,27 +244,16 @@ class ParameterExplorer(FittingComponent):
         # The given ranges are relative to the best or initial value
         if self.config.relative:
 
-            # TODO: get parameter values of best fitting model
+            # Loop over the free parameter labels
+            for label in self.free_parameter_labels:
 
-            # Get the current values in the ski file prepared by InputInitializer
-            young_luminosity_guess, young_filter = self.ski_file.get_stellar_component_luminosity("Young stars")
-            ionizing_luminosity_guess, ionizing_filter = self.ski_file.get_stellar_component_luminosity("Ionizing stars")
-            dust_mass_guess = self.ski_file.get_dust_component_mass(0)
+                # Get the best value (or initial value in the case no generations were lauched yet)
+                value = self.best_parameter_values[label]
 
-            # Set the range of the FUV luminosity of the young stellar population
-            min_value = self.config.young[0] * young_luminosity_guess
-            max_value = self.config.young[1] * young_luminosity_guess
-            self.ranges["FUV young"] = RealRange(min_value, max_value)
-
-            # Set the range of the FUV luminosity of the ionizing stellar population
-            min_value = self.config.ionizing[0] * ionizing_luminosity_guess
-            max_value = self.config.ionizing[1] * ionizing_luminosity_guess
-            self.ranges["FUV ionizing"] = RealRange(min_value, max_value)
-
-            # Set the range of the dust mass
-            min_value = self.config.dust[0] * dust_mass_guess
-            max_value = self.config.dust[1] * dust_mass_guess
-            self.ranges["Dust mass"] = QuantityRange(min_value, max_value)
+                # Calculate the range
+                rel_min = self.config[label + "_range"].min
+                rel_max = self.config[label + "_range"].max
+                self.ranges[label] = range_around(value, rel_min, rel_max)
 
         else:
 
@@ -476,10 +465,8 @@ class ParameterExplorer(FittingComponent):
         log.info("Launching the simulations ...")
 
         # Set the paths to the directories to contain the launch scripts (job scripts) for the different remote hosts
-        for host_id in self.launcher.host_ids:
-            script_dir_path = fs.join(self.fit_scripts_path, host_id)
-            if not fs.is_directory(script_dir_path): fs.create_directory(script_dir_path)
-            self.launcher.set_script_path(host_id, script_dir_path)
+        # Just use the directory created for the generation
+        for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation_info["Path"])
 
         # Set the paths to the screen output directories (for debugging) for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
@@ -488,7 +475,7 @@ class ParameterExplorer(FittingComponent):
         fuv = Filter.from_string("FUV")
 
         # Set the name of the wavelength grid file
-        self.ski_file.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
+        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
 
         # Loop over the different parameter combinations
         for i in range(self.nmodels):
@@ -502,9 +489,9 @@ class ParameterExplorer(FittingComponent):
             simulation_name = time.unique_name()
 
             # Change the parameter values in the ski file
-            self.ski_file.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
-            self.ski_file.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
-            self.ski_file.set_dust_component_mass(0, dust_mass)
+            self.ski_template.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
+            self.ski_template.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
+            self.ski_template.set_dust_component_mass(0, dust_mass)
 
             # Create a directory for this simulation
             simulation_path = fs.create_directory_in(self.generation_info["Path"], simulation_name)
@@ -514,7 +501,7 @@ class ParameterExplorer(FittingComponent):
 
             # Put the ski file with adjusted parameters into the simulation directory
             ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
-            self.ski_file.saveto(ski_path)
+            self.ski_template.saveto(ski_path)
 
             # Create the SKIRT simulation definition
             definition = SingleSimulationDefinition(ski_path, self.input_paths, simulation_output_path)

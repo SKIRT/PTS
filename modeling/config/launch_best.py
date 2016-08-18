@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.basics.host import find_host_ids
 
 # -----------------------------------------------------------------
 
@@ -23,8 +24,10 @@ definition.sections["wavelengths"].add_optional("min_zoom", "real", "the minium 
 definition.sections["wavelengths"].add_optional("max_zoom", "real", "the maximum wavelength of the zoomed-in grid", 30)
 definition.sections["wavelengths"].add_optional("npoints_zoom", "integer", "the number of wavelength points in the zoomed-in grid", 300)
 
+# Add optional arguments
 definition.add_optional("packages", "real", "the number of photon packages per wavelength", 1e6)
 definition.add_optional("selfabsorption", "boolean", "whether self-absorption should be enabled", True)
-definition.add_optional("remote", "string", "the remote host on which to launch the simulations", "nancy")
+definition.add_optional("remote", "string", "the remote host on which to launch the simulations", "nancy", choices=find_host_ids())
+definition.add_optional("images_remote", "string", "the remote host on which to make the observed images", "nancy", choices=find_host_ids())
 
 # -----------------------------------------------------------------

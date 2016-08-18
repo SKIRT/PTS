@@ -16,12 +16,29 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
+from astropy.units import Unit, Quantity
 
 # -----------------------------------------------------------------
 
 # TODO: what to do with the combination of inclusive=False and invert=True ??
 # Define inclusive for minimum value and maximum value seperately??
+
+# -----------------------------------------------------------------
+
+def range_around(value, rel_min, rel_max):
+
+    """
+    This function ...
+    :param value:
+    :param rel_min:
+    :param rel_max:
+    :return:
+    """
+
+    if isinstance(value, int): return IntegerRange.around(value, rel_min, rel_max)
+    elif isinstance(value, float): return RealRange.around(value, rel_min, rel_max)
+    elif isinstance(value, Quantity): return QuantityRange.around(value, rel_min, rel_max)
+    else: raise ValueError("Value has unknown type '" + str(type(value)) + "'")
 
 # -----------------------------------------------------------------
 
@@ -44,6 +61,23 @@ class Range(object):
         self.max = max_value
         self.inclusive = inclusive
         self.invert = invert
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def around(cls, value, rel_min, rel_max, inclusive=True, invert=False):
+
+        """
+        This function ...
+        :param value:
+        :param rel_min:
+        :param rel_max:
+        :param inclusive:
+        :param invert:
+        :return:
+        """
+
+        return cls(value * rel_min, value * rel_max, inclusive, invert)
 
     # -----------------------------------------------------------------
 

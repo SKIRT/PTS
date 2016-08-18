@@ -618,6 +618,19 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def reference_wcs_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        reference_path = fs.join(self.prep_path, self.reference_image, "result.fits")
+        return reference_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def reference_wcs(self):
 
         """
@@ -626,8 +639,7 @@ class ModelingComponent(Configurable):
         """
 
         #return self.dataset.get_wcs(self.reference_image)
-        reference_path = fs.join(self.prep_path, self.reference_image, "result.fits")
-        return CoordinateSystem.from_file(reference_path)
+        return CoordinateSystem.from_file(self.reference_wcs_path)
 
     # -----------------------------------------------------------------
 

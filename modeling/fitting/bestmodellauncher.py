@@ -12,36 +12,13 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import math
-
-# Import astronomical modules
-from astropy.units import Unit, dimensionless_angles
-from astropy import constants
-
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import SkiFile
-from ...core.basics.filter import Filter
-from ..basics.models import SersicModel3D, DeprojectionModel3D
-from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...magic.basics.skyregion import SkyRegion
-from ..basics.instruments import SEDInstrument, FrameInstrument
-from ..core.sun import Sun
-from ..core.mappings import Mappings
-from ...magic.tools import wavelengths
 from ...core.tools.logging import log
-from ..basics.projection import GalaxyProjection
-from ..core.sed import ObservedSED
-from .wavelengthgrids import WavelengthGridGenerator
-from .dustgrids import DustGridGenerator
-from ...core.basics.range import IntegerRange, RealRange, QuantityRange
-
-# -----------------------------------------------------------------
-
-template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "template.ski")
+from ...core.launch.batchlauncher import BatchLauncher
+from ...magic.misc.kernels import AnianoKernels
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -64,41 +41,20 @@ class BestModelLauncher(FittingComponent):
 
         # -- Attributes --
 
-        # The ski file
-        self.ski = None
-
-        # The structural parameters
-        self.parameters = None
-
-        # The projection system
-        self.projection = None
-
-        # The truncation ellipse
-        self.ellipse = None
-
-        # The geometric bulge model
-        self.bulge = None
-
-        # The deprojection model
-        self.deprojection = None
-        self.deprojections = dict()
-
-        # Filters
-        self.i1 = None
-        self.fuv = None
-
-        # Solar luminosity units
-        self.sun_fuv = None
-        self.sun_i1 = None
-
-        # Coordinate system
-        self.reference_wcs = None
+        # The SKIRT batch launcher
+        self.launcher = BatchLauncher()
 
         # The ski files for simulating the contributions of the various stellar components
         self.ski_contributions = dict()
 
-        # The ski file for generating simulated images
-        self.ski_images = None
+        # The ski file for generating simulated images for the total model
+        self.ski_total = None
+
+        # The paths to the ski files
+        self.ski_paths = dict()
+
+        # The Pacs 160 micron filter
+        self.pacs_160 = None
 
     # -----------------------------------------------------------------
 
@@ -112,19 +68,14 @@ class BestModelLauncher(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the necessary input
-        self.load_input()
+        # 2. Adjust the ski template
+        self.adjust_ski()
 
-        # 9. Adjust the ski files for simulating the contributions of the various stellar components
-        self.adjust_ski_contributions()
-
-        # 10. Adjust the ski file for generating simulated images
-        self.adjust_ski_images()
-
-        self.launch()
-
-        # 12. Writing
+        # 3. Write first, then launch the simulations
         self.write()
+
+        # 4. Launch the simulations
+        self.launch()
 
     # -----------------------------------------------------------------
 
@@ -136,53 +87,88 @@ class BestModelLauncher(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(FittingInitializer, self).setup()
+        super(BestModelLauncher, self).setup()
 
-        # Create filters
-        self.i1 = Filter.from_string("I1")
-        self.fuv = Filter.from_string("FUV")
+        # Create the Pacs 160 micron filter
+        self.pacs_160 = Filter.from_string("Pacs 160")
 
-        # Solar properties
-        sun = Sun()
-        self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv) # Get the luminosity of the Sun in the FUV band
-        self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1)   # Get the luminosity of the Sun in the IRAC I1 band
-
-        # Reference coordinate system
-        reference_path = fs.join(self.truncation_path, self.reference_image + ".fits")
-        self.reference_wcs = CoordinateSystem.from_file(reference_path)
-
-        # Create a WavelengthGridGenerator
-        self.wg_generator = WavelengthGridGenerator()
-
-        # Create the DustGridGenerator
-        self.dg_generator = DustGridGenerator()
+        # Set options for the batch launcher
+        self.set_launcher_options()
 
     # -----------------------------------------------------------------
 
-    def load_input(self):
+    def set_launcher_options(self):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Load the template ski file
-        self.load_template()
+        # Inform the user
+        log.info("Setting options for the batch simulation launcher ...")
 
-        # 2. Load the structural parameters of the galaxy
-        self.load_parameters()
+        # Basic options
+        self.launcher.config.shared_input = True  # The input directories (or files) for the different simulations are shared
+        self.launcher.config.group_simulations = True  # group multiple simulations into a single job
+        self.launcher.config.remotes = [self.config.remote]  # the remote host(s) on which to run the simulations
+        #self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
+        #self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
 
-        # 3. Load the projection system
-        self.load_projection()
+        # Simulation analysis options
 
-        # 4. Load the truncation ellipse
-        self.load_truncation_ellipse()
+        ## General
+        self.launcher.config.analysis.relative = True
 
-        # 5. Load the observed SED
-        self.load_observed_sed()
+        ## Extraction
+        self.launcher.config.analysis.extraction.path = "extr"     # name for the extraction directory
+        self.launcher.config.analysis.extraction.progress = True   # extract progress information
+        self.launcher.config.analysis.extraction.timeline = True   # extract the simulation timeline
+        self.launcher.config.analysis.extraction.memory = True     # extract memory usage information
+
+        ## Plotting
+        self.launcher.config.analysis.plotting.path = "plot"
+        self.launcher.config.analysis.plotting.progress = True    # plot progress information
+        self.launcher.config.analysis.plotting.timeline = True    # plot timeline
+        self.launcher.config.analysis.plotting.memory = True      # plot memory usage
+        self.launcher.config.analysis.plotting.seds = True        # plot the simulated SEDs
+        self.launcher.config.analysis.plotting.reference_sed = self.observed_sed_path  # the path to the reference SED (for plotting the simulated SED against the reference points)
+        self.launcher.config.analysis.plotting.format = "png"     # plot in PNG format so that an animation can be made from the fit SEDs
+
+        # Set the paths to the kernel for each image (except for the SPIRE images)
+        kernel_paths = dict()
+        aniano = AnianoKernels()
+        pacs_red_psf_path = aniano.get_psf_path(self.pacs_160)
+        for filter_name in self.observed_filter_names:
+            if "SPIRE" in filter_name: continue
+            kernel_paths[filter_name] = pacs_red_psf_path
+
+        ## Miscellaneous
+        self.launcher.config.analysis.misc.path = "misc"          # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
+        self.launcher.config.analysis.misc.images = True          # create observed images
+        self.launcher.config.analysis.misc.fluxes = True          # calculate observed fluxes
+        self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names  # The filters for which to create the observations
+        self.launcher.config.analysis.misc.make_images_remote = self.config.images_remote
+        self.launcher.config.analysis.misc.images_wcs = self.reference_wcs_path
+        self.launcher.config.analysis.misc.images_unit = "MJy/sr"
+        self.launcher.config.analysis.misc.images_kernels = kernel_paths
 
     # -----------------------------------------------------------------
 
+    def adjust_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting the ski template ...")
+
+        # 1. Adjust the ski files for simulating the contributions of the various stellar components
+        self.adjust_ski_contributions()
+
+        # 2. Adjust the ski file for generating simulated images
+        self.adjust_ski_images()
     
     # -----------------------------------------------------------------
 
@@ -204,13 +190,20 @@ class BestModelLauncher(FittingComponent):
         for contribution in contributions:
 
             # Create a copy of the ski file instance
-            ski = self.ski.copy()
+            ski = self.ski_template.copy()
 
             # Remove other stellar components
             ski.remove_stellar_components_except(component_names[contribution])
 
             # Add the ski file to the dictionary
             self.ski_contributions[contribution] = ski
+
+            # Set the ski path
+            ski_path = fs.join(self.fit_best_contribution_paths[contribution], self.galaxy_name + ".ski")
+            self.ski_paths[contribution] = ski_path
+
+        # Set the path to the ski file for the total model
+        self.ski_paths["total"] = fs.join(self.fit_best_total_path, self.galaxy_name + ".ski")
 
     # -----------------------------------------------------------------
 
@@ -225,13 +218,13 @@ class BestModelLauncher(FittingComponent):
         log.info("Adjusting ski files for generating simulated images ...")
 
         # Create a copy of the ski file instance
-        self.ski_images = self.ski.copy()
+        self.ski_total = self.ski_template.copy()
 
         # Remove all instruments
-        self.ski_images.remove_all_instruments()
+        self.ski_total.remove_all_instruments()
 
         # Add the simple instrument
-        self.ski_images.add_instrument("earth", self.simple_instrument)
+        self.ski_total.add_instrument("earth", self.simple_instrument)
 
     # -----------------------------------------------------------------
 
@@ -243,7 +236,7 @@ class BestModelLauncher(FittingComponent):
         """
 
         # Inform the user
-        log.info("Launching simulations ...")
+        log.info("Launching the simulations ...")
 
 
 
@@ -263,7 +256,7 @@ class BestModelLauncher(FittingComponent):
         self.write_ski_files_contributions()
 
         # Write the ski file for generating simulated images
-        self.write_ski_file_images()
+        self.write_ski_file_total()
 
     # -----------------------------------------------------------------
 
@@ -278,17 +271,11 @@ class BestModelLauncher(FittingComponent):
         log.info("Writing the ski files for simulating the contribution of the various stellar components ...")
 
         # Loop over the ski files
-        for contribution in self.ski_contributions:
-
-            # Determine the path to the ski file
-            ski_path = fs.join(self.fit_best_contribution_paths[contribution], self.galaxy_name + ".ski")
-
-            # Write the ski file
-            self.ski_contributions[contribution].saveto(ski_path)
+        for contribution in self.ski_contributions: self.ski_contributions[contribution].saveto(self.ski_paths[contribution])
 
     # -----------------------------------------------------------------
 
-    def write_ski_file_images(self):
+    def write_ski_file_total(self):
 
         """
         This function ...
@@ -296,12 +283,9 @@ class BestModelLauncher(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the ski file for creating simulated images ...")
-
-        # Determine the path to the ski file
-        ski_path = fs.join(self.fit_best_images_path, self.galaxy_name + ".ski")
+        log.info("Writing the ski file for creating simulated images for the total model ...")
 
         # Write the ski file
-        self.ski_images.saveto(ski_path)
+        self.ski_total.saveto(self.ski_paths["total"])
 
 # -----------------------------------------------------------------

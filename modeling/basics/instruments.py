@@ -94,16 +94,27 @@ class Instrument(object):
         # Inform the user
         log.info("Saving the instrument to " + path + " ...")
 
-        with open(path, 'w') as modelfile:
+        # Write the properties
+        with open(path, 'w') as instrumentfile:
 
             # Print the type
-            print("Type:", self.__class__.__name__, file=modelfile)
+            print("Type:", self.__class__.__name__, file=instrumentfile)
 
             # Loop over the variables
             for name in vars(self):
 
                 dtype, value = stringify_not_list(getattr(self, name))
-                print(name + ":", value + " [" + dtype + "]", file=modelfile)
+                print(name + ":", value + " [" + dtype + "]", file=instrumentfile)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 

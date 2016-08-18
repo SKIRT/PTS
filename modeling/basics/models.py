@@ -30,6 +30,83 @@ from ...core.tools import parsing
 #
 # -----------------------------------------------------------------
 
+class Model(object):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading model from " + path + " ...")
+
+        properties = dict()
+
+        with open(path, 'r') as modelfile:
+
+            for line in modelfile:
+
+                if "Type:" in line: continue
+
+                name, rest = line.split(": ")
+                value, dtype = rest.split("[")
+                dtype = dtype.split("]")[0]
+
+                # Set the property value
+                properties[name] = getattr(parsing, dtype)(value)
+
+        # Create the class instance
+        return cls(**properties)
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the model to " + path + " ...")
+
+        # Write the properties
+        with open(path, 'w') as modelfile:
+
+            # Print the type
+            print("Type:", self.__class__.__name__, file=modelfile)
+
+            # Loop over the variables
+            for name in vars(self):
+
+                dtype, value = stringify_not_list(getattr(self, name))
+                print(name + ":", value + " [" + dtype + "]", file=modelfile)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+# -----------------------------------------------------------------
+
 def load_3d_model(path):
 
     """
@@ -49,7 +126,7 @@ def load_3d_model(path):
 
 # -----------------------------------------------------------------
 
-class SersicModel3D(object):
+class SersicModel3D(Model):
 
     """
     This function ...
@@ -93,75 +170,9 @@ class SersicModel3D(object):
         # Create a new Sersic model and return it
         return cls(effective_radius, index, flattening, tilt)
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        effective_radius = None
-        index = None
-        flattening = None
-        tilt = None
-
-        # Read the parameter file
-        with open(path, 'r') as model_file:
-
-            # Loop over all lines in the file
-            for line in model_file:
-
-                # Split the line
-                splitted = line.split(": ")
-                splitted[1] = splitted[1].split("\n")[0]
-
-                if splitted[0] == "Type":
-                    if splitted[1] != "SersicModel3D": raise ValueError("Model not of type SersicModel3D but '" + splitted[1] + "'")
-                elif splitted[0] == "Effective radius": effective_radius = parsing.quantity(splitted[1])
-                elif splitted[0] == "Index": index = float(splitted[1])
-                elif splitted[0] == "Flattening": flattening = float(splitted[1])
-                elif splitted[0] == "Tilt": tilt = parsing.angle(splitted[1])
-
-        # Create the SersicModel3D and return it
-        return cls(effective_radius, index, flattening, tilt)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Open the file and write the properties of this model
-        with open(path, 'w') as model_file:
-
-            print("Type:", "SersicModel3D", file=model_file)
-            print("Effective radius:", str(self.effective_radius), file=model_file)
-            print("Index:", str(self.index), file=model_file)
-            print("Flattening:", str(self.flattening), file=model_file)
-            print("Tilt:", str(self.tilt.to("deg").value) + " deg", file=model_file)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
-
 # -----------------------------------------------------------------
 
-class ExponentialDiskModel3D(object):
+class ExponentialDiskModel3D(Model):
 
     """
     This function ...
@@ -212,81 +223,9 @@ class ExponentialDiskModel3D(object):
         # Create a new exponential disk model and return it
         return cls(radial_scale, axial_scale, tilt=tilt)
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        radial_scale = None
-        axial_scale = None
-        radial_truncation = None
-        axial_truncation = None
-        inner_radius = None
-        tilt = None
-
-        # Read the parameter file
-        with open(path, 'r') as model_file:
-
-            # Loop over all lines in the file
-            for line in model_file:
-
-                # Split the line
-                splitted = line.split(": ")
-                splitted[1] = splitted[1].split("\n")[0]
-
-                if splitted[0] == "Type":
-                    if splitted[1] != "ExponentialDiskModel3D": raise ValueError("Model not of type ExponentialDiskModel3D but '" + splitted[1] + "'")
-                elif splitted[0] == "Radial scale": radial_scale = parsing.quantity(splitted[1])
-                elif splitted[0] == "Axial scale": axial_scale = parsing.quantity(splitted[1])
-                elif splitted[0] == "Radial truncation": radial_truncation = parsing.quantity(splitted[1])
-                elif splitted[0] == "Axial truncation": axial_truncation = parsing.quantity(splitted[1])
-                elif splitted[0] == "Inner radius": inner_radius = parsing.quantity(splitted[1])
-                elif splitted[0] == "Tilt": tilt = parsing.angle(splitted[1])
-
-        # Create the ExponentialDiskModel and return it
-        return cls(radial_scale, axial_scale, radial_truncation, axial_truncation, inner_radius, tilt)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Open the file and write the properties of this model
-        with open(path, 'w') as model_file:
-
-            print("Type:", "ExponentialDiskModel3D", file=model_file)
-            print("Radial scale:", str(self.radial_scale), file=model_file)
-            print("Axial scale:", str(self.axial_scale), file=model_file)
-            print("Radial truncation:", str(self.radial_truncation), file=model_file)
-            print("Axial truncation:", str(self.axial_truncation), file=model_file)
-            print("Inner radius:", str(self.inner_radius), file=model_file)
-            print("Tilt:", str(self.tilt.to("deg").value) + " deg", file=model_file)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
-
 # -----------------------------------------------------------------
 
-class DeprojectionModel3D(object):
+class DeprojectionModel3D(Model):
 
     """
     This class ...
@@ -312,87 +251,6 @@ class DeprojectionModel3D(object):
         self.x_center = x_center
         self.y_center = y_center
         self.scale_height = scale_height
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        filename = None
-        pixelscale = None
-        position_angle = None
-        inclination = None
-        x_size = None
-        y_size = None
-        x_center = None
-        y_center = None
-        scale_height = None
-
-        # Read the parameter file
-        with open(path, 'r') as model_file:
-
-            # Loop over all lines in the file
-            for line in model_file:
-
-                # Split the line
-                splitted = line.split(": ")
-                splitted[1] = splitted[1].split("\n")[0]
-
-                if splitted[0] == "Type":
-                    if splitted[1] != "DeprojectionModel3D": raise ValueError("Model not of type DeprojectionModel3D but '" + splitted[1] + "'")
-                elif splitted[0] == "Filename": filename = splitted[1]
-                elif splitted[0] == "Pixelscale": pixelscale = parsing.quantity(splitted[1])
-                elif splitted[0] == "Position angle": position_angle = parsing.angle(splitted[1])
-                elif splitted[0] == "Inclination": inclination = parsing.angle(splitted[1])
-                elif splitted[0] == "Number of x pixels": x_size = int(splitted[1])
-                elif splitted[0] == "Number of y pixels": y_size = int(splitted[1])
-                elif splitted[0] == "Center x pixel": x_center = float(splitted[1])
-                elif splitted[0] == "Center y pixel": y_center = float(splitted[1])
-                elif splitted[0] == "Scale height": scale_height = parsing.quantity(splitted[1])
-
-        # Create the DeprojectionModel and return it
-        return cls(filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Open the file and write the properties of this model
-        with open(path, 'w') as model_file:
-
-            print("Type:", "DeprojectionModel3D", file=model_file)
-            print("Filename:", self.filename, file=model_file)
-            print("Pixelscale:", str(self.pixelscale), file=model_file)
-            print("Position angle:", str(self.position_angle.to("deg").value) + " deg", file=model_file)
-            print("Inclination:", str(self.inclination.to("deg").value) + " deg", file=model_file)
-            print("Number of x pixels:", str(self.x_size), file=model_file)
-            print("Number of y pixels:", str(self.y_size), file=model_file)
-            print("Center x pixel:", str(self.x_center), file=model_file)
-            print("Center y pixel:", str(self.y_center), file=model_file)
-            print("Scale height:", str(self.scale_height), file=model_file)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 
@@ -557,7 +415,7 @@ def load_2d_model(path):
 
 # -----------------------------------------------------------------
 
-class SersicModel2D(object):
+class SersicModel2D(Model):
 
     """
     This class ...
@@ -577,69 +435,9 @@ class SersicModel2D(object):
         self.effective_radius = kwargs.pop("effective_radius", None)
         self.index = kwargs.pop("index", None)
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        properties = dict()
-
-        with open(path, 'r') as modelfile:
-
-            for line in modelfile:
-
-                if "Type:" in line: continue
-
-                name, rest = line.split(": ")
-                value, dtype = rest.split("[")
-                dtype = dtype.split("]")[0]
-
-                # Set the property value
-                properties[name] = getattr(parsing, dtype)(value)
-
-        # Create the class instance
-        return cls(**properties)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        with open(path, 'w') as modelfile:
-
-            # Print the type
-            print("Type:", "SersicModel2D", file=modelfile)
-
-            # Loop over the variables
-            for name in vars(self):
-
-                dtype, value = stringify_not_list(getattr(self, name))
-                print(name + ":", value + " [" + dtype + "]", file=modelfile)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
-
 # -----------------------------------------------------------------
 
-class ExponentialDiskModel2D(object):
+class ExponentialDiskModel2D(Model):
 
     """
     This class ...
@@ -657,66 +455,6 @@ class ExponentialDiskModel2D(object):
         self.position_angle = kwargs.pop("position_angle", None) # (degrees ccw from North)
         self.mu0 = kwargs.pop("mu0", None)
         self.scalelength = kwargs.pop("scalelength", None)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        properties = dict()
-
-        with open(path, 'r') as modelfile:
-
-            for line in modelfile:
-
-                if "Type:" in line: continue
-
-                name, rest = line.split(": ")
-                value, dtype = rest.split("[")
-                dtype = dtype.split("]")[0]
-
-                # Set the property value
-                properties[name] = getattr(parsing, dtype)(value)
-
-        # Create the class instance
-        return cls(**properties)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        with open(path, 'w') as modelfile:
-
-            # Print the type
-            print("Type:", "ExponentialDiskModel2D", file=modelfile)
-
-            # Loop over the variables
-            for name in vars(self):
-
-                dtype, value = stringify_not_list(getattr(self, name))
-                print(name + ": " + value + " [" + dtype + "]", file=modelfile)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 
