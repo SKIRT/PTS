@@ -123,7 +123,13 @@ class SkiFile:
     ## This function returns the number of wavelength points as defined in the wavelengths file
     def nwavelengthsfile(self, input_path):
         wavelengths_filename = self.wavelengthsfile()
-        wavelengths_path = os.path.join(input_path, wavelengths_filename)
+        if isinstance(input_path, list):
+            for path in input_path:
+                if os.path.basename(path) == wavelengths_filename:
+                    wavelengths_path = path
+                    break
+            else: raise ValueError("The list of input paths does not contain the path to the wavelengths file")
+        else: wavelengths_path = os.path.join(input_path, wavelengths_filename)
         with open(wavelengths_path, 'r') as f: first_line = f.readline()
         nwavelengths = int(first_line.split("\n")[0])
         return nwavelengths

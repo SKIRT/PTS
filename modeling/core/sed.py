@@ -310,6 +310,31 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
+    def filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        names = []
+
+        # Loop over all entries
+        for i in range(len(self.table)):
+
+            # Get the instrument and band
+            instrument = self.table["Instrument"][i]
+            band = self.table["Band"][i]
+
+            # Add the filter name
+            names.append(instrument + " " + band)
+
+        # Return the list of filter names
+        return names
+
+    # -----------------------------------------------------------------
+
     def filters(self):
 
         """

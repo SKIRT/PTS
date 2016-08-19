@@ -217,7 +217,7 @@ class BatchAnalyser(OldConfigurable):
         intermediate_time = self.timeline.other
 
         # Open the timing table
-        timing_table = TimingTable(self.timing_table_path)
+        timing_table = TimingTable.from_file(self.timing_table_path)
 
         # Add an entry to the timing table
         # Simulation name, Timestamp, Host id, Cluster name, Cores, Hyperthreads per core, Processes, Wavelengths,

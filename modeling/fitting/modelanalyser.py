@@ -196,6 +196,8 @@ class FitModelAnalyser(FittingComponent):
             # Find the index of the current band in the weights table
             index = tables.find_index(self.weights, key=[instrument, band], column_name=["Instrument", "Band"])
 
+            if index is None: continue # Skip this band if a weight is not found
+
             # Get the weight
             weight = self.weights["Weight"][index] # apparently, this is a string, so parsing the table went wrong ...
             weight = float(weight)

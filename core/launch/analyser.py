@@ -182,14 +182,16 @@ class SimulationAnalyser(OldConfigurable):
 
         # Determine the path to the output directory for the analysis of the best model within the radiative transfer
         # modeling environment
-        analysis_out_path = fs.join(self.simulation.analysis.modeling_path, "analysis", "out")
+        #analysis_out_path = fs.join(self.simulation.analysis.modeling_path, "analysis", "out")
 
         # If the output directory of the simulation corresponds to the analysis output directory, the simulation
         # corresponds to the best model in the current state of the radiative transfer modeling
-        if self.simulation.output_path == analysis_out_path: self.analyse_best_model()
+        #if self.simulation.output_path == analysis_out_path: self.analyse_best_model()
 
         # Else, the simulation is just one of the many simulations launched during the fitting step of the modeling
-        else: self.analyse_fit_model()
+        #else: self.analyse_fit_model()
+
+        self.analyse_fit_model()
 
     # -----------------------------------------------------------------
 
