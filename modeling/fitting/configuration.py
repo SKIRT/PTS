@@ -143,9 +143,6 @@ class FittingConfigurer(FittingComponent):
         :return:
         """
 
-        # Get all the labels
-        #labels = self.ski.labels()
-
         # Create configuration setter
         setter = InteractiveConfigurationSetter("free parameters", add_logging=False, add_cwd=False)
 
@@ -208,7 +205,7 @@ class FittingConfigurer(FittingComponent):
         log.info("Adjusting labels of the free parameters in the template ski file ...")
 
         # Loop over the labels currently in the template ski file
-        for label in self.ski.labels():
+        for label in self.ski.labels:
 
             # If the label is in the list of free parameter labels, skip (don't remove)
             if label in self.parameters_config.free_parameters: continue

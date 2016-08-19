@@ -13,125 +13,31 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.tools import parsing
-from ...magic.basics.skygeometry import SkyCoordinate
+from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
-class GalaxyProperties(object):
+class GalaxyProperties(SimplePropertyComposite):
     
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
         """
 
-        self.name = None
-        self.ngc_id = None
-        self.center = None
-        self.major = None
-        self.major_arcsec = None
-        self.ellipticity = None
-        self.position_angle = None
-        self.distance = None
-        self.distance_error = None
-        self.inclination = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the properties instance
-        properties = cls()
-
-        ra = None
-        dec = None
-
-        # Read the parameter file
-        with open(path, 'r') as parameter_file:
-
-            # Loop over all lines in the file
-            for line in parameter_file:
-
-                line = line.rstrip("\n")
-                splitted = line.split(": ")
-
-                if splitted[0] == "Name":
-                    properties.name = splitted[1]
-                elif splitted[0] == "NGC ID":
-                    properties.ngc_id = splitted[1]
-                elif splitted[0] == "Center RA":
-                    ra = parsing.quantity(splitted[1])
-                elif splitted[0] == "Center DEC":
-                    dec = parsing.quantity(splitted[1])
-                elif splitted[0] == "Major axis length":
-                    properties.major = parsing.quantity(splitted[1])
-                elif splitted[0] == "Angular major axis length":
-                    properties.major_arcsec = parsing.quantity(splitted[1])
-                elif splitted[0] == "Ellipticity":
-                    properties.ellipticity = float(splitted[1])
-                elif splitted[0] == "Position angle":
-                    properties.position_angle = parsing.angle(splitted[1])
-                elif splitted[0] == "Distance":
-                    properties.distance = parsing.quantity(splitted[1])
-                elif splitted[0] == "Distance error":
-                    properties.distance_error = parsing.quantity(splitted[1])
-                elif splitted[0] == "Inclination":
-                    properties.inclination = parsing.angle(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density":
-                    properties.i1_fluxdensity = parsing.quantity(splitted[1])
-                elif splitted[0] == "IRAC 3.6um flux density error":
-                    properties.i1_error = parsing.quantity(splitted[1])
-                elif splitted[0] == "IRAC 4.5um flux density":
-                    properties.i2_fluxdensity = parsing.quantity(splitted[1])
-                elif splitted[0] == "IRAC 4.5um flux density error":
-                    properties.i2_error = parsing.quantity(splitted[1])
-
-        # Add the center coordinate
-        properties.center = SkyCoordinate(ra=ra, dec=dec)
-
-        # Return the properties instance
-        return properties
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Create the parameters file
-        with open(path, 'w') as parameter_file:
-
-            # Add general info
-            print("Name:", self.name, file=parameter_file)
-            print("NGC ID:", self.ngc_id, file=parameter_file)
-            print("Center RA:", str(self.center.ra.to("deg").value) + " deg", file=parameter_file)
-            print("Center DEC:", str(self.center.dec.to("deg").value) + " deg", file=parameter_file)
-            print("Major axis length:", str(self.major), file=parameter_file)
-            print("Angular major axis length:", str(self.major_arcsec), file=parameter_file)
-            print("Ellipticity:", self.ellipticity, file=parameter_file)
-            print("Position angle:", str(self.position_angle.to("deg").value) + " deg", file=parameter_file)
-            print("Distance:", str(self.distance), file=parameter_file)
-            print("Distance error:", str(self.distance_error), file=parameter_file)
-            print("Inclination:", str(self.inclination.to("deg").value) + " deg", file=parameter_file)
-
-            #print("IRAC 3.6um flux density:", properties.i1_fluxdensity, file=parameter_file)
-            #print("IRAC 3.6um flux density error:", properties.i1_error, file=parameter_file)
-            #print("IRAC 4.5um flux density:", properties.i2_fluxdensity, file=parameter_file)
-            #print("IRAC 4.5um flux density error:", properties.i2_error, file=parameter_file)
+        self.name = kwargs.pop("name", None)
+        self.ngc_id = kwargs.pop("ngc_id", None)
+        self.center = kwargs.pop("center", None)
+        self.major = kwargs.pop("major", None)
+        self.major_arcsec = kwargs.pop("major_arcsec", None)
+        self.ellipticity = kwargs.pop("ellipticity", None)
+        self.position_angle = kwargs.pop("position_angle", None)
+        self.distance = kwargs.pop("distance", None)
+        self.distance_error = kwargs.pop("distance_error", None)
+        self.inclination = kwargs.pop("inclination", None)
 
 # -----------------------------------------------------------------

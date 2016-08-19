@@ -19,6 +19,7 @@ from types import NoneType
 import sys
 import argparse
 from collections import OrderedDict
+import numpy as np
 
 # Import the relevant PTS classes and modules
 from .map import Map
@@ -386,12 +387,13 @@ def stringify_not_list(value):
 
     from astropy.units import Quantity
     from astropy.coordinates import Angle
+    from pts.magic.basics.skygeometry import SkyCoordinate
 
     from .range import RealRange, IntegerRange, QuantityRange
 
     if isinstance(value, bool): return "boolean", str(value)
     elif isinstance(value, int): return "integer", str(value)
-    elif isinstance(value, float): return "real", repr(value)
+    elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64): return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
     elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit)
     elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit)
@@ -399,6 +401,7 @@ def stringify_not_list(value):
     elif isinstance(value, RealRange): return "real_range", repr(value)
     elif isinstance(value, IntegerRange): return "integer_range", repr(value)
     elif isinstance(value, QuantityRange): return "quantity_range", repr(value)
+    elif isinstance(value, SkyCoordinate): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------

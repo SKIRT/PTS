@@ -66,10 +66,6 @@ class FittingInitializer(FittingComponent):
         # The table of weights for each band
         self.weights = None
 
-        # Filters
-        self.i1 = None
-        self.fuv = None
-
         # Solar luminosity units
         self.sun_fuv = None
         self.sun_i1 = None
@@ -129,14 +125,10 @@ class FittingInitializer(FittingComponent):
         # Call the setup function of the base class
         super(FittingInitializer, self).setup()
 
-        # Create filters
-        self.i1 = Filter.from_string("I1")
-        self.fuv = Filter.from_string("FUV")
-
         # Solar properties
         sun = Sun()
-        self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv) # Get the luminosity of the Sun in the FUV band
-        self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1)   # Get the luminosity of the Sun in the IRAC I1 band
+        self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv_filter) # Get the luminosity of the Sun in the FUV band
+        self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1_filter)   # Get the luminosity of the Sun in the IRAC I1 band
 
         # Create a WavelengthGridGenerator
         self.wg_generator = WavelengthGridGenerator()
@@ -160,7 +152,7 @@ class FittingInitializer(FittingComponent):
         log.info("Creating the wavelength grids ...")
 
         # Fixed wavelengths (always in the grid)
-        fixed = [self.i1.pivotwavelength(), self.fuv.pivotwavelength()]
+        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
 
         # Generate the wavelength grids
         self.wg_generator.run(self.config.wg.npoints_range, self.config.wg.ngrids, fixed=fixed)
@@ -361,7 +353,7 @@ class FittingInitializer(FittingComponent):
         fluxdensity = self.bulge2d_model.fluxdensity
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_i1).value
@@ -370,7 +362,7 @@ class FittingInitializer(FittingComponent):
         self.ski_template.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
         self.ski_template.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 
@@ -396,10 +388,10 @@ class FittingInitializer(FittingComponent):
         bulge_fluxdensity = self.bulge2d_model.fluxdensity
 
         # Get the 3.6 micron flux density with the bulge subtracted
-        fluxdensity = self.observed_flux(self.i1, unit="Jy") - bulge_fluxdensity
+        fluxdensity = self.observed_flux(self.i1_filter, unit="Jy") - bulge_fluxdensity
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_i1).value
@@ -414,7 +406,7 @@ class FittingInitializer(FittingComponent):
         self.ski_template.set_stellar_component_geometry("Evolved stellar disk", deprojection)
         self.ski_template.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1_filter.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 
@@ -439,10 +431,10 @@ class FittingInitializer(FittingComponent):
         scale_height = 100. * Unit("pc") # M51
 
         # Get the FUV flux density
-        fluxdensity = 2. * self.observed_flux(self.fuv, unit="Jy")
+        fluxdensity = 2. * self.observed_flux(self.fuv_filter, unit="Jy")
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_fuv).value
@@ -457,7 +449,7 @@ class FittingInitializer(FittingComponent):
         self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
         self.ski_template.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 
@@ -485,7 +477,7 @@ class FittingInitializer(FittingComponent):
         # Convert the SFR into a FUV luminosity
         sfr = 0.8 # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
-        luminosity = mappings.luminosity_for_filter(self.fuv)
+        luminosity = mappings.luminosity_for_filter(self.fuv_filter)
         #luminosity = luminosity.to(self.sun_fuv).value
 
         # Set the parameters of the ionizing stellar component
@@ -498,7 +490,7 @@ class FittingInitializer(FittingComponent):
         self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
         self.ski_template.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
         #self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
 
     # -----------------------------------------------------------------
 

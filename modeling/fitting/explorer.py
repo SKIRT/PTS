@@ -503,9 +503,6 @@ class ParameterExplorer(FittingComponent):
         # Set the paths to the screen output directories (for debugging) for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
 
-        # Create a FUV filter object
-        fuv = Filter.from_string("FUV")
-
         # Set the name of the wavelength grid file
         self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
 

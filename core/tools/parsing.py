@@ -518,3 +518,31 @@ def image_path(argument):
     else: return path
 
 # -----------------------------------------------------------------
+
+def coordinate(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.geometry import Coordinate
+    x, y = real_tuple(argument)
+    return Coordinate(x, y)
+
+# -----------------------------------------------------------------
+
+def skycoordinate(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.skygeometry import SkyCoordinate
+    ra, dec = quantity_tuple(argument)
+    return SkyCoordinate(ra=ra, dec=dec)
+
+# -----------------------------------------------------------------

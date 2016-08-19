@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
-import copy
 from abc import ABCMeta
 
 # Import astronomical modules
@@ -23,15 +22,11 @@ from astropy.units import Unit
 from astropy.modeling.models import Sersic2D
 
 # Import the relevant PTS classes and modules
-from ...core.tools import parsing
+from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
-#
-# 3D MODELS
-#
-# -----------------------------------------------------------------
 
-class Model(object):
+class Model(SimplePropertyComposite):
 
     """
     This class ...
@@ -39,73 +34,10 @@ class Model(object):
 
     __metaclass__ = ABCMeta
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading model from " + path + " ...")
-
-        properties = dict()
-
-        with open(path, 'r') as modelfile:
-
-            for line in modelfile:
-
-                if "Type:" in line: continue
-
-                name, rest = line.split(": ")
-                value, dtype = rest.split("[")
-                dtype = dtype.split("]")[0]
-
-                # Set the property value
-                properties[name] = getattr(parsing, dtype)(value)
-
-        # Create the class instance
-        return cls(**properties)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Saving the model to " + path + " ...")
-
-        # Write the properties
-        with open(path, 'w') as modelfile:
-
-            # Print the type
-            print("Type:", self.__class__.__name__, file=modelfile)
-
-            # Loop over the variables
-            for name in vars(self):
-
-                dtype, value = stringify_not_list(getattr(self, name))
-                print(name + ":", value + " [" + dtype + "]", file=modelfile)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
-
+# -----------------------------------------------------------------
+#
+# 3D MODELS
+#
 # -----------------------------------------------------------------
 
 def load_3d_model(path):
@@ -456,26 +388,5 @@ class ExponentialDiskModel2D(Model):
         self.position_angle = kwargs.pop("position_angle", None) # (degrees ccw from North)
         self.mu0 = kwargs.pop("mu0", None)
         self.scalelength = kwargs.pop("scalelength", None)
-
-# -----------------------------------------------------------------
-
-def stringify_not_list(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    from astropy.units import Quantity
-    from astropy.coordinates import Angle
-
-    if isinstance(value, bool): return "boolean", str(value)
-    elif isinstance(value, int): return "integer", str(value)
-    elif isinstance(value, float): return "real", repr(value)
-    elif isinstance(value, basestring): return "string", value
-    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit)
-    elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit)
-    else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------

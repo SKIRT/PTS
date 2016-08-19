@@ -168,6 +168,7 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Getting the decomposition parameters ...")
 
+        # Use the S4G database
         self.decompose_s4g()
 
         #self.decompose_fit()
@@ -203,8 +204,10 @@ class GalaxyDecomposer(DecompositionComponent):
         :return:
         """
 
+        # Create the decomposer
         decomposer = FittingDecomposer()
 
+        # Run the decomposition
         decomposer.run()
 
         # Add the components
@@ -269,9 +272,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Create the 'earth' projection system
         azimuth = 0.0
-        self.projections["earth"] = GalaxyProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,
-                                                              self.galaxy_properties.distance,
-                                                              self.galaxy_properties.inclination, azimuth, self.disk_pa)
+        self.projections["earth"] = GalaxyProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center, self.galaxy_properties.distance, self.galaxy_properties.inclination, azimuth, self.disk_pa)
 
         # Create the face-on projection system
         self.projections["faceon"] = FaceOnProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,

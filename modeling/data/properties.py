@@ -167,6 +167,9 @@ class PropertyFetcher(DataComponent):
         center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame='fk5')
         self.properties.center = center
 
+        # Center position
+        #self.properties.center = SkyCoordinate(ra=self.info["RA"][0], dec=self.info["DEC"][0], unit="deg") # center position from DustPedia
+
         # Distance
         self.properties.distance = table["Dmean"][0] * Unit("Mpc")
         self.properties.distance_error = table["e_Dmean"][0] * Unit("Mpc")

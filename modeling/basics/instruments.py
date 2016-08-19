@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.basics.instruments Contains the SEDInstrument, FrameInstrument SimpleInstrument and FullInstruemnt classes.
+## \package pts.modeling.basics.instruments Contains the SEDInstrument, FrameInstrument, SimpleInstrument and
+#  FullInstrument classes.
 
 # -----------------------------------------------------------------
 
@@ -16,9 +17,7 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
-from ...core.tools import parsing
-from ...core.basics.configuration import stringify_not_list
-from ...core.tools.logging import log
+from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
@@ -42,79 +41,13 @@ def load_instrument(path):
 
 # -----------------------------------------------------------------
 
-class Instrument(object):
+class Instrument(SimplePropertyComposite):
 
     """
     This class ...
     """
 
     __metaclass__ = ABCMeta
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading instrument from " + path + " ...")
-
-        properties = dict()
-
-        with open(path, 'r') as instrumentfile:
-
-            for line in instrumentfile:
-
-                if "Type:" in line: continue
-
-                name, rest = line.split(": ")
-                value, dtype = rest.split("[")
-                dtype = dtype.split("]")[0]
-
-                # Set the property value
-                properties[name] = getattr(parsing, dtype)(value)
-
-        # Create the class instance
-        return cls(**properties)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Saving the instrument to " + path + " ...")
-
-        # Write the properties
-        with open(path, 'w') as instrumentfile:
-
-            # Print the type
-            print("Type:", self.__class__.__name__, file=instrumentfile)
-
-            # Loop over the variables
-            for name in vars(self):
-
-                dtype, value = stringify_not_list(getattr(self, name))
-                print(name + ":", value + " [" + dtype + "]", file=instrumentfile)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 

@@ -295,9 +295,7 @@ def get_relevant_wcs_properties(wcs, center, distance):
 
     # CENTER PIXEL
     pixel_center = center.to_pixel(wcs)
-    # center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5) # when not convolved ...
-    center = Position(0.5 * pixels_x - pixel_center.x - 1,
-                      0.5 * pixels_y - pixel_center.y - 1)  # when convolved ...
+    center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
     center_x = center.x * Unit("pix")
     center_y = center.y * Unit("pix")
     center_x = (center_x * wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
