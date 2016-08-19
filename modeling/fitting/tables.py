@@ -343,6 +343,32 @@ class ChiSquaredTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def best_simulation_name_and_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmin(self["Chi squared"])
+        return self["Simulation name"][index], self["Chi squared"][index]
+
+    # -----------------------------------------------------------------
+
+    def chi_squared_for(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = tables.find_index(self, simulation_name, "Simulation name")
+        return self["Chi squared"][index]
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, chi_squared):
 
         """

@@ -214,7 +214,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
         log.start("Starting " + command_name + " ...")
 
         # Record starting time
-        start = _time.clock()
+        start = _time.time()
 
         ## DO WHAT HAS TO BE DONE
 
@@ -225,7 +225,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
         inst.run()
 
         # Record end time
-        end = _time.clock()
+        end = _time.time()
         seconds = end - start
 
         # Succesfully finished

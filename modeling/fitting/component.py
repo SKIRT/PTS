@@ -295,24 +295,33 @@ class FittingComponent(ModelingComponent):
         :return:
         """
 
+        values = None
+        chi_squared = float("inf")
+
         for generation_name in self.generation_names:
 
-            values =
+            generation_values, generation_chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
+            if generation_chi_squared < chi_squared:
+                values = generation_values
+
+        # Return the values
+        return values
 
         # TODO: get parameter values of best fitting model
 
         # Get the current values in the ski file prepared by InputInitializer
-        young_luminosity_guess, young_filter = self.ski_template.get_stellar_component_luminosity("Young stars")
-        ionizing_luminosity_guess, ionizing_filter = self.ski_template.get_stellar_component_luminosity("Ionizing stars")
-        dust_mass_guess = self.ski_template.get_dust_component_mass(0)
+        #young_luminosity_guess, young_filter = self.ski_template.get_stellar_component_luminosity("Young stars")
+        #ionizing_luminosity_guess, ionizing_filter = self.ski_template.get_stellar_component_luminosity("Ionizing stars")
+        #dust_mass_guess = self.ski_template.get_dust_component_mass(0)
 
     # -----------------------------------------------------------------
 
-    def best_parameter_values_for_generation(self, generation_name):
+    def best_parameter_values_for_generation(self, generation_name, return_chi_squared=False):
 
         """
         This function ...
         :param generation_name:
+        :param return_chi_squared:
         :return:
         """
 
@@ -329,7 +338,10 @@ class FittingComponent(ModelingComponent):
         parameters_table = self.parameters_table_for_generation(generation_name)
 
         # Return the parameters of the best simulation
-        return parameters_table.parameter_values_for_simulation(best_simulation_name)
+        if return_chi_squared:
+            chi_squared = chi_squared_table.chi_squared_for(best_simulation_name)
+            return parameters_table.parameter_values_for_simulation(best_simulation_name), chi_squared
+        else: return parameters_table.parameter_values_for_simulation(best_simulation_name)
 
     # -----------------------------------------------------------------
 
