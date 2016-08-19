@@ -103,7 +103,8 @@ class SmartTable(Table):
 
             current_string_length = int(dtype_str.split("S")[1])
 
-            new_string_length = len(values[index])
+            if values[index] is None: new_string_length = 0
+            else: new_string_length = len(values[index])
 
             if new_string_length > current_string_length: new_sizes[colname] = new_string_length
 
@@ -123,6 +124,8 @@ class SmartTable(Table):
         :param value:
         :return:
         """
+
+        if value is None: return
 
         dtype_str = str(self[colname].dtype)
 

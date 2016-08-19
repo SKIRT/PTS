@@ -483,6 +483,56 @@ class BatchLauncher(OldConfigurable):
         self.logging_options = LoggingOptions()
         self.logging_options.set_options(self.config.logging)
 
+        # Check whether the options are consistent
+        self.check_options()
+
+    # -----------------------------------------------------------------
+
+    def check_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the batch launcher options ...")
+
+        # PLOTTING
+
+        # If any plotting setting has been enabled, check whether the plotting path has been set
+        if self.config.analysis.plotting.progress or self.config.analysis.plotting.memory or \
+            self.config.analysis.plotting.timeline or self.config.analysis.plotting.seds or \
+                self.config.analysis.plotting.grids:
+            if self.config.analysis.plotting.path is None: raise ValueError("The plotting path has not been set")
+
+        # If progress plotting has been enabled, enabled progress extraction
+        if self.config.analysis.plotting.progress and not self.config.analysis.extraction.progress:
+            log.warning("Progress plotting is enabled so progress extraction will also be enabled")
+            self.config.analysis.extraction.progress = True
+
+        # If memory plotting has been enabled, enable memory extraction
+        if self.config.analysis.plotting.memory and not self.config.analysis.extraction.memory:
+            log.warning("Memory plotting is enabled so memory extraction will also be enabled")
+            self.config.analysis.extraction.memory = True
+
+        # If timeline plotting has been enabled, enable timeline extraction
+        if self.config.analysis.plotting.timeline and not self.config.analysis.extraction.timeline:
+            log.warning("Timeline plotting is enabled so timeline extraction will also be enabled")
+            self.config.analysis.extraction.timeline = True
+
+        # EXTRACTION
+
+        # If any extraction setting has been enabled, check whether the extraction path has been set
+        if self.config.analysis.extraction.progress or self.config.analysis.extraction.memory or \
+            self.config.analysis.extraction.timeline:
+            if self.config.analysis.extraction.path is None: raise ValueError("The extraction path has not been set")
+
+        # If memory extraction has been enabled, enable memory logging
+        if self.config.analysis.extraction.memory and not self.config.logging.memory:
+            log.warning("Memory extraction is enabled so memory logging will also be enabled")
+            self.config.logging.memory = True
+
     # -----------------------------------------------------------------
 
     def setup_remotes(self):

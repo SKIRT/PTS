@@ -196,6 +196,9 @@ class MemoryExtractor(object):
         # Obtain the log files created by the simulation
         self.log_files = simulation.logfiles()
 
+        # Check whether the log files contain memory information
+        if not self.log_files[0].has_memory: raise ValueError("The log files don't contain memory information")
+
         # Perform the extraction
         self.extract()
 

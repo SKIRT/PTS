@@ -131,7 +131,19 @@ class LogFile(object):
         return None
 
     # -----------------------------------------------------------------
-    
+
+    @property
+    def has_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "Memory" in self.contents.colnames
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def peak_memory(self):
 

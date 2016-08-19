@@ -167,6 +167,12 @@ class ParameterExplorer(FittingComponent):
         ## General
         self.launcher.config.analysis.relative = True
 
+        ## Logging
+        self.launcher.config.logging.verbose = True
+        self.launcher.config.logging.memory = True
+        #self.launcher.config.logging.allocation = True
+        #self.launcher.config.logging.allocation_limit = 1e-5
+
         ## Extraction
         self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
         self.launcher.config.analysis.extraction.progress = True  # extract progress information
