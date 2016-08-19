@@ -24,7 +24,7 @@ class GridModelGenerator(ModelGenerator):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -32,7 +32,7 @@ class GridModelGenerator(ModelGenerator):
         """
 
         # Call the constructor of the base class
-        super(GridModelGenerator, self).__init__()
+        super(GridModelGenerator, self).__init__(config)
 
         # -- Attributes --
 

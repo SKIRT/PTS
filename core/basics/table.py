@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astropy.table import Table
 
@@ -72,8 +75,10 @@ class SmartTable(Table):
         :return:
         """
 
+        fill_values = [('--', '0')]
+
         # Open the table
-        table = super(SmartTable, cls).read(path, format="ascii.ecsv")
+        table = super(SmartTable, cls).read(path, format="ascii.ecsv", fill_values=fill_values)
 
         # Set the path
         table.path = path
@@ -154,8 +159,20 @@ class SmartTable(Table):
         """
 
         mask = [value is None for value in values]
-        values = [self.column_info[i][1]("0") if values[i] is None else values[i] for i in range(len(values))]
-        super(SmartTable, self).add_row(values, mask=mask)
+
+        new_values = []
+        for i in range(len(values)):
+
+            if values[i] is not None: new_values.append(values[i])
+            else:
+                coltype = self[self.colnames[i]].dtype.name
+                if coltype.startswith("string"): new_values.append("")
+                elif coltype.startswith("float"): new_values.append(0.)
+                elif coltype.startswith("int"): new_values.append(0)
+                else: raise ValueError("Unknown column type: " + coltype)
+
+        # Add the row
+        super(SmartTable, self).add_row(new_values, mask=mask)
 
     # -----------------------------------------------------------------
 

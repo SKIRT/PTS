@@ -93,17 +93,17 @@ class ParameterExplorer(FittingComponent):
         # 2. Set the parameter ranges
         self.set_ranges()
 
-        # 3. Generate the model parameters
-        self.generate_models()
-
-        # 4. Set the generation info
+        # 3. Set the generation info
         self.set_info()
 
-        # 5. Set the paths to the input files
-        self.set_input()
-
-        # 6. Create the generation directory
+        # 4. Create the generation directory
         self.create_generation_directory()
+
+        # 5. Generate the model parameters
+        self.generate_models()
+
+        # 6. Set the paths to the input files
+        self.set_input()
 
         # 7. Set the parallelization schemes for the different remote hosts
         if self.uses_schedulers: self.set_parallelization()
@@ -239,6 +239,18 @@ class ParameterExplorer(FittingComponent):
 
                 # Create the model generator
                 self.generator = InitialModelGenerator()
+
+        # Create the configuration for the generator
+        from ...core.basics.configuration import Configuration
+        config = Configuration()
+        config.path = self.config.path
+        config.generation_name = self.generation_name
+        config.nmodels = self.config.simulations
+        config.crossover_rate = self.config.crossover_rate
+        config.mutation_rate = self.config.mutation_rate
+
+        # Set the config
+        self.generator.config = config
 
     # -----------------------------------------------------------------
 

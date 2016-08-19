@@ -26,7 +26,7 @@ class GeneticModelGenerator(ModelGenerator):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -34,7 +34,7 @@ class GeneticModelGenerator(ModelGenerator):
         """
 
         # Call the constructor of the base class
-        super(GeneticModelGenerator, self).__init__()
+        super(GeneticModelGenerator, self).__init__(config)
 
         # -- Attributes --
 

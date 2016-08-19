@@ -30,7 +30,7 @@ class InitialModelGenerator(ModelGenerator):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -38,7 +38,7 @@ class InitialModelGenerator(ModelGenerator):
         """
 
         # Call the constructor of the base class
-        super(InitialModelGenerator, self).__init__()
+        super(InitialModelGenerator, self).__init__(config)
 
         # The genetic algorithm engine
         self.engine = None
@@ -70,10 +70,10 @@ class InitialModelGenerator(ModelGenerator):
         # Set options for the engine
         self.engine.terminationCriteria.set(RawScoreCriteria)
         self.engine.setMinimax(constants.minimaxType["minimize"])
-        self.engine.setGenerations(5)
-        self.engine.setCrossoverRate(0.5)
-        self.engine.setPopulationSize(100)
-        self.engine.setMutationRate(0.5)
+        self.engine.setGenerations(5) # not important in this case
+        self.engine.setCrossoverRate(self.config.crossover_rate)
+        self.engine.setPopulationSize(self.config.nmodels)
+        self.engine.setMutationRate(self.config.mutation_rate)
 
         # Initialize the genetic algorithm
         self.engine.initialize()
@@ -114,6 +114,9 @@ class InitialModelGenerator(ModelGenerator):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write the genetic algorithm engine
         self.write_engine()
 
@@ -129,8 +132,11 @@ class InitialModelGenerator(ModelGenerator):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the state of the genetic engine ...")
+
         # Save the genetic algorithm
-        self.engine.saveto(path)
+        self.engine.saveto(self.genetic_engine_path_for_generation(self.config.generation_name))
 
     # -----------------------------------------------------------------
 
@@ -141,7 +147,10 @@ class InitialModelGenerator(ModelGenerator):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the state of the random number generator ...")
+
         # Save the state of the random generator
-        save_state(random_path)
+        save_state(self.prng_path_for_generation(self.config.generation_name))
 
 # -----------------------------------------------------------------

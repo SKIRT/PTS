@@ -31,6 +31,10 @@ definition.add_optional("remotes", "string", "the remote host on which to run th
 definition.add_optional("nodes", "integer", "the number of nodes to use for the simulations", 4)
 definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
 
+# Advanced options for the genetic engine
+definition.add_optional("crossover_rate", "fraction", "the crossover rate", 0.5)
+definition.add_optional("mutation_rate", "fraction", "the mutation rate", 0.5)
+
 # The ranges of the different free parameters (although the absolute ranges are defined in the fitting configuration,
 # give the option to refine these ranges for each exploration step (generation))
 for label in free_parameter_labels:

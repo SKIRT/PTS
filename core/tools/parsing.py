@@ -122,6 +122,20 @@ def negative_real(argument):
 
 # -----------------------------------------------------------------
 
+def fraction(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = real(argument)
+    if value > 1 or value < 0: raise ValueError("Value should be from 0 to 1")
+    return value
+
+# -----------------------------------------------------------------
+
 def string(argument):
 
     """

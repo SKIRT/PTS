@@ -34,7 +34,7 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -42,7 +42,7 @@ class ModelGenerator(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(ModelGenerator, self).__init__()
+        super(ModelGenerator, self).__init__(config)
 
         # The order of the free parameter labels
         self.parameter_labels_order = None
@@ -157,6 +157,9 @@ class ModelGenerator(FittingComponent):
         # 4. Generate the model parameters
         self.generate()
 
+        # 5. Writing
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -233,6 +236,18 @@ class ModelGenerator(FittingComponent):
 
     @abstractmethod
     def generate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def write(self):
 
         """
         This function ...

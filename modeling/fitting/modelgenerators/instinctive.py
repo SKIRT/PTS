@@ -24,7 +24,7 @@ class InstinctiveModelGenerator(ModelGenerator):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -32,7 +32,7 @@ class InstinctiveModelGenerator(ModelGenerator):
         """
 
         # Call the constructor of the base class
-        super(InstinctiveModelGenerator, self).__init__()
+        super(InstinctiveModelGenerator, self).__init__(config)
 
     # -----------------------------------------------------------------
 

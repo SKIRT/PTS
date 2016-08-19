@@ -94,6 +94,9 @@ class MosaicAnalyser(DataComponent):
         # 3. Load the image as obtained from other source
         self.load_references()
 
+        # Rebin if necessary
+        self.rebin()
+
         # 4. Make directory for each band that has been processed
         self.make_directories()
 
@@ -153,6 +156,39 @@ class MosaicAnalyser(DataComponent):
 
             # Load the reference image
             self.references[band_id] = Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def rebin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Rebinning to the reference WCS if necessary ...")
+
+        # Loop over the bands
+        for band_id in self.mosaics:
+
+            reference_wcs = self.references[band_id].wcs
+            mosaic_wcs = self.mosaics[band_id].wcs
+
+            if reference_wcs == mosaic_wcs: continue
+
+            # Rebin mosaic
+            self.mosaics[band_id] /= self.mosaics[band_id].pixelarea.to("sr").value
+            self.mosaics[band_id].rebin(reference_wcs)
+            self.mosaics[band_id] *= self.mosaics[band_id].pixelarea.to("sr").value
+
+            # Rebin poisson frame
+            self.poisson_frames[band_id] /= self.poisson_frames[band_id].pixelarea.to("sr").value
+            self.poisson_frames[band_id].rebin(reference_wcs)
+            self.poisson_frames[band_id] *= self.poisson_frames[band_id].pixelarea.to("sr").value
+
+            # Rebin relative poisson frame
+            self.relative_poisson_frames[band_id].rebin(reference_wcs)
 
     # -----------------------------------------------------------------
 
@@ -244,8 +280,21 @@ class MosaicAnalyser(DataComponent):
             # Determine path
             path = fs.join(self.data_images_paths[self.origin], self.ngc_id_nospaces + "_" + band_id + "_poisson.fits")
 
-            # Save the poisson error frame
-            self.poisson_frames[band_id].save(path)
+            # For GALEX
+            if "GALEX" in band_id:
+
+                # Construct the poisson frame in Jy/pix from the relative poisson frame
+                poisson_frame_jy = self.relative_poisson_frames[band_id] * self.references[band_id]
+                poisson_frame_jy.unit = "Jy/pix"
+
+                # Save the poisson error frame
+                poisson_frame_jy.save(path)
+
+            # For SDSS
+            else:
+
+                # Save the poisson error frame
+                self.poisson_frames[band_id].save(path)
 
     # -----------------------------------------------------------------
 

@@ -252,6 +252,30 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def genetic_engine_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.fit_generations_path, generation_name, "engine.pickle")
+
+    # -----------------------------------------------------------------
+
+    def prng_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.fit_generations_path, generation_name, "prng.pickle")
+
+    # -----------------------------------------------------------------
+
     def chi_squared_table_path_for_generation(self, generation_name):
 
         """
