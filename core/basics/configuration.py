@@ -395,7 +395,7 @@ def stringify_not_list(value):
     elif isinstance(value, int): return "integer", str(value)
     elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64): return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
-    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit)
+    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit).replace("solMass", "Msun").replace("solLum", "Lsun")
     elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit)
     elif isinstance(value, NoneType): return "None", "None"
     elif isinstance(value, RealRange): return "real_range", repr(value)

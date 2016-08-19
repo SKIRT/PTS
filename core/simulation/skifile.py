@@ -1063,6 +1063,15 @@ class SkiFile:
         # Get normalization of this component
         return get_unique_element(stellar_component, "normalization")
 
+    ## This function sets the wavelength for the spectral luminosity normalization
+    def set_stellar_component_normalization_wavelength(self, component_id, wavelength):
+
+        # Get the normalization element
+        normalization = self.get_stellar_component_normalization(component_id)
+
+        # Set the wavelength
+        normalization.set("wavelength", str_from_quantity(wavelength))
+
     ## This function returns the luminosity of the stellar component with the specified id,
     #   - if the normalization is by bolometric luminosity, returns (luminosity [as Astropy quantity], None)
     #   - if the normalization is by luminosity in a specific band, returns (luminosity [as Astropy quantity], Filter object)
@@ -2401,6 +2410,30 @@ class LabeledSkiFile(SkiFile):
                     value_item = setting_value[1:-1].split(":")[1]
 
                     if label == label_item: element.set(setting_name, value_item)
+
+    # -----------------------------------------------------------------
+
+    def set_labeled_value(self, label, value):
+
+        """
+        This function ...
+        :param label:
+        :param value:
+        :return:
+        """
+
+        from ..basics.configuration import stringify_not_list
+
+        if label not in self.labels: raise ValueError("The label '" + label + "' is not present in the ski file")
+
+        # Get the labeled elements
+        elements = self.get_labeled_elements(label)
+
+        # Labeled value
+        labeled_value = "[" + label + ":" + stringify_not_list(value)[1] + "]"
+
+        # Set the new value for each corresponding element
+        for element, setting_name in elements: element.set(setting_name, labeled_value)
 
     # -----------------------------------------------------------------
 

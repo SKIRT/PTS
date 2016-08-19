@@ -253,8 +253,6 @@ class BatchLauncher(OldConfigurable):
             # Loop over the IDs of all the hosts used by the BatchLauncher
             for host_id in self.host_ids:
 
-                print(host_id)
-
                 # Create Host instance
                 host = Host(host_id)
 

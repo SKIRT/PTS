@@ -11,9 +11,9 @@
     <instrumentSystem type="InstrumentSystem">
       <InstrumentSystem>
         <instruments type="Instrument">
-          <SimpleInstrument instrumentName="earth" distance="3.6 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="67 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
-          <SimpleInstrument instrumentName="face-on" distance="3.6 Mpc" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
-          <SimpleInstrument instrumentName="edge-on" distance="3.6 Mpc" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="earth" distance="[distance:3.6 Mpc]" inclination="[inclination:59 deg]" azimuth="0 deg" positionAngle="[position_angle:67 deg]" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="face-on" distance="[distance:3.6 Mpc]" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
+          <SimpleInstrument instrumentName="edge-on" distance="[distance:3.6 Mpc]" inclination="90 deg" azimuth="0 deg" positionAngle="0 deg" pixelsX="600" pixelsY="600" fieldOfViewX="30050.0834724541 pc" fieldOfViewY="30050.0834724541 pc"/>
         </instruments>
       </InstrumentSystem>
     </instrumentSystem>
@@ -33,7 +33,7 @@
               </TriaxialGeometryDecorator>
             </geometry>
             <sed type="StellarSED">
-              <BruzualCharlotSED age="12" metallicity="0.02"/>
+              <BruzualCharlotSED age="12" metallicity="[metallicity:0.02]"/>
             </sed>
             <normalization type="StellarCompNormalization">
               <LuminosityStellarCompNormalization band="IRAC1" luminosity="1"/>
@@ -42,37 +42,37 @@
           <!-- Evolved stellar disk -->
           <PanStellarComp>
             <geometry type="Geometry">
-              <ReadFitsGeometry filename="old_stars.fits" pixelScale="49.74188368 pc" positionAngle="67 deg" inclination="59 deg" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="521 pc"/>
+              <ReadFitsGeometry filename="old_stars.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:67 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[old_scaleheight:521 pc]"/>
             </geometry>
             <sed type="StellarSED">
-              <BruzualCharlotSED age="8" metallicity="0.02"/>
+              <BruzualCharlotSED age="8" metallicity="[metallicity:0.02]"/>
             </sed>
             <normalization type="StellarCompNormalization">
-              <LuminosityStellarCompNormalization band="IRAC1" luminosity="1"/>
+              <LuminosityStellarCompNormalization band="IRAC1" luminosity="[i1_old:1]"/>
             </normalization>
           </PanStellarComp>
           <!-- Young stars -->
           <PanStellarComp>
             <geometry type="Geometry">
-              <ReadFitsGeometry filename="young_stars.fits" pixelScale="49.74188368 pc" positionAngle="67 deg" inclination="59 deg" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="150 pc"/>
+              <ReadFitsGeometry filename="young_stars.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[young_scaleheight:150 pc]"/>
             </geometry>
             <sed type="StellarSED">
-              <BruzualCharlotSED age="0.1" metallicity="0.02"/>
+              <BruzualCharlotSED age="0.1" metallicity="[metallicity:0.02]"/>
             </sed>
             <normalization type="StellarCompNormalization">
-              <LuminosityStellarCompNormalization band="FUV" luminosity="1"/>
+              <LuminosityStellarCompNormalization band="FUV" luminosity="[fuv_young:1]"/>
             </normalization>
           </PanStellarComp>
           <!-- Ionizing stars -->
           <PanStellarComp>
             <geometry type="Geometry">
-              <ReadFitsGeometry filename="ionizing_stars.fits" pixelScale="49.74188368 pc" positionAngle="67 deg" inclination="59 deg" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="150 pc"/>
+              <ReadFitsGeometry filename="ionizing_stars.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[ionizing_scaleheight:150 pc]"/>
             </geometry>
             <sed type="StellarSED">
-              <MappingsSED metallicity="0.02" compactness="6" pressure="1e12 K/m3" coveringFactor="0.2"/>
+              <MappingsSED metallicity="[metallicity:0.02]" compactness="[sfr_compactness:6]" pressure="[sfr_pressure:1e12 K/m3]" coveringFactor="[sfr_covering:0.2]"/>
             </sed>
             <normalization type="StellarCompNormalization">
-              <LuminosityStellarCompNormalization band="FUV" luminosity="1"/>
+              <LuminosityStellarCompNormalization band="FUV" luminosity="[fuv_ionizing:1]"/>
             </normalization>
           </PanStellarComp>
         </components>
@@ -85,13 +85,13 @@
             <components type="DustComp">
               <DustComp>
                 <geometry type="Geometry">
-                  <ReadFitsGeometry filename="dust.fits" pixelScale="49.74188368 pc" positionAngle="67 deg" inclination="59 deg" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="260.5 pc"/>
+                  <ReadFitsGeometry filename="dust.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[dust_scaleheight:260.5 pc]"/>
                 </geometry>
                 <mix type="DustMix">
                   <ThemisDustMix writeMix="true" writeMeanMix="true" writeSize="true" hydrocarbonPops="25" enstatitePops="25" forsteritePops="25"/>
                 </mix>
                 <normalization type="DustCompNormalization">
-                  <DustMassDustCompNormalization dustMass="2e7 Msun"/>
+                  <DustMassDustCompNormalization dustMass="[dust_mass:2e7 Msun]"/>
                 </normalization>
               </DustComp>
             </components>

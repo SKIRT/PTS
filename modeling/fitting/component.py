@@ -67,8 +67,14 @@ class FittingComponent(ModelingComponent):
         # The path to the fit/wavelength grids directory
         self.fit_wavelength_grids_path = None
 
+        # The path to the wavelength grids table
+        self.wavelength_grids_table_path = None
+
         # The path to the fit/dust grids directory
         self.fit_dust_grids_path = None
+
+        # The path to the dust grids table
+        self.dust_grids_table_path = None
 
         # The path to the fit/best directory
         self.fit_best_path = None
@@ -123,8 +129,14 @@ class FittingComponent(ModelingComponent):
         # Set the path to the fit/wavelength grids directory
         self.fit_wavelength_grids_path = fs.create_directory_in(self.fit_path, "wavelength grids")
 
+        # Set the path to the wavelength grids table
+        self.wavelength_grids_table_path = fs.join(self.fit_wavelength_grids_path, "grids.dat")
+
         # Set the path to the fit/dust grids directory
         self.fit_dust_grids_path = fs.create_directory_in(self.fit_path, "dust grids")
+
+        # Set the path to the dust grids table
+        self.dust_grids_table_path = fs.join(self.fit_dust_grids_path, "grids.dat")
 
         # Set the path to the fit/best directory
         self.fit_best_path = fs.create_directory_in(self.fit_path, "best")

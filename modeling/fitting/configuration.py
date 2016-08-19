@@ -113,12 +113,6 @@ class FittingConfigurer(FittingComponent):
         # Load the template ski file
         self.load_template()
 
-        # Load the parameter descriptions
-        #self.load_descriptions()
-
-        # Load the parameter types
-        #self.load_types()
-
     # -----------------------------------------------------------------
 
     def load_template(self):

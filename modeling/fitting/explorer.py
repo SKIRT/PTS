@@ -143,6 +143,10 @@ class ParameterExplorer(FittingComponent):
         if self.ngenerations == 0 and self.uses_schedulers:
             raise ValueError("The specified remote hosts cannot be used for the first generation: at least one remote uses a scheduling system")
 
+        # Check whether initialize_fit has been called
+        if not fs.is_file(self.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit before starting the parameter exploration")
+        if not fs.is_file(self.dust_grids_table_path): raise RuntimeError("Call initialize_fit before starting the parameter exploration")
+
     # -----------------------------------------------------------------
 
     def set_launcher_options(self):

@@ -449,7 +449,11 @@ class FittingInitializer(FittingComponent):
         self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
         self.ski_template.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
+        #self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
+
+        # SET NORMALIZATION (IS FREE PARAMETER)
+        self.ski_template.set_stellar_component_normalization_wavelength("Young stars", self.fuv_filter.centerwavelength() * Unit("micron"))
+        self.ski_template.set_labeled_value("fuv_young", luminosity)
 
     # -----------------------------------------------------------------
 
@@ -490,7 +494,11 @@ class FittingInitializer(FittingComponent):
         self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
         self.ski_template.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
         #self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
+        #self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
+
+        # SET NORMALIZATION (IS FREE PARAMETER)
+        self.ski_template.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * Unit("micron"))
+        self.ski_template.set_labeled_value("fuv_ionizing", luminosity) # keep label
 
     # -----------------------------------------------------------------
 
@@ -521,7 +529,9 @@ class FittingInitializer(FittingComponent):
         # Adjust the ski file
         self.ski_template.set_dust_component_geometry(0, deprojection)
         self.ski_template.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
-        self.ski_template.set_dust_component_mass(0, dust_mass) # dust mass
+        #self.ski_template.set_dust_component_mass(0, dust_mass) # dust mass
+
+        self.ski_template.set_labeled_value("dust_mass", dust_mass) # keep label
 
     # -----------------------------------------------------------------
 
@@ -718,8 +728,7 @@ class FittingInitializer(FittingComponent):
             index += 1
 
         # Write the wavelength grids table
-        table_path = fs.join(self.fit_wavelength_grids_path, "grids.dat")
-        tables.write(self.wg_generator.table, table_path)
+        tables.write(self.wg_generator.table, self.wavelength_grids_table_path)
 
     # -----------------------------------------------------------------
 
@@ -747,8 +756,7 @@ class FittingInitializer(FittingComponent):
             index += 1
 
         # Write the dust grids table
-        table_path = fs.join(self.fit_dust_grids_path, "grids.dat")
-        tables.write(self.dg_generator.table, table_path)
+        tables.write(self.dg_generator.table, self.dust_grids_table_path)
 
 # -----------------------------------------------------------------
 
