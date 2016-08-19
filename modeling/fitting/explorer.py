@@ -244,11 +244,40 @@ class ParameterExplorer(FittingComponent):
         # The given ranges are relative to the best or initial value
         if self.config.relative:
 
+            # Check if there are any models that have been evaluated
+            if self.has_evaluated_models:
+
+                # Inform the user
+                log.info("Determining the parameter ranges based on the current best values and the specified relative ranges ...")
+
+                # Get the best model
+                model = self.best_model
+
+                # Debugging
+                log.debug("Using the parameter values of simulation '" + model.simulation_name + "' of generation '" + model.generation_name + "' ...")
+
+                # Get the parameter values of the best model
+                parameter_values = model.parameter_values
+
+            else:
+
+                # Inform the user
+                log.info("Determining the parameter ranges based on the first guess values and the specified relative ranges ...")
+
+                # Get the initial guess values
+                parameter_values = self.first_guess_parameter_values
+
+            # Debugging
+            log.debug("The values that are used as the centers of the ranges are:")
+
             # Loop over the free parameter labels
             for label in self.free_parameter_labels:
 
                 # Get the best value (or initial value in the case no generations were lauched yet)
-                value = self.best_parameter_values[label]
+                value = parameter_values[label]
+
+                # Debugging
+                log.debug(" - " + label + ": " + str(value))
 
                 # Calculate the range
                 rel_min = self.config[label + "_range"].min
@@ -256,6 +285,9 @@ class ParameterExplorer(FittingComponent):
                 self.ranges[label] = range_around(value, rel_min, rel_max)
 
         else:
+
+            # Inform the user
+            log.info("Using the specified ranges ...")
 
             # Loop over the free parameter labels
             for label in self.free_parameter_labels:

@@ -327,14 +327,17 @@ class BestModelLauncher(FittingComponent):
             # Inform the user
             log.info("Using the parameter values from the initial guess model ...")
 
-            # Get the values for the free parameters from the ski file template
-            labeled_values = self.ski_template.get_labeled_values()
-            self.parameter_values = dict()
-            for label in self.free_parameter_labels:
-                self.parameter_values[label] = labeled_values[label]
+            # Get the parameter values
+            self.parameter_values = self.first_guess_parameter_values
 
         # If the best simulation of a generation has to be used
-        else: self.parameter_values = self.best_parameter_values_for_generation(self.config.generation)
+        else:
+
+            # Inform the user
+            log.info("Using the parameter values from the best model in the '" + self.config.generation + "' generation ...")
+
+            # Get the parameter values
+            self.parameter_values = self.best_parameter_values_for_generation(self.config.generation)
 
         # Debugging
         log.debug("The parameter values used for the simulations are: ")

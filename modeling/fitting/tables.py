@@ -156,6 +156,30 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize list
+        names = []
+
+        # Loop over each row (generation)
+        for i in range(len(self)):
+
+            name = self["Generation name"][i]
+            finished = not self["Finishing time"].mask[i]
+
+            if finished: names.append(name)
+
+        # Return the list of finished generations
+        return names
+
+    # -----------------------------------------------------------------
+
     def set_finishing_time(self, generation_name, timestamp):
 
         """
@@ -165,8 +189,10 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
+        # Check if the generation exists
         if generation_name not in self.generation_names: raise ValueError("Generation '" + generation_name + "' does not exist in the table")
 
+        # Loop over the rows, find the entry for the specified generation
         for i in range(len(self)):
 
             if self["Generation name"][i] == generation_name: # match
@@ -366,6 +392,18 @@ class ChiSquaredTable(SmartTable):
 
         index = tables.find_index(self, simulation_name, "Simulation name")
         return self["Chi squared"][index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
 
     # -----------------------------------------------------------------
 

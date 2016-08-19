@@ -24,9 +24,10 @@ from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .tables import GenerationsTable, ChiSquaredTable, ParametersTable
-from ...core.simulation.skifile import SkiFile, LabeledSkiFile
+from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.distribution import Distribution
 from ..basics.instruments import load_instrument
+from ..core.model import Model
 
 # -----------------------------------------------------------------
 
@@ -215,6 +216,18 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generations_table.finished_generations
+
+    # -----------------------------------------------------------------
+
     def is_finished_generation(self, generation_name):
 
         """
@@ -288,6 +301,69 @@ class FittingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def first_guess_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the current values in the ski file prepared by InputInitializer
+        # young_luminosity_guess, young_filter = self.ski_template.get_stellar_component_luminosity("Young stars")
+        # ionizing_luminosity_guess, ionizing_filter = self.ski_template.get_stellar_component_luminosity("Ionizing stars")
+        # dust_mass_guess = self.ski_template.get_dust_component_mass(0)
+
+        parameter_values = dict()
+
+        # Get the values for the free parameters from the ski file template
+        labeled_values = self.ski_template.get_labeled_values()
+        for label in self.free_parameter_labels:
+            parameter_values[label] = labeled_values[label]
+
+        # Return the dictionary of the values for the free parameters
+        return parameter_values
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_evaluated_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If there are already multiple generations, assume that there are also evaluted models for at least one
+        if len(self.generation_names) > 0: return True
+
+        # Loop over the generations, if one model has been evaluted, return True
+        for generation_name in self.generation_names:
+
+            # Check if there are 1 or more evaluted simulations in this generation
+            if len(self.get_evaluated_simulations_in_generation(generation_name)) > 0: return True
+
+        # If no evaluted simulation is found, return False
+        return False
+
+    # -----------------------------------------------------------------
+
+    def get_evaluated_simulations_in_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Open the chi squared table for the specified generation
+        chi_squared_table = self.chi_squared_table_for_generation(generation_name)
+
+        # Return the names of the finished simulations
+        return chi_squared_table.simulation_names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def best_parameter_values(self):
 
         """
@@ -298,7 +374,31 @@ class FittingComponent(ModelingComponent):
         values = None
         chi_squared = float("inf")
 
+        # Loop over the generations
         for generation_name in self.generation_names:
+
+            generation_values, generation_chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True, only_finished=False)
+            if generation_chi_squared < chi_squared:
+                values = generation_values
+
+        # Return the values
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_parameter_values_finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        values = None
+        chi_squared = float("inf")
+
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
 
             generation_values, generation_chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
             if generation_chi_squared < chi_squared:
@@ -307,26 +407,112 @@ class FittingComponent(ModelingComponent):
         # Return the values
         return values
 
-        # TODO: get parameter values of best fitting model
+    # -----------------------------------------------------------------
 
-        # Get the current values in the ski file prepared by InputInitializer
-        #young_luminosity_guess, young_filter = self.ski_template.get_stellar_component_luminosity("Young stars")
-        #ionizing_luminosity_guess, ionizing_filter = self.ski_template.get_stellar_component_luminosity("Ionizing stars")
-        #dust_mass_guess = self.ski_template.get_dust_component_mass(0)
+    @lazyproperty
+    def best_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set best model to None initially
+        best_model = None
+
+        # Loop over the generations
+        for generation_name in self.generation_names:
+
+            # Get the best model for this generation
+            model = self.best_model_for_generation(generation_name, only_finished=False)
+
+            # Replace the best model if necessary
+            if best_model is None or model.chi_squared < best_model.chi_squared: best_model = model
+
+        # Return the best model
+        return best_model
 
     # -----------------------------------------------------------------
 
-    def best_parameter_values_for_generation(self, generation_name, return_chi_squared=False):
+    @lazyproperty
+    def best_model_finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set best model to None initially
+        best_model = None
+
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
+
+            # Get the best model for this generation
+            model = self.best_model_for_generation(generation_name)
+
+            # Replace the best model if necessary
+            if best_model is None or model.chi_squared < best_model.chi_squared: best_model = model
+
+        # Return the best model
+        return best_model
+
+    # -----------------------------------------------------------------
+
+    def best_model_for_generation(self, generation_name, only_finished=True):
+
+        """
+        This function ...
+        :param generation_name:
+        :param only_finished:
+        :return:
+        """
+
+        # Check if the generation is finished (if this is required by the caller)
+        if only_finished:
+            if not self.is_finished_generation(generation_name): raise RuntimeError("The generation '" + generation_name + "' is not yet finished")
+
+        # Open the chi squared table
+        chi_squared_table = self.chi_squared_table_for_generation(generation_name)
+
+        # Get the name of the simulation with the lowest chi squared value
+        best_simulation_name = chi_squared_table.best_simulation_name
+
+        # Open the parameters table for this generation
+        parameters_table = self.parameters_table_for_generation(generation_name)
+
+        # Get the chi squared value
+        chi_squared = chi_squared_table.chi_squared_for(best_simulation_name)
+
+        # Get the parameter values
+        parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
+
+        # Create a 'Model' object
+        model = Model()
+
+        # Set attributes
+        model.simulation_name = best_simulation_name
+        model.chi_squared = chi_squared
+        model.parameter_values = parameter_values
+
+        # Return the model
+        return model
+
+    # -----------------------------------------------------------------
+
+    def best_parameter_values_for_generation(self, generation_name, return_chi_squared=False, only_finished=True):
 
         """
         This function ...
         :param generation_name:
         :param return_chi_squared:
+        :param only_finished:
         :return:
         """
 
-        # Check if the generation is finished
-        if not self.is_finished_generation(generation_name): raise RuntimeError("The generation '" + generation_name + "' is not yet finished, so the best ")
+        # Check if the generation is finished (if this is required by the caller)
+        if only_finished:
+            if not self.is_finished_generation(generation_name): raise RuntimeError("The generation '" + generation_name + "' is not yet finished")
 
         # Open the chi squared table
         chi_squared_table = self.chi_squared_table_for_generation(generation_name)
@@ -590,18 +776,66 @@ def get_generation_names(modeling_path):
     :return:
     """
 
-    # Determine the path to the generations table
-    generations_table_path = fs.join(modeling_path, "fit", "generations.dat")
-
-    # Load the generations table
-    generations_table = GenerationsTable.from_file(generations_table_path)
+    # Get the generations table
+    generations_table = get_generations_table(modeling_path)
 
     # Return the generation names
     return generations_table.generation_names
 
 # -----------------------------------------------------------------
 
+def get_finished_generations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Get the generations table
+    generations_table = get_generations_table(modeling_path)
+
+    # Return the names of the finished generations
+    return generations_table.finished_generations
+
+# -----------------------------------------------------------------
+
 def get_last_generation_name(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Get the generations table
+    generations_table = get_generations_table(modeling_path)
+
+    # Return the name of the last generation
+    if len(generations_table) > 0: return generations_table["Generation name"][-1]
+    else: return None
+
+# -----------------------------------------------------------------
+
+def get_last_finished_generation(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Get the generations table
+    generations_table = get_generations_table(modeling_path)
+
+    # Return the name of the last finished generation
+    finished_generations = generations_table.finished_generations
+    if len(finished_generations) > 0: return finished_generations[-1]
+    else: return None
+
+# -----------------------------------------------------------------
+
+def get_generations_table(modeling_path):
 
     """
     This function ...
@@ -615,8 +849,7 @@ def get_last_generation_name(modeling_path):
     # Load the generations table
     generations_table = GenerationsTable.from_file(generations_table_path)
 
-    # Return the name of the last generation
-    if len(generations_table) > 0: return generations_table["Generation name"][-1]
-    else: return None
+    # Return the table
+    return generations_table
 
 # -----------------------------------------------------------------
