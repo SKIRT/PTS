@@ -25,7 +25,7 @@ class MosaicAnalyser(DataComponent):
     """
     This class ...
     """
-    
+
     def __init__(self, config=None):
 
         """
@@ -42,12 +42,16 @@ class MosaicAnalyser(DataComponent):
         # The results
         self.mosaics = dict()
         self.poisson_frames = dict()
+        self.relative_poisson_frames = dict()
 
         # The references
         self.references = dict()
 
         # Origin of the mosaics
         self.origin = None
+
+        # ...
+        self.check_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -90,8 +94,8 @@ class MosaicAnalyser(DataComponent):
         # 3. Load the image as obtained from other source
         self.load_references()
 
-        # 4. Verify the mosaicing result with the reference
-        self.verify()
+        # 4. Make directory for each band that has been processed
+        self.make_directories()
 
         # 5. Writing
         self.write()
@@ -125,7 +129,7 @@ class MosaicAnalyser(DataComponent):
 
             # Check type
             if splitted[-1] == "errors": self.poisson_frames[band_id] = Frame.from_file(path)
-            elif splitted[-1] == "relerrors": continue
+            elif splitted[-1] == "relerrors": self.relative_poisson_frames[band_id] = Frame.from_file(path)
             elif splitted[-1] == "swarp": continue
             else: self.mosaics[band_id] = Frame.from_file(path) # the mosaic
 
@@ -141,6 +145,7 @@ class MosaicAnalyser(DataComponent):
         # Inform the user
         log.info("Loading the reference mosaics ...")
 
+        # Loop over the bands
         for band_id in self.mosaics:
 
             # Determine the path to the image downloaded from the DustPedia archive
@@ -151,7 +156,7 @@ class MosaicAnalyser(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def verify(self):
+    def make_directories(self):
 
         """
         This function ...
@@ -159,16 +164,17 @@ class MosaicAnalyser(DataComponent):
         """
 
         # Inform the user
-        log.info("Verifying the mosaiced images and poisson frame ...")
+        log.info("Making directories for checking the mosaicing ...")
 
-        # Convert relative poisson frames into absolute poisson errors in Jansky
-        for band_id in self.poisson_frames:
+        # Loop over the bands
+        for band_id in self.mosaics:
 
-            # Calculate absolute poisson frame
-            self.poisson_frames[band_id] *= self.references[band_id]
+            # Set the path
+            check_band_path = fs.join(self.data_images_paths[self.origin], "check_" + band_id)
+            self.check_paths[band_id] = check_band_path
 
-            # Set the unit of the poisson frame
-            self.poisson_frames[band_id].unit = self.references[band_id].unit
+            # Create the directory
+            fs.create_directory(check_band_path)
 
     # -----------------------------------------------------------------
 
@@ -182,11 +188,22 @@ class MosaicAnalyser(DataComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write poisson error maps
+        self.write_poisson()
+
+        # For checking :
+
         # Write mosaics
         self.write_mosaics()
 
-        # Write poisson error maps
-        self.write_poisson()
+        # Write relative poisson maps
+        self.write_relative_poisson()
+
+        # Write differences with reference
+        self.write_difference()
+
+        # Write relative differences with reference
+        self.write_relative_difference()
 
     # -----------------------------------------------------------------
 
@@ -200,14 +217,11 @@ class MosaicAnalyser(DataComponent):
         # Inform the user
         log.info("Writing the mosaics created by PTS ...")
 
-        mosaic_pts_path = fs.join(self.data_images_paths[self.origin], "pts")
-        fs.create_directory(mosaic_pts_path)
-
         # Loop over the mosaic frames
         for band_id in self.mosaics:
 
             # Determine path
-            path = fs.join(mosaic_pts_path, self.ngc_id_nospaces + "_" + band_id + ".fits")
+            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + ".fits")
 
             # Save the mosaic frame
             self.mosaics[band_id].save(path)
@@ -232,5 +246,74 @@ class MosaicAnalyser(DataComponent):
 
             # Save the poisson error frame
             self.poisson_frames[band_id].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_relative_poisson(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the relative poisson error maps ...")
+
+        # Loop over the frames
+        for band_id in self.relative_poisson_frames:
+
+            # Determine path
+            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + "_relpoisson.fits")
+
+            # Save the relative poisson error frame
+            self.relative_poisson_frames[band_id].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_difference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the difference with the reference (DustPedia) mosaics ...")
+
+        # Loop over the bands
+        for band_id in self.references:
+
+            # Determine path
+            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + "_difference.fits")
+
+            # Calculate the difference
+            difference = self.references[band_id] - self.mosaics[band_id]
+
+            # Write
+            difference.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_relative_difference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the relative difference with the reference (DustPedia) mosaics ...")
+
+        # Loop over the bands
+        for band_id in self.references:
+
+            # Determine path
+            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + "_reldifference.fits")
+
+            # Calculate the difference
+            reldifference = self.references[band_id] / self.mosaics[band_id]
+
+            # Write
+            reldifference.save(path)
 
 # -----------------------------------------------------------------
