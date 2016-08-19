@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
@@ -24,7 +21,6 @@ from .modelgenerators.grid import GridModelGenerator
 from .modelgenerators.initial import InitialModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
 from .modelgenerators.instinctive import InstinctiveModelGenerator
-from ...core.basics.filter import Filter
 from ...core.tools import time
 from ...core.basics.range import range_around
 from ...core.simulation.definition import SingleSimulationDefinition
@@ -513,24 +509,12 @@ class ParameterExplorer(FittingComponent):
         # Loop over the different parameter combinations
         for i in range(self.nmodels):
 
-            # Get the parameter values
-            #young_luminosity = self.generator.parameters["fuv_young"][i]
-            #ionizing_luminosity = self.generator.parameters["fuv_ionizing"][i]
-            #dust_mass = self.generator.parameters["dust_mass"][i]
-
-            #parameter_values = {"fuv_young": young_luminosity, "fuv_ionizing": ionizing_luminosity, "dust_mass": dust_mass}
-
             # Set the parameter values as a dictionary for this individual model
             parameter_values = dict()
             for label in self.free_parameter_labels: parameter_values[label] = self.generator.parameters[label][i]
 
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()
-
-            # Change the parameter values in the ski file
-            #self.ski_template.set_stellar_component_luminosity("Young stars", young_luminosity, fuv.centerwavelength() * Unit("micron"))
-            #self.ski_template.set_stellar_component_luminosity("Ionizing stars", ionizing_luminosity, fuv.centerwavelength() * Unit("micron"))
-            #self.ski_template.set_dust_component_mass(0, dust_mass)
 
             # Set the parameter values in the ski file template
             self.ski_template.set_labeled_values(parameter_values)
@@ -631,6 +615,9 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Writing generation info ...")
 
+        # Generate a timestamp
+        timestamp = time.timestamp()
+
         # Add an entry to the generations table
         name = self.generation_info["Generation name"]
         index = self.generation_info["Generation index"]
@@ -639,7 +626,7 @@ class ParameterExplorer(FittingComponent):
         dg_level = self.generation_info["Dust grid level"]
         nsimulations = self.generation_info["Number of simulations"]
         selfabsorption = self.generation_info["Self-absorption"]
-        self.generations_table.add_entry(name, index, method, wg_level, dg_level, nsimulations, selfabsorption, self.ranges)
+        self.generations_table.add_entry(name, index, timestamp, method, wg_level, dg_level, nsimulations, selfabsorption, self.ranges)
 
         # Save the table
         self.generations_table.save()
