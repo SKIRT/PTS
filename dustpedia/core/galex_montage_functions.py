@@ -855,7 +855,7 @@ def convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_
 
     # Determine how the files are named
     filename_ends = "-" + band_dict['band_short'] + "-int"  # -fd-int for FUV, -nd-int for NUV
-    filename_ends_no_int = "-" + band_dict['band_short']  # -fd for FUV, -nd for NUV
+    filename_ends_no_int = "-" + band_dict['band_short']    # -fd for FUV, -nd for NUV
 
     # DO THE UNIT CONVERSION
     for image_name in image_names_for_mosaic:
@@ -893,10 +893,12 @@ def convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_
         poisson.unit = "count/(s*sr)" # set new unit
 
         # SAVE THE TILE IN COUNTS/S/SR
-        frame.save(temp_converted_path, image_name + ".fits")
+        frame_path = fs.join(temp_converted_path, image_name + ".fits")
+        frame.save(frame_path)
 
         # SAVE THE ERROR MAP OF THE TILE IN COUNTS/S/SR
-        poisson.save(temp_converted_path, image_name + "_error.fits")
+        errors_path = fs.join(temp_converted_path, image_name + "_error.fits")
+        poisson.save(errors_path)
 
 # -----------------------------------------------------------------
 
