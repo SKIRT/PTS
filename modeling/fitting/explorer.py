@@ -576,7 +576,7 @@ class ParameterExplorer(FittingComponent):
         for simulation in simulations:
 
             # Add the path to the modeling directory to the simulation object
-            simulation.analysis.modeling_path = self.generation_info["Path"]
+            simulation.analysis.modeling_path = self.config.path
 
             # Set the path to the fit model analyser
             analyser_path = "pts.modeling.fitting.modelanalyser.FitModelAnalyser"

@@ -228,6 +228,9 @@ class BatchAnalyser(OldConfigurable):
                                data_parallel, total_runtime, setup_time, stellar_time, spectra_time, dust_time,
                                writing_time, waiting_time, communication_time, intermediate_time)
 
+        # Save the table
+        timing_table.save()
+
     # -----------------------------------------------------------------
 
     def write_memory(self):
@@ -289,5 +292,8 @@ class BatchAnalyser(OldConfigurable):
         memory_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
                                hyperthreads, processes, wavelengths, dust_cells, selfabsorption, transient_heating,
                                data_parallel, npixels, peak_memory_usage)
+
+        # Save the table
+        memory_table.save()
 
 # -----------------------------------------------------------------

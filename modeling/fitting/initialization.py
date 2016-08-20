@@ -437,7 +437,7 @@ class FittingInitializer(FittingComponent):
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
 
         # Get the spectral luminosity in solar units
-        #luminosity = luminosity.to(self.sun_fuv).value
+        #luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
         # Set the parameters of the young stellar component
         deprojection = self.deprojection.copy()
@@ -482,7 +482,7 @@ class FittingInitializer(FittingComponent):
         sfr = 0.8 # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
         luminosity = mappings.luminosity_for_filter(self.fuv_filter)
-        #luminosity = luminosity.to(self.sun_fuv).value
+        #luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
         # Set the parameters of the ionizing stellar component
         deprojection = self.deprojection.copy()

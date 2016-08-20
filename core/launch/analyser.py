@@ -62,9 +62,7 @@ class SimulationAnalyser(OldConfigurable):
         self.setup(simulation)
 
         # If the simulation has no analysis options, finish the procedure right away
-        if self.simulation.analysis is None:
-            self.finish()
-            return
+        if self.simulation.analysis is None: return
 
         # 2. Run the basic analysis
         self.analyse_basic()
@@ -74,9 +72,6 @@ class SimulationAnalyser(OldConfigurable):
 
         # 3. Analyse the scaling, if the simulation is part of a scaling test
         if self.simulation.from_scaling_test: self.analyse_scaling()
-
-        # 5. Finish the analysis for the current simulation
-        self.finish()
 
     # -----------------------------------------------------------------
 
