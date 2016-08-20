@@ -67,17 +67,42 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, flux_calculator):
+    @classmethod
+    def for_simulation(cls, simulation):
 
         """
         This function ...
         :param simulation:
-        :param flux_calculator:
         :return:
         """
 
+        # Create the instance
+        analyser = cls()
+
+        # Set the modeling path as the working path for this class
+        analyser.config.path = simulation.analysis.modeling_path
+
+        # Set the task
+        analyser.simulation = simulation
+
+        # Return the instance
+        return analyser
+
+    # -----------------------------------------------------------------
+
+    def run(self, simulationanalyser):
+
+        """
+        This function ...
+        :param simulationanalyser:
+        :return:
+        """
+
+        # Get a reference to the flux calculator
+        flux_calculator = simulationanalyser.basic_analyser.flux_calculator
+
         # 1. Call the setup function
-        self.setup(simulation, flux_calculator)
+        self.setup(flux_calculator)
 
         # 4. Calculate the differences
         self.calculate_differences()
@@ -116,20 +141,16 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, flux_calculator):
+    def setup(self, flux_calculator):
 
         """
         This function ...
-        :param simulation:
         :param flux_calculator:
         :return:
         """
 
         # Call the setup function of the base class
         super(FitModelAnalyser, self).setup()
-
-        # Make a local reference to the simulation object
-        self.simulation = simulation
 
         # Make a local reference to the flux calculator
         if flux_calculator is None:
@@ -148,7 +169,7 @@ class FitModelAnalyser(FittingComponent):
         self.differences = tables.new(data, names, dtypes=dtypes)
 
         # Set the name of the generation
-        self.generation_name = fs.name(self.simulation.analysis.modeling_generation_path)
+        self.generation_name = fs.name(fs.directory_of(self.simulation.base_path))
 
     # -----------------------------------------------------------------
 

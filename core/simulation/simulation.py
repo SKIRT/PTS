@@ -17,6 +17,7 @@ import os
 import os.path
 import types
 import numpy as np
+import importlib
 
 # Import the relevant PTS classes and modules
 from ..tools import serialization
@@ -584,6 +585,9 @@ class RemoteSimulation(SkirtSimulation):
         # Flag indicating whether this simulation has been analysed or not
         self.analysed = False
 
+        # The paths to the extra simulation analysers
+        self.analyser_paths = []
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -630,6 +634,45 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
+    def add_analyser(self, clspath):
+
+        """
+        This function ...
+        :param clspath:
+        :return:
+        """
+
+        self.analyser_paths.append(clspath)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analyser_classes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # The list of classes
+        classes = []
+
+        # Loop over the class paths
+        for class_path in self.analyser_paths:
+            module_path, class_name = class_path.rsplit('.', 1)
+
+            # Get the class of the configurable of which an instance has to be created
+            module = importlib.import_module(module_path)
+            cls = getattr(module, class_name)
+
+            # Add the class to the list of classes
+            classes.append(cls)
+
+        # Return the list of classes
+        return classes
+
+    # -----------------------------------------------------------------
+
     @property
     def from_modeling(self):
 
@@ -638,7 +681,7 @@ class RemoteSimulation(SkirtSimulation):
         :return:
         """
 
-        return self.analysis.modeling_generation_path is not None
+        return self.analysis.modeling_path is not None
 
     # -----------------------------------------------------------------
 

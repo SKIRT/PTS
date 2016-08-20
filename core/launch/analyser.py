@@ -17,10 +17,7 @@ from ..basics.configurable import OldConfigurable
 from ..launch.basicanalyser import BasicAnalyser
 from ..launch.batchanalyser import BatchAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
-from ...modeling.fitting.modelanalyser import FitModelAnalyser
-from ...modeling.analysis.bestmodelanalyser import BestModelAnalyser
 from ..tools.logging import log
-from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -50,8 +47,6 @@ class SimulationAnalyser(OldConfigurable):
         self.basic_analyser = BasicAnalyser()
         self.batch_analyser = BatchAnalyser()
         self.scaling_analyser = ScalingAnalyser()
-        self.fit_model_analyser = FitModelAnalyser()
-        self.best_model_analyser = BestModelAnalyser()
 
     # -----------------------------------------------------------------
 
@@ -79,9 +74,6 @@ class SimulationAnalyser(OldConfigurable):
 
         # 3. Analyse the scaling, if the simulation is part of a scaling test
         if self.simulation.from_scaling_test: self.analyse_scaling()
-
-        # 4. Analyse the goodness of fit of the radiative transfer model, if the simulation is part of a modeling run
-        if self.simulation.from_modeling: self.analyse_model()
 
         # 5. Finish the analysis for the current simulation
         self.finish()
@@ -120,8 +112,6 @@ class SimulationAnalyser(OldConfigurable):
         # Clear the analysers
         self.basic_analyser.clear()
         self.scaling_analyser.clear()
-        self.fit_model_analyser.clear()
-        self.best_model_analyser.clear()
 
     # -----------------------------------------------------------------
 
@@ -167,72 +157,5 @@ class SimulationAnalyser(OldConfigurable):
 
         # Run the scaling analyser
         self.scaling_analyser.run(self.simulation, self.basic_analyser.timeline, self.basic_analyser.memory)
-
-    # -----------------------------------------------------------------
-
-    def analyse_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Analysing the radiative transfer model ...")
-
-        # Determine the path to the output directory for the analysis of the best model within the radiative transfer
-        # modeling environment
-        #analysis_out_path = fs.join(self.simulation.analysis.modeling_path, "analysis", "out")
-
-        # If the output directory of the simulation corresponds to the analysis output directory, the simulation
-        # corresponds to the best model in the current state of the radiative transfer modeling
-        #if self.simulation.output_path == analysis_out_path: self.analyse_best_model()
-
-        # Else, the simulation is just one of the many simulations launched during the fitting step of the modeling
-        #else: self.analyse_fit_model()
-
-        self.analyse_fit_model()
-
-    # -----------------------------------------------------------------
-
-    def analyse_fit_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Run the fit model analyser
-        self.fit_model_analyser.config.path = fs.directory_of(fs.directory_of(fs.directory_of(self.simulation.analysis.modeling_generation_path)))
-        self.fit_model_analyser.run(self.simulation, self.basic_analyser.flux_calculator)
-
-    # -----------------------------------------------------------------
-
-    def analyse_best_model(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Run the best model analyser
-        self.best_model_analyser.config.path = self.simulation.analysis.modeling_path
-        self.best_model_analyser.run(self.simulation)
-
-    # -----------------------------------------------------------------
-
-    def finish(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Indicate that this simulation has been analysed
-        self.simulation.analysed = True
-        self.simulation.save()
-
-        # If requested, remove the local output directory
-        if self.simulation.remove_local_output: fs.remove_directory(self.simulation.output_path)
 
 # -----------------------------------------------------------------

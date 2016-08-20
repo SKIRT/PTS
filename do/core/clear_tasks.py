@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.clean_tasks Clean PTS tasks for a certain remote host.
+## \package pts.do.core.clean_tasks Clear PTS tasks for a certain remote host.
 
 # -----------------------------------------------------------------
 
@@ -25,12 +25,15 @@ from pts.core.tools import introspection
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_required("remote", "string", "the name of the remote host for which to clean the tasks", choices=find_host_ids())
+definition.add_required("remote", "string", "the name of the remote host for which to clear the tasks", choices=find_host_ids())
+
+# Add optional
+definition.add_positional_optional("ids", "integer_list", "the IDs of the tasks to clear")
 
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-setter = ArgumentConfigurationSetter("clean_tasks", "Clean PTS tasks for a certain remote host")
+setter = ArgumentConfigurationSetter("clear_tasks", "Clear PTS tasks for a certain remote host")
 config = setter.run(definition)
 
 # -----------------------------------------------------------------
@@ -43,15 +46,18 @@ level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting clean_tasks ...")
+log.start("Starting clear_tasks ...")
 
 # -----------------------------------------------------------------
 
 # Determine the path to the run directory for the specified remote host
 host_run_path = fs.join(introspection.pts_run_dir, config.remote)
 
-# Remove all files in the run directory
-for path, name in fs.files_in_path(host_run_path, extension="fits", returns=["path", "name"]):
+# Loop over the task files in the run directory for the host
+for path, name in fs.files_in_path(host_run_path, extension="task", returns=["path", "name"]):
+
+    # Skip
+    if config.ids is not None and int(name) not in config.ids: continue
 
     # Inform the user
     log.info("Removing task " + name + " ...")
