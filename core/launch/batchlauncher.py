@@ -25,6 +25,7 @@ from ..tools.logging import log
 from ..basics.host import Host
 from .parallelization import Parallelization
 from .analyser import SimulationAnalyser
+from .options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
@@ -57,9 +58,6 @@ class BatchLauncher(OldConfigurable):
         # The queue
         self.queue = []
 
-        # The extra queue
-        self.extra_queue = []
-
         # The scheduling options for (some of) the simulations and (some of) the remote hosts. This is a nested
         # dictionary where the first key represents the remote host ID and the next key represents the name of the
         # simulation (see 'name' parameter of 'add_to_queue')
@@ -88,18 +86,19 @@ class BatchLauncher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, definition, name=None, parallelization=None):
+    def add_to_queue(self, definition, name=None, parallelization=None, analysis_options=None):
 
         """
         This function ...
         :param definition:
         :param name: a name that is given to the simulation
         :param parallelization: individual parallelization scheme for this particular simulation
+        :param analysis_options: analysis options (if None, analysis options will be created from batch launcher configuration)
         :return:
         """
 
         # Add the simulation definition object to the queue
-        self.queue.append((definition, name, parallelization))
+        self.queue.append((definition, name, parallelization, analysis_options))
 
     # -----------------------------------------------------------------
 
@@ -131,23 +130,6 @@ class BatchLauncher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_extra_queue(self, definition, name=None, analysis_options=None, logging_options=None, share_input=False):
-
-        """
-        This function ...
-        :param definition:
-        :param name:
-        :param analysis_options:
-        :param logging_options:
-        :param share_input:
-        :return:
-        """
-
-        # Add the simulation definition, simulation name, analysis options and logging options to the queue
-        self.extra_queue.append((definition, name, analysis_options, logging_options, share_input))
-
-    # -----------------------------------------------------------------
-
     @property
     def in_queue(self):
 
@@ -157,18 +139,6 @@ class BatchLauncher(OldConfigurable):
         """
 
         return len(self.queue)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def in_extra_queue(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.extra_queue)
 
     # -----------------------------------------------------------------
 
@@ -449,9 +419,6 @@ class BatchLauncher(OldConfigurable):
         # Clear the queue
         self.queue = []
 
-        # Clear the extra queue
-        self.extra_queue = []
-
         # Clear the scheduling options
         self.scheduling_options = defaultdict(dict())
 
@@ -482,56 +449,6 @@ class BatchLauncher(OldConfigurable):
         # Create the logging options
         self.logging_options = LoggingOptions()
         self.logging_options.set_options(self.config.logging)
-
-        # Check whether the options are consistent
-        self.check_options()
-
-    # -----------------------------------------------------------------
-
-    def check_options(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Checking the batch launcher options ...")
-
-        # PLOTTING
-
-        # If any plotting setting has been enabled, check whether the plotting path has been set
-        if self.config.analysis.plotting.progress or self.config.analysis.plotting.memory or \
-            self.config.analysis.plotting.timeline or self.config.analysis.plotting.seds or \
-                self.config.analysis.plotting.grids:
-            if self.config.analysis.plotting.path is None: raise ValueError("The plotting path has not been set")
-
-        # If progress plotting has been enabled, enabled progress extraction
-        if self.config.analysis.plotting.progress and not self.config.analysis.extraction.progress:
-            log.warning("Progress plotting is enabled so progress extraction will also be enabled")
-            self.config.analysis.extraction.progress = True
-
-        # If memory plotting has been enabled, enable memory extraction
-        if self.config.analysis.plotting.memory and not self.config.analysis.extraction.memory:
-            log.warning("Memory plotting is enabled so memory extraction will also be enabled")
-            self.config.analysis.extraction.memory = True
-
-        # If timeline plotting has been enabled, enable timeline extraction
-        if self.config.analysis.plotting.timeline and not self.config.analysis.extraction.timeline:
-            log.warning("Timeline plotting is enabled so timeline extraction will also be enabled")
-            self.config.analysis.extraction.timeline = True
-
-        # EXTRACTION
-
-        # If any extraction setting has been enabled, check whether the extraction path has been set
-        if self.config.analysis.extraction.progress or self.config.analysis.extraction.memory or \
-            self.config.analysis.extraction.timeline:
-            if self.config.analysis.extraction.path is None: raise ValueError("The extraction path has not been set")
-
-        # If memory extraction has been enabled, enable memory logging
-        if self.config.analysis.extraction.memory and not self.config.logging.memory:
-            log.warning("Memory extraction is enabled so memory logging will also be enabled")
-            self.config.logging.memory = True
 
     # -----------------------------------------------------------------
 
@@ -688,7 +605,7 @@ class BatchLauncher(OldConfigurable):
             for _ in range(next(self.assignment)):
 
                 # Get the last item from the queue (it is removed)
-                definition, name, parallelization_item = self.queue.pop()
+                definition, name, parallelization_item, analysis_options_item = self.queue.pop()
                 if parallelization_item is None: parallelization_item = parallelization
 
                 # Check whether scheduling options are defined for this simulation and for this remote host
@@ -696,8 +613,16 @@ class BatchLauncher(OldConfigurable):
                     scheduling_options = self.scheduling_options[remote.host_id][name]
                 else: scheduling_options = None
 
+                # Check whether analysis options are specified
+                if analysis_options_item is None:
+                    logging_options = self.logging_options.copy()
+                    analysis_options_item = self.create_analysis_options(definition, name, logging_options)
+                else: logging_options = self.logging_options
+
                 # Queue the simulation
-                simulation = remote.add_to_queue(definition, self.logging_options, parallelization_item, name=name, scheduling_options=scheduling_options, remote_input_path=remote_input_path)
+                simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
+                                                 scheduling_options=scheduling_options, remote_input_path=remote_input_path,
+                                                 analysis_options=analysis_options_item)
                 simulations_remote.append(simulation)
 
                 # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
@@ -708,38 +633,20 @@ class BatchLauncher(OldConfigurable):
                 # If the input directory is shared between the different simulations
                 if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
-                # Set the analysis options for the simulation
-                self.set_analysis_options(simulation)
+                ## SET OPTIONS
+
+                # Remove remote files
+                simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
+                simulation.remove_remote_output = not self.config.keep
+                simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
+
+                # Retrieval
+                simulation.retrieve_types = self.config.retrieve_types
+
+                ##
 
                 # Save the simulation object
                 simulation.save()
-
-            # Add the arguments in the extra queue
-            if self.in_extra_queue > 0 and remote.host_id == self.config.extra_remote:
-
-                for _ in range(self.in_extra_queue):
-
-                    # Get the last item from the extra queue
-                    definition, name, analysis_options, logging_options, share_input = self.extra_queue.pop()
-
-                    # Set the remote input path
-                    if share_input and self.config.shared_input: remote_in_path = remote_input_path
-                    else: remote_in_path = None
-
-                    # Queue the simulation
-                    simulation = remote.add_to_queue(definition, logging_options, parallelization, name=name, remote_input_path=remote_in_path)
-                    simulations_remote.append(simulation)
-
-                    # Set the analysis options for the simulation
-                    if analysis_options is not None: simulation.analysis = analysis_options
-
-                    # Remove remote files
-                    simulation.remove_remote_input = not self.config.keep and not share_input
-                    simulation.remove_remote_output = not self.config.keep
-                    simulation.remove_remote_simulation_directory = not self.config.keep and not share_input
-
-                    # Save the simulation object
-                    simulation.save()
 
             # Set a path for the script file to be saved to locally (for manual inspection)
             if remote.host_id in self.script_paths:
@@ -815,78 +722,76 @@ class BatchLauncher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def set_analysis_options(self, simulation):
+    def create_analysis_options(self, definition, simulation_name, logging_options):
 
         """
         This function ...
-        :param simulation:
+        :param definition:
+        :param simulation_name:
+        :param logging_options:
         :return:
         """
 
-        # Set the options
-        simulation.set_analysis_options(self.config.analysis)
+        # Create the analysis options object
+        analysis_options = AnalysisOptions()
+        analysis_options.set_options(self.config.analysis)
 
         # Determine the path to the extraction directory for this simulation
         if self.config.analysis.extraction.path is None:
-            extraction_path = fs.join(simulation.base_path, "extr")
+            extraction_path = fs.join(definition.base_path, "extr")
             # the ski files of multiple simulations can be int he same directory
-            if fs.is_directory(extraction_path): extraction_path = fs.join(simulation.base_path, simulation.name, "extr")
-        elif self.config.analysis.relative: extraction_path = fs.join(simulation.base_path, self.config.analysis.extraction.path)
-        else: extraction_path = fs.join(self.config.analysis.extraction.path, simulation.name)
+            if fs.is_directory(extraction_path): extraction_path = fs.join(definition.base_path, definition.name, "extr")
+        elif self.config.analysis.relative: extraction_path = fs.join(definition.base_path, self.config.analysis.extraction.path)
+        else: extraction_path = fs.join(self.config.analysis.extraction.path, simulation_name)
 
         # Create the extraction directory only if it is necessary
-        if simulation.analysis.any_extraction:
-
+        if analysis_options.any_extraction:
             if not fs.is_directory(extraction_path): fs.create_directory(extraction_path, recursive=True)
-            simulation.analysis.extraction.path = extraction_path
+            analysis_options.extraction.path = extraction_path
 
         # Set the extraction path to None otherwise
-        else: simulation.analysis.extraction.path = None
+        else: analysis_options.extraction.path = None
 
         # Determine the path to the plotting directory for this simulation
         if self.config.analysis.plotting.path is None:
-            plotting_path = fs.join(simulation.base_path, "plot")
+            plotting_path = fs.join(definition.base_path, "plot")
             # the ski files of multiple simulations can be in the same directory
-            if fs.is_directory(plotting_path): plotting_path = fs.join(simulation.base_path, simulation.name, "plot")
-        elif self.config.analysis.relative: plotting_path = fs.join(simulation.base_path, self.config.analysis.plotting.path)
-        else: plotting_path = fs.join(self.config.analysis.plotting.path, simulation.name)
+            if fs.is_directory(plotting_path): plotting_path = fs.join(definition.base_path, simulation_name, "plot")
+        elif self.config.analysis.relative: plotting_path = fs.join(definition.base_path, self.config.analysis.plotting.path)
+        else: plotting_path = fs.join(self.config.analysis.plotting.path, simulation_name)
 
         # Create the plotting directory only if it is necessary
-        if simulation.analysis.any_plotting:
-
+        if analysis_options.any_plotting:
             if not fs.is_directory(plotting_path): fs.create_directory(plotting_path, recursive=True)
-            simulation.analysis.plotting.path = plotting_path
+            analysis_options.plotting.path = plotting_path
 
         # Set the plotting path to None otherwise
-        else: simulation.analysis.plotting.path = None
+        else: analysis_options.plotting.path = None
 
         # Determine the 'misc' directory for this simulation (and create it if necessary)
         if self.config.analysis.misc.path is None:
-            misc_path = fs.join(simulation.base_path, "misc")
+            misc_path = fs.join(definition.base_path, "misc")
             # the ski files of multiple simulations can be int he same directory
-            if fs.is_directory(misc_path): misc_path = fs.join(simulation.base_path, simulation.name, "misc")
-        elif self.config.analysis.relative: misc_path = fs.join(simulation.base_path, self.config.analysis.misc.path)
-        else: misc_path = fs.join(self.config.analysis.misc.path, simulation.name)
+            if fs.is_directory(misc_path): misc_path = fs.join(definition.base_path, simulation_name, "misc")
+        elif self.config.analysis.relative: misc_path = fs.join(definition.base_path, self.config.analysis.misc.path)
+        else: misc_path = fs.join(self.config.analysis.misc.path, simulation_name)
 
         # Create the misc directory only if it is necessary
-        if simulation.analysis.any_misc:
-
+        if analysis_options.any_misc:
             if not fs.is_directory(misc_path): fs.create_directory(misc_path, recursive=True)
-            simulation.analysis.misc.path = misc_path
+            analysis_options.misc.path = misc_path
 
         # Set the misc path to None otherwise
-        else: simulation.analysis.misc.path = None
+        else: analysis_options.misc.path = None
 
         # Set timing and memory table paths (if specified for this batch launcher)
-        if self.config.timing_table_path is not None: simulation.analysis.timing_table_path = self.config.timing_table_path
-        if self.config.memory_table_path is not None: simulation.analysis.memory_table_path = self.config.memory_table_path
+        if self.config.timing_table_path is not None: analysis_options.timing_table_path = self.config.timing_table_path
+        if self.config.memory_table_path is not None: analysis_options.memory_table_path = self.config.memory_table_path
 
-        # Remove remote files
-        simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
-        simulation.remove_remote_output = not self.config.keep
-        simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
+        # Check the analysis options
+        analysis_options.check(logging_options)
 
-        # Retrieval
-        simulation.retrieve_types = self.config.retrieve_types
+        # Return the analysis options
+        return analysis_options
 
 # -----------------------------------------------------------------

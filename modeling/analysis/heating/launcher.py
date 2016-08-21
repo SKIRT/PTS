@@ -69,26 +69,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new BestModelLauncher instance
-        launcher = cls()
-
-        # Set the modeling path
-        launcher.config.path = arguments.path
-
-        # Return the new instance
-        return launcher
-
-    # -----------------------------------------------------------------
-
     def run(self):
 
         """
@@ -155,48 +135,6 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # Load the ski file
         self.ski = SkiFile(path)
-
-    # -----------------------------------------------------------------
-
-    def load_projections(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the projection systems ...")
-
-        # Load the different projection systems
-        for name in ["earth", "faceon"]:
-
-            # Determine the path to the projection file
-            path = fs.join(self.components_path, name + ".proj")
-
-            # Load the projection
-            projection = GalaxyProjection.from_file(path)
-
-            # Add the projection to the dictionary
-            self.projections[name] = projection
-
-    # -----------------------------------------------------------------
-
-    def create_instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the instrument ...")
-
-        # Create a SimpleInstrument for the 'earth' projection
-        self.instruments["earth"] = SimpleInstrument.from_projection(self.projections["earth"])
-
-        # Create a FrameInstrument for the 'faceon' projection
-        self.instruments["faceon"] = FrameInstrument.from_projection(self.projections["faceon"])
 
     # -----------------------------------------------------------------
 
@@ -275,32 +213,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # Write the ski files
         self.write_ski_files()
-
-    # -----------------------------------------------------------------
-
-    def copy_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Copying the input maps ...")
-
-        # Determine the paths to the input maps in the fit/in directory
-        fit_in_path = fs.join(self.fit_path, "in")
-        old_path = fs.join(fit_in_path, "old_stars.fits")
-        young_path = fs.join(fit_in_path, "young_stars.fits")
-        ionizing_path = fs.join(fit_in_path, "ionizing_stars.fits")
-        dust_path = fs.join(fit_in_path, "dust.fits")
-
-        # Copy the files to the analysis/in directory (if necessary)
-        if not fs.has_file(self.analysis_in_path, fs.name(old_path)): fs.copy_file(old_path, self.analysis_in_path)
-        if not fs.has_file(self.analysis_in_path, fs.name(young_path)): fs.copy_file(young_path, self.analysis_in_path)
-        if not fs.has_file(self.analysis_in_path, fs.name(ionizing_path)): fs.copy_file(ionizing_path, self.analysis_in_path)
-        if not fs.has_file(self.analysis_in_path, fs.name(dust_path)): fs.copy_file(dust_path, self.analysis_in_path)
-
+        
     # -----------------------------------------------------------------
 
     def write_ski_files(self):

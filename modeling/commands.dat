@@ -18,8 +18,8 @@ initialize_fit | -- | fitting.initialization.FittingInitializer | arguments | Do
 explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the parameter space for the radiative transfer modeling
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation
-launch_analysis | -- | analysis.launch.AnalysisLauncher | arguments | Launch a simulation for analysis
-launch_heating | -- | analysis.heating.launch.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
+launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a simulation for analysis
+launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
 analyse_attenuation | -- | analysis.attenuation.AttenuationAnalyser | arguments | Analyse the dust attenuation of the best fitting model
 analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating in the best fitting model
 analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours of the best fitting model

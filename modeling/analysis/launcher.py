@@ -26,11 +26,10 @@ from ..basics.instruments import FullInstrument
 from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.options import LoggingOptions
-from ...core.simulation.arguments import SkirtArguments
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...core.simulation.remote import SkirtRemote
+from ...core.launch.batchlauncher import BatchLauncher
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...magic.misc.kernels import AnianoKernels
 from ..basics.projection import GalaxyProjection
@@ -56,14 +55,8 @@ class AnalysisLauncher(AnalysisComponent):
 
         # -- Attributes --
 
-        # Create the SKIRT remote execution context
-        self.remote = SkirtRemote()
-
-        # The path to the directory with the best model parameters
-        self.best_path = None
-
-        # The ski file for the best model
-        self.ski = None
+        # The SKIRT batch launcher
+        self.launcher = BatchLauncher()
 
         # The wavelength grid
         self.wavelength_grid = None
@@ -138,13 +131,10 @@ class AnalysisLauncher(AnalysisComponent):
         """
 
         # Call the setup function of the base class
-        super(BestModelLauncher, self).setup()
+        super(AnalysisLauncher, self).setup()
 
         # Setup the remote execution environment
         self.remote.setup(self.config.remote)
-
-        # The path to the directory with the best model parameters
-        self.best_path = fs.join(self.fit_path, "best")
 
         # Reference coordinate system
         self.reference_wcs = CoordinateSystem.from_file(self.reference_path)
@@ -445,21 +435,6 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def write_input(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Write the wavelength grid
-        self.write_wavelength_grid()
-
-        # Copy the input map
-        self.copy_maps()
-
-    # -----------------------------------------------------------------
-
     def write_wavelength_grid(self):
 
         """
@@ -472,31 +447,6 @@ class AnalysisLauncher(AnalysisComponent):
 
         # Write the wavelength grid
         self.wavelength_grid.to_skirt_input(self.analysis_wavelengths_path)
-
-    # -----------------------------------------------------------------
-
-    def copy_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Copying the input maps ...")
-
-        # Determine the paths to the input maps in the fit/in directory
-        fit_in_path = fs.join(self.fit_path, "in")
-        old_path = fs.join(fit_in_path, "old_stars.fits")
-        young_path = fs.join(fit_in_path, "young_stars.fits")
-        ionizing_path = fs.join(fit_in_path, "ionizing_stars.fits")
-        dust_path = fs.join(fit_in_path, "dust.fits")
-
-        # Copy the files to the analysis/in directory (if necessary)
-        if not fs.has_file(self.analysis_in_path, fs.name(old_path)): fs.copy_file(old_path, self.analysis_in_path)
-        if not fs.has_file(self.analysis_in_path, fs.name(young_path)): fs.copy_file(young_path, self.analysis_in_path)
-        if not fs.has_file(self.analysis_in_path, fs.name(ionizing_path)): fs.copy_file(ionizing_path, self.analysis_in_path)
-        if not fs.has_file(self.analysis_in_path, fs.name(dust_path)): fs.copy_file(dust_path, self.analysis_in_path)
 
     # -----------------------------------------------------------------
 

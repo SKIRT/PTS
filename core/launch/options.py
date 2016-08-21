@@ -13,10 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import warnings
 
 # Import the relevant PTS classes and modules
 from ..basics.map import Map
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -58,6 +60,17 @@ class Options(object):
 
             # If the option does not exist, ignore it but give a warning
             else: warnings.warn("The option " + option + " does not exist")
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
 
 # -----------------------------------------------------------------
 
@@ -229,5 +242,50 @@ class AnalysisOptions(Options):
         """
 
         return self.misc.rgb or self.misc.wave or self.misc.fluxes or self.misc.images
+
+    # -----------------------------------------------------------------
+
+    def check(self, logging_options):
+
+        """
+        This function ...
+        :param logging_options:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the analysis options ...")
+
+        # PLOTTING
+
+        # If any plotting setting has been enabled, check whether the plotting path has been set
+        if self.plotting.progress or self.plotting.memory or self.plotting.timeline or self.plotting.seds or self.plotting.grids:
+            if self.plotting.path is None: raise ValueError("The plotting path has not been set")
+
+        # If progress plotting has been enabled, enabled progress extraction
+        if self.plotting.progress and not self.extraction.progress:
+            log.warning("Progress plotting is enabled so progress extraction will also be enabled")
+            self.extraction.progress = True
+
+        # If memory plotting has been enabled, enable memory extraction
+        if self.plotting.memory and not self.extraction.memory:
+            log.warning("Memory plotting is enabled so memory extraction will also be enabled")
+            self.extraction.memory = True
+
+        # If timeline plotting has been enabled, enable timeline extraction
+        if self.plotting.timeline and not self.extraction.timeline:
+            log.warning("Timeline plotting is enabled so timeline extraction will also be enabled")
+            self.extraction.timeline = True
+
+        # EXTRACTION
+
+        # If any extraction setting has been enabled, check whether the extraction path has been set
+        if self.extraction.progress or self.extraction.memory or self.extraction.timeline:
+            if self.extraction.path is None: raise ValueError("The extraction path has not been set")
+
+        # If memory extraction has been enabled, enable memory logging
+        if self.extraction.memory and not logging_options.memory:
+            log.warning("Memory extraction is enabled so memory logging will also be enabled")
+            logging_options.memory = True
 
 # -----------------------------------------------------------------

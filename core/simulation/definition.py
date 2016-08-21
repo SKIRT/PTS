@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the relevant PTS classes and modules
+from ..tools import filesystem as fs
+
 # -----------------------------------------------------------------
 
 class SingleSimulationDefinition(object):
@@ -41,6 +44,30 @@ class SingleSimulationDefinition(object):
         # A name for this simulation
         self.name = name
             
+    # -----------------------------------------------------------------
+
+    @property
+    def base_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.ski_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def prefix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.strip_extension(fs.name(self.ski_path))
+
     # -----------------------------------------------------------------
 
     def __str__(self):
