@@ -164,6 +164,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.remotes = self.config.remotes       # the remote host(s) on which to run the simulations
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
+        self.launcher.config.cores_per_process = self.config.cores_per_process # the number of cores per process, for non-schedulers
 
         # Simulation analysis options
 
@@ -485,24 +486,8 @@ class ParameterExplorer(FittingComponent):
         # Loop over the IDs of the hosts used by the batch launcher that use a scheduling system
         for host in self.launcher.scheduler_hosts:
 
-            # Debugging
-            log.debug("Determining the parallelization scheme for host " + host.id + " ...")
-
-            # Get the number of cores per node for this host
-            cores_per_node = host.clusters[host.cluster_name].cores
-
-            # Determine the number of cores corresponding to the number of requested cores
-            cores = cores_per_node * self.config.nodes
-
-            # Use 1 core for each process (assume there is enough memory)
-            processes = cores
-
-            # Determine the number of threads per core
-            if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
-            else: threads_per_core = 1
-
-            # Create a Parallelization instance
-            parallelization = Parallelization(cores, threads_per_core, processes)
+            # Get the parallelization scheme for this host
+            parallelization = Parallelization.for_host(host, self.config.nnodes)
 
             # Debugging
             log.debug("Parallelization scheme for host " + host.id + ": " + str(parallelization))
@@ -520,10 +505,7 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Estimating the runtimes based on the results of previous runs ...")
-
-        # Get the number of photon packages (per wavelength) for this batch of simulations
-        current_packages = self.ski_template.packages()
+        log.info("Estimating the runtimes based on the results of previously finished simulations ...")
 
         # Create a RuntimeEstimator instance
         estimator = RuntimeEstimator.from_file(self.timing_table_path)
@@ -545,7 +527,7 @@ class ParameterExplorer(FittingComponent):
             else: plot_path = None
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(host_id, current_packages, parallelization, plot_path=plot_path)
+            runtime = estimator.runtime_for(host_id, self.ski_template, parallelization, plot_path=plot_path)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
@@ -572,7 +554,7 @@ class ParameterExplorer(FittingComponent):
         # Just use the directory created for the generation
         for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation_info["Path"])
 
-        # Set the paths to the screen output directories (for debugging) for remotes without a scheduling system for jobs
+        # Enable screen output logging for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
 
         # Loop over the different parameter combinations

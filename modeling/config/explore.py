@@ -29,7 +29,6 @@ definition.add_positional_optional("generation_method", "string", "the model gen
 
 # Optional parameters
 definition.add_optional("remotes", "string", "the remote host on which to run the parameter exploration", ["nancy"], choices=find_host_ids())
-definition.add_optional("nodes", "integer", "the number of nodes to use for the simulations", 4)
 definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
 
 # Advanced options for the genetic engine
@@ -56,10 +55,14 @@ definition.add_flag("visualise", "make visualisations")
 definition.add_flag("dry", "dry-run (don't actually launch simulations)")
 
 # Simulation options
-definition.add_optional("packages", "real", "the number of photon packages per wavelength", 2e5)
+definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)
 definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations")
 definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations")
 definition.add_flag("selfabsorption", "dust self-absorption", True)
 definition.add_flag("transient_heating", "transient (non-LTE) dust heating", True)
+
+# Parallelization options
+definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations (for scheduler)", 4)
+definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 4)
 
 # -----------------------------------------------------------------

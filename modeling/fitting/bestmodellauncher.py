@@ -14,14 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.launch.batchlauncher import BatchLauncher
+from ...core.launch.parallelization import Parallelization
+from ...core.launch.estimate import RuntimeEstimator
+from ...core.launch.options import SchedulingOptions
 from ...magic.misc.kernels import AnianoKernels
-from ...core.basics.filter import Filter
 from .wavelengthgrids import create_one_wavelength_grid
 from .dustgrids import create_one_dust_grid
 from ..core.emissionlines import EmissionLines
@@ -67,9 +70,6 @@ class BestModelLauncher(FittingComponent):
         # The paths to the ski files
         self.ski_paths = dict()
 
-        # The Pacs 160 micron filter
-        self.pacs_160 = None
-
         # The parameter values of the best model
         self.parameter_values = None
 
@@ -88,6 +88,9 @@ class BestModelLauncher(FittingComponent):
 
         # The paths to the simulation input files
         self.input_paths = None
+
+        # The scheduling options for the different simulations (if using a remote host with scheduling system)
+        self.scheduling_options = dict()
 
     # -----------------------------------------------------------------
 
@@ -116,10 +119,16 @@ class BestModelLauncher(FittingComponent):
         # 6. Adjust the ski template
         self.adjust_ski()
 
-        # 7. Write first, then launch the simulations
+        # 7. Set the parallelization scheme
+        if self.uses_scheduler: self.set_parallelization()
+
+        # 8. Estimate the runtimes, create the scheduling options
+        if self.uses_scheduler: self.estimate_runtimes()
+
+        # 9. Write first, then launch the simulations
         self.write()
 
-        # 8. Launch the simulations
+        # 10. Launch the simulations
         self.launch()
 
     # -----------------------------------------------------------------
@@ -133,9 +142,6 @@ class BestModelLauncher(FittingComponent):
 
         # Call the setup function of the base class
         super(BestModelLauncher, self).setup()
-
-        # Create the Pacs 160 micron filter
-        self.pacs_160 = Filter.from_string("Pacs 160")
 
         # Set options for the batch launcher
         self.set_launcher_options()
@@ -183,6 +189,7 @@ class BestModelLauncher(FittingComponent):
         self.launcher.config.remotes = [self.config.remote]  # the remote host(s) on which to run the simulations
         #self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         #self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
+        self.launcher.config.cores_per_process = self.config.cores_per_process # the number of cores per process, for non-schedulers
 
         # Simulation analysis options
 
@@ -207,7 +214,7 @@ class BestModelLauncher(FittingComponent):
         # Set the paths to the kernel for each image (except for the SPIRE images)
         kernel_paths = dict()
         aniano = AnianoKernels()
-        pacs_red_psf_path = aniano.get_psf_path(self.pacs_160)
+        pacs_red_psf_path = aniano.get_psf_path(self.pacs_red_filter)
         for filter_name in self.observed_filter_names:
             if "SPIRE" in filter_name: continue
             kernel_paths[filter_name] = pacs_red_psf_path
@@ -361,9 +368,6 @@ class BestModelLauncher(FittingComponent):
         # 2. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
 
-        # 3. Adjust the ski file for generating simulated images
-        self.adjust_ski_total()
-    
     # -----------------------------------------------------------------
 
     def set_properties(self):
@@ -376,8 +380,34 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Setting ski file properties ...")
 
+        # Debugging
+        log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
+
+        # Set the number of photon packages per wavelength
+        self.ski_template.setpackages(self.config.npackages)
+
+        # Debugging
+        log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
+
+        # Set dust self-absorption
+        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
+        else: self.ski_template.disable_selfabsorption()
+
+        # Debugging
+        log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
+
+        # Set transient heating
+        if self.config.transient_heating: self.ski_template.set_transient_dust_emissivity()
+        else: self.ski_template.set_grey_body_dust_emissivity()
+
+        # Debugging
+        log.debug("Setting the wavelength grid file ...")
+
         # Set the name of the wavelength grid file
         self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path))
+
+        # Debugging
+        log.debug("Setting the dust grid ...")
 
         # Set the dust grid
         self.ski_template.set_dust_grid(self.dust_grid)
@@ -400,15 +430,57 @@ class BestModelLauncher(FittingComponent):
             # Create a copy of the ski file instance
             ski = self.ski_template.copy()
 
+            # Adjust the ski file for generating simulated images
+            if contribution == "total":
+
+                # Debugging
+                log.debug("Adjusting ski file for generating simulated images ...")
+
+                # Remove all instruments
+                self.ski_total.remove_all_instruments()
+
+                # Add the simple instrument
+                self.ski_total.add_instrument("earth", self.simple_instrument)
+
             # Remove other stellar components
-            if contribution != "total": ski.remove_stellar_components_except(component_names[contribution])
+            else:
+
+                # Debugging
+                log.debug("Adjusting ski file for simulating the contribution of the " + contribution + " stellar population ...")
+                log.debug("Removing all stellar components other than: " + " ".join(component_names[contribution]) + " ...")
+
+                # Remove the other components
+                ski.remove_stellar_components_except(component_names[contribution])
 
             # Add the ski file to the dictionary
             self.ski_contributions[contribution] = ski
 
     # -----------------------------------------------------------------
 
-    def adjust_ski_total(self):
+    def set_parallelization(self):
+
+        """
+        This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
+        a scheduling system (the parallelization for the other hosts is left up to the batch launcher and will be
+        based on the current load of the corresponding system).
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme for the remote host (" + self.config.remote + ") ...")
+
+        # Get the parallelization scheme for this host
+        parallelization = Parallelization.for_host(self.remote_host, self.config.nnodes)
+
+        # Debugging
+        log.debug("Parallelization scheme for host " + self.remote_host_id + ": " + str(parallelization))
+
+        # Set the parallelization for this host
+        self.launcher.set_parallelization_for_host(self.remote_host_id, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def estimate_runtimes(self):
 
         """
         This function ...
@@ -416,16 +488,37 @@ class BestModelLauncher(FittingComponent):
         """
 
         # Inform the user
-        log.info("Adjusting ski files for generating simulated images ...")
+        log.info("Estimating the runtimes based on the results of previously finished simulations ...")
 
-        # Create a copy of the ski file instance
-        self.ski_total = self.ski_template.copy()
+        # Create a RuntimeEstimator instance
+        estimator = RuntimeEstimator.from_file(self.timing_table_path)
 
-        # Remove all instruments
-        self.ski_total.remove_all_instruments()
+        # Debugging
+        log.debug("Estimating the runtime for host '" + self.remote_host_id + "' ...")
 
-        # Add the simple instrument
-        self.ski_total.add_instrument("earth", self.simple_instrument)
+        # Get the parallelization scheme that we have defined for this remote host
+        parallelization = self.launcher.parallelization_for_host(self.remote_host_id)
+
+        # Dictionary of estimated walltimes for the different simulations
+        walltimes = dict()
+
+        # Loop over the different ski files`
+        for contribution in self.ski_contributions:
+
+            # Get the ski file
+            ski = self.ski_contributions[contribution]
+
+            # Estimate the runtime for the current number of photon packages and the current remote host
+            runtime = estimator.runtime_for(self.remote_host_id, ski, parallelization)
+
+            # Debugging
+            log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
+
+            # Set the estimated walltime
+            walltimes[contribution] = runtime
+
+        # Create and set scheduling options for each host that uses a scheduling system
+        for contribution in walltimes: self.scheduling_options[contribution] = SchedulingOptions.from_dict({"walltime": walltimes[contribution]})
 
     # -----------------------------------------------------------------
 
@@ -495,6 +588,44 @@ class BestModelLauncher(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def remote_host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        hosts = self.launcher.hosts
+        assert len(hosts) == 1
+        return hosts[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote_host.id
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def uses_scheduler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.uses_schedulers
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -505,8 +636,18 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Launching the simulations ...")
 
-        # Loop over the ski paths for the different contributions (total, )
+        # Set the path to the directory to contain the launch script (job script);
+        # just use the directory created for the generation
+        self.launcher.set_script_path(self.remote_host_id, self.best_generation_path)
+
+        # Enable screen output logging if using a remote host without a scheduling system for jobs
+        if not self.uses_scheduler: self.launcher.enable_screen_output(self.remote_host_id)
+
+        # Loop over the ski paths for the different contributions
         for contribution in self.ski_paths:
+
+            # Debugging
+            log.debug("Initiating queuing of simulation for the contribution of the " + contribution + " stellar component ...")
 
             # Get ski path and output path
             ski_path = self.ski_paths[contribution]
@@ -520,13 +661,32 @@ class BestModelLauncher(FittingComponent):
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
+            log.debug(" - name: " + simulation_name)
             log.debug(" - ski path: " + definition.ski_path)
             log.debug(" - output path: " + definition.output_path)
 
             # Put the parameters in the queue and get the simulation object
             self.launcher.add_to_queue(definition, simulation_name)
 
+            # Set scheduling options for this simulation
+            if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options[contribution])
+
         # Run the launcher, schedules the simulations
         simulations = self.launcher.run()
+
+        # Loop over the scheduled simulations
+        for simulation in simulations:
+
+            # Add the path to the modeling directory to the simulation object
+            simulation.analysis.modeling_path = self.config.path
+
+            # Set the path to the fit model analyser
+            #analyser_path = "pts.modeling.fitting. ..."
+
+            # Add the analyser class path
+            #simulation.add_analyser(analyser_path)
+
+            # Save the simulation object
+            simulation.save()
 
 # -----------------------------------------------------------------

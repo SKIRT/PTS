@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
@@ -132,7 +135,9 @@ class AnalysisComponent(ModelingComponent):
 
         # Initialize the timing table if necessary
         if not fs.is_file(self.timing_table_path):
-            timing_table = TimingTable.initialize()
+
+            # Create the table and save it
+            timing_table = TimingTable()
             timing_table.saveto(self.timing_table_path)
 
         ## MEMORY TABLE
@@ -142,7 +147,33 @@ class AnalysisComponent(ModelingComponent):
 
         # Initialize the memory table if necessary
         if not fs.is_file(self.memory_table_path):
-            memory_table = MemoryTable.initialize()
+
+            # Create the table and save it
+            memory_table = MemoryTable()
             memory_table.saveto(self.memory_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def timing_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return TimingTable.from_file(self.timing_table_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def memory_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return MemoryTable.from_file(self.memory_table_path)
 
 # -----------------------------------------------------------------

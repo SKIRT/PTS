@@ -12,27 +12,19 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools import tables, time
 from ...core.tools import filesystem as fs
-from ...core.simulation.skifile import SkiFile
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools.logging import log
-from ..basics.instruments import FullInstrument
 from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.options import LoggingOptions
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
-from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...core.launch.batchlauncher import BatchLauncher
-from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ...core.simulation.remote import SkirtRemote
 from ...magic.misc.kernels import AnianoKernels
-from ..basics.projection import GalaxyProjection
 
 # -----------------------------------------------------------------
 
@@ -55,17 +47,23 @@ class AnalysisLauncher(AnalysisComponent):
 
         # -- Attributes --
 
-        # The SKIRT batch launcher
-        self.launcher = BatchLauncher()
+        # The remote SKIRT environment
+        self.remote = SkirtRemote()
+
+        # The name of the analysis run
+        self.analysis_run_name = None
+
+        # The path to the analysis run directory
+        self.analysis_run_path = None
+
+        # The ski file
+        self.ski = None
 
         # The wavelength grid
         self.wavelength_grid = None
 
-        # The projection systems
-        self.projections = dict()
-
-        # Coordinate system
-        self.reference_wcs = None
+        # The dust grid
+        self.dust_grid = None
 
         # The instruments
         self.instruments = dict()
@@ -91,25 +89,24 @@ class AnalysisLauncher(AnalysisComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the ski file describing the best model
-        self.load_ski()
+        self.create_directories()
 
-        # 3. Load the projection systems
-        self.load_projections()
-
-        # 4. Create the wavelength grid
+        # 2. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 5. Create the instruments
+        # 3. Create the dust grid
+        self.create_dust_grid()
+
+        # 4. Create the instruments
         self.create_instruments()
 
-        # 6. Adjust the ski file
+        # 5. Adjust the ski file
         self.adjust_ski()
 
-        # 7. Set parallelization
+        # 6. Set parallelization
         self.set_parallelization()
 
-        # 8. Estimate the runtime for the simulation
+        # 7. Estimate the runtime for the simulation
         if self.remote.scheduler: self.estimate_runtime()
 
         # 9. Set the analysis options
@@ -136,50 +133,11 @@ class AnalysisLauncher(AnalysisComponent):
         # Setup the remote execution environment
         self.remote.setup(self.config.remote)
 
-        # Reference coordinate system
-        self.reference_wcs = CoordinateSystem.from_file(self.reference_path)
+        # Generate a name for this analysis run
+        self.analysis_run_name = time.unique_name()
 
-    # -----------------------------------------------------------------
-
-    def load_projections(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the projection systems ...")
-
-        # Load the different projection systems
-        for name in ["earth", "faceon", "edgeon"]:
-
-            # Determine the path to the projection file
-            path = fs.join(self.components_path, name + ".proj")
-
-            # Load the projection
-            projection = GalaxyProjection.from_file(path)
-
-            # Add the projection to the dictionary
-            self.projections[name] = projection
-
-    # -----------------------------------------------------------------
-
-    def load_ski(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ski file for the best fitting model ...")
-
-        # Determine the path to the best model ski file
-        path = fs.join(self.best_path, self.galaxy_name + ".ski")
-
-        # Load the ski file
-        self.ski = SkiFile(path)
+        # Create a directory for this analysis run
+        self.analysis_run_path = fs.join(self.analysis_path, self.analysis_run_name)
 
     # -----------------------------------------------------------------
 
@@ -193,42 +151,62 @@ class AnalysisLauncher(AnalysisComponent):
         # Inform the user
         log.info("Creating the wavelength grid ...")
 
-        # Verify the grid parameters
-        if self.config.wavelengths.npoints < 2: raise ValueError(
-            "the number of points in the low-resolution grid should be at least 2")
-        if self.config.wavelengths.npoints_zoom < 2: raise ValueError(
-            "the number of points in the high-resolution subgrid should be at least 2")
-        if self.config.wavelengths.min <= 0: raise ValueError("the shortest wavelength should be positive")
-        if (self.config.wavelengths.min_zoom <= self.config.wavelengths.min
-            or self.config.wavelengths.max_zoom <= self.config.wavelengths.min_zoom
-            or self.config.wavelengths.max <= self.config.wavelengths.max_zoom):
-            raise ValueError("the high-resolution subgrid should be properly nested in the low-resolution grid")
+        # Create the emission lines instance
+        emission_lines = EmissionLines()
 
-        logmin = np.log10(float(self.config.wavelengths.min))
-        logmax = np.log10(float(self.config.wavelengths.max))
-        logmin_zoom = np.log10(float(self.config.wavelengths.min_zoom))
-        logmax_zoom = np.log10(float(self.config.wavelengths.max_zoom))
+        # Fixed wavelengths in the grid
+        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
 
-        # Build the high- and low-resolution grids independently
-        base_grid = np.logspace(logmin, logmax, num=self.config.wavelengths.npoints, endpoint=True, base=10)
-        zoom_grid = np.logspace(logmin_zoom, logmax_zoom, num=self.config.wavelengths.npoints_zoom, endpoint=True, base=10)
+        # Create the grid
+        grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
 
-        # Merge the two grids
-        total_grid = []
+        # Set the grid
+        self.wavelength_grid = grid
 
-        # Add the wavelengths of the low-resolution grid before the first wavelength of the high-resolution grid
-        for wavelength in base_grid:
-            if wavelength < self.config.wavelengths.min_zoom: total_grid.append(wavelength)
+    # -----------------------------------------------------------------
 
-        # Add the wavelengths of the high-resolution grid
-        for wavelength in zoom_grid: total_grid.append(wavelength)
+    def create_dust_grid(self):
 
-        # Add the wavelengths of the low-resolution grid after the last wavelength of the high-resolution grid
-        for wavelength in base_grid:
-            if wavelength > self.config.wavelengths.max_zoom: total_grid.append(wavelength)
+        """
+        This function ...
+        :return:
+        """
 
-        # Create the wavelength grid
-        self.wavelength_grid = WavelengthGrid.from_wavelengths(total_grid)
+        # Inform the user
+        log.info("Creating the dust grid ...")
+
+        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+        major_angular = self.truncation_ellipse.major  # major axis length of the sky ellipse
+        radius_physical = (major_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Get the pixelscale in physical units
+        distance = self.galaxy_properties.distance
+        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        x_radius = radius_physical
+        y_radius = radius_physical
+        z_radius = 3. * Unit("kpc")
+
+        x_min = - x_radius
+        x_max = x_radius
+        y_min = - y_radius
+        y_max = y_radius
+        z_min = - z_radius
+        z_max = z_radius
+
+        x_extent = x_max - x_min
+        y_extent = y_max - y_min
+        z_extent = z_max - z_min
+
+        # Set the scale
+        scale = self.config.dg.rel_scale * pixelscale
+
+        # Create the grid
+        grid = create_one_dust_grid(self.config.dg.grid_type, scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max, self.config.dg.min_level, self.config.dg.max_mass_fraction)
+
+        # Set the grid
+        self.dust_grid = grid
 
     # -----------------------------------------------------------------
 
@@ -242,11 +220,14 @@ class AnalysisLauncher(AnalysisComponent):
         # Inform the user
         log.info("Creating the instruments ...")
 
-        # Loop over the projection systems
-        for name in self.projections:
+        # Loop over the projections
+        for projection in ["earth", "faceon", "edgeon"]:
 
-            # Create the instrument from the projection system
-            self.instruments[name] = FullInstrument.from_projection(self.projections[name])
+            # Debugging
+            log.debug("Creating a full instrument for the " + projection + " projection ...")
+
+            # Create the instrument and add it to the dictionary
+            self.instruments[projection] = self.create_instrument("full", projection)
 
     # -----------------------------------------------------------------
 
@@ -287,36 +268,20 @@ class AnalysisLauncher(AnalysisComponent):
         # Inform the user
         log.info("Determining the parallelization scheme ...")
 
-        # Get the remote host
-        host = self.remote.host
-
         # If the host uses a scheduling system
-        if host.scheduler:
+        if self.remote.scheduler:
 
-            # Get the number of cores per node for this host
-            cores_per_node = host.clusters[host.cluster_name].cores
+            # Debugging
+            log.debug("Remote host (" + self.remote.host_id + ") uses a scheduling system; determining parallelization scheme based on the requested number of nodes (" + str(self.config.nnodes) + ") ...")
 
-            # Determine the number of cores corresponding to 4 full nodes
-            cores = cores_per_node * 4
-
-            # Use 1 core for each process (assume there is enough memory)
-            processes = cores
-
-            # Determine the number of threads per core
-            if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
-            else: threads_per_core = 1
-
-            # Create a Parallelization instance
-            self.parallelization = Parallelization(cores, threads_per_core, processes)
+            # Create the parallelization scheme from the host configuration and the requested number of nodes
+            self.parallelization = Parallelization.for_host(self.remote.host, self.config.nnodes)
 
         # If the remote host does not use a scheduling system
         else:
 
-            # Use 4 cores per process
-            #cores_per_process = 4
-
-            # Use 10 cores per process
-            cores_per_process = 10
+            # Debugging
+            log.debug("Remote host (" + self.remote.host_id + ") does not use a scheduling system; determining parallelization scheme based on the current load of the system and the requested number of cores per process (" + str(self.config.cores_per_process) + ") ...")
 
             # Get the amount of (currently) free cores on the remote host
             cores = int(self.remote.free_cores)
@@ -325,7 +290,7 @@ class AnalysisLauncher(AnalysisComponent):
             threads_per_core = self.remote.threads_per_core if self.remote.use_hyperthreading else 1
 
             # Create the parallelization object
-            self.parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core)
+            self.parallelization = Parallelization.from_free_cores(cores, self.config.cores_per_process, threads_per_core)
 
         # Debugging
         log.debug("Parallelization scheme that will be used: " + str(self.parallelization))
@@ -340,19 +305,16 @@ class AnalysisLauncher(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Estimating the runtime for the simulation ...")
-
-        # Debugging
-        log.debug("Loading the table with the total runtimes of previous simulations ...")
-
-        # Load the timing table
-        timing_table = tables.from_file(self.timing_table_path, format="ascii.ecsv")
+        log.info("Estimating the runtime for the simulation based on the timing of previous simulations ...")
 
         # Create a RuntimeEstimator instance
-        estimator = RuntimeEstimator(timing_table)
+        estimator = RuntimeEstimator(self.timing_table)
 
         # Estimate the runtime for the configured number of photon packages and the configured remote host
-        runtime = estimator.runtime_for(self.config.remote, self.config.packages, self.parallelization)
+        runtime = estimator.runtime_for(self.config.remote, self.ski, self.parallelization)
+
+        # Debugging
+        log.debug("The estimated runtime for the simulation is " + str(runtime) + " seconds")
 
         # Create the scheduling options, set the walltime
         self.scheduling_options = SchedulingOptions()
@@ -373,7 +335,7 @@ class AnalysisLauncher(AnalysisComponent):
         # Set the paths to the for each image (except for the SPIRE images)
         kernel_paths = dict()
         aniano = AnianoKernels()
-        pacs_red_psf_path = aniano.get_psf_path("PACS 160")
+        pacs_red_psf_path = aniano.get_psf_path(self.pacs_red_filter)
         for filter_name in filter_names:
             if "SPIRE" in filter_name: continue
             kernel_paths[filter_name] = pacs_red_psf_path
@@ -404,7 +366,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.misc.observation_filters = filter_names
         self.analysis_options.misc.observation_instruments = ["earth"]
         self.analysis_options.misc.make_images_remote = "nancy"
-        self.analysis_options.misc.images_wcs = self.refere
+        self.analysis_options.misc.images_wcs = self.reference_wcs
         self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_unit = "MJy/sr"
 
@@ -427,8 +389,11 @@ class AnalysisLauncher(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the input
-        self.write_input()
+        # Write the wavelength grid
+        self.write_wavelength_grid()
+
+        # Write the dust grid
+        self.write_dust_grid()
 
         # Write the ski file
         self.write_ski()

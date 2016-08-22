@@ -19,6 +19,7 @@ from astroquery.ned import Ned
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -64,6 +65,22 @@ for url in urls:
     if ":" in name:
 
         splitted = name.split(":")
+
+        if splitted[0].startswith("NGC_"):
+            band = splitted[0].split("NGC_")[1][5:]
+            try:
+                filter = Filter.from_string(band)
+                splitted = [config.galaxy, None, band, splitted[1]]
+            except: pass
+
+        if len(splitted) == 3:
+
+            splitted = [config.galaxy, None, splitted[1], splitted[2]]
+
+        elif len(splitted) == 2:
+
+            info_and_band = splitted[0].split("NGC_")[1][5:]
+            splitted = [config.galaxy, None, info_and_band, splitted[1]]
 
         galaxy_name = splitted[0]
         unknown = splitted[1]

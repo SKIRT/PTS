@@ -24,7 +24,6 @@ from astropy.table import Table
 from .component import FittingComponent
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import Filter
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ..core.sun import Sun
 from ..core.mappings import Mappings

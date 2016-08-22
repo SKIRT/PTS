@@ -31,6 +31,6 @@ definition.sections["dg"].add_optional("min_level", "integer", "the minimum divi
 definition.sections["dg"].add_optional("max_mass_fraction", "the maximum mass fraction per cell", 1e-6)
 
 # Parallelization options
-definition.add_optional("nodes", "integer", "the number of nodes to use for the simulations", 4)
+definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations", 4)
 
 # -----------------------------------------------------------------

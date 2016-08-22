@@ -240,7 +240,10 @@ class Filter:
         ha_names = ["Ha", "H alpha", "H-alpha", "H-a", "Halpha", "H_alpha", "Mosaic Halpha"]
 
         # SWIFT UVOT filters
-        uvot_uvw2_names = ["UVOT W2", "UVW2", "W2", "Swift W2", "SWIFT W2", "UVOT_W2"]
+        uvot_u_names = ["UVOT U", "Swift U", "Swift_U"]
+        uvot_b_names = ["UVOT B", "Swift B", "Swift_B"]
+        uvot_v_names = ["UVOT V", "Swift V", "Swift_V"]
+        uvot_uvw2_names = ["UVOT W2", "UVW2", "W2", "Swift W2", "SWIFT W2", "UVOT_W2", "Swift_"]
         uvot_uvm2_names = ["UVOT M2", "UVM2", "M2", "Swift M2", "SWIFT M2", "UVOT_M2"]
         uvot_uvw1_names = ["UVOT W1", "UVW1", "W1", "Swift W1", "SWIFT W1", "UVOT_W1"]
 

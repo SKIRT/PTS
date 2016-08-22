@@ -60,17 +60,23 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def runtime_for(self, host_id, packages, parallelization, fos=1.2, plot_path=None):
+    def runtime_for(self, host_id, ski_file, parallelization, fos=1.2, plot_path=None):
 
         """
         This function ...
         :param host_id:
-        :param packages:
+        :param ski_file:
         :param parallelization:
         :param fos: factor of safety
         :param plot_path:
         :return:
         """
+
+        # Get the number of photon packages (per wavelength) for this batch of simulations
+        packages = ski_file.packages()
+
+        # TODO: greatly expand the number of parameters that are used to estimate the runtime
+        # such as: nwavelengths, self-absorption, transient heating, data parallel, ...
 
         # Get the list of runtimes for the specified host for the specified configuration of packages and parallelization
         previous_runtimes = self.previous_runtimes_for(host_id, packages, parallelization)

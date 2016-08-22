@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the relevant PTS classes and modules
+from ..tools.logging import log
+
 # -----------------------------------------------------------------
 
 class Parallelization(object):
@@ -65,6 +68,40 @@ class Parallelization(object):
         corespp = self.cores / self.processes
         assert int(corespp) == corespp
         return int(corespp)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def for_host(cls, host, nnodes):
+
+        """
+        This function ...
+        :param host:
+        :param nnodes:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Determining the parallelization scheme for host " + host.id + " ...")
+
+        # Get the number of cores per node for this host
+        cores_per_node = host.clusters[host.cluster_name].cores
+
+        # Determine the number of cores corresponding to the number of requested cores
+        cores = cores_per_node * nnodes
+
+        # Use 1 core for each process (assume there is enough memory)
+        processes = cores
+
+        # Determine the number of threads per core
+        if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
+        else: threads_per_core = 1
+
+        # Create a Parallelization instance
+        parallelization = cls(cores, threads_per_core, processes)
+
+        # Return the parallelization scheme
+        return parallelization
 
     # -----------------------------------------------------------------
 

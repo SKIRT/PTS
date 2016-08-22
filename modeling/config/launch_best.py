@@ -39,9 +39,16 @@ definition.sections["dg"].add_optional("min_level", "integer", "the minimum divi
 definition.sections["dg"].add_optional("max_mass_fraction", "the maximum mass fraction per cell", 1e-6)
 
 # Add optional arguments
-definition.add_optional("packages", "real", "the number of photon packages per wavelength", 1e6)
-definition.add_optional("selfabsorption", "boolean", "whether self-absorption should be enabled", True)
 definition.add_optional("remote", "string", "the remote host on which to launch the simulations", "nancy", choices=find_host_ids())
 definition.add_optional("images_remote", "string", "the remote host on which to make the observed images", "nancy", choices=find_host_ids())
+
+# Simulation options
+definition.add_optional("npackages", "real", "number of photon packages per wavelength", 1e6)
+definition.add_flag("selfabsorption", "dust self-absorption", True)
+definition.add_flag("transient_heating", "transient (non-LTE) dust heating", True)
+
+# Parallelization options
+definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations (for scheduler)", 4)
+definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 4)
 
 # -----------------------------------------------------------------
