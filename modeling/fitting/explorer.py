@@ -105,16 +105,19 @@ class ParameterExplorer(FittingComponent):
         # 6. Set the paths to the input files
         self.set_input()
 
-        # 7. Set the parallelization schemes for the different remote hosts
+        # 7. Adjust the ski template
+        self.adjust_ski()
+
+        # 8. Set the parallelization schemes for the different remote hosts
         if self.uses_schedulers: self.set_parallelization()
 
-        # 8. Estimate the runtimes for the different remote hosts
+        # 9. Estimate the runtimes for the different remote hosts
         if self.uses_schedulers: self.estimate_runtimes()
 
-        # 9. Launch the simulations for different parameter values
+        # 10. Launch the simulations for different parameter values
         self.launch()
 
-        # 10. Writing
+        # 11. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -371,7 +374,9 @@ class ParameterExplorer(FittingComponent):
         self.generation_info["Wavelength grid level"] = wavelength_grid_level
         self.generation_info["Dust grid level"] = dust_grid_level
         self.generation_info["Number of simulations"] = self.config.simulations
+        self.generation_info["Number of photon packages"] = self.config.npackages
         self.generation_info["Self-absorption"] = self.config.selfabsorption
+        self.generation_info["Transient heating"] = self.config.transient_heating
 
     # -----------------------------------------------------------------
 
@@ -418,6 +423,50 @@ class ParameterExplorer(FittingComponent):
 
         # Initialize the chi squared table
         self.chi_squared_table = ChiSquaredTable.initialize()
+
+    # -----------------------------------------------------------------
+
+    def adjust_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting the ski template for the properties of this generation ...")
+
+        # Debugging
+        log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
+
+        # Set the number of photon packages per wavelength
+        self.ski_template.setpackages(self.config.npackages)
+
+        # Debugging
+        log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
+
+        # Set dust self-absorption
+        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
+        else: self.ski_template.disable_selfabsorption()
+
+        # Debugging
+        log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
+
+        # Set transient heating
+        if self.config.transient_heating: self.ski_template.set_transient_dust_emissivity()
+        else: self.ski_template.set_grey_body_dust_emissivity()
+
+        # Debugging
+        log.debug("Setting the name of the wavelengths file to " + fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])) + " ...")
+
+        # Set the name of the wavelength grid file
+        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
+
+        # Debugging
+        log.debug("Setting the dust grid (level " + str(self.generation_info["Dust grid level"]) + ") ...")
+
+        # Set the dust grid
+        self.ski_template.set_dust_grid(self.dust_grid_for_level(self.generation_info["Dust grid level"]))
 
     # -----------------------------------------------------------------
 
@@ -526,15 +575,16 @@ class ParameterExplorer(FittingComponent):
         # Set the paths to the screen output directories (for debugging) for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
 
-        # Set the name of the wavelength grid file
-        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
-
         # Loop over the different parameter combinations
         for i in range(self.nmodels):
 
             # Set the parameter values as a dictionary for this individual model
             parameter_values = dict()
             for label in self.free_parameter_labels: parameter_values[label] = self.generator.parameters[label][i]
+
+            # Debugging
+            log.debug("Adjusting ski file for the following model parameters:")
+            for label in parameter_values: log.debug(" - " + label + ": " + str(parameter_values[label]))
 
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()
@@ -557,6 +607,7 @@ class ParameterExplorer(FittingComponent):
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
+            log.debug(" - name: " + simulation_name)
             log.debug(" - ski path: " + definition.ski_path)
             log.debug(" - output path: " + definition.output_path)
 
@@ -654,8 +705,10 @@ class ParameterExplorer(FittingComponent):
         wg_level = self.generation_info["Wavelength grid level"]
         dg_level = self.generation_info["Dust grid level"]
         nsimulations = self.generation_info["Number of simulations"]
+        npackages = self.generation_info["Number of photon packages"]
         selfabsorption = self.generation_info["Self-absorption"]
-        self.generations_table.add_entry(name, index, timestamp, method, wg_level, dg_level, nsimulations, selfabsorption, self.ranges)
+        transientheating = self.generation_info["Transient heating"]
+        self.generations_table.add_entry(name, index, timestamp, method, wg_level, dg_level, nsimulations, npackages, selfabsorption, transientheating, self.ranges)
 
         # Save the table
         self.generations_table.save()

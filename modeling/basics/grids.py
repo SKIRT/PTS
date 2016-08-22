@@ -13,10 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import copy
+from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
-from ...core.tools import parsing
+from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
@@ -28,11 +28,28 @@ def load_grid(path):
     :return:
     """
 
-    return None
+    # Get the first line of the file
+    with open(path, 'r') as f: first_line = f.readline()
+
+    # Create and return the appropriate dust grid
+    if "BinaryTreeDustGrid" in first_line: return BinaryTreeDustGrid.from_file(path)
+    elif "OctTreeDustGrid" in first_line: return OctTreeDustGrid.from_file(path)
+    elif "CartesianDustGrid" in first_line: return CartesianDustGrid.from_file(path)
+    else: raise ValueError("Unrecognized dust grid file")
 
 # -----------------------------------------------------------------
 
-class BinaryTreeDustGrid(object):
+class DustGrid(SimplePropertyComposite):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+# -----------------------------------------------------------------
+
+class BinaryTreeDustGrid(DustGrid):
 
     """
     This class ...
@@ -77,92 +94,9 @@ class BinaryTreeDustGrid(object):
         self.max_dens_disp_fraction = max_dens_disp_fraction
         self.direction_method = direction_method
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        effective_radius = None
-        index = None
-        flattening = None
-        tilt = None
-
-        # Read the parameter file
-        with open(path, 'r') as model_file:
-
-            # Loop over all lines in the file
-            for line in model_file:
-
-                # Split the line
-                splitted = line.split(": ")
-                splitted[1] = splitted[1].split("\n")[0]
-
-                first = splitted[0]
-                second = splitted[1]
-
-                if first == "Min x": min_x = parsing.quantity(second)
-                elif first == "Max x": max_x = parsing.quantity(second)
-                elif first == "Min y": min_y = parsing.quantity(second)
-                elif first == "Max y": max_y = parsing.quantity(second)
-                elif first == "Min z": min_z = parsing.quantity(second)
-                elif first == "Max z": max_z = parsing.quantity(second)
-                elif first == "Write": write = parsing.boolean(second)
-                elif first == "Min level": min_level = int(second)
-                elif first == "Max level": max_level = int(second)
-                elif first == "Search method": search_method = second
-
-        # Create the dust grid instance and return it
-        return cls(effective_radius, index, flattening, tilt)
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Open the file and write the properties of this grid
-        with open(path, 'w') as grid_file:
-
-            print("Min x:", str(self.min_x), file=grid_file)
-            print("Max x:", str(self.max_x), file=grid_file)
-            print("Min y:", str(self.min_y), file=grid_file)
-            print("Max y:", str(self.max_x), file=grid_file)
-            print("Min z:", str(self.min_z), file=grid_file)
-            print("Max z:", str(self.max_z), file=grid_file)
-            print("Write:", str(self.write), file=grid_file)
-            print("Min level:", str(self.min_level), file=grid_file)
-            print("Max level:", str(self.max_level), file=grid_file)
-            print("Search method:", str(self.search_method), file=grid_file)
-            print("Sample count:", str(self.sample_count), file=grid_file)
-            print("Max optical depth:", str(self.max_optical_depth), file=grid_file)
-            print("Max mass fraction:", str(self.max_mass_fraction), file=grid_file)
-            print("Max dens disp fraction:", str(self.max_dens_disp_fraction), file=grid_file)
-            print("Direction method:", str(self.direction_method), file=grid_file)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
-
 # -----------------------------------------------------------------
 
-class OctTreeDustGrid(object):
+class OctTreeDustGrid(DustGrid):
 
     """
     This class ...
@@ -207,67 +141,15 @@ class OctTreeDustGrid(object):
         self.max_dens_disp_fraction = max_dens_disp_fraction
         self.barycentric = barycentric
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Open the file and write the properties of this grid
-        with open(path, 'w') as grid_file:
-
-            print("Min x:", str(self.min_x), file=grid_file)
-            print("Max x:", str(self.max_x), file=grid_file)
-            print("Min y:", str(self.min_y), file=grid_file)
-            print("Max y:", str(self.max_x), file=grid_file)
-            print("Min z:", str(self.min_z), file=grid_file)
-            print("Max z:", str(self.max_z), file=grid_file)
-            print("Write:", str(self.write), file=grid_file)
-            print("Min level:", str(self.min_level), file=grid_file)
-            print("Max level:", str(self.max_level), file=grid_file)
-            print("Search method:", str(self.search_method), file=grid_file)
-            print("Sample count:", str(self.sample_count), file=grid_file)
-            print("Max optical depth:", str(self.max_optical_depth), file=grid_file)
-            print("Max mass fraction:", str(self.max_mass_fraction), file=grid_file)
-            print("Max dens disp fraction:", str(self.max_dens_disp_fraction), file=grid_file)
-            print("Barycentric", str(self.barycentric), file=grid_file)
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
-
 # -----------------------------------------------------------------
 
-class CartesianDustGrid(object):
+class CartesianDustGrid(DustGrid):
 
     """
     This class ...
     """
 
-    def __init__(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1.,
-                 write=True):
+    def __init__(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1., write=True):
 
         """
         The constructor ...
@@ -297,42 +179,5 @@ class CartesianDustGrid(object):
         self.mesh_type = mesh_type
         self.ratio = ratio
         self.write = write
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Open the file and write the properties of this grid
-        with open(path, 'w') as grid_file:
-
-            print("Min x:", str(self.min_x), file=grid_file)
-            print("Max x:", str(self.max_x), file=grid_file)
-            print("Min y:", str(self.min_y), file=grid_file)
-            print("Max y:", str(self.max_x), file=grid_file)
-            print("Min z:", str(self.min_z), file=grid_file)
-            print("Max z:", str(self.max_z), file=grid_file)
-            print("X bins:", str(self.x_bins), file=grid_file)
-            print("Y bins:", str(self.y_bins), file=grid_file)
-            print("Z bins:", str(self.z_bins), file=grid_file)
-            print("Mesh type:", str(self.mesh_type), file=grid_file)
-            print("Ratio:", str(self.ratio), file=grid_file)
-            print("Write:", str(self.write), file=grid_file)
 
 # -----------------------------------------------------------------

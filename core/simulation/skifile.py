@@ -1707,6 +1707,21 @@ class SkiFile:
         # Create and add the new emissivity
         parent.append(parent.makeelement("TransientDustEmissivity", {}))
 
+    ## This function sets a grey body dust emissivity for the simulation
+    def set_grey_body_dust_emissivity(self):
+
+        # Get the dust emissivity
+        emissivity = self.get_dust_emissivity()
+
+        # Get the parent
+        parent = emissivity.getparent()
+
+        # Remove the old emissivity
+        parent.remove(emissivity)
+
+        # Create and add the new emissivity
+        parent.append(parent.makeelement("GreyBodyDustEmissivity", {}))
+
     ## This function returns the dust library
     def get_dust_lib(self):
 

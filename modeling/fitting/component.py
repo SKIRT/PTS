@@ -28,6 +28,7 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.distribution import Distribution
 from ..basics.instruments import load_instrument
 from ..core.model import Model
+from ..basics.grids import load_grid
 
 # -----------------------------------------------------------------
 
@@ -753,6 +754,19 @@ class FittingComponent(ModelingComponent):
         """
 
         return fs.join(self.fit_dust_grids_path, str(level) + ".dg")
+
+    # -----------------------------------------------------------------
+
+    def dust_grid_for_level(self, level):
+
+        """
+        This function ...
+        :param level:
+        :return:
+        """
+
+        # Load and return the dust grid
+        return load_grid(self.dust_grid_path_for_level(level))
 
     # -----------------------------------------------------------------
 

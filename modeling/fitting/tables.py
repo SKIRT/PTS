@@ -101,7 +101,9 @@ class GenerationsTable(SmartTable):
                    ("Wavelength grid level", int, None, "level of the wavelength gid"),
                    ("Dust grid level", int, None, "level of the dust grid"),
                    ("Number of simulations", int, None, "number of simulations (individuals) in the generation"),
-                   ("Self-absorption", bool, None, "dust self-absorption enabled")]
+                   ("Number of photon packages", int, None, "number of photon packages per wavelength"),
+                   ("Self-absorption", bool, None, "dust self-absorption enabled"),
+                   ("Transient heating", bool, None, "transient heating enabled")]
 
     # -----------------------------------------------------------------
 
@@ -223,7 +225,7 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption, ranges):
+    def add_entry(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages, selfabsorption, transientheating, ranges):
 
         """
         This function ...
@@ -234,12 +236,14 @@ class GenerationsTable(SmartTable):
         :param wavelength_grid_level:
         :param dust_grid_level:
         :param nsimulations:
+        :param npackages:
         :param selfabsorption:
+        :param transientheating:
         :param ranges:
         :return:
         """
 
-        values = [name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, selfabsorption]
+        values = [name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages, selfabsorption, transientheating]
 
         # Add the boundaries (min, max) of the parameter ranges as seperate column values
         for label in self.parameter_labels:

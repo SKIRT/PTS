@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition, stringify_not_list
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.component import load_fitting_configuration
+from pts.core.basics.host import find_host_ids
 
 # -----------------------------------------------------------------
 
@@ -27,7 +28,7 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_positional_optional("generation_method", "string", "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
 
 # Optional parameters
-definition.add_optional("remotes", "string", "the remote host on which to run the parameters exploration", ["nancy"])
+definition.add_optional("remotes", "string", "the remote host on which to run the parameter exploration", ["nancy"], choices=find_host_ids())
 definition.add_optional("nodes", "integer", "the number of nodes to use for the simulations", 4)
 definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
 
@@ -53,8 +54,12 @@ definition.add_flag("ionizing_log", "use logarithmic spacing of the ionizing ste
 definition.add_flag("dust_log", "use logarithmic spacing of the dust mass values")
 definition.add_flag("visualise", "make visualisations")
 definition.add_flag("dry", "dry-run (don't actually launch simulations)")
+
+# Simulation options
+definition.add_optional("packages", "real", "the number of photon packages per wavelength", 2e5)
 definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations")
 definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations")
 definition.add_flag("selfabsorption", "dust self-absorption", True)
+definition.add_flag("transient_heating", "transient (non-LTE) dust heating", True)
 
 # -----------------------------------------------------------------

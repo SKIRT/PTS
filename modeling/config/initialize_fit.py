@@ -28,6 +28,5 @@ definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "the
 # Add optional arguments
 definition.add_optional("packages", "real", "the number of photon packages per wavelength", 2e5)
 definition.add_flag("selfabsorption", "enable dust self-absorption")
-definition.add_optional("dust_grid", "string", "the type of dust grid to use (bintree, octtree or cartesian)", "bintree")
 
 # -----------------------------------------------------------------
