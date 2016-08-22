@@ -903,3 +903,80 @@ def get_generations_table(modeling_path):
     return generations_table
 
 # -----------------------------------------------------------------
+
+def get_chi_squared_table(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    # Determine the path to the chi squared table
+    path = fs.join(modeling_path, "fit", generation_name, "chi_squared.dat")
+
+    # Load the table
+    table = ChiSquaredTable.from_file(path)
+
+    # Return the table
+    return table
+
+# -----------------------------------------------------------------
+
+def get_parameters_table(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    # Determine the path to the parameters table
+    path = fs.join(modeling_path, "fit", generation_name, )
+
+    # Load the table
+    table = ParametersTable.from_file(path)
+
+    # Return the table
+    return table
+
+# -----------------------------------------------------------------
+
+def get_best_model_for_generation(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    # Open the chi squared table
+    chi_squared_table = get_chi_squared_table(modeling_path, generation_name)
+
+    # Get the name of the simulation with the lowest chi squared value
+    best_simulation_name = chi_squared_table.best_simulation_name
+
+    # Open the parameters table for this generation
+    parameters_table = get_parameters_table(generation_name, generation_name)
+
+    # Get the chi squared value
+    chi_squared = chi_squared_table.chi_squared_for(best_simulation_name)
+
+    # Get the parameter values
+    parameter_values = parameters_table.parameter_values_for_simulation(best_simulation_name)
+
+    # Create a 'Model' object
+    model = Model()
+
+    # Set attributes
+    model.simulation_name = best_simulation_name
+    model.chi_squared = chi_squared
+    model.parameter_values = parameter_values
+
+    # Return the model
+    return model
+
+# -----------------------------------------------------------------
