@@ -52,10 +52,13 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
 
-        # The path to the directory with the best model parameters
-        self.best_path = None
+        # The run name
+        self.analysis_run_name = None
 
-        # The ski file corresponding to the best model
+        # The path to the analysis run directory
+        self.analysis_run_path = None
+
+        # The ski file for the model
         self.ski = None
 
         # The projection systems
@@ -128,7 +131,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Loading the ski file for the best fitting model ...")
+        log.info("Loading the ski file ...")
 
         # Determine the path to the best model ski file
         path = fs.join(self.best_path, self.galaxy_name + ".ski")

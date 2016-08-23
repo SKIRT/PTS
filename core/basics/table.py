@@ -150,6 +150,36 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def _strip_units(self, values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        scalar_values = []
+
+        for i, value in enumerate(values):
+
+            # If this value has a unit, we have to make sure it is converted into the proper column unit
+            if hasattr(value, "unit"):
+
+                column_unit = self.column_info[i][2]
+                assert column_unit is not None
+
+                scalar_value = value.to(column_unit).value
+
+                scalar_values.append(scalar_value)
+
+            # A scalar value (or string, int, ...)
+            else: scalar_values.append(value)
+
+        # Return the values without unit
+        return scalar_values
+
+    # -----------------------------------------------------------------
+
     def add_row(self, values):
 
         """
@@ -158,8 +188,16 @@ class SmartTable(Table):
         :return:
         """
 
+        # Resize string columns for the new values
+        self._resize_string_columns(values)
+
+        # Strip units
+        values = self._strip_units(values)
+
+        # Create mask
         mask = [value is None for value in values]
 
+        # Set masked values to have a default value (None will not work for Astropy)
         new_values = []
         for i in range(len(values)):
 

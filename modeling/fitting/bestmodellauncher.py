@@ -190,6 +190,7 @@ class BestModelLauncher(FittingComponent):
         #self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         #self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # the number of cores per process, for non-schedulers
+        self.launcher.config.dry = self.config.dry
 
         # Simulation analysis options
 

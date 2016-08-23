@@ -32,16 +32,19 @@ class BestParametersTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def initialize(cls, parameters):
+    def initialize(cls, parameters, units):
 
         """
         This function ...
         :param parameters:
+        :param units:
         :return:
         """
 
         # Set the labels
-        for label in parameters: cls.column_info.append((label, float, None, "value for " + label))
+        for label in parameters:
+            unit = units[label] if label in units else None
+            cls.column_info.append((label, float, unit, "value for " + label))
 
         # Call the initialize function of the best parameters table function
         return super(BestParametersTable, cls).initialize()
@@ -79,9 +82,6 @@ class BestParametersTable(SmartTable):
 
         # Add the parameter values
         for label in self.parameter_labels: values.append(parameter_values[label])
-
-        # Resize string columns for the new values
-        self._resize_string_columns(values)
 
         # Add a row to the table
         self.add_row(values)
@@ -253,9 +253,6 @@ class GenerationsTable(SmartTable):
         # Add None for the finishing time
         values.append(None)
 
-        # Resize string columns for the new values
-        self._resize_string_columns(values)
-
         # Add a row to the table
         self.add_row(values)
 
@@ -272,16 +269,18 @@ class ParametersTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def initialize(cls, parameters):
+    def initialize(cls, parameters, units):
 
         """
         This function ...
         :param parameters:
+        :param units:
         :return:
         """
 
         for label in parameters:
-            cls.column_info.append((label, float, None, "value for " + label))
+            unit = units[label] if label in units else None
+            cls.column_info.append((label, float, unit, "value for " + label))
 
         # Call the initialize function of the parameters table function
         return super(ParametersTable, cls).initialize()
@@ -340,9 +339,6 @@ class ParametersTable(SmartTable):
 
         # Add the parameter values
         for label in self.parameter_labels: values.append(parameter_values[label])
-
-        # Resize string columns for the new values
-        self._resize_string_columns(values)
 
         # Add a row to the table
         self.add_row(values)
@@ -420,10 +416,8 @@ class ChiSquaredTable(SmartTable):
         :return:
         """
 
+        # Set the values
         values = [name, chi_squared]
-
-        # Resize string columns for the new values
-        self._resize_string_columns(values)
 
         # Add a row to the table
         self.add_row(values)

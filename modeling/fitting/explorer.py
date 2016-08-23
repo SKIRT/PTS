@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
@@ -28,6 +31,7 @@ from .tables import ParametersTable, ChiSquaredTable
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
+from ..config.parameters import units as parameter_units
 
 # -----------------------------------------------------------------
 
@@ -165,6 +169,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # the number of cores per process, for non-schedulers
+        self.launcher.config.dry = self.config.dry               # dry run (don't actually launch simulations)
 
         # Simulation analysis options
 
@@ -420,7 +425,7 @@ class ParameterExplorer(FittingComponent):
         self.generation_info["Chi squared table path"] = fs.join(self.generation_info["Path"], "chi_squared.dat")
 
         # Initialize the parameters table
-        self.parameters_table = ParametersTable.initialize(self.free_parameter_labels)
+        self.parameters_table = ParametersTable.initialize(self.free_parameter_labels, parameter_units)
 
         # Initialize the chi squared table
         self.chi_squared_table = ChiSquaredTable.initialize()
@@ -562,7 +567,14 @@ class ParameterExplorer(FittingComponent):
 
             # Set the parameter values as a dictionary for this individual model
             parameter_values = dict()
-            for label in self.free_parameter_labels: parameter_values[label] = self.generator.parameters[label][i]
+            for label in self.free_parameter_labels:
+
+                # Get the value for this model from the generator and get the unit defined for this parameter
+                value = self.generator.parameters[label][i]
+                unit = Unit(parameter_units[label])
+
+                # Set the value with unit to the dictionary for this model
+                parameter_values[label] = value * unit
 
             # Debugging
             log.debug("Adjusting ski file for the following model parameters:")

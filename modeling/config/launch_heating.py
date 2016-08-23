@@ -8,17 +8,22 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.basics.host import find_host_ids
+from pts.modeling.analysis.component import get_analysis_run_names, get_last_run_name
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
+# Positional option
+definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", get_last_run_name(fs.cwd()), get_analysis_run_names(fs.cwd()))
+
 # Optional settings
 definition.add_optional("remotes", "string_list", "the list of remote hosts on which to launch the simulations", ["nancy"], choices=find_host_ids())
 
 # Simulation options
-definition.add_optional("packages", "real", "the number of photon packages per wavelength", 1e7)
+definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 1e7)
 
 # Settings for the wavelength grid
 definition.add_optional("nwavelengths", "integer", "the number of wavelengths to simulate the best model", 450)

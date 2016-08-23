@@ -80,14 +80,10 @@ class TimingTable(SmartTable):
         :return:
         """
 
-        #if cluster_name is None: cluster_name = "--"
-
+        # Set the values
         values = [name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths, packages,
                   cells, selfabsorption, transient_heating, data_parallel, total_runtime, setup_time, stellar_time,
                   spectra_time, dust_time, writing_time, waiting_time, communication_time, intermediate_time]
-
-        # Resize string columns for longer entries
-        self._resize_string_columns(values)
 
         # Add a row to the table
         self.add_row(values)

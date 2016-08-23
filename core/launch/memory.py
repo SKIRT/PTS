@@ -62,11 +62,9 @@ class MemoryTable(SmartTable):
         :return:
         """
 
+        # Set the values
         values = [name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
                   dust_cells, selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage]
-
-        # Resize string columns for longer entries
-        self._resize_string_columns(values)
 
         # Add a row to the table
         self.add_row(values)

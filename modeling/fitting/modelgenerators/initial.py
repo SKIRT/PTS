@@ -103,7 +103,7 @@ class InitialModelGenerator(ModelGenerator):
                 value = individual[i]
 
                 # Add the parameter value to the dictionary
-                self.parameters[self.parameter_labels_order[i]].append(value)
+                self.parameters[self.free_parameter_labels[i]].append(value)
 
     # -----------------------------------------------------------------
 

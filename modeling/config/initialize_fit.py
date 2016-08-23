@@ -26,7 +26,7 @@ definition.sections["dg"].add_optional("level_range", "integer_range", "the rang
 definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "the range of the maximum mass fraction in each cell", "0.5e-6>1e-5", convert_default=True)
 
 # Add optional arguments
-definition.add_optional("packages", "real", "the number of photon packages per wavelength", 2e5)
+definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)
 definition.add_flag("selfabsorption", "enable dust self-absorption")
 
 # -----------------------------------------------------------------

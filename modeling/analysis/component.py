@@ -20,6 +20,7 @@ from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
+from .info import AnalysisRunInfo
 
 # -----------------------------------------------------------------
 
@@ -60,7 +61,7 @@ class AnalysisComponent(ModelingComponent):
         # Call the setup function of the base class
         super(AnalysisComponent, self).setup()
 
-        ## TIMING TABLE
+        # Timing table --
 
         # Set the path to the timing table
         self.timing_table_path = fs.join(self.analysis_path, "timing.dat")
@@ -72,7 +73,7 @@ class AnalysisComponent(ModelingComponent):
             timing_table = TimingTable()
             timing_table.saveto(self.timing_table_path)
 
-        ## MEMORY TABLE
+        # Memory table --
 
         # Set the path to the memory table
         self.memory_table_path = fs.join(self.analysis_path, "memory.dat")
@@ -107,5 +108,68 @@ class AnalysisComponent(ModelingComponent):
         """
 
         return MemoryTable.from_file(self.memory_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.analysis_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    def get_run_path(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        path = fs.join(self.analysis_path, run_name)
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_run_info(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        path = fs.join(self.get_run_path(run_name), "info.dat")
+        return AnalysisRunInfo.from_file(path)
+
+# -----------------------------------------------------------------
+
+def get_analysis_run_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    analysis_path = fs.join(modeling_path, "analysis")
+    return fs.directories_in_path(analysis_path, returns="name")
+
+# -----------------------------------------------------------------
+
+def get_last_run_name(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return sorted(get_analysis_run_names(modeling_path))[-1]
 
 # -----------------------------------------------------------------

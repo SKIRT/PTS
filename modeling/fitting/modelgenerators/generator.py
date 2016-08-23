@@ -44,9 +44,6 @@ class ModelGenerator(FittingComponent):
         # Call the constructor of the base class
         super(ModelGenerator, self).__init__(config)
 
-        # The order of the free parameter labels
-        self.parameter_labels_order = None
-
         # The dictionary with the parameter ranges
         self.ranges = OrderedDict()
 
@@ -83,7 +80,7 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
-        return len(self.parameters[self.parameter_labels_order[0]])
+        return len(self.parameters[self.free_parameter_labels[0]])
 
     # -----------------------------------------------------------------
 
@@ -99,7 +96,7 @@ class ModelGenerator(FittingComponent):
         minima = []
 
         # Set the list values
-        for label in self.parameter_labels_order: minima.append(self.ranges[label].min)
+        for label in self.free_parameter_labels: minima.append(self.ranges[label].min)
 
         # Return the minimal parameter values
         return minima
@@ -118,7 +115,7 @@ class ModelGenerator(FittingComponent):
         maxima = []
 
         # Set the list values
-        for label in self.parameter_labels_order: maxima.append(self.ranges[label].max)
+        for label in self.free_parameter_labels: maxima.append(self.ranges[label].max)
 
         # Return the maximal parameter values
         return maxima
@@ -171,9 +168,6 @@ class ModelGenerator(FittingComponent):
 
         # Call the setup of the base class
         super(ModelGenerator, self).setup()
-
-        # Establish the order of the free parameters
-        self.parameter_labels_order = list(self.free_parameter_labels)
 
     # -----------------------------------------------------------------
 

@@ -29,6 +29,7 @@ from ...core.basics.distribution import Distribution
 from ..basics.instruments import load_instrument
 from ..core.model import Model
 from ..basics.grids import load_grid
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -978,5 +979,26 @@ def get_best_model_for_generation(modeling_path, generation_name):
 
     # Return the model
     return model
+
+# -----------------------------------------------------------------
+
+def get_ski_file_for_simulation(modeling_path, generation_name, simulation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :param simulation_name:
+    :return:
+    """
+
+    # Get the galaxy name
+    galaxy_name = fs.name(modeling_path)
+
+    # Determine the path to the ski file
+    ski_path = fs.join(modeling_path, generation_name, simulation_name, galaxy_name + ".ski")
+
+    # Load and return the ski file
+    return SkiFile(ski_path)
 
 # -----------------------------------------------------------------

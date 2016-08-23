@@ -51,6 +51,24 @@ types_and_ranges["i1_old"] = ("real", None)
 types_and_ranges["sfr_pressure"] = ("quantity", None)
 types_and_ranges["inclination"] = ("angle", None)
 
+# Default units of the different parameters
+units = dict()
+units["distance"] = "Mpc"
+units["ionizing_scaleheight"] = "pc"
+# sfr_compactness: no unit
+units["fuv_young"] = "W/micron"
+units["old_scaleheight"] = "pc"
+units["position_angle"] = "deg"
+units["dust_mass"] = "Msun"
+units["fuv_ionizing"] = "W/micron"
+# metallicity: no unit
+units["young_scaleheight"] = "pc"
+# sfr_covering: no unit
+units["dust_scaleheight"] = "pc"
+units["i1_old"] = "W/micron"
+units["sfr_pressure"] = "K/m3"
+units["inclination"] = "deg"
+
 # -----------------------------------------------------------------
 
 # Create the configuration

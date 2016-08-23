@@ -52,7 +52,6 @@ definition.add_flag("young_log", "use logarithmic spacing of the young stellar l
 definition.add_flag("ionizing_log", "use logarithmic spacing of the ionizing stellar luminosity values")
 definition.add_flag("dust_log", "use logarithmic spacing of the dust mass values")
 definition.add_flag("visualise", "make visualisations")
-definition.add_flag("dry", "dry-run (don't actually launch simulations)")
 
 # Simulation options
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)
@@ -64,5 +63,8 @@ definition.add_flag("transient_heating", "transient (non-LTE) dust heating", Tru
 # Parallelization options
 definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations (for scheduler)", 4)
 definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 4)
+
+# Special options
+definition.add_flag("dry", "dry-run (don't actually launch simulations)")
 
 # -----------------------------------------------------------------

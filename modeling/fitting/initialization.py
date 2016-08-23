@@ -279,7 +279,7 @@ class FittingInitializer(FittingComponent):
         self.ski_template.add_instrument("earth", self.instruments["SED"])
 
         # Set the number of photon packages
-        self.ski_template.setpackages(self.config.packages)
+        self.ski_template.setpackages(self.config.npackages)
 
         # Set the name of the wavelength grid file
         self.ski_template.set_file_wavelength_grid("wavelengths.txt")

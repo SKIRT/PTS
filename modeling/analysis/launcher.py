@@ -32,7 +32,7 @@ from ..core.emissionlines import EmissionLines
 from ..fitting.wavelengthgrids import create_one_wavelength_grid
 from ..fitting.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
-from ..fitting.component import get_best_model_for_generation
+from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
 
 # -----------------------------------------------------------------
 
@@ -133,34 +133,37 @@ class AnalysisLauncher(AnalysisComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Create the wavelength grid
+        # 2. Load the ski file
+        self.load_ski()
+
+        # 3. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 3. Create the dust grid
+        # 4. Create the dust grid
         self.create_dust_grid()
 
-        # 4. Create the instruments
+        # 5. Create the instruments
         self.create_instruments()
 
-        # 5. Set the input paths
+        # 6. Set the input paths
         self.set_input()
 
-        # 5. Adjust the ski file
+        # 7. Adjust the ski file
         self.adjust_ski()
 
-        # 6. Set parallelization
+        # 8. Set parallelization
         self.set_parallelization()
 
-        # 7. Estimate the runtime for the simulation
+        # 9. Estimate the runtime for the simulation
         if self.remote.scheduler: self.estimate_runtime()
 
-        # 9. Set the analysis options
+        # 10. Set the analysis options
         self.set_analysis_options()
 
-        # 10. Writing
+        # 11. Writing
         self.write()
 
-        # 11. Launch the simulation
+        # 12. Launch the simulation
         self.launch()
 
     # -----------------------------------------------------------------
@@ -253,6 +256,21 @@ class AnalysisLauncher(AnalysisComponent):
         self.run_colours_path = fs.create_directory_in(self.analysis_run_path, "colours")
         self.run_residuals_path = fs.create_directory_in(self.analysis_run_path, "residuals")
         self.run_heating_path = fs.create_directory_in(self.analysis_run_path, "heating")
+
+    # -----------------------------------------------------------------
+
+    def load_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ski file ...")
+
+        # Load the ski file
+        self.ski = get_ski_file_for_simulation(self.config.path, self.config.generation, self.best_model.simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -374,14 +392,20 @@ class AnalysisLauncher(AnalysisComponent):
         # Inform the user
         log.info("Adjusting the ski file parameters ...")
 
+        # Set the number of photon packages
+        self.ski.setpackages(self.config.npackages)
+
+        # Enable dust self-absorption
+        self.ski.enable_selfabsorption()
+
+        # Enable transient heating
+        self.ski.set_transient_dust_emissivity()
+
         # Remove the existing instruments
         self.ski.remove_all_instruments()
 
         # Add the instruments
         for name in self.instruments: self.ski.add_instrument(name, self.instruments[name])
-
-        # Set the number of photon packages
-        self.ski.setpackages(self.config.packages)
 
         # Enable all writing options for analysis
         #self.ski.enable_all_writing_options()
@@ -502,6 +526,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.misc.images_wcs = self.reference_wcs
         self.analysis_options.misc.images_kernels = kernel_paths
         self.analysis_options.misc.images_unit = "MJy/sr"
+        self.analysis_options.misc.make_images_remote = self.config.images_remote
 
         # Set the paths of the timing and memory table files
         self.analysis_options.timing_table_path = self.timing_table_path

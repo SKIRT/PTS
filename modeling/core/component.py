@@ -374,11 +374,11 @@ class ModelingComponent(Configurable):
     def free_parameter_labels(self):
 
         """
-        This function ...
+        THIS FUNCTION GUARANTEES THAT THE LABELS ARE ALWAYS ORDERED ALPHABETICALLY !!
         :return:
         """
 
-        return self.fitting_configuration.free_parameters if self.fitting_configuration is not None else None
+        return sorted(self.fitting_configuration.free_parameters) if self.fitting_configuration is not None else None
 
     # -----------------------------------------------------------------
 
