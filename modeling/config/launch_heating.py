@@ -26,7 +26,12 @@ definition.add_optional("remotes", "string_list", "the list of remote hosts on w
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 1e7)
 
 # Settings for the wavelength grid
-definition.add_optional("nwavelengths", "integer", "the number of wavelengths to simulate the best model", 450)
+#definition.add_optional("nwavelengths", "integer", "the number of wavelengths to simulate the best model", 450)
+
+# Settings for the wavelength grid
+definition.add_section("wg", "options for the wavelength grid")
+definition.sections["wg"].add_optional("range", "quantity_range", "the wavelength range", "0.1 micron>10micron", convert_default=True)
+definition.sections["wg"].add_optional("npoints", "integer", "the number of wavelength points", 25)
 
 # Settings for the dust grid
 definition.add_section("dg", "options for the dust grid")

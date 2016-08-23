@@ -143,8 +143,8 @@ class WavelengthGridGenerator(object):
         log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
 
         # Create the grid
-        if add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_wavelength_grid(npoints, self.emission_lines, fixed)
-        else: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_wavelength_grid(npoints, fixed=fixed)
+        if add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, self.emission_lines, fixed)
+        else: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, fixed=fixed)
 
         # Add the grid
         self.grids.append(grid)
@@ -159,10 +159,13 @@ class WavelengthGridGenerator(object):
 
 # -----------------------------------------------------------------
 
-def create_one_wavelength_grid(npoints, emission_lines=None, fixed=None):
+def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None):
 
     """
     This function ...
+    :param npoints:
+    :param emission_lines:
+    :param fixed:
     :return:
     """
 
@@ -177,6 +180,7 @@ def create_one_wavelength_grid(npoints, emission_lines=None, fixed=None):
 
     # Loop over the subgrids
     for subgrid in subgrids:
+
         # Debugging
         log.debug("Adding the " + subgrid + " subgrid ...")
 
@@ -194,29 +198,8 @@ def create_one_wavelength_grid(npoints, emission_lines=None, fixed=None):
     emission_npoints = 0
     if emission_lines is not None:
 
-        # Add emission line grid points
-        logdelta = 0.001
-        for line in emission_lines:
-
-            center = line.center
-            left = line.left
-            right = line.right
-
-            # logcenter = np.log10(center)
-            logleft = np.log10(left if left > 0 else center) - logdelta
-            logright = np.log10(right if right > 0 else center) + logdelta
-            newgrid = []
-            for w in wavelengths:
-                logw = np.log10(w)
-                if logw < logleft or logw > logright:
-                    newgrid.append(w)
-            newgrid.append(center)
-            if left > 0:
-                newgrid.append(left)
-            if right > 0:
-                newgrid.append(right)
-            wavelengths = newgrid
-
+        # Add the mission lines
+        wavelengths = add_emission_lines(wavelengths, emission_lines)
         emission_npoints = len(emission_lines)
 
     # Add fixed wavelength points
@@ -233,6 +216,160 @@ def create_one_wavelength_grid(npoints, emission_lines=None, fixed=None):
 
     # Return the grid and some information about the subgrids
     return grid, subgrid_npoints, emission_npoints, fixed_npoints
+
+# -----------------------------------------------------------------
+
+def create_one_logarithmic_wavelength_grid(wrange, npoints, emission_lines=None, fixed=None):
+
+    """
+    This function ...
+    :param wrange:
+    :param npoints:
+    :param emission_lines:
+    :param fixed:
+    :return:
+    """
+
+    # Verify the grid parameters
+    if npoints < 2: raise ValueError("the number of points in the grid should be at least 2")
+    if wrange.min <= 0: raise ValueError("the shortest wavelength should be positive")
+
+    # Calculate log of boundaries
+    logmin = np.log10(float(wrange.min))
+    logmax = np.log10(float(wrange.max))
+
+    # Calculate the grid points
+    wavelengths = np.logspace(logmin, logmax, num=npoints, endpoint=True, base=10)
+
+    # Add the emission lines
+    emission_npoints = 0
+    if emission_lines is not None:
+
+        # Add the mission lines
+        wavelengths = add_emission_lines(wavelengths, emission_lines)
+        emission_npoints = len(emission_lines)
+
+    # Add fixed wavelength points
+    fixed_npoints = 0
+    if fixed is not None:
+        fixed_npoints = len(fixed)
+        for wavelength in fixed: wavelengths.append(wavelength)
+
+    # Sort the wavelength points
+    wavelengths = sorted(wavelengths)
+
+    # Create the wavelength grid
+    grid = WavelengthGrid.from_wavelengths(wavelengths)
+
+    # Return the grid
+    return grid, emission_npoints, fixed_npoints
+
+# -----------------------------------------------------------------
+
+def create_one_nested_log_wavelength_grid(wrange, npoints, wrange_zoom, npoints_zoom, emission_lines=None, fixed=None):
+
+    """
+    This function ...
+    :param wrange:
+    :param npoints:
+    :param wrange_zoom:
+    :param npoints_zoom:
+    :param emission_lines:
+    :param fixed:
+    :return:
+    """
+
+    # Verify the grid parameters
+    if npoints < 2: raise ValueError("the number of points in the low-resolution grid should be at least 2")
+    if npoints_zoom < 2: raise ValueError("the number of points in the high-resolution subgrid should be at least 2")
+    if wrange.min <= 0: raise ValueError("the shortest wavelength should be positive")
+    if (wrange_zoom.min <= wrange.min
+        or wrange_zoom.max <= wrange_zoom.min
+        or wrange.max <= wrange_zoom.max):
+        raise ValueError("the high-resolution subgrid should be properly nested in the low-resolution grid")
+
+    logmin = np.log10(float(wrange.min))
+    logmax = np.log10(float(wrange.max))
+    logmin_zoom = np.log10(float(wrange_zoom.min))
+    logmax_zoom = np.log10(float(wrange_zoom.max))
+
+    # Build the high- and low-resolution grids independently
+    base_grid = np.logspace(logmin, logmax, num=npoints, endpoint=True, base=10)
+    zoom_grid = np.logspace(logmin_zoom, logmax_zoom, num=npoints_zoom, endpoint=True, base=10)
+
+    # Merge the two grids
+    wavelengths = []
+
+    # Add the wavelengths of the low-resolution grid before the first wavelength of the high-resolution grid
+    for wavelength in base_grid:
+        if wavelength < wrange_zoom.min: wavelengths.append(wavelength)
+
+    # Add the wavelengths of the high-resolution grid
+    for wavelength in zoom_grid: wavelengths.append(wavelength)
+
+    # Add the wavelengths of the low-resolution grid after the last wavelength of the high-resolution grid
+    for wavelength in base_grid:
+        if wavelength > wrange_zoom.max: wavelengths.append(wavelength)
+
+    # Add the emission lines
+    emission_npoints = 0
+    if emission_lines is not None:
+
+        # Add the mission lines
+        wavelengths = add_emission_lines(wavelengths, emission_lines)
+        emission_npoints = len(emission_lines)
+
+    # Add fixed wavelength points
+    fixed_npoints = 0
+    if fixed is not None:
+        fixed_npoints = len(fixed)
+        for wavelength in fixed: wavelengths.append(wavelength)
+
+    # Sort the wavelength points
+    wavelengths = sorted(wavelengths)
+
+    # Create the wavelength grid
+    grid = WavelengthGrid.from_wavelengths(wavelengths)
+
+    # Return the grid
+    return grid, emission_npoints, fixed_npoints
+
+# -----------------------------------------------------------------
+
+def add_emission_lines(wavelengths, emission_lines):
+
+    """
+    This function ...
+    :param wavelengths:
+    :param emission_lines:
+    :return:
+    """
+
+    # Add emission line grid points
+    logdelta = 0.001
+    for line in emission_lines:
+
+        center = line.center
+        left = line.left
+        right = line.right
+
+        # logcenter = np.log10(center)
+        logleft = np.log10(left if left > 0 else center) - logdelta
+        logright = np.log10(right if right > 0 else center) + logdelta
+        newgrid = []
+        for w in wavelengths:
+            logw = np.log10(w)
+            if logw < logleft or logw > logright:
+                newgrid.append(w)
+        newgrid.append(center)
+        if left > 0:
+            newgrid.append(left)
+        if right > 0:
+            newgrid.append(right)
+        wavelengths = newgrid
+
+    # Return the new wavelength list
+    return wavelengths
 
 # -----------------------------------------------------------------
 

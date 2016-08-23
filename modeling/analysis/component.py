@@ -147,6 +147,19 @@ class AnalysisComponent(ModelingComponent):
         path = fs.join(self.get_run_path(run_name), "info.dat")
         return AnalysisRunInfo.from_file(path)
 
+    # -----------------------------------------------------------------
+
+    def get_run(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        info_path = fs.join(self.get_run_path(run_name), "info.dat")
+        return AnalysisRun.from_info(info_path)
+
 # -----------------------------------------------------------------
 
 def get_analysis_run_names(modeling_path):
@@ -171,5 +184,106 @@ def get_last_run_name(modeling_path):
     """
 
     return sorted(get_analysis_run_names(modeling_path))[-1]
+
+# -----------------------------------------------------------------
+
+class AnalysisRun(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        self.galaxy_name = None
+        self.info = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_info(cls, info_path):
+
+        """
+        This function ...
+        :param info_path:
+        :return:
+        """
+
+        # Create the instance
+        run = cls()
+
+        # Set the analysis run info
+        run.info = AnalysisRunInfo.from_file(info_path)
+
+        # Set galaxy name
+        modeling_path = fs.directory_of(fs.directory_of(run.info.path))
+        run.galaxy_name = fs.name(modeling_path)
+
+        # Return the analysis run object
+        return run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.analysis_run_path, )
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkiFile(self.ski_file_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grid_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.analysis_run_path, )
 
 # -----------------------------------------------------------------

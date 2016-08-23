@@ -25,7 +25,7 @@ from ...core.launch.parallelization import Parallelization
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.options import SchedulingOptions
 from ...magic.misc.kernels import AnianoKernels
-from .wavelengthgrids import create_one_wavelength_grid
+from .wavelengthgrids import create_one_subgrid_wavelength_grid
 from .dustgrids import create_one_dust_grid
 from ..core.emissionlines import EmissionLines
 from ...core.simulation.definition import SingleSimulationDefinition
@@ -249,7 +249,7 @@ class BestModelLauncher(FittingComponent):
         fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
 
         # Create the grid
-        grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
+        grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
 
         # Set the grid
         self.wavelength_grid = grid

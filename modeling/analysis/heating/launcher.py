@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.heating.launch Contains the DustHeatingContributionLauncher class
+## \package pts.modeling.analysis.heating.launch Contains the DustHeatingContributionLauncher class.
 
 # -----------------------------------------------------------------
 
@@ -21,12 +21,20 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
-from ....core.simulation.skifile import SkiFile
 from ....core.launch.batchlauncher import BatchLauncher
 from ....core.simulation.definition import SingleSimulationDefinition
 from ....core.tools.logging import log
-from ...basics.instruments import SimpleInstrument, FrameInstrument
-from ...basics.projection import GalaxyProjection
+from ...core.emissionlines import EmissionLines
+from ....core.basics.range import RealRange
+from ...fitting.wavelengthgrids import create_one_logarithmic_wavelength_grid
+
+# -----------------------------------------------------------------
+
+contributions = ["total", "old", "young", "ionizing", "unevolved"]
+component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
+                    "young": "Young stars",
+                    "ionizing": "Ionizing stars",
+                    "unevolved": ["Young stars", "Ionizing stars"]}
 
 # -----------------------------------------------------------------
 
@@ -52,23 +60,29 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
 
-        # The run name
-        self.analysis_run_name = None
+        # The analysis run
+        self.analysis_run = None
 
-        # The path to the analysis run directory
-        self.analysis_run_path = None
+        # Create directory for instruments created for investigating heating
+        self.heating_instruments_path = None
+
+        # The path to the wavelength grid file
+        self.heating_wavelength_grid_path = None
 
         # The ski file for the model
         self.ski = None
 
-        # The projection systems
-        self.projections = dict()
-
-        # The instrument to be used for the simulations
-        self.instruments = dict()
-
         # The ski files for the different contributions
         self.ski_files = dict()
+
+        # The paths to the simulation input files
+        self.input_paths = None
+
+        # The wavelength grid
+        self.wavelength_grid = None
+
+        # The instruments
+        self.instruments = dict()
 
     # -----------------------------------------------------------------
 
@@ -82,17 +96,17 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the ski file describing the best model
-        self.load_ski()
-
-        # 3. Load the projection systems
-        self.load_projections()
+        # Create the wavelength grid
+        self.create_wavelength_grid()
 
         # 4. Create the instruments
         self.create_instruments()
 
+        # Set the simulation input
+        self.set_input()
+
         # 5. Create the ski files for the different contributors
-        self.create_ski_files()
+        self.adjust_ski()
 
         # 6. Writing
         self.write()
@@ -112,18 +126,52 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # Call the setup function of the base class
         super(DustHeatingContributionLauncher, self).setup()
 
-        # The path to the directory with the best model parameters
-        self.best_path = fs.join(self.fit_path, "best")
+        # Load the analysis run
+        self.load_run()
+
+        # Set options for the batch launcher
+        self.set_launcher_options()
+
+    # -----------------------------------------------------------------
+
+    def load_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the analysis run " + self.config.run + " ...")
+
+        # Get the run
+        self.analysis_run = self.get_run(self.config.run)
+
+        self.heating_instruments_path = fs.create_directory_in(self.analysis_run.path, "heating")
+
+        self.heating_wavelength_grid_path = fs.join(self.)
+
+    # -----------------------------------------------------------------
+
+    def set_launcher_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting options for the batch simulation launcher ...")
 
         # Set options for the BatchLauncher
         self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
-        #self.launcher.config.group_simulations = True  # group multiple simulations into a single job
+        # self.launcher.config.group_simulations = True  # group multiple simulations into a single job
         self.launcher.config.remotes = self.config.remotes  # the remote hosts on which to run the simulations
         self.launcher.config.logging.verbose = True
 
     # -----------------------------------------------------------------
 
-    def load_ski(self):
+    def create_wavelength_grid(self):
 
         """
         This function ...
@@ -131,17 +179,23 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Loading the ski file ...")
+        log.info("Creating the wavelength grid ...")
 
-        # Determine the path to the best model ski file
-        path = fs.join(self.best_path, self.galaxy_name + ".ski")
+        # Create the emission lines instance
+        emission_lines = EmissionLines()
 
-        # Load the ski file
-        self.ski = SkiFile(path)
+        # Fixed wavelengths in the grid
+        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()] # in micron
+
+        # Range in micron
+        micron_range = RealRange(self.config.wg.range.min.to("micron").value, self.config.wg.range.max.to("micron").value)
+
+        # Create and set the grid
+        self.wavelength_grid = create_one_logarithmic_wavelength_grid(micron_range, self.config.wg.npoints, emission_lines, fixed)
 
     # -----------------------------------------------------------------
 
-    def create_ski_files(self):
+    def create_instruments(self):
 
         """
         This function ...
@@ -149,7 +203,49 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Creating the ski files for the different contributions ...")
+        log.info("Creating the instruments ...")
+
+        # Debugging
+        log.debug("Creating a simple instrument for the earth projection ...")
+
+        # Create the instrument and add it to the dictionary
+        self.instruments["earth"] = self.create_instrument("simple", "earth")
+
+        # Debugging
+        log.debug("Creating a frame instrument for the faceon projection ...")
+
+        # Create the instrument and add it to the dictionary
+        self.instruments["faceon"] = self.create_instrument("frame", "faceon")
+
+    # -----------------------------------------------------------------
+
+    def set_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the input paths ...")
+
+        # Set the paths to the input maps
+        self.input_paths = self.input_map_paths
+
+        # Determine and set the path to the wavelength grid file
+        self.input_paths.append(self.heating_wavelength_grid_path)
+
+    # -----------------------------------------------------------------
+
+    def adjust_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adjusting the ski files for simulating the different contributions ...")
 
         # Remove the existing instruments
         self.ski.remove_all_instruments()
@@ -166,7 +262,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         self.ski.set_log_wavelength_grid(min_wavelength, max_wavelength, points, write=True)
 
         # Set the number of photon packages
-        self.ski.setpackages(self.config.packages)
+        self.ski.setpackages(self.config.npackages)
 
         # Set dust system writing options
         self.ski.set_write_convergence()
@@ -211,12 +307,36 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Copy the input maps (if necessary)
-        self.copy_maps()
+        # Write the wavelength grid
+        self.write_wavelength_grid()
+
+        # Write the instruments
+        self.write_instruments()
 
         # Write the ski files
         self.write_ski_files()
         
+    # -----------------------------------------------------------------
+
+    def write_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the instruments ...")
+
+        # Loop over the instruments
+        for name in self.instruments:
+
+            # Determine path
+            path = fs.join(heating_instruments_path, name + ".instr")
+
+            # Save
+            self.instruments[name].save(path)
+
     # -----------------------------------------------------------------
 
     def write_ski_files(self):
@@ -227,7 +347,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the ski file ...")
+        log.info("Writing the ski files ...")
 
         # Loop over the contributions
         for contribution in self.ski_files:

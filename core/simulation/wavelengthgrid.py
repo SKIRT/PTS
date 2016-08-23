@@ -112,6 +112,87 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def logarithmic(cls, wrange, npoints):
+
+        """
+        This function ...
+        :param wrange:
+        :param npoints:
+        :return:
+        """
+
+        # Verify the grid parameters
+        if npoints < 2: raise ValueError("the number of points in the grid should be at least 2")
+        if wrange.min <= 0: raise ValueError("the shortest wavelength should be positive")
+
+        # Calculate log of boundaries
+        logmin = np.log10(float(wrange.min))
+        logmax = np.log10(float(wrange.max))
+
+        # Calculate the grid points
+        base_grid = np.logspace(logmin, logmax, num=npoints, endpoint=True, base=10)
+
+        # Create the wavelength grid
+        wavelength_grid = cls.from_wavelengths(base_grid)
+
+        # Return the wavelength grid
+        return wavelength_grid
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def nested_log(cls, wrange, npoints, wrange_zoom, npoints_zoom):
+
+        """
+        This function ...
+        :param wrange:
+        :param npoints:
+        :param wrange_zoom:
+        :param npoints_zoom:
+        :return:
+        """
+
+        # Verify the grid parameters
+        if npoints < 2: raise ValueError("the number of points in the low-resolution grid should be at least 2")
+        if npoints_zoom < 2: raise ValueError("the number of points in the high-resolution subgrid should be at least 2")
+        if wrange.min <= 0: raise ValueError("the shortest wavelength should be positive")
+        if (wrange_zoom.min <= wrange.min
+            or wrange_zoom.max <= wrange_zoom.min
+            or wrange.max <= wrange_zoom.max):
+            raise ValueError("the high-resolution subgrid should be properly nested in the low-resolution grid")
+
+        logmin = np.log10(float(wrange.min))
+        logmax = np.log10(float(wrange.max))
+        logmin_zoom = np.log10(float(wrange_zoom.min))
+        logmax_zoom = np.log10(float(wrange_zoom.max))
+
+        # Build the high- and low-resolution grids independently
+        base_grid = np.logspace(logmin, logmax, num=npoints, endpoint=True, base=10)
+        zoom_grid = np.logspace(logmin_zoom, logmax_zoom, num=npoints_zoom, endpoint=True, base=10)
+
+        # Merge the two grids
+        total_grid = []
+
+        # Add the wavelengths of the low-resolution grid before the first wavelength of the high-resolution grid
+        for wavelength in base_grid:
+            if wavelength < wrange_zoom.min: total_grid.append(wavelength)
+
+        # Add the wavelengths of the high-resolution grid
+        for wavelength in zoom_grid: total_grid.append(wavelength)
+
+        # Add the wavelengths of the low-resolution grid after the last wavelength of the high-resolution grid
+        for wavelength in base_grid:
+            if wavelength > wrange_zoom.max: total_grid.append(wavelength)
+
+        # Create the wavelength grid
+        wavelength_grid = cls.from_wavelengths(total_grid)
+
+        # Return the wavelength grid
+        return wavelength_grid
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_skirt_output(cls, path):
 
         """
