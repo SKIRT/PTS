@@ -21,6 +21,7 @@ from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
 from .info import AnalysisRunInfo
+from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -229,6 +230,186 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @property
+    def name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def out_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "out")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extr_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "extr")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "plot")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def misc_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "misc")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "attenuation")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "colours")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def residuals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "residuals")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "heating")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_wavelength_grid_path(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return fs.join(self.heating_path, "wavelength_grid.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_instruments_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.heating_path, "instruments")
+
+    # -----------------------------------------------------------------
+
+    def heating_simulation_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        return fs.join(self.heating_path, contribution)
+
+    # -----------------------------------------------------------------
+
+    def heating_ski_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        return fs.join(self.heating_simulation_path_for_contribution(contribution), self.galaxy_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    def heating_output_path_for_contribution(self, contribution):
+
+        """
+        This function ...
+        :param contribution:
+        :return:
+        """
+
+        return fs.join(self.heating_simulation_path_for_contribution(contribution), "out")
+
+    # -----------------------------------------------------------------
+
+    @property
     def analysis_run_name(self):
 
         """
@@ -277,6 +458,18 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @property
+    def dust_grid_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "dust_grid.dg")
+
+    # -----------------------------------------------------------------
+
+    @property
     def wavelength_grid_path(self):
 
         """
@@ -284,6 +477,18 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.analysis_run_path, )
+        return fs.join(self.path, "wavelength_grid.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def instruments_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "instruments")
 
 # -----------------------------------------------------------------

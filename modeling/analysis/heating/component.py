@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.heating.component Contains the DustHeatingAnalysisComponent class
+## \package pts.modeling.analysis.heating.component Contains the DustHeatingAnalysisComponent class.
 
 # -----------------------------------------------------------------
 
@@ -34,57 +34,5 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
         # Call the constructor of the base class
         super(DustHeatingAnalysisComponent, self).__init__(config)
-
-        # -- Attributes --
-
-        # The different contributing components
-        self.contributions = ["total", "old", "young", "ionizing", "unevolved"]
-        self.component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
-                                "young": "Young stars",
-                                "ionizing": "Ionizing stars",
-                                "unevolved": ["Young stars", "Ionizing stars"]}
-
-        # The paths to the analysis/heating/total, analysis/heating/old, analysis/heating/young,
-        # analysis/heating/ionizing directory and analysis/heating/unevolved directory
-        self.simulation_paths = dict()
-        self.output_paths = dict()
-        self.ski_paths = dict()
-
-    # -----------------------------------------------------------------
-
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(DustHeatingAnalysisComponent, self).setup()
-
-        # Set the paths to the different simulation directories and corresponding output directories
-        for contribution in self.contributions:
-
-            # Set the simulation path
-            simulation_path = fs.join(self.analysis_heating_path, contribution)
-
-            # Create the simulation directory if it is not present
-            if not fs.is_directory(simulation_path): fs.create_directory(simulation_path)
-
-            # Set the path to the output directory
-            output_path = fs.join(simulation_path, "out")
-
-            # Create the output directory if it is not present
-            if not fs.is_directory(simulation_path): fs.create_directory(output_path)
-
-            # Add the paths to the appropriate dictionaries
-            self.simulation_paths[contribution] = simulation_path
-            self.output_paths[contribution] = output_path
-
-            # Determine the path to the ski file for this contribution
-            ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
-
-            # Set the ski file path
-            self.ski_paths[contribution] = ski_path
 
 # -----------------------------------------------------------------

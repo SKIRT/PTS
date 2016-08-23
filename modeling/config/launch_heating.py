@@ -20,7 +20,7 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", get_last_run_name(fs.cwd()), get_analysis_run_names(fs.cwd()))
 
 # Optional settings
-definition.add_optional("remotes", "string_list", "the list of remote hosts on which to launch the simulations", ["nancy"], choices=find_host_ids())
+definition.add_optional("remote", "string", "remote host on which to launch the simulations", "nancy", choices=find_host_ids())
 
 # Simulation options
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 1e7)
