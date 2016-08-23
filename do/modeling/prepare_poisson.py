@@ -23,6 +23,7 @@ from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.magic.misc.extinction import GalacticExtinction
 from pts.magic.misc.kernels import AnianoKernels
 from pts.magic.core.kernel import ConvolutionKernel
+from pts.core.tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -114,8 +115,17 @@ for path in paths:
     # Make frame remote
     remote_frame = RemoteFrame.from_local(poisson, remote_host_id)
 
+    # For SDSS, get the FWHM of the image
+    fwhm = None
+    if instrument == "SDSS":
+        statistics_path = fs.join(prep_path, instrument + " " + band, "sources", "statistics.dat")
+        # Get the FWHM from the statistics file
+        with open(statistics_path) as statistics_file:
+            for line in statistics_file:
+                if "FWHM" in line: fwhm = parsing.quantity(line.split("FWHM: ")[1].replace("\n", ""))
+
     # Get the kernel path for convolution from this filter to the Pacs red filter
-    kernel_file_path = aniano.get_kernel_path(fltr, "Pacs red")
+    kernel_file_path = aniano.get_kernel_path(fltr, "Pacs red", fwhm=fwhm)
     kernel = ConvolutionKernel.from_file(kernel_file_path)
 
     # Prepare the kernel
