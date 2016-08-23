@@ -320,8 +320,8 @@ class ImagePreparer(OldConfigurable):
         # Inform the user
         log.info("Correcting for galactic extinction ...")
 
-        # Correct the primary frame for galactic extinction
-        self.image.frames.primary *= 10**(0.4 * self.config.attenuation)
+        # Correct all data frames for galactic extinction (primary, poisson error frame, ...)
+        self.image *= 10**(0.4 * self.config.attenuation)
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("corrected_for_extinction.fits")
