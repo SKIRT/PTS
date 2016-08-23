@@ -29,9 +29,6 @@ from pts.magic.core.kernel import ConvolutionKernel
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# The galaxy name
-definition.add_required("galaxy", "string", "galaxy name")
-
 # Get configuration
 setter = ArgumentConfigurationSetter("prepare_poisson")
 config = setter.run(definition)

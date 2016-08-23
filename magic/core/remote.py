@@ -1004,7 +1004,7 @@ class RemoteFrame(object):
         log.debug("Downloading the frame ...")
 
         # Download
-        self.remote.download(remote_file_path, local_directory)
+        self.remote.download(remote_file_path, local_directory, compress=True, show_output=True)
 
         # Remove the remote file
         self.remote.remove_file(remote_file_path)
@@ -1403,7 +1403,7 @@ class RemoteImage(object):
         log.debug("Downloading the image ...")
 
         # Download
-        self.remote.download(remote_image_path, local_directory)
+        self.remote.download(remote_image_path, local_directory, compress=True, show_output=True)
 
         # Remove the remote file
         self.remote.remove_file(remote_image_path)
