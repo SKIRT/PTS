@@ -637,7 +637,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        np.nanmax(self._data) == np.nanmin(self._data)
+        return np.nanmax(self._data) == np.nanmin(self._data)
 
     # -----------------------------------------------------------------
 
