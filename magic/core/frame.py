@@ -630,6 +630,22 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def filled_like(cls, frame, value):
+
+        """
+        This function ...
+        :param frame:
+        :param value:
+        :return:
+        """
+
+        frame = cls.zeros_like(frame)
+        frame.fill(value)
+        return frame
+
+    # -----------------------------------------------------------------
+
     def is_constant(self):
 
         """

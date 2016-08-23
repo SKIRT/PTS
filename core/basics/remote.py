@@ -169,6 +169,9 @@ class Remote(object):
         # Disconnect
         if self.connected:
 
+            # End python session if running
+            if self.in_python_session: self.end_python_session()
+
             self.ssh.logout()
             if connected_remotes is not None: del connected_remotes[self.host.id] # the conditional statement is because 'connected_remotes' is set to None during destruction at the end of a script
             self.connected = False
@@ -733,7 +736,7 @@ class Remote(object):
         :return:
         """
 
-        output = self.send_python_line(name, output=True, show_output=True)
+        output = self.send_python_line(name, output=True)
         assert len(output) == 1, output
         return eval(output[0])
 
@@ -1012,7 +1015,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download(self, origin, destination, timeout=30, new_name=None, compress=False, show_output=False):
+    def download(self, origin, destination, timeout=60, new_name=None, compress=False, show_output=False):
 
         """
         This function ...
@@ -1124,7 +1127,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def upload(self, origin, destination, timeout=30, new_name=None, compress=False, show_output=False):
+    def upload(self, origin, destination, timeout=60, new_name=None, compress=False, show_output=False):
 
         """
         This function ...

@@ -724,7 +724,7 @@ class RemoteFrame(object):
         """
 
         # Upload the WCS
-        self.remote.send_python_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")', show_output=True)
+        self.remote.send_python_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
 
         # Create remote frame label for the footprint
         footprint_label = get_new_label("Frame", self.remote)

@@ -107,6 +107,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # 4. Normalize the map
         self.normalize_map()
 
+        # 5. Cut-off map
+        self.cutoff_map()
+
         # 5. Writing
         self.write()
 
@@ -387,6 +390,20 @@ class IonizingStellarMapMaker(MapsComponent):
         # Normalize the dust map
         self.map.normalize()
         self.map.unit = None
+
+    # -----------------------------------------------------------------
+
+    def cutoff_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cutting-off the map at low significance of the data ...")
+
+
 
     # -----------------------------------------------------------------
 

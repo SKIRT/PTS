@@ -76,6 +76,9 @@ class DustMapMaker(MapsComponent):
         # 6. Make a dust map based on Cortese
         if self.config.make_cortese: self.make_cortese()
 
+        # Cut-off the map
+        self.cutoff_map()
+
         # 7. Writing
         self.write()
 
@@ -100,6 +103,10 @@ class DustMapMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making the TIR to FUV map ...")
+
+        # Create the maker
         maker = TIRtoFUVMapMaker()
 
         # Run the maker
@@ -191,6 +198,20 @@ class DustMapMaker(MapsComponent):
 
         # Add the dust map to the dictionary
         self.maps["cortese"] = maker.map
+
+    # -----------------------------------------------------------------
+
+    def cutoff_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cutting-off the map at low significance of the data ...")
+
+
 
     # -----------------------------------------------------------------
 

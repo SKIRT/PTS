@@ -197,12 +197,13 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frame(self, name, masked=True):
+    def get_frame(self, name, masked=True, mask_value=0.0):
 
         """
         This function ...
         :param name:
         :param masked:
+        :param mask_value:
         :return:
         """
 
@@ -215,7 +216,7 @@ class DataSet(object):
             # Get the mask and set frame pixels to zero
             if name in self.mask_paths:
                 mask = self.get_mask(name)
-                frame[mask] = 0.0
+                frame[mask] = mask_value
             else: log.warning("No mask available for " + name + " frame")
 
         # Set the name
@@ -238,7 +239,7 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_errors(self, name, masked=True):
+    def get_errors(self, name, masked=True, mask_value=0.0):
 
         """
         This function ...
@@ -261,7 +262,7 @@ class DataSet(object):
             # Get the mask and set frame pixels to zero
             if name in self.mask_paths:
                 mask = self.get_mask(name)
-                errors[mask] = 0.0
+                errors[mask] = mask_value
             else: log.warning("No mask available for " + name + " frame")
 
         # Set the name
@@ -269,6 +270,98 @@ class DataSet(object):
 
         # Return the errors frame
         return errors
+
+    # -----------------------------------------------------------------
+
+    def get_relative_errors(self, name, masked=True, mask_value=0.0):
+
+        """
+        This function ...
+        :param name:
+        :param masked:
+        :param mask_value:
+        :return:
+        """
+
+        # Check if the name appears in the frames list
+        if name not in self.paths: raise ValueError("Invalid name: " + name)
+
+        # Get the frame
+        frame = self.get_frame(name)
+
+        # Get the errors
+        errors = self.get_errors(name)
+        if errors is None: return None
+
+        # Calculate the relative error map
+        rel_errors = errors / frame
+
+        # Check if the error frame has to be masked
+        if masked:
+
+            # Get the mask and set frame pixels to zero
+            if name in self.mask_paths:
+                mask = self.get_mask(name)
+                rel_errors[mask] = mask_value
+            else: log.warning("No mask available for " + name + " frame")
+
+        # Return the relative error map
+        return rel_errors
+
+    # -----------------------------------------------------------------
+
+    def get_significance(self, name, levels=None, below_levels_value=float("nan")):
+
+        """
+        This function ...
+        :param name:
+        :param levels:
+        :param below_levels_value:
+        :return:
+        """
+
+        # Sort the level bins from small to large
+        if levels is not None: levels = sorted(levels)
+
+        # Get the frame
+        frame = self.get_frame(name)
+
+        # Get the errors
+        errors = self.get_errors(name)
+        if errors is None: return None
+
+        # If level bins are specified
+        if levels is not None:
+
+            # Create a frame full of nans
+            significance = Frame.filled_like(frame, below_levels_value)
+
+            # Loop over the levels
+            for level in levels:
+                significance[frame > level * errors] = level
+
+        # No level bins, just calculate the exact significance level in each pixel
+        else: significance = frame / errors
+
+        # Return the significance map
+        return significance
+
+    # -----------------------------------------------------------------
+
+    def get_significance_mask(self, name, level):
+
+        """
+        This function ...
+        :param name:
+        :param level:
+        :return:
+        """
+
+        # Get significance map
+        significance = self.get_significance(name)
+
+        # Return the mask for a certain significance level
+        return significance > level
 
     # -----------------------------------------------------------------
 

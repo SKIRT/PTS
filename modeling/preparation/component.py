@@ -87,6 +87,6 @@ class PreparationComponent(ModelingComponent):
                 self.original_paths[prep_name] = original_path
 
         # Create the preparation subdirectories for each image
-        fs.create_directories(self.prep_paths.values())
+        #fs.create_directories(self.prep_paths.values())
 
 # -----------------------------------------------------------------
