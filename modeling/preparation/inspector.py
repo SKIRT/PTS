@@ -109,6 +109,9 @@ class PreparationInspector(PreparationComponent):
             # Add the level map to the dictionary
             self.significance_maps[name] = self.dataset.get_significance(name, levels)
 
+        # Add the H-alpha significance map
+        self.significance_maps["Halpha"] = self.get_halpha_significance_levels(levels)
+
     # -----------------------------------------------------------------
 
     def write(self):

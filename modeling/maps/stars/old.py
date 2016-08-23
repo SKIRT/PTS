@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....core.tools import filesystem as fs
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -46,6 +47,9 @@ class OldStellarMapMaker(MapsComponent):
         # The map of the old stars
         self.map = None
 
+        # The image of significance masks
+        self.significance = Image()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -61,16 +65,19 @@ class OldStellarMapMaker(MapsComponent):
         # 2. Load the necessary frames
         self.load_frames()
 
-        # 3. Make the map of old stars
+        # 3. Calculate the significance masks
+        self.calculate_significance()
+
+        # 4. Make the map of old stars
         self.make_map()
 
-        # 4. Normalize the map
+        # 5. Normalize the map
         self.normalize_map()
 
-        # 5. Cut-off the map
+        # 6. Cut-off the map
         self.cutoff_map()
 
-        # 5. Writing
+        # 7. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -116,6 +123,21 @@ class OldStellarMapMaker(MapsComponent):
 
         # Set the frame
         self.i1_jy = frame
+
+    # -----------------------------------------------------------------
+
+    def calculate_significance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the significance masks ...")
+
+        # Get the significance mask
+        self.significance.add_mask(self.dataset.get_significance_mask("IRAC I1", self.config.i1_significance), "IRAC I1")
 
     # -----------------------------------------------------------------
 
@@ -193,6 +215,9 @@ class OldStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Cutting-off the map at low significance of the data ...")
 
+        # Set zero outside of significant pixels
+        self.map[self.significance.intersect_masks().inverse()] = 0.0
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -210,6 +235,9 @@ class OldStellarMapMaker(MapsComponent):
 
         # Write the map of old stars
         self.write_map()
+
+        # Write the significance mask
+        self.write_significance_masks()
 
     # -----------------------------------------------------------------
 
@@ -243,5 +271,20 @@ class OldStellarMapMaker(MapsComponent):
 
         # Write
         self.map.save(self.old_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_significance_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the significance masks ...")
+
+        # Write
+        self.significance.save(self.old_stellar_significance_path)
 
 # -----------------------------------------------------------------

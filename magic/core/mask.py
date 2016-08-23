@@ -12,12 +12,53 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astropy.io import fits
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..basics.mask import MaskBase
+
+# -----------------------------------------------------------------
+
+def union(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # Initialize data
+    data = np.zeros(args[0].shape)
+
+    # Combine the masks
+    for mask in args: data += mask
+
+    # Return the mask
+    return Mask(data)
+
+# -----------------------------------------------------------------
+
+def intersection(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # Initialize data
+    data = np.ones(args[0].shape)
+
+    # Combine the masks
+    for mask in args: data *= mask
+
+    # Return the mask
+    return Mask(data)
 
 # -----------------------------------------------------------------
 

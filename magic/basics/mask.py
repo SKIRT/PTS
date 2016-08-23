@@ -323,6 +323,31 @@ class MaskBase(object):
         self._data += other.data
         return self
 
+    # -----------------------------------------------------------------
+
+    def invert(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self._data = np.logical_not(self._data)
+
+    # -----------------------------------------------------------------
+
+    def inverse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create new, inverted copy
+        new = self.copy()
+        new.invert()
+        return new
+
 # -----------------------------------------------------------------
 
 class Mask(np.ndarray):

@@ -20,6 +20,7 @@ from ....core.basics.distribution import Distribution
 from ....core.plot.distribution import DistributionPlotter
 from ....magic.basics.geometry import Composite
 from ....magic.basics.region import Region
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -63,6 +64,9 @@ class YoungStellarMapMaker(MapsComponent):
         # Region of area taken for calculating distribution of pixel values
         self.distribution_region = None
 
+        # The image of significance masks
+        self.significance = Image()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -77,6 +81,9 @@ class YoungStellarMapMaker(MapsComponent):
 
         # 2. Load the necessary frames
         self.load_frames()
+
+        # 3. Calculate the significance masks
+        self.calculate_significance()
 
         # 3. Make the map of young stars
         self.make_map()
@@ -158,6 +165,21 @@ class YoungStellarMapMaker(MapsComponent):
         # Normalize the disk image
         self.disk.normalize()
         self.disk.unit = None
+
+    # -----------------------------------------------------------------
+
+    def calculate_significance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the significance masks ...")
+
+        # Get the significance mask
+        self.significance.add_mask(self.dataset.get_significance_mask("GALEX FUV", self.config.fuv_significance), "GALEX FUV")
 
     # -----------------------------------------------------------------
 
@@ -296,6 +318,9 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Cutting-off the map at low significance of the data ...")
 
+        # Set zero outside of significant pixels
+        self.map[self.significance.intersect_masks().inverse()] = 0.0
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -319,6 +344,9 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Write the final young stellar map
         self.write_map()
+
+        # Write the significance mask
+        self.write_significance_masks()
 
     # -----------------------------------------------------------------
 
@@ -398,5 +426,20 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Write
         self.map.save(self.young_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_significance_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the significance masks ...")
+
+        # Write
+        self.significance.save(self.young_stellar_significance_path)
 
 # -----------------------------------------------------------------

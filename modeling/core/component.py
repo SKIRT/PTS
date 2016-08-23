@@ -103,6 +103,12 @@ class ModelingComponent(Configurable):
         self.ionizing_stellar_map_path = None
         self.dust_map_path = None
 
+        # The paths to the significance maps
+        self.old_stellar_significance_path = None
+        self.young_stellar_significance_path = None
+        self.ionizing_stellar_significance_path = None
+        self.dust_significance_path = None
+
         # The path to the galaxy properties file
         self.galaxy_properties_path = None
 
@@ -203,6 +209,12 @@ class ModelingComponent(Configurable):
         self.young_stellar_map_path = fs.join(self.maps_path, "young_stars.fits")
         self.ionizing_stellar_map_path = fs.join(self.maps_path, "ionizing_stars.fits")
         self.dust_map_path = fs.join(self.maps_path, "dust.fits")
+
+        # The paths to the significance masks
+        self.old_stellar_significance_path = fs.join(self.maps_path, "old_stars_significance.fits")
+        self.young_stellar_significance_path = fs.join(self.maps_path, "young_stars_significance.fits")
+        self.ionizing_stellar_significance_path = fs.join(self.maps_path, "ionizing_stars_significance.fits")
+        self.dust_significance_path = fs.join(self.maps_path, "dust_significance.fits")
 
         # Set the path to the galaxy properties file
         self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
@@ -485,6 +497,83 @@ class ModelingComponent(Configurable):
 
         # Return the frame
         return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def halpha_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the image
+        path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
+
+        # Check whether the Halpha image is present
+        if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
+
+        # Load the errors frame
+        errors = Frame.from_file(path, plane="errors")
+
+        # Return the errors frame
+        return errors
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def halpha_relative_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        frame = self.halpha_frame
+        errors = self.halpha_errors
+
+        # Calculate the relative errors frame and return it
+        return errors / frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def halpha_significance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        frame = self.halpha_frame
+        errors = self.halpha_errors
+
+        # Calculate the significance map and return it
+        return frame / errors
+
+    # -----------------------------------------------------------------
+
+    def get_halpha_significance_levels(self, levels, below_levels_value=float("nan")):
+
+        """
+        This function ...
+        :param levels:
+        :param below_levels_value:
+        :return:
+        """
+
+        # Get the significance map
+        significance = self.halpha_significance
+
+        # Create a frame full of nans
+        significance_levels = Frame.filled_like(significance, below_levels_value)
+
+        # Loop over the levels
+        for level in levels: significance_levels[significance > level] = level
+
+        # Return the significance levels map
+        return significance_levels
 
     # -----------------------------------------------------------------
 

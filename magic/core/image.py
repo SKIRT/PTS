@@ -30,6 +30,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from . import io
 from .frame import Frame, sum_frames
+from .mask import intersection, union
 
 # -----------------------------------------------------------------
 
@@ -796,6 +797,36 @@ class Image(object):
 
             # Crop the region
             self.regions[region_name] = self.regions[region_name].cropped(x_min, x_max, y_min, y_max)
+
+    # -----------------------------------------------------------------
+
+    def intersect_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the total mask
+        mask = intersection(self.masks.values())
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def unite_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the total mask
+        mask = union(self.masks.values())
+
+        # Return the mask
+        return mask
 
     # -----------------------------------------------------------------
 
