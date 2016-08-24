@@ -27,6 +27,7 @@ from ....core.basics.distribution import Distribution
 from ....core.plot.distribution import DistributionPlotter
 from ....magic.basics.geometry import Composite
 from ....magic.basics.region import Region
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -82,6 +83,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # The region of the pixels used for plotting the distributions of pixel values
         self.distribution_region = None
 
+        # The image of significance masks
+        self.significance = Image()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -96,6 +100,9 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # 2. Load the necessary frames
         self.load_frames()
+
+        # Calculate the significance masks
+        self.calculate_significance()
 
         # 3. Make the map
         self.make_map()
@@ -150,6 +157,22 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Load the disk image and normalize to unity
         self.load_disk()
+
+    # -----------------------------------------------------------------
+
+    def calculate_significance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the significance masks ...")
+
+        # Get the significance mask
+        self.significance.add_mask(self.dataset.get_significance_mask("MIPS 24mu", self.config.mips24_significance), "MIPS 24mu")
+        self.significance.add_mask(self.get_halpha_significance_mask(self.config.halpha_significance), "Halpha")
 
     # -----------------------------------------------------------------
 
@@ -403,7 +426,8 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Cutting-off the map at low significance of the data ...")
 
-
+        # Set zero outside of significant pixels
+        self.map[self.significance.intersect_masks().inverse()] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -434,6 +458,9 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Write the ionizing stars map
         self.write_map()
+
+        # Write the significance masks
+        self.write_significance_masks()
 
     # -----------------------------------------------------------------
 
@@ -573,5 +600,20 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Write
         self.map.save(self.ionizing_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_significance_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the significance masks ...")
+
+        # Write
+        self.significance.save(self.ionizing_stellar_significance_path)
 
 # -----------------------------------------------------------------

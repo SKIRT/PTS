@@ -21,6 +21,7 @@ from .buat import BuatDustMapMaker
 from .cortese import CorteseDustMapMaker
 from ....core.tools import filesystem as fs
 from .tirtofuv import TIRtoFUVMapMaker
+from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -49,6 +50,12 @@ class DustMapMaker(MapsComponent):
         # The dust maps
         self.maps = dict()
 
+        # The best dust map
+        self.map = None
+
+        # The image of significance masks
+        self.significance = Image()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -60,6 +67,9 @@ class DustMapMaker(MapsComponent):
 
         # 1. Call the setup function
         self.setup()
+
+        # 2. Calculate the significance masks
+        self.calculate_significance()
 
         # 2. Make the TIR to FUV map
         if self.config.make_buat or self.config.make_cortese: self.make_tir_to_fuv()
@@ -75,6 +85,9 @@ class DustMapMaker(MapsComponent):
 
         # 6. Make a dust map based on Cortese
         if self.config.make_cortese: self.make_cortese()
+
+        # Make the final map
+        self.make_map()
 
         # Cut-off the map
         self.cutoff_map()
@@ -93,6 +106,25 @@ class DustMapMaker(MapsComponent):
 
         # Call the setup function of the base class
         super(DustMapMaker, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def calculate_significance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the significance masks ...")
+
+        # Get the significance masks
+        self.significance.add_mask(self.dataset.get_significance_mask("GALEX FUV", self.config.fuv_significance), "GALEX FUV")
+        self.significance.add_mask(self.dataset.get_significance_mask("MIPS 24mu", self.config.mips24_significance), "MIPS 24mu")
+        self.significance.add_mask(self.dataset.get_significance_mask("Pacs blue", self.config.pacs70_significance), "Pacs blue")
+        self.significance.add_mask(self.dataset.get_significance_mask("Pacs red", self.config.pacs160_significance), "Pacs red")
+        self.significance.add_mask(self.dataset.get_significance_mask("2MASS H", self.config.h_significance), "2MASS H")
 
     # -----------------------------------------------------------------
 
@@ -201,6 +233,18 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the best dust map
+        self.map = self.maps[self.config.best_method].copy()
+
+    # -----------------------------------------------------------------
+
     def cutoff_map(self):
 
         """
@@ -211,7 +255,8 @@ class DustMapMaker(MapsComponent):
         # Inform the user
         log.info("Cutting-off the map at low significance of the data ...")
 
-
+        # Set zero outside of significant pixels
+        self.map[self.significance.intersect_masks().inverse()] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -230,6 +275,9 @@ class DustMapMaker(MapsComponent):
 
         # Write the final dust map
         self.write_map()
+
+        # Write the significance mask
+        self.write_significance_masks()
 
     # -----------------------------------------------------------------
 
@@ -265,6 +313,21 @@ class DustMapMaker(MapsComponent):
         log.info("Writing the final dust map ...")
 
         # Write the final dust map
-        self.maps[self.config.best_method].save(self.dust_map_path)
+        self.map.save(self.dust_map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_significance_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the significance masks ...")
+
+        # Write
+        self.significance.save(self.dust_significance_path)
 
 # -----------------------------------------------------------------

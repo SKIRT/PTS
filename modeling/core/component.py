@@ -577,6 +577,18 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_halpha_significance_mask(self, level):
+
+        """
+        This function ...
+        :param level:
+        :return:
+        """
+
+        return self.halpha_significance > level
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def masked_disk_frame(self):
 
