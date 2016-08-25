@@ -794,6 +794,17 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def quadratic_sum(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sqrt(np.sum(self._data[self.nans().inverse()]**2))
+
+    # -----------------------------------------------------------------
+
     def normalize(self, to=1.0):
 
         """

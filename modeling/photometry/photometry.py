@@ -232,7 +232,8 @@ class PhotoMeter(PhotometryComponent):
             if "Pacs" in name or "SPIRE" in name: flux *= self.get_aperture_correction_factor(self.images[name], aniano, herschel)
 
             # Calculate the total flux error in Jansky
-            flux_error = self.errors[name].sum()
+            #flux_error = self.errors[name].sum()
+            flux_error = self.errors[name].quadratic_sum()
 
             # Create errorbar
             errorbar = ErrorBar(float(flux_error))
