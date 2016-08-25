@@ -50,6 +50,9 @@ class OldStellarMapMaker(MapsComponent):
         # The image of significance masks
         self.significance = Image()
 
+        # The cutoff mask
+        self.cutoff_mask = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -73,6 +76,9 @@ class OldStellarMapMaker(MapsComponent):
 
         # 5. Normalize the map
         self.normalize_map()
+
+        # Make the cutoff mask
+        self.make_cutoff_mask()
 
         # 6. Cut-off the map
         self.cutoff_map()
@@ -137,7 +143,7 @@ class OldStellarMapMaker(MapsComponent):
         log.info("Calculating the significance masks ...")
 
         # Get the significance mask
-        self.significance.add_mask(self.dataset.get_significance_mask("IRAC I1", self.config.i1_significance), "IRAC I1")
+        if self.config.i1_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("IRAC I1", self.config.i1_significance), "IRAC_I1")
 
     # -----------------------------------------------------------------
 
@@ -205,6 +211,27 @@ class OldStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_cutoff_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the cutoff mask ...")
+
+        # Combine the significance masks
+        high_significance = self.significance.intersect_masks()
+
+        # Fill holes
+        if self.config.remove_holes: high_significance.fill_holes()
+
+        # Set
+        self.cutoff_mask = high_significance.inverse()
+
+    # -----------------------------------------------------------------
+
     def cutoff_map(self):
 
         """
@@ -216,7 +243,7 @@ class OldStellarMapMaker(MapsComponent):
         log.info("Cutting-off the map at low significance of the data ...")
 
         # Set zero outside of significant pixels
-        self.map[self.significance.intersect_masks().inverse()] = 0.0
+        self.map[self.cutoff_mask] = 0.0
 
     # -----------------------------------------------------------------
 

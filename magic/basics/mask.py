@@ -348,6 +348,39 @@ class MaskBase(object):
         new.invert()
         return new
 
+    # -----------------------------------------------------------------
+
+    def fill_holes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a copy of this mask
+        #new_mask = self.copy()
+
+        # Perform the segmentation
+        segments = detect_sources(self.inverse().data.astype(float), 0.5, 1).data
+
+        # Find the label of the largest segment (=the background)
+        label_counts = np.bincount(segments.flatten())
+        if len(label_counts) > 1:
+
+            background_label = np.argmax(label_counts[1:]) + 1
+            # If the source mask is larger than the background (in number of pixels), the above will provide the correct label
+            # therefore we do the '[1:]'
+
+            # Create a mask for the holes identified as background
+            holes = self.inverse().data
+            holes[segments == background_label] = False
+
+            # Remove holes from the mask
+            self._data[holes] = True
+
+        # Return the new mask
+        #return new_mask
+
 # -----------------------------------------------------------------
 
 class Mask(np.ndarray):

@@ -86,6 +86,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # The image of significance masks
         self.significance = Image()
 
+        # The cutoff mask
+        self.cutoff_mask = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -113,6 +116,9 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # 4. Normalize the map
         self.normalize_map()
+
+        # Make the cutoff mask
+        self.make_cutoff_mask()
 
         # 5. Cut-off map
         self.cutoff_map()
@@ -171,8 +177,8 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Calculating the significance masks ...")
 
         # Get the significance mask
-        self.significance.add_mask(self.dataset.get_significance_mask("MIPS 24mu", self.config.mips24_significance), "MIPS 24mu")
-        self.significance.add_mask(self.get_halpha_significance_mask(self.config.halpha_significance), "Halpha")
+        if self.config.mips24_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("MIPS 24mu", self.config.mips24_significance), "MIPS_24mu")
+        if self.config.halpha_significance > 0: self.significance.add_mask(self.get_halpha_significance_mask(self.config.halpha_significance), "Halpha")
 
     # -----------------------------------------------------------------
 
@@ -416,6 +422,27 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_cutoff_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the cutoff mask ...")
+
+        # Combine the significance masks
+        high_significance = self.significance.intersect_masks()
+
+        # Fill holes
+        if self.config.remove_holes: high_significance.fill_holes()
+
+        # Set
+        self.cutoff_mask = high_significance.inverse()
+
+    # -----------------------------------------------------------------
+
     def cutoff_map(self):
 
         """
@@ -427,7 +454,7 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Cutting-off the map at low significance of the data ...")
 
         # Set zero outside of significant pixels
-        self.map[self.significance.intersect_masks().inverse()] = 0.0
+        self.map[self.cutoff_mask] = 0.0
 
     # -----------------------------------------------------------------
 

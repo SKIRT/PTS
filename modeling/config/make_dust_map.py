@@ -13,22 +13,15 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-#definition.add_section("cutoff", "options for cutting off the maps at certain noise levels")
-#definition.sections["cutoff"].add_optional("reference_path", "string", "...", None)
-#definition.sections["cutoff"].add_optional("level", "real", "cutoff when signal < level * uncertainty (ilse: 5)", 3.0)
-#definition.sections["cutoff"].add_optional("remove_holes", "boolean", "remove holes from the cutoff mask", True)
-
-#definition.add_section("dust")
-#definition.sections["dust"].add_section("ssfr")
-#definition.sections["dust"].sections["ssfr"].add_optional("mask_low_fuv_snr", bool, "...", True)
-#definition.sections["dust"].sections["ssfr"].add_optional("fuv_snr_level", float, "cut-off when signal(FUV) < fuv_snr_level * uncertainty(FUV)  (Ilse: 10.0)", 0.0)
-
 # The significance level
-definition.add_optional("fuv_significance", "real", "significance level of the FUV image below which to cut-off the dust map", 3.0)
-definition.add_optional("mips24_significance", "real", "significance level of the MIPS 24 micron image below which to cut-off the dust map", 3.0)
-definition.add_optional("pacs70_significance", "real", "significance level of the Pacs 70 micron image below which to cut-off the dust map", 3.0)
-definition.add_optional("pacs160_significance", "real", "significance level of the Pacs 160 micron image below which to cut-off the dust map", 3.0)
-definition.add_optional("h_significance", "real", "significance level of the 2MASS H image below which to cut-off the dust map", 3.0) # used for SSFR
+definition.add_optional("fuv_significance", "real", "significance level of the FUV image below which to cut-off the dust map", 2.5)
+definition.add_optional("mips24_significance", "real", "significance level of the MIPS 24 micron image below which to cut-off the dust map", 2.0)
+definition.add_optional("pacs70_significance", "real", "significance level of the Pacs 70 micron image below which to cut-off the dust map", 1.0)
+definition.add_optional("pacs160_significance", "real", "significance level of the Pacs 160 micron image below which to cut-off the dust map", 2.0)
+definition.add_optional("h_significance", "real", "significance level of the 2MASS H image below which to cut-off the dust map", 0.0) # used for SSFR
+
+# Remove holes from the cutoff mask
+definition.add_flag("remove_holes", "remove holes from the total cutoff mask", True)
 
 definition.add_flag("make_black_body", "make dust map based on black-body fitting", True)
 definition.add_flag("make_emission", "make dust map based on emission", True)

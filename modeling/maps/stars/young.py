@@ -67,6 +67,9 @@ class YoungStellarMapMaker(MapsComponent):
         # The image of significance masks
         self.significance = Image()
 
+        # The cutoff mask
+        self.cutoff_mask = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -94,6 +97,9 @@ class YoungStellarMapMaker(MapsComponent):
 
         # 4. Normalize the map
         self.normalize_map()
+
+        # Create the cutoff mask
+        self.make_cutoff_mask()
 
         # 5. Cut-off map
         self.cutoff_map()
@@ -179,7 +185,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Calculating the significance masks ...")
 
         # Get the significance mask
-        self.significance.add_mask(self.dataset.get_significance_mask("GALEX FUV", self.config.fuv_significance), "GALEX FUV")
+        if self.config.fuv_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("GALEX FUV", self.config.fuv_significance), "GALEX_FUV")
 
     # -----------------------------------------------------------------
 
@@ -308,6 +314,27 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_cutoff_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the cutoff mask ...")
+
+        # Combine the significance masks
+        high_significance = self.significance.intersect_masks()
+
+        # Fill holes
+        if self.config.remove_holes: high_significance.fill_holes()
+
+        # Set
+        self.cutoff_mask = high_significance.inverse()
+
+    # -----------------------------------------------------------------
+
     def cutoff_map(self):
 
         """
@@ -319,7 +346,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Cutting-off the map at low significance of the data ...")
 
         # Set zero outside of significant pixels
-        self.map[self.significance.intersect_masks().inverse()] = 0.0
+        self.map[self.cutoff_mask] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -347,6 +374,9 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Write the significance mask
         self.write_significance_masks()
+
+        # Write the cutoff mask
+        self.write_cutoff_mask()
 
     # -----------------------------------------------------------------
 
@@ -441,5 +471,20 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Write
         self.significance.save(self.young_stellar_significance_path)
+
+    # -----------------------------------------------------------------
+
+    def write_cutoff_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the cutoff mask ...")
+
+        # Write
+        self.cutoff_mask.save(self.young_stellar_cutoff_path)
 
 # -----------------------------------------------------------------

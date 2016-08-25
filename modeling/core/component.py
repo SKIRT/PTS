@@ -109,6 +109,12 @@ class ModelingComponent(Configurable):
         self.ionizing_stellar_significance_path = None
         self.dust_significance_path = None
 
+        # The paths to the cutoff masks
+        self.old_stellar_cutoff_path = None
+        self.young_stellar_cutoff_path = None
+        self.ionizing_stellar_cutoff_path = None
+        self.dust_cutoff_path = None
+
         # The path to the galaxy properties file
         self.galaxy_properties_path = None
 
@@ -215,6 +221,12 @@ class ModelingComponent(Configurable):
         self.young_stellar_significance_path = fs.join(self.maps_path, "young_stars_significance.fits")
         self.ionizing_stellar_significance_path = fs.join(self.maps_path, "ionizing_stars_significance.fits")
         self.dust_significance_path = fs.join(self.maps_path, "dust_significance.fits")
+
+        # The paths to the significance masks
+        self.old_stellar_cutoff_path = fs.join(self.maps_path, "old_stars_cutoff.fits")
+        self.young_stellar_cutoff_path = fs.join(self.maps_path, "young_stars_cutoff.fits")
+        self.ionizing_stellar_cutoff_path = fs.join(self.maps_path, "ionizing_stars_cutoff.fits")
+        self.dust_cutoff_path = fs.join(self.maps_path, "dust_cutoff.fits")
 
         # Set the path to the galaxy properties file
         self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")

@@ -808,7 +808,7 @@ class Image(object):
         """
 
         # Calculate the total mask
-        mask = intersection(self.masks.values())
+        mask = intersection(*self.masks.values())
 
         # Return the mask
         return mask
@@ -823,7 +823,7 @@ class Image(object):
         """
 
         # Calculate the total mask
-        mask = union(self.masks.values())
+        mask = union(*self.masks.values())
 
         # Return the mask
         return mask
