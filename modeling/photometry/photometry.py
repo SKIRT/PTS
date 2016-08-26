@@ -150,7 +150,7 @@ class PhotoMeter(PhotometryComponent):
         self.sed = ObservedSED()
 
         # Setup the remote PTS launcher
-        #self.launcher.setup(self.config.remote)
+        self.launcher.setup(self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -453,7 +453,7 @@ class PhotoMeter(PhotometryComponent):
 
 
         # Set cutout
-        input_dict["cutout"] = frame.data
+        input_dict["cutout"] = frame
 
 
         config_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec/pix").value
@@ -528,7 +528,7 @@ class PhotoMeter(PhotometryComponent):
 
         # SET INPUT DICT
 
-        input_dict["psf"] = psf.data
+        input_dict["psf"] = psf
 
         #annulus_inner_factor_x = annulus_inner.radius.x / truncation_ellipse_image.radius.x
         #annulus_outer_factor_x = annulus_outer.radius.x / truncation_ellipse_image.radius.x

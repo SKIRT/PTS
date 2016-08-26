@@ -728,6 +728,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def get_python_attributes(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_simple_python_variable("vars(" + name + ")")
+
+    # -----------------------------------------------------------------
+
     def get_simple_python_variable(self, name):
 
         """
@@ -737,7 +749,11 @@ class Remote(object):
         """
 
         output = self.send_python_line(name, output=True)
-        assert len(output) == 1, output
+
+        #if len(output) < 1: raise NameError("No such variable: '" + name + "'")
+        if len(output) == 0: return None
+        elif len(output) > 1: raise RuntimeError("Unexpected output: " + str(output))
+
         return eval(output[0])
 
     # -----------------------------------------------------------------
@@ -751,7 +767,8 @@ class Remote(object):
         :return:
         """
 
-        return self.get_simple_python_variable(variable + "." + name)
+        try: return self.get_simple_python_variable(variable + "." + name)
+        except NameError: raise AttributeError("Variable '" + variable + "' has no attribute '" + name + "'")
 
     # -----------------------------------------------------------------
 
