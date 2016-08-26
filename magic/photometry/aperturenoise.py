@@ -51,6 +51,21 @@ class ApertureNoiseCalculator(Configurable):
         # Call the constructor of the base class
         super(ApertureNoiseCalculator, self).__init__(config)
 
+        # INPUT
+
+        self.cutout = None
+        self.source_dict = None
+        self.band_dict = None
+        self.kwargs_dict = None
+        self.adj_semimaj_pix = None
+        self.adj_axial_ratio = None
+        self.adj_angle = None
+        self.centre_i = None
+        self.centre_j = None
+        self.downsample_factor = None
+
+        # OUTPUT
+
         # The aperture noise
         self.noise = None
 
@@ -60,15 +75,16 @@ class ApertureNoiseCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # Try the exact method
         success = self.try_exact()
@@ -88,15 +104,28 @@ class ApertureNoiseCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param input_dict:
         :return:
         """
 
         # Call the setup function of the base class
         super(ApertureNoiseCalculator, self).setup()
+
+        # Get input
+        self.cutout = kwargs.pop("cutout")
+        self.source_dict = kwargs.pop("source_dict")
+        self.band_dict = kwargs.pop("band_dict")
+        self.kwargs_dict = kwargs.pop("kwargs_dict")
+        self.adj_semimaj_pix = kwargs.pop("adj_semimaj_pix")
+        self.adj_axial_ratio = kwargs.pop("adj_axial_ratio")
+        self.adj_angle = kwargs.pop("adj_angle")
+        self.centre_i = kwargs.pop("centre_i")
+        self.centre_j = kwargs.pop("centre_j")
+        self.downsample_factor = kwargs.pop("downsample_factor")
 
         # Set the calculators
         self.exact_calculator = ExactApertureNoiseCalculator()
@@ -114,20 +143,19 @@ class ApertureNoiseCalculator(Configurable):
         # Attempt to determine aperture noise the preferred way, using full-size randomly-placed apertures
         log.info("Estimating aperture noise using full-size randomly-placed sky apertures ...")
 
-        # Calculate the aperture photometry noise
-        #ap_noise_dict = ApNoise(pod['cutout'].copy(), source_dict, band_dict, kwargs_dict, pod['adj_semimaj_pix'], pod['adj_axial_ratio'], pod['adj_angle'], pod['centre_i'], pod['centre_j'], downsample=int(band_dict['downsample_factor']))
-
+        # Set the input
         input_dict = dict()
-        input_dict["cutout"] = cutout
-        input_dict["source_dict"] = source_dict
-        input_dict["band_dict"] = band_dict
-        input_dict["kwargs_dict"] = kwargs_dict
-        input_dict["adj_semimaj_pix"] = adj_semimaj_pix
-        input_dict["adj_axial_ratio"] = adj_axial_ratio
-        input_dict["adj_angle"] = adj_angle
-        input_dict["centre_i"] = centre_i
-        input_dict["centre_j"] = centre_j
-        input_dict["downsample"] = int(band_dict['downsample_factor'])
+        input_dict["cutout"] = self.cutout.copy()
+        input_dict["source_dict"] = self.source_dict
+        input_dict["band_dict"] = self.band_dict
+        input_dict["kwargs_dict"] = self.kwargs_dict
+        input_dict["adj_semimaj_pix"] = self.adj_semimaj_pix
+        input_dict["adj_axial_ratio"] = self.adj_axial_ratio
+        input_dict["adj_angle"] = self.adj_angle
+        input_dict["centre_i"] = self.centre_i
+        input_dict["centre_j"] = self.centre_j
+        #input_dict["downsample"] = int(band_dict['downsample_factor'])
+        input_dict["downsample_factor"] = self.downsample_factor
 
         # Run the calculator
         self.exact_calculator.run(input_dict)
@@ -159,22 +187,20 @@ class ApertureNoiseCalculator(Configurable):
         # Inform the user
         log.info("Estimating aperture noise using extrapolation of noise estimated from smaller sky apertures ...")
 
-        # CALCULATE THE APERTURE NOISE USING EXTRAPOLATION
-        #ap_noise_dict = ApNoiseExtrap(pod['cutout'].copy(), source_dict, band_dict, kwargs_dict, pod['adj_semimaj_pix'], pod['adj_axial_ratio'], pod['adj_angle'], pod['centre_i'], pod['centre_j'])
-
+        # Set the input
         input_dict = dict()
-        input_dict["cutout"] = cutout
-        input_dict["source_dict"] = source_dict
-        input_dict["band_dict"] = band_dict
-        input_dict["kwargs_dict"] = kwargs_dict
-        input_dict["adj_semimaj_pix"] = adj_semimaj_pix
-        input_dict["adj_axial_ratio"] = adj_axial_ratio
-        input_dict["adj_angle"] = adj_angle
-        input_dict["centre_i"] = centre_i
-        input_dict["centre_j"] = centre_j
+        input_dict["cutout"] = self.cutout.copy()
+        input_dict["source_dict"] = self.source_dict
+        input_dict["band_dict"] = self.band_dict
+        input_dict["kwargs_dict"] = self.kwargs_dict
+        input_dict["adj_semimaj_pix"] = self.adj_semimaj_pix
+        input_dict["adj_axial_ratio"] = self.adj_axial_ratio
+        input_dict["adj_angle"] = self.adj_angle
+        input_dict["centre_i"] = self.centre_i
+        input_dict["centre_j"] = self.centre_j
 
         # Run the calculator
-        self.extrapolation_calculator.run(input_dict)
+        self.extrapolation_calculator.run(**input_dict)
 
         # If even aperture extrapolation is unable to produce an aperture noise estimate, report null value
         if not self.extrapolation_calculator.success: return False
@@ -208,7 +234,7 @@ class ExactApertureNoiseCalculator(object):
         self.centre_i = None
         self.centre_j = None
         self.mini = None
-        self.downsample = None
+        self.downsample_factor = None
 
         # OUTPUT
 
@@ -222,26 +248,32 @@ class ExactApertureNoiseCalculator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, input_dict):
+    def run(self, **kwargs):
 
         """
         Function that attempts to estimate aperture noise using randomly-positioned sky apertures of given dimensions
-        :param input_dict:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(input_dict)
+        self.setup(**kwargs)
 
-        # Calculate
+        # 2. Calculate the noise
         self.calculate()
 
     # -----------------------------------------------------------------
 
-    def setup(self, input_dict):
+    def setup(self, **input_dict):
 
         """
-        This function ...
+        This function .
+        cutout:                 Array upon which photometry is being perfomred upon
+        adj_semimaj_pix:        Semi-major axis of photometric aperture, in pixels.
+        adj_axial_ratio:        Axial ratio of photometryic aperture.
+        adj_angle:              Position angle of photometric aperture, in degrees.
+        adj_centre_i:           Zero-indexed, 0th-axis coordinate (equivalent to y-axis one-indexed coordinates in FITS terms) of centre position of photometric aperture.
+        adj_centre_j:           Zero-indexed, 1st-axis coordinate (equivalent to x-axis one-indexed coordinates in FITS terms) of centre position of photometric aperture.
         :return:
         """
 
@@ -257,7 +289,19 @@ class ExactApertureNoiseCalculator(object):
         self.centre_i = input_dict.pop("centre_i")
         self.centre_j = input_dict.pop("centre_j")
         self.mini = input_dict.pop("mini")
-        self.downsample = input_dict.pop("downsample")
+        self.downsample_factor = input_dict.pop("downsample_factor")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def downsample(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(self.downsample_factor)
 
     # -----------------------------------------------------------------
 
@@ -281,9 +325,10 @@ class ExactApertureNoiseCalculator(object):
 
         # If mini-apertures are being used, ensure downsampling isn't agressive (ie, apertures would be sub-Nyquist sampled)
         if self.mini != False:
-            ds_mini = int( np.round( float(self.mini - 1.0) ) / 2.355 )
-            if ds_mini>=2:
-                ds_factor = min([ ds_factor, ds_mini ])
+
+            ds_mini = int(np.round( float(self.mini - 1.0) ) / 2.355)
+
+            if ds_mini >= 2: ds_factor = min([ ds_factor, ds_mini ])
             else: ds_factor = 1
 
         # If downsampling is makes sense, apply
@@ -296,8 +341,7 @@ class ExactApertureNoiseCalculator(object):
             self.centre_j /= float(ds_factor)
             self.adj_semimaj_pix /= float(ds_factor)
 
-            if self.mini != False:
-                self.mini /= float(ds_factor)
+            if self.mini != False: self.mini /= float(ds_factor)
 
         # Handle input variables if mini-apertures are required
         if self.mini != False:
@@ -305,14 +349,16 @@ class ExactApertureNoiseCalculator(object):
             if ap_debug: log.debug('Setup: Preparing inputs for mini-apertures')
 
             if isinstance(self.mini, float) or isinstance(self.mini, int):
+
                 mini = float(self.mini)
                 adj_semimaj_pix_full = self.adj_semimaj_pix
                 self.adj_semimaj_pix = mini
-            else: pdb.set_trace()
-        else:
-            adj_semimaj_pix_full = self.adj_semimaj_pix
-        adj_semimin_pix_full = adj_semimaj_pix_full / self.adj_axial_ratio
 
+            else: pdb.set_trace()
+
+        else: adj_semimaj_pix_full = self.adj_semimaj_pix
+
+        adj_semimin_pix_full = adj_semimaj_pix_full / self.adj_axial_ratio
 
         # Define charactaristics of circular aperture with same area as elliptical source aperture
         ap_area = np.pi * self.adj_semimaj_pix * (self.adj_semimaj_pix / self.adj_axial_ratio)
@@ -447,19 +493,23 @@ class ExactApertureNoiseCalculator(object):
                 random_accept = False
                 random_reject_count = 0
                 while random_accept == False:
+
                     random_index = int(np.floor( np.random.rand() * float(random_i_list.shape[0])))
-                    if random_index not in random_failed:
-                        random_accept = True
-                    else:
-                        random_reject_count += 1
-                    if random_reject_count > (10*random_i_list.shape[0]):
-                        break
+
+                    if random_index not in random_failed: random_accept = True
+                    else: random_reject_count += 1
+                    if random_reject_count > (10 * random_i_list.shape[0]): break
+
                 if random_reject_count > (10 * random_i_list.shape[0]):
+
                     if ap_debug: log.debug('Rejection: Unable to find un-used random coodinates')
                     continue
+
                 random_i = random_i_list[random_index]
                 random_j = random_j_list[random_index]
+
                 if ap_debug:
+
                     ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
                     attempt_mask[ np.where(ap_mask==1) ] = sky_success_counter
                     log.debug('Aperture: '+str(sky_success_counter + 1) + ';   Generation: '+str(sky_gen_counter) + ';   Pix Coords: [' + str(random_i) + ',' + str(random_j)+']')
@@ -468,6 +518,7 @@ class ExactApertureNoiseCalculator(object):
                 #if ap_debug: print 'Checking: Determining whether aperture intersects source (sophisticated check)'
                 exclude_sum = ChrisFuncs.Photom.EllipseSum(exclude_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)[0]
                 if exclude_sum > 0:
+
                     if ap_debug: log.debug('Rejection: Aperture intersects source (according to sophisticated check)')
                     random_failed.append(random_index)
                     continue
@@ -490,6 +541,7 @@ class ExactApertureNoiseCalculator(object):
                 flag_tallies = np.array([ np.where(flag_mask_check==flag)[0].shape[0] for flag in (2.0**np.arange(0.0,sky_success_counter+2.0)).tolist() ])
                 flag_check = np.where(flag_tallies<(0.5*ap_area))[0].shape[0]
                 if flag_check > 1:
+
                     if ap_debug: log.debug('Rejection: Aperture over-sampled (according to sophisticated check)')
                     random_failed.append(random_index)
                     continue
@@ -632,13 +684,15 @@ class ExtrapolatingApertureNoiseCalculator(object):
 
         # OUTPUT
 
+        # The aperture noise
         self.noise = None
 
+        # Success flag
         self.success = False
 
     # -----------------------------------------------------------------
 
-    def run(self, input_dict):
+    def run(self, **input_dict):
 
         """
         This function attempts to estimate the aperture noise using raomy-positioned sky aperturs of given dimensions
@@ -647,18 +701,23 @@ class ExtrapolatingApertureNoiseCalculator(object):
         """
 
         # 1. Call the setup function
-        self.setup(input_dict)
+        self.setup(**input_dict)
 
         # 2. Calculate
         self.calculate()
 
     # -----------------------------------------------------------------
 
-    def setup(self, input_dict):
+    def setup(self, **input_dict):
 
         """
-        This function ...
-        :param input_dict:
+        This function .
+        cutout:                 Array upon which photometry is being perfomred upon
+        adj_semimaj_pix:        Semi-major axis of photometric aperture, in pixels.
+        adj_axial_ratio:        Axial ratio of photometryic aperture.
+        adj_angle:              Position angle of photometric aperture, in degrees.
+        adj_centre_i:           Zero-indexed, 0th-axis coordinate (equivalent to y-axis one-indexed coordinates in FITS terms) of centre position of photometric aperture.
+        adj_centre_j:           Zero-indexed, 1st-axis coordinate (equivalent to x-axis one-indexed coordinates in FITS terms) of centre position of photometric aperture.
         :return:
         """
 
@@ -681,6 +740,9 @@ class ExtrapolatingApertureNoiseCalculator(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Calculating the aperture noise ...")
+
         #source_id = source_dict['name']+'_'+band_dict['band_name']
 
         # Define charactaristics of circular aperture with same area as elliptical source aperture
@@ -689,7 +751,7 @@ class ExtrapolatingApertureNoiseCalculator(object):
 
         # Generate list of mini-aperture sizes to use, and declare result lists
         mini_ap_rad_base = 2.0
-        mini_ap_rad_pix_input = mini_ap_rad_base**np.arange( 1.0, np.ceil( math.log( sky_ap_rad_pix, mini_ap_rad_base ) ) )[::-1]
+        mini_ap_rad_pix_input = mini_ap_rad_base**np.arange(1.0, np.ceil( math.log( sky_ap_rad_pix, mini_ap_rad_base)))[::-1]
         min_ap_rad_pix_output = []
         mini_ap_noise_output = []
         mini_ap_num_output = []
@@ -697,18 +759,39 @@ class ExtrapolatingApertureNoiseCalculator(object):
         # Loop over radii for mini-apertures
         for mini_ap_rad_pix in mini_ap_rad_pix_input:
 
-            log.debug('Finding aperture noise for mini-apertures of radius '+str(mini_ap_rad_pix)[:6]+' pixels.')
-            mini_ap_noise_dict = ApNoise(cutout.copy(), self.source_dict, self.band_dict, self.kwargs_dict, self.adj_semimaj_pix, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j, mini=mini_ap_rad_pix, downsample=int(band_dict['downsample_factor']))
+            log.debug('Finding aperture noise for mini-apertures of radius '+str(mini_ap_rad_pix)[:6] + ' pixels.')
+
+            mini_calculator = ExactApertureNoiseCalculator()
+
+
+            input_dict_radius = dict()
+            input_dict_radius["cutout"] = self.cutout.copy()
+            input_dict_radius["source_dict"] = self.source_dict
+            input_dict_radius["band_dict"] = self.band_dict
+            input_dict_radius["kwargs_dict"] = self.kwargs_dict
+            input_dict_radius["adj_semimaj_pix"] = self.adj_semimaj_pix
+            input_dict_radius["adj_axial_ratio"] = self.adj_axial_ratio
+            input_dict_radius["adj_angle"] = self.adj_angle
+            input_dict_radius["centre_i"] = self.centre_i
+            input_dict_radius["centre_j"] = self.centre_j
+            input_dict_radius["mini_ap_rad_pix"] = mini_ap_rad_pix
+            input_dict_radius["downsample_factor"] = self.downsample_factor
+
+            mini_calculator.run(**input_dict_radius)
+
+            #mini_ap_noise_dict = ApNoise(cutout.copy(), self.source_dict, self.band_dict, self.kwargs_dict, self.adj_semimaj_pix, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j, mini=mini_ap_rad_pix, downsample=int(band_dict['downsample_factor']))
 
             # If mini-aperture succeeded, record and proceed; else, call it a day
-            if mini_ap_noise_dict['fail'] == False:
+            if mini_calculator.success:
 
                 min_ap_rad_pix_output.append(mini_ap_rad_pix)
-                mini_ap_noise_output.append(mini_ap_noise_dict['ap_noise'])
-                mini_ap_num_output.append(mini_ap_noise_dict['ap_num'])
+                mini_ap_noise_output.append(mini_calculator.noise)
+                mini_ap_num_output.append(mini_calculator.napertures)
 
-            elif mini_ap_noise_dict['fail'] == True: log.debug('Unable to place sufficient number of mini-apertures at this radius.')
+            # No succes for this radius
+            else: log.debug('Unable to place sufficient number of mini-apertures at this radius.')
 
+            # Stop when we have 6 datapoints
             if len(mini_ap_noise_output) >= 6: break
 
         # Convert output lists into arrays

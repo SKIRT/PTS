@@ -27,6 +27,8 @@ from ...magic.misc.kernels import AnianoKernels, HerschelKernels
 from ...magic.core.kernel import ConvolutionKernel
 from ...core.launch.pts import PTSRemoteLauncher
 from ...magic.misc.calibration import CalibrationError
+from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
+from ..preparation import unitconversion
 
 # -----------------------------------------------------------------
 
@@ -90,11 +92,11 @@ class PhotoMeter(PhotometryComponent):
         # The list of image frames
         self.images = dict()
 
-        # The corresponding error maps
-        #self.errors = dict()
+        # The fluxes
+        self.fluxes = dict()
 
-        # The disk ellipse
-        self.disk_ellipse = None
+        # The flux errors
+        self.errors = dict()
 
         # The SED
         self.sed = None
@@ -107,6 +109,10 @@ class PhotoMeter(PhotometryComponent):
 
         # Create the PTS remote launcher
         self.launcher = PTSRemoteLauncher()
+
+        # The instances that keep track of PSFs and convolution kernels
+        self.aniano = AnianoKernels()
+        self.herschel = HerschelKernels()
 
     # -----------------------------------------------------------------
 
@@ -126,13 +132,19 @@ class PhotoMeter(PhotometryComponent):
         # 3. Get the photometric flux points from the literature for comparison
         self.load_reference_seds()
 
-        # 4. Do the photometry
-        self.do_photometry()
+        # 4. Calculate the fluxes
+        self.calculate_fluxes()
 
-        # 5. Calculate the differences between the calculated photometry and the reference SEDs
+        # 5. Calculate the errors
+        self.calculate_errors()
+
+        # 6. Make the SED
+        self.make_sed()
+
+        # 7. Calculate the differences between the calculated photometry and the reference SEDs
         self.calculate_differences()
 
-        # 6. Writing
+        # 8. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -175,9 +187,6 @@ class PhotoMeter(PhotometryComponent):
             # Load the frame
             frame = self.dataset.get_frame(name)
 
-            # Load the error map
-            #errors = self.dataset.get_errors(name)
-
             # Debugging
             log.debug("Converting the " + name + " to Jy ...")
 
@@ -195,16 +204,12 @@ class PhotoMeter(PhotometryComponent):
             # CONVERT IMAGE
             frame *= conversion_factor
 
-            # CONVERT ERROR MAP
-            #errors *= conversion_factor
-
             # Add to the appropriate dictionary
             self.images[name] = frame
-            #self.errors[name] = errors
 
     # -----------------------------------------------------------------
 
-    def do_photometry(self):
+    def calculate_fluxes(self):
 
         """
         This function ...
@@ -212,53 +217,76 @@ class PhotoMeter(PhotometryComponent):
         """
 
         # Inform the user
-        log.info("Performing the photometry calculation ...")
-
-        # The object that keeps track of PSFs and convolution kernels
-        aniano = AnianoKernels()
-        herschel = HerschelKernels()
+        log.info("Calculating the aperture fluxes ...")
 
         # Loop over all the images
         for name in self.images:
 
             # Debugging
-            log.debug("Performing photometry for the " + name + " image ...")
-
-            # Debugging
-            log.debug("Calculating the total flux and flux error ...")
+            log.debug("Calculating the total flux in the " + name + " image ...")
 
             # Calculate the total flux in Jansky
             flux = self.images[name].sum()
 
-            # Calculate the total flux error in Jansky
-            #flux_error = self.errors[name].sum()
-            #flux_error = self.errors[name].quadratic_sum()
+            # Apply correction for EEF of aperture
+            if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
 
-            flux_error = self.calculate_error(name)
-
-            # Create errorbar
-            errorbar = ErrorBar(float(flux_error))
-
-            # Add this entry to the SED
-            self.sed.add_entry(self.images[name].filter, flux, errorbar)
+            # Add the flux to the dictionary
+            self.fluxes[name] = flux
 
     # -----------------------------------------------------------------
 
-    def calculate_error(self, name):
+    def calculate_errors(self):
 
         """
         This function ...
-        :param name:
         :return:
         """
 
-        # Get the calibration error
-        CalibrationError.from_filter(fltr)
+        # Inform the user
+        log.info("Calculating the errors on the aperture fluxes ...")
 
-        # Calculate the aperture noise error
+        # Loop over all the images
+        for name in self.images:
 
-        # Apply correction for EEF of aperture
-        if "Pacs" in name or "SPIRE" in name: aperture_correction = self.get_aperture_correction_factor(self.images[name], aniano, herschel)
+            # Debugging
+            log.debug("Calculating the flux error for the " + name + " image ...")
+
+            # Calculate the calibration error
+            calibration_error = self.calculate_calibration_error(name)
+
+            # Calculate the aperture noise error
+            aperture_noise = self.calculate_aperture_noise(name)
+
+            # Set the error contributions
+            self.errors[name] = (calibration_error, aperture_noise)
+
+    # -----------------------------------------------------------------
+
+    def make_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the observed SED ...")
+
+        # Loop over all images
+        for name in self.images:
+
+            # The flux
+            flux = self.fluxes[name]
+
+            # The error contributions
+            calibration_error, aperture_noise = self.errors[name]
+
+            # Add the error contributions
+            errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
+
+            # Add this entry to the SED
+            self.sed.add_entry(self.images[name].filter, flux, errorbar)
 
     # -----------------------------------------------------------------
 
@@ -289,6 +317,9 @@ class PhotoMeter(PhotometryComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the differences with the reference SEDs ...")
 
         # Get list of instruments, bands and fluxes of the calculated SED
         instruments = self.sed.instruments()
@@ -354,6 +385,9 @@ class PhotoMeter(PhotometryComponent):
         # Write SED table
         self.write_sed()
 
+        # Write the contributions to the flux errors
+        self.write_error_contributions()
+
         # Write the differences
         self.write_differences()
 
@@ -377,6 +411,25 @@ class PhotoMeter(PhotometryComponent):
 
         # Save the SED
         self.sed.save(self.observed_sed_path)
+
+    # -----------------------------------------------------------------
+
+    def write_error_contributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the contributions to the flux errors ...")
+
+        data = [[] for _ in range(len(reference_labels) + 3)]
+        names = ["Instrument", "Band", "Calibration error", "Aperture noise"]
+        for label in reference_labels:
+            names.append(label)
+
+        self.contributions = tables.new(data, names=names)
 
     # -----------------------------------------------------------------
 
@@ -445,15 +498,105 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def get_aperture_correction_factor(self, frame, aniano, herschel):
+    def calculate_calibration_error(self, name):
 
         """
         This function ...
-        :param frame:
-        :param aniano:
-        :param herschel
+        :param name:
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the calibration error for the " + name + " image ...")
+
+        # The flux value
+        flux = self.fluxes[name]
+
+        # Get the calibration error
+        calibration_error = CalibrationError.from_filter(self.images[name].filter)
+
+        if calibration_error.magnitude:
+
+            mag_error = calibration_error.value
+
+            # Convert the total flux to AB magnitude
+            flux_mag = unitconversion.jansky_to_ab(flux)
+
+            a = flux_mag - mag_error
+            b = flux_mag + mag_error
+
+            # Convert a and b to Jy
+            a = unitconversion.ab_to_jansky(a)
+            b = unitconversion.ab_to_jansky(b)
+
+            # Calculate lower and upper limit of the flux
+            c = a - flux
+            d = flux - b
+
+            # Create the error bar
+            error_bar = ErrorBar(c, d)
+
+        # The calibration uncertainty is expressed in a percentage (from the flux values)
+        elif calibration_error.percentage:
+
+            # Calculate calibration errors with percentage
+            fraction = calibration_error.value * 0.01
+
+            # Calculate the absolute error on the flux value
+            error = flux * fraction
+
+            # Create the error bar
+            error_bar = ErrorBar(error)
+
+        # Unrecognized calibration error (not a magnitude, not a percentage)
+        else: raise ValueError("Unrecognized calibration error")
+
+        # Return the calibration error
+        return error_bar
+
+    # -----------------------------------------------------------------
+
+    def calculate_aperture_noise(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the aperture noise for " + name + " ...")
+
+        # Get the frame
+        frame = self.images[name]
+
+        # Create the aperture noise calculator
+        calculator = ApertureNoiseCalculator()
+
+        # Set the input
+        input_dict = dict()
+        input_dict["cutout"] = frame.data
+
+        # Run the aperture noise calculator
+        calculator.run(**input_dict)
+
+        # Get the noise, create the error bar
+        error_bar = ErrorBar(calculator.noise)
+
+        # Return the error bar
+        return error_bar
+
+    # -----------------------------------------------------------------
+
+    def calculate_aperture_correction_factor(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        frame = self.images[name]
 
         filter_name = str(frame.filter)
 
@@ -486,7 +629,7 @@ class PhotoMeter(PhotometryComponent):
         if filter_name == "Pacs blue":
 
             ## USE psf.data !!
-            psf_path = aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
+            psf_path = self.aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
             psf = ConvolutionKernel.from_file(psf_path)
 
             annulus_inner = self.sky_annulus_inner("Pacs blue")
@@ -495,7 +638,7 @@ class PhotoMeter(PhotometryComponent):
         # PACS GREEN
         elif filter_name == "Pacs green":
 
-            psf_path = aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
+            psf_path = self.aniano.get_psf_path(self.reference_filter) # reference filter = pacs red filter
             psf = ConvolutionKernel.from_file(psf_path)
 
             annulus_inner = self.sky_annulus_inner("Pacs green")
@@ -504,7 +647,7 @@ class PhotoMeter(PhotometryComponent):
         # PACS RED
         elif filter_name == "Pacs red":
 
-            psf_path = aniano.get_psf_path(self.reference_filter)  # reference filter = pacs red filter
+            psf_path = self.aniano.get_psf_path(self.reference_filter)  # reference filter = pacs red filter
             psf = ConvolutionKernel.from_file(psf_path)
 
             annulus_inner = self.sky_annulus_inner("Pacs red")
@@ -513,7 +656,7 @@ class PhotoMeter(PhotometryComponent):
         # SPIRE PSW
         elif filter_name == "SPIRE PSW":
 
-            psf = herschel.get_spire_psf("PSW")
+            psf = self.herschel.get_spire_psf("PSW")
 
             annulus_inner = self.sky_annulus_inner(filter_name)
             annulus_outer = self.sky_annulus_outer(filter_name)
@@ -521,7 +664,7 @@ class PhotoMeter(PhotometryComponent):
         # SPIRE PMW
         elif filter_name == "SPIRE PMW":
 
-            psf = herschel.get_spire_psf("PMW")
+            psf = self.herschel.get_spire_psf("PMW")
 
             annulus_inner = self.sky_annulus_inner(filter_name)
             annulus_outer = self.sky_annulus_outer(filter_name)
@@ -529,7 +672,7 @@ class PhotoMeter(PhotometryComponent):
         # SPIRE PLW
         elif filter_name == "SPIRE PLW":
 
-            psf = herschel.get_spire_psf("PLW")
+            psf = self.herschel.get_spire_psf("PLW")
 
             annulus_inner = self.sky_annulus_inner(filter_name)
             annulus_outer = self.sky_annulus_outer(filter_name)
