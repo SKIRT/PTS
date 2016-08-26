@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.component Contains the AnalysisComponent class
+## \package pts.modeling.analysis.component Contains the AnalysisComponent class.
 
 # -----------------------------------------------------------------
 
