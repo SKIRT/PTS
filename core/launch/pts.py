@@ -109,6 +109,8 @@ class PTSRemoteLauncher(object):
         # Initialize
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
 
+        print("CONFIG", config)
+
         # START REMOTE PYTHON SESSION
         self.remote.start_python_session()
 
@@ -188,11 +190,13 @@ class PTSRemoteLauncher(object):
                 modulepath, classname = classpath.rsplit(".", 1)
 
                 self.remote.send_python_line("input_module = importlib.import_module('" + modulepath + "')")  # get the module of the class
-                self.remote.send_python_line("input_cls = getattr(module, '" + classname + "')")  # get the class
+                self.remote.send_python_line("input_cls = getattr(input_module, '" + classname + "')")  # get the class
 
                 # Open the input file
-                self.remote.send_python_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')")
+                self.remote.send_python_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
         ###
+
+        #self.remote.send_python_line("print(input_dict)", show_output=True)
 
         # Import the Configuration class remotely
         self.remote.import_python_package("Configuration", from_name="pts.core.basics.configuration")
@@ -202,6 +206,8 @@ class PTSRemoteLauncher(object):
 
         # Create the class instance, configure it with the configuration settings
         self.remote.send_python_line("inst = cls(config)")
+
+        self.remote.send_python_line("print(inst.config)", show_output=True)
 
         # Run the instance
         if input_dict is not None: self.remote.send_python_line("inst.run(input_dict)", show_output=True)
@@ -263,6 +269,7 @@ class PTSRemoteLauncher(object):
 
         # Create the configuration setter
         if config_dict is None: config_dict = dict()  # no problem if all options are optional
+        print("CONFIG_DICT", config_dict)
         setter = DictConfigurationSetter(config_dict, command_name, description)
 
         # Create the configuration from the definition and from the provided configuration dictionary

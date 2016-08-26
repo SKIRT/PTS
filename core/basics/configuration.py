@@ -1455,6 +1455,8 @@ def add_settings_from_dict(config, definition, dictionary):
     :return:
     """
 
+    dict_that_is_emptied = copy.deepcopy(dictionary)
+
     # Fixed
     for name in definition.fixed:
 
@@ -1469,7 +1471,8 @@ def add_settings_from_dict(config, definition, dictionary):
         choices = definition.required[name][2]
 
         # Get the value specified in the dictionary
-        value = dictionary[name]
+        #value = dictionary[name]
+        value = dict_that_is_emptied.pop(name)
 
         # TODO: check type?
 
@@ -1489,7 +1492,8 @@ def add_settings_from_dict(config, definition, dictionary):
         # Check if this option is specified in the dictionary
         if name in dictionary:
 
-            value = dictionary[name]
+            #value = dictionary[name]
+            value = dict_that_is_emptied.pop(name)
 
             # TODO: check type?
 
@@ -1513,7 +1517,8 @@ def add_settings_from_dict(config, definition, dictionary):
         # Check if this option is specified in the dictionary
         if name in dictionary:
 
-            value = dictionary[name]
+            #value = dictionary[name]
+            value = dict_that_is_emptied.pop(name)
 
             # TODO: check type?
 
@@ -1535,7 +1540,7 @@ def add_settings_from_dict(config, definition, dictionary):
         default = definition.flags[name][2]  # True or False
 
         # Check if this option is specified in the dictionary
-        if name in dictionary: value = dictionary[name]
+        if name in dictionary: value = dict_that_is_emptied.pop(name)
 
         # Use the default value otherwise
         else: value = default
@@ -1552,11 +1557,14 @@ def add_settings_from_dict(config, definition, dictionary):
         # Recursively add the settings
         section_definition = definition.sections[name]
 
-        if name in dictionary: section_dictionary = dictionary[name]
+        if name in dictionary: section_dictionary = dict_that_is_emptied[name]
         else: section_dictionary = dict() # new empty dict
 
         # Add the settings
         add_settings_from_dict(config[name], section_definition, section_dictionary)
+
+    # LEFTOVER
+    for name in dict_that_is_emptied: config[name] = dict_that_is_emptied[name]
 
 # -----------------------------------------------------------------
 
