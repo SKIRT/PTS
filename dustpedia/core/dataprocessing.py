@@ -447,7 +447,7 @@ class DustPediaDataProcessing(object):
         log.info("Making GALEX mosaic for " + galaxy_name + " and map of relative poisson errors ...")
 
         # Create directories
-        working_path, download_path, response_path, background_path, counts_path, raw_path, temp_path = self.create_base_directories(galaxy_name, create=False)
+        working_path, download_path, response_path, background_path, counts_path, raw_path, temp_path = self.create_base_directories(galaxy_name)
 
         # Create temp subdirectories
         temp_fuv_path = fs.join(temp_path, "FUV")
@@ -455,10 +455,10 @@ class DustPediaDataProcessing(object):
         fs.create_directories(temp_fuv_path, temp_nuv_path)
 
         # Create download subdirectories
-        download_images_path, download_response_path, download_background_path, download_counts_path = self.create_download_directories(download_path, create=False)
+        download_images_path, download_response_path, download_background_path, download_counts_path = self.create_download_directories(download_path)
 
         # Download data and split into FUV and NUV
-        #self.download_and_split(galaxy_name, download_path, download_images_path, download_response_path, download_background_path, download_counts_path, raw_path, response_path, background_path, counts_path)
+        self.download_and_split(galaxy_name, download_path, download_images_path, download_response_path, download_background_path, download_counts_path, raw_path, response_path, background_path, counts_path)
 
         raw_fuv_path = fs.join(raw_path, "FUV")
         raw_nuv_path = fs.join(raw_path, "NUV")
@@ -493,9 +493,9 @@ class DustPediaDataProcessing(object):
         log.info("Creating directories ...")
 
         # Determine the path to the temporary directory for downloading the images
-        #working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
+        working_path = fs.join(fs.home(), time.unique_name("GALEX_" + galaxy_name))
 
-        working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
+        #working_path = fs.join(fs.home(), "GALEX_NGC3031_2016-08-04--10-59-27-047")
 
         # Create the working directory
         if create: fs.create_directory(working_path)
