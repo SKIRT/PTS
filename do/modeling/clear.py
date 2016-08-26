@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -26,8 +26,8 @@ definition = ConfigurationDefinition()
 definition.add_required("step", "string", "the modeling step for which to clear the output")
 
 # Get the configuration
-reader = ConfigurationReader("clear")
-config = reader.read(definition)
+setter = ArgumentConfigurationSetter("clear")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 

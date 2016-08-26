@@ -18,7 +18,7 @@ from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -26,8 +26,8 @@ from pts.core.basics.configuration import ConfigurationDefinition, Configuration
 definition = ConfigurationDefinition()
 
 # Get configuration
-reader = ConfigurationReader("list_galaxies")
-config = reader.read(definition)
+setter = ArgumentConfigurationSetter("list_galaxies")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 

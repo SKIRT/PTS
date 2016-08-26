@@ -24,11 +24,9 @@ from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import mutators
 from pts.evolve import initializators
 from pts.evolve import constants
-from pts.core.tools.logging import log
-from pts.core.tools import time
 from pts.core.tools import filesystem as fs
 from pts.core.tools.random import setup_prng
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -37,8 +35,8 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("seed", int, "the random seed", 4357)
 
 # Get configuration
-reader = ConfigurationReader("reference")
-config = reader.read(definition)
+setter = ArgumentConfigurationSetter("reference")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 

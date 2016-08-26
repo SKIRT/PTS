@@ -23,7 +23,7 @@ from pts.evolve import constants
 from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools.random import setup_prng, save_state
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -32,8 +32,8 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("seed", int, "the random seed", 4357)
 
 # Get configuration
-reader = ConfigurationReader("explore")
-config = reader.read(definition)
+setter = ArgumentConfigurationSetter("explore")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 

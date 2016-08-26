@@ -24,10 +24,8 @@ from pyevolve.G1DList import G1DList
 from pyevolve import Mutators
 from pyevolve import Initializators
 from pyevolve import Consts
-from pts.core.tools.logging import log
-from pts.core.tools import time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -36,8 +34,8 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("seed", int, "the random seed", 4357)
 
 # Get configuration
-reader = ConfigurationReader("original")
-config = reader.read(definition)
+setter = ArgumentConfigurationSetter("original")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 

@@ -18,7 +18,7 @@ from pts.core.simulation.simulation import createsimulations
 from pts.core.extract.timeline import TimeLineExtractor, TimeLineTable
 from pts.core.plot.timeline import TimeLinePlotter
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -29,8 +29,8 @@ definition = ConfigurationDefinition()
 definition.add_flag("table", "save the extracted timeline table")
 
 # Get configuration
-reader = ConfigurationReader("plottimeline")
-config = reader.read(definition)
+setter = ArgumentConfigurationSetter("plottimeline")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 

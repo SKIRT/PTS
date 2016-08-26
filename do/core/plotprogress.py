@@ -35,7 +35,7 @@ from pts.core.simulation.simulation import createsimulations
 from pts.core.extract.progress import ProgressExtractor, ProgressTable
 from pts.core.plot.progress import ProgressPlotter
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ConfigurationReader
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -46,8 +46,8 @@ definition = ConfigurationDefinition()
 definition.add_flag("table", "save the extracted progress table")
 
 # Get configuration
-reader = ConfigurationReader("plotprogress")
-config = reader.read(definition)
+setter = ArgumentConfigurationSetter("plotprogress")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 
