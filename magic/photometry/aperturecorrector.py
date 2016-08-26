@@ -105,10 +105,10 @@ class ApertureCorrector(Configurable):
 
         ### INPUT
 
-        psf = self.input.psf  # PSF MUST BE PREPARED
+        psf = self.input["psf"]  # PSF MUST BE PREPARED
 
         # Cutout
-        cutout = self.input.cutout
+        cutout = self.input["cutout"]
 
         #####
 

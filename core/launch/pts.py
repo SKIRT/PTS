@@ -151,7 +151,48 @@ class PTSRemoteLauncher(object):
 
         #####
 
-        #### UPLOAD THE INPUT : TODO
+        if input_dict is not None:
+
+            ## Save the input locally
+
+            local_input_filepaths = []
+
+            for name in input_dict:
+
+                # Determine filepath
+                path = fs.join(temp_path, name + "." + input_dict[name].default_extension)
+
+                # Save
+                input_dict[name].save(path)
+
+                # Add the filepath
+                local_input_filepaths.append(path)
+
+            #### UPLOAD THE INPUT :
+
+            # Upload the input files
+            self.remote.upload(local_input_filepaths, remote_temp_path)
+
+            ### LOAD THE INPUT DICT REMOTELY
+
+            self.remote.send_python_line("input_dict = dict()")
+
+            for name in input_dict:
+
+                # Determine the remote filepath
+                remote_filepath = fs.join(remote_temp_path, name + "." + input_dict[name].default_extension)
+
+                # Import the class of the filetype remotely
+                classpath = str(type(input_dict[name])).split("'")[1].split("'")[0]
+
+                modulepath, classname = classpath.rsplit(".", 1)
+
+                self.remote.send_python_line("input_module = importlib.import_module('" + modulepath + "')")  # get the module of the class
+                self.remote.send_python_line("input_cls = getattr(module, '" + classname + "')")  # get the class
+
+                # Open the input file
+                self.remote.send_python_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')")
+        ###
 
         # Import the Configuration class remotely
         self.remote.import_python_package("Configuration", from_name="pts.core.basics.configuration")
@@ -163,7 +204,8 @@ class PTSRemoteLauncher(object):
         self.remote.send_python_line("inst = cls(config)")
 
         # Run the instance
-        self.remote.send_python_line("inst.run()", show_output=True)  # TODO: pass input dictionary?
+        if input_dict is not None: self.remote.send_python_line("inst.run(input_dict)", show_output=True)
+        else: self.remote.send_python_line("inst.run()", show_output=True)
 
         # Set the output
         output_list = None

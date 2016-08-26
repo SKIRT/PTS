@@ -55,26 +55,6 @@ class ResidualAnalyser(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new ResidualAnalyser instance
-        analyser = cls()
-
-        # Set the modeling path
-        analyser.config.path = arguments.path
-
-        # Return the new instance
-        return analyser
-
-    # -----------------------------------------------------------------
-
     def run(self):
 
         """

@@ -572,9 +572,6 @@ class PhotoMeter(PhotometryComponent):
         # Debugging
         log.debug("Performing the aperture correction calculation remotely ...")
 
-        print("CONFIG", config_dict)
-        print("INPUT", input_dict)
-
         # Calculate the aperture correction factor
         factor = self.launcher.run_attached("aperture_correction", config_dict, input_dict, return_output_names=["factor"], unpack=True)
 
