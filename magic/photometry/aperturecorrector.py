@@ -45,9 +45,6 @@ class ApertureCorrector(Configurable):
         # The input
         self.input = None
 
-        # Create the output dictionary
-        #self.output = dict()
-
         # The aperture correction factor
         self.factor = None
 
@@ -67,9 +64,7 @@ class ApertureCorrector(Configurable):
         # Calculate the correction factor
         factor = self.calculate_aperture_correction()
 
-        # Add factor to output dict
-        #self.output["factor"] = factor
-
+        # Set the factor
         self.factor = factor
 
     # -----------------------------------------------------------------
@@ -123,7 +118,7 @@ class ApertureCorrector(Configurable):
         ##
 
         # Produce guess values
-        initial_sersic_amplitide = cutout[int(round(self.config.centre_i)), int(round(self.config.centre_j))]
+        initial_sersic_amplitude = cutout[int(round(self.config.centre_i)), int(round(self.config.centre_j))]
         initial_sersic_r_eff = self.config.semimaj_pix / 10.0
         initial_sersic_n = 1.0
         initial_sersic_x_0 = self.config.centre_j
@@ -133,7 +128,7 @@ class ApertureCorrector(Configurable):
 
         # Produce sersic model from guess parameters, for time trials
         sersic_x, sersic_y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
-        sersic_model = astropy.modeling.models.Sersic2D(amplitude=initial_sersic_amplitide, r_eff=initial_sersic_r_eff,
+        sersic_model = astropy.modeling.models.Sersic2D(amplitude=initial_sersic_amplitude, r_eff=initial_sersic_r_eff,
                                                         n=initial_sersic_n, x_0=initial_sersic_x_0,
                                                         y_0=initial_sersic_y_0, ellip=initial_sersic_ellip,
                                                         theta=initial_sersic_theta)
@@ -142,7 +137,7 @@ class ApertureCorrector(Configurable):
         # Make sure that PSF array is smaller than sersic model array (as required for convolution); if not, remove its edges such that it is
         if psf.shape[0] > sersic_map.shape[0] or psf.shape[1] > sersic_map.shape[1]:
             excess = max(psf.shape[0] - sersic_map.shape[0], psf.shape[1] - sersic_map.shape[1])
-            border = int(np.round(np.ceil(float(excess) / 2.0) - 1.0))
+            border = max(2, int(np.round(np.ceil(float(excess) / 2.0) - 1.0)))
             psf = psf[border:, border:]
             psf = psf[:-border, :-border]
 
@@ -155,24 +150,21 @@ class ApertureCorrector(Configurable):
         conv_map = astropy.convolution.convolve(sersic_map, psf, normalize_kernel=True)
         time_direct = time.time() - time_direct
 
-        if time_fft < time_direct:
-            use_fft = True
-        else:
-            use_fft = False
+        if time_fft < time_direct: use_fft = True
+        else: use_fft = False
 
         # Set up parameters to fit galaxy with 2-dimensional sersic profile
         params = lmfit.Parameters()
-        params.add('sersic_amplitide', value=initial_sersic_amplitide, vary=True)
+        params.add('sersic_amplitide', value=initial_sersic_amplitude, vary=True)
         params.add('sersic_r_eff', value=initial_sersic_r_eff, vary=True, min=0.0, max=self.config.semimaj_pix)
         params.add('sersic_n', value=initial_sersic_n, vary=True, min=0.1, max=10)
         params.add('sersic_x_0', value=initial_sersic_x_0, vary=False)
         params.add('sersic_y_0', value=initial_sersic_y_0, vary=False)
-        params.add('sersic_ellip', value=initial_sersic_ellip, vary=True, min=0.5 * initial_sersic_ellip,
-                   max=0.5 * (1.0 - initial_sersic_ellip) + initial_sersic_ellip)
+        params.add('sersic_ellip', value=initial_sersic_ellip, vary=True, min=0.5 * initial_sersic_ellip, max=0.5 * (1.0 - initial_sersic_ellip) + initial_sersic_ellip)
         params.add('sersic_theta', value=initial_sersic_theta, vary=False)
 
         # Solve with LMfit to find parameters of best-fit sersic profile
-        result = lmfit.minimize(chi_squared_sersic, params, args=(cutout, psf, mask, use_fft), method='leastsq', ftol=1E-5, xtol=1E-5)
+        result = lmfit.minimize(chi_squared_sersic, params, args=(cutout, psf, mask, use_fft), method='leastsq', ftol=1E-5, xtol=1E-5, maxfev=200)
 
         # Extract best-fit results
         sersic_amplitide = result.params['sersic_amplitide'].value
@@ -184,15 +176,11 @@ class ApertureCorrector(Configurable):
         sersic_theta = result.params['sersic_theta'].value
 
         # Construct underlying sersic map and convolved sersic map, using best-fit parameters
-        sersic_model = astropy.modeling.models.Sersic2D(amplitude=sersic_amplitide, r_eff=sersic_r_eff, n=sersic_n,
-                                                        x_0=sersic_x_0, y_0=sersic_y_0, ellip=sersic_ellip,
-                                                        theta=sersic_theta)
+        sersic_model = astropy.modeling.models.Sersic2D(amplitude=sersic_amplitide, r_eff=sersic_r_eff, n=sersic_n, x_0=sersic_x_0, y_0=sersic_y_0, ellip=sersic_ellip, theta=sersic_theta)
         sersic_map = sersic_model(sersic_x, sersic_y)
 
-        if use_fft:
-            conv_map = astropy.convolution.convolve_fft(sersic_map, psf, normalize_kernel=True)
-        else:
-            conv_map = astropy.convolution.convolve(sersic_map, psf, normalize_kernel=True)
+        if use_fft: conv_map = astropy.convolution.convolve_fft(sersic_map, psf, normalize_kernel=True)
+        else: conv_map = astropy.convolution.convolve(sersic_map, psf, normalize_kernel=True)
 
         # Determine annulus properties before proceeding with photometry
         # bg_inner_semimaj_pix = input_dict['semimaj_pix'] * input_dict['annulus_inner'] # number of pixels of semimajor axis of inner annulus ellipse
@@ -206,31 +194,34 @@ class ApertureCorrector(Configurable):
         centre_j_annulus = self.config.annulus_centre_j
 
         # Evaluate pixels in source aperture and background annulus in UNCONVOLVED sersic map
-        sersic_ap_calc = ChrisFuncs.Photom.EllipseSum(sersic_map, self.config.semimaj_pix, self.config.axial_ratio,
-                                                      self.config.angle, self.config.centre_i,
-                                                      self.config.centre_j)
-        sersic_bg_calc = ChrisFuncs.Photom.AnnulusSum(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus,
-                                                      angle_annulus, centre_i_annulus, centre_j_annulus)
+        if self.config.subpixel_factor == 1.0:
+            sersic_ap_calc = ChrisFuncs.Photom.EllipseSum(sersic_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j)
+            sersic_bg_calc = ChrisFuncs.Photom.AnnulusSum(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
+        elif self.config.subpixel_factor > 1.0:
+            sersic_ap_calc = ChrisFuncs.Photom.EllipseSumUpscale(sersic_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j, upscale=self.config.subpixel_factor)
+            sersic_bg_calc = ChrisFuncs.Photom.AnnulusSumUpscale(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus, upscale=self.config.subpixel_factor)
+        else: raise ValueError("Invalid subpixel factor: " + str(self.config.subpixel_factor))
 
         # Background-subtract and measure UNCONVOLVED sersic source flux
         sersic_bg_clip = ChrisFuncs.SigmaClip(sersic_bg_calc[2], median=False, sigma_thresh=3.0)
-        sersic_bg_avg = sersic_bg_clip[1]
-        sersic_ap_sum = sersic_ap_calc[0] - (sersic_ap_calc[
-                                                 1] * sersic_bg_avg)  # sersic_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
+        sersic_bg_avg = sersic_bg_clip[1] * self.config.subpixel_factor**2.0
+        sersic_ap_sum = sersic_ap_calc[0] - (sersic_ap_calc[1] * sersic_bg_avg)  # sersic_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
 
         # Evaluate pixels in source aperture and background annulus in CONVOLVED sersic map
-        conv_ap_calc = ChrisFuncs.Photom.EllipseSum(conv_map, self.config.semimaj_pix, self.config.axial_ratio,
-                                                    self.config.angle, self.config.centre_i, self.config.centre_j)
-        conv_bg_calc = ChrisFuncs.Photom.AnnulusSum(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus,
-                                                    angle_annulus, centre_i_annulus, centre_j_annulus)
+        if self.config.subpixel_factor == 1.0:
+            conv_ap_calc = ChrisFuncs.Photom.EllipseSum(conv_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j)
+            conv_bg_calc = ChrisFuncs.Photom.AnnulusSum(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
+        elif self.config.subpixel_factor > 1.0:
+            conv_ap_calc = ChrisFuncs.Photom.EllipseSumUpscale(conv_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j, upscale=self.config.subpixel_factor)
+            conv_bg_calc = ChrisFuncs.Photom.AnnulusSumUpscale(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus, upscale=self.config.subpixel_factor)
+        else: raise ValueError("Invalid subpixel factor: " + str(self.config.subpixel_factor))
 
         # Background-subtract and measure CONVOLVED sersic source flux
         conv_bg_clip = ChrisFuncs.SigmaClip(conv_bg_calc[2], median=False, sigma_thresh=3.0)
-        conv_bg_avg = conv_bg_clip[1]
-        conv_ap_sum = conv_ap_calc[0] - (conv_ap_calc[
-                                             1] * conv_bg_avg)  # conv_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
+        conv_bg_avg = conv_bg_clip[1] * self.config.subpixel_factor**2.0
+        conv_ap_sum = conv_ap_calc[0] - (conv_ap_calc[1] * conv_bg_avg)  # conv_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
 
-        # Find difference between flux measued on convoled and unconvoled sersic maps
+        # Find difference between flux measured on convoled and unconvoled sersic maps
         ap_correction = np.nanmax([1.0, (sersic_ap_sum / conv_ap_sum)])
 
         # Return aperture correction

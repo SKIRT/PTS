@@ -109,8 +109,6 @@ class PTSRemoteLauncher(object):
         # Initialize
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
 
-        print("CONFIG", config)
-
         # START REMOTE PYTHON SESSION
         self.remote.start_python_session()
 
@@ -207,11 +205,11 @@ class PTSRemoteLauncher(object):
         # Create the class instance, configure it with the configuration settings
         self.remote.send_python_line("inst = cls(config)")
 
-        self.remote.send_python_line("print(inst.config)", show_output=True)
+        #self.remote.send_python_line("print(inst.config)", show_output=True)
 
         # Run the instance
-        if input_dict is not None: self.remote.send_python_line("inst.run(input_dict)", show_output=True)
-        else: self.remote.send_python_line("inst.run()", show_output=True)
+        if input_dict is not None: self.remote.send_python_line("inst.run(input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
+        else: self.remote.send_python_line("inst.run()", show_output=True, timeout=None) # no timeout, this can take a while
 
         # Set the output
         output_list = None
@@ -269,7 +267,6 @@ class PTSRemoteLauncher(object):
 
         # Create the configuration setter
         if config_dict is None: config_dict = dict()  # no problem if all options are optional
-        print("CONFIG_DICT", config_dict)
         setter = DictConfigurationSetter(config_dict, command_name, description)
 
         # Create the configuration from the definition and from the provided configuration dictionary

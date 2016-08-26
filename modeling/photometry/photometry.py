@@ -26,6 +26,7 @@ from ...core.plot.sed import SEDPlotter
 from ...magic.misc.kernels import AnianoKernels, HerschelKernels
 from ...magic.core.kernel import ConvolutionKernel
 from ...core.launch.pts import PTSRemoteLauncher
+from ...magic.misc.calibration import CalibrationError
 
 # -----------------------------------------------------------------
 
@@ -90,7 +91,7 @@ class PhotoMeter(PhotometryComponent):
         self.images = dict()
 
         # The corresponding error maps
-        self.errors = dict()
+        #self.errors = dict()
 
         # The disk ellipse
         self.disk_ellipse = None
@@ -168,13 +169,14 @@ class PhotoMeter(PhotometryComponent):
         for name in self.dataset.names:
 
             # Debugging
-            log.debug("Loading the data and error map for the " + name + " image ...")
+            #log.debug("Loading the data and error map for the " + name + " image ...")
+            log.debug("Loading the " + name + " image ...")
 
             # Load the frame
             frame = self.dataset.get_frame(name)
 
             # Load the error map
-            errors = self.dataset.get_errors(name)
+            #errors = self.dataset.get_errors(name)
 
             # Debugging
             log.debug("Converting the " + name + " to Jy ...")
@@ -194,11 +196,11 @@ class PhotoMeter(PhotometryComponent):
             frame *= conversion_factor
 
             # CONVERT ERROR MAP
-            errors *= conversion_factor
+            #errors *= conversion_factor
 
             # Add to the appropriate dictionary
             self.images[name] = frame
-            self.errors[name] = errors
+            #self.errors[name] = errors
 
     # -----------------------------------------------------------------
 
@@ -228,18 +230,35 @@ class PhotoMeter(PhotometryComponent):
             # Calculate the total flux in Jansky
             flux = self.images[name].sum()
 
-            # Apply correction for EEF of aperture
-            if "Pacs" in name or "SPIRE" in name: flux *= self.get_aperture_correction_factor(self.images[name], aniano, herschel)
-
             # Calculate the total flux error in Jansky
             #flux_error = self.errors[name].sum()
-            flux_error = self.errors[name].quadratic_sum()
+            #flux_error = self.errors[name].quadratic_sum()
+
+            flux_error = self.calculate_error(name)
 
             # Create errorbar
             errorbar = ErrorBar(float(flux_error))
 
             # Add this entry to the SED
             self.sed.add_entry(self.images[name].filter, flux, errorbar)
+
+    # -----------------------------------------------------------------
+
+    def calculate_error(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the calibration error
+        CalibrationError.from_filter(fltr)
+
+        # Calculate the aperture noise error
+
+        # Apply correction for EEF of aperture
+        if "Pacs" in name or "SPIRE" in name: aperture_correction = self.get_aperture_correction_factor(self.images[name], aniano, herschel)
 
     # -----------------------------------------------------------------
 
@@ -568,6 +587,10 @@ class PhotoMeter(PhotometryComponent):
 
         config_dict["annulus_centre_i"] = annulus_outer.center.y
         config_dict["annulus_centre_j"] = annulus_outer.center.x
+
+
+        # SUBPIXEL FACTOR (with consideration of sub-pixels when factor > 1.0)
+        config_dict["subpixel_factor"] = 1.0
 
         # Debugging
         log.debug("Performing the aperture correction calculation remotely ...")

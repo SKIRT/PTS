@@ -8,8 +8,8 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.basics.host import find_host_ids
-from pts.modeling.analysis.component import get_analysis_run_names, get_last_run_name
 from pts.core.tools import filesystem as fs
+from pts.modeling.analysis.component import get_analysis_run_names, get_last_run_name
 
 # -----------------------------------------------------------------
 
