@@ -51,6 +51,28 @@ line_styles = ['-', '--', '-.', ':']
 
 # -----------------------------------------------------------------
 
+def plot_coordinates_on_image(image, x_coordinates, y_coordinates, path=None, format=None):
+
+    """
+    This function ...
+    :param dimensions:
+    :param x_coordinates:
+    :param y_coordinates:
+    :return:
+    """
+
+    plt.figure(figsize=(15, 15))
+
+    plt.imshow(image, origin="lower", interpolation="nearest")
+    plt.plot(x_coordinates, y_coordinates, 'ro')
+
+    if path is None: plt.show()
+    else: plt.savefig(path, format=format)
+
+    plt.close()
+
+# -----------------------------------------------------------------
+
 def plot_mask(mask, title=None, path=None, format=None):
 
     """
@@ -116,10 +138,6 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         vmax = interval[1]
 
     else: raise ValueError("Invalid option for 'interval'")
-
-    #if scale == "skimage":
-    #    vmin = 0.0
-    #    vmax = 1.0
 
     # Make the plot
     plt.figure(figsize=(7,7))

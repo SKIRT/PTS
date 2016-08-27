@@ -208,7 +208,7 @@ class PTSRemoteLauncher(object):
         #self.remote.send_python_line("print(inst.config)", show_output=True)
 
         # Run the instance
-        if input_dict is not None: self.remote.send_python_line("inst.run(input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
+        if input_dict is not None: self.remote.send_python_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
         else: self.remote.send_python_line("inst.run()", show_output=True, timeout=None) # no timeout, this can take a while
 
         # Set the output

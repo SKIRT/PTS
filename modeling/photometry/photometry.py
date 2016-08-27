@@ -29,6 +29,7 @@ from ...core.launch.pts import PTSRemoteLauncher
 from ...magic.misc.calibration import CalibrationError
 from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
 from ..preparation import unitconversion
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -185,7 +186,7 @@ class PhotoMeter(PhotometryComponent):
             log.debug("Loading the " + name + " image ...")
 
             # Load the frame
-            frame = self.dataset.get_frame(name)
+            frame = self.dataset.get_frame(name, masked=False)
 
             # Debugging
             log.debug("Converting the " + name + " to Jy ...")
@@ -229,7 +230,7 @@ class PhotoMeter(PhotometryComponent):
             flux = self.images[name].sum()
 
             # Apply correction for EEF of aperture
-            if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
+            #if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
 
             # Add the flux to the dictionary
             self.fluxes[name] = flux
@@ -570,12 +571,51 @@ class PhotoMeter(PhotometryComponent):
         # Get the frame
         frame = self.images[name]
 
+        truncation_ellipse_sky = self.truncation_ellipse
+        truncation_ellipse_image = truncation_ellipse_sky.to_pixel(frame.wcs)
+
+        debug_config = Map()
+
+
         # Create the aperture noise calculator
         calculator = ApertureNoiseCalculator()
 
         # Set the input
         input_dict = dict()
         input_dict["cutout"] = frame.data
+        input_dict["debug"] = debug_config
+        input_dict["band_name"] = name
+        input_dict["adj_semimaj_pix"] = truncation_ellipse_image.radius.x
+        input_dict["adj_axial_ratio"] = truncation_ellipse_image.radius.x / truncation_ellipse_image.radius.y
+        input_dict["adj_angle"] = truncation_ellipse_image.angle.to("deg").value
+        input_dict["centre_i"] = truncation_ellipse_image.center.y
+        input_dict["centre_j"] = truncation_ellipse_image.center.x
+        input_dict["downsample_factor"] = 1.0
+
+        # Get the sky annulus ellipses
+        annulus_inner = self.sky_annulus_inner(name)
+        annulus_outer = self.sky_annulus_outer(name)
+
+        input_dict["semimaj_pix_annulus_outer"] = annulus_outer.radius.x
+        input_dict["semimaj_pix_annulus_inner"] = annulus_inner.radius.x
+
+        axratio_annulus_outer = annulus_outer.radius.x / annulus_outer.radius.y
+        axratio_annulus_inner = annulus_inner.radius.x / annulus_inner.radius.y
+
+        # Check
+        if not np.isclose(axratio_annulus_outer, axratio_annulus_inner): log.error("DIFFERENCE AX RATIO", axratio_annulus_outer, axratio_annulus_inner)
+        input_dict["axial_ratio_annulus"] = axratio_annulus_outer
+
+        annulus_angle_outer = annulus_outer.angle.to("deg").value
+        annulus_angle_inner = annulus_inner.angle.to("deg").value
+
+        # Check
+        if not np.isclose(annulus_angle_outer, annulus_angle_inner): log.error("DIFFERENCE ANNULUS ANGLE", annulus_angle_outer, annulus_angle_inner)
+        input_dict["annulus_angle"] = annulus_angle_inner
+        input_dict["annulus_centre_i"] = annulus_outer.center.y
+        input_dict["annulus_centre_j"] = annulus_outer.center.x
+
+        input_dict["plot_path"] = self.phot_temp_path
 
         # Run the aperture noise calculator
         calculator.run(**input_dict)

@@ -43,14 +43,15 @@ class ApertureCorrector(Configurable):
         super(ApertureCorrector, self).__init__(config)
 
         # The input
-        self.input = None
+        self.psf = None
+        self.cutout = None
 
         # The aperture correction factor
         self.factor = None
 
     # -----------------------------------------------------------------
 
-    def run(self, input_dict):
+    def run(self, **input_dict):
 
         """
         This function ...
@@ -58,14 +59,28 @@ class ApertureCorrector(Configurable):
         :return:
         """
 
+        # 1. Call the setup function
+        self.setup(**input_dict)
+
+        # 2. Calculate the correction factor
+        self.calculate_aperture_correction()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **input_dict):
+
+        """
+        This function ...
+        :param input_dict:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ApertureCorrector, self).setup()
+
         # Set the input
-        self.input = input_dict
-
-        # Calculate the correction factor
-        factor = self.calculate_aperture_correction()
-
-        # Set the factor
-        self.factor = factor
+        self.psf = input_dict.pop("psf")
+        self.cutout = input_dict.pop("cutout")
 
     # -----------------------------------------------------------------
 
@@ -100,10 +115,10 @@ class ApertureCorrector(Configurable):
 
         ### INPUT
 
-        psf = self.input["psf"].data  # PSF MUST BE PREPARED
+        psf = self.psf.data  # PSF MUST BE PREPARED
 
         # Cutout
-        cutout = self.input["cutout"].data
+        cutout = self.cutout.data
 
         #####
 
@@ -225,7 +240,10 @@ class ApertureCorrector(Configurable):
         ap_correction = np.nanmax([1.0, (sersic_ap_sum / conv_ap_sum)])
 
         # Return aperture correction
-        return ap_correction
+        #return ap_correction
+
+        # Set the factor
+        self.factor = ap_correction
 
 # -----------------------------------------------------------------
 
