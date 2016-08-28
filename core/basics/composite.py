@@ -53,7 +53,7 @@ class SimplePropertyComposite(object):
                 if "Type:" in line: continue
 
                 name, rest = line.split(": ")
-                value, dtype = rest.split("[")
+                value, dtype = rest.split(" [")
                 dtype = dtype.split("]")[0]
 
                 # Set the property value

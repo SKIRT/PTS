@@ -254,7 +254,7 @@ class ParameterExplorer(FittingComponent):
         config = Configuration()
         config.path = self.config.path
         config.generation_name = self.generation_name
-        config.nmodels = self.config.simulations
+        config.nmodels = self.config.nsimulations
         config.crossover_rate = self.config.crossover_rate
         config.mutation_rate = self.config.mutation_rate
 
@@ -379,7 +379,7 @@ class ParameterExplorer(FittingComponent):
         self.generation_info["Method"] = self.config.generation_method
         self.generation_info["Wavelength grid level"] = wavelength_grid_level
         self.generation_info["Dust grid level"] = dust_grid_level
-        self.generation_info["Number of simulations"] = self.config.simulations
+        self.generation_info["Number of simulations"] = self.config.nsimulations
         self.generation_info["Number of photon packages"] = self.config.npackages
         self.generation_info["Self-absorption"] = self.config.selfabsorption
         self.generation_info["Transient heating"] = self.config.transient_heating

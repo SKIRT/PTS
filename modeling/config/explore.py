@@ -29,7 +29,7 @@ definition.add_positional_optional("generation_method", "string", "the model gen
 
 # Optional parameters
 definition.add_optional("remotes", "string", "the remote host on which to run the parameter exploration", ["nancy"], choices=find_host_ids())
-definition.add_optional("simulations", "integer", "the number of simulations to launch in one batch/generation", 100)
+definition.add_optional("nsimulations", "integer", "the number of simulations to launch in one batch/generation", 100)
 
 # Advanced options for the genetic engine
 definition.add_optional("crossover_rate", "fraction", "the crossover rate", 0.5)
