@@ -9,6 +9,42 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
+import numpy as np
+
+# -----------------------------------------------------------------
+
+def sum_errorbars_quadratically(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    lowers = []
+    uppers = []
+
+    # Loop over the given error bars
+    for arg in args:
+
+        lowers.append(abs(arg.lower))
+        uppers.append(arg.upper)
+
+    lowers = np.array(lowers)
+    uppers = np.array(uppers)
+
+    lower = - np.sqrt(np.sum(lowers**2))
+    upper = np.sqrt(np.sum(uppers**2))
+
+    # Set and return the new error bar
+    return ErrorBar(lower, upper)
+
+# -----------------------------------------------------------------
+
 class ErrorBar(object):
     
     """

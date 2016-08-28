@@ -270,6 +270,36 @@ class SkyRegion(list):
 
     # -----------------------------------------------------------------
 
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        min_ra = None
+        max_ra = None
+        min_dec = None
+        max_dec = None
+
+        # Loop over the shapes
+        for shape in self:
+
+            if min_ra is None or shape.min_ra < min_ra: min_ra = shape.min_ra
+            if max_ra is None or shape.max_ra > max_ra: max_ra = shape.max_ra
+            if min_dec is None or shape.min_dec < min_dec: min_dec = shape.min_dec
+            if max_dec is None or shape.max_dec > max_dec: max_dec = shape.max_dec
+
+        # Get center and radius of the new bounding box
+        center = SkyCoordinate(0.5 * (min_ra + max_ra), 0.5 * (min_dec + max_dec))
+        radius = Extent(0.5 * (max_ra - min_ra), 0.5 * (max_dec - min_dec))
+
+        # Return the bounding box
+        return SkyRectangle(center, radius)
+
+    # -----------------------------------------------------------------
+
     def to_pixel(self, wcs):
 
         """

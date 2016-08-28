@@ -26,11 +26,11 @@ from astropy.units import Unit
 from ..basics.layers import Layers
 from ..basics.region import Region
 from ..basics.mask import Mask
+from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from . import io
 from .frame import Frame, sum_frames
-from .mask import intersection, union
 
 # -----------------------------------------------------------------
 
@@ -808,7 +808,7 @@ class Image(object):
         """
 
         # Calculate the total mask
-        mask = intersection(*self.masks.values())
+        mask = newMask.intersection(*self.masks.values())
 
         # Return the mask
         return mask
@@ -823,7 +823,7 @@ class Image(object):
         """
 
         # Calculate the total mask
-        mask = union(*self.masks.values())
+        mask = newMask.union(*self.masks.values())
 
         # Return the mask
         return mask

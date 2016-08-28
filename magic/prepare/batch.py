@@ -38,15 +38,16 @@ class BatchImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the galactic attenuation
         self.get_extinction()
@@ -59,15 +60,19 @@ class BatchImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
         super(BatchImagePreparer, self).setup()
+
+        # Get the dataset
+        self.dataset = kwargs.pop("dataset")
 
     # -----------------------------------------------------------------
 
@@ -79,7 +84,7 @@ class BatchImagePreparer(Configurable):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Getting the galactic extinction ...")
 
     # -----------------------------------------------------------------
 
@@ -91,7 +96,7 @@ class BatchImagePreparer(Configurable):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Preparing the images ...")
 
     # -----------------------------------------------------------------
 

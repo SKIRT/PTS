@@ -83,6 +83,46 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def intersection(cls, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        # Initialize data
+        data = np.ones(args[0].shape)
+
+        # Combine the masks
+        for mask in args: data *= mask
+
+        # Return the mask
+        return cls(data)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def union(cls, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        # Initialize data
+        data = np.zeros(args[0].shape)
+
+        # Combine the masks
+        for mask in args: data += mask
+
+        # Return the mask
+        return cls(data)
+
+    # -----------------------------------------------------------------
+
     @property
     def data(self):
 
@@ -380,6 +420,30 @@ class MaskBase(object):
 
         # Return the new mask
         #return new_mask
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nmasked(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sum(self.data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nunmasked(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sum(np.logical_not(self.data))
 
 # -----------------------------------------------------------------
 

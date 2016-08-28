@@ -34,6 +34,9 @@ from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ..tools import plotting
+from ...core.basics.distribution import Distribution
+from ...core.plot.distribution import DistributionPlotter
+from ..core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -56,7 +59,6 @@ class ApertureNoiseCalculator(Configurable):
         # INPUT
 
         self.cutout = None
-        self.debug = None
         self.band_name = None
         self.adj_semimaj_pix = None
         self.adj_axial_ratio = None
@@ -128,7 +130,6 @@ class ApertureNoiseCalculator(Configurable):
 
         # Get input
         self.cutout = kwargs.pop("cutout")
-        self.debug = kwargs.pop("debug")
         self.band_name = kwargs.pop("band_name")
         self.adj_semimaj_pix = kwargs.pop("adj_semimaj_pix")
         self.adj_axial_ratio = kwargs.pop("adj_axial_ratio")
@@ -151,6 +152,12 @@ class ApertureNoiseCalculator(Configurable):
         self.exact_calculator = ExactApertureNoiseCalculator()
         self.extrapolation_calculator = ExtrapolatingApertureNoiseCalculator()
 
+        # Set config options
+        self.exact_calculator.config.debug = self.config.debug
+        self.exact_calculator.config.plot_path = self.config.plot_path
+        self.extrapolation_calculator.config.debug = self.config.debug
+        self.extrapolation_calculator.config.plot_path = self.config.plot_path
+
     # -----------------------------------------------------------------
 
     def try_exact(self):
@@ -166,7 +173,6 @@ class ApertureNoiseCalculator(Configurable):
         # Set the input
         input_dict = dict()
         input_dict["cutout"] = self.cutout.copy()
-        input_dict["debug"] = self.debug
         input_dict["band_name"] = self.band_name
         input_dict["adj_semimaj_pix"] = self.adj_semimaj_pix
         input_dict["adj_axial_ratio"] = self.adj_axial_ratio
@@ -218,7 +224,6 @@ class ApertureNoiseCalculator(Configurable):
         # Set the input
         input_dict = dict()
         input_dict["cutout"] = self.cutout.copy()
-        input_dict["debug"] = self.debug
         input_dict["band_name"] = self.band_name
         input_dict["adj_semimaj_pix"] = self.adj_semimaj_pix
         input_dict["adj_axial_ratio"] = self.adj_axial_ratio
@@ -248,22 +253,25 @@ class ApertureNoiseCalculator(Configurable):
 
 # -----------------------------------------------------------------
 
-class ExactApertureNoiseCalculator(object):
+class ExactApertureNoiseCalculator(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
+        :param config:
         """
+
+        # Call the constructor of the base class
+        super(ExactApertureNoiseCalculator, self).__init__(config)
 
         # INPUT
 
         self.cutout = None
-        self.debug = None
         self.band_name = None
         self.adj_semimaj_pix = None
         self.adj_axial_ratio = None
@@ -323,10 +331,11 @@ class ExactApertureNoiseCalculator(object):
         :return:
         """
 
-        # cutout, source_dict, band_dict, kwargs_dict, adj_semimaj_pix, adj_axial_ratio, adj_angle, centre_i, centre_j, mini=False, downsample=False
+        # Call the setup function of the base class
+        super(ExactApertureNoiseCalculator, self).setup()
 
+        # Set input
         self.cutout = input_dict.pop("cutout")
-        self.debug = input_dict.pop("debug")
         self.band_name = input_dict.pop("band_name")
         self.adj_semimaj_pix = input_dict.pop("adj_semimaj_pix")
         self.adj_axial_ratio = input_dict.pop("adj_axial_ratio")
@@ -368,6 +377,153 @@ class ExactApertureNoiseCalculator(object):
         """
 
         return int(self.downsample_factor) > 1
+
+    # -----------------------------------------------------------------
+
+    def determine_number_of_apertures(self, radius, pixel_area):
+
+        """
+        This function ...
+        :param radius:
+        :param pixel_area:
+        :return:
+        """
+
+        #npixels = np.sum(self.mask.inverse())
+
+        # Assuming optimal hexagonal packing, get an estimate of the maximum number of circles of given radius
+        # can fit in the area covered by the pixels that are not masked. This is obviously a significant overestimation
+        # especially in the case where the radius becomes of the same order of magnitude as the radius of the
+        # galaxy annulus (the hexagonal packing assumes a rectangular area or at least rectangular-like edges)
+        # With perfect hexagonal packing, the area of the rectangle that will be covered by the circles is π/(2√3),
+        # which is approximately equal to 0.907
+        # See: https://www.quora.com/How-many-3-75-inch-circles-will-fit-inside-a-17-inch-square
+        coverable_area = 0.907 * pixel_area
+        circle_area = np.pi * radius ** 2
+        optimal_number_of_apertures = coverable_area / circle_area
+
+        # Debugging
+        log.debug("The upper limit to the number of apertures that fit in the part of the frame that is not masked "
+                  "(assuming hexagonal packing) is " + str(optimal_number_of_apertures))
+
+        # Determine the number of apertures that are going to be used, take a third of the upper limit
+        #napertures = int(optimal_number_of_apertures / 3.)
+
+        # Debugging
+        #log.debug("A total of " + str(napertures) + " apertures are going to be used to estimate the sky ...")
+
+        # Return the number of apertures
+        return optimal_number_of_apertures
+
+    # -----------------------------------------------------------------
+
+    def generate_positions(self, sky_success_target, sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, adj_semimaj_pix_full,
+                           cutout_inviolate, sky_border):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Generate random polar coordinates to draw from
+        log.debug('Setup: Generating pool of random polar coordinates')
+
+        #random_size = sky_success_target * sky_gen_max * 10
+        random_size = 100
+        random_failed = []
+        random_theta_list = 360.0 * np.random.rand(random_size)
+        random_r_list = adj_semimin_pix + np.abs(np.random.normal(loc=0.0, scale=5.0 * adj_semimaj_pix_full, size=random_size))
+
+        # Distribution of radii
+        initial_r_distribution = Distribution.from_values(random_r_list)
+        initial_theta_distribution = Distribution.from_values(random_theta_list)
+
+        # Locate contiguous map regions
+        log.debug('Pruning: Locating contiguous coverage regions')
+
+        cont_binary = np.zeros(self.cutout.shape)
+        cont_binary[np.where(np.isnan(cutout_inviolate) == False)] = 1
+        cont_structure = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
+        cont_label = scipy.ndimage.measurements.label(cont_binary, structure=cont_structure)[0]
+        cont_search_mask = ChrisFuncs.EllipseMask(cont_label, 3.0, 1.0, 0.0, self.centre_i, self.centre_j)
+        cont_search_values = cont_label[np.where(cont_search_mask == 1)]
+
+        #plotting.plot_mask(cont_binary, title="cont binary")
+        #plotting.plot_box(cont_label, title="cont label")
+        #plotting.plot_mask(cont_search_mask, title="cont search mask")
+        #plotting.plot_mask(cont_search_values, title="cont search values")
+        #print(cont_search_values)
+
+        # Identify contiguous region associated with target source
+        log.debug('Pruning: Identifying coverage region associated with source')
+
+        if np.where(cont_search_values > 0)[0].shape[0] == 0: cont_target = 0
+        else: cont_target = scipy.stats.mode(cont_search_values[np.where(cont_search_values > 0)])[0][0]
+        cont_where_bad = np.where(cont_label != cont_target)
+
+        # Remove random coordinates that are more distant than most distant part of the coverage region the target source lies in
+        log.debug('Pruning: Removing random coords that definitely lie outside coverage region')
+
+        cont_size_i, cont_size_j = self.cutout.shape
+        cont_range_i = np.arange(cont_size_i) - self.centre_i
+        cont_range_j = np.arange(cont_size_j) - self.centre_j
+        cont_coord_i, cont_coord_j = np.meshgrid(cont_range_j, cont_range_i)  # Yes, i and j are supposed to be this way around inside meshgrid (for some reason)
+        cont_coord_i[cont_where_bad] = np.NaN
+        cont_coord_j[cont_where_bad] = np.NaN
+        cont_dist = np.sqrt(cont_coord_i ** 2 + cont_coord_j ** 2)
+        cont_dist_max = np.nanmax(cont_dist)
+        random_r_coverage = np.where(random_r_list < (cont_dist_max - sky_border))
+        random_r_list = random_r_list[random_r_coverage]
+        random_theta_list = random_theta_list[random_r_coverage]
+
+        final_r_distributution = Distribution.from_values(random_r_list)
+        final_theta_distribution = Distribution.from_values(random_theta_list)
+
+        plotter = DistributionPlotter()
+        plotter.add_distribution(initial_r_distribution, "initial r")
+        plotter.add_distribution(final_r_distributution, "final r")
+        #plotter.run()
+
+        plotter.clear()
+        plotter.add_distribution(initial_theta_distribution, "initial theta")
+        plotter.add_distribution(final_theta_distribution, "final theta")
+        #plotter.run()
+
+        # Convert random polar coordinates into cartesian coordinates
+        log.debug('Pruning: Converting random polar coords to cartesian coords, and removing those that lie beyond map border')
+
+        random_i_list = self.centre_i + (random_r_list * np.cos(np.radians(random_theta_list)))  # np.random.normal(loc=centre_i, scale=2.0*sky_ap_rad_pix)
+        random_j_list = self.centre_j + (random_r_list * np.sin(np.radians(random_theta_list)))  # np.random.normal(loc=centre_j, scale=2.0*sky_ap_rad_pix)
+
+        # Remove random coodinates that fall fall beyond border in i-coords
+        random_not_i_border = np.where((random_i_list > sky_border) & (random_i_list < (self.cutout.shape[0] - sky_border)))
+        random_i_list = random_i_list[random_not_i_border]
+        random_j_list = random_j_list[random_not_i_border]
+
+        # Remove random coodinates that fall fall beyond border in j-coords
+        random_not_j_border = np.where((random_j_list > sky_border) & (random_j_list < (self.cutout.shape[1] - sky_border)))
+        random_i_list = random_i_list[random_not_j_border]
+        random_j_list = random_j_list[random_not_j_border]
+
+        # Remove random coordinates that intersect source
+        log.debug('Pruning: Removing random coords that intersect source')
+        random_not_source = np.where(np.sqrt((np.abs(self.centre_i - random_i_list)) ** 2.0 + (
+        np.abs(self.centre_j - random_j_list)) ** 2.0) > adj_semimin_pix_full)
+        # random_not_source = np.where( (abs(centre_i-random_i_list)>adj_semimin_pix_full) & (abs(centre_j-random_j_list)>adj_semimin_pix_full) )
+        random_i_list = random_i_list[random_not_source]
+        random_j_list = random_j_list[random_not_source]
+
+        # Remove random coordinates that correspond to NaN pixels
+        log.debug('Pruning: Removing random coords that correspond to NaN pixels')
+        random_i_list_pix = np.round(random_i_list).astype(int)
+        random_j_list_pix = np.round(random_j_list).astype(int)
+        random_ij_values = self.cutout[(random_i_list_pix, random_j_list_pix)]
+        random_ij_pix_good = np.where(np.isnan(random_ij_values) == False)
+        random_i_list = random_i_list[random_ij_pix_good]
+        random_j_list = random_j_list[random_ij_pix_good]
+
+        # Return the random coordinates
+        return random_i_list, random_j_list, random_failed
 
     # -----------------------------------------------------------------
 
@@ -430,7 +586,7 @@ class ExactApertureNoiseCalculator(object):
         # Define characteristics of circular aperture with same area as elliptical source aperture
         ap_area = np.pi * self.adj_semimaj_pix * (self.adj_semimaj_pix / self.adj_axial_ratio)
         sky_ap_rad_pix = ( ap_area / np.pi )**0.5
-        sky_border = int( sky_ap_rad_pix + 1.0 ) #int( ( band_dict['annulus_outer'] * sky_ap_rad_pix ) + 1 )
+        sky_border = int(sky_ap_rad_pix + 1.0) #int( ( band_dict['annulus_outer'] * sky_ap_rad_pix ) + 1 )
         adj_semimin_pix = self.adj_semimaj_pix / self.adj_axial_ratio
 
         # Creating mask maps to describe no-go regions
@@ -441,96 +597,31 @@ class ExactApertureNoiseCalculator(object):
         flag_mask = np.zeros(self.cutout.shape)
         attempt_mask = np.zeros(self.cutout.shape)
 
+        # Determine the maximum theoretical number of circular apertures with this radius for the number of usable pixels in the cutout
+        pixel_area = Mask.union(exclude_mask, np.isnan(self.cutout)).nunmasked
+        max_number_of_sky_apertures = self.determine_number_of_apertures(sky_ap_rad_pix, pixel_area)
+        log.warning("The maximum number of sky apertures is " + str(max_number_of_sky_apertures))
+
         #plotting.plot_mask(exclude_mask)
 
         # Set pixels in source aperture to all have NaN pixels, so they don't get sampled by sky annuli
         cutout_inviolate = self.cutout.copy()
-        self.cutout[ np.where(ChrisFuncs.Photom.EllipseMask(self.cutout, adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j) == 1) ] = np.NaN
+        self.cutout[np.where(ChrisFuncs.Photom.EllipseMask(self.cutout, adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j) == 1)] = np.NaN
 
         #plotting.plot_box(self.cutout)
 
         # Define how many random aperture are desired/required/permitted
-        sky_success_target = 50 # the desired number of apertures of the specified size
-        sky_success_min = 20    # the minimum number of apertures for the specified size
-        sky_gen_max = 100       # max number of attempts at generations of a coordinate for each aperture
+        sky_success_target = 50  # the desired number of apertures of the specified size
+        sky_success_min = 20     # the minimum number of apertures for the specified size
+        sky_gen_max = 100        # max number of attempts at generations of a coordinate for each aperture
 
-        # Generate random polar coordinates to draw from
-        log.debug('Setup: Generating pool of random polar coordinates')
-
-        random_size = sky_success_target * sky_gen_max * 10
-        random_failed = []
-        random_theta_list = 360.0 * np.random.rand(random_size)
-        random_r_list = adj_semimin_pix + np.abs(np.random.normal(loc=0.0, scale=5.0*adj_semimaj_pix_full, size=random_size))
-
-        # Locate contiguous map regions
-        log.debug('Pruning: Locating contiguous coverage regions')
-
-        cont_binary = np.zeros(self.cutout.shape)
-        cont_binary[ np.where( np.isnan(cutout_inviolate)==False ) ] = 1
-        cont_structure = np.array([[1,1,1], [1,1,1], [1,1,1]])
-        cont_label = scipy.ndimage.measurements.label(cont_binary, structure=cont_structure)[0]
-        cont_search_mask = ChrisFuncs.EllipseMask(cont_label, 3.0, 1.0, 0.0, self.centre_i, self.centre_j)
-        cont_search_values = cont_label[ np.where( cont_search_mask==1 ) ]
-
-        # Identify contiguous region associated with target source
-        log.debug('Pruning: Identifying coverage region associated with source')
-
-        if np.where(cont_search_values>0)[0].shape[0] == 0: cont_target = 0
-        else: cont_target = scipy.stats.mode(cont_search_values[np.where(cont_search_values>0)])[0][0]
-        cont_where_bad = np.where(cont_label != cont_target)
-
-        # Remove random coordinates that are more distant than most distant part of the coverage region the target source lies in
-        log.debug('Pruning: Removing random coords that definitely lie outside coverage region')
-
-        cont_size_i, cont_size_j = self.cutout.shape
-        cont_range_i = np.arange(cont_size_i) - self.centre_i
-        cont_range_j = np.arange(cont_size_j) - self.centre_j
-        cont_coord_i, cont_coord_j = np.meshgrid(cont_range_j, cont_range_i)  # Yes, i and j are supposed to be this way around inside meshgrid (for some reason)
-        cont_coord_i[cont_where_bad] = np.NaN
-        cont_coord_j[cont_where_bad] = np.NaN
-        cont_dist = np.sqrt(cont_coord_i**2 + cont_coord_j**2)
-        cont_dist_max = np.nanmax(cont_dist)
-        random_r_coverage = np.where( random_r_list < (cont_dist_max-sky_border) )
-        random_r_list = random_r_list[random_r_coverage]
-        random_theta_list = random_theta_list[random_r_coverage]
-
-        # Convert random polar coordinates into cartesian coordinates
-        log.debug('Pruning: Converting random polar coords to cartesian coords, and removing those that lie beyond map border')
-
-        random_i_list = self.centre_i + (random_r_list * np.cos(np.radians(random_theta_list))) #np.random.normal(loc=centre_i, scale=2.0*sky_ap_rad_pix)
-        random_j_list = self.centre_j + (random_r_list * np.sin(np.radians(random_theta_list))) #np.random.normal(loc=centre_j, scale=2.0*sky_ap_rad_pix)
-
-        # Remove random coodinates that fall fall beyond border in i-coords
-        random_not_i_border = np.where((random_i_list>sky_border) & (random_i_list < (self.cutout.shape[0]-sky_border)))
-        random_i_list = random_i_list[random_not_i_border]
-        random_j_list = random_j_list[random_not_i_border]
-
-        # Remove random coodinates that fall fall beyond border in j-coords
-        random_not_j_border = np.where((random_j_list>sky_border) & (random_j_list < (self.cutout.shape[1]-sky_border)))
-        random_i_list = random_i_list[random_not_j_border]
-        random_j_list = random_j_list[random_not_j_border]
-
-        # Remove random coordinates that intersect source
-        log.debug('Pruning: Removing random coords that intersect source')
-        random_not_source = np.where( np.sqrt( (np.abs(self.centre_i-random_i_list))**2.0 + (np.abs(self.centre_j-random_j_list))**2.0 ) > adj_semimin_pix_full )
-        #random_not_source = np.where( (abs(centre_i-random_i_list)>adj_semimin_pix_full) & (abs(centre_j-random_j_list)>adj_semimin_pix_full) )
-        random_i_list = random_i_list[random_not_source]
-        random_j_list = random_j_list[random_not_source]
-
-        # Remove random coordinates that correspond to NaN pixels
-        log.debug('Pruning: Removing random coords that correspond to NaN pixels')
-        random_i_list_pix = np.round(random_i_list).astype(int)
-        random_j_list_pix = np.round(random_j_list).astype(int)
-        random_ij_values = self.cutout[(random_i_list_pix, random_j_list_pix)]
-        random_ij_pix_good = np.where(np.isnan(random_ij_values)==False)
-        random_i_list = random_i_list[random_ij_pix_good]
-        random_j_list = random_j_list[random_ij_pix_good]
+        # Generate random positions
+        random_i_list, random_j_list, random_failed = self.generate_positions(sky_success_target, sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, adj_semimaj_pix_full, cutout_inviolate, sky_border)
 
         # If none of the apertures are suitable, immediately report failure
         if random_i_list.shape[0] == 0:
 
             log.debug('Status: Pruning removed all generated coordinates')
-            #ap_noise_dict = {'fail':True, 'prior_mask':prior_mask, 'flag_mask':flag_mask, 'sky_success_counter':0}
 
             self.success = False
             self.prior_mask = prior_mask
@@ -542,7 +633,7 @@ class ExactApertureNoiseCalculator(object):
             return
 
         # Plot the coordinates
-        #plotting.plot_coordinates_on_image(self.cutout, random_j_list, random_i_list)
+        plotting.plot_coordinates_on_image(self.cutout, random_j_list, random_i_list)
 
         log.debug("NUMBER OF COORDINATES: " + str(len(random_i_list)))
 
@@ -593,7 +684,7 @@ class ExactApertureNoiseCalculator(object):
                 if log.is_debug():
                     #ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
                     #plotting.plot_mask(ap_mask, title="Aperture " + str(sky_success_counter + 1) + ", generation " + str(sky_gen_counter))
-                    attempt_mask[np.where(ap_mask==1)] = sky_success_counter
+                    attempt_mask[np.where(ap_mask == 1)] = sky_success_counter
                     log.debug('Aperture: ' + str(sky_success_counter + 1) + ';   Generation: ' + str(sky_gen_counter) + ';   Pix Coords: [' + str(random_i) + ',' + str(random_j)+']')
 
                 # Do sophisticated check that generated sky aperture does not intersect source; if it does, reject
@@ -604,7 +695,7 @@ class ExactApertureNoiseCalculator(object):
                     log.debug('Rejection: Aperture intersects source (according to sophisticated check)')
 
                     # Plot
-                    if self.debug.intersection: plotting.plot_mask(ap_mask, "Rejection: aperture intersects source")
+                    if self.config.debug.intersection: plotting.plot_mask(ap_mask, "Rejection: aperture intersects source")
 
                     random_failed.append(random_index)
                     continue
@@ -613,14 +704,14 @@ class ExactApertureNoiseCalculator(object):
                 # sampled by previous sky apertures; they have, reject
                 log.debug('Checking: Determining if aperture over-sampled (basic check)')
                 prior_calc = ChrisFuncs.Photom.EllipseSum(prior_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-                prior_calc[2][ np.where(prior_calc[2]>=1.0) ] = 1.0
+                prior_calc[2][np.where(prior_calc[2] >= 1.0)] = 1.0
                 prior_frac = np.sum(prior_calc[2]) / float(prior_calc[1])
                 if prior_frac > 0.5:
 
                     log.debug('Rejection: Aperture over-sampled (according to basic check)')
 
                     # Plot
-                    if self.debug.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (basic)")
+                    if self.config.debug.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (basic)")
 
                     random_failed.append(random_index)
                     continue
@@ -635,7 +726,7 @@ class ExactApertureNoiseCalculator(object):
                 if flag_check > 1:
 
                     log.debug('Rejection: Aperture over-sampled (according to sophisticated check)')
-                    if self.debug.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (sophisticated)")
+                    if self.config.debug.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (sophisticated)")
                     random_failed.append(random_index)
                     continue
 
@@ -660,7 +751,7 @@ class ExactApertureNoiseCalculator(object):
                 if ap_nan_frac > ap_nan_thresh:
 
                     log.debug('Rejection: Aperture contains too many NaNs')
-                    if self.debug.nans: plotting.plot_mask(ap_mask, "Rejection: aperture contains too many NaNs")
+                    if self.config.debug.nans: plotting.plot_mask(ap_mask, "Rejection: aperture contains too many NaNs")
                     random_failed.append(random_index)
                     continue
 
@@ -673,7 +764,7 @@ class ExactApertureNoiseCalculator(object):
                 if bg_nan_frac > bg_nan_thresh:
 
                     log.debug('Rejection: Annulus contains too many NaNs')
-                    if self.debug.annulus_nans: plotting.plot_mask(ap_mask, "Rejection: annulus contains too many NaNs")
+                    if self.config.debug.annulus_nans: plotting.plot_mask(ap_mask, "Rejection: annulus contains too many NaNs")
                     random_failed.append(random_index)
                     continue
 
@@ -751,22 +842,24 @@ class ExactApertureNoiseCalculator(object):
 
 # -----------------------------------------------------------------
 
-class ExtrapolatingApertureNoiseCalculator(object):
+class ExtrapolatingApertureNoiseCalculator(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The consturctor ...
         """
 
+        # Call the constructor of the base class
+        super(ExtrapolatingApertureNoiseCalculator, self).__init__(config)
+
         # INPUT
 
         self.cutout = None
-        self.debug = None
         self.band_name = None
         self.adj_semimaj_pix = None
         self.adj_axial_ratio = None
@@ -824,8 +917,11 @@ class ExtrapolatingApertureNoiseCalculator(object):
         :return:
         """
 
+        # Call the setup function of the base class
+        super(ExtrapolatingApertureNoiseCalculator, self).setup()
+
+        # INPUT
         self.cutout = input_dict.pop("cutout")
-        self.debug = input_dict.pop("debug")
         self.band_name = input_dict.pop("band_name")
         self.adj_semimaj_pix = input_dict.pop("adj_semimaj_pix")
         self.adj_axial_ratio = input_dict.pop("adj_axial_ratio")
@@ -878,7 +974,6 @@ class ExtrapolatingApertureNoiseCalculator(object):
 
             input_dict_radius = dict()
             input_dict_radius["cutout"] = self.cutout.copy()
-            input_dict_radius["debug"] = self.debug
             input_dict_radius["band_name"] = self.band_name
             input_dict_radius["adj_semimaj_pix"] = self.adj_semimaj_pix
             input_dict_radius["adj_axial_ratio"] = self.adj_axial_ratio

@@ -1563,8 +1563,8 @@ def add_settings_from_dict(config, definition, dictionary):
         # Add the settings
         add_settings_from_dict(config[name], section_definition, section_dictionary)
 
-    # LEFTOVER
-    for name in dict_that_is_emptied: config[name] = dict_that_is_emptied[name]
+    # Add leftover settings
+    add_nested_dict_values_to_map(config, dict_that_is_emptied)
 
 # -----------------------------------------------------------------
 
@@ -1972,5 +1972,31 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
         # Add the settings
         add_settings_interactive(config[name], section_definition, prompt_optional=prompt_optional)
+
+# -----------------------------------------------------------------
+
+def add_nested_dict_values_to_map(mapping, dictionary):
+
+    """
+    This function ...
+    :param mapping:
+    :param dictionary:
+    :return:
+    """
+
+    # Loop over the dictionary items
+    for name in dictionary:
+
+        # Get the value
+        value = dictionary[name]
+
+        # Recursively call this function if the value is an other dictionary
+        if isinstance(value, dict):
+
+            mapping[name] = Map()
+            add_nested_dict_values_to_map(mapping[name], value)
+
+        # Else, add the value to the mapping
+        else: mapping[name] = value
 
 # -----------------------------------------------------------------

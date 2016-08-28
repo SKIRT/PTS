@@ -73,6 +73,22 @@ def plot_coordinates_on_image(image, x_coordinates, y_coordinates, path=None, fo
 
 # -----------------------------------------------------------------
 
+def plot_mask_on_image(image, mask, title=None, path=None, format=None):
+
+    """
+    This function ...
+    :param image:
+    :param mask:
+    :param title:
+    :param path:
+    :param format:
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
 def plot_mask(mask, title=None, path=None, format=None):
 
     """

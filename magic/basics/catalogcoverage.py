@@ -108,10 +108,10 @@ class CatalogCoverage(object):
         # List of boxes from ranges in the table
         self.boxes = []
 
-        ra = box.center.x
-        dec = box.center.y
-        ra_span = 2. * box.radius.x
-        dec_span = 2. * box.radius.y
+        ra = box.center.ra.to("deg").value
+        dec = box.center.dec.to("deg").value
+        ra_span = 2. * box.radius.x.to("deg").value
+        dec_span = 2. * box.radius.y.to("deg").value
 
         # Loop over all entries in the table
         for i in range(len(self.table)):

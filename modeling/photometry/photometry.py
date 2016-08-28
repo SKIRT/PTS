@@ -20,7 +20,7 @@ from .component import PhotometryComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..core.sed import ObservedSED
-from ...core.basics.errorbar import ErrorBar
+from ...core.basics.errorbar import ErrorBar, sum_errorbars_quadratically
 from ...core.tools import tables
 from ...core.plot.sed import SEDPlotter
 from ...magic.misc.kernels import AnianoKernels, HerschelKernels
@@ -30,6 +30,8 @@ from ...magic.misc.calibration import CalibrationError
 from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
 from ..preparation import unitconversion
 from ...core.basics.map import Map
+from .tables import FluxErrorTable
+from ...core.basics.configuration import DictConfigurationSetter, ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
@@ -115,6 +117,9 @@ class PhotoMeter(PhotometryComponent):
         self.aniano = AnianoKernels()
         self.herschel = HerschelKernels()
 
+        # The flux error table
+        self.error_table = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -142,10 +147,13 @@ class PhotoMeter(PhotometryComponent):
         # 6. Make the SED
         self.make_sed()
 
-        # 7. Calculate the differences between the calculated photometry and the reference SEDs
+        # 7.  Make the error table
+        self.make_error_table()
+
+        # 8. Calculate the differences between the calculated photometry and the reference SEDs
         self.calculate_differences()
 
-        # 8. Writing
+        # 9. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -182,7 +190,6 @@ class PhotoMeter(PhotometryComponent):
         for name in self.dataset.names:
 
             # Debugging
-            #log.debug("Loading the data and error map for the " + name + " image ...")
             log.debug("Loading the " + name + " image ...")
 
             # Load the frame
@@ -291,6 +298,33 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
+    def make_error_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the flux error table ...")
+
+        # Initialize the flux error table
+        self.error_table = FluxErrorTable()
+
+        # Loop over the errors
+        for name in self.images:
+
+            # Get the error contributions
+            calibration_error, aperture_noise = self.errors[name]
+
+            # Add the error contributions
+            total_error = sum_errorbars_quadratically(calibration_error, aperture_noise)
+
+            # Add an entry to the flux error table
+            self.error_table.add_entry(self.images[name].filter, calibration_error, aperture_noise, total_error)
+
+    # -----------------------------------------------------------------
+
     def load_reference_seds(self):
 
         """
@@ -387,7 +421,7 @@ class PhotoMeter(PhotometryComponent):
         self.write_sed()
 
         # Write the contributions to the flux errors
-        self.write_error_contributions()
+        self.write_error_table()
 
         # Write the differences
         self.write_differences()
@@ -415,7 +449,7 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def write_error_contributions(self):
+    def write_error_table(self):
 
         """
         This function ...
@@ -423,14 +457,10 @@ class PhotoMeter(PhotometryComponent):
         """
 
         # Inform the user
-        log.info("Writing the contributions to the flux errors ...")
+        log.info("Writing the table of the flux error contributions ...")
 
-        data = [[] for _ in range(len(reference_labels) + 3)]
-        names = ["Instrument", "Band", "Calibration error", "Aperture noise"]
-        for label in reference_labels:
-            names.append(label)
-
-        self.contributions = tables.new(data, names=names)
+        # Write the table
+        self.error_table.saveto(self.phot_errors_path)
 
     # -----------------------------------------------------------------
 
@@ -444,11 +474,8 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Writing the percentual differences with reference fluxes to a data file ...")
 
-        # Determine the full path to the output file
-        path = fs.join(self.phot_path, "differences.dat")
-
         # Save the differences table
-        tables.write(self.differences, path, format="ascii.ecsv")
+        tables.write(self.differences, self.phot_differences_path)
 
     # -----------------------------------------------------------------
 
@@ -574,16 +601,30 @@ class PhotoMeter(PhotometryComponent):
         truncation_ellipse_sky = self.truncation_ellipse
         truncation_ellipse_image = truncation_ellipse_sky.to_pixel(frame.wcs)
 
-        debug_config = Map()
+        # CONFIGURATION DICTIONARY
+        config_dict = dict()
+        config_dict["plot_path"] = self.noise_path_for_image(name)
+        config_dict["debug"] = dict()
+        config_dict["debug"]["intersection"] = False
+        config_dict["debug"]["oversampled"] = False
+        config_dict["debug"]["nans"] = False
+        config_dict["debug"]["annulus_nans"] = False
 
+        # Configuration setter
+        command_name = "calculate_aperture_noise"
+        description = "calculate aperture noise"
+        setter = DictConfigurationSetter(config_dict, command_name, description)
 
-        # Create the aperture noise calculator
-        calculator = ApertureNoiseCalculator()
+        # Create the configuration
+        definition = ConfigurationDefinition()
+        config = setter.run(definition)
+
+        # Create the aperture noise calculator, configure it with the configuration
+        calculator = ApertureNoiseCalculator(config)
 
         # Set the input
         input_dict = dict()
         input_dict["cutout"] = frame.data
-        input_dict["debug"] = debug_config
         input_dict["band_name"] = name
         input_dict["adj_semimaj_pix"] = truncation_ellipse_image.radius.x
         input_dict["adj_axial_ratio"] = truncation_ellipse_image.radius.x / truncation_ellipse_image.radius.y

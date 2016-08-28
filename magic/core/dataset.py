@@ -30,6 +30,7 @@ from .mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
+from ..basics.skyregion import SkyRegion
 
 # -----------------------------------------------------------------
 
@@ -197,6 +198,31 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_filter(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_frame(name).filter
+
+    # -----------------------------------------------------------------
+
+    def get_header(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Load the header and return it
+        return fits.getheader(self.paths[name])
+
+    # -----------------------------------------------------------------
+
     def get_frame(self, name, masked=True, mask_value=0.0):
 
         """
@@ -239,12 +265,31 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Region of all the bounding boxes
+        boxes_region = SkyRegion()
+
+        # Add the bounding boxes as sky rectangles
+        for name in self.paths: boxes_region.append(self.get_wcs(name).bounding_box)
+
+        # Return the bounding box of the region of rectangles
+        return boxes_region.bounding_box
+
+    # -----------------------------------------------------------------
+
     def get_errors(self, name, masked=True, mask_value=0.0):
 
         """
         This function ...
         :param name:
         :param masked:
+        :param mask_value:
         :return:
         """
 

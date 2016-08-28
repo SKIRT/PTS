@@ -24,44 +24,6 @@ from ..basics.mask import MaskBase
 
 # -----------------------------------------------------------------
 
-def union(*args):
-
-    """
-    This function ...
-    :param args:
-    :return:
-    """
-
-    # Initialize data
-    data = np.zeros(args[0].shape)
-
-    # Combine the masks
-    for mask in args: data += mask
-
-    # Return the mask
-    return Mask(data)
-
-# -----------------------------------------------------------------
-
-def intersection(*args):
-
-    """
-    This function ...
-    :param args:
-    :return:
-    """
-
-    # Initialize data
-    data = np.ones(args[0].shape)
-
-    # Combine the masks
-    for mask in args: data *= mask
-
-    # Return the mask
-    return Mask(data)
-
-# -----------------------------------------------------------------
-
 class Mask(MaskBase):
     
     """

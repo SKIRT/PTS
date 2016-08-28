@@ -105,7 +105,7 @@ class DistributionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path, min_value=None, max_value=None, min_count=None, max_count=None, format=None, logscale=False):
+    def run(self, output_path=None, min_value=None, max_value=None, min_count=None, max_count=None, format=None, logscale=False, legend=True):
 
         """
         This function ...
@@ -126,7 +126,7 @@ class DistributionPlotter(object):
         self.max_count = max_count
 
         # Make the plot
-        self.plot(output_path, format=format, logscale=logscale)
+        self.plot(output_path, format=format, logscale=logscale, legend=legend)
 
     # -----------------------------------------------------------------
 
@@ -155,7 +155,7 @@ class DistributionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path, logscale=False, add_smooth=False, add_extrema=False, format=None, add_statistics=True):
+    def plot(self, path=None, logscale=False, add_smooth=False, add_extrema=False, format=None, add_statistics=True, legend=True):
 
         """
         This function ...
@@ -165,6 +165,7 @@ class DistributionPlotter(object):
         :param add_extrema:
         :param format:
         :param add_statistics:
+        :param legend:
         :return:
         """
 
@@ -245,14 +246,19 @@ class DistributionPlotter(object):
 
         if logscale: axes.set_yscale("log", nonposx='clip')
 
+        # Add legend
+        if len(self.distributions) > 1 and legend: plt.legend()
+
         plt.tight_layout()
 
         # Debugging
-        if type(path).__name__ == "BytesIO": log.debug("Saving the distribution plot to a buffer ...")
+        if path is None: log.debug("Showing the plot interactively ...")
+        elif type(path).__name__ == "BytesIO": log.debug("Saving the distribution plot to a buffer ...")
         else: log.debug("Saving the distribution plot to " + str(path) + " ...")
 
-        # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, format=format, transparent=self.transparent)
+        # Finish
+        if path is None: plt.show()
+        else: plt.savefig(path, bbox_inches='tight', pad_inches=0.25, format=format, transparent=self.transparent) # Save the figure
         plt.close()
 
 # -----------------------------------------------------------------

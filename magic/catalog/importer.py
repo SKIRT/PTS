@@ -155,7 +155,7 @@ class CatalogImporter(OldConfigurable):
         if self._has_dustpedia_catalog is not None: return self._has_dustpedia_catalog
 
         # Get bounding box of the frame
-        bounding_box = self.frame.bounding_box()
+        bounding_box = self.frame.bounding_box
 
         # Loop over all directories within the catalogs directory (different galaxies)
         for galaxy_path in fs.directories_in_path(self.catalogs_user_path):

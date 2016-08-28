@@ -135,7 +135,7 @@ class CatalogSynchronizer(OldConfigurable):
         """
 
         # Get bounding box
-        coordinate_box = self.frame.bounding_box()
+        coordinate_box = self.frame.bounding_box
 
         # Get current catalog coverage
         coverage = CatalogCoverage(self.galaxy_name)
@@ -366,7 +366,7 @@ class CatalogSynchronizer(OldConfigurable):
         """
 
         # Get bounding box
-        coordinate_box = self.frame.bounding_box()
+        coordinate_box = self.frame.bounding_box
 
         # Get current catalog coverage
         coverage = CatalogCoverage(self.galaxy_name)

@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import copy
 
 # Import astronomical modules
 from astropy.coordinates import SkyCoord, Angle
@@ -24,6 +25,25 @@ from astropy.units import Unit
 from .vector import Extent
 from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon
 from ..tools import coordinates
+
+# -----------------------------------------------------------------
+
+class SkyExtent(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, ra, dec):
+
+        """
+        The constructor ...
+        :param ra:
+        :param dec:
+        """
+
+        self.ra = ra
+        self.dec = dec
 
 # -----------------------------------------------------------------
 
@@ -253,6 +273,54 @@ class SkyCoordinate(SkyCoord):
 
     # -----------------------------------------------------------------
 
+    @property
+    def min_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ra
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ra
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dec
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dec
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_pixel(cls, coordinate, wcs, mode='wcs'):
 
@@ -354,6 +422,54 @@ class SkyLine(object):
         dec_span = dec_distance * Unit("deg")
 
         return math.sqrt(ra_span**2 + dec_span**2)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.start.ra, self.end.ra)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.start.ra, self.end.ra)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.start.dec, self.end.dec)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.start.dec, self.end.dec)
 
     # -----------------------------------------------------------------
 
@@ -498,6 +614,58 @@ class SkyEllipse(object):
         """
 
         return self.radius.y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        bounding_box = self.bounding_box
+        return bounding_box.center.ra - bounding_box.radius.ra
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        bounding_box = self.bounding_box
+        return bounding_box.center.ra + bounding_box.radius.ra
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        bounding_box = self.bounding_box
+        return bounding_box.center.dec - bounding_box.radius.dec
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        bounding_box = self.bounding_box
+        return bounding_box.center.dec + bounding_box.radius.dec
 
     # -----------------------------------------------------------------
 
@@ -665,6 +833,54 @@ class SkyCircle(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def min_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center.ra - self.radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center.ra + self.radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_dec(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.center.dec - self.radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center.dec + self.radius
+
+    # -----------------------------------------------------------------
+
     def __mul__(self, value):
 
         """
@@ -828,6 +1044,29 @@ class SkyRectangle(object):
         """
 
         return SkyRectangle(self.center, self.radius / value, self.angle)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.copy()
 
     # -----------------------------------------------------------------
 
