@@ -18,6 +18,7 @@ from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.io import fits
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -31,6 +32,7 @@ from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ..basics.skyregion import SkyRegion
+from ..tools import headers
 
 # -----------------------------------------------------------------
 
@@ -280,6 +282,140 @@ class DataSet(object):
 
         # Return the bounding box of the region of rectangles
         return boxes_region.bounding_box
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            wcs = self.get_wcs(name)
+            if pixelscale is None or wcs.average_pixelscale < pixelscale: pixelscale = wcs.average_pixelscale
+
+        # Return the minimum pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            wcs = self.get_wcs(name)
+            if pixelscale is None or wcs.average_pixelscale > pixelscale: pixelscale = wcs.average_pixelscale
+
+        # Return the maximum pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fwhm = None
+
+        for name in self.paths:
+
+            # Get the FWHM
+            header = self.get_header(name)
+            header_fwhm = headers.get_fwhm(header)
+
+            if fwhm is None or header_fwhm < fwhm: fwhm = header_fwhm
+
+        # Return the minimum FWHM
+        return fwhm
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fwhm = None
+
+        for name in self.paths:
+
+            # Get the FWHM
+            header = self.get_header(name)
+            header_fwhm = headers.get_fwhm(header)
+
+            if fwhm is None or header_fwhm > fwhm: fwhm = header_fwhm
+
+        # Return the minimum FWHM
+        return fwhm
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        wavelength = None
+
+        for name in self.paths:
+
+            # Get the wavelength
+            header = self.get_header(name)
+            header_wavelength = headers.get_filter(name, header).pivotwavelength() * Unit("micron")
+
+            if wavelength is None or header_wavelength < wavelength: wavelength = header_wavelength
+
+        # Return the minimum wavelength
+        return wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        wavelength = None
+
+        for name in self.paths:
+
+            # Get the wavelength
+            header = self.get_header(name)
+            header_wavelength = headers.get_filter(name, header).pivotwavelength() * Unit("micron")
+
+            if wavelength is None or header_wavelength > wavelength: wavelength = header_wavelength
+
+        # Return the maximum wavelength
+        return wavelength
 
     # -----------------------------------------------------------------
 

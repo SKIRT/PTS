@@ -32,6 +32,7 @@ from ...core.launch.options import SchedulingOptions
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
 from ..config.parameters import units as parameter_units
+from ...core.basics.configuration import stringify_not_list
 
 # -----------------------------------------------------------------
 
@@ -578,10 +579,15 @@ class ParameterExplorer(FittingComponent):
 
             # Debugging
             log.debug("Adjusting ski file for the following model parameters:")
-            for label in parameter_values: log.debug(" - " + label + ": " + str(parameter_values[label]))
+            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label]))
 
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()
+
+            # For the luminosity of SpectralLuminosityNormalization components, convert to W/m
+            #for label in parameter_values:
+            #    if label == "fuv_young" or label == "fuv_ionizing" or label == "i1_old":
+            #        parameter_values[label] = parameter_values[label].to("W/m").value
 
             # Set the parameter values in the ski file template
             self.ski_template.set_labeled_values(parameter_values)

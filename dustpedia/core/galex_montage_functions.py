@@ -435,19 +435,19 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
     ####################### DIRECTORIES
 
     # Create a directory for the noise maps in counts per second
-    temp_noise_path = fs.create_directory_in(temp_path, "noise")
+    temp_noise_path = fs.create_directory_in(temp_path_band, "noise")
 
     # Temp directory for the images and poisson noise maps in count/s/sr
-    temp_converted_path = fs.create_directory_in(temp_path, "converted")
+    temp_converted_path = fs.create_directory_in(temp_path_band, "converted")
 
     # REBINNED in counts per second PER SR
-    temp_rebinned_path = fs.create_directory_in(temp_path, "rebinned")
+    temp_rebinned_path = fs.create_directory_in(temp_path_band, "rebinned")
 
     # MOSAICING
-    temp_mosaic_path = fs.create_directory_in(temp_path, "mosaic")
+    temp_mosaic_path = fs.create_directory_in(temp_path_band, "mosaic")
 
     # RESULT AFTER MOSAICING AND BACK TO COUNTS/S
-    #temp_result_path = fs.create_directory_in(temp_path, "result")
+    #temp_result_path = fs.create_directory_in(temp_path_band, "result")
 
     ######################
 

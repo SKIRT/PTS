@@ -653,16 +653,21 @@ class BatchLauncher(OldConfigurable):
                 local_script_path = fs.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
             else: local_script_path = None
 
+            # Determine screen name
+            screen_name = time.unique_name("batch_launcher")
+
             # Set a path for the screen output to be saved remotely (for debugging)
             if remote.host_id in self.save_screen_output:
                 remote_skirt_dir_path = remote.skirt_dir
-                remote_skirt_run_debug_path = fs.join(remote_skirt_dir_path, "run-debug")
-                if not remote.is_directory(remote_skirt_run_debug_path): remote.create_directory(remote_skirt_run_debug_path)
-                screen_output_path = fs.join(remote_skirt_run_debug_path, time.unique_name("screen") + ".txt")
+                remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen output")
+                if not remote.is_directory(remote_skirt_screen_output_path): remote.create_directory(remote_skirt_screen_output_path)
+                this_screen_output_path = fs.join(remote_skirt_screen_output_path, screen_name)
+                remote.create_directory(this_screen_output_path)
+                screen_output_path = this_screen_output_path
             else: screen_output_path = None
 
             # Start the queue
-            screen_name = remote.start_queue(group_simulations=self.config.group_simulations, local_script_path=local_script_path, screen_output_path=screen_output_path)
+            remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, local_script_path=local_script_path, screen_output_path=screen_output_path)
 
             # Set the screen name for all of the simulation objects
             for simulation in simulations_remote:
