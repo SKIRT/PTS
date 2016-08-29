@@ -603,7 +603,9 @@ class PhotoMeter(PhotometryComponent):
 
         # CONFIGURATION DICTIONARY
         config_dict = dict()
-        config_dict["plot_path"] = self.noise_path_for_image(name)
+        plot_path = sef.noise_path_for_image(image)
+        fs.create_directory(pot_path)
+        config_dict["plot_path"] = plot_path
         config_dict["debug"] = dict()
         config_dict["debug"]["intersection"] = False
         config_dict["debug"]["oversampled"] = False

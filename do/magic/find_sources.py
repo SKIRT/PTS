@@ -65,6 +65,8 @@ parser.add_argument("--other_dilation_factor", type=float, help="the dilation fa
 parser.add_argument("--saturation_sigma_level", type=float, help="the sigma level to be used for the segmentation step in saturation detection")
 parser.add_argument("--other_sigma_level", type=float, help="the sigma level to be used for the segmentation step in finding the other sources")
 
+parser.add_argument("--stars_peak_sigma_level", type=float, help="the sigma level for the peak finding step of the star finder")
+
 parser.add_argument("--fwhm", type=float, help="the FWHM of the image in arcseconds")
 
 parser.add_argument("--saturation_box_sigmas", type=float, help="ask Sam")

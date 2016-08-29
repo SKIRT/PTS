@@ -119,6 +119,9 @@ class SourceFinder(OldConfigurable):
         # Set the saturation_box_sigmas
         if arguments.saturation_box_sigmas is not None: finder.config.stars.saturation.sigmas = arguments.saturation_box_sigmas
 
+        # Set the sigma level for the peak detection step of the star finder
+        if arguments.stars_peak_sigma_level is not None: finder.config.stars.detection.sigma_level = arguments.stars_peak_sigma_level
+
         # Return the new instance
         return finder
 

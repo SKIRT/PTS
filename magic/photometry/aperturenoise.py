@@ -534,6 +534,11 @@ class ExactApertureNoiseCalculator(Configurable):
         :return:
         """
 
+        # Define how many random aperture are desired/required/permitted
+        sky_success_target = 50  # the desired number of apertures of the specified size
+        sky_success_min = 20  # the minimum number of apertures for the specified size
+        sky_gen_max = 100  # max number of attempts at generations of a coordinate for each aperture
+
         # Inform the user
         log.info("Calculating ...")
 
@@ -602,6 +607,20 @@ class ExactApertureNoiseCalculator(Configurable):
         max_number_of_sky_apertures = self.determine_number_of_apertures(sky_ap_rad_pix, pixel_area)
         log.warning("The maximum number of sky apertures is " + str(max_number_of_sky_apertures))
 
+        # Check
+        if max_number_of_sky_apertures < sky_success_min:
+
+            log.error("The theoretical maximum number of sky apertures for this image is " + str(max_number_of_sky_apertures) + " , but we need " + str(sky_success_min))
+
+            self.success = False
+            self.prior_mask = prior_mask
+            self.flag_mask = flag_mask
+            self.sky_success_counter = 0
+
+            self.cutout_inviolate = cutout_inviolate
+
+            return
+
         #plotting.plot_mask(exclude_mask)
 
         # Set pixels in source aperture to all have NaN pixels, so they don't get sampled by sky annuli
@@ -609,11 +628,6 @@ class ExactApertureNoiseCalculator(Configurable):
         self.cutout[np.where(ChrisFuncs.Photom.EllipseMask(self.cutout, adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j) == 1)] = np.NaN
 
         #plotting.plot_box(self.cutout)
-
-        # Define how many random aperture are desired/required/permitted
-        sky_success_target = 50  # the desired number of apertures of the specified size
-        sky_success_min = 20     # the minimum number of apertures for the specified size
-        sky_gen_max = 100        # max number of attempts at generations of a coordinate for each aperture
 
         # Generate random positions
         random_i_list, random_j_list, random_failed = self.generate_positions(sky_success_target, sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, adj_semimaj_pix_full, cutout_inviolate, sky_border)
