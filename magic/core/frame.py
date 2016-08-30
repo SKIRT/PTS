@@ -608,7 +608,8 @@ class Frame(NDDataArray):
         """
 
         # Create a new frame
-        new = cls(np.zeros_like(frame._data))
+        if hasattr(frame, "_data"): new = cls(np.zeros_like(frame._data))
+        else: new = cls(np.zeros_like(frame))
         return new
 
     # -----------------------------------------------------------------

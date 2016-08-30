@@ -43,13 +43,14 @@ def dist_ellipse(n, xc, yc, ratio, pa=0): # original implementation (like DIST_E
                passes through the pixel.
     """
 
-    ang = np.radians(pa)
+    ang = np.radians(pa + 90.)
     cosang = np.cos(ang)
     sinang = np.sin(ang)
-    nx = n[0]
-    ny = n[1]
+    nx = n[1]
+    ny = n[0]
     x = np.arange(-xc,nx-xc)
     y = np.arange(-yc,ny-yc)
+
     im = np.empty(n)
     xcosang = x*cosang
     xsinang = x*sinang

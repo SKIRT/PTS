@@ -93,7 +93,13 @@ class PhotoMeter(PhotometryComponent):
         super(PhotoMeter, self).__init__(config)
 
         # The list of image frames
-        self.images = dict()
+        self.frames = dict()
+
+        # The list of image frames
+        self.truncated_frames = dict()
+
+        # The sky values
+        #self.sky_values = dict()
 
         # The fluxes
         self.fluxes = dict()
@@ -192,8 +198,17 @@ class PhotoMeter(PhotometryComponent):
             # Debugging
             log.debug("Loading the " + name + " image ...")
 
-            # Load the frame
+            # Load the frame, not truncated
             frame = self.dataset.get_frame(name, masked=False)
+
+            # Load the truncated frame
+            truncated_frame = self.dataset.get_frame(name)
+
+            # Get the sky value
+            sky = self.dataset.get_image_plane(name, "sky")[0,0]
+
+            # Debugging
+            log.debug("The sky value for this image is " + str(sky) + " MJy/sr")
 
             # Debugging
             log.debug("Converting the " + name + " to Jy ...")
@@ -211,9 +226,20 @@ class PhotoMeter(PhotometryComponent):
 
             # CONVERT IMAGE
             frame *= conversion_factor
+            truncated_frame *= conversion_factor
+
+            # Convert the sky value
+            sky *= conversion_factor
+
+            # Debugging
+            log.debug("The sky value in Jansky / pixel is " + str(sky))
 
             # Add to the appropriate dictionary
-            self.images[name] = frame
+            self.frames[name] = frame + sky # add the sky to the frame
+            self.truncated_frames[name] = truncated_frame
+
+            # Add the sky value
+            #self.sky_values[name] = sky
 
     # -----------------------------------------------------------------
 
@@ -228,13 +254,13 @@ class PhotoMeter(PhotometryComponent):
         log.info("Calculating the aperture fluxes ...")
 
         # Loop over all the images
-        for name in self.images:
+        for name in self.frames:
 
             # Debugging
             log.debug("Calculating the total flux in the " + name + " image ...")
 
             # Calculate the total flux in Jansky
-            flux = self.images[name].sum()
+            flux = self.truncated_frames[name].sum()
 
             # Apply correction for EEF of aperture
             #if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
@@ -255,7 +281,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Calculating the errors on the aperture fluxes ...")
 
         # Loop over all the images
-        for name in self.images:
+        for name in self.frames:
 
             # Debugging
             log.debug("Calculating the flux error for the " + name + " image ...")
@@ -264,7 +290,10 @@ class PhotoMeter(PhotometryComponent):
             calibration_error = self.calculate_calibration_error(name)
 
             # Calculate the aperture noise error
-            aperture_noise = self.calculate_aperture_noise(name)
+            #aperture_noise = self.calculate_aperture_noise(name)
+
+            #calibration_error = ErrorBar(0.0)
+            aperture_noise = ErrorBar(0.0)
 
             # Set the error contributions
             self.errors[name] = (calibration_error, aperture_noise)
@@ -282,7 +311,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Making the observed SED ...")
 
         # Loop over all images
-        for name in self.images:
+        for name in self.frames:
 
             # The flux
             flux = self.fluxes[name]
@@ -294,7 +323,7 @@ class PhotoMeter(PhotometryComponent):
             errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
 
             # Add this entry to the SED
-            self.sed.add_entry(self.images[name].filter, flux, errorbar)
+            self.sed.add_entry(self.frames[name].filter, flux, errorbar)
 
     # -----------------------------------------------------------------
 
@@ -309,10 +338,10 @@ class PhotoMeter(PhotometryComponent):
         log.info("Making the flux error table ...")
 
         # Initialize the flux error table
-        self.error_table = FluxErrorTable()
+        self.error_table = FluxErrorTable.initialize()
 
         # Loop over the errors
-        for name in self.images:
+        for name in self.frames:
 
             # Get the error contributions
             calibration_error, aperture_noise = self.errors[name]
@@ -321,7 +350,7 @@ class PhotoMeter(PhotometryComponent):
             total_error = sum_errorbars_quadratically(calibration_error, aperture_noise)
 
             # Add an entry to the flux error table
-            self.error_table.add_entry(self.images[name].filter, calibration_error, aperture_noise, total_error)
+            self.error_table.add_entry(self.frames[name].filter, calibration_error, aperture_noise, total_error)
 
     # -----------------------------------------------------------------
 
@@ -541,7 +570,7 @@ class PhotoMeter(PhotometryComponent):
         flux = self.fluxes[name]
 
         # Get the calibration error
-        calibration_error = CalibrationError.from_filter(self.images[name].filter)
+        calibration_error = CalibrationError.from_filter(self.frames[name].filter)
 
         if calibration_error.magnitude:
 
@@ -553,16 +582,25 @@ class PhotoMeter(PhotometryComponent):
             a = flux_mag - mag_error
             b = flux_mag + mag_error
 
+            log.debug("Flux value: " + str(flux))
+            log.debug("a magnitude: " + str(a))
+            log.debug("b magnitude: " + str(b))
+
             # Convert a and b to Jy
             a = unitconversion.ab_to_jansky(a)
             b = unitconversion.ab_to_jansky(b)
 
             # Calculate lower and upper limit of the flux
             c = a - flux
-            d = flux - b
+            d = b - flux
+
+            log.debug("a value: " + str(a))
+            log.debug("b value: " + str(b))
+            log.debug("c value: " + str(c))
+            log.debug("d value: " + str(d))
 
             # Create the error bar
-            error_bar = ErrorBar(c, d)
+            error_bar = ErrorBar(d, c)
 
         # The calibration uncertainty is expressed in a percentage (from the flux values)
         elif calibration_error.percentage:
@@ -595,22 +633,22 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Calculating the aperture noise for " + name + " ...")
 
-        # Get the frame
-        frame = self.images[name]
+        # Get the frame (this is with the sky NOT subtracted)
+        frame = self.frames[name]
 
         truncation_ellipse_sky = self.truncation_ellipse
         truncation_ellipse_image = truncation_ellipse_sky.to_pixel(frame.wcs)
 
         # CONFIGURATION DICTIONARY
         config_dict = dict()
-        plot_path = sef.noise_path_for_image(image)
-        fs.create_directory(pot_path)
+        plot_path = self.noise_path_for_image(name)
+        fs.create_directory(plot_path)
         config_dict["plot_path"] = plot_path
-        config_dict["debug"] = dict()
-        config_dict["debug"]["intersection"] = False
-        config_dict["debug"]["oversampled"] = False
-        config_dict["debug"]["nans"] = False
-        config_dict["debug"]["annulus_nans"] = False
+        config_dict["debug_plotting"] = dict()
+        config_dict["debug_plotting"]["intersection"] = False
+        config_dict["debug_plotting"]["oversampled"] = False
+        config_dict["debug_plotting"]["nans"] = False
+        config_dict["debug_plotting"]["annulus_nans"] = True
 
         # Configuration setter
         command_name = "calculate_aperture_noise"
@@ -639,24 +677,34 @@ class PhotoMeter(PhotometryComponent):
         annulus_inner = self.sky_annulus_inner(name)
         annulus_outer = self.sky_annulus_outer(name)
 
-        input_dict["semimaj_pix_annulus_outer"] = annulus_outer.radius.x
-        input_dict["semimaj_pix_annulus_inner"] = annulus_inner.radius.x
+        annulus_inner_radius = annulus_inner.radius.x
+        annulus_outer_radius = annulus_outer.radius.x
+
+        # THIS IS JUST A FIX BECAUSE SOMETHING WENT WRONG WITH CREATING THE ANNULUS REGION (FOR SDSS e.g.)
+        if annulus_inner_radius == annulus_outer_radius:
+            annulus_inner_radius = 0.4 * annulus_outer_radius
+
+        #input_dict["semimaj_pix_annulus_outer"] = annulus_outer_radius
+        #input_dict["semimaj_pix_annulus_inner"] = annulus_inner_radius
 
         axratio_annulus_outer = annulus_outer.radius.x / annulus_outer.radius.y
         axratio_annulus_inner = annulus_inner.radius.x / annulus_inner.radius.y
 
         # Check
         if not np.isclose(axratio_annulus_outer, axratio_annulus_inner): log.error("DIFFERENCE AX RATIO", axratio_annulus_outer, axratio_annulus_inner)
-        input_dict["axial_ratio_annulus"] = axratio_annulus_outer
+        #input_dict["axial_ratio_annulus"] = axratio_annulus_outer
 
         annulus_angle_outer = annulus_outer.angle.to("deg").value
         annulus_angle_inner = annulus_inner.angle.to("deg").value
 
         # Check
         if not np.isclose(annulus_angle_outer, annulus_angle_inner): log.error("DIFFERENCE ANNULUS ANGLE", annulus_angle_outer, annulus_angle_inner)
-        input_dict["annulus_angle"] = annulus_angle_inner
-        input_dict["annulus_centre_i"] = annulus_outer.center.y
-        input_dict["annulus_centre_j"] = annulus_outer.center.x
+        #input_dict["annulus_angle"] = annulus_angle_inner
+        #input_dict["annulus_centre_i"] = annulus_outer.center.y
+        #input_dict["annulus_centre_j"] = annulus_outer.center.x
+
+        input_dict["annulus_inner_factor"] = 1.5
+        input_dict["annulus_outer_factor"] = 2.0
 
         input_dict["plot_path"] = self.phot_temp_path
 
@@ -814,6 +862,8 @@ class PhotoMeter(PhotometryComponent):
         config_dict["annulus_centre_i"] = annulus_outer.center.y
         config_dict["annulus_centre_j"] = annulus_outer.center.x
 
+        #config_dict["annulus_outer_factor"] = 2.0
+        #config_dict["annulus_inner_factor"] = 1.5
 
         # SUBPIXEL FACTOR (with consideration of sub-pixels when factor > 1.0)
         config_dict["subpixel_factor"] = 1.0

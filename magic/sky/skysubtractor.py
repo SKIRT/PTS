@@ -629,8 +629,7 @@ class SkySubtractor(OldConfigurable):
 
             # If the overlap fraction is larger than 50% for this aperture, skip it
             if overlap_fraction >= 0.5:
-                log.debug(
-                    "For this aperture, an overlap fraction of more than 50% was found with the sky mask, skipping ...")
+                log.debug("For this aperture, an overlap fraction of more than 50% was found with the sky mask, skipping ...")
                 continue
 
             # Get a mask of the pixels that overlap with the apertures mask
@@ -643,8 +642,7 @@ class SkySubtractor(OldConfigurable):
 
             # If the overlap fraction is larger than 10% for this aperture, skip it
             if overlap_fraction >= 0.1:
-                log.debug(
-                    "For this aperture, an overlap fraction of more than 10% was found with other apertures, skipping ...")
+                log.debug("For this aperture, an overlap fraction of more than 10% was found with other apertures, skipping ...")
 
             # Add the aperture area to the mask
             apertures_mask[source.y_slice, source.x_slice] += source.mask

@@ -156,6 +156,32 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    def __getitem__(self, item):
+
+        """
+        This function ...
+        :param item:
+        :return:
+        """
+
+        if isinstance(item, MaskBase): return self._data[item.data]
+        else: return self._data[item]
+
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, item, value):
+
+        """
+        This function ...
+        :param item:
+        :return:
+        """
+
+        if isinstance(item, MaskBase): self._data[item.data] = value
+        else: self._data[item] = value
+
+    # -----------------------------------------------------------------
+
     @property
     def shape(self):
 
@@ -347,7 +373,8 @@ class MaskBase(object):
         """
 
         new = self.copy()
-        new += other
+        if isinstance(other, MaskBase): new._data += other.data
+        else: new._data += other
         return new
 
     # -----------------------------------------------------------------
@@ -360,7 +387,36 @@ class MaskBase(object):
         :return:
         """
 
-        self._data += other.data
+        if isinstance(other, MaskBase): self._data += other.data
+        else: self._data += other
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __mul__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        new = self.copy()
+        if isinstance(other, MaskBase): new._data *= other.data
+        else: new._data *= other
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if isinstance(other, MaskBase): self._data *= other.data
+        else: self._data *= other
         return self
 
     # -----------------------------------------------------------------
@@ -444,6 +500,43 @@ class MaskBase(object):
         """
 
         return np.sum(np.logical_not(self.data))
+
+    # -----------------------------------------------------------------
+
+    def masks(self, position):
+
+        """
+        This function ...
+        :param position:
+        :return:
+        """
+
+        # Calculate x and y of the pixel corresponding to the object's position
+        x_pixel = int(round(position.x))
+        y_pixel = int(round(position.y))
+
+        return self.data[y_pixel, x_pixel]  # Return the value of the mask in this pixel
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_shape(cls, shape, x_size, y_size, invert=False):
+
+        """
+        This function ...
+        :param shape:
+        :param x_size:
+        :param y_size:
+        :param invert:
+        :return:
+        """
+
+        # Return a new Mask object
+        mask = cls(shape.to_mask(x_size, y_size))
+
+        # Return the mask (inverted if requested)
+        if invert: return mask.inverse()
+        else: return mask
 
 # -----------------------------------------------------------------
 
@@ -999,10 +1092,7 @@ class Mask(np.ndarray):
 
         # Check whether this box contains the position
         if x_pixel < 0 or y_pixel < 0 or x_pixel >= self.xsize or y_pixel >= self.ysize: return False
-        else:
-
-            # Return the value of the mask in this pixel
-            return self[y_pixel, x_pixel]
+        else: return self[y_pixel, x_pixel] # Return the value of the mask in this pixel
 
     # -----------------------------------------------------------------
 

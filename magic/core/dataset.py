@@ -565,6 +565,23 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_image_plane(self, name, plane_name):
+
+        """
+        This function ...
+        :param name:
+        :param plane_name:
+        :return:
+        """
+
+        # Open the requested frame
+        frame = Frame.from_file(self.paths[name], plane=plane_name)
+
+        # Return the frame
+        return frame
+
+    # -----------------------------------------------------------------
+
     def planes_in_image(self, name):
 
         """

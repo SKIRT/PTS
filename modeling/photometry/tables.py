@@ -25,9 +25,12 @@ class FluxErrorTable(SmartTable):
 
     column_info = [("Instrument", str, None, "name of the instrument"),
                    ("Band", str, None, "name of the band"),
-                   ("Calibration error", float, None, "calibration error"),
-                   ("Aperture noise", float, None, "aperture noise"),
-                   ("Total error", float, None, "total error")]
+                   ("Calibration error-", float, None, "calibration error lower"),
+                   ("Calibration error+", float, None, "calibration error upper"),
+                   ("Aperture noise-", float, None, "aperture noise lower"),
+                   ("Aperture noise+", float, None, "aperture noise upper"),
+                   ("Total error-", float, None, "total error lower"),
+                   ("Total error+", float, None, "total error upper")]
 
     # -----------------------------------------------------------------
 
@@ -43,7 +46,7 @@ class FluxErrorTable(SmartTable):
         """
 
         # Set the values
-        values = [fltr.instrument, fltr.band, calibration_error, aperture_noise, total_error]
+        values = [fltr.instrument, fltr.band, calibration_error.lower, calibration_error.upper, aperture_noise.lower, aperture_noise.upper, total_error.lower, total_error.upper]
 
         # Add a row to the table
         self.add_row(values)

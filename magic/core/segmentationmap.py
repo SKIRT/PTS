@@ -13,6 +13,9 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from photutils.segmentation import SegmentationImage
 from astropy.io import fits
@@ -100,6 +103,19 @@ class SegmentationMap(SegmentationImage):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def empty_like(cls, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        return cls(np.zeros(frame.shape))
+
+    # -----------------------------------------------------------------
+
     @property
     def xsize(self):
 
@@ -145,6 +161,21 @@ class SegmentationMap(SegmentationImage):
 
         # Return the header
         return header
+
+    # -----------------------------------------------------------------
+
+    def add_shape(self, shape):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create mask
+        mask = shape.to_mask(self.xsize, self.ysize)
+
+        # Add the mask as integer type
+        self._data += mask.astype(int)
 
     # -----------------------------------------------------------------
 
