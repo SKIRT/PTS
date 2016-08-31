@@ -29,8 +29,7 @@ from ...core.launch.pts import PTSRemoteLauncher
 from ...magic.misc.calibration import CalibrationError
 from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
 from ..preparation import unitconversion
-from ...core.basics.map import Map
-from .tables import FluxErrorTable
+from .tables import FluxErrorTable, FluxDifferencesTable
 from ...core.basics.configuration import DictConfigurationSetter, ConfigurationDefinition
 
 # -----------------------------------------------------------------
@@ -110,9 +109,6 @@ class PhotoMeter(PhotometryComponent):
         # The SED
         self.sed = None
 
-        # The reference SEDs
-        self.reference_seds = dict()
-
         # The differences
         self.differences = None
 
@@ -125,6 +121,9 @@ class PhotoMeter(PhotometryComponent):
 
         # The flux error table
         self.error_table = None
+
+        # The flux differences table
+        self.differences_table = None
 
     # -----------------------------------------------------------------
 
@@ -140,9 +139,6 @@ class PhotoMeter(PhotometryComponent):
 
         # 2. Load the truncated images
         self.load_images()
-
-        # 3. Get the photometric flux points from the literature for comparison
-        self.load_reference_seds()
 
         # 4. Calculate the fluxes
         self.calculate_fluxes()
@@ -179,6 +175,12 @@ class PhotoMeter(PhotometryComponent):
 
         # Setup the remote PTS launcher
         self.launcher.setup(self.config.remote)
+
+        # Initialize the flux error table
+        self.error_table = FluxErrorTable.initialize()
+
+        # Initialize the flux differences table
+        self.differences_table = FluxDifferencesTable.initialize(self.reference_sed_labels)
 
     # -----------------------------------------------------------------
 
@@ -260,10 +262,10 @@ class PhotoMeter(PhotometryComponent):
             log.debug("Calculating the total flux in the " + name + " image ...")
 
             # Calculate the total flux in Jansky
-            flux = self.truncated_frames[name].sum()
+            flux = self.truncated_frames[name].sum() # * Unit("Jansky")
 
             # Apply correction for EEF of aperture
-            #if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
+            if "Pacs" in name or "SPIRE" in name: flux *= self.calculate_aperture_correction_factor(name)
 
             # Add the flux to the dictionary
             self.fluxes[name] = flux
@@ -290,10 +292,7 @@ class PhotoMeter(PhotometryComponent):
             calibration_error = self.calculate_calibration_error(name)
 
             # Calculate the aperture noise error
-            #aperture_noise = self.calculate_aperture_noise(name)
-
-            #calibration_error = ErrorBar(0.0)
-            aperture_noise = ErrorBar(0.0)
+            aperture_noise = self.calculate_aperture_noise(name)
 
             # Set the error contributions
             self.errors[name] = (calibration_error, aperture_noise)
@@ -312,6 +311,9 @@ class PhotoMeter(PhotometryComponent):
 
         # Loop over all images
         for name in self.frames:
+
+            # Debugging
+            log.debug("Adding SED entry for the " + name + " image ...")
 
             # The flux
             flux = self.fluxes[name]
@@ -337,11 +339,11 @@ class PhotoMeter(PhotometryComponent):
         # Inform the user
         log.info("Making the flux error table ...")
 
-        # Initialize the flux error table
-        self.error_table = FluxErrorTable.initialize()
-
         # Loop over the errors
         for name in self.frames:
+
+            # Debugging
+            log.debug("Adding an entry to the error table for the " + name + " image ...")
 
             # Get the error contributions
             calibration_error, aperture_noise = self.errors[name]
@@ -349,29 +351,11 @@ class PhotoMeter(PhotometryComponent):
             # Add the error contributions
             total_error = sum_errorbars_quadratically(calibration_error, aperture_noise)
 
+            # Calculate the relative error
+            total_relative_error = total_error / self.fluxes[name]
+
             # Add an entry to the flux error table
-            self.error_table.add_entry(self.frames[name].filter, calibration_error, aperture_noise, total_error)
-
-    # -----------------------------------------------------------------
-
-    def load_reference_seds(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the reference SEDs ...")
-
-        # Loop over the SEDs in the data/SEDs directory
-        for path, name in fs.files_in_path(self.data_seds_path, extension="dat", returns=["path", "name"], not_contains="Lines"):
-
-            # Open the observed SED
-            sed = ObservedSED.from_file(path)
-
-            # Add the SED to the dictionary
-            self.reference_seds[name] = sed
+            self.error_table.add_entry(self.frames[name].filter, calibration_error, aperture_noise, total_error, total_relative_error)
 
     # -----------------------------------------------------------------
 
@@ -386,39 +370,31 @@ class PhotoMeter(PhotometryComponent):
         log.info("Calculating the differences with the reference SEDs ...")
 
         # Get list of instruments, bands and fluxes of the calculated SED
-        instruments = self.sed.instruments()
-        bands = self.sed.bands()
+        filters = self.sed.filters()
         fluxes = self.sed.fluxes(unit="Jy", add_unit=False)
 
         # The number of data points
-        number_of_points = len(instruments)
-
-        # Initialize data and names
-        reference_labels = self.reference_seds.keys()
-        data = [[] for _ in range(len(reference_labels)+3)]
-        names = ["Instrument", "Band", "Flux"]
-        for label in reference_labels:
-            names.append(label)
+        number_of_points = len(filters)
 
         # Loop over the different points in the calculated SED
         for i in range(number_of_points):
 
-            # Add instrument, band and flux
-            data[0].append(instruments[i])
-            data[1].append(bands[i])
-            data[2].append(fluxes[i])
+            # The dictionary with the flux differences for the different reference SEDs
+            differences = dict()
 
-            column_index = 3
+            # The instrument and band
+            instrument = filters[i].instrument
+            band = filters[i].band
 
             # Loop over the different reference SEDs
-            for label in reference_labels:
+            for label in self.reference_sed_labels:
 
                 relative_difference = None
 
                 # Loop over the data points in the reference SED
                 for j in range(len(self.reference_seds[label].table["Wavelength"])):
 
-                    if self.reference_seds[label].table["Instrument"][j] == instruments[i] and self.reference_seds[label].table["Band"][j] == bands[i]:
+                    if self.reference_seds[label].table["Instrument"][j] == instrument and self.reference_seds[label].table["Band"][j] == band:
 
                         difference = fluxes[i] - self.reference_seds[label].table["Flux"][j]
                         relative_difference = difference / fluxes[i] * 100.
@@ -426,13 +402,11 @@ class PhotoMeter(PhotometryComponent):
                         # Break because a match has been found within this reference SED
                         break
 
-                # Add percentage to the table (or None if no match was found in this reference SED)
-                data[column_index].append(relative_difference)
+                # Add percentage to the dictionary (or None if no match was found in this reference SED)
+                differences[label] = relative_difference
 
-                column_index += 1
-
-        # Create table of differences
-        self.differences = tables.new(data, names=names)
+            # Add entry to the table
+            self.differences_table.add_entry(filters[i], fluxes[i], differences)
 
     # -----------------------------------------------------------------
 
@@ -504,7 +478,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Writing the percentual differences with reference fluxes to a data file ...")
 
         # Save the differences table
-        tables.write(self.differences, self.phot_differences_path)
+        self.differences_table.saveto(self.phot_differences_path)
 
     # -----------------------------------------------------------------
 

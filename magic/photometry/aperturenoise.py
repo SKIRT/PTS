@@ -28,12 +28,13 @@ from skimage.measure import block_reduce
 # Import astronomical modules
 import ChrisFuncs
 from astropy.units import Unit
+from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.tools import time
+from ...core.tools import time, tables
 from ..tools import plotting
 from ...core.basics.distribution import Distribution
 from ...core.plot.distribution import DistributionPlotter
@@ -43,8 +44,15 @@ from ..core.frame import Frame
 from ..core.segmentationmap import SegmentationMap
 from ..basics.vector import Position
 from ..basics.region import Region
-from ..basics.geometry import Coordinate, Circle
+from ..basics.geometry import Coordinate, Circle, Composite
 from ..core.source import Source
+
+# -----------------------------------------------------------------
+
+# Define how many random aperture are desired/required/permitted
+sky_success_min = 20  # the minimum number of apertures for the specified size
+sky_gen_max = 100  # max number of attempts at generations of a coordinate for each aperture
+sky_success_target = 50  # the desired number of apertures of the specified size
 
 # -----------------------------------------------------------------
 
@@ -75,13 +83,6 @@ class ApertureNoiseCalculator(Configurable):
         self.centre_j = None
         #self.mini_ap_rad_pix = None
         self.downsample_factor = None
-
-        #self.semimaj_pix_annulus_outer = None
-        #self.semimaj_pix_annulus_inner = None
-        #self.axial_ratio_annulus = None
-        #self.annulus_angle = None
-        #self.annulus_centre_i = None
-        #self.annulus_centre_j = None
 
         self.annulus_inner_factor = None
         self.annulus_outer_factor = None
@@ -145,15 +146,7 @@ class ApertureNoiseCalculator(Configurable):
         self.adj_angle = kwargs.pop("adj_angle")
         self.centre_i = kwargs.pop("centre_i")
         self.centre_j = kwargs.pop("centre_j")
-        #self.mini_ap_rad_pix = kwargs.pop("mini_ap_rad_pix", None)
         self.downsample_factor = kwargs.pop("downsample_factor")
-
-        #self.semimaj_pix_annulus_outer = kwargs.pop("semimaj_pix_annulus_outer")
-        #self.semimaj_pix_annulus_inner = kwargs.pop("semimaj_pix_annulus_inner")
-        #self.axial_ratio_annulus = kwargs.pop("axial_ratio_annulus")
-        #self.annulus_angle = kwargs.pop("annulus_angle")
-        #self.annulus_centre_i = kwargs.pop("annulus_centre_i")
-        #self.annulus_centre_j = kwargs.pop("annulus_centre_j")
 
         self.annulus_inner_factor = kwargs.pop("annulus_inner_factor")
         self.annulus_outer_factor = kwargs.pop("annulus_outer_factor")
@@ -189,15 +182,7 @@ class ApertureNoiseCalculator(Configurable):
         input_dict["adj_angle"] = self.adj_angle
         input_dict["centre_i"] = self.centre_i
         input_dict["centre_j"] = self.centre_j
-        #input_dict["mini_ap_rad_pix"] = self.mini_ap_rad_pix
         input_dict["downsample_factor"] = self.downsample_factor
-
-        #input_dict["semimaj_pix_annulus_outer"] = self.semimaj_pix_annulus_outer
-        #input_dict["semimaj_pix_annulus_inner"] = self.semimaj_pix_annulus_inner
-        #input_dict["axial_ratio_annulus"] = self.axial_ratio_annulus
-        #input_dict["annulus_angle"] = self.annulus_angle
-        #input_dict["annulus_centre_i"] = self.annulus_centre_i
-        #input_dict["annulus_centre_j"] = self.annulus_centre_j
 
         input_dict["annulus_inner_factor"] = self.annulus_inner_factor
         input_dict["annulus_outer_factor"] = self.annulus_outer_factor
@@ -241,15 +226,7 @@ class ApertureNoiseCalculator(Configurable):
         input_dict["adj_angle"] = self.adj_angle
         input_dict["centre_i"] = self.centre_i
         input_dict["centre_j"] = self.centre_j
-        #input_dict["mini_ap_rad_pix"] = self.mini_ap_rad_pix
         input_dict["downsample_factor"] = self.downsample_factor
-
-        #input_dict["semimaj_pix_annulus_outer"] = self.semimaj_pix_annulus_outer
-        #input_dict["semimaj_pix_annulus_inner"] = self.semimaj_pix_annulus_inner
-        #input_dict["axial_ratio_annulus"] = self.axial_ratio_annulus
-        #input_dict["annulus_angle"] = self.annulus_angle
-        #input_dict["annulus_centre_i"] = self.annulus_centre_i
-        #input_dict["annulus_centre_j"] = self.annulus_centre_j
 
         input_dict["annulus_inner_factor"] = self.annulus_inner_factor
         input_dict["annulus_outer_factor"] = self.annulus_outer_factor
@@ -293,13 +270,6 @@ class ExactApertureNoiseCalculator(Configurable):
         self.mini_ap_rad_pix = None
         self.downsample_factor = None
 
-        #self.semimaj_pix_annulus_outer = None
-        #self.semimaj_pix_annulus_inner = None
-        #self.axial_ratio_annulus = None
-        #self.annulus_angle = None
-        #self.annulus_centre_i = None
-        #self.annulus_centre_j = None
-
         self.annulus_inner_factor = None
         self.annulus_outer_factor = None
 
@@ -316,6 +286,20 @@ class ExactApertureNoiseCalculator(Configurable):
         self.flag_mask = None
         self.sky_success_counter = None
         self.cutout_inviolate = None
+
+
+        ##
+
+        self.apertures_frame = None
+        self.apertures_sum_frame = None
+        self.apertures_mean_frame = None
+        self.apertures_noise_frame = None
+
+        # Region for the sky aperture circles
+        self.aperture_region = Region()
+
+        self.covering_apertures = None
+        self.apertures_mask = None
 
     # -----------------------------------------------------------------
 
@@ -362,17 +346,8 @@ class ExactApertureNoiseCalculator(Configurable):
         self.mini_ap_rad_pix = input_dict.pop("mini_ap_rad_pix", None)
         self.downsample_factor = input_dict.pop("downsample_factor")
 
-        #self.semimaj_pix_annulus_outer = input_dict.pop("semimaj_pix_annulus_outer")
-        #self.semimaj_pix_annulus_inner = input_dict.pop("semimaj_pix_annulus_inner")
-        #self.axial_ratio_annulus = input_dict.pop("axial_ratio_annulus")
-        #self.annulus_angle = input_dict.pop("annulus_angle")
-        #self.annulus_centre_i = input_dict.pop("annulus_centre_i")
-        #self.annulus_centre_j = input_dict.pop("annulus_centre_j")
-
         self.annulus_inner_factor = input_dict.pop("annulus_inner_factor")
         self.annulus_outer_factor = input_dict.pop("annulus_outer_factor")
-
-        #self.adj_semimaj_pix_full = self.adj_semimaj_pix
 
     # -----------------------------------------------------------------
 
@@ -413,31 +388,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    #@property
-    #def annulus_outer_factor(self):
-
-    #    """
-    #    This function ...
-    #    :return:
-    #    """
-
-    #    return self.semimaj_pix_annulus_outer / self.adj_semimaj_pix_full
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def annulus_inner_factor(self):
-
-    #    """
-    #    This function ...
-    #    :return:
-    #    """
-
-    #    return self.semimaj_pix_annulus_inner / self.adj_semimaj_pix_full
-
-    # -----------------------------------------------------------------
-
-    def generate_positions(self, sky_success_target, sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, adj_semimaj_pix_full,
+    def generate_positions(self, adj_semimin_pix, adj_semimin_pix_full, adj_semimaj_pix_full,
                            cutout_inviolate, sky_border):
 
         """
@@ -554,11 +505,6 @@ class ExactApertureNoiseCalculator(Configurable):
         :return:
         """
 
-        # Define how many random aperture are desired/required/permitted
-        sky_success_target = 50  # the desired number of apertures of the specified size
-        sky_success_min = 20  # the minimum number of apertures for the specified size
-        sky_gen_max = 100  # max number of attempts at generations of a coordinate for each aperture
-
         # Inform the user
         log.info("Calculating ...")
 
@@ -588,10 +534,6 @@ class ExactApertureNoiseCalculator(Configurable):
             self.centre_i /= float(ds_factor)
             self.centre_j /= float(ds_factor)
             self.adj_semimaj_pix /= float(ds_factor)
-            #self.semimaj_pix_annulus_outer /= float(ds_factor)
-            #self.semimaj_pix_annulus_inner /= float(ds_factor)
-            #self.annulus_centre_i /= float(ds_factor)
-            #self.annulus_centre_j /= float(ds_factor)
 
             if self.mini: self.mini_ap_rad_pix /= float(ds_factor)
 
@@ -605,9 +547,6 @@ class ExactApertureNoiseCalculator(Configurable):
                 mini = float(self.mini_ap_rad_pix)
                 self.adj_semimaj_pix_full = self.adj_semimaj_pix
                 self.adj_semimaj_pix = mini
-
-                #annulus_outer_semimaj_pix_full = self.semimaj_pix_annulus_outer
-                #annulus_inner_semimaj_pix_full = self.semimaj_pix_annulus_inner
 
             else: pdb.set_trace()
 
@@ -630,10 +569,7 @@ class ExactApertureNoiseCalculator(Configurable):
         # Creating mask maps to describe no-go regions
         log.debug('Setup: Creating mask maps')
 
-        prior_mask = np.zeros(self.cutout.shape)
         exclude_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j)
-        flag_mask = np.zeros(self.cutout.shape)
-        attempt_mask = np.zeros(self.cutout.shape)
 
         # Plot exclude mask
         if self.config.plot_path is not None:
@@ -653,8 +589,8 @@ class ExactApertureNoiseCalculator(Configurable):
             log.error("The theoretical maximum number of sky apertures for this image is " + str(max_number_of_sky_apertures) + " , but we need " + str(sky_success_min))
 
             self.success = False
-            self.prior_mask = prior_mask
-            self.flag_mask = flag_mask
+            self.prior_mask = None
+            self.flag_mask = None
             self.sky_success_counter = 0
 
             return
@@ -663,11 +599,28 @@ class ExactApertureNoiseCalculator(Configurable):
         cutout_inviolate = self.cutout.copy()
         self.cutout[np.where(ChrisFuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j) == 1)] = np.NaN
 
+
+
+        # Segmentation map for the number of apertures covering each pixel
+        self.covering_apertures = SegmentationMap.empty_like(self.cutout)
+
+        # Create a mask that tags all pixels that have been covered by one of the apertures
+        self.apertures_mask = Mask.empty_like(self.cutout)
+
+        # Prior mask
+        self.prior_mask = Mask.empty_like(self.cutout)
+
+
+
         # Chris' method
-        #self.generate_apertures_caapr()
+        # sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask
+        self.generate_apertures_caapr(adj_semimin_pix, adj_semimin_pix_full, cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask, ap_area)
 
         # PTS method
-        self.generate_apertures_pts(total_mask, pixel_area, sky_ap_rad_pix, max_number_of_sky_apertures)
+        #self.generate_apertures_pts(total_mask, pixel_area, sky_ap_rad_pix, max_number_of_sky_apertures)
+
+        # Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -710,15 +663,12 @@ class ExactApertureNoiseCalculator(Configurable):
         :param total_mask:
         :param pixel_area:
         :param sky_ap_rad_pix:
+        :param max_number_of_sky_apertures:
         :return:
         """
 
-        sky_success_target = 50  # the desired number of apertures of the specified size
-        sky_gen_max = 100
-
-
         # DETERMINE THE REQUIRED NUMBER OF APERTURES
-        required_napertures = min(int(0.5 * max_number_of_sky_apertures), 50)
+        required_napertures = min(int(0.5 * max_number_of_sky_apertures), sky_success_target)
 
         # SHOW THE REQUIRED NUMBER OF APERTURES
         log.info("The required number of apertures for this radius is " + str(required_napertures))
@@ -745,11 +695,6 @@ class ExactApertureNoiseCalculator(Configurable):
         # Get the number of pixels that are not masked (also the area of the frame not masked)
         #npixels = pixels_x.size
 
-        # Create a mask that tags all pixels that have been covered by one of the apertures
-        apertures_mask = Mask.empty_like(self.cutout)
-
-        # Segmentation map for the number of apertures covering each pixel
-        covering_apertures = SegmentationMap.empty_like(self.cutout)
 
         # Counter to keep track of the number of 'succesful' apertures that have been used
         current_napertures = 0
@@ -763,17 +708,12 @@ class ExactApertureNoiseCalculator(Configurable):
         aperture_means = []
         aperture_stddevs = []
 
-        # Region for the sky aperture circles
-        aperture_region = Region()
-
         min_random_r = self.adj_semimaj_pix_full + sky_ap_rad_pix
         max_random_r = max_maj_distance - sky_ap_rad_pix
 
         #print("MIN RANDOM R:", min_random_r)
         #print("MAX RANDOM R:", max_random_r)
 
-        #prior_mask = np.zeros(self.cutout.shape)
-        prior_mask = Mask.empty_like(self.cutout)
         #exclude_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio,
         #                                             self.adj_angle, self.centre_i, self.centre_j)
         #flag_mask = np.zeros(self.cutout.shape)
@@ -849,7 +789,7 @@ class ExactApertureNoiseCalculator(Configurable):
             source = Source.from_shape(self.cutout, circle, 1.3)
 
             # Get a mask of the pixels that overlap with the apertures mask
-            apertures_mask_cutout = apertures_mask[source.y_slice, source.x_slice]
+            apertures_mask_cutout = self.apertures_mask[source.y_slice, source.x_slice]
             overlapping = apertures_mask_cutout * source.mask
 
             # Calculate the overlap fraction with the apertures mask
@@ -886,6 +826,9 @@ class ExactApertureNoiseCalculator(Configurable):
 
             bg_inner_semimaj_pix = self.adj_semimaj_pix * self.annulus_inner_factor
             bg_width = (self.adj_semimaj_pix * self.annulus_outer_factor) - bg_inner_semimaj_pix
+
+            bg_width = min(2.0, bg_width)
+
             #print("ANNULUS INNER FACTOR", self.annulus_inner_factor)
             #print("ANNULUS OUTER FACTOR", self.annulus_outer_factor)
             #print("SELF.ADJ_SEMIMAJ_PIX", self.adj_semimaj_pix)
@@ -930,17 +873,24 @@ class ExactApertureNoiseCalculator(Configurable):
             #    break
 
 
-
             # APERTURE IS ACCEPTED
 
             # Add the aperture area to the mask
-            apertures_mask[source.y_slice, source.x_slice] += source.mask
+            self.apertures_mask[source.y_slice, source.x_slice] += source.mask
 
             # Add to covering mask
-            covering_apertures.add_shape(circle)
+            self.covering_apertures.add_shape(circle)
+
+            # Create annulus
+            base = Circle(center, bg_inner_semimaj_pix)
+            exclude = Circle(center, bg_inner_semimaj_pix + bg_width)
+            annulus = Composite(base, exclude)
 
             # Add aperture circle to region
-            aperture_region.append(circle)
+            self.aperture_region.append(circle)
+
+            # Add annulus to region
+            self.aperture_region.append(annulus)
 
             # Increment counters
             current_napertures += 1
@@ -977,13 +927,11 @@ class ExactApertureNoiseCalculator(Configurable):
 
             # Add this aperture to the prior mask and flag mask
             #ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_y, random_x)
-            prior_mask += ap_mask
+            self.prior_mask += ap_mask
             #flag_mask[np.where(ap_mask == 1)] += 2.0 ** (current_napertures + 1.0)
 
 
             ## END
-
-
 
             ##
 
@@ -991,7 +939,6 @@ class ExactApertureNoiseCalculator(Configurable):
 
             # Stop when we have enough apertures
             if current_napertures == required_napertures: break
-
 
         # CALCULATE NOISE BASED ON THE APERTURE SUMS (THE SKY PHOTOMETRY APERTURES)
 
@@ -1002,11 +949,9 @@ class ExactApertureNoiseCalculator(Configurable):
 
         log.info("The aperture noise for this radius is " + str(ap_noise))
 
-        # ChrisFuncs.Cutout(prior_mask, '/home/saruman/spx7cjc/DustPedia/Prior.fits')
-
         if self.config.plot_path is not None:
             path = fs.join(self.config.plot_path, "prior.png")
-            plotting.plot_mask(prior_mask, path=path)
+            plotting.plot_mask(self.prior_mask, path=path)
 
         # Debugging
         log.debug('Aperture noise from current random apertures is ' + str(ChrisFuncs.FromGitHub.randlet.ToPrecision(ap_noise, 4)) + ' (in map units).')
@@ -1021,52 +966,162 @@ class ExactApertureNoiseCalculator(Configurable):
         aperture_radius = sky_ap_rad_pix
         self.create_aperture_frames(aperture_centers, aperture_sums, aperture_means, aperture_stddevs, aperture_radius)
 
-        # Save ...
-        apertures_frame_path = fs.join(self.config.plot_path, "apertures.fits")
-        self.apertures_frame.save(apertures_frame_path)
-
-        # Save ...
-        apertures_sum_frame_path = fs.join(self.config.plot_path, "apertures_sum.fits")
-        self.apertures_sum_frame.save(apertures_sum_frame_path)
-
-        # Save ...
-        apertures_mean_frame_path = fs.join(self.config.plot_path, "apertures_mean.fits")
-        self.apertures_mean_frame.save(apertures_mean_frame_path)
-
-        # Save ...
-        apertures_noise_frame_path = fs.join(self.config.plot_path, "apertures_noise.fits")
-        self.apertures_noise_frame.save(apertures_noise_frame_path)
-
         ####
-
-        # Save region
-        region_path = fs.join(self.config.plot_path, "apertures.reg")
-        aperture_region.save(region_path)
-
-        # Save covering map
-        covering_path = fs.join(self.config.plot_path, "covering.fits")
-        covering_apertures.save(covering_path)
-
-        # Save aperture mask
-        apertures_mask_path = fs.join(self.config.plot_path, "apertures_mask.fits")
-        apertures_mask.save(apertures_mask_path)
-
-        # Save prior mask
-        prior_mask_path = fs.join(self.config.plot_path, "prior_mask.fits")
-        prior_mask.save(prior_mask_path)
 
     # -----------------------------------------------------------------
 
-    def generate_apertures_chris(self, sky_success_target, sky_gen_max, adj_semimin_pix, adj_semimin_pix_full,
-                                 cutout_inviolate, sky_border, sky_ap_rad_pix):
+    def write(self):
 
         """
         This function ...
         :return:
         """
 
+        # Write ...
+        self.write_apertures_frame()
+
+        # Write ...
+        self.write_apertures_sum_frame()
+
+        # Write ...
+        self.write_apertures_mean_frame()
+
+        # Write ...
+        self.write_apertures_noise_frame()
+
+        # Write ...
+        self.write_aperture_region()
+
+        # Write ...
+        self.write_covering_apertures()
+
+        # Write ...
+        self.write_apertures_mask()
+
+        # Write ...
+        self.write_prior_mask()
+
+    # -----------------------------------------------------------------
+
+    def write_apertures_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save ...
+        apertures_frame_path = fs.join(self.config.plot_path, "apertures.fits")
+        self.apertures_frame.save(apertures_frame_path)
+
+    # -----------------------------------------------------------------
+
+    def write_apertures_sum_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save ...
+        apertures_sum_frame_path = fs.join(self.config.plot_path, "apertures_sum.fits")
+        self.apertures_sum_frame.save(apertures_sum_frame_path)
+
+    # -----------------------------------------------------------------
+
+    def write_apertures_mean_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save ...
+        apertures_mean_frame_path = fs.join(self.config.plot_path, "apertures_mean.fits")
+        self.apertures_mean_frame.save(apertures_mean_frame_path)
+
+    # -----------------------------------------------------------------
+
+    def write_apertures_noise_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save ...
+        apertures_noise_frame_path = fs.join(self.config.plot_path, "apertures_noise.fits")
+        self.apertures_noise_frame.save(apertures_noise_frame_path)
+
+    # -----------------------------------------------------------------
+
+    def write_aperture_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save region
+        region_path = fs.join(self.config.plot_path, "apertures.reg")
+        self.aperture_region.save(region_path)
+
+    # -----------------------------------------------------------------
+
+    def write_covering_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save covering map
+        covering_path = fs.join(self.config.plot_path, "covering.fits")
+        self.covering_apertures.save(covering_path)
+
+    # -----------------------------------------------------------------
+
+    def write_apertures_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save aperture mask
+        apertures_mask_path = fs.join(self.config.plot_path, "apertures_mask.fits")
+        self.apertures_mask.save(apertures_mask_path)
+
+    # -----------------------------------------------------------------
+
+    def write_prior_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save prior mask
+        prior_mask_path = fs.join(self.config.plot_path, "prior_mask.fits")
+        self.prior_mask.save(prior_mask_path)
+
+    # -----------------------------------------------------------------
+
+    def generate_apertures_caapr(self, adj_semimin_pix, adj_semimin_pix_full,
+                                 cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask, ap_area):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Masks
+        #prior_mask = np.zeros(self.cutout.shape)
+        flag_mask = np.zeros(self.cutout.shape)
+        attempt_mask = np.zeros(self.cutout.shape)
+
         # Generate random positions
-        random_i_list, random_j_list, random_failed = self.generate_positions(sky_success_target, sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, self.adj_semimaj_pix_full, cutout_inviolate, sky_border)
+        random_i_list, random_j_list, random_failed = self.generate_positions(adj_semimin_pix, adj_semimin_pix_full, self.adj_semimaj_pix_full, cutout_inviolate, sky_border)
 
         # If none of the apertures are suitable, immediately report failure
         if random_i_list.shape[0] == 0:
@@ -1074,7 +1129,7 @@ class ExactApertureNoiseCalculator(Configurable):
             log.debug('Status: Pruning removed all generated coordinates')
 
             self.success = False
-            self.prior_mask = prior_mask
+            #self.prior_mask = prior_mask
             self.flag_mask = flag_mask
             self.sky_success_counter = 0
 
@@ -1155,7 +1210,7 @@ class ExactApertureNoiseCalculator(Configurable):
                 # Do basic check that the majority of the pixels in the generated sky aperture have not already been
                 # sampled by previous sky apertures; they have, reject
                 log.debug('Checking: Determining if aperture over-sampled (basic check)')
-                prior_calc = ChrisFuncs.Photom.EllipseSum(prior_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                prior_calc = ChrisFuncs.Photom.EllipseSum(self.prior_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
                 prior_calc[2][np.where(prior_calc[2] >= 1.0)] = 1.0
                 prior_frac = np.sum(prior_calc[2]) / float(prior_calc[1])
                 if prior_frac > 0.5:
@@ -1174,7 +1229,7 @@ class ExactApertureNoiseCalculator(Configurable):
                 flag_mask_check = flag_mask.copy()
                 flag_mask_check[np.where(ap_mask_check==1)] = int(2.0**(sky_success_counter+1.0))
                 flag_tallies = np.array([ np.where(flag_mask_check==flag)[0].shape[0] for flag in (2.0**np.arange(0.0, sky_success_counter+2.0)).tolist() ])
-                flag_check = np.where(flag_tallies<(0.5*ap_area))[0].shape[0]
+                flag_check = np.where(flag_tallies < 0.5*ap_area)[0].shape[0]
                 if flag_check > 1:
 
                     log.debug('Rejection: Aperture over-sampled (according to sophisticated check)')
@@ -1189,8 +1244,13 @@ class ExactApertureNoiseCalculator(Configurable):
                 # Evaluate pixels in sky annulus
                 log.debug('Checking: Evaluating pixels in sky annulus')
 
-                bg_inner_semimaj_pix = self.semimaj_pix_annulus_inner
-                bg_width = self.semimaj_pix_annulus_outer - bg_inner_semimaj_pix
+                #bg_inner_semimaj_pix = self.semimaj_pix_annulus_inner
+                #bg_width = self.semimaj_pix_annulus_outer - bg_inner_semimaj_pix
+
+                bg_inner_semimaj_pix = self.adj_semimaj_pix * self.annulus_inner_factor
+                bg_width = (self.adj_semimaj_pix * self.annulus_outer_factor) - bg_inner_semimaj_pix
+
+                bg_width = min(2.0, bg_width)
 
                 bg_calc = ChrisFuncs.Photom.AnnulusSum(self.cutout, bg_inner_semimaj_pix, bg_width, 1.0, 0.0, random_i, random_j)
 
@@ -1252,7 +1312,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             # Add this aperture to the prior mask and flag mask
             ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-            prior_mask += ap_mask
+            self.prior_mask += ap_mask
             flag_mask[np.where(ap_mask==1)] += 2.0**sky_success_counter
 
             # If target number of sky apertures have been processed, break out of loop
@@ -1265,7 +1325,7 @@ class ExactApertureNoiseCalculator(Configurable):
         if sky_total_fail:
 
             self.success = False
-            self.prior_mask = prior_mask
+            #self.prior_mask = prior_mask
             self.flag_mask = flag_mask
             self.sky_success_counter = sky_success_counter
 
@@ -1283,7 +1343,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             if self.config.plot_path is not None:
                 path = fs.join(self.config.plot_path, "prior.png")
-                plotting.plot_mask(prior_mask, path=path)
+                plotting.plot_mask(self.prior_mask, path=path)
 
             # Debugging
             log.debug('Aperture noise from current random apertures is ' + str(ChrisFuncs.FromGitHub.randlet.ToPrecision(ap_noise,4)) + ' (in map units).')
@@ -1291,7 +1351,7 @@ class ExactApertureNoiseCalculator(Configurable):
             self.success = True
             self.noise = ap_noise
             self.napertures = sky_success_counter
-            self.prior_mask = prior_mask
+            #self.prior_mask = prior_mask
             self.flag_mask = flag_mask
 
             self.cutout_inviolate = cutout_inviolate
@@ -1324,15 +1384,7 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
         self.adj_angle = None
         self.centre_i = None
         self.centre_j = None
-        #self.mini_ap_rad_pix = None
         self.downsample_factor = None
-
-        #self.semimaj_pix_annulus_outer = None
-        #self.semimaj_pix_annulus_inner = None
-        #self.axial_ratio_annulus = None
-        #self.annulus_angle = None
-        #self.annulus_centre_i = None
-        #self.annulus_centre_j = None
 
         self.annulus_inner_factor = None
         self.annulus_outer_factor = None
@@ -1344,6 +1396,9 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
 
         # Success flag
         self.success = False
+
+        # The table with the extrapolation values
+        self.extrapolation_table = None
 
     # -----------------------------------------------------------------
 
@@ -1360,6 +1415,9 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
 
         # 2. Calculate
         self.calculate()
+
+        # Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -1387,18 +1445,15 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
         self.adj_angle = input_dict.pop("adj_angle")
         self.centre_i = input_dict.pop("centre_i")
         self.centre_j = input_dict.pop("centre_j")
-        #self.mini_ap_rad_pix = input_dict.pop("mini_ap_rad_pix", None)
         self.downsample_factor = input_dict.pop("downsample_factor")
-
-        #self.semimaj_pix_annulus_outer = input_dict.pop("semimaj_pix_annulus_outer")
-        #self.semimaj_pix_annulus_inner = input_dict.pop("semimaj_pix_annulus_inner")
-        #self.axial_ratio_annulus = input_dict.pop("axial_ratio_annulus")
-        #self.annulus_angle = input_dict.pop("annulus_angle")
-        #self.annulus_centre_i = input_dict.pop("annulus_centre_i")
-        #self.annulus_centre_j = input_dict.pop("annulus_centre_j")
 
         self.annulus_inner_factor = input_dict.pop("annulus_inner_factor")
         self.annulus_outer_factor = input_dict.pop("annulus_outer_factor")
+
+        # Initialize the extrapolation table
+        #names = ["Aperture radius", "Aperture area", "Noise"]
+        #dtypes = [float, float, float]
+        #self.extrapolation_table = Table(names=names, dtype=dtypes, masked=True)
 
     # -----------------------------------------------------------------
 
@@ -1451,13 +1506,6 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
             input_dict_radius["mini_ap_rad_pix"] = mini_ap_rad_pix
             input_dict_radius["downsample_factor"] = self.downsample_factor
 
-            #input_dict_radius["semimaj_pix_annulus_outer"] = self.semimaj_pix_annulus_outer
-            #input_dict_radius["semimaj_pix_annulus_inner"] = self.semimaj_pix_annulus_inner
-            #input_dict_radius["axial_ratio_annulus"] = self.axial_ratio_annulus
-            #input_dict_radius["annulus_angle"] = self.annulus_angle
-            #input_dict_radius["annulus_centre_i"] = self.annulus_centre_i
-            #input_dict_radius["annulus_centre_j"] = self.annulus_centre_j
-
             input_dict_radius["annulus_inner_factor"] = self.annulus_inner_factor
             input_dict_radius["annulus_outer_factor"] = self.annulus_outer_factor
 
@@ -1500,16 +1548,20 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
 
         else:
 
+            mini_ap_areas = np.pi*min_ap_rad_pix_output**2.0
+
             # Calculate values to plot
-            log_mini_ap_area = np.log10(np.pi*min_ap_rad_pix_output**2.0)
+            log_mini_ap_area = np.log10(mini_ap_areas)
             log_mini_ap_noise = np.log10(mini_ap_noise_output)
             mini_ap_noise_err_rel = mini_ap_num_output**0.5 / mini_ap_num_output
             #mini_ap_noise_err = np.abs( mini_ap_noise_output * mini_ap_noise_err_rel )
-            log_mini_ap_noise_err = mini_ap_noise_err_rel#ChrisFuncs.LogError(mini_ap_noise_output, mini_ap_noise_err)
+            log_mini_ap_noise_err = mini_ap_noise_err_rel #ChrisFuncs.LogError(mini_ap_noise_output, mini_ap_noise_err)
 
-            # Define straight-line function, and fit it to points
-            def Line(x,m,c):
-                return (m*x)+c
+            # Set the table columns
+            names = ["Aperture radius", "Aperture area", "Noise"]
+            dtypes = [float, float, float]
+            data = [min_ap_rad_pix_output, mini_ap_areas, mini_ap_noise_output]
+            self.extrapolation_table = Table(names=names, data=data, dtypes=dtypes)
 
             log.debug("log mini ap area " + str(log_mini_ap_area))
             log.debug("log mini ap noise " + str(log_mini_ap_noise))
@@ -1570,6 +1622,32 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
 
             return
 
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.write_extrapolation_table()
+
+    # -----------------------------------------------------------------
+
+    def write_extrapolation_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        path = fs.join(self.config.plot_path, "extrapolation.dat")
+
+        # Write
+        tables.write(self.extrapolation_table, path)
+
 # -----------------------------------------------------------------
 
 def number_of_apertures_for_radius(radius, pixel_area):
@@ -1619,5 +1697,10 @@ def ellipse_radius_for_angle(a, b, angle):
     denominator = math.sqrt( a**2 * math.sin(angle.to("radian").value)**2 + b**2 * math.cos(angle.to("radian").value)**2)
 
     return numerator / denominator
+
+# -----------------------------------------------------------------
+
+# Define straight-line function, and fit it to points
+def Line(x,m,c): return m*x + c
 
 # -----------------------------------------------------------------

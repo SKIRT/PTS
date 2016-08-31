@@ -1082,6 +1082,40 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def reference_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the reference SEDs ...")
+
+        # Loop over the SEDs in the data/SEDs directory
+        for path, name in fs.files_in_path(self.data_seds_path, extension="dat", returns=["path", "name"], not_contains="Lines"):
+
+            # Open the observed SED
+            sed = ObservedSED.from_file(path)
+
+            # Add the SED to the dictionary
+            self.reference_seds[name] = sed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def reference_sed_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.reference_seds.keys()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dustpedia_sed(self):
 
         """
