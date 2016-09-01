@@ -173,6 +173,11 @@ class Layers(OrderedDict):
 
     def get_state(self):
 
+        """
+        This function ...
+        :return:
+        """
+
         # Create an empty dictionary to contain the state of the layers
         state = dict()
 
@@ -185,6 +190,12 @@ class Layers(OrderedDict):
     # -----------------------------------------------------------------
 
     def set_state(self, state):
+
+        """
+        This function ...
+        :param state:
+        :return:
+        """
 
         # Deselect all layers
         self.deselect_all()

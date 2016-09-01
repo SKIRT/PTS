@@ -140,6 +140,42 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nregions > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmasks > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsegments > 0
+
+    # -----------------------------------------------------------------
+
+    @property
     def nframes(self):
 
         """
@@ -499,6 +535,59 @@ class Image(object):
 
         # Update the path
         self.path = path
+
+    # -----------------------------------------------------------------
+
+    def show_layers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_frames: log.info("Frames:")
+
+        frame_index = 0
+        for name in self.frames:
+
+            # Show
+            log.info("[" + str(frame_index) + "] " + name)
+
+            # Increment
+            frame_index += 1
+
+        if self.has_regions: log.info("Regions:")
+
+        region_index = 0
+        for name in self.regions:
+
+            # Show
+            log.info("[" + str(region_index) + "] " + name)
+
+            # Increment
+            region_index += 1
+
+        if self.has_masks: log.info("Masks:")
+
+        mask_index = 0
+        for name in self.masks:
+
+            # Show
+            log.info("[" + str(mask_index) + "] " + name)
+
+            # Increment
+            mask_index += 1
+
+        if self.has_segments: log.info("Segmentation maps:")
+
+        segments_index = 0
+        for name in self.segments:
+
+            # Show
+            log.info("[" + str(segments_index) + "] " + name)
+
+            # Increment
+            segments_index += 1
 
     # -----------------------------------------------------------------
 

@@ -977,6 +977,9 @@ class ExactApertureNoiseCalculator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         # Write ...
         self.write_apertures_frame()
 
@@ -1010,6 +1013,9 @@ class ExactApertureNoiseCalculator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the apertures frame ...")
+
         # Save ...
         apertures_frame_path = fs.join(self.config.plot_path, "apertures.fits")
         self.apertures_frame.save(apertures_frame_path)
@@ -1022,6 +1028,9 @@ class ExactApertureNoiseCalculator(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the apertures sum frame ...")
 
         # Save ...
         apertures_sum_frame_path = fs.join(self.config.plot_path, "apertures_sum.fits")
@@ -1036,6 +1045,9 @@ class ExactApertureNoiseCalculator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the apertures mean frame ...")
+
         # Save ...
         apertures_mean_frame_path = fs.join(self.config.plot_path, "apertures_mean.fits")
         self.apertures_mean_frame.save(apertures_mean_frame_path)
@@ -1048,6 +1060,9 @@ class ExactApertureNoiseCalculator(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the apertures noise frame ...")
 
         # Save ...
         apertures_noise_frame_path = fs.join(self.config.plot_path, "apertures_noise.fits")
@@ -1062,6 +1077,9 @@ class ExactApertureNoiseCalculator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the aperture region ...")
+
         # Save region
         region_path = fs.join(self.config.plot_path, "apertures.reg")
         self.aperture_region.save(region_path)
@@ -1074,6 +1092,9 @@ class ExactApertureNoiseCalculator(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the covering of the apertures ...")
 
         # Save covering map
         covering_path = fs.join(self.config.plot_path, "covering.fits")
@@ -1088,6 +1109,9 @@ class ExactApertureNoiseCalculator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the apertures mask ...")
+
         # Save aperture mask
         apertures_mask_path = fs.join(self.config.plot_path, "apertures_mask.fits")
         self.apertures_mask.save(apertures_mask_path)
@@ -1100,6 +1124,9 @@ class ExactApertureNoiseCalculator(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the prior mask ...")
 
         # Save prior mask
         prior_mask_path = fs.join(self.config.plot_path, "prior_mask.fits")
@@ -1416,7 +1443,7 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
         # 2. Calculate
         self.calculate()
 
-        # Writing
+        # 3. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -1631,6 +1658,10 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write ...
         self.write_extrapolation_table()
 
     # -----------------------------------------------------------------
