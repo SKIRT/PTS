@@ -110,6 +110,9 @@ class FittingComponent(ModelingComponent):
         # The path to the geometries directory
         self.fit_geometries_path = None
 
+        # The directory with the probability distributions for the different free parameters
+        self.prob_distributions_path = None
+
         # The paths to the probability distribution tables
         self.distribution_table_paths = dict()
 
@@ -199,12 +202,15 @@ class FittingComponent(ModelingComponent):
 
         ## PROBABILITY DISTRIBUTION TABLES
 
+        # The directory with the probability distributions for the different free parameters
+        self.prob_distributions_path = fs.create_directory_in(self.fit_prob_path, "distributions")
+
         # Set the paths to the probability distribution tables
         if self.free_parameter_labels is not None:
             for label in self.free_parameter_labels:
 
                 # Determine the path to the table
-                path = fs.join(self.fit_prob_path, label + ".dat")
+                path = fs.join(self.prob_distributions_path, label + ".dat")
 
                 # Set the path
                 self.distribution_table_paths[label] = path
@@ -671,6 +677,18 @@ class FittingComponent(ModelingComponent):
 
         # Return the name of the generation with the highest index
         return name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_generation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fit_generations_path, self.last_genetic_generation_name)
 
     # -----------------------------------------------------------------
 

@@ -386,6 +386,23 @@ class GPopulation(object):
 
     # -----------------------------------------------------------------
 
+    def set_ranges(self, minima, maxima):
+
+        """
+        This function ...
+        :param minima:
+        :param maxima:
+        :return:
+        """
+
+        # Create dictionary
+        params = {"minima": minima, "maxima": maxima}
+
+        # Update the parameters 'minima' and 'maxima'
+        self.setParams(**params)
+
+    # -----------------------------------------------------------------
+
     def setPopulationSize(self, size):
 
         """

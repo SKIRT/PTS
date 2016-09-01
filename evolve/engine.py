@@ -529,6 +529,20 @@ class GAEngine(object):
 
     # -----------------------------------------------------------------
 
+    def set_ranges(self, minima, maxima):
+
+        """
+        This function ...
+        :param minima:
+        :param maxima:
+        :return:
+        """
+
+        # Set the ranges of the internal population (is this sufficient??)
+        self.internalPop.set_ranges(minima, maxima)
+
+    # -----------------------------------------------------------------
+
     def setPopulationSize(self, size):
 
         """
@@ -622,7 +636,8 @@ class GAEngine(object):
 
     def setMinimax(self, mtype):
 
-        """ Sets the minimize/maximize mode, use constants.minimaxType
+        """
+        Sets the minimize/maximize mode, use constants.minimaxType
         :param mtype: the minimax mode, from constants.minimaxType
         """
 
@@ -644,7 +659,8 @@ class GAEngine(object):
 
     def setElitism(self, flag):
 
-        """ Sets the elitism option, True or False
+        """
+        Sets the elitism option, True or False
         :param flag: True or False
         """
 
@@ -696,7 +712,8 @@ class GAEngine(object):
 
     def worstIndividual(self):
 
-        """ Returns the population worst individual
+        """
+        Returns the population worst individual
         :rtype: the best individual
         """
 
@@ -796,16 +813,20 @@ class GAEngine(object):
 
             if check is not None:
 
-                # Get the parametr values for this individual
+                # Get the parameter values for this individual
                 parameter_a = individual.genomeList[0]
                 parameter_b = individual.genomeList[1]
+                parameter_c = individual.genomeList[2]
 
-                parameter_a_check = check["Parameter a"][index]
-                parameter_b_check = check["Parameter b"][index]
+                parameter_a_check = check[0][index]
+                parameter_b_check = check[1][index]
+                parameter_c_check = check[2][index]
                 rel_diff_a = abs((parameter_a - parameter_a_check) / parameter_a)
                 rel_diff_b = abs((parameter_b - parameter_b_check) / parameter_b)
+                rel_diff_c = abs((parameter_c - parameter_c_check) / parameter_c)
                 assert np.isclose(parameter_a, parameter_a_check, rtol=1e-11), rel_diff_a
                 assert np.isclose(parameter_b, parameter_b_check, rtol=1e-11), rel_diff_b
+                assert np.isclose(parameter_c, parameter_c_check, rtol=1e-11), rel_diff_c
 
             # Set the score
             individual.score = scores[index]

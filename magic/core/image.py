@@ -298,6 +298,19 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @unit.setter
+    def unit(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the unit of all frames
+        for frame_name in self.frames: self.frames[frame_name].unit = value
+
+    # -----------------------------------------------------------------
+
     @property
     def pixelscale(self):
 

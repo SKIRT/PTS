@@ -24,7 +24,6 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 from ...core.basics.animation import Animation
-from ...core.simulation.skifile import SkiFile
 from .tables import ModelProbabilitiesTable, ParameterProbabilitiesTable
 
 # -----------------------------------------------------------------
@@ -70,10 +69,7 @@ class SEDFitter(FittingComponent):
         self.prob_generations_table_paths = dict()
 
         # The directory for the combined probabilities
-        self.prob_combined_path = None
-
-        # The directory with the probability distributions for the different free parameters
-        self.prob_distributions_path = None
+        self.prob_parameters_path = None
 
     # -----------------------------------------------------------------
 
@@ -122,10 +118,7 @@ class SEDFitter(FittingComponent):
             self.prob_generations_table_paths[generation_name] = path
 
         # The directory with the combined probability tables for the different free parameters
-        self.prob_combined_path = fs.create_directory_in(self.fit_prob_path, "combined")
-
-        # The directory with the probability distributions for the different free parameters
-        self.prob_distributions_path = fs.create_directory_in(self.fit_prob_path, "distributions")
+        self.prob_parameters_path = fs.create_directory_in(self.fit_prob_path, "parameters")
 
     # -----------------------------------------------------------------
 
@@ -158,6 +151,9 @@ class SEDFitter(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Calculating the probabilities ...")
 
         # Calculate the probability tables
         self.calculate_model_probabilities()
@@ -271,7 +267,7 @@ class SEDFitter(FittingComponent):
                 for generation_name in self.model_probabilities:
 
                     simulation_indices = self.model_probabilities[generation_name][label] == value
-                    individual_probabilities += list(self.model_probabilities[generation_name]["Probability"])
+                    individual_probabilities += list(self.model_probabilities[generation_name]["Probability"][simulation_indices])
 
                 # Combine the individual probabilities
                 combined_probability = np.sum(np.array(individual_probabilities))
@@ -318,20 +314,26 @@ class SEDFitter(FittingComponent):
         # Create an Animation instance
         self.animation = Animation()
 
-        # Loop over the entries of the chi squared table (sorted by decreasing chi squared)
-        for i in range(len(self.chi_squared)):
+        # Loop over the generations
+        for generation_name in self.finished_generations:
 
-            # Get the name of the simulation
-            simulation_name = self.chi_squared["Simulation name"][i]
+            # Get the model probabilities table for this generation
+            model_probabilities_table = self.model_probabilities[generation_name]
 
-            # Determine the path to the corresponding SED plot file
-            path = fs.join(self.fit_plot_path, simulation_name, "sed.png")
+            # Loop over the simulations in the model probability table
+            for i in range(len(model_probabilities_table)):
 
-            # Load the image (as a NumPy array)
-            image = imageio.imread(path)
+                # Get the name of the simulation
+                simulation_name = model_probabilities_table["Simulation name"][i]
 
-            # Add the image to the animation
-            self.animation.add_frame(image)
+                # Determine the path to the corresponding SED plot file
+                path = fs.join(self.fit_generations_path, generation_name, simulation_name, "plot", "sed.png")
+
+                # Load the image (as a NumPy array)
+                image = imageio.imread(path)
+
+                # Add the image to the animation
+                self.animation.add_frame(image)
 
     # -----------------------------------------------------------------
 
@@ -345,6 +347,9 @@ class SEDFitter(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the parameter probabilities
+        self.write_parameter_probabilities()
+
         # Write the ski file of the best simulation
         self.write_best_parameters()
 
@@ -356,6 +361,27 @@ class SEDFitter(FittingComponent):
 
         # Write the animated GIF
         if self.config.visualise: self.write_animation()
+
+    # -----------------------------------------------------------------
+
+    def write_parameter_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the parameter probabilities ...")
+
+        # Loop over the probability tables for the different free parameter
+        for label in self.free_parameter_labels:
+
+            # Determine the path for the table
+            path = fs.join(self.prob_parameters_path, label + ".dat")
+
+            # Save the table
+            self.parameter_probabilities[label].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -388,13 +414,10 @@ class SEDFitter(FittingComponent):
         for parameter_name in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[parameter_name] + " ...")
-
-            # Determine the path to the resulting table file
-            path = fs.join(self.fit_prob_path, parameter_name + ".dat")
+            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[parameter_name] + " parameter ...")
 
             # Write the table of probabilities for this parameter
-            self.distributions[parameter_name].save(path)
+            self.distributions[parameter_name].save(self.distribution_table_paths[parameter_name])
 
     # -----------------------------------------------------------------
 
@@ -414,12 +437,12 @@ class SEDFitter(FittingComponent):
             # Debugging
             log.debug("Plotting the probability distribution of the " + self.parameter_descriptions[parameter_name] + " ...")
 
-            # Get the probability distributinon for
+            # Get the probability distribution for this parameter
             distribution = self.distributions[parameter_name]
             description = self.parameter_descriptions[parameter_name]
 
             # Create a plot file for the probability distribution
-            path = fs.join(self.fit_prob_path, parameter_name + ".pdf")
+            path = fs.join(self.prob_distributions_path, parameter_name + ".pdf")
             distribution.plot(title="Probability of the " + description, path=path, logscale=True)
 
     # -----------------------------------------------------------------
@@ -435,7 +458,7 @@ class SEDFitter(FittingComponent):
         log.info("Writing the animation ...")
 
         # Determine the path to the new animation
-        path = fs.join(self.visualisation_path, time.unique_name("sedfitting") + ".gif")
+        path = fs.join(self.visualisation_path, time.unique_name("sedfitter") + ".gif")
 
         # Write the animation
         self.animation.save(path)
