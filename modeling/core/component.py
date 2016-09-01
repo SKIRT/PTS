@@ -435,6 +435,19 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..config.parameters import units as parameter_units
+        return parameter_units
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dataset(self):
 
         """

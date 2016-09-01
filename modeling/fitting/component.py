@@ -23,7 +23,7 @@ from ..core.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
-from .tables import GenerationsTable, ChiSquaredTable, ParametersTable
+from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestParametersTable
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.distribution import Distribution
 from ..basics.instruments import load_instrument
@@ -94,6 +94,9 @@ class FittingComponent(ModelingComponent):
 
         # The path to the generations table
         self.generations_table_path = None
+
+        # The path to the best parameters table
+        self.best_parameters_table_path = None
 
         # The path to the weights table
         self.weights_table_path = None
@@ -194,6 +197,8 @@ class FittingComponent(ModelingComponent):
             generations_table = GenerationsTable.initialize(self.free_parameter_labels)
             generations_table.saveto(self.generations_table_path)
 
+        ## PROBABILITY DISTRIBUTION TABLES
+
         # Set the paths to the probability distribution tables
         if self.free_parameter_labels is not None:
             for label in self.free_parameter_labels:
@@ -203,6 +208,16 @@ class FittingComponent(ModelingComponent):
 
                 # Set the path
                 self.distribution_table_paths[label] = path
+
+        ## BEST PARAMETERS TABLE
+
+        # Set the path to the best parameters table
+        self.best_parameters_table_path = fs.join(self.fit_path, "best_parameters.dat")
+
+        # Initialize the best parameters table if necessary
+        if not fs.is_file(self.best_parameters_table_path) and self.free_parameter_labels is not None:
+            best_parameters_table = BestParametersTable.initialize(self.free_parameter_labels, self.parameter_units)
+            best_parameters_table.saveto(self.best_parameters_table_path)
 
     # -----------------------------------------------------------------
 
@@ -444,6 +459,19 @@ class FittingComponent(ModelingComponent):
 
         # Return the values
         return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_parameters_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the table and return it
+        return BestParametersTable.from_file(self.best_parameters_table_path)
 
     # -----------------------------------------------------------------
 

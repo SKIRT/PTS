@@ -31,7 +31,6 @@ from .tables import ParametersTable, ChiSquaredTable
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
-from ..config.parameters import units as parameter_units
 from ...core.basics.configuration import stringify_not_list
 
 # -----------------------------------------------------------------
@@ -426,7 +425,7 @@ class ParameterExplorer(FittingComponent):
         self.generation_info["Chi squared table path"] = fs.join(self.generation_info["Path"], "chi_squared.dat")
 
         # Initialize the parameters table
-        self.parameters_table = ParametersTable.initialize(self.free_parameter_labels, parameter_units)
+        self.parameters_table = ParametersTable.initialize(self.free_parameter_labels, self.parameter_units)
 
         # Initialize the chi squared table
         self.chi_squared_table = ChiSquaredTable.initialize()
@@ -572,7 +571,7 @@ class ParameterExplorer(FittingComponent):
 
                 # Get the value for this model from the generator and get the unit defined for this parameter
                 value = self.generator.parameters[label][i]
-                unit = Unit(parameter_units[label])
+                unit = Unit(self.parameter_units[label])
 
                 # Set the value with unit to the dictionary for this model
                 parameter_values[label] = value * unit

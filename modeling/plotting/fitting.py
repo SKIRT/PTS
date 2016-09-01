@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.plotting.fitting Contains the FittingPlotter class
+## \package pts.modeling.plotting.fitting Contains the FittingPlotter class.
 
 # -----------------------------------------------------------------
 
@@ -29,7 +29,6 @@ from ...core.plot.wavelengthgrid import WavelengthGridPlotter
 from ...core.plot.grids import plotgrids
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.logfile import LogFile
-from ...core.simulation.skifile import SkiFile
 from ..core.emissionlines import EmissionLines
 from ..core.sed import load_example_mappings_sed, load_example_bruzualcharlot_sed, load_example_zubko_sed
 from ..core.sed import SED, ObservedSED
@@ -37,7 +36,6 @@ from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
 from ...magic.basics.skyregion import SkyRegion
-from ..basics.models import load_model
 from ..misc.geometryplotter import GeometryPlotter
 
 # -----------------------------------------------------------------
@@ -56,19 +54,17 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         :return:
         """
 
-        # Call the constructor of the base class
-        #super(FittingPlotter, self).__init__(config) # not sure this works
+        # Call the constructor of the base classes
         PlottingComponent.__init__(self, config)
         FittingComponent.__init__(self)
 
         # -- Attributes --
 
         # Paths
+
         self.plot_fitting_wavelength_grids_path = None
         self.plot_fitting_dust_grids_path = None
-
-        # The ski file
-        self.ski = None
+        self.plot_fitting_generation_paths = dict()
 
         # The wavelength grids
         self.wavelength_grids = []
@@ -112,10 +108,69 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the ski file
-        self.load_ski_file()
+        # 2. Load the input
+        self.load_input()
 
-        # 3. Load the wavelength grids
+        # 3. Plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(FittingPlotter, self).setup()
+
+        # Create directories
+        self.create_directories()
+
+    # -----------------------------------------------------------------
+
+    def create_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the necessary directories ...")
+
+        # Directory for plotting the wavelength grids
+        self.plot_fitting_wavelength_grids_path = fs.create_directory_in(self.plot_fitting_path, "wavelength grids")
+
+        # Directory for plotting the dust grids
+        self.plot_fitting_dust_grids_path = fs.create_directory_in(self.plot_fitting_path, "dust grids")
+
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
+
+            # Determine the path
+            path = fs.join(self.plot_fitting_path, generation_name)
+            if fs.is_directory(path): continue # plotting has already been done for this finished generation
+
+            # Create the directory and set the path
+            fs.create_directory(path)
+            self.plot_fitting_generation_paths[generation_name] = path
+
+    # -----------------------------------------------------------------
+
+    def load_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the input ...")
+
+        # 1. Load the wavelength grids
         self.load_wavelength_grids()
 
         # Load the current probability distributions of the different fit parameters
@@ -145,43 +200,6 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # 11. Load the geometries
         self.load_geometries()
 
-        # 12. Plot
-        self.plot()
-
-    # -----------------------------------------------------------------
-
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(FittingPlotter, self).setup()
-
-        # Set paths
-        self.plot_fitting_wavelength_grids_path = fs.create_directory_in(self.plot_fitting_path, "wavelength grids")
-        self.plot_fitting_dust_grids_path = fs.create_directory_in(self.plot_fitting_path, "dust grids")
-
-    # -----------------------------------------------------------------
-
-    def load_ski_file(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ski file ...")
-
-        # Determine the path to the initialized ski file
-        path = fs.join(self.fit_path, self.galaxy_name + ".ski")
-
-        # Load the ski file
-        if fs.is_file(path): self.ski = SkiFile(path)
-
     # -----------------------------------------------------------------
 
     def load_wavelength_grids(self):
@@ -195,7 +213,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         log.info("Loading the wavelength grids used for the fitting ...")
 
         # Loop over the files found in the fit/wavelength grids directory
-        for path in fs.files_in_path(self.fit_wavelength_grids_path, extension="txt", sort=int):
+        for path in fs.files_in_path(self.fit_wavelength_grids_path, extension="txt", sort=int, not_contains="grids"):
 
             # Load the wavelength grid
             grid = WavelengthGrid.from_skirt_input(path)

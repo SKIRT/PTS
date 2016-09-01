@@ -25,12 +25,7 @@ from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 from ...core.basics.animation import Animation
 from ...core.simulation.skifile import SkiFile
-
-# -----------------------------------------------------------------
-
-descriptions = {"FUV young": "FUV luminosity of the young stars",
-                "FUV ionizing": "FUV luminosity of the ionizing stars",
-                "Dust mass": "dust mass"}
+from .tables import ModelProbabilitiesTable, ParameterProbabilitiesTable
 
 # -----------------------------------------------------------------
 
@@ -53,22 +48,32 @@ class SEDFitter(FittingComponent):
 
         # -- Attributes --
 
-        # The table of chi squared values
-        self.chi_squared = None
+        # The model probabilities tables
+        self.model_probabilities = dict()
+
+        # The parameter probabilities tables
+        self.parameter_probabilities = dict()
 
         # The model parameter table
-        self.parameters = None
-
-        # The best parameter values
-        self.best_fuv_young = None
-        self.best_fuv_ionizing = None
-        self.best_dust_mass = None
+        self.parameter_tables = dict()
 
         # The tables with the probability distributions for the different fit parameters
         self.distributions = dict()
 
         # The animation
         self.animation = None
+
+        # The directory with the probability tables for all finished generations
+        self.prob_generations_path = None
+
+        #
+        self.prob_generations_table_paths = dict()
+
+        # The directory for the combined probabilities
+        self.prob_combined_path = None
+
+        # The directory with the probability distributions for the different free parameters
+        self.prob_distributions_path = None
 
     # -----------------------------------------------------------------
 
@@ -82,14 +87,14 @@ class SEDFitter(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the chi squared table
-        self.load_chi_squared()
+        # 2. Get the parameters of the best models for each generation
+        self.get_best_parameters()
 
-        # 3. Load the parameter table
-        self.load_parameters()
+        # 3. Calculate the probabilities
+        self.calculate_probabilities()
 
         # 4. Calculate the probability distributions
-        self.calculate_distributions()
+        self.create_distributions()
 
         # 5. Make an animation of the fitting procedure
         if self.config.visualise: self.animate()
@@ -109,9 +114,60 @@ class SEDFitter(FittingComponent):
         # Call the setup function of the base class
         super(SEDFitter, self).setup()
 
+        # The directory with the probability tables for all finished generations
+        self.prob_generations_path = fs.create_directory_in(self.fit_prob_path, "generations")
+
+        for generation_name in self.finished_generations:
+            path = fs.join(self.prob_generations_path, generation_name + ".dat")
+            self.prob_generations_table_paths[generation_name] = path
+
+        # The directory with the combined probability tables for the different free parameters
+        self.prob_combined_path = fs.create_directory_in(self.fit_prob_path, "combined")
+
+        # The directory with the probability distributions for the different free parameters
+        self.prob_distributions_path = fs.create_directory_in(self.fit_prob_path, "distributions")
+
     # -----------------------------------------------------------------
 
-    def load_chi_squared(self):
+    def get_best_parameters(self):
+
+        """"
+        This function ...
+        """
+
+        # Inform the user
+        log.info("Getting the parameter values of the best model for the finished generations (if not already done)")
+
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
+
+            # Check if the generation is already in the best parameters table
+            if generation_name in self.best_parameters_table.generation_names: continue
+
+            # Otherwise, add the best parameter values
+            values = self.best_parameter_values_for_generation(generation_name)
+
+            # Add an entry to the best parameters table file
+            self.best_parameters_table.add_entry(generation_name, values)
+
+    # -----------------------------------------------------------------
+
+    def calculate_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Calculate the probability tables
+        self.calculate_model_probabilities()
+
+        # Calcualte the combined probability tables (all finished generations)
+        self.calculate_parameter_probabilities()
+
+    # -----------------------------------------------------------------
+
+    def calculate_model_probabilities(self):
 
         """
         This function ...
@@ -119,21 +175,66 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Loading the table with the chi squared value for each model ...")
+        log.info("Calculating the model probabilities for the finished generations (if not already done) ...")
 
-        # Load the chi squared table
-        self.chi_squared = tables.from_file(self.chi_squared_table_path, format="ascii.ecsv")
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
 
-        # Check whether the table is non-empty
-        if len(self.chi_squared) == 0: raise RuntimeError("Could not find any chi squared value, it appears no simulations have been run yet")
+            # Check whether the probabilities table is already present for this generation
+            if fs.is_file(self.prob_generations_table_paths[generation_name]):
 
-        # Sort the table for decreasing chi squared value
-        self.chi_squared.sort("Chi squared")
-        self.chi_squared.reverse()
+                # Debugging
+                log.debug("Loading the model probabilities table for generation " + generation_name + " ...")
+
+                # Load the probabilities table
+                probabilities_table = ModelProbabilitiesTable.from_file(self.prob_generations_table_paths[generation_name])
+
+                # Add to the dictionary
+                self.model_probabilities[generation_name] = probabilities_table
+
+            # Otherwise, calculate the probabilities based on the chi squared table
+            else:
+
+                # Load the parameter table
+                parameter_table = self.parameters_table_for_generation(generation_name)
+
+                # Load the chi squared table
+                chi_squared_table = self.chi_squared_table_for_generation(generation_name)
+
+                # Sort the table for decreasing chi squared value
+                chi_squared_table.sort("Chi squared")
+                chi_squared_table.reverse()
+
+                # Get the chi squared values
+                chi_squared_values = chi_squared_table["Chi squared"]
+
+                # Calculate the probability for each model
+                probabilities = np.exp(-0.5 * chi_squared_values)
+
+                # Create the probabilities table
+                probabilities_table = ModelProbabilitiesTable.initialize(self.free_parameter_labels, self.parameter_units)
+
+                # Add the entries to the model probabilities table
+                for i in range(len(probabilities_table)):
+
+                    # Get the simulation name
+                    simulation_name = chi_squared_table["Simulation name"][i]
+
+                    # Get a dictionary with the parameter values for this simulation
+                    parameter_values = parameter_table.parameter_values_for_simulation(simulation_name)
+
+                    # Add an entry to the table
+                    probabilities_table.add_entry(simulation_name, parameter_values, probabilities[i])
+
+                # Save the model probabilities table
+                probabilities_table.saveto(self.prob_generations_table_paths[generation_name])
+
+                # Add to the dictionary
+                self.model_probabilities[generation_name] = probabilities_table
 
     # -----------------------------------------------------------------
 
-    def load_parameters(self):
+    def calculate_parameter_probabilities(self):
 
         """
         This function ...
@@ -141,14 +242,49 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Loading the table with the model parameters ...")
+        log.info("Calculating the probabilities of the different parameter values ...")
 
-        # Load the parameter table
-        self.parameters = tables.from_file(self.parameter_table_path, format="ascii.ecsv")
+        # Loop over the free parameters
+        for label in self.free_parameter_labels:
+
+            # Create a set for the unique values
+            unique_values = set()
+
+            # Loop over the generations to extract all unique values for the parameter
+            for generation_name in self.model_probabilities:
+
+                # Loop over the values of this parameter for this generation, and expand the set accordingly
+                for value in self.model_probabilities[generation_name][label]: unique_values.add(value)
+
+            # Get a (sorted) list of all the unique values for this parameter
+            unique_values = sorted(list(unique_values))
+
+            # Initialize a ParameterProbabilitiesTable instance for this parameter
+            table = ParameterProbabilitiesTable.initialize()
+
+            # Add an entry for each unique parameter value that has been encountered
+            for value in unique_values:
+
+                # Add the probabilities from all models that have this value
+                individual_probabilities = []
+
+                for generation_name in self.model_probabilities:
+
+                    simulation_indices = self.model_probabilities[generation_name][label] == value
+                    individual_probabilities += list(self.model_probabilities[generation_name]["Probability"])
+
+                # Combine the individual probabilities
+                combined_probability = np.sum(np.array(individual_probabilities))
+
+                # Add an entry to the table
+                table.add_entry(value, combined_probability)
+
+            # Set the table
+            self.parameter_probabilities[label] = table
 
     # -----------------------------------------------------------------
 
-    def calculate_distributions(self):
+    def create_distributions(self):
 
         """
         This function ...
@@ -156,77 +292,16 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Calculating the probability distributions for each parameter ...")
+        log.info("Creating the probability distributions ...")
 
-        # Get the chi squared values
-        chi_squared_values = self.chi_squared["Chi squared"]
+        # Loop over the free parameters
+        for label in self.free_parameter_labels:
 
-        # Calculate the probability for each model
-        probabilities = np.exp(-0.5 * chi_squared_values)
+            # Convert the probability lists into NumPy arrays and normalize them
+            normalized_probabilities = np.array(self.parameter_probabilities[label]["Probability"]) / sum(self.parameter_probabilities[label]["Probability"])
 
-        # Initialize lists to contain the parameter values for each simulation
-        young_lum_of_simulations = []
-        ionizing_lum_of_simulations = []
-        dust_mass_of_simulations = []
-
-        # From the parameters table, get the entries that correspond to simulations that
-        # are finished (and for which a chi squared value has been calculated)
-        for i in range(len(self.chi_squared)):
-
-            # Get the name of the simulation
-            simulation_name = self.chi_squared["Simulation name"][i]
-
-            # Find the index of this simulation in the parameters table
-            j = tables.find_index(self.parameters, simulation_name)
-
-            # "FUV young" "FUV ionizing" "Dust mass"
-            young_lum_of_simulations.append(self.parameters["FUV young"][j])
-            ionizing_lum_of_simulations.append(self.parameters["FUV ionizing"][j])
-            dust_mass_of_simulations.append(self.parameters["Dust mass"][j])
-
-        # Convert into NumPy arrays
-        young_lum_of_simulations = np.array(young_lum_of_simulations)
-        ionizing_lum_of_simulations = np.array(ionizing_lum_of_simulations)
-        dust_mass_of_simulations = np.array(dust_mass_of_simulations)
-
-        # FUV luminosity of young stellar population
-        young_lum_unique = sorted(list(set(young_lum_of_simulations)))
-
-        # FUV luminosity of ionizing stellar population
-        ionizing_lum_unique = sorted(list(set(ionizing_lum_of_simulations)))
-
-        # Dust mass
-        dust_mass_unique = sorted(list(set(dust_mass_of_simulations)))
-
-        # Initialize lists to contain the probability for each unique parameter value
-        young_lum_probabilities = []
-        ionizing_lum_probabilities = []
-        dust_mass_probabilities = []
-
-        # Loop over all unique parameter values of the FUV luminosity of the young stars
-        for young_lum in young_lum_unique:
-            simulation_indices = young_lum_of_simulations == young_lum
-            young_lum_probabilities.append(np.sum(probabilities[simulation_indices]))
-
-        # Loop over all unique parameter values of the FUV luminosity of the ionizing stars
-        for ionizing_lum in ionizing_lum_unique:
-            simulation_indices = ionizing_lum_of_simulations == ionizing_lum
-            ionizing_lum_probabilities.append(np.sum(probabilities[simulation_indices]))
-
-        # Loop over all unique parameter values of the dust mass
-        for dust_mass in dust_mass_unique:
-            simulation_indices = dust_mass_of_simulations == dust_mass
-            dust_mass_probabilities.append(np.sum(probabilities[simulation_indices]))
-
-        # Convert the probability lists into NumPy arrays and normalize them
-        young_lum_probabilities = np.array(young_lum_probabilities) / sum(young_lum_probabilities)
-        ionizing_lum_probabilities = np.array(ionizing_lum_probabilities) / sum(ionizing_lum_probabilities)
-        dust_mass_probabilities = np.array(dust_mass_probabilities) / sum(dust_mass_probabilities)
-
-        # Create the probability distributions for the different parameters
-        self.distributions["FUV young"] = Distribution.from_probabilities(young_lum_probabilities, young_lum_unique, "FUV young")
-        self.distributions["FUV ionizing"] = Distribution.from_probabilities(ionizing_lum_probabilities, ionizing_lum_unique, "FUV ionizing")
-        self.distributions["Dust mass"] = Distribution.from_probabilities(dust_mass_probabilities, dust_mass_unique, "Dust mass")
+            # Create the probability distributions for the different parameters
+            self.distributions[label] = Distribution.from_probabilities(normalized_probabilities, self.parameter_probabilities[label]["Value"], label)
 
     # -----------------------------------------------------------------
 
@@ -271,10 +346,7 @@ class SEDFitter(FittingComponent):
         log.info("Writing ...")
 
         # Write the ski file of the best simulation
-        self.write_best()
-
-        # Write the ski files for calculating the contribution of the various stellar components
-        self.write_best_contributions()
+        self.write_best_parameters()
 
         # Write the probability distributions in table format
         self.write_distributions()
@@ -287,7 +359,7 @@ class SEDFitter(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_best(self):
+    def write_best_parameters(self):
 
         """
         This function ...
@@ -295,71 +367,10 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the best model parameters ...")
+        log.info("Writing the best model parameters table ...")
 
-        # Get the simulation name of the last entry in the chi squared table (the lowest chi squared value)
-        simulation_name = self.chi_squared["Simulation name"][len(self.chi_squared)-1]
-
-        # Determine the path to the simulation's ski file
-        ski_path = fs.join(self.fit_out_path, simulation_name, self.galaxy_name + ".ski")
-
-        # Copy the ski file to the fit/best directory
-        fs.copy_file(ski_path, self.fit_best_path)
-
-        # Find the corresponding index in the parameter table
-        index = tables.find_index(self.parameters, simulation_name, "Simulation name")
-
-        # Get the best parameter values
-        self.best_fuv_young = self.parameters["FUV young"][index]
-        self.best_fuv_ionizing = self.parameters["FUV ionizing"][index]
-        self.best_dust_mass = self.parameters["Dust mass"][index]
-
-        # Write a file with the best parameter values
-        path = fs.join(self.fit_best_path, "parameters.dat")
-        with open(path, 'w') as best_parameters:
-            best_parameters.write("FUV young: " + str(self.best_fuv_young) + "\n")
-            best_parameters.write("FUV ionizing: " + str(self.best_fuv_ionizing) + "\n")
-            best_parameters.write("Dust mass: " + str(self.best_dust_mass) + "\n")
-
-    # -----------------------------------------------------------------
-
-    def write_best_contributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the best model parameters to the ski files for calculating the various stellar contributions ...")
-
-        # Get the simulation name of the last entry in the chi squared table (the lowest chi squared value)
-        simulation_name = self.chi_squared["Simulation name"][len(self.chi_squared) - 1]
-
-        # Determine the path to the simulation's ski file
-        ski_path = fs.join(self.fit_out_path, simulation_name, self.galaxy_name + ".ski")
-
-        # Open the ski file
-        ski = SkiFile(ski_path)
-
-        # Loop over the contributions
-        contributions = ["old", "young", "ionizing"]
-        component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
-                           "young": "Young stars",
-                           "ionizing": "Ionizing stars"}
-        for contribution in contributions:
-
-            # Create a copy of the ski file instance
-            ski = ski.copy()
-
-            # Remove other stellar components
-            ski.remove_stellar_components_except(component_names[contribution])
-
-            # Determine the path to the ski file
-            ski_path = fs.join(self.fit_best_path, contribution, self.galaxy_name + ".ski")
-
-            # Save the ski file
-            ski.saveto(ski_path)
+        # Save the best parameters table
+        self.best_parameters_table.save()
 
     # -----------------------------------------------------------------
 
@@ -377,7 +388,7 @@ class SEDFitter(FittingComponent):
         for parameter_name in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + descriptions[parameter_name] + " ...")
+            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[parameter_name] + " ...")
 
             # Determine the path to the resulting table file
             path = fs.join(self.fit_prob_path, parameter_name + ".dat")
@@ -401,11 +412,11 @@ class SEDFitter(FittingComponent):
         for parameter_name in self.distributions:
 
             # Debugging
-            log.debug("Plotting the probability distribution of the " + descriptions[parameter_name] + " ...")
+            log.debug("Plotting the probability distribution of the " + self.parameter_descriptions[parameter_name] + " ...")
 
             # Get the probability distributinon for
             distribution = self.distributions[parameter_name]
-            description = descriptions[parameter_name]
+            description = self.parameter_descriptions[parameter_name]
 
             # Create a plot file for the probability distribution
             path = fs.join(self.fit_prob_path, parameter_name + ".pdf")

@@ -52,6 +52,18 @@ class BestParametersTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def generation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Generation name"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def parameter_labels(self):
 
         """
@@ -418,6 +430,111 @@ class ChiSquaredTable(SmartTable):
 
         # Set the values
         values = [name, chi_squared]
+
+        # Add a row to the table
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
+class ModelProbabilitiesTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    column_info = [("Simulation name", str, None, "name of the simulation")]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        labels = []
+
+        for name in self.colnames:
+
+            if name == "Simulation name" or name == "Probability": continue
+            labels.append(name)
+
+        return labels
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def initialize(cls, parameters, units):
+
+        """
+        This function ...
+        :param parameters:
+        :param units:
+        :return:
+        """
+
+        # Add columns for the parameter values
+        for label in parameters:
+
+            unit = units[label] if label in units else None
+            cls.column_info.append((label, float, unit, "value for " + label))
+
+        # Add column for probabilities
+        cls.column_info.append(("Probability", float, None, "model probability"))
+
+        # Call the initialize function of the parameters table function
+        return super(ModelProbabilitiesTable, cls).initialize()
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, simulation_name, parameter_values, probability):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param probability:
+        :return:
+        """
+
+        # Set the values
+        values = [simulation_name]
+
+        # Add the parameter values
+        for label in self.parameter_labels:
+            values.append(parameter_values[label])
+
+        # Add the probability
+        values.append(probability)
+
+        # Add a row to the table
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
+class ParameterProbabilitiesTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    column_info = [("Parameter value", float, None, "value of the parameter"),
+                   ("Probability", float, None, "probability for this parameter value")]
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, value, probability):
+
+        """
+        This function ...
+        :param value:
+        :param probability:
+        :return:
+        """
+
+        # Set the values
+        values = [value, probability]
 
         # Add a row to the table
         self.add_row(values)
