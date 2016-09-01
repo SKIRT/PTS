@@ -578,7 +578,7 @@ class ParameterExplorer(FittingComponent):
 
             # Debugging
             log.debug("Adjusting ski file for the following model parameters:")
-            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label]))
+            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
 
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()

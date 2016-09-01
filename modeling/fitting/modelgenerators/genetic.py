@@ -60,8 +60,8 @@ class GeneticModelGenerator(ModelGenerator):
         # Load the genetic engine
         self.load_engine()
 
-        # Set the genome ranges
-        self.set_ranges()
+        # Set options for the genetic engine
+        self.set_options()
 
     # -----------------------------------------------------------------
 
@@ -137,6 +137,9 @@ class GeneticModelGenerator(ModelGenerator):
         # Set the scores from the previous generation
         self.set_scores()
 
+        # Generate the new models
+        self.generate_new_models()
+
     # -----------------------------------------------------------------
 
     def set_scores(self):
@@ -155,9 +158,15 @@ class GeneticModelGenerator(ModelGenerator):
         # Load the chi squared table from the previous generation
         chi_squared_table = self.chi_squared_table_for_generation(self.last_genetic_generation_name)
 
+        # List of chi squared values in the same order as the parameters table
+        chi_squared_values = []
+
         # Check whether the chi-squared and parameter tables match
         for i in range(len(parameters_table)):
-            assert parameters_table["Simulation name"][i] == chi_squared_table["Simulation name"][i]
+
+            simulation_name = parameters_table["Simulation name"][i]
+            chi_squared = chi_squared_table.chi_squared_for(simulation_name)
+            chi_squared_values.append(chi_squared)
 
         # Get the scores
         scores = chi_squared_table["Chi squared"]

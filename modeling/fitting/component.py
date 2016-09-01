@@ -343,7 +343,7 @@ class FittingComponent(ModelingComponent):
         :return:
         """
 
-        return ParametersTable.from_file(self.parameters_table_for_generation(generation_name))
+        return ParametersTable.from_file(self.parameters_table_path_for_generation(generation_name))
 
     # -----------------------------------------------------------------
 
@@ -674,6 +674,9 @@ class FittingComponent(ModelingComponent):
                 if index > highest_index:
                     highest_index = index
                     name = self.generations_table["Generation name"][i]
+
+        # The initial generation, although it has no index, should also be considered a genetic generation
+        if name is None and "initial" in self.generations_table["Generation name"]: name = "initial"
 
         # Return the name of the generation with the highest index
         return name
