@@ -34,8 +34,13 @@ class Layers(OrderedDict):
         :return:
         """
 
-        if not isinstance(key, basestring): raise KeyError("Cannot use a key that is not a string")
-        if " " in key: raise KeyError("Cannot use a key that contains spaces")
+        if isinstance(key, int):
+            if key >= len(self): raise IndexError("layer index out of range")
+            key = self.keys()[key]
+        elif isinstance(key, basestring):
+            if " " in key: raise KeyError("Cannot use a string key that contains spaces")
+        else: raise KeyError("Cannot use a key that is not a string or an integer")
+
         super(Layers, self).__setitem__(key, value)
         self.__dict__.update({key: value})
 
@@ -52,6 +57,10 @@ class Layers(OrderedDict):
         if isinstance(key, int):
             if key >= len(self): raise IndexError("layer index out of range")
             key = self.keys()[key]
+        elif isinstance(key, basestring):
+            if " " in key: raise KeyError("Cannot use a string key that contains spaces")
+        else: raise KeyError("Cannot use a key that is not a string or an integer")
+
         return super(Layers, self).__getitem__(key)
 
     # -----------------------------------------------------------------

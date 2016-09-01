@@ -1249,6 +1249,80 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def replace_frame(self, name, frame):
+
+        """
+        This function ...
+        :param name:
+        :param frame:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Replacing the '" + name + "' frame ...")
+
+        # Check whether a frame with this name exists
+        if name not in self.frames: raise RuntimeError("A frame with this name does not exist")
+
+        # Check if the shape matches the shape of this image
+        if self.shape is not None:
+            if frame.shape != self.shape: raise ValueError("Frame does not have the correct shape for this image")
+
+        # Set the WCS
+        if self.wcs is not None: frame.wcs = self.wcs
+
+        # Set the frame
+        self.frames[name] = frame
+
+    # -----------------------------------------------------------------
+
+    def move_frame(self, name, position):
+
+        """
+        This function ...
+        :param name:
+        :param position:
+        :return:
+        """
+
+        # Inform the user
+        log.debug("Moving frame '" + name + "' to position " + str(position) + " in the frame layers ...")
+
+        # Check whether a frame with this name exists
+        if name not in self.frames: raise RuntimeError("A frame with this name does not exist")
+
+        # Get the current position of the frame
+        current_position = self.frames.keys().index(name)
+
+        # Check if the current position is already the same as the requested position
+        if current_position == position: return
+
+        # Make an iterable from the indices of all the other frames
+        other_indices = iter([index for index in range(len(self.frames)) if index != current_position])
+
+        # Create a new layers instance
+        reordered_frames = Layers()
+
+        # Loop over the other indices
+        for index in other_indices:
+
+            # Check the number of frames present in the new dictionary
+            current_nframes = len(reordered_frames)
+
+            # If the number of current frames corresponds to the requested frame position, add the frame
+            if current_nframes == position: reordered_frames[name] = self.frames[name]
+
+            # Fill the rest of the reordered frames up with the other frames, in the order defined by other_indices
+            else:
+
+                this_name = self.frames.keys()[index]
+                reordered_frames[this_name] = self.frames[this_name]
+
+        # Set the frames layers
+        self.frames = reordered_frames
+
+    # -----------------------------------------------------------------
+
     def add_region(self, region, name, overwrite=False):
 
         """
