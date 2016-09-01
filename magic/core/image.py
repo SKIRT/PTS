@@ -1401,7 +1401,7 @@ class Image(object):
         reordered_frames = Layers()
 
         # Loop over the other indices
-        for index in other_indices:
+        while len(reordered_frames) < len(self.frames):
 
             # Check the number of frames present in the new dictionary
             current_nframes = len(reordered_frames)
@@ -1412,6 +1412,7 @@ class Image(object):
             # Fill the rest of the reordered frames up with the other frames, in the order defined by other_indices
             else:
 
+                index = next(other_indices)
                 this_name = self.frames.keys()[index]
                 reordered_frames[this_name] = self.frames[this_name]
 

@@ -589,8 +589,6 @@ class ExactApertureNoiseCalculator(Configurable):
             log.error("The theoretical maximum number of sky apertures for this image is " + str(max_number_of_sky_apertures) + " , but we need " + str(sky_success_min))
 
             self.success = False
-            self.prior_mask = None
-            self.flag_mask = None
             self.sky_success_counter = 0
 
             return
@@ -610,7 +608,8 @@ class ExactApertureNoiseCalculator(Configurable):
         # Prior mask
         self.prior_mask = Mask.empty_like(self.cutout)
 
-
+        # Flag mask
+        self.flag_mask = np.zeros(self.cutout.shape)
 
         # Chris' method
         # sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask
@@ -716,7 +715,6 @@ class ExactApertureNoiseCalculator(Configurable):
 
         #exclude_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio,
         #                                             self.adj_angle, self.centre_i, self.centre_j)
-        #flag_mask = np.zeros(self.cutout.shape)
         #attempt_mask = np.zeros(self.cutout.shape)
 
         # Generate at least 20 apertures, ideally 50
@@ -970,6 +968,253 @@ class ExactApertureNoiseCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
+    def generate_apertures_caapr(self, adj_semimin_pix, adj_semimin_pix_full,
+                                 cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask, ap_area):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Masks
+        #prior_mask = np.zeros(self.cutout.shape)
+
+        attempt_mask = np.zeros(self.cutout.shape)
+
+        # Generate random positions
+        random_i_list, random_j_list, random_failed = self.generate_positions(adj_semimin_pix, adj_semimin_pix_full, self.adj_semimaj_pix_full, cutout_inviolate, sky_border)
+
+        # If none of the apertures are suitable, immediately report failure
+        if random_i_list.shape[0] == 0:
+
+            log.debug('Status: Pruning removed all generated coordinates')
+
+            self.success = False
+            self.sky_success_counter = 0
+
+            self.cutout_inviolate = cutout_inviolate
+
+            return
+
+        # Plot the coordinates
+        if self.config.plot_path is not None:
+            path = fs.join(self.config.plot_path, "coordinates.png")
+            plotting.plot_coordinates_on_image(self.cutout, random_j_list, random_i_list, path=path)
+
+        log.debug("NUMBER OF COORDINATES: " + str(len(random_i_list)))
+
+        # Commence creation of random sky apertures
+        sky_success_counter = 0
+        sky_sum_list = []
+        sky_total_fail = False
+        while True:
+
+            # Repeatedly generate random sky apertures, until an acceptable aperture is generated
+            sky_gen_counter = 0 # set counter to zero
+            sky_gen_fail = False
+            while True:
+
+                sky_gen_counter += 1
+
+                # If more than a given number of unsuccessful sky apertures have been generated in a row, call it a day
+                if sky_gen_counter > sky_gen_max:
+
+                    sky_gen_fail = True
+                    log.debug('Status: Unable to generate suitable random sky aperture after ' + str(sky_gen_max) + ' attempts')
+                    break
+
+                # Select random coordinate for this iteration; if no un-used random coordinates can be found, reject
+                log.debug('Checking: Selecting random coordinate')
+                random_accept = False
+                random_reject_count = 0
+                while not random_accept:
+
+                    random_index = int(np.floor( np.random.rand() * float(random_i_list.shape[0])))
+
+                    if random_index not in random_failed: random_accept = True
+                    else: random_reject_count += 1
+                    if random_reject_count > (10 * random_i_list.shape[0]): break
+
+                if random_reject_count > (10 * random_i_list.shape[0]):
+
+                    log.debug('Rejection: Unable to find un-used random coodinates')
+                    continue
+
+                # Get the random coordinate
+                random_i = random_i_list[random_index]
+                random_j = random_j_list[random_index]
+
+                # Create mask
+                ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+
+                if log.is_debug():
+                    #ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                    #plotting.plot_mask(ap_mask, title="Aperture " + str(sky_success_counter + 1) + ", generation " + str(sky_gen_counter))
+                    attempt_mask[np.where(ap_mask == 1)] = sky_success_counter
+                    log.debug('Aperture: ' + str(sky_success_counter + 1) + ';   Generation: ' + str(sky_gen_counter) + ';   Pix Coords: [' + str(random_i) + ',' + str(random_j)+']')
+
+                # Do sophisticated check that generated sky aperture does not intersect source; if it does, reject
+                log.debug('Checking: Determining whether aperture intersects source (sophisticated check)')
+                exclude_sum = ChrisFuncs.Photom.EllipseSum(exclude_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)[0]
+                if exclude_sum > 0:
+
+                    log.debug('Rejection: Aperture intersects source (according to sophisticated check)')
+
+                    # Plot
+                    if self.config.debug_plotting.intersection: plotting.plot_mask(ap_mask, "Rejection: aperture intersects source")
+
+                    random_failed.append(random_index)
+                    continue
+
+                # Do basic check that the majority of the pixels in the generated sky aperture have not already been
+                # sampled by previous sky apertures; they have, reject
+                log.debug('Checking: Determining if aperture over-sampled (basic check)')
+                prior_calc = ChrisFuncs.Photom.EllipseSum(self.prior_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                prior_calc[2][np.where(prior_calc[2] >= 1.0)] = 1.0
+                prior_frac = np.sum(prior_calc[2]) / float(prior_calc[1])
+                if prior_frac > 0.5:
+
+                    log.debug('Rejection: Aperture over-sampled (according to basic check)')
+
+                    # Plot
+                    if self.config.debug_plotting.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (basic)")
+
+                    random_failed.append(random_index)
+                    continue
+
+                # Do sophisticated check that the majority of the pixels in the generated sky aperture have not already been sampled by previous sky apertures; they have, reject
+                log.debug('Checking: Determinging if aperture oversampled (sophisticated check)')
+                ap_mask_check = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                flag_mask_check = self.flag_mask.copy()
+                flag_mask_check[np.where(ap_mask_check==1)] = int(2.0**(sky_success_counter+1.0))
+                flag_tallies = np.array([ np.where(flag_mask_check == flag)[0].shape[0] for flag in (2.0**np.arange(0.0, sky_success_counter+2.0)).tolist() ])
+                flag_check = np.where(flag_tallies < 0.5*ap_area)[0].shape[0]
+                if flag_check > 1:
+
+                    log.debug('Rejection: Aperture over-sampled (according to sophisticated check)')
+                    if self.config.debug_plotting.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (sophisticated)")
+                    random_failed.append(random_index)
+                    continue
+
+                # Evaluate pixels in sky aperture
+                log.debug('Checking: Evaluating pixels in sky aperture')
+                ap_calc = ChrisFuncs.Photom.EllipseSum(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+
+                # Evaluate pixels in sky annulus
+                log.debug('Checking: Evaluating pixels in sky annulus')
+
+                #bg_inner_semimaj_pix = self.semimaj_pix_annulus_inner
+                #bg_width = self.semimaj_pix_annulus_outer - bg_inner_semimaj_pix
+
+                bg_inner_semimaj_pix = self.adj_semimaj_pix * self.annulus_inner_factor
+                bg_width = (self.adj_semimaj_pix * self.annulus_outer_factor) - bg_inner_semimaj_pix
+
+                bg_width = min(2.0, bg_width)
+
+                bg_calc = ChrisFuncs.Photom.AnnulusSum(self.cutout, bg_inner_semimaj_pix, bg_width, 1.0, 0.0, random_i, random_j)
+
+                # Check if more than a given fraction of the pixels inside the source aperture are NaN; if so, reject
+                if ap_calc[3][0].shape[0] == 0 or ap_calc[1] == 0: ap_nan_frac = 0.0
+                if ap_calc[1] == 0: ap_nan_frac = 1.0
+                else: ap_nan_frac = float(ap_calc[3][0].shape[0]) / float(ap_calc[1]+float(ap_calc[3][0].shape[0]))
+                ap_nan_thresh = 0.10
+
+                if ap_nan_frac > ap_nan_thresh:
+
+                    log.debug('Rejection: Aperture contains too many NaNs')
+                    if self.config.debug_plotting.nans: plotting.plot_mask(ap_mask, "Rejection: aperture contains too many NaNs")
+                    random_failed.append(random_index)
+                    continue
+
+                # Check if more than a given fraction of the pixels inside the sky annulus are NaN; if so, reject
+                if bg_calc[3][0].shape[0] == 0: bg_nan_frac = 0.0
+                if bg_calc[1] == 0: bg_nan_frac = 1.0
+                else: bg_nan_frac = float(bg_calc[3][0].shape[0]) / float(bg_calc[1]+bg_calc[3][0].shape[0])
+
+                bg_nan_thresh = 0.80
+                if bg_nan_frac > bg_nan_thresh:
+
+                    log.debug('Rejection: Annulus contains too many NaNs')
+                    if self.config.debug_plotting.annulus_nans:
+                        plotting.plot_mask(ap_mask, "Rejection: annulus contains too many NaNs")
+                        #plotting.
+                    random_failed.append(random_index)
+                    continue
+
+                # If coords have not been rejected for any reason, accept them and proceed
+                else:
+
+                    sky_success_counter += 1
+                    break
+
+            # If no suitable sky aperture could be generated on this iteration, decide how to proceed, based on how many had been successfully generated already
+            if sky_gen_fail:
+
+                if sky_success_counter < sky_success_min:
+
+                    sky_total_fail = True
+                    break
+
+                else:
+
+                    log.debug('Status: However, sufficient number of successful random apertures (' + str(int(sky_success_counter)) + ') already generated; proceeding')
+                    break
+
+            # Calculate actual flux in sky aperture, and record
+            log.debug('Checking: Performing photometry with random sky aperture and annulus')
+            bg_clip = ChrisFuncs.SigmaClip(bg_calc[2], median=False, sigma_thresh=3.0)
+            bg_avg = bg_clip[1]
+            ap_sum = ap_calc[0] - (ap_calc[1] * bg_avg)
+            sky_sum_list.append(ap_sum)
+            if np.isnan(ap_sum):
+                pdb.set_trace()
+
+            # Add this aperture to the prior mask and flag mask
+            ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+            self.prior_mask += ap_mask
+            self.flag_mask[np.where(ap_mask==1)] += 2.0**sky_success_counter
+
+            # If target number of sky apertures have been processed, break out of loop
+            if sky_success_counter >= sky_success_target:
+
+                log.debug('Status: Target number of successful random apertures (' + str(int(sky_success_target)) + ') generated; proceeding')
+                break
+
+        # If total failure was encountered, end process and report now
+        if sky_total_fail:
+
+            self.success = False
+            self.sky_success_counter = sky_success_counter
+
+            self.cutout_inviolate = cutout_inviolate
+
+            return
+
+        # Otherwise, calculate aperture noise using returned aperture values, and return
+        else:
+
+            sky_sum_list = np.array(sky_sum_list)
+            ap_noise = ChrisFuncs.SigmaClip(sky_sum_list, tolerance=0.001, median=True, sigma_thresh=3.0)[0]
+
+            #ChrisFuncs.Cutout(prior_mask, '/home/saruman/spx7cjc/DustPedia/Prior.fits')
+
+            if self.config.plot_path is not None:
+                path = fs.join(self.config.plot_path, "prior.png")
+                plotting.plot_mask(self.prior_mask, path=path)
+
+            # Debugging
+            log.debug('Aperture noise from current random apertures is ' + str(ChrisFuncs.FromGitHub.randlet.ToPrecision(ap_noise,4)) + ' (in map units).')
+
+            self.success = True
+            self.noise = ap_noise
+            self.napertures = sky_success_counter
+
+            self.cutout_inviolate = cutout_inviolate
+
+            return
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -1003,6 +1248,9 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Write ...
         self.write_prior_mask()
+
+        # Write flag mask
+        self.write_flag_mask()
 
     # -----------------------------------------------------------------
 
@@ -1134,256 +1382,19 @@ class ExactApertureNoiseCalculator(Configurable):
 
     # -----------------------------------------------------------------
 
-    def generate_apertures_caapr(self, adj_semimin_pix, adj_semimin_pix_full,
-                                 cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask, ap_area):
+    def write_flag_mask(self):
 
         """
         This function ...
         :return:
         """
 
-        # Masks
-        #prior_mask = np.zeros(self.cutout.shape)
-        flag_mask = np.zeros(self.cutout.shape)
-        attempt_mask = np.zeros(self.cutout.shape)
-
-        # Generate random positions
-        random_i_list, random_j_list, random_failed = self.generate_positions(adj_semimin_pix, adj_semimin_pix_full, self.adj_semimaj_pix_full, cutout_inviolate, sky_border)
-
-        # If none of the apertures are suitable, immediately report failure
-        if random_i_list.shape[0] == 0:
-
-            log.debug('Status: Pruning removed all generated coordinates')
-
-            self.success = False
-            #self.prior_mask = prior_mask
-            self.flag_mask = flag_mask
-            self.sky_success_counter = 0
-
-            self.cutout_inviolate = cutout_inviolate
-
-            return
-
-        # Plot the coordinates
-        if self.config.plot_path is not None:
-            path = fs.join(self.config.plot_path, "coordinates.png")
-            plotting.plot_coordinates_on_image(self.cutout, random_j_list, random_i_list, path=path)
-
-        log.debug("NUMBER OF COORDINATES: " + str(len(random_i_list)))
-
-        # Commence creation of random sky apertures
-        sky_success_counter = 0
-        sky_sum_list = []
-        sky_total_fail = False
-        while True:
-
-            # Repeatedly generate random sky apertures, until an acceptable aperture is generated
-            sky_gen_counter = 0 # set counter to zero
-            sky_gen_fail = False
-            while True:
-
-                sky_gen_counter += 1
-
-                # If more than a given number of unsuccessful sky apertures have been generated in a row, call it a day
-                if sky_gen_counter > sky_gen_max:
-
-                    sky_gen_fail = True
-                    log.debug('Status: Unable to generate suitable random sky aperture after ' + str(sky_gen_max) + ' attempts')
-                    break
-
-                # Select random coordinate for this iteration; if no un-used random coordinates can be found, reject
-                log.debug('Checking: Selecting random coordinate')
-                random_accept = False
-                random_reject_count = 0
-                while not random_accept:
-
-                    random_index = int(np.floor( np.random.rand() * float(random_i_list.shape[0])))
-
-                    if random_index not in random_failed: random_accept = True
-                    else: random_reject_count += 1
-                    if random_reject_count > (10 * random_i_list.shape[0]): break
-
-                if random_reject_count > (10 * random_i_list.shape[0]):
-
-                    log.debug('Rejection: Unable to find un-used random coodinates')
-                    continue
-
-                # Get the random coordinate
-                random_i = random_i_list[random_index]
-                random_j = random_j_list[random_index]
-
-                # Create mask
-                ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-
-                if log.is_debug():
-                    #ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-                    #plotting.plot_mask(ap_mask, title="Aperture " + str(sky_success_counter + 1) + ", generation " + str(sky_gen_counter))
-                    attempt_mask[np.where(ap_mask == 1)] = sky_success_counter
-                    log.debug('Aperture: ' + str(sky_success_counter + 1) + ';   Generation: ' + str(sky_gen_counter) + ';   Pix Coords: [' + str(random_i) + ',' + str(random_j)+']')
-
-                # Do sophisticated check that generated sky aperture does not intersect source; if it does, reject
-                log.debug('Checking: Determining whether aperture intersects source (sophisticated check)')
-                exclude_sum = ChrisFuncs.Photom.EllipseSum(exclude_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)[0]
-                if exclude_sum > 0:
-
-                    log.debug('Rejection: Aperture intersects source (according to sophisticated check)')
-
-                    # Plot
-                    if self.config.debug_plotting.intersection: plotting.plot_mask(ap_mask, "Rejection: aperture intersects source")
-
-                    random_failed.append(random_index)
-                    continue
-
-                # Do basic check that the majority of the pixels in the generated sky aperture have not already been
-                # sampled by previous sky apertures; they have, reject
-                log.debug('Checking: Determining if aperture over-sampled (basic check)')
-                prior_calc = ChrisFuncs.Photom.EllipseSum(self.prior_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-                prior_calc[2][np.where(prior_calc[2] >= 1.0)] = 1.0
-                prior_frac = np.sum(prior_calc[2]) / float(prior_calc[1])
-                if prior_frac > 0.5:
-
-                    log.debug('Rejection: Aperture over-sampled (according to basic check)')
-
-                    # Plot
-                    if self.config.debug_plotting.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (basic)")
-
-                    random_failed.append(random_index)
-                    continue
-
-                # Do sophisticated check that the majority of the pixels in the generated sky aperture have not already been sampled by previous sky apertures; they have, reject
-                log.debug('Checking: Determinging if aperture oversampled (sophisticated check)')
-                ap_mask_check = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-                flag_mask_check = flag_mask.copy()
-                flag_mask_check[np.where(ap_mask_check==1)] = int(2.0**(sky_success_counter+1.0))
-                flag_tallies = np.array([ np.where(flag_mask_check==flag)[0].shape[0] for flag in (2.0**np.arange(0.0, sky_success_counter+2.0)).tolist() ])
-                flag_check = np.where(flag_tallies < 0.5*ap_area)[0].shape[0]
-                if flag_check > 1:
-
-                    log.debug('Rejection: Aperture over-sampled (according to sophisticated check)')
-                    if self.config.debug_plotting.oversampled: plotting.plot_mask(ap_mask, "Rejection: aperture over-sampled (sophisticated)")
-                    random_failed.append(random_index)
-                    continue
-
-                # Evaluate pixels in sky aperture
-                log.debug('Checking: Evaluating pixels in sky aperture')
-                ap_calc = ChrisFuncs.Photom.EllipseSum(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-
-                # Evaluate pixels in sky annulus
-                log.debug('Checking: Evaluating pixels in sky annulus')
-
-                #bg_inner_semimaj_pix = self.semimaj_pix_annulus_inner
-                #bg_width = self.semimaj_pix_annulus_outer - bg_inner_semimaj_pix
-
-                bg_inner_semimaj_pix = self.adj_semimaj_pix * self.annulus_inner_factor
-                bg_width = (self.adj_semimaj_pix * self.annulus_outer_factor) - bg_inner_semimaj_pix
-
-                bg_width = min(2.0, bg_width)
-
-                bg_calc = ChrisFuncs.Photom.AnnulusSum(self.cutout, bg_inner_semimaj_pix, bg_width, 1.0, 0.0, random_i, random_j)
-
-                # Check if more than a given fraction of the pixels inside the source aperture are NaN; if so, reject
-                if ap_calc[3][0].shape[0] == 0 or ap_calc[1] == 0: ap_nan_frac = 0.0
-                if ap_calc[1] == 0: ap_nan_frac = 1.0
-                else: ap_nan_frac = float(ap_calc[3][0].shape[0]) / float(ap_calc[1]+float(ap_calc[3][0].shape[0]))
-                ap_nan_thresh = 0.10
-
-                if ap_nan_frac > ap_nan_thresh:
-
-                    log.debug('Rejection: Aperture contains too many NaNs')
-                    if self.config.debug_plotting.nans: plotting.plot_mask(ap_mask, "Rejection: aperture contains too many NaNs")
-                    random_failed.append(random_index)
-                    continue
-
-                # Check if more than a given fraction of the pixels inside the sky annulus are NaN; if so, reject
-                if bg_calc[3][0].shape[0] == 0: bg_nan_frac = 0.0
-                if bg_calc[1] == 0: bg_nan_frac = 1.0
-                else: bg_nan_frac = float(bg_calc[3][0].shape[0]) / float(bg_calc[1]+bg_calc[3][0].shape[0])
-
-                bg_nan_thresh = 0.80
-                if bg_nan_frac > bg_nan_thresh:
-
-                    log.debug('Rejection: Annulus contains too many NaNs')
-                    if self.config.debug_plotting.annulus_nans:
-                        plotting.plot_mask(ap_mask, "Rejection: annulus contains too many NaNs")
-                        #plotting.
-                    random_failed.append(random_index)
-                    continue
-
-                # If coords have not been rejected for any reason, accept them and proceed
-                else:
-
-                    sky_success_counter += 1
-                    break
-
-            # If no suitable sky aperture could be generated on this iteration, decide how to proceed, based on how many had been successfully generated already
-            if sky_gen_fail:
-
-                if sky_success_counter < sky_success_min:
-
-                    sky_total_fail = True
-                    break
-
-                else:
-
-                    log.debug('Status: However, sufficient number of successful random apertures (' + str(int(sky_success_counter)) + ') already generated; proceeding')
-                    break
-
-            # Calculate actual flux in sky aperture, and record
-            log.debug('Checking: Performing photometry with random sky aperture and annulus')
-            bg_clip = ChrisFuncs.SigmaClip(bg_calc[2], median=False, sigma_thresh=3.0)
-            bg_avg = bg_clip[1]
-            ap_sum = ap_calc[0] - (ap_calc[1] * bg_avg)
-            sky_sum_list.append(ap_sum)
-            if np.isnan(ap_sum):
-                pdb.set_trace()
-
-            # Add this aperture to the prior mask and flag mask
-            ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
-            self.prior_mask += ap_mask
-            flag_mask[np.where(ap_mask==1)] += 2.0**sky_success_counter
-
-            # If target number of sky apertures have been processed, break out of loop
-            if sky_success_counter >= sky_success_target:
-
-                log.debug('Status: Target number of successful random apertures (' + str(int(sky_success_target)) + ') generated; proceeding')
-                break
-
-        # If total failure was encountered, end process and report now
-        if sky_total_fail:
-
-            self.success = False
-            #self.prior_mask = prior_mask
-            self.flag_mask = flag_mask
-            self.sky_success_counter = sky_success_counter
-
-            self.cutout_inviolate = cutout_inviolate
-
-            return
-
-        # Otherwise, calculate aperture noise using returned aperture values, and return
-        else:
-
-            sky_sum_list = np.array(sky_sum_list)
-            ap_noise = ChrisFuncs.SigmaClip(sky_sum_list, tolerance=0.001, median=True, sigma_thresh=3.0)[0]
-
-            #ChrisFuncs.Cutout(prior_mask, '/home/saruman/spx7cjc/DustPedia/Prior.fits')
-
-            if self.config.plot_path is not None:
-                path = fs.join(self.config.plot_path, "prior.png")
-                plotting.plot_mask(self.prior_mask, path=path)
-
-            # Debugging
-            log.debug('Aperture noise from current random apertures is ' + str(ChrisFuncs.FromGitHub.randlet.ToPrecision(ap_noise,4)) + ' (in map units).')
-
-            self.success = True
-            self.noise = ap_noise
-            self.napertures = sky_success_counter
-            #self.prior_mask = prior_mask
-            self.flag_mask = flag_mask
-
-            self.cutout_inviolate = cutout_inviolate
-
-            return
+        # Inform the user
+        log.info("Writing the flag mask ...")
+
+        # Save flag mask
+        flag_mask_path = fs.join(self.config.plot_path, "flag_mask.fits")
+        self.flag_mask.save(flag_mask_path)
 
 # -----------------------------------------------------------------
 
@@ -1563,13 +1574,10 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
         # If insufficient points to make extrapolation, report failure; else proceed
         if min_ap_rad_pix_output.shape[0] < 2:
 
-            #ap_noise_dict = {'fail':True, 'ap_noise':np.NaN}
-
             self.success = False
             self.noise = None
 
             gc.collect()
-            #return ap_noise_dict
 
             return
 
