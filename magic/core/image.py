@@ -1184,17 +1184,25 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def rename_frame(self, old_name, new_name):
+    def rename_frame(self, old_name, new_name, keep_position=False):
 
         """
         This function renames a frame
         :param old_name:
         :param new_name:
+        :param keep_position:
         :return:
         """
 
+        # Get the current position
+        if keep_position: current_position = self.frames.keys().index(old_name)
+        else: current_position = None
+
         # Remove the frame from the dictionary of frames and re-add it under a different key
         self.frames[new_name] = self.frames.pop(old_name)
+
+        # Move the frame to the original position
+        if keep_position: self.move_frame(new_name, current_position)
 
     # -----------------------------------------------------------------
 
