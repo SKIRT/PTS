@@ -53,6 +53,14 @@ parser.add_argument("-pay", "--polAvY", action="store_true", default = False,
             help="Plot the polarization degree integrated over y-direction for all x-pixels")
 parser.add_argument("-e", "--export", action="store_true", default = False,
             help="Exports data files in addition to the plots.")
+circPol_parser = parser.add_mutually_exclusive_group(required=False)
+circPol_parser.add_argument("-pc", '--plotCircular', dest='plotCircular', action='store_true',
+            help="Plot the circular polarization maps. Default: automatic")
+circPol_parser.add_argument("-npc", '--no-plotCircular', dest='plotCircular', action='store_false',
+            help="Do not plot the circular polarization maps. Default: automatic")
+parser.set_defaults(plotCircular=None)
+parser.add_argument("-npl", "--no-plotLinear", action="store_false", default = True,
+            help="Do not plot the linear polarization maps.")
 args = parser.parse_args()
 binsize = (args.binx, args.biny)
 # construct the list of simulation objects and make the plots
@@ -61,7 +69,7 @@ for simulation in createsimulations(args.simulation):
     plotpolarization(simulation, instrumentList=args.instrument, binsize=binsize,
                     wavelength=args.wavelength, polAvY=args.polAvY, export=args.export,
                     degreeLength=args.scale, vertRange=args.vertRange,
-                    noColBar=args.noColBar)
+                    noColBar=args.noColBar, plotCircular=args.plotCircular)
 end = time.time()
 print "Finished plotpolarization in {0:0.2f} s".format(end-start)
 

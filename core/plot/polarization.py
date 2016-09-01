@@ -17,10 +17,12 @@ import numpy as np
 import pyfits
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import os
 import sys
 from matplotlib import ticker
 from matplotlib.colors import LogNorm
+import warnings
 
 # Import the relevant PTS classes and modules
 from ..tools import archive as arch
@@ -42,18 +44,23 @@ from ..tools import archive as arch
 # - noColBar: do not Plot the colorbar(s) of the background plot.
 # - axes: For calling from a script. Given an ax object, will plot *everything* onto this. Creates no files. No suptitle.
 # - crop: To crop (parts of) pixels from the border(s). THE BINNING IS NOT INFLUENCED BY THIS. [l,r,b,t]
-# - quiet: no printing from this funtion
+# - quiet: no printing text from this funtion
+# - plotCircular: Whether or not to plot a circular polarization map. 'True': Yes; 'False': No; 'None': Automatic
 def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7,7), wavelength='all',
                     polAvY=False, export=False, degreeLength=[None,None], vertRange=[None,None],
-                    noColBar=False, axes=None, crop=[0.,0.,0.,0.], quiet=False):
-    np.seterr(invalid='ignore')
+                    noColBar=False, axes=None, crop=[0.,0.,0.,0.], minDeg=0., quiet=False, plotCircular=None, plotLinear=True):
+    
+    ####################################### general settings #######################################
+    plotCircularOnce = False # Used when automatically decting and plotting circular polarization
     if quiet:#no printing with quiet option!
         sys.stdout=open(os.devnull,"w")
-    if degreeLength[0] == None: degreeLSet = False #flag so we're allowed to set degree
-    else:                       degreeLSet = True #flag so we don't change degree later
-    if degreeLength[1] == None: dLengthSet = False #flag so we're allowed to set length
-    else:                       dLengthSet = True #flag so we don't change length later
-
+    
+    degreeLSet = False if degreeLength[0] is None else True #flag whether we're allowed to set degree
+    dLengthSet = False if degreeLength[1] is None else True  #flag so we're allowed to set length
+    
+    warnings.filterwarnings("ignore", category = FutureWarning)
+    np.seterr(invalid='ignore')
+    
     binX = binsize[0]
     binY = binsize[1]
     instruments = zip(simulation.instrumentnames(), simulation.stokesfitspaths())
@@ -140,6 +147,82 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                 U = Us
                 V = Vs
 
+
+            # actual binning
+            posX = np.arange(startX-0.5+binX/2.0, orLenX - dropX + startX - 0.5, binX)
+            posY = np.arange(startY-0.5+binY/2.0, orLenY - dropY + startY - 0.5, binY)
+            binnedI = np.zeros((len(posY),len(posX)))
+            binnedQ = np.zeros((len(posY),len(posX)))
+            binnedU = np.zeros((len(posY),len(posX)))
+            binnedV = np.zeros((len(posY),len(posX)))
+            circPolSig = 0
+            for x in range(len(posX)):
+                for y in range(len(posY)):
+                    binnedI[y,x] = np.sum(I[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
+                    binnedQ[y,x] = np.sum(Q[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
+                    binnedU[y,x] = np.sum(U[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
+                    binnedV[y,x] = np.sum(V[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
+                    # we only need circular polarization relative to total Intensity
+                    binnedV[y,x] /= binnedI[y,x]
+                    if plotCircular is None and plotLinear == True:
+                        stdV =      np.nanstd(V[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)]/
+                                              I[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
+                        if stdV == 0: stdV = 1 # if we only have one polarized pixel in the bins, stdV is undefined
+                        circPolSig=np.nanmax([circPolSig, np.abs(binnedV[y,x])/stdV])
+            if circPolSig > 2:
+                print "    Pixel with circular polarization detected, {:3} standard deviations from zero.".format(int(circPolSig*10)/10.)
+                plotCircularOnce = True
+                
+                
+            ################################# routines I like using ################################
+            # set up the figure
+            def ConfigurePlot(background = True):
+                # plot contour of intensity (in HD)
+                if background:
+                    Inan = I*1.
+                    Inan[Inan<=0] = np.NaN
+                    if np.any(Inan > 10.**6.*np.nanmedian(np.unique(Inan))):
+                        print "Automated masking of star in background plot"
+                        Inan = np.ma.masked_where(Inan > 10.**6.*np.nanmedian(np.unique(Inan)), Inan)
+                    vmin = vertRange[0]
+                    vmax = vertRange[1]
+                    backGrndPlt = ax.imshow(Inan, alpha=0.4, norm=LogNorm(), vmin=vmin, vmax=vmax, origin = 'lower')
+                    if not noColBar:
+                        cbar = plt.colorbar(backGrndPlt)
+                        cbar.set_label(simulation.fluxlabel(), labelpad=5)
+                        if not axes: #only if we're not called from a script
+                            plt.suptitle(simulation.prefix(), fontsize=14, fontweight='bold')
+                        
+                ax.set_title('instrument: "' + name + '", $\lambda=' +
+                            str(simulation.wavelengths()[index])+'\ \mu m$', fontsize=12)
+                ax.axis('scaled')
+                ax.set_xlabel('x (pixels)')
+                ax.set_ylabel('y (pixels)')
+                ax.set_xlim(xmin=crop[0], xmax=len(I[0,:])-crop[1])
+                ax.set_ylim(ymin=crop[2], ymax=len(I[:,0])-crop[3])
+            
+            # save the figure
+            def saveAndClosePlot(plotfile):
+                plt.savefig(plotfile, bbox_inches='tight')
+                print "      Created PDF polarization map " + plotfile
+                plt.close()
+            
+            # round away from zero
+            def roundUp(x, slack = 0.):
+                x= x*(1.-slack)
+                signX = np.sign(x)
+                x = np.abs(x)
+                dec = 10**(np.floor(np.log10(x)))
+                mant = x/dec
+                if mant <= 1: return signX*1*dec
+                if mant <= 2: return signX*2*dec
+                if mant <= 4: return signX*4*dec
+                if mant <= 5: return signX*5*dec
+                return signX*10*dec
+                #return (signX*np.ceil(mant)*dec)
+
+
+            ############################# y-averaged polarization plot #############################
             #if we're doing the y-axis averaged polarization graph:
             if polAvY:
                 #set up figure
@@ -166,95 +249,97 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                                     header = 'column 1: y-axis averaged polarization degree for all x pixels')
                     plt.close()
                 print "      Created integrated polarization plot"
-                continue
-
-            # actual binning
-            posX = np.arange(startX-0.5+binX/2.0, orLenX - dropX + startX - 0.5, binX)
-            posY = np.arange(startY-0.5+binY/2.0, orLenY - dropY + startY - 0.5, binY)
-            binnedI = np.zeros((len(posY),len(posX)))
-            binnedQ = np.zeros((len(posY),len(posX)))
-            binnedU = np.zeros((len(posY),len(posX)))
-            binnedV = np.zeros((len(posY),len(posX)))
-            for x in range(len(posX)):
-                for y in range(len(posY)):
-                    binnedI[y,x] = np.sum(I[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
-                    binnedQ[y,x] = np.sum(Q[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
-                    binnedU[y,x] = np.sum(U[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
-                    binnedV[y,x] = np.sum(V[startY+binY*y : startY+binY*(y+1) , startX+binX*x : startX+binX*(x+1)])
-
-            # degree of polarization with low resolution for foreground segments
-            # compute the linear polarization degree
-            degreeLD = np.sqrt(binnedQ**2 + binnedU**2)
-            degreeLD[degreeLD>0] /= binnedI[degreeLD>0]
-
-            # compute the polarization angle
-            angle = 0.5 * np.arctan2(binnedU, binnedQ)#angle is angle from North through East while looking at the sky
-
-            # setup the figure
-            if not axes: #only if we're not called from a script
-                plt.close('all')
-                figure = plt.figure()
-                ax = figure.add_subplot(111)
-            else:
-                ax = axes
-
-            # plot contour of intensity (in HD)
-            Inan = I*1.
-            Inan[Inan<=0] = np.NaN
-            #automated masking
-            Inan = np.ma.masked_where(Inan > 10.**6.*np.median(np.unique(Inan)), Inan)
-            vmin = vertRange[0]
-            vmax = vertRange[1]
-            backGrndPlt = ax.imshow(Inan, alpha=0.4, norm=LogNorm(), vmin=vmin, vmax=vmax, origin = 'lower')
-            #backGrndPlt = plt.contourf(Inan, alpha=0.4, locator=ticker.LogLocator()) # for higher quality
-            if not noColBar:
-                cbar = plt.colorbar(backGrndPlt)
-                cbar.set_label(simulation.fluxlabel(), labelpad=5)
 
 
-            # determine a characteristic 'high' degree of polarization in the Frame (For key and scaling)
-            charDegree = np.percentile(degreeLD, 99.0) # This has to be done before degreeLD contains 'np.NaN'
-            # removing pixels with zero polarization
-            degreeLD[degreeLD<=0] = np.NaN   # a runtime error here means that a laser is pointed at your instrument
-            if not 0<charDegree<1:
-                charDegree = np.nanmax((np.nanmax(degreeLD), 0.01)) #  a warning means no polarization at all
 
-            # calculate the scaling. It is relative to the picture size, thus the high polarization 'charDegree' should
-             # be short enough so it does not overlap with the polarization around it.
-            if not degreeLSet: degreeLength[0] = 10**(int(np.log10(charDegree))) # runtime error here means no polarization in the whole picture
-            if not dLengthSet: degreeLength[1] = 1/(charDegree* 2.2)/max(len(posX)/figsize[0], len(posY)/figsize[1])
-            key = "{:.3g}%".format(100 * degreeLength[0])
+            ################################## linear polarization #################################
+            if plotLinear:
+                if not axes: #only if we're not called from a script
+                    figure = plt.figure()
+                    ax = figure.add_subplot(111)
+                    
+                else:
+                    ax = axes
+                ConfigurePlot()
+                # compute the linear polarization degree
+                degreeLD = np.sqrt(binnedQ**2 + binnedU**2)
+                degreeLD[degreeLD>0] /= binnedI[degreeLD>0]
+                # determine a characteristic 'high' degree of polarization in the Frame (For key and scaling)
+                charDegree = np.percentile(degreeLD, 99.0) # This has to be done before degreeLD contains 'np.NaN'
+                # removing pixels with miniscule polarization
+                degreeLD[degreeLD<=minDeg] = np.NaN   # a runtime error here means that a laser is pointed at your instrument
+                if not 0<charDegree<1:
+                    print charDegree
+                    charDegree = np.nanmax((np.nanmax(degreeLD), 0.0001)) #  a warning means no polarization at all
+                # calculate the scaling. It is relative to the picture size, thus the high polarization 'charDegree' should
+                # be short enough so it does not overlap with the polarization around it.
+                if not degreeLSet: degreeLength[0] = roundUp(charDegree) # runtime error here means no polarization in the whole picture
+                if not dLengthSet: degreeLength[1] = 1/(degreeLength[0]* 2.2)/max(float(len(posX))/figsize[0], float(len(posY))/figsize[1])
+                key = "{:.3g}%".format(100 * degreeLength[0])
 
-            # mask small values that would render as dots otherwise
-            degreeLD[degreeLD<=0.2*degreeLength[0]] = np.NaN
+                # mask small values that would render as dots otherwise
+                #degreeLD[degreeLD<=0.2*degreeLength[0]] = np.NaN
 
-            # create the polarization vector arrays
-            xPolarization = -degreeLD*np.sin(angle) #For angle = 0: North & x=0, For angle = 90deg: West & x=-1
-            yPolarization =  degreeLD*np.cos(angle) #For angle = 0: North & y=1, For angle = 90deg: West & y=0
+                # compute the polarization angle
+                angle = 0.5 * np.arctan2(binnedU, binnedQ)#angle is angle from North through East while looking at the sky
+                # create the polarization vector arrays
+                xPolarization = -degreeLD*np.sin(angle) #For angle = 0: North & x=0, For angle = 90deg: West & x=-1
+                yPolarization =  degreeLD*np.cos(angle) #For angle = 0: North & y=1, For angle = 90deg: West & y=0
 
-            # plot the vector field (in LD)
-            X,Y = np.meshgrid( posX , posY)
-            quiverplot = ax.quiver(X,Y, xPolarization, yPolarization, pivot='middle', units='inches',
-                                    angles = 'xy', scale = 1./degreeLength[1], scale_units = 'inches', headwidth=0,
-                                    headlength=1, headaxislength=1, minlength = 1, width = 0.02)
+                # plot the vector field (in LD)
+                X,Y = np.meshgrid( posX , posY)
+                quiverplot = ax.quiver(X,Y, xPolarization, yPolarization, pivot='middle', units='inches',
+                                        angles = 'xy', scale = 1./degreeLength[1], scale_units = 'inches', headwidth=0,
+                                        headlength=1, headaxislength=1, minlength = 0.8, width = 0.02)
 
-            # add legend, labels and title
-            ax.quiverkey(quiverplot, 0.85, 0.02, degreeLength[0], key,
-                          coordinates='axes', labelpos='E')
-            if not axes: #only if we're not called from a script
-                plt.suptitle(simulation.prefix(), fontsize=14, fontweight='bold')
-            ax.set_title('instrument: "' + name + '", $\lambda=' +
-                        str(simulation.wavelengths()[index])+'\ \mu m$', fontsize=12)
-            ax.axis('scaled')
-            ax.set_xlabel('x (pixels)')
-            ax.set_ylabel('y (pixels)')
-            ax.set_xlim(xmin=crop[0], xmax=len(I[0,:])-crop[1])
-            ax.set_ylim(ymin=crop[2], ymax=len(I[:,0])-crop[3])
-
-            # save and close the figure
-            if not axes: #only if we're not called from a script
-                plt.savefig(plotfile, bbox_inches='tight', pad_inches=0.25)
-                print "      Created PDF polarization map "# + plotfile
-                plt.close()
+                # add legend, labels and title
+                ax.quiverkey(quiverplot, 0.85, 0.02, degreeLength[0], key,
+                              coordinates='axes', labelpos='E')
+                
+                if not axes: #only if we're not called from a script
+                    saveAndClosePlot(plotfile)
+            
+            
+            ################################# circular polarization ################################
+            if plotCircular or plotCircularOnce:
+                plotCircularOnce = False #it has done its job
+                #my own class to draw circular polarization arrows
+                def circArrow(ax, pos, size, lw = 1., color = 'k', *args, **kwargs):
+                    # add the arc
+                    size = 0.93* size
+                    lw = lw*0.8*abs(size)**.4
+                    oa = 33.
+                    ax.add_artist(mpatches.Arc(pos, size, size, theta1=oa, theta2=-oa, lw = lw, capstyle = 'round', color = color, *args, **kwargs))
+                    # add the pointing
+                    x = pos[0]+size/2.*np.cos(oa/180*np.pi)
+                    y = pos[1]-abs(size)/2.*np.sin(oa/180*np.pi)
+                    ax.add_artist(mlines.Line2D([x-0.5*size/2, x, x],[y, y, y-0.5*abs(size)/2],
+                                    lw = lw, solid_capstyle = 'round', dash_capstyle = 'round', color = color, *args, **kwargs))
+                                    
+                # create figure
+                if not axes: #only if we're not called from a script
+                    figure = plt.figure()
+                    ax = figure.add_subplot(111)
+                    
+                else:
+                    ax = axes
+                ConfigurePlot()
+                
+                # determine max polarization degree, create 'legend'
+                maxV = abs(np.nanmax(binnedV))
+                if not degreeLSet: degreeLength[0] = roundUp(maxV, slack = 0.1) #rounds to one significant digit
+                if not dLengthSet: degreeLength[1] = min(binX,binY)
+                circArrow(ax, (0.85*(len(I[0,:])-crop[1])-degreeLength[1]/2., -degreeLength[1]/2.-5), degreeLength[1], zorder = 10, clip_on=False)
+                ax.text(0.85*(len(I[0,:])-crop[1]), -degreeLength[1]/2-5., r'$+{} \%$'.format(100.*degreeLength[0]), va='center')
+                # actual plotting
+                for x in range(len(posX)):
+                    for y in range(len(posY)):
+                        if np.isfinite(binnedV[y,x]):
+                            circArrow(ax, (posX[x], posY[y]), binnedV[y,x]*degreeLength[1]/degreeLength[0], zorder = 10, clip_on=False)
+                        
+                # plotting:
+                if not axes: #only if we're not called from a script
+                    plotfile = "cpol".join(plotfile.rsplit("pol", 1))
+                    saveAndClosePlot(plotfile)
 
 # -----------------------------------------------------------------
