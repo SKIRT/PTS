@@ -453,26 +453,32 @@ class TrainedFinder(OldConfigurable):
             #log.debug("type image = " + str(type(image)))
             #log.debug("image.shape = " + str(image.shape))
 
+        # Create eliminate mask
+        eliminate_mask = Mask.empty_like(self.frame)
+
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxy_finder is not None:
 
             # Determine the mask that covers the principal and companion galaxies
-            eliminate_mask = self.galaxy_finder.principal_mask + self.galaxy_finder.companion_mask
+            eliminate_mask += self.galaxy_finder.principal_mask + self.galaxy_finder.companion_mask
 
-            # NEW: PLUS: Eliminate the segments covered by the 'ignore mask'
-            if self.ignore_mask is not None: eliminate_mask += self.ignore_mask
+        # NEW: PLUS: Eliminate the segments covered by the 'ignore mask'
+        if self.ignore_mask is not None: eliminate_mask += self.ignore_mask
 
-            # Check where the galaxy mask overlaps with the segmentation map
-            overlap = masks.intersection(self.segments, eliminate_mask)
-            if np.any(overlap):
+        # NEW: Eliminate the segments covered by the 'bad mask'
+        if self.bad_mask is not None: eliminate_mask += self.bad_mask
 
-                # Check which indices are present in the overlap map
-                possible = np.array(range(1, np.max(overlap) + 1))
-                present = np.in1d(possible, overlap)
-                indices = possible[present]
+        # Check where the galaxy mask overlaps with the segmentation map
+        overlap = masks.intersection(self.segments, eliminate_mask)
+        if np.any(overlap):
 
-                # Remove the galaxies from the segmentation map
-                for index in indices: self.segments[self.segments == index] = 0
+            # Check which indices are present in the overlap map
+            possible = np.array(range(1, np.max(overlap) + 1))
+            present = np.in1d(possible, overlap)
+            indices = possible[present]
+
+            # Remove the galaxies from the segmentation map
+            for index in indices: self.segments[self.segments == index] = 0
 
         # Find apertures
         #contours = self.find_contours()

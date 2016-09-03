@@ -139,6 +139,7 @@ class StarFinder(OldConfigurable):
         # Make a local reference to the frame
         self.frame = frame
 
+        # Make a local reference to the catalog
         self.catalog = catalog
 
         # Special and ignore masks
