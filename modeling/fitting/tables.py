@@ -46,6 +46,9 @@ class BestParametersTable(SmartTable):
             unit = units[label] if label in units else None
             cls.column_info.append((label, float, unit, "value for " + label))
 
+        # Add the Chi squared column
+        cls.column_info.append(("Chi squared", float, None, "chi-squared value"))
+
         # Call the initialize function of the best parameters table function
         return super(BestParametersTable, cls).initialize()
 
@@ -81,12 +84,13 @@ class BestParametersTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, generation_name, parameter_values):
+    def add_entry(self, generation_name, parameter_values, chi_squared):
 
         """
         This function ...
         :param generation_name:
         :param parameter_values:
+        :param chi_squared:
         :return:
         """
 
@@ -94,6 +98,9 @@ class BestParametersTable(SmartTable):
 
         # Add the parameter values
         for label in self.parameter_labels: values.append(parameter_values[label])
+
+        # Add the chi squared value
+        values.append(chi_squared)
 
         # Add a row to the table
         self.add_row(values)

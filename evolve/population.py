@@ -225,7 +225,9 @@ class GPopulation(object):
 
     def __len__(self):
 
-        """ Return the length of population """
+        """
+        Return the length of population
+        """
 
         return len(self.internalPop)
 
@@ -233,7 +235,9 @@ class GPopulation(object):
 
     def __getitem__(self, key):
 
-        """ Returns the specified individual from population """
+        """
+        Returns the specified individual from population
+        """
 
         return self.internalPop[key]
 
@@ -241,7 +245,9 @@ class GPopulation(object):
 
     def __iter__(self):
 
-        """ Returns the iterator of the population """
+        """
+        Returns the iterator of the population
+        """
 
         return iter(self.internalPop)
 
@@ -249,7 +255,9 @@ class GPopulation(object):
 
     def __setitem__(self, key, value):
 
-        """ Set an individual of population """
+        """
+        Set an individual of population
+        """
 
         self.internalPop[key] = value
         self.clearFlags()
@@ -258,7 +266,9 @@ class GPopulation(object):
 
     def clearFlags(self):
 
-        """ Clear the sorted and statted internal flags """
+        """
+        Clear the sorted and statted internal flags
+        """
 
         self.sorted = False
         self.statted = False
@@ -267,7 +277,8 @@ class GPopulation(object):
 
     def getStatistics(self):
 
-        """ Return a Statistics class for statistics
+        """
+        Return a Statistics class for statistics
         :rtype: the :class:`Statistics.Statistics` instance
         """
 
@@ -278,7 +289,9 @@ class GPopulation(object):
 
     def statistics(self):
 
-        """ Do statistical analysis of population and set 'statted' to True """
+        """
+        Do statistical analysis of population and set 'statted' to True
+        """
 
         if self.statted:
          return
@@ -398,8 +411,12 @@ class GPopulation(object):
         # Create dictionary
         params = {"minima": minima, "maxima": maxima}
 
-        # Update the parameters 'minima' and 'maxima'
-        self.setParams(**params)
+        # Update the parameters 'minima' and 'maxima' for each individual
+        for i in xrange(len(self.internalPop)):
+
+            # Set the parameter ranges of this individual
+            curr = self.internalPop[i]
+            curr.setParams(**params)
 
     # -----------------------------------------------------------------
 

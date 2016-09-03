@@ -868,7 +868,7 @@ class GAEngine(object):
         log.info("Creating generation " + str(self.currentGeneration) + " ...")
 
         # Clone the current internal population
-        newPop = GPopulation(self.internalPop)
+        new_population = GPopulation(self.internalPop)
         log.debug("Population was cloned.")
 
         size_iterate = len(self.internalPop)
@@ -879,6 +879,7 @@ class GAEngine(object):
 
         crossover_empty = self.select(popID=self.currentGeneration).crossover.isEmpty()
 
+        # Loop over the population
         for i in xrange(0, size_iterate, 2):
 
             genomeMom = self.select(popID=self.currentGeneration)
@@ -898,8 +899,8 @@ class GAEngine(object):
             sister.mutate(pmut=self.pMutation, ga_engine=self)
             brother.mutate(pmut=self.pMutation, ga_engine=self)
 
-            newPop.internalPop.append(sister)
-            newPop.internalPop.append(brother)
+            new_population.internalPop.append(sister)
+            new_population.internalPop.append(brother)
 
         if len(self.internalPop) % 2 != 0:
 
@@ -914,13 +915,13 @@ class GAEngine(object):
                 sister = sister.clone()
                 sister.mutate(pmut=self.pMutation, ga_engine=self)
 
-            newPop.internalPop.append(sister)
+            new_population.internalPop.append(sister)
 
         # Return the new population
         #return newPop
 
         # NEW
-        self.new_population = newPop
+        self.new_population = new_population
 
     # -----------------------------------------------------------------
 

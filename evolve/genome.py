@@ -92,7 +92,8 @@ class GenomeBase(object):
 
    def setParams(self, **args):
 
-      """ Set the internal params
+      """
+      Set the internal params
       Example:
          >>> genome.setParams(rangemin=0, rangemax=100, gauss_mu=0, gauss_sigma=1)
       .. note:: All the individuals of the population shares this parameters and uses
@@ -106,7 +107,8 @@ class GenomeBase(object):
 
    def getParam(self, key, nvl=None):
 
-      """ Gets an internal parameter
+      """
+      Gets an internal parameter
       Example:
          >>> genome.getParam("rangemax")
          100

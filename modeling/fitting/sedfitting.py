@@ -138,10 +138,10 @@ class SEDFitter(FittingComponent):
             if generation_name in self.best_parameters_table.generation_names: continue
 
             # Otherwise, add the best parameter values
-            values = self.best_parameter_values_for_generation(generation_name)
+            values, chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
 
             # Add an entry to the best parameters table file
-            self.best_parameters_table.add_entry(generation_name, values)
+            self.best_parameters_table.add_entry(generation_name, values, chi_squared)
 
     # -----------------------------------------------------------------
 
