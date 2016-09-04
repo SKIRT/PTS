@@ -49,7 +49,7 @@ class PlottingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -57,7 +57,7 @@ class PlottingComponent(ModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(PlottingComponent, self).setup()
+        super(PlottingComponent, self).setup(**kwargs)
 
         # Set the path to the plot/data directory
         self.plot_data_path = fs.create_directory_in(self.plot_path, "data")

@@ -40,6 +40,10 @@ from ..misc.geometryplotter import GeometryPlotter
 
 # -----------------------------------------------------------------
 
+features = ["chi squared", "distributions"]
+
+# -----------------------------------------------------------------
+
 class FittingPlotter(PlottingComponent, FittingComponent):
     
     """
@@ -60,11 +64,15 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         # -- Attributes --
 
+        # The features to be plotted
+        self.features = None
+
         # Paths
 
         self.plot_fitting_wavelength_grids_path = None
         self.plot_fitting_dust_grids_path = None
         self.plot_fitting_generation_paths = dict()
+        self.plot_fitting_distributions_path = None
 
         # The wavelength grids
         self.wavelength_grids = []
@@ -96,17 +104,33 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # The geometries
         self.geometries = dict()
 
+        # The prior and posterior probability distributions
+        self.prior_distributions = dict()     # indexed on generation, then on the free parameter labels
+        self.posterior_distributions = dict() # indexed on the free parameter labels
+
     # -----------------------------------------------------------------
 
-    def run(self, features=None):
+    def plot_feature(self, feature):
 
         """
         This function ...
         :return:
         """
 
+        return self.config.features is None or feature in self.config.features
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the input
         self.load_input()
@@ -116,7 +140,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -124,7 +148,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(FittingPlotter, self).setup()
+        super(FittingPlotter, self).setup(**kwargs)
 
         # Create directories
         self.create_directories()
@@ -158,6 +182,9 @@ class FittingPlotter(PlottingComponent, FittingComponent):
             fs.create_directory(path)
             self.plot_fitting_generation_paths[generation_name] = path
 
+        # Directory for plotting probability distributions
+        self.plot_fitting_distributions_path = fs.create_directory_in(self.plot_fitting_path, "distributions")
+
     # -----------------------------------------------------------------
 
     def load_input(self):
@@ -171,34 +198,34 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         log.info("Loading the input ...")
 
         # 1. Load the wavelength grids
-        self.load_wavelength_grids()
+        if self.plot_feature("wavelength grids"): self.load_wavelength_grids()
 
         # Load the current probability distributions of the different fit parameters
-        self.load_distributions()
+        if self.plot_feature("distributions"): self.load_distributions()
 
         # 4. Load the transmission curves
-        self.load_transmission_curves()
+        if self.plot_feature("transmission"): self.load_transmission_curves()
 
         # 5. Load the dust cell tree data
-        self.load_dust_cell_trees()
+        if self.plot_feature("tree"): self.load_dust_cell_trees()
 
         # 6. Load the runtimes
-        self.load_runtimes()
+        if self.plot_feature("runtimes"): self.load_runtimes()
 
         # 7. Load the observed SED
-        self.load_observed_sed()
+        if self.plot_feature("sed"): self.load_observed_sed()
 
         # 8. Load the SEDs of the various models
-        self.load_model_seds()
+        if self.plot_feature("sed"): self.load_model_seds()
 
         # 9. Load the SEDs for the various contribution
-        self.load_sed_contributions()
+        if self.plot_feature("sed"): self.load_sed_contributions()
 
         # 10. Load the simulated images
-        self.load_images()
+        if self.plot_feature("images"): self.load_images()
 
         # 11. Load the geometries
-        self.load_geometries()
+        if self.plot_feature("geometries"): self.load_geometries()
 
     # -----------------------------------------------------------------
 
@@ -230,20 +257,62 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         :return:
         """
 
+        # Load prior distributions
+        self.load_prior_distributions()
+
+        # Load the posterior distributions
+        self.load_posterior_distributions()
+
+    # -----------------------------------------------------------------
+
+    def load_prior_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the prior probability distributions for the different free parameters for each generation ...")
+
+        # Loop over the generations
+        for generation_name in self.genetic_generations:
+
+            # Initialize a dictionary
+            distributions_dict = dict()
+
+            # Load the parameters table
+            parameters_table = self.parameters_table_for_generation(generation_name)
+
+            # Loop over the different parameters
+            for label in self.free_parameter_labels:
+
+                # Create a distribution from the list of parameter values
+                distribution = Distribution.from_values(parameters_table[label])
+
+                # Add the distribution to the dictionary
+                distributions_dict[label] = distribution
+
+            # Add the dictionary for this generation
+            self.prior_distributions[generation_name] = distributions_dict
+
+    # -----------------------------------------------------------------
+
+    def load_posterior_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Loading the probability distributions for the different fit parameters ...")
 
         # Loop over the different fit parameters
-        for parameter_name in self.parameter_names:
+        for parameter_name in self.free_parameter_labels:
 
-            # Load the probability distribution
-            distribution = Distribution.from_file(self.distribution_table_paths[parameter_name])
-
-            # Normalize the distribution
-            distribution.normalize(value=1.0, method="max")
-
-            # Set the distribution
-            self.distributions[parameter_name] = distribution
+            # Load and set the distribution
+            self.posterior_distributions[parameter_name] = self.get_parameter_distribution(parameter_name)
 
     # -----------------------------------------------------------------
 
@@ -560,34 +629,55 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         :return:
         """
 
-        # Plot the probability distributions of the parameter values
-        self.plot_distributions()
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the progress of the best chi squared value over the course of generations
+        if self.plot_feature("chi squared"): self.plot_chi_squared()
+
+        # Plot the prior and posteriour probability distributions of the parameter values
+        if self.plot_feature("distributions"): self.plot_distributions()
 
         # Plot the wavelength grid used for the fitting
-        self.plot_wavelengths()
+        if self.plot_feature("wavelength grids"): self.plot_wavelengths()
 
         # Plot the dust grid
-        self.plot_dust_grids()
+        if self.plot_feature("dust grids"): self.plot_dust_grids()
 
         # Plot the distribution of dust cells for the different tree levels
-        self.plot_dust_cell_distribution()
+        if self.plot_feature("cell distribution"): self.plot_dust_cell_distribution()
 
         # Plot the distributions of the runtimes on different remote systems
-        if self.runtimes is not None: self.plot_runtimes()
+        if self.plot_feature("runtimes") and self.runtimes is not None: self.plot_runtimes()
 
         # Plot the SEDs of the models
-        if len(self.seds) > 0: self.plot_model_seds()
+        if self.plot_feature("sed") and len(self.seds) > 0: self.plot_model_seds()
 
         # Plot the SEDs
-        if len(self.sed_contributions) > 0: self.plot_sed_contributions()
+        if self.plot_feature("sed") and len(self.sed_contributions) > 0: self.plot_sed_contributions()
 
         # Plot the images
-        if len(self.simulated_images) > 0: self.plot_images()
+        if self.plot_feature("images") and len(self.simulated_images) > 0: self.plot_images()
 
         # Plot the geometries
-        if len(self.geometries) > 0: self.plot_geometries()
+        if self.plot_feature("geometries") and len(self.geometries) > 0: self.plot_geometries()
 
-        self.create_animation()
+        # Create the animation
+        #self.create_animation()
+
+    # -----------------------------------------------------------------
+
+    def plot_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the progress of the best chi squared value over the course of generations ...")
+
+
 
     # -----------------------------------------------------------------
 
@@ -601,32 +691,51 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Plotting the probability distributions ...")
 
-        # Young stars
-        x_limits = [self.config.young_stars.min, self.config.young_stars.max]
-        linear_path = fs.join(self.plot_fitting_path, "fuv_young_distribution_linear.pdf")
-        log_path = fs.join(self.plot_fitting_path, "fuv_young_distribution_log.pdf")
-        cumulative_path = fs.join(self.plot_fitting_path, "fuv_young_distribution_cumulative.pdf")
-        self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn", path=linear_path)
-        self.distributions["FUV young"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn (in log scale)", path=log_path)
-        self.distributions["FUV young"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of young stars", path=cumulative_path)
+        # Plot prior distributions
+        self.plot_prior_distributions()
 
-        # Ionizing stars
-        x_limits = [self.config.ionizing_stars.min, self.config.ionizing_stars.max]
-        linear_path = fs.join(self.plot_fitting_path, "fuv_ionizing_distribution_linear.pdf")
-        log_path = fs.join(self.plot_fitting_path, "fuv_ionizing_distribution_log.pdf")
-        cumulative_path = fs.join(self.plot_fitting_path, "fuv_ionizing_distribution_cumulative.pdf")
-        self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn", path=linear_path)
-        self.distributions["FUV ionizing"].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of ionizing stars will be drawn (in log scale)", path=log_path)
-        self.distributions["FUV ionizing"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of ionizing stars", path=cumulative_path)
+        # Plot posterior distributions
+        self.plot_posterior_distributions()
 
-        # Dust mass
-        x_limits = [self.config.dust.min, self.config.dust.max]
-        linear_path = fs.join(self.plot_fitting_path, "dust_mass_distribution_linear.pdf")
-        log_path = fs.join(self.plot_fitting_path, "dust_mass_distribution_log.pdf")
-        cumulative_path = fs.join(self.plot_fitting_path, "dust_mass_distribution_cumulative.pdf")
-        self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn", path=linear_path)
-        self.distributions["Dust mass"].plot_smooth(x_limits=x_limits, title="Probability distribution from which dust masses will be drawn (in log scale)", path=log_path)
-        self.distributions["Dust mass"].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of dust masses", path=cumulative_path)
+    # -----------------------------------------------------------------
+
+    def plot_prior_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the posterior parameter distributions ...")
+
+    # -----------------------------------------------------------------
+
+    def plot_posterior_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the posterior parameter distributions ...")
+
+        # Loop over the parameter labels
+        for label in self.posterior_distributions:
+
+            # Path
+            linear_path = fs.join(self.plot_fitting_distributions_path, "posterior_" + label + "_linear.pdf")
+            log_path = fs.join(self.plot_fitting_distributions_path, "posterior_" + label + "_log.pdf")
+            cumulative_path = fs.join(self.plot_fitting_distributions_path, "posterior_" + label + "_cumulative.pdf")
+
+            # Get the limits
+            x_limits = [self.free_parameter_ranges[label].min, self.free_parameter_ranges[label].max]
+
+            # Plot the distributions
+            self.posterior_distributions[label].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn", path=linear_path)
+            self.posterior_distributions[label].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn (in log scale)", path=log_path)
+            self.posterior_distributions[label].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of young stars", path=cumulative_path)
 
     # -----------------------------------------------------------------
 

@@ -209,17 +209,17 @@ class Mappings(object):
 
     # -----------------------------------------------------------------
 
-    def luminosity_for_filter(self, filter, unit="W/micron"):
+    def luminosity_for_filter(self, fltr, unit="W/micron"):
 
         """
         This function ...
-        :param filter:
+        :param fltr:
         :param unit:
         :return:
         """
 
         #luminosity = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
-        luminosity = filter.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.luminosities(unit="W/micron", asarray=True)) # also in W/micron
+        luminosity = fltr.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.luminosities(unit="W/micron", asarray=True)) # also in W/micron
         luminosity = luminosity * Unit("W/micron")
 
         # Return the luminosity in the desired unit

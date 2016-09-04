@@ -252,6 +252,18 @@ class FittingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def genetic_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generations_table.genetic_generations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def finished_generations(self):
 
         """

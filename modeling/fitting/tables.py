@@ -178,6 +178,28 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def genetic_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the generation names
+        names = []
+
+        # Loop over the rows in the table
+        for i in range(len(self)):
+
+            # Add the generation name
+            if not self["Generation index"].mask[i]: names.append(self["Generation name"][i])
+
+        # Return the generation names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
     def finished_generations(self):
 
         """

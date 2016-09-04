@@ -480,7 +480,9 @@ class FittingInitializer(FittingComponent):
         # Convert the SFR into a FUV luminosity
         sfr = 0.8 # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
-        luminosity = mappings.luminosity_for_filter(self.fuv_filter)
+        luminosity = mappings.luminosity_for_filter(self.fuv_filter) * 1e6
+        # the times 1e6 is just a fix because these luminosities are otherwise much too small!! (what does the mappings luminosity really represent??)
+        # TODO: investigate how to get a valid guess for the ionizing stellar luminosity here!!!
         #luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
         # Set the parameters of the ionizing stellar component
