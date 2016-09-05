@@ -900,7 +900,7 @@ def all_close(array):
     first = array[0]
 
     for i in range(1, len(array)):
-        if not np.isclose(array[i], first): return False
+        if not np.isclose(array[i], first, rtol=1e-4): return False
 
     return True
 

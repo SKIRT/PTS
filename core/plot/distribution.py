@@ -54,11 +54,18 @@ class DistributionPlotter(object):
         self._min_count = None
         self._max_count = None
 
-        # The definite axes limits
+        # Input
         self.min_value = None
         self.max_value = None
         self.min_count = None
         self.max_count = None
+        self.output_path = None
+        self.format = None
+        self.logscale = False
+        self.legend = True
+        self.add_smooth = False
+        self.add_extrema = False
+        self.add_statistics = False
 
         # Store the figure and its axes as references
         self._figure = None
@@ -105,32 +112,23 @@ class DistributionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path=None, min_value=None, max_value=None, min_count=None, max_count=None, format=None, logscale=False, legend=True):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param output_path:
-        :param min_value:
-        :param max_value:
-        :param min_count:
-        :param max_count:
-        :param format:
-        :param logscale:
+        :param kwargs:
         :return:
         """
 
-        # Set the axis limits
-        self.min_value = min_value
-        self.max_value = max_value
-        self.min_count = min_count
-        self.max_count = max_count
+        # Call the setup function
+        self.setup(**kwargs)
 
         # Make the plot
-        self.plot(output_path, format=format, logscale=logscale, legend=legend)
+        self.plot()
 
     # -----------------------------------------------------------------
 
-    def clear(self):
+    def clear(self, clear_distributions=True):
 
         """
         This function ...
@@ -142,32 +140,70 @@ class DistributionPlotter(object):
 
         # Set default values for all attributes
         self.title = None
-        self.distributions = OrderedDict()
+        if clear_distributions: self.distributions = OrderedDict()
+
         self._min_value = None
         self._max_value = None
         self._min_count = None
         self._max_count = None
+
+        # Input
         self.min_value = None
         self.max_value = None
         self.min_count = None
         self.max_count = None
+        self.output_path = None
+        self.format = None
+        self.logscale = False
+        self.legend = True
+        self.add_smooth = False
+        self.add_extrema = False
+        self.add_statistics = False
+
         self._figure = None
 
     # -----------------------------------------------------------------
 
-    def plot(self, path=None, logscale=False, add_smooth=False, add_extrema=False, format=None, add_statistics=True, legend=True):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param path:
-        :param logscale:
-        :param add_smooth:
-        :param add_extrema:
-        :param format:
-        :param add_statistics:
-        :param legend:
+        :param kwargs:
         :return:
         """
+
+        # Set the axis limits
+        self.min_value = kwargs.pop("min_value", None)
+        self.max_value = kwargs.pop("max_value", None)
+        self.min_count = kwargs.pop("min_count", None)
+        self.max_count = kwargs.pop("max_count", None)
+
+        # Get ...
+        self.output_path = kwargs.pop("output_path", None)
+        self.format = kwargs.pop("format", None)
+        self.logscale = kwargs.pop("logscale", False)
+        self.legend = kwargs.pop("legend", False)
+
+        self.add_smooth = kwargs.pop("add_smooth", False)
+        self.add_extrema = kwargs.pop("add_extrema", False)
+        self.add_statistics = kwargs.pop("add_statistics", False)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = self.output_path
+        logscale = self.logscale
+        format = self.format
+        legend = self.legend
+        add_smooth = self.add_smooth
+        add_extrema = self.add_extrema
+        add_statistics = self.add_statistics
 
         # Inform the user
         log.info("Making the distribution plot ...")

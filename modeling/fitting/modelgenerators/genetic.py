@@ -153,10 +153,10 @@ class GeneticModelGenerator(ModelGenerator):
         log.info("Setting scores from previous generation ...")
 
         # Load the parameters table from the previous generation
-        parameters_table = self.parameters_table_for_generation(self.last_genetic_generation_name)
+        parameters_table = self.parameters_table_for_generation(self.last_genetic_or_initial_generation_name)
 
         # Load the chi squared table from the previous generation
-        chi_squared_table = self.chi_squared_table_for_generation(self.last_genetic_generation_name)
+        chi_squared_table = self.chi_squared_table_for_generation(self.last_genetic_or_initial_generation_name)
 
         # List of chi squared values in the same order as the parameters table
         chi_squared_values = []

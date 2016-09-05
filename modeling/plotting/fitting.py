@@ -39,6 +39,7 @@ from ...core.plot.sed import SEDPlotter
 from ...magic.basics.skyregion import SkyRegion
 from ..misc.geometryplotter import GeometryPlotter
 from ..basics.models import load_3d_model
+from ...core.plot.distribution import DistributionPlotter
 
 # -----------------------------------------------------------------
 
@@ -253,7 +254,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         log.info("Loading the prior probability distributions for the different free parameters for each generation ...")
 
         # Loop over the generations
-        for generation_name in self.genetic_generations:
+        for generation_name in self.generation_names:
 
             # Initialize a dictionary
             distributions_dict = dict()
@@ -265,7 +266,11 @@ class FittingPlotter(PlottingComponent, FittingComponent):
             for label in self.free_parameter_labels:
 
                 # Test if the values are not all equal
-                if np.min(parameters_table[label]) == np.max(parameters_table[label]): continue
+                if np.min(parameters_table[label]) == np.max(parameters_table[label]):
+
+                    # Give a warning and skip this parameter (we can't make a distribution of values that are all the same)
+                    log.warning("The prior values for the '" + label + "' parameter of the '" + generation_name + "' generation are all identical")
+                    continue
 
                 # Create a distribution from the list of parameter values
                 distribution = Distribution.from_values(parameters_table[label])
@@ -657,6 +662,9 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Plotting the posterior parameter distributions ...")
 
+        # Create a distribution plotter
+        plotter = DistributionPlotter()
+
         # Loop over the generations
         for generation_name in self.prior_distributions:
 
@@ -666,26 +674,53 @@ class FittingPlotter(PlottingComponent, FittingComponent):
             # Get the parameter ranges for this generation
             ranges = self.parameter_ranges_for_generation(generation_name)
 
+            # Directories
+            linear_path = fs.create_directory_in(generation_path, "linear")
+            linear_smooth_path = fs.create_directory_in(generation_path, "linear smooth")
+            log_path = fs.create_directory_in(generation_path, "log")
+            log_smooth_path = fs.create_directory_in(generation_path, "log smooth")
+
             # Loop over the distributions (for the different parameters)
             for label in self.prior_distributions[generation_name]:
 
-                # Determine the path to the plot files
-                linear_path = fs.join(generation_path, label + "_linear.pdf")
-                log_path = fs.join(generation_path, label + "_log.pdf")
-
                 # Get the limits
-                #limits = [ranges[label].min, ranges[label].max]
-
-                #limits = [np.min()]
-                limits = None
+                limits = [ranges[label].min, ranges[label].max]
 
                 # Show the limits
-                print(self.prior_distributions[generation_name][label].min_value)
-                print(self.prior_distributions[generation_name][label].max_value)
+                #print(self.prior_distributions[generation_name][label].min_value)
+                #print(self.prior_distributions[generation_name][label].max_value)
 
-                # Plot the distributions
-                self.prior_distributions[generation_name][label].plot_smooth(x_limits=limits, title="Prior probability distribution of " + self.parameter_descriptions[label], path=linear_path)
-                self.prior_distributions[generation_name][label].plot_smooth(x_limits=limits, title="Prior probability distribution of " + self.parameter_descriptions[label], path=log_path)
+                # Define the title
+                title = "Prior probability distribution of " + self.parameter_descriptions[label]
+
+                # Add the distribution
+                plotter.add_distribution(self.prior_distributions[generation_name][label], label)
+                plotter.title = title
+
+                # Plot linear
+                path = fs.join(linear_path, label + ".pdf")
+                plotter.run(output_path=path)
+
+                plotter.clear(clear_distributions=False)
+
+                # Plot linear smooth
+                path = fs.join(linear_smooth_path, label + ".pdf")
+                plotter.run(output_path=path, add_smooth=True)
+
+                plotter.clear(clear_distributions=False)
+
+                # Plot log
+                path = fs.join(log_path, label + ".pdf")
+                plotter.run(output_path=path, logscale=True)
+
+                plotter.clear(clear_distributions=False)
+
+                # Plot log smooth
+                path = fs.join(log_smooth_path, label + ".pdf")
+                plotter.run(output_path=path, add_smooth=True, logscale=True)
+
+                # Clear
+                plotter.clear()
 
     # -----------------------------------------------------------------
 

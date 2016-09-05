@@ -412,11 +412,7 @@ class GPopulation(object):
         params = {"minima": minima, "maxima": maxima}
 
         # Update the parameters 'minima' and 'maxima' for each individual
-        for i in xrange(len(self.internalPop)):
-
-            # Set the parameter ranges of this individual
-            curr = self.internalPop[i]
-            curr.setParams(**params)
+        self.set_params_for_all_individuals(**params)
 
     # -----------------------------------------------------------------
 
@@ -465,6 +461,23 @@ class GPopulation(object):
         for i in xrange(end):
          if individual.compare(self.internalPop[i]) == 0:
             return True
+
+    # -----------------------------------------------------------------
+
+    def set_params_for_all_individuals(self, **params):
+
+        """
+        This function ...
+        :param params
+        :return:
+        """
+
+        # Loop over all individuals in the internal population
+        for i in xrange(len(self.internalPop)):
+
+            # Set the parameters of this individual
+            curr = self.internalPop[i]
+            curr.setParams(**params)
 
     # -----------------------------------------------------------------
 

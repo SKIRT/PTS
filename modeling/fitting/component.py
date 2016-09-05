@@ -260,6 +260,18 @@ class FittingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def genetic_generations_with_initial(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generations_table.genetic_generations_with_initial
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def finished_generations(self):
 
         """
@@ -711,10 +723,25 @@ class FittingComponent(ModelingComponent):
                     highest_index = index
                     name = self.generations_table["Generation name"][i]
 
-        # The initial generation, although it has no index, should also be considered a genetic generation
+        # Return the name of the generation with the highest index
+        return name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_or_initial_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = self.last_genetic_generation_name
+
+        # Check whether the initial generation exists
         if name is None and "initial" in self.generations_table["Generation name"]: name = "initial"
 
-        # Return the name of the generation with the highest index
+        # Return the name
         return name
 
     # -----------------------------------------------------------------
@@ -728,6 +755,18 @@ class FittingComponent(ModelingComponent):
         """
 
         return fs.join(self.fit_generations_path, self.last_genetic_generation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_or_initial_generation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.fit_generations_path, self.last_genetic_or_initial_generation_name)
 
     # -----------------------------------------------------------------
 

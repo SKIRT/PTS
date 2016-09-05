@@ -201,6 +201,25 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def genetic_generations_with_initial(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the list of genetic generation names without the initial generation
+        names = self.genetic_generations
+
+        # Prepend the name of the initial generation if present
+        if "initial" in self["Generation name"]: names = ["initial"] + names
+
+        # Return the list of generation name
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
     def finished_generations(self):
 
         """
