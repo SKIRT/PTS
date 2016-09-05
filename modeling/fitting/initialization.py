@@ -399,7 +399,7 @@ class FittingInitializer(FittingComponent):
         deprojection = self.deprojection.copy()
         deprojection.filename = "old_stars.fits"
         deprojection.scale_height = scale_height
-        self.deprojections["Old stars"] = deprojection
+        self.deprojections["old stars"] = deprojection
 
         # Adjust the ski file
         self.ski_template.set_stellar_component_geometry("Evolved stellar disk", deprojection)
@@ -442,7 +442,7 @@ class FittingInitializer(FittingComponent):
         deprojection = self.deprojection.copy()
         deprojection.filename = "young_stars.fits"
         deprojection.scale_height = scale_height
-        self.deprojections["Young stars"] = deprojection
+        self.deprojections["young stars"] = deprojection
 
         # Adjust the ski file
         self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
@@ -489,7 +489,7 @@ class FittingInitializer(FittingComponent):
         deprojection = self.deprojection.copy()
         deprojection.filename = "ionizing_stars.fits"
         deprojection.scale_height = scale_height
-        self.deprojections["Ionizing stars"] = deprojection
+        self.deprojections["ionizing stars"] = deprojection
 
         # Adjust the ski file
         self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
@@ -525,7 +525,7 @@ class FittingInitializer(FittingComponent):
         deprojection = self.deprojection.copy()
         deprojection.filename = "dust.fits"
         deprojection.scale_height = scale_height
-        self.deprojections["Dust"] = deprojection
+        self.deprojections["dust"] = deprojection
 
         # Adjust the ski file
         self.ski_template.set_dust_component_geometry(0, deprojection)

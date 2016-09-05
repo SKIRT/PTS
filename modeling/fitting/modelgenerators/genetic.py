@@ -76,7 +76,7 @@ class GeneticModelGenerator(ModelGenerator):
         log.info("Loading the state of the random number generator ...")
 
         # Determine the path to the saved prng state
-        path = fs.join(self.last_genetic_generation_path, "prng.pickle")
+        path = fs.join(self.last_genetic_or_initial_generation_path, "prng.pickle")
 
         # Load the random state
         load_state(path)
@@ -94,7 +94,7 @@ class GeneticModelGenerator(ModelGenerator):
         log.info("Loading the state of the genetic algorithm engine ...")
 
         # Determine the path to the saved genetic algorithm engine
-        path = fs.join(self.last_genetic_generation_path, "engine.pickle")
+        path = fs.join(self.last_genetic_or_initial_generation_path, "engine.pickle")
 
         # Load the engine
         self.engine = GAEngine.from_file(path)
