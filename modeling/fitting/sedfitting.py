@@ -68,9 +68,6 @@ class SEDFitter(FittingComponent):
         #
         self.prob_generations_table_paths = dict()
 
-        # The directory for the combined probabilities
-        self.prob_parameters_path = None
-
     # -----------------------------------------------------------------
 
     def run(self):
@@ -116,9 +113,6 @@ class SEDFitter(FittingComponent):
         for generation_name in self.finished_generations:
             path = fs.join(self.prob_generations_path, generation_name + ".dat")
             self.prob_generations_table_paths[generation_name] = path
-
-        # The directory with the combined probability tables for the different free parameters
-        self.prob_parameters_path = fs.create_directory_in(self.fit_prob_path, "parameters")
 
     # -----------------------------------------------------------------
 
@@ -377,11 +371,8 @@ class SEDFitter(FittingComponent):
         # Loop over the probability tables for the different free parameter
         for label in self.free_parameter_labels:
 
-            # Determine the path for the table
-            path = fs.join(self.prob_parameters_path, label + ".dat")
-
             # Save the table
-            self.parameter_probabilities[label].saveto(path)
+            self.parameter_probabilities[label].saveto(self.get_parameter_distribution_path(label))
 
     # -----------------------------------------------------------------
 

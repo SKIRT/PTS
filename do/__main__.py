@@ -48,6 +48,7 @@ parser.add_argument("do_command", type=str, help="the name of the PTS do command
 parser.add_argument("--interactive", action="store_true", help="use interactive mode for the configuration")
 parser.add_argument("--arguments", action="store_true", help="use argument mode for the configuration")
 parser.add_argument("--configfile", type=str, help="use a configuration file")
+parser.add_argument("--rerun", action="store_true", help="use the last used configuration")
 parser.add_argument("--remote", type=str, help="launch the PTS command remotely")
 parser.add_argument("--keep", action="store_true", help="keep the remote output")
 parser.add_argument("--input", type=parsing.directory_path, help="the name/path of the input directory")
@@ -84,6 +85,7 @@ configuration_method = None
 if args.interactive: configuration_method = "interactive"
 elif args.arguments: configuration_method = "arguments"
 elif args.configfile is not None: configuration_method = "file:" + args.configfile
+elif args.rerun: configuration_method = "last"
 
 # Construct clean arguments list
 sys.argv = ["pts", args.do_command] + args.options
@@ -160,6 +162,11 @@ elif len(table_matches) == 1 and len(matches) == 0:
     elif configuration_method.startswith("file"):
         configuration_filepath = configuration_method.split(":")[1]
         setter = FileConfigurationSetter(configuration_filepath, command_name, description)
+    elif configuration_method == "last":
+        configuration_filepath = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
+        if not fs.is_directory(introspection.pts_user_config_dir): fs.create_directory(introspection.pts_user_config_dir)
+        if not fs.is_file(configuration_filepath): raise RuntimeError("Cannot use rerun (config file not present)")
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
     else: raise ValueError("Invalid configuration method: " + configuration_method)
 
     # Create the configuration from the definition and from reading the command line arguments
@@ -169,6 +176,16 @@ elif len(table_matches) == 1 and len(matches) == 0:
     if config.write_config:
         config_file_path = fs.join(config.config_dir_path(), command_name + ".cfg")
         config.save(config_file_path)
+    ##
+
+    if not args.rerun:
+
+        if not fs.is_directory(introspection.pts_user_config_dir): fs.create_directory(introspection.pts_user_config_dir)
+
+        # NEW: CACHE THE CONFIG
+        config_cache_path = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
+        config.save(config_cache_path)
+
     ##
 
     # If the PTS command has to be executed remotely

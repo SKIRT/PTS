@@ -114,7 +114,10 @@ class FittingComponent(ModelingComponent):
         self.prob_distributions_path = None
 
         # The paths to the probability distribution tables
-        self.distribution_table_paths = dict()
+        #self.distribution_table_paths = dict()
+
+        # The directory for the posterior / parameter probability distribution tables
+        self.prob_parameters_path = None
 
     # -----------------------------------------------------------------
 
@@ -205,15 +208,8 @@ class FittingComponent(ModelingComponent):
         # The directory with the probability distributions for the different free parameters
         self.prob_distributions_path = fs.create_directory_in(self.fit_prob_path, "distributions")
 
-        # Set the paths to the probability distribution tables
-        if self.free_parameter_labels is not None:
-            for label in self.free_parameter_labels:
-
-                # Determine the path to the table
-                path = fs.join(self.prob_distributions_path, label + ".dat")
-
-                # Set the path
-                self.distribution_table_paths[label] = path
+        # The directory with the combined probability tables for the different free parameters
+        self.prob_parameters_path = fs.create_directory_in(self.fit_prob_path, "parameters")
 
         ## BEST PARAMETERS TABLE
 
@@ -284,6 +280,18 @@ class FittingComponent(ModelingComponent):
         """
 
         return self.generations_table.is_finished(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def parameter_ranges_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.generations_table.parameter_ranges_for_generation(generation_name)
 
     # -----------------------------------------------------------------
 
@@ -615,6 +623,22 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_parameter_distribution_path(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        # Determine the path for the table
+        path = fs.join(self.prob_parameters_path, label + ".dat")
+
+        # Return the path to the table
+        return path
+
+    # -----------------------------------------------------------------
+
     def get_parameter_distribution(self, label, normalized=True):
 
         """
@@ -625,7 +649,7 @@ class FittingComponent(ModelingComponent):
         """
 
         # Load the probability distribution
-        distribution = Distribution.from_file(self.distribution_table_paths[label])
+        distribution = Distribution.from_file(self.get_parameter_distribution_path(label))
 
         # Normalize the distribution
         if normalized: distribution.normalize(value=1.0, method="max")
@@ -643,7 +667,7 @@ class FittingComponent(ModelingComponent):
         :return:
         """
 
-        return fs.is_file(self.distribution_table_paths[label])
+        return fs.is_file(self.get_parameter_distribution_path(label))
 
     # -----------------------------------------------------------------
 

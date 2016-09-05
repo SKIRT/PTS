@@ -374,7 +374,7 @@ def G1DListMutatorRealGaussian(genome, **args):
 def HeterogeneousListMutatorRealGaussian(genome, **args):
 
    """
-   Heregogeneous version of real gaussian list mutator
+   Heteregeneous version of real gaussian list mutator
    """
 
    if args["pmut"] <= 0.0:
@@ -382,18 +382,25 @@ def HeterogeneousListMutatorRealGaussian(genome, **args):
    listSize = len(genome)
    mutations = args["pmut"] * (listSize)
 
-   mu = genome.getParam("gauss_mu")
-   sigma = genome.getParam("gauss_sigma")
+   #mu = genome.getParam("gauss_mu")
+   #sigma = genome.getParam("gauss_sigma")
 
-   if mu is None:
-      mu = constants.CDefG1DListMutRealMU
+   #if mu is None:
+   #   mu = constants.CDefG1DListMutRealMU
 
-   if sigma is None:
-      sigma = constants.CDefG1DListMutRealSIGMA
+   #if sigma is None:
+   #   sigma = constants.CDefG1DListMutRealSIGMA
 
    if mutations < 1.0:
       mutations = 0
+
+      # Let the fact whether we do a mutation for each genome depend on a random 'coin flip'
       for it in xrange(listSize):
+
+         # Get the mu and the sigma
+         mu = genome.getParam("centers")[it]
+         sigma = genome.getParam("sigmas")[it]
+
          if utils.randomFlipCoin(args["pmut"]):
 
             final_value = genome[it] + prng.normal(mu, sigma)
@@ -404,7 +411,13 @@ def HeterogeneousListMutatorRealGaussian(genome, **args):
             genome[it] = final_value
             mutations += 1
    else:
+
+      # Do a specific number of mutations
       for it in xrange(int(round(mutations))):
+
+         # Get the mu and the sigma
+         mu = genome.getParam("centers")[it]
+         sigma = genome.getParam("sigmas")[it]
 
          which_gene = prng.randint(0, listSize)
          final_value = genome[which_gene] + prng.normal(mu, sigma)

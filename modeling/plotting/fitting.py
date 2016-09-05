@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from collections import defaultdict, OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -37,10 +38,7 @@ from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
 from ...magic.basics.skyregion import SkyRegion
 from ..misc.geometryplotter import GeometryPlotter
-
-# -----------------------------------------------------------------
-
-features = ["chi squared", "distributions"]
+from ..basics.models import load_3d_model
 
 # -----------------------------------------------------------------
 
@@ -49,6 +47,26 @@ class FittingPlotter(PlottingComponent, FittingComponent):
     """
     This class...
     """
+
+    # The load functions
+    load_functions = dict()
+
+    # The plot functions
+    plot_functions = dict()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def features(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return cls.plot_functions.keys()
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -60,19 +78,17 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         # Call the constructor of the base classes
         PlottingComponent.__init__(self, config)
-        FittingComponent.__init__(self)
+        FittingComponent.__init__(self, config)
 
         # -- Attributes --
-
-        # The features to be plotted
-        self.features = None
 
         # Paths
 
         self.plot_fitting_wavelength_grids_path = None
         self.plot_fitting_dust_grids_path = None
-        self.plot_fitting_generation_paths = dict()
         self.plot_fitting_distributions_path = None
+        self.plot_fitting_prior_distributions_path = None
+        self.plot_fitting_posterior_distributions_path = None
 
         # The wavelength grids
         self.wavelength_grids = []
@@ -110,17 +126,6 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_feature(self, feature):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.config.features is None or feature in self.config.features
-
-    # -----------------------------------------------------------------
-
     def run(self, **kwargs):
 
         """
@@ -132,11 +137,18 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the input
-        self.load_input()
+        # Check which features should be plotted
+        if self.config.features is None: features_to_plot = self.features()
+        else: features_to_plot = self.config.features
 
-        # 3. Plot
-        self.plot()
+        # Plot the features
+        for feature in features_to_plot:
+
+            # Call the load function (if necessary)
+            if feature in self.load_functions: self.load_functions[feature](self)
+
+            # Call the plot function
+            self.plot_functions[feature](self)
 
     # -----------------------------------------------------------------
 
@@ -179,53 +191,15 @@ class FittingPlotter(PlottingComponent, FittingComponent):
             if fs.is_directory(path): continue # plotting has already been done for this finished generation
 
             # Create the directory and set the path
-            fs.create_directory(path)
-            self.plot_fitting_generation_paths[generation_name] = path
+            #fs.create_directory(path)
+            #self.plot_fitting_generation_paths[generation_name] = path
 
         # Directory for plotting probability distributions
         self.plot_fitting_distributions_path = fs.create_directory_in(self.plot_fitting_path, "distributions")
 
-    # -----------------------------------------------------------------
-
-    def load_input(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the input ...")
-
-        # 1. Load the wavelength grids
-        if self.plot_feature("wavelength grids"): self.load_wavelength_grids()
-
-        # Load the current probability distributions of the different fit parameters
-        if self.plot_feature("distributions"): self.load_distributions()
-
-        # 4. Load the transmission curves
-        if self.plot_feature("transmission"): self.load_transmission_curves()
-
-        # 5. Load the dust cell tree data
-        if self.plot_feature("tree"): self.load_dust_cell_trees()
-
-        # 6. Load the runtimes
-        if self.plot_feature("runtimes"): self.load_runtimes()
-
-        # 7. Load the observed SED
-        if self.plot_feature("sed"): self.load_observed_sed()
-
-        # 8. Load the SEDs of the various models
-        if self.plot_feature("sed"): self.load_model_seds()
-
-        # 9. Load the SEDs for the various contribution
-        if self.plot_feature("sed"): self.load_sed_contributions()
-
-        # 10. Load the simulated images
-        if self.plot_feature("images"): self.load_images()
-
-        # 11. Load the geometries
-        if self.plot_feature("geometries"): self.load_geometries()
+        # Directories for prior and posterior distributions
+        self.plot_fitting_prior_distributions_path = fs.create_directory_in(self.plot_fitting_distributions_path, "prior")
+        self.plot_fitting_posterior_distributions_path = fs.create_directory_in(self.plot_fitting_distributions_path, "posterior")
 
     # -----------------------------------------------------------------
 
@@ -257,6 +231,9 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the distributions ...")
+
         # Load prior distributions
         self.load_prior_distributions()
 
@@ -287,6 +264,9 @@ class FittingPlotter(PlottingComponent, FittingComponent):
             # Loop over the different parameters
             for label in self.free_parameter_labels:
 
+                # Test if the values are not all equal
+                if np.min(parameters_table[label]) == np.max(parameters_table[label]): continue
+
                 # Create a distribution from the list of parameter values
                 distribution = Distribution.from_values(parameters_table[label])
 
@@ -310,6 +290,9 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         # Loop over the different fit parameters
         for parameter_name in self.free_parameter_labels:
+
+            # Check if the posterior distribution has been calculated
+            if not self.has_distribution(parameter_name): continue
 
             # Load and set the distribution
             self.posterior_distributions[parameter_name] = self.get_parameter_distribution(parameter_name)
@@ -411,6 +394,19 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
             # Add the runtime to the list of runtimes
             self.runtimes[host_id][packages, parallelization].append(runtime)
+
+    # -----------------------------------------------------------------
+
+    def load_seds(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        self.load_observed_sed()
+        self.load_model_seds()
+        self.load_sed_contributions()
 
     # -----------------------------------------------------------------
 
@@ -608,62 +604,14 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Loading the geometries ...")
 
-        # Determine the path to the fit/geometries directory
-        geometries_path = fs.join(self.fit_path, "geometries")
-
         # Load all geometries in the directory
-        for path, name in fs.files_in_path(geometries_path, extension="mod", returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.fit_geometries_path, extension="mod", returns=["path", "name"]):
 
             # Load the geometry
-            model = load_model(path)
+            model = load_3d_model(path)
 
             # Add the geometry
             self.geometries[name] = model
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting ...")
-
-        # Plot the progress of the best chi squared value over the course of generations
-        if self.plot_feature("chi squared"): self.plot_chi_squared()
-
-        # Plot the prior and posteriour probability distributions of the parameter values
-        if self.plot_feature("distributions"): self.plot_distributions()
-
-        # Plot the wavelength grid used for the fitting
-        if self.plot_feature("wavelength grids"): self.plot_wavelengths()
-
-        # Plot the dust grid
-        if self.plot_feature("dust grids"): self.plot_dust_grids()
-
-        # Plot the distribution of dust cells for the different tree levels
-        if self.plot_feature("cell distribution"): self.plot_dust_cell_distribution()
-
-        # Plot the distributions of the runtimes on different remote systems
-        if self.plot_feature("runtimes") and self.runtimes is not None: self.plot_runtimes()
-
-        # Plot the SEDs of the models
-        if self.plot_feature("sed") and len(self.seds) > 0: self.plot_model_seds()
-
-        # Plot the SEDs
-        if self.plot_feature("sed") and len(self.sed_contributions) > 0: self.plot_sed_contributions()
-
-        # Plot the images
-        if self.plot_feature("images") and len(self.simulated_images) > 0: self.plot_images()
-
-        # Plot the geometries
-        if self.plot_feature("geometries") and len(self.geometries) > 0: self.plot_geometries()
-
-        # Create the animation
-        #self.create_animation()
 
     # -----------------------------------------------------------------
 
@@ -709,6 +657,36 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Plotting the posterior parameter distributions ...")
 
+        # Loop over the generations
+        for generation_name in self.prior_distributions:
+
+            # Create directory for this generation
+            generation_path = fs.create_directory_in(self.plot_fitting_prior_distributions_path, generation_name)
+
+            # Get the parameter ranges for this generation
+            ranges = self.parameter_ranges_for_generation(generation_name)
+
+            # Loop over the distributions (for the different parameters)
+            for label in self.prior_distributions[generation_name]:
+
+                # Determine the path to the plot files
+                linear_path = fs.join(generation_path, label + "_linear.pdf")
+                log_path = fs.join(generation_path, label + "_log.pdf")
+
+                # Get the limits
+                #limits = [ranges[label].min, ranges[label].max]
+
+                #limits = [np.min()]
+                limits = None
+
+                # Show the limits
+                print(self.prior_distributions[generation_name][label].min_value)
+                print(self.prior_distributions[generation_name][label].max_value)
+
+                # Plot the distributions
+                self.prior_distributions[generation_name][label].plot_smooth(x_limits=limits, title="Prior probability distribution of " + self.parameter_descriptions[label], path=linear_path)
+                self.prior_distributions[generation_name][label].plot_smooth(x_limits=limits, title="Prior probability distribution of " + self.parameter_descriptions[label], path=log_path)
+
     # -----------------------------------------------------------------
 
     def plot_posterior_distributions(self):
@@ -725,17 +703,17 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         for label in self.posterior_distributions:
 
             # Path
-            linear_path = fs.join(self.plot_fitting_distributions_path, "posterior_" + label + "_linear.pdf")
-            log_path = fs.join(self.plot_fitting_distributions_path, "posterior_" + label + "_log.pdf")
-            cumulative_path = fs.join(self.plot_fitting_distributions_path, "posterior_" + label + "_cumulative.pdf")
+            linear_path = fs.join(self.plot_fitting_posterior_distributions_path, label + "_linear.pdf")
+            log_path = fs.join(self.plot_fitting_posterior_distributions_path, label + "_log.pdf")
+            cumulative_path = fs.join(self.plot_fitting_posterior_distributions_path, label + "_cumulative.pdf")
 
             # Get the limits
             x_limits = [self.free_parameter_ranges[label].min, self.free_parameter_ranges[label].max]
 
             # Plot the distributions
-            self.posterior_distributions[label].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn", path=linear_path)
-            self.posterior_distributions[label].plot_smooth(x_limits=x_limits, title="Probability distribution from which FUV luminosities of young stars will be drawn (in log scale)", path=log_path)
-            self.posterior_distributions[label].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of FUV luminosities of young stars", path=cumulative_path)
+            self.posterior_distributions[label].plot_smooth(x_limits=x_limits, title="Posterior probability distribution of " + self.parameter_descriptions[label], path=linear_path)
+            self.posterior_distributions[label].plot_smooth(x_limits=x_limits, title="Posterior probability distribution of " + self.parameter_descriptions[label] + " (in log scale)", path=log_path)
+            self.posterior_distributions[label].plot_cumulative_smooth(x_limits=x_limits, title="Cumulative distribution of " + self.parameter_descriptions[label], path=cumulative_path)
 
     # -----------------------------------------------------------------
 
@@ -924,6 +902,18 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def plot_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.plot_model_seds()
+        self.plot_sed_contributions()
+
+    # -----------------------------------------------------------------
+
     def plot_model_seds(self):
 
         """
@@ -1089,5 +1079,36 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         # Save the animation as a GIF file
         self.animation.save(path)
+
+    # -----------------------------------------------------------------
+
+    # Set the load functions
+    load_functions["wavelength grids"] = load_wavelength_grids
+    load_functions["distributions"] = load_distributions
+    load_functions["transmission"] = load_transmission_curves
+    load_functions["tree"] = load_dust_cell_trees
+    load_functions["runtimes"] = load_runtimes
+    load_functions["seds"] = load_seds
+    load_functions["images"] = load_images
+    load_functions["geometries"] = load_geometries
+
+    # -----------------------------------------------------------------
+
+    # Set the plot functions
+    plot_functions["chi-squared"] = plot_chi_squared
+    plot_functions["distributions"] = plot_distributions
+    plot_functions["wavelength grids"] = plot_wavelengths
+    plot_functions["dust grids"] = plot_dust_grids
+    plot_functions["cell distribution"] = plot_dust_cell_distribution
+    #if self.plot_feature("runtimes") and self.runtimes is not None: self.plot_runtimes()
+    #if self.plot_feature("sed") and len(self.seds) > 0: self.plot_model_seds()
+    #if self.plot_feature("sed") and len(self.sed_contributions) > 0: self.plot_sed_contributions()
+    #if self.plot_feature("images") and len(self.simulated_images) > 0: self.plot_images()
+    #if self.plot_feature("geometries") and len(self.geometries) > 0: self.plot_geometries()
+    plot_functions["runtimes"] = plot_runtimes
+    plot_functions["seds"] = plot_seds
+    plot_functions["images"] = plot_images
+    plot_functions["geometries"] = plot_geometries
+    plot_functions["animation"] = create_animation
 
 # -----------------------------------------------------------------

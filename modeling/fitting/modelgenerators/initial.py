@@ -61,8 +61,11 @@ class InitialModelGenerator(ModelGenerator):
         # Set genome options
         genome.setParams(minima=self.parameter_minima, maxima=self.parameter_maxima, bestrawscore=0.00, rounddecimal=2)
         genome.initializator.set(initializators.HeterogeneousListInitializerReal)
-        # genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
-        genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
+        genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
+
+        # If gaussian is used
+        #genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
+        #genome.setParams(centers=centers, sigmas=sigmas) # means is a list with the centers of the gaussian function [for each parameter], sigmas is a list with the standard deviations [for each parameter]
 
         # Create the genetic algorithm engine
         self.engine = GAEngine(genome)

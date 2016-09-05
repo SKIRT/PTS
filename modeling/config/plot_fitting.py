@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.plotting.fitting import features
+from pts.modeling.plotting.fitting import FittingPlotter
 
 # -----------------------------------------------------------------
 
@@ -15,6 +15,6 @@ from pts.modeling.plotting.fitting import features
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add settings
-definition.add_positional_optional("features", "string_list", "features to be plotted", choices=features)
+definition.add_positional_optional("features", "string_list", "features to be plotted", choices=FittingPlotter.features())
 
 # -----------------------------------------------------------------

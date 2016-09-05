@@ -18,6 +18,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ...core.tools import tables
+from ...core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -220,6 +221,38 @@ class GenerationsTable(SmartTable):
 
         # Return the list of finished generations
         return names
+
+    # -----------------------------------------------------------------
+
+    def parameter_ranges_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Find the row index of the specified generation
+        index = tables.find_index(self, generation_name, "Generation name")
+
+        # Create a dictionary to contain the ranges
+        ranges = dict()
+
+        # Loop over the parameter labels
+        for label in self.parameter_labels:
+
+            # Get the minimum and maximum value
+            min_value = self["Minimum value for " + label][index]
+            max_value = self["Maximum value for " + label][index]
+
+            # Create the range
+            range = RealRange(min_value, max_value)
+
+            # Add the range to the dictionary
+            ranges[label] = range
+
+        # Return the ranges dictionary
+        return ranges
 
     # -----------------------------------------------------------------
 

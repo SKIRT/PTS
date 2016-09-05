@@ -624,6 +624,8 @@ class PhotoMeter(PhotometryComponent):
         config_dict["debug_plotting"]["nans"] = False
         config_dict["debug_plotting"]["annulus_nans"] = True
 
+        config_dict["method"] = self.config.noise_method
+
         # Configuration setter
         command_name = "calculate_aperture_noise"
         description = "calculate aperture noise"

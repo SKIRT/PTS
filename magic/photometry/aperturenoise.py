@@ -161,6 +161,9 @@ class ApertureNoiseCalculator(Configurable):
         self.extrapolation_calculator.config.debug_plotting = self.config.debug_plotting
         self.extrapolation_calculator.config.plot_path = self.config.plot_path
 
+        self.exact_calculator.config.method = self.config.method # pts or caapr
+        self.extrapolation_calculator.config.method = self.config.method # pts or caapr
+
     # -----------------------------------------------------------------
 
     def try_exact(self):
@@ -611,12 +614,18 @@ class ExactApertureNoiseCalculator(Configurable):
         # Flag mask
         self.flag_mask = np.zeros(self.cutout.shape)
 
-        # Chris' method
-        # sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask
-        self.generate_apertures_caapr(adj_semimin_pix, adj_semimin_pix_full, cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask, ap_area)
+        if self.config.method == "caapr":
 
-        # PTS method
-        #self.generate_apertures_pts(total_mask, pixel_area, sky_ap_rad_pix, max_number_of_sky_apertures)
+            # Chris' method
+            # sky_gen_max, adj_semimin_pix, adj_semimin_pix_full, cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask
+            self.generate_apertures_caapr(adj_semimin_pix, adj_semimin_pix_full, cutout_inviolate, sky_border, sky_ap_rad_pix, exclude_mask, ap_area)
+
+        elif self.config.method == "pts":
+
+            # PTS method
+            self.generate_apertures_pts(total_mask, pixel_area, sky_ap_rad_pix, max_number_of_sky_apertures)
+
+        else: raise ValueError("Invalid method (must be 'caapr' or 'pts')")
 
         # Writing
         self.write()
@@ -1532,6 +1541,8 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
                 mini_plot_path = fs.join(self.config.plot_path, "mini_" + str(mini_ap_rad_pix))
                 fs.create_directory(mini_plot_path)
                 mini_calculator.config.plot_path = mini_plot_path
+
+            mini_calculator.config.method = self.config.method # pts or caapr
 
             input_dict_radius = dict()
             input_dict_radius["cutout"] = self.cutout.copy()

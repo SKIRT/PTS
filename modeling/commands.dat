@@ -33,5 +33,5 @@ plot_decomposition | plot | plotting.decomposition.DecompositionPlotter | argume
 plot_truncation | plot | plotting.truncation.TruncationPlotter | arguments | Make plots of the truncation step
 plot_photometry | plot | plotting.photometry.PhotometryPlotter | arguments | Make plots of the photometry step
 plot_maps | plot | plotting.maps.MapsPlotter | arguments | Make plots of the map making step
-plot_fit | plot | plotting.fitting.FittingPlotter | interactive | Make plots of the fitting step
+plot_fitting | plot_fitting | plotting.fitting.FittingPlotter | interactive | Make plots of the fitting step
 plot_analysis | plot | plotting.analysis.AnalysisPlotter | arguments | Make plots of the analysis step
