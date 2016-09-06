@@ -63,6 +63,9 @@ class FittingComponent(ModelingComponent):
         # The path to the template ski file
         self.template_ski_path = None
 
+        # The path to the fixed parameter values file
+        self.fixed_parameters_path = None
+
         # The path to the fit/evolution directory
         self.fit_generations_path = None
 
@@ -133,6 +136,9 @@ class FittingComponent(ModelingComponent):
 
         # Set the path to the template ski file
         self.template_ski_path = fs.join(self.fit_path, "template.ski")
+
+        # Set the path to the fixed parameters file
+        self.fixed_parameters_path = fs.join(self.fit_path, "fixed.dat")
 
         # Set the path to the fit/generations directory
         self.fit_generations_path = fs.create_directory_in(self.fit_path, "generations")
@@ -413,6 +419,25 @@ class FittingComponent(ModelingComponent):
 
         # Return the dictionary of the values for the free parameters
         return parameter_values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fixed_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ...core.basics.configuration import load_mapping
+        from ...core.basics.map import Map
+
+        parameters = Map()
+        with open(self.fixed_parameters_path) as f: load_mapping(f, parameters)
+
+        # Return the parameters map
+        return parameters
 
     # -----------------------------------------------------------------
 

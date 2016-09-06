@@ -33,6 +33,8 @@ from .wavelengthgrids import WavelengthGridGenerator
 from .dustgrids import DustGridGenerator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ..basics.models import DeprojectionModel3D
+from ...core.basics.configuration import write_mapping
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -78,6 +80,9 @@ class FittingInitializer(FittingComponent):
         # The wavelength grid and dust grid generators
         self.wg_generator = None
         self.dg_generator = None
+
+        # The fixed parameters map
+        self.fixed = Map()
 
     # -----------------------------------------------------------------
 
@@ -175,6 +180,12 @@ class FittingInitializer(FittingComponent):
         distance = self.galaxy_properties.distance
         inclination = self.galaxy_properties.inclination
         pa = self.earth_projection.position_angle
+
+        ## NEW: SET FIXED PARAMETERS
+        self.fixed["distance"] = distance
+        self.fixed["inclination"] = inclination
+        self.fixed["position_angle"] = pa
+        ##
 
         # Get the center pixel
         pixel_center = self.galaxy_properties.center.to_pixel(self.reference_wcs)
@@ -392,6 +403,12 @@ class FittingInitializer(FittingComponent):
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
 
+        ## NEW: SET FIXED PARAMETERS
+        self.fixed["metallicity"] = disk_metallicity
+        self.fixed["old_scaleheight"] = scale_height
+        self.fixed["i1_old"] = luminosity
+        ##
+
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_i1).value
 
@@ -438,6 +455,10 @@ class FittingInitializer(FittingComponent):
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
+        ## NEW: SET FIXED PARAMETERS
+        self.fixed["young_scaleheight"] = scale_height
+        ##
+
         # Set the parameters of the young stellar component
         deprojection = self.deprojection.copy()
         deprojection.filename = "young_stars.fits"
@@ -476,6 +497,13 @@ class FittingInitializer(FittingComponent):
         # Get the scale height
         #scale_height = 150 * Unit("pc") # first models
         scale_height = 100. * Unit("pc") # M51
+
+        ## NEW: SET FIXED PARAMETERS
+        self.fixed["ionizing_scaleheight"] = scale_height
+        self.fixed["sfr_compactness"] = ionizing_compactness
+        self.fixed["sfr_covering"] = ionizing_covering_factor
+        self.fixed["sfr_pressure"] = ionizing_pressure
+        ##
 
         # Convert the SFR into a FUV luminosity
         sfr = 0.8 # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
@@ -520,6 +548,10 @@ class FittingInitializer(FittingComponent):
         hydrocarbon_pops = 25
         enstatite_pops = 25
         forsterite_pops = 25
+
+        ## NEW: SET FIXED PARAMETERS
+        self.fixed["dust_scaleheight"] = scale_height
+        ##
 
         # Set the parameters of the dust component
         deprojection = self.deprojection.copy()
@@ -621,16 +653,19 @@ class FittingInitializer(FittingComponent):
         # 2. Write the ski file
         self.write_ski()
 
-        # 3. Write the weights table
+        # 3. Write the fixed parameters
+        self.write_fixed()
+
+        # 4. Write the weights table
         self.write_weights()
 
-        # 4. Write the deprojection models
+        # 5. Write the deprojection models
         self.write_deprojection_models()
 
-        # 5. Write the wavelength grids
+        # 6. Write the wavelength grids
         self.write_wavelength_grids()
 
-        # Write the dust grids
+        # 7. Write the dust grids
         self.write_dust_grids()
 
     # -----------------------------------------------------------------
@@ -668,6 +703,21 @@ class FittingInitializer(FittingComponent):
 
         # Save the ski template file
         self.ski_template.save()
+
+    # -----------------------------------------------------------------
+
+    def write_fixed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the fixed parameter values to " + self.fixed_parameters_path + " ...")
+
+        # Write the fixed parameters map
+        with open(self.fixed_parameters_path, 'w') as f: write_mapping(f, self.fixed)
 
     # -----------------------------------------------------------------
 
