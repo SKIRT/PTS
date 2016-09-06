@@ -19,6 +19,10 @@ from ....core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+contributions = ["total", "old", "young", "ionizing", "unevolved"]
+
+# -----------------------------------------------------------------
+
 class DustHeatingAnalysisComponent(AnalysisComponent):
     
     """
@@ -41,7 +45,31 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    @property
+    def cell_heating_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.heating_path, "cell")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projected_heating_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.heating_path, "projected")
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -49,7 +77,7 @@ class DustHeatingAnalysisComponent(AnalysisComponent):
         """
 
         # Call the setup function of the base class
-        super(DustHeatingAnalysisComponent, self).setup()
+        super(DustHeatingAnalysisComponent, self).setup(**kwargs)
 
         # Load the analysis run
         self.load_run()

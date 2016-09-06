@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from .component import DustHeatingAnalysisComponent
+from .component import DustHeatingAnalysisComponent, contributions
 from ....core.tools import filesystem as fs
 from ....core.launch.batchlauncher import BatchLauncher
 from ....core.simulation.definition import SingleSimulationDefinition
@@ -30,7 +30,6 @@ from ....core.launch.options import SchedulingOptions
 
 # -----------------------------------------------------------------
 
-contributions = ["total", "old", "young", "ionizing", "unevolved"]
 component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
                     "young": "Young stars",
                     "ionizing": "Ionizing stars",

@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import rpy2.robjects as ro
 
 # Import the relevant PTS classes and modules
-from .component import DustHeatingAnalysisComponent
+from .component import DustHeatingAnalysisComponent, contributions
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ....core.tools import tables, introspection
@@ -48,6 +48,8 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
         # -- Attributes --
 
+        self.total_output_path = None
+
         # The wavelength grid used for the simulations
         self.wavelength_grid = None
 
@@ -74,7 +76,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -82,7 +84,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the wavelength grid
         self.load_wavelength_grid()
@@ -110,7 +112,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -118,7 +120,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         """
 
         # Call the setup function of the base class
-        super(CellDustHeatingAnalyser, self).setup()
+        super(CellDustHeatingAnalyser, self).setup(**kwargs)
+
+        # Determine the output path for the 'total' simulation
+        self.total_output_path = self.analysis_run.heating_output_path_for_contribution("total")
 
     # -----------------------------------------------------------------
 
@@ -133,7 +138,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the wavelength grid file produced by SKIRT ...")
 
         # Determine the path to the wavelength grid file in heating/total
-        wavelengths_path = fs.join(self.output_paths["total"], self.galaxy_name + "_wavelengths.dat")
+        wavelengths_path = fs.join(self.total_output_path, self.galaxy_name + "_wavelengths.dat")
 
         # Load the wavelength grid as a table
         self.wavelength_grid = WavelengthGrid.from_skirt_output(wavelengths_path)
@@ -161,7 +166,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # column 4: optical depth
 
         # Determine the path to the cell properties file in heating/total
-        properties_path = fs.join(self.output_paths["total"], self.galaxy_name + "_ds_cellprops.dat")
+        properties_path = fs.join(self.total_output_path, self.galaxy_name + "_ds_cellprops.dat")
 
         # Load the properties table
         self.cell_properties = SkirtTable.from_file(properties_path)
@@ -188,7 +193,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         contribution_tables = dict()
 
         # Loop over the different contributions
-        for contribution in self.contributions:
+        for contribution in contributions:
 
             # Skip the simulation of the total unevolved (young + ionizing) stellar population
             if contribution == "unevolved": continue
@@ -197,7 +202,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
             log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
 
             # Determine the path to the output directory of the simulation
-            output_path = self.output_paths[contribution]
+            output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
 
             # Determine the path to the absorption data file
             absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
@@ -392,7 +397,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Writing the distribution of heating fractions of the unevolved stellar population ...")
 
         # Determine the path to the distribution file
-        path = fs.join(self.analysis_heating_path, "distribution.dat")
+        path = fs.join(self.cell_heating_path, "distribution.dat")
 
         # Save the distribution
         self.distribution.save(path)
@@ -410,7 +415,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Writing the radial distribution of heating fractions of the unevolved stellar population ...")
 
         # Determine the path to the radial distribution file
-        path = fs.join(self.analysis_heating_path, "radial_distribution.dat")
+        path = fs.join(self.cell_heating_path, "radial_distribution.dat")
 
         # Save the radial distribution
         self.radial_distribution.save(path)
@@ -449,7 +454,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting a histogram of the distribution of heating fractions of the unevolved stellar population ...")
 
         # Determine the path to the plot file
-        path = fs.join(self.analysis_heating_path, "distribution.pdf")
+        path = fs.join(self.cell_heating_path, "distribution.pdf")
 
         # Create the plot file
         self.distribution.plot(title="Distribution of the heating fraction of the unevolved stellar population", path=path)
@@ -467,7 +472,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting a 2D histogram of the radial distribution of the heating fractions of the unevolved stellar population ...")
 
         # Determine the path to the plot file
-        path = fs.join(self.analysis_heating_path, "radial_distribution.pdf")
+        path = fs.join(self.cell_heating_path, "radial_distribution.pdf")
 
         # Create the plot file
         self.radial_distribution.plot(title="Radial distribution of the heating fraction of the unevolved stellar population", path=path)
@@ -485,7 +490,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting a map of the heating fraction of the unevolved stellar population for a face-on view of the galaxy ...")
 
         # Determine the path to the plot file
-        path = fs.join(self.analysis_heating_path, "map.pdf")
+        path = fs.join(self.cell_heating_path, "map.pdf")
 
         plt.figure()
 
@@ -542,13 +547,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         data = dict()
 
         # Loop over the different contributions
-        for contribution in self.contributions:
+        for contribution in contributions:
 
             # Debugging
             log.debug("Loading the SKIRT absorption table for the simulation of the " + contribution + " stellar population ...")
 
             # Determine the path to the output directory of the simulation
-            output_path = self.output_paths[contribution]
+            output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
 
             # Determine the path to the absorption data file
             absorption_path = fs.join(output_path, self.galaxy_name + "_ds_abs.dat")
@@ -565,7 +570,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Merging the individual absorption tables into one (this can take a while) ...")
 
         current_rows = dict()
-        for contribution in self.contributions: current_rows[contribution] = 0
+        for contribution in contributions: current_rows[contribution] = 0
 
         x_column = []
         y_column = []
@@ -585,7 +590,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
             abs = dict()
 
             # Loop over the absorption tables of the different contributions, find the cell index
-            for contribution in self.contributions:
+            for contribution in contributions:
 
                 table = data[contribution]
                 current_row = current_rows[contribution]
@@ -605,13 +610,13 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
             y_column.append(y)
             z_column.append(z)
 
-            for contribution in self.contributions:
+            for contribution in contributions:
                 abs_columns[contribution].append(abs[contribution] if contribution in abs else None)
 
         # Initialize the column data and names
         data = [x_column, y_column, z_column]
         names = ["X coordinate", "Y coordinate", "Z coordinate"]
-        for contribution in self.contributions:
+        for contribution in contributions:
             data.append(abs_columns[contribution])
             names.append("Absorption for " + contribution + " stellar population")
 
@@ -627,11 +632,11 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        properties_path = fs.join(self.output_paths["total"], self.galaxy_name + "_ds_cellprops.dat")
-        tot_path = fs.join(self.output_paths["total"], self.galaxy_name + "_ds_abs.dat")
-        old_path = fs.join(self.output_paths["old"], self.galaxy_name + "_ds_abs.dat")
-        young_path = fs.join(self.output_paths["young"], self.galaxy_name + "_ds_abs.dat")
-        ionizing_path = fs.join(self.output_paths["ionizing"], self.galaxy_name + "_ds_abs.dat")
+        properties_path = fs.join(self.analysis_run.heating_output_path_for_contribution("total"), self.galaxy_name + "_ds_cellprops.dat")
+        tot_path = fs.join(self.analysis_run.heating_output_path_for_contribution("total"), self.galaxy_name + "_ds_abs.dat")
+        old_path = fs.join(self.analysis_run.heating_output_path_for_contribution("old"), self.galaxy_name + "_ds_abs.dat")
+        young_path = fs.join(self.analysis_run.heating_output_path_for_contribution("young"), self.galaxy_name + "_ds_abs.dat")
+        ionizing_path = fs.join(self.analysis_run.heating_output_path_for_contribution("ionizing"), self.galaxy_name + "_ds_abs.dat")
         self.merge_in_r(properties_path, tot_path, old_path, young_path, ionizing_path)
 
     # -----------------------------------------------------------------
@@ -643,7 +648,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         :return:
         """
 
-        temp_path = fs.join(self.analysis_heating_path, "abs_temp.dat")
+        temp_path = fs.join(self.cell_heating_path, "abs_temp.dat")
 
         # Define the lines that have to be executed by R to merge the absorption data
         lines = []
@@ -722,10 +727,10 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         for i in range(4, 4 + self.number_of_wavelengths): column_indices.append(i)
 
         # Loop over the different contributions
-        for contribution in self.contributions:
+        for contribution in contributions:
 
             # Determine the path to the output directory of the simulation
-            output_path = self.output_paths[contribution]
+            output_path = self.analysis_run.heating_output_path_for_contribution(contribution)
 
             # Determine the path to the ISFR data file
             isrf_path = fs.join(output_path, self.galaxy_name + "_ds_isrf.dat")

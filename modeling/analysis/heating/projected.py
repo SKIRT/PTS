@@ -20,10 +20,10 @@ import matplotlib.pyplot as plt
 from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
-from ....core.tools import tables, introspection
+from ....core.tools import tables
 from ...core.sed import SED
 from ....core.simulation.wavelengthgrid import WavelengthGrid
-from ....magic.core.image import Image
+from ....magic.core.datacube import DataCube
 from ....magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
@@ -46,6 +46,8 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         super(ProjectedDustHeatingAnalyser, self).__init__(config)
 
         # -- Attributes --
+
+        self.total_output_path = None
 
         # The wavelength grid used for the simulations
         self.wavelength_grid = None
@@ -117,6 +119,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Call the setup function of the base class
         super(ProjectedDustHeatingAnalyser, self).setup()
 
+        # Determine the output path for the 'total' simulation
+        self.total_output_path = self.analysis_run.heating_output_path_for_contribution("total")
+
     # -----------------------------------------------------------------
 
     def load_wavelength_grid(self):
@@ -130,7 +135,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the wavelength grid file produced by SKIRT ...")
 
         # Determine the path to the wavelength grid file in heating/total
-        wavelengths_path = fs.join(self.output_paths["total"], self.galaxy_name + "_wavelengths.dat")
+        wavelengths_path = fs.join(self.total_output_path, self.galaxy_name + "_wavelengths.dat")
 
         # Load the wavelength grid as a table
         self.wavelength_grid = WavelengthGrid.from_skirt_output(wavelengths_path)
@@ -172,7 +177,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the SED of the simulation with the total stellar population ...")
 
         # Determine the path to the SED file
-        path = fs.join(self.output_paths["total"], self.galaxy_name + "_earth_sed.dat")
+        path = fs.join(self.total_output_path, self.galaxy_name + "_earth_sed.dat")
 
         # Load the SED
         self.total_sed = SED.from_skirt(path)
@@ -190,7 +195,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the SED of the simulation with the evolved stellar population ...")
 
         # Determine the path to the SED file
-        path = fs.join(self.output_paths["old"], self.galaxy_name + "_earth_sed.dat")
+        path = fs.join(self.analysis_run.heating_output_path_for_contribution("old"), self.galaxy_name + "_earth_sed.dat")
 
         # Load the SED
         self.evolved_sed = SED.from_skirt(path)
@@ -208,7 +213,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the SED of the simulation with the unevolved stellar populations ...")
 
         # Determine the path to the SED file
-        path = fs.join(self.output_paths["unevolved"], self.galaxy_name + "_earth_sed.dat")
+        path = fs.join(self.analysis_run.heating_output_path_for_contribution("unevolved"), self.galaxy_name + "_earth_sed.dat")
 
         # Load the SED
         self.unevolved_sed = SED.from_skirt(path)
@@ -225,11 +230,13 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         # Inform the user
         log.info("Loading the simulated datacubes ...")
 
-        #
+        # Load total datacube
         self.load_total_datacube()
 
+        # Load evolved datacube
         self.load_evolved_datacube()
 
+        # Load unevolved datacube
         self.load_unevolved_datacube()
 
     # -----------------------------------------------------------------
@@ -245,10 +252,10 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the datacube of the simulation with the total stellar population ...")
 
         # Determine the path to the datacube
-        path = fs.join(self.output_paths["total"], self.galaxy_name + "_earth_total.fits")
+        path = fs.join(self.total_output_path, self.galaxy_name + "_earth_total.fits")
 
         # Load the datacube
-        self.total_datacube = Image.from_file(path)
+        self.total_datacube = DataCube.from_file(path, self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -263,10 +270,10 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the datacube of the simulation with the evolved stellar population ...")
 
         # Determine the path to the datacube
-        path = fs.join(self.output_paths["evolved"], self.galaxy_name + "_earth_total.fits")
+        path = fs.join(self.analysis_run.heating_output_path_for_contribution("evolved"), self.galaxy_name + "_earth_total.fits")
 
         # Load the datacube
-        self.evolved_datacube = Image.from_file(path)
+        self.evolved_datacube = DataCube.from_file(path, self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -281,10 +288,10 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Loading the datacube of the simulation with the unevolved stellar populations ...")
 
         # Determine the path to the datacube
-        path = fs.join(self.output_paths["unevolved"], self.galaxy_name + "_earth_total.fits")
+        path = fs.join(self.analysis_run.heating_output_path_for_contribution("unevolved"), self.galaxy_name + "_earth_total.fits")
 
         # Load the datacube
-        self.unevolved_datacube = Image.from_file(path)
+        self.unevolved_datacube = DataCube.from_file(path, self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -476,7 +483,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Writing a table with the flux fractions at different wavelengths ...")
 
         # Determine the path to the table of the flux fractions
-        path = fs.join(self.analysis_heating_path, "fractions.dat")
+        path = fs.join(self.projected_heating_path, "fractions.dat")
 
         # Write the table
         tables.write(self.fractions, path, format="ascii.ecsv")
@@ -494,19 +501,19 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Writing the TIR maps ...")
 
         # Determine the path to the total TIR map
-        path = fs.join(self.analysis_heating_path, "tir_total.fits")
+        path = fs.join(self.projected_heating_path, "tir_total.fits")
 
         # Write the total TIR map
         self.total_tir_map.save(path)
 
         # Determine the path to the unevolved TIR map
-        path = fs.join(self.analysis_heating_path, "tir_unevolved.fits")
+        path = fs.join(self.projected_heating_path, "tir_unevolved.fits")
 
         # Write the unevolved TIR map
         self.unevolved_tir_map.save(path)
 
         # Determine the path to the evolved TIR map
-        path = fs.join(self.analysis_heating_path, "tir_evolved.fits")
+        path = fs.join(self.projected_heating_path, "tir_evolved.fits")
 
         # Write the evolved TIR map
         self.evolved_tir_map.save(path)
@@ -542,7 +549,7 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         log.info("Plotting the flux fractions as a function of wavelength ...")
 
         # Determine the path to the plot file
-        path = fs.join(self.analysis_heating_path, "fractions.pdf")
+        path = fs.join(self.projected_heating_path, "fractions.pdf")
 
         # Create the figure
         plt.figure(figsize=(7, 5))
