@@ -12,11 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
+from ..core.mappings import Mappings
 
 # -----------------------------------------------------------------
 
@@ -48,5 +46,29 @@ class Model(object):
         """
 
         return self.parameter_values.keys() if self.parameter_values is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mappings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the relevant parameters
+        metallicity = self.parameter_values["metallicity"]
+        compactness = self.parameter_values["sfr_compactness"]
+        pressure = self.parameter_values["sfr_pressure"]
+        covering_factor = self.parameter_values["sfr_covering"]
+        #sfr = self.parameter_values[""] # has to be derived from the MAPPINGS SED from the FUV luminosity
+        sfr = 1.
+
+        # Create the MAPPINGS template
+        mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
+
+        # Return the mappings template
+        return mappings
 
 # -----------------------------------------------------------------

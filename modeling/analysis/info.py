@@ -35,6 +35,7 @@ class AnalysisRunInfo(object):
         self.generation_name = None
         self.simulation_name = None
         self.parameter_values = None
+        self.chi_squared = None
 
     # -----------------------------------------------------------------
 
@@ -56,6 +57,7 @@ class AnalysisRunInfo(object):
         info.generation_name = map.generation_name
         info.simulation_name = map.simulation_name
         info.parameter_values = map.parameter_values
+        info.chi_squared = map.chi_squared
 
         # Return the info
         return info
@@ -76,6 +78,7 @@ class AnalysisRunInfo(object):
         map.generation_name = self.generation_name
         map.simulation_name = self.simulation_name
         map.parameter_valus = self.parameter_values
+        map.chi_squared = self.chi_squared
         with open(path, 'w') as infofile: write_mapping(infofile, map)
 
 # -----------------------------------------------------------------

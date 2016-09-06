@@ -943,7 +943,9 @@ class SkirtRemote(Remote):
             output = self.execute("tail -2 " + file_path)
 
             # Get the last line of the actual simulation
-            if " Available memory: " in output[1]: last = output[0]
+            if len(output) == 0: return "invalid: cannot read log file"
+            elif len(output) == 1: last = output[0]
+            elif " Available memory: " in output[1]: last = output[0]
             else: last = output[1]
 
             # Interpret the content of the last line
@@ -982,7 +984,9 @@ class SkirtRemote(Remote):
             output = self.execute("tail -2 " + file_path)
 
             # Get the last line of the actual simulation
-            if " Available memory: " in output[1]: last = output[0]
+            if len(output) == 0: return "invalid: cannot read log file"
+            if len(output) == 1: last = output[0]
+            elif " Available memory: " in output[1]: last = output[0]
             else: last = output[1]
 
             # Interpret the content of the last line

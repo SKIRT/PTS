@@ -39,6 +39,14 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
     This class...
     """
 
+    # The load functions
+    load_functions = dict()
+
+    # The plot functions
+    plot_functions = dict()
+
+    # -----------------------------------------------------------------
+
     def __init__(self, config=None):
 
         """
@@ -47,10 +55,9 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
         :return:
         """
 
-        # Call the constructor of the base class
-        #super(AnalysisPlotter, self).__init__(config) # not sure this works
+        # Call the constructors of the base classes
         PlottingComponent.__init__(self, config)
-        AnalysisComponent.__init__(self)
+        AnalysisComponent.__init__(self, config)
 
         # -- Attributes --
 
@@ -74,7 +81,7 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, features=None):
+    def run(self):
 
         """
         This function ...

@@ -30,6 +30,14 @@ class DataPlotter(PlottingComponent, DataComponent):
     This class...
     """
 
+    # The load functions
+    load_functions = dict()
+
+    # The plot functions
+    plot_functions = dict()
+
+    # -----------------------------------------------------------------
+
     def __init__(self, config=None):
 
         """
@@ -38,10 +46,9 @@ class DataPlotter(PlottingComponent, DataComponent):
         :return:
         """
 
-        # Call the constructor of the base class
-        #super(DataPlotter, self).__init__(config)  # not sure this works
+        # Call the constructors of the base classes
         PlottingComponent.__init__(self, config)
-        DataComponent.__init__(self)
+        DataComponent.__init__(self, config)
 
         # -- Attributes --
 
@@ -53,7 +60,7 @@ class DataPlotter(PlottingComponent, DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, features=None):
+    def run(self):
 
         """
         This function ...

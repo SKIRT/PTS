@@ -200,6 +200,24 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize
+        fltrs = dict()
+
+        # Loop over the images
+        for name in self.paths: fltrs[name] = self.get_frame(name, masked=False).filter
+
+        # Return the dictionary with the filters
+        return fltrs
+
+    # -----------------------------------------------------------------
+
     def get_filter(self, name):
 
         """
@@ -252,6 +270,34 @@ class DataSet(object):
 
         # Return the frame
         return frame
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, fltr, masked=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param masked:
+        :return:
+        """
+
+        filter_string = str(fltr)
+
+        # Get the dictionary of filters
+        fltrs = self.get_filters()
+
+        # Loop over the filters dictionary
+        for name in fltrs:
+
+            # Get the frame
+            frame = self.get_frame(name, masked=masked)
+
+            # Check the filter
+            if str(frame.filter) == filter_string: return frame
+
+        # No frame found
+        return None
 
     # -----------------------------------------------------------------
 

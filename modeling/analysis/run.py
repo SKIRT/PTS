@@ -12,10 +12,14 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .info import AnalysisRunInfo
-from ...core.simulation.skifile import SkiFile
+from ...core.simulation.skifile import LabeledSkiFile
+from ..core.model import Model
 
 # -----------------------------------------------------------------
 
@@ -272,7 +276,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.analysis_run_path, )
+        return fs.join(self.analysis_run_path, self.galaxy_name + ".ski")
 
     # -----------------------------------------------------------------
 
@@ -284,7 +288,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return SkiFile(self.ski_file_path)
+        return LabeledSkiFile(self.ski_file_path)
 
     # -----------------------------------------------------------------
 
@@ -321,5 +325,81 @@ class AnalysisRun(object):
         """
 
         return fs.join(self.path, "instruments")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.generation_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.simulation_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the ski file
+        ski = self.ski_file
+
+        # Get the values of all the labeled parameters
+        values = ski.get_labeled_values()
+
+        # Return the parameter values
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.chi_squared
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the model
+        model = Model()
+
+        # Set attributes
+        model.simulation_name = self.simulation_name
+        model.chi_squared = self.chi_squared
+        model.parameter_values = self.parameter_values # set the parameter values
+
+        # Return the model
+        return model
 
 # -----------------------------------------------------------------

@@ -49,6 +49,44 @@ class PlottingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def features(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return cls.plot_functions.keys()
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # Check which features should be plotted
+        if self.config.features is None: features_to_plot = self.features()
+        else: features_to_plot = self.config.features
+
+        # Plot the features
+        for feature in features_to_plot:
+
+            # Call the load function (if necessary)
+            if feature in self.load_functions: self.load_functions[feature](self)
+
+            # Call the plot function
+            self.plot_functions[feature](self)
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """

@@ -64,9 +64,6 @@ class BestModelLauncher(FittingComponent):
         # The ski files for simulating the contributions of the various stellar components
         self.ski_contributions = dict()
 
-        # The ski file for generating simulated images for the total model
-        self.ski_total = None
-
         # The paths to the ski files
         self.ski_paths = dict()
 
@@ -441,10 +438,10 @@ class BestModelLauncher(FittingComponent):
                 log.debug("Adjusting ski file for generating simulated images ...")
 
                 # Remove all instruments
-                self.ski_total.remove_all_instruments()
+                ski.remove_all_instruments()
 
                 # Add the simple instrument
-                self.ski_total.add_instrument("earth", self.simple_instrument)
+                ski.add_instrument("earth", self.simple_instrument)
 
             # Remove other stellar components
             else:
@@ -557,8 +554,8 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Writing the wavelength grid ...")
 
-        # Write the wavelength grid
-        self.wavelength_grid.save(self.wavelength_grid_path)
+        # Write the wavelength grid for SKIRT input
+        self.wavelength_grid.to_skirt_input(self.wavelength_grid_path)
 
     # -----------------------------------------------------------------
 

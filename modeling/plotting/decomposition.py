@@ -28,6 +28,14 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
     This class...
     """
 
+    # The load functions
+    load_functions = dict()
+
+    # The plot functions
+    plot_functions = dict()
+
+    # -----------------------------------------------------------------
+
     def __init__(self, config=None):
 
         """
@@ -36,8 +44,7 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
         :return:
         """
 
-        # Call the constructor of the base class
-        #super(DecompositionPlotter, self).__init__(config) # not sure this works
+        # Call the constructors of the base classes
         PlottingComponent.__init__(self, config)
         DecompositionComponent.__init__(self)
 
@@ -50,7 +57,7 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, features=None):
+    def run(self):
 
         """
         This function ...

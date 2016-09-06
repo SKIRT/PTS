@@ -28,6 +28,14 @@ class PhotometryPlotter(PlottingComponent, PhotometryComponent):
     This class...
     """
 
+    # The load functions
+    load_functions = dict()
+
+    # The plot functions
+    plot_functions = dict()
+
+    # -----------------------------------------------------------------
+
     def __init__(self, config=None):
 
         """

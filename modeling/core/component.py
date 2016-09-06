@@ -17,6 +17,7 @@ from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -732,6 +733,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def truncation_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse.bounding_box
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def reference_filter(self):
 
         """
@@ -1177,6 +1190,18 @@ class ModelingComponent(Configurable):
         """
 
         return Filter.from_string("Pacs 160")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def v_band_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.55 * Unit("micron")
 
 # -----------------------------------------------------------------
 

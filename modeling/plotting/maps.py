@@ -28,6 +28,14 @@ class MapsPlotter(PlottingComponent, MapsComponent):
     This class...
     """
 
+    # The load functions
+    load_functions = dict()
+
+    # The plot functions
+    plot_functions = dict()
+
+    # -----------------------------------------------------------------
+
     def __init__(self, config=None):
 
         """
@@ -36,8 +44,7 @@ class MapsPlotter(PlottingComponent, MapsComponent):
         :return:
         """
 
-        # Call the constructor of the base class
-        #super(MapsPlotter, self).__init__(config) # not sure this works
+        # Call the constructors of the base classes
         PlottingComponent.__init__(self, config)
         MapsComponent.__init__(self)
 
@@ -48,7 +55,7 @@ class MapsPlotter(PlottingComponent, MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, features=None):
+    def run(self):
 
         """
         This function ...

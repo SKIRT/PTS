@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
+from ....core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -37,14 +38,44 @@ class ColourAnalysisComponent(AnalysisComponent):
 
         # -- Attributes --
 
-        # The path to the colours/observed directory
-        self.colours_observed_path = None
+        # The analysis run
+        self.analysis_run = None
 
-        # The path to the colours/simulated directory
-        self.colours_simulated_path = None
+    # -----------------------------------------------------------------
 
-        # The path to the colours/residuals directory
-        self.colours_residuals_path = None
+    @property
+    def colours_observed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.colours_path, "observed")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_simulated_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.colours_path, "simulated")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_residuals_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.colours_path, "residuals")
 
     # -----------------------------------------------------------------
 
@@ -58,16 +89,22 @@ class ColourAnalysisComponent(AnalysisComponent):
         # Call the setup function of the base class
         super(ColourAnalysisComponent, self).setup()
 
-        # Set the path to the colours/observed directory
-        self.colours_observed_path = fs.join(self.analysis_colours_path, "observed")
+        # Load the analysis run
+        self.analysis_run = None
 
-        # Set the path to the colours/simulated directory
-        self.colours_simulated_path = fs.join(self.analysis_colours_path, "simulated")
+    # -----------------------------------------------------------------
 
-        # Set the path to the colours/residuals directory
-        self.colours_residuals_path = fs.join(self.analysis_colours_path, "residuals")
+    def load_run(self):
 
-        # Create the directories
-        fs.create_directories(self.colours_observed_path, self.colours_simulated_path, self.colours_residuals_path)
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the analysis run " + self.config.run + " ...")
+
+        # Get the run
+        self.analysis_run = self.get_run(self.config.run)
 
 # -----------------------------------------------------------------

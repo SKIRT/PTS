@@ -454,6 +454,22 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_simulations_in_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        # Get the parameters table
+        parameters_table = self.parameters_table_for_generation(generation_name)
+
+        # Return the names of the simulations
+        return parameters_table.simulation_names
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def best_parameter_values(self):
 

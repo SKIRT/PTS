@@ -420,6 +420,11 @@ class RemoteSynchronizer(Configurable):
 
                     formatter = fmt.reset
 
+                # Tasks with invalid state
+                elif "invalid" in simulation_status:
+
+                    formatter = fmt.red + fmt.bold
+
                 # Crashed simulation
                 elif simulation_status == "crashed":
 

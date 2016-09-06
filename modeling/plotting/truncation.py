@@ -13,7 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from .component import PlottingComponent
+from ..truncation.component import TruncationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
@@ -21,11 +22,19 @@ from ...magic.plot.imagegrid import StandardImageGridPlotter
 
 # -----------------------------------------------------------------
 
-class TruncationPlotter(ModelingComponent):
+class TruncationPlotter(PlottingComponent, TruncationComponent):
     
     """
     This class...
     """
+
+    # The load functions
+    load_functions = dict()
+
+    # The plot functions
+    plot_functions = dict()
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -35,8 +44,9 @@ class TruncationPlotter(ModelingComponent):
         :return:
         """
 
-        # Call the constructor of the base class
-        super(TruncationPlotter, self).__init__(config)
+        # Call the constructors of the base classes
+        PlottingComponent.__init__(self, config)
+        TruncationComponent.__init__(self, config)
 
         # -- Attributes --
 
@@ -45,7 +55,7 @@ class TruncationPlotter(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, features=None):
+    def run(self):
 
         """
         This function ...

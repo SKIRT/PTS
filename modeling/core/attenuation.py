@@ -26,6 +26,10 @@ from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
+attenuation_data_path = fs.join(introspection.pts_dat_dir("modeling"), "attenuation")
+
+# -----------------------------------------------------------------
+
 class AttenuationCurve(object):
 
     """
@@ -188,10 +192,6 @@ class AttenuationCurve(object):
 
 # -----------------------------------------------------------------
 
-attenuation_data_path = fs.join(introspection.pts_dat_dir("modeling"), "attenuation")
-
-# -----------------------------------------------------------------
-
 class MilkyWayAttenuationCurve(AttenuationCurve):
 
     """
@@ -230,17 +230,19 @@ class SMCAttenuationCurve(AttenuationCurve):
     This class ...
     """
 
+    # Determine the path to the data file
+    path = fs.join(attenuation_data_path, "AttenuationLawSMC.dat")
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
         This function ...
         """
 
-        # Determine the path to the data file
-        path = fs.join(attenuation_data_path, "AttenuationLawSMC.dat")
-
         # Load the attenuation data
-        wavelengths_angstrom, alambda_av = np.loadtxt(path, unpack=True)
+        wavelengths_angstrom, alambda_av = np.loadtxt(self.path, unpack=True)
 
         # Convert wavelengths into micron
         wavelengths = wavelengths_angstrom * 0.0001
@@ -259,17 +261,19 @@ class CalzettiAttenuationCurve(AttenuationCurve):
     This class ...
     """
 
+    # Determine the path to the data file
+    path = fs.join(attenuation_data_path, "AttenuationLawCalzetti.dat")
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
         This function ...
         """
 
-        # Determine the path to the data file
-        path = fs.join(attenuation_data_path, "AttenuationLawCalzetti.dat")
-
         # Load the attenuation data
-        wavelengths_angstrom, alambda_av = np.loadtxt(path, unpack=True)
+        wavelengths_angstrom, alambda_av = np.loadtxt(self.path, unpack=True)
 
         # Convert wavelengths into micron
         wavelengths = wavelengths_angstrom * 0.0001
@@ -317,17 +321,35 @@ class MappingsAttenuationCurve(AttenuationCurve):
     This class ...
     """
 
+    path = fs.join(attenuation_data_path, "AttenuationLawMAPPINGS.dat")
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
         This function ...
         """
 
-        super(MappingsAttenuationCurve, self).__init__()
+        # Load the data
+        # wl in micron from long to short wl.
+        # ABS
+        wavelengths, abs_attenuations = np.loadtxt(self.path, unpack=True)
+
+        # Call the constructor of the base class
+        super(MappingsAttenuationCurve, self).__init__(wavelengths, abs_attenuations)
 
 # -----------------------------------------------------------------
 
 def generate_milky_way_attenuations(wavelength_min, wavelength_max, Nsamp):
+
+    """
+    This function ...
+    :param wavelength_min:
+    :param wavelength_max:
+    :param Nsamp:
+    :return:
+    """
 
     # Parameter values from Fitzpatrick & Massa 2007, table 5.
     x0 = 4.592
@@ -373,6 +395,16 @@ def generate_milky_way_attenuations(wavelength_min, wavelength_max, Nsamp):
 
 # -----------------------------------------------------------------
 
-def Lorentzian(x, x0, gamma): return x*x / ((x*x-x0*x0)**2 + (x*gamma)**2)
+def Lorentzian(x, x0, gamma):
+
+    """
+    This function ...
+    :param x:
+    :param x0:
+    :param gamma:
+    :return:
+    """
+
+    return x*x / ((x*x-x0*x0)**2 + (x*gamma)**2)
 
 # -----------------------------------------------------------------

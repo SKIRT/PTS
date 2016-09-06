@@ -41,6 +41,9 @@ class ResidualAnalyser(AnalysisComponent):
 
         # -- Attributes --
 
+        # The analysis run
+        self.analysis_run = None
+
         # The simulated images
         self.simulated = dict()
 
@@ -50,12 +53,9 @@ class ResidualAnalyser(AnalysisComponent):
         # The residual images
         self.residuals = dict()
 
-        # The truncation ellipse
-        self.ellipse = None
-
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -63,32 +63,38 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
-        # 2. Load the simulated images
-        self.load_simulated_images()
-
-        # 3. Load the observed images
-        self.load_observed_images()
-
-        # 4. Rebin the images to the same pixel grid
-        self.rebin()
-
-        # Load the truncation ellipse
-        self.load_truncation_ellipse()
+        # Load the observed and simulated images
+        self.load_images()
 
         # 5. Calculate the residual images
-        #self.calculate_residuals()
+        self.calculate_residuals()
 
         # 6. Writing
-        #self.write()
+        self.write()
 
         # 7. Plotting
         self.plot()
 
     # -----------------------------------------------------------------
 
-    def load_simulated_images(self):
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ResidualAnalyser, self).setup(**kwargs)
+
+        # Load the analysis run
+        self.load_run()
+
+    # -----------------------------------------------------------------
+
+    def load_run(self):
 
         """
         This function ...
@@ -96,22 +102,28 @@ class ResidualAnalyser(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Loading the simulated images ...")
+        log.info("Loading the analysis run " + self.config.run + " ...")
 
-        # Loop over all FITS files found in the analysis/misc directory
-        for path, name in fs.files_in_path(self.analysis_misc_path, extension="fits", returns=["path", "name"], contains="__"):
+        # Get the run
+        self.analysis_run = self.get_run(self.config.run)
 
-            # Debugging
-            log.debug("Loading the '" + name + "' image ...")
+    # -----------------------------------------------------------------
 
-            # Get the filter name
-            filter_name = name.split("__")[1]
+    def load_images(self):
 
-            # Open the image
-            frame = Frame.from_file(path)
+        """
+        This function ...
+        :return:
+        """
 
-            # Add the image frame to the dictionary
-            self.simulated[filter_name] = frame
+        # Inform the user
+        log.info("Loading the images ...")
+
+        # Load ...
+        self.load_observed_images()
+
+        # Load ...
+        self.load_simulated_images()
 
     # -----------------------------------------------------------------
 
@@ -125,83 +137,62 @@ class ResidualAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Loading the observed images ...")
 
-        # Loop over all FITS files found in the 'truncated' directory
-        for path, name in fs.files_in_path(self.truncation_path, extension="fits", returns=["path", "name"]):
-
-            # Ignore the bulge, disk and model images
-            if name == "bulge" or name == "disk" or name == "model": continue
-
-            # Ignore the H alpha image
-            if "Halpha" in name: continue
-
-            # Check whether a simulated image exists for this band
-            if name not in self.simulated:
-                log.warning("The simulated version of the " + name + " image could not be found, skipping " + name + " data ...")
-                continue
+        # Load all data
+        for name in self.dataset.names:
 
             # Debugging
-            log.debug("Loading the '" + name + "' image ...")
+            log.debug("Loading the observed " + name + " image ...")
 
-            # The filter name is the image name
-            filter_name = name
+            # Load the frame, not truncated
+            frame = self.dataset.get_frame(name, masked=False)
+
+            # Define the name of the filter as the image name
+            image_name = str(frame.filter)
+
+            # Add the image frame to the dictionary
+            self.observed[image_name] = frame
+
+    # -----------------------------------------------------------------
+
+    def load_simulated_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the simulated images ...")
+
+        # Loop over all FITS files found in the analysis run misc directory
+        for path, name in fs.files_in_path(self.analysis_run.misc_path, extension="fits", returns=["path", "name"], contains="__"):
+
+            # Debugging
+            log.debug("Loading the simulated " + name + " image ...")
 
             # Open the image
             frame = Frame.from_file(path)
 
-            # Add the image frame to the dictionary
-            self.observed[filter_name] = frame
+            # Get the filter name
+            image_name = str(frame.filter)
 
-    # -----------------------------------------------------------------
-
-    def rebin(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Rebinning the observed and simulated images to the same resolution ...")
-
-        # Loop over the filter names
-        for filter_name in self.filter_names:
-
-            simulated = self.simulated[filter_name]
-            observed = self.observed[filter_name]
-
-            # Check whether the coordinate systems of the observed and simulated image match
-            if simulated.wcs == observed.wcs:
-                # Debugging
-                log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " filter matches")
+            # Check whether a simulated image exists for this band
+            if image_name not in self.observed:
+                log.warning("The observed " + image_name + " image could not be found, skipping simulated " + image_name + " image ...")
                 continue
 
-            # Debugging
-            log.debug("The coordinate system of the simulated and observed image for the " + filter_name + " does not match: rebinning the simulated image ...")
+            # Check whether the coordinate systems of the observed and simulated image match
+            if frame.wcs == self.observed[image_name].wcs: log.debug("The coordinate system of the simulated and observed image for the " + image_name + " filter matches")
+            else:
 
-            # Rebin the simulated image to the coordinate system of the observed image
-            simulated_rebinned = simulated.rebinned(observed.wcs)
+                # Debugging
+                log.debug("The coordinate system of the simulated and observed image for the " + image_name + " filter does not match: rebinning the simulated image ...")
 
-            # Replace the simulated frame by the rebinned frame
-            self.simulated[filter_name] = simulated_rebinned
+                # Rebin the simulated image to the coordinate system of the observed image
+                frame.rebin(self.observed[image_name].wcs)
 
-    # -----------------------------------------------------------------
-
-    def load_truncation_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ellipse region used for truncating the observed images ...")
-
-        # Determine the path
-        path = fs.join(self.truncation_path, "ellipse.reg")
-
-        # Get the ellipse
-        region = SkyRegion.from_file(path)
-        self.ellipse = region[0]
+            # Add the simulated image frame to the dictionary
+            self.simulated[image_name] = frame
 
     # -----------------------------------------------------------------
 
@@ -218,6 +209,7 @@ class ResidualAnalyser(AnalysisComponent):
         # Loop over the filter names
         for filter_name in self.filter_names:
 
+            # Get the observed and simulated image
             simulated = self.simulated[filter_name]
             observed = self.observed[filter_name]
 
@@ -260,7 +252,7 @@ class ResidualAnalyser(AnalysisComponent):
         for filter_name in self.residuals:
 
             # Determine the path for this residual image
-            path = fs.join(self.analysis_residuals_path, filter_name + ".fits")
+            path = fs.join(self.analysis_run.residuals_path, filter_name + ".fits")
 
             # Debugging
             log.debug("Writing the residual frame for the " + filter_name + " band to '" + path + "' ...")
@@ -307,10 +299,10 @@ class ResidualAnalyser(AnalysisComponent):
             plotter.add_row(observed, simulated, filter_name)
 
         # Set the bounding box for the plotter
-        plotter.set_bounding_box(self.ellipse.bounding_box)
+        plotter.set_bounding_box(self.truncation_box)
 
         # Determine the path to the plot file
-        path = fs.join(self.analysis_residuals_path, "residuals.pdf")
+        path = fs.join(self.analysis_run.residuals_path, "residuals.pdf")
 
         # Run the plotter
         plotter.run(path)

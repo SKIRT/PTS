@@ -52,7 +52,7 @@ class AnalysisComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...

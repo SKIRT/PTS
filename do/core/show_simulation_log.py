@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.show_log Show the log output of a remote PTS task.
+## \package pts.do.core.show_simulation_log Show the log output of a remote SKIRT simulation.
 
 # -----------------------------------------------------------------
 
@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.core.basics.host import find_host_ids
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.remote import Remote
-from pts.core.basics.task import Task
 from pts.core.tools import introspection
+from pts.core.simulation.simulation import RemoteSimulation
 
 # -----------------------------------------------------------------
 
@@ -27,27 +27,26 @@ from pts.core.tools import introspection
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_required("remote", "string", "the name of the remote host", choices=find_host_ids())
-definition.add_required("id", "positive_integer", "the name of the remote host for which to show/retrieve simulations and tasks")
+definition.add_required("remote", "string", "name of the remote host", choices=find_host_ids())
+definition.add_required("id", "positive_integer", "simulation ID")
 
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-#setter = InteractiveConfigurationSetter("show_log", "Show the log output of a remote PTS task")
-setter = ArgumentConfigurationSetter("show_log", "Show the log output of a remote PTS task")
+setter = ArgumentConfigurationSetter("show_simulation_log", "Show the log output of a remote SKIRT simulation")
 config = setter.run(definition)
 
 # -----------------------------------------------------------------
 
 # Determine the log file path
-logfile_path = fs.join(fs.cwd(), time.unique_name("status") + ".txt") if config.report else None
+logfile_path = fs.join(fs.cwd(), time.unique_name("show_simulation_log") + ".txt") if config.report else None
 
 # Determine the log level
 level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting show_log ...")
+log.start("Starting show_simulation_log ...")
 
 # -----------------------------------------------------------------
 
@@ -55,22 +54,21 @@ log.start("Starting show_log ...")
 remote = Remote()
 remote.setup(config.remote)
 
-# Open the task
-task_path = fs.join(introspection.pts_run_dir, config.remote, str(config.id) + ".task")
-task = Task.from_file(task_path)
+# Open the simulation
+simulation_path = fs.join(introspection.skirt_run_dir, config.remote, str(config.id) + ".sim")
+simulation = RemoteSimulation.from_file(simulation_path)
 
-# Check whether the log file is present
-log_output_path = task.remote_log_path
-log_path = None
-for filename in remote.files_in_path(log_output_path):
-    if "log" in filename:
-        log_path = fs.join(log_output_path, filename)
-        break
+# The name of the ski file (the simulation prefix)
+ski_name = simulation.prefix()
 
-if log_path is None: raise RuntimeError("Log does not exist remotely")
+# The path to the simulation log file
+remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
 
-# Read the text file
-lines = remote.read_text_file(log_path)
+# Check whether the log file exists
+if not remote.is_file(remote_log_file_path): raise RuntimeError("The log file does not exist remotely")
+
+# Read the log file
+lines = remote.read_text_file(remote_log_file_path)
 
 # Print the lines of the log file
 for line in lines: print(line)

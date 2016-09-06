@@ -22,7 +22,15 @@ from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
 from ....magic.plot.imagegrid import ResidualImageGridPlotter
 from ....core.basics.distribution import Distribution
-from ....magic.basics.skyregion import SkyRegion
+from ....core.basics.filter import Filter
+
+# -----------------------------------------------------------------
+
+# Names that identify the interesting wavelengths/filters
+colour_names = ["70/100", "100/160", "160/250", "250/350", "350/500"]
+keys = ["70", "100", "160", "250", "350", "500"]
+ids = {"Pacs blue": "70", "Pacs green": "100", "Pacs red": "160", "SPIRE PSW": "250", "SPIRE PMW": "350", "SPIRE PLW": "500"}
+filter_names = {"70": "Pacs blue", "100": "Pacs green", "160": "Pacs red", "250": "SPIRE PSW", "350": "SPIRE PMW", "500": "SPIRE PLW"}
 
 # -----------------------------------------------------------------
 
@@ -45,12 +53,6 @@ class ColourAnalyser(ColourAnalysisComponent):
 
         # -- Attributes --
 
-        # Names that identify the interesting wavelengths/filters
-        self.colour_names = ["70/100", "100/160", "160/250", "250/350", "350/500"]
-        self.keys = ["70", "100", "160", "250", "350", "500"]
-        self.ids = {"Pacs blue": "70", "Pacs green": "100", "Pacs red": "160", "SPIRE PSW": "250", "SPIRE PMW": "350", "SPIRE PLW": "500"}
-        self.filter_names = {"70": "Pacs blue", "100": "Pacs green", "160": "Pacs red", "250": "SPIRE PSW", "350": "SPIRE PMW", "500": "SPIRE PLW"}
-
         # The dictionaries that contain the observed and simulated far-infrared images
         self.observed = dict()
         self.simulated = dict()
@@ -65,9 +67,6 @@ class ColourAnalyser(ColourAnalysisComponent):
         # The residual pixel value distributions
         self.residual_distributions = dict()
 
-        # The truncation ellipse
-        self.ellipse = None
-
     # -----------------------------------------------------------------
 
     def run(self):
@@ -80,29 +79,41 @@ class ColourAnalyser(ColourAnalysisComponent):
         # 1. Call the setup function
         self.setup()
 
+        # 2. Load the images
+        self.load_images()
+
+        # 2. Rebin the images to the same pixel grid
+        self.rebin()
+
+        # 3. Calculate the colour maps
+        self.calculate_colours()
+
+        # 4. Calculate the residual colour maps
+        self.calculate_residuals()
+
+        # 5. Writing
+        self.write()
+
+        # 6. Plotting
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def load_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the images ...")
+
         # 2. Load the observed images
         self.load_observed_images()
 
         # 3. Load the simulated images
         self.load_simulated_images()
-
-        # 4. Rebin the images to the same pixel grid
-        self.rebin()
-
-        # 5. Load the truncation ellipse
-        self.load_truncation_ellipse()
-
-        # 6. Calculate the colour maps
-        self.calculate_colours()
-
-        # 7. Calculate the residual colour maps
-        self.calculate_residuals()
-
-        # 8. Writing
-        self.write()
-
-        # 9. Plotting
-        self.plot()
 
     # -----------------------------------------------------------------
 
@@ -117,19 +128,13 @@ class ColourAnalyser(ColourAnalysisComponent):
         log.info("Loading the observed images ...")
 
         # Loop over the appropriate observed images
-        for key in self.keys:
+        for key in keys:
 
-            # Determine the path to the image
-            filter_name = self.filter_names[key]
-            path = fs.join(self.truncation_path, filter_name + ".fits")
+            # Get the corresponding filter
+            fltr = Filter.from_string(filter_names[key])
 
-            # Check whether the image is present
-            if not fs.is_file(path):
-                log.warning("Observed " + key + " micron image is not present")
-                continue
-
-            # Load the image frame
-            frame = Frame.from_file(path)
+            # Get the observed image for this filter
+            frame = self.dataset.get_frame_for_filter(fltr)
 
             # Add the frame to the dictionary
             self.observed[key] = frame
@@ -147,12 +152,12 @@ class ColourAnalyser(ColourAnalysisComponent):
         log.info("Loading the simulated images ...")
 
         # Loop over the appropriate simulated images
-        for key in self.keys:
+        for key in keys:
 
             # Determine the path to the image
-            filter_name = self.filter_names[key]
+            filter_name = filter_names[key]
             image_name = self.galaxy_name + "_earth_total__" + filter_name
-            path = fs.join(self.analysis_misc_path, image_name + ".fits")
+            path = fs.join(self.analysis_run.misc_path, image_name + ".fits")
 
             # Check whether the image is present
             if not fs.is_file(path):
@@ -226,25 +231,6 @@ class ColourAnalyser(ColourAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def load_truncation_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the ellipse region used for truncating the observed images ...")
-
-        # Determine the path
-        path = fs.join(self.truncation_path, "ellipse.reg")
-
-        # Get the ellipse
-        region = SkyRegion.from_file(path)
-        self.ellipse = region[0]
-
-    # -----------------------------------------------------------------
-
     def calculate_colours(self):
 
         """
@@ -256,23 +242,23 @@ class ColourAnalyser(ColourAnalysisComponent):
         log.info("Calculating the colour maps")
 
         # Loop over the different colours
-        for colour_name in self.colour_names:
+        for colour_name in colour_names:
 
             # Get the wavelengths to create the colour map
             wavelength1, wavelength2 = colour_name.split("/")
 
             # Check whether the corresponding observed and simulated images exist
             if not wavelength1 in self.observed:
-                log.warning("Observed " + self.filter_names[wavelength1] + " not present, " + colour_name + " can not be calculated")
+                log.warning("Observed " + filter_names[wavelength1] + " not present, " + colour_name + " can not be calculated")
                 continue
             if not wavelength1 in self.simulated:
-                log.warning("Simulated " + self.filter_names[wavelength1] + " not present, " + colour_name + " can not be calculated")
+                log.warning("Simulated " + filter_names[wavelength1] + " not present, " + colour_name + " can not be calculated")
                 continue
             if not wavelength2 in self.observed:
-                log.warning("Observed " + self.filter_names[wavelength2] + " not present, " + colour_name + " can not be calculated")
+                log.warning("Observed " + filter_names[wavelength2] + " not present, " + colour_name + " can not be calculated")
                 continue
             if not wavelength2 in self.simulated:
-                log.warning("Simulated " + self.filter_names[wavelength2] + " not present, " + colour_name + " can not be calculated")
+                log.warning("Simulated " + filter_names[wavelength2] + " not present, " + colour_name + " can not be calculated")
                 continue
 
             # Debugging
@@ -491,10 +477,10 @@ class ColourAnalyser(ColourAnalysisComponent):
             plotter.add_row(observed_colour, simulated_colour, colour_name)
 
         # Set the bounding box for the plotter
-        plotter.set_bounding_box(self.ellipse.bounding_box)
+        plotter.set_bounding_box(self.truncation_box)
 
         # Determine the path to the plot file
-        path = fs.join(self.analysis_colours_path, "colours.pdf")
+        path = fs.join(self.analysis_run.colours_path, "colours.pdf")
 
         # Run the plotter
         plotter.run(path)

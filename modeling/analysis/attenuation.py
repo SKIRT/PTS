@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
+import numpy as np
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
@@ -20,7 +21,7 @@ from .component import AnalysisComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ..core.sed import SED
-from ..core.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve
+from ..core.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve, MappingsAttenuationCurve
 from ...core.plot.attenuation import AttenuationPlotter
 
 # -----------------------------------------------------------------
@@ -54,6 +55,9 @@ class AttenuationAnalyser(AnalysisComponent):
         super(AttenuationAnalyser, self).__init__(config)
 
         # -- Attributes --
+
+        # The analysis run
+        self.analysis_run = None
 
         # The SEDs
         self.total_sed = None
@@ -106,6 +110,24 @@ class AttenuationAnalyser(AnalysisComponent):
         # Call the setup function of the base class
         super(AttenuationAnalyser, self).setup()
 
+        # Load the analysis run
+        self.load_run()
+
+    # -----------------------------------------------------------------
+
+    def load_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the analysis run " + self.config.run + " ...")
+
+        # Get the run
+        self.analysis_run = self.get_run(self.config.run)
+
     # -----------------------------------------------------------------
 
     def load_seds(self):
@@ -119,7 +141,7 @@ class AttenuationAnalyser(AnalysisComponent):
         log.info("Loading the simulated total and transparent SED ...")
 
         # Determine the path to the SED file corresponding to the 'earth' instrument
-        sed_path = fs.join(self.analysis_out_path, self.galaxy_name + "_earth_sed.dat")
+        sed_path = fs.join(self.analysis_run.out_path, self.galaxy_name + "_earth_sed.dat")
 
         # Load the total SED
         self.total_sed = SED.from_skirt(sed_path, contribution="total")
@@ -139,74 +161,135 @@ class AttenuationAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Calculating the attenuations ...")
 
-        # The wavelength of the V band
-        v_band_wavelength = 0.55 * Unit("micron")
+        # Calculate the diffuse attenuation
+        self.calculate_diffuse_attenuation()
 
-        # Calculate the attenuations of the dust in star-forming regions
-        #self.attenuation_sfr = AttenuationCurve()
-        # Find the V-band attenuation for the SFR dust
-        #v_band_attenuation_sfr = self.attenuation_sfr.attenuation_at(v_band_wavelength)
+        # Calculate the SFR attenuation
+        self.calculate_sfr_attenuation()
 
-        # Calculate the attenuations of the diffuse dust component
-        self.attenuation_diffuse = AttenuationCurve.from_seds(self.total_sed, self.transparent_sed)
-
-        # Find the V-band attenuation for the diffuse dust component
-        v_band_attenuation_diffuse = self.attenuation_diffuse.attenuation_at(v_band_wavelength)
-
-        # Normalize the attenuation curve to the V-band attenuation
-        self.attenuation_diffuse.normalize_at(v_band_wavelength)
-
-        # SED of transparent + delta flux mappings
-        #transparent_sfr_sed = self.transparent_sed + delta_flux_mappings
-
-        # Calculate the attenuations for all the dust
-        #self.attenuation_total = AttenuationCurve.from_seds(self.total_sed, transparent_sfr_sed)
-        # Find the total V-band attenuation
-        #v_band_attenuation_total = self.attenuation_total.attenuation_at(v_band_wavelength)
-
-
-        #print(' V band attenuation from star-forming regions:   ' + str(att_mappings_V))
-        print(' V band attenuation from diffuse dust: ' + str(v_band_attenuation_diffuse))
-        #print(' total V band attenuation:          ' + str(att_tot_V))
-
-        #proportion = delta_flux_mappings / (modTrans - modFlux)
-
-        #print(' V band energy fraction of mappings attenuation to total: ' + str(proportion[np.argmin(np.abs(modWls - 0.55))]))
-        #print(' NUV band energy fraction of mappings attenuation to total: ' + str(proportion[np.argmin(np.abs(modWls - 0.227))]))
-        #print(' FUV band energy fraction of mappings attenuation to total: ' + str(proportion[np.argmin(np.abs(modWls - 0.153))]))
-        #print(' Mean energy fraction of mappings attenuation to total:   ' + str(np.mean(proportion[modWls < 5])))
-        #print(' Median energy fraction of mappings attenuation to total: ' + str(np.median(proportion[modWls < 5])))
+        # Calculate the total attenuation
+        self.calculate_total_attenuation()
 
     # -----------------------------------------------------------------
 
-    def calculate_attenuation_mapping(self):
+    def calculate_diffuse_attenuation(self):
 
         """
         This function ...
         :return:
         """
 
-        # refAtt_MAPPINGS = "Files/AttenuationLawMAPPINGS.dat"
-        # refSED_MAPPINGS = "SKIRTrun/models/testHeating/MappingsHeating/mappings_i0_sed.dat"
+        # Inform the user
+        log.info("Calculating the diffuse stellar contribution to the attenuation curve ...")
 
-        # input = np.loadtxt(refAtt_MAPPINGS)
-        # wl_mappings = input[:, 0]  # wl in micron from long to short wl.
-        # abs_mappings = input[:, 1]  # factor
+        # Calculate the attenuations of the diffuse dust component
+        self.attenuation_diffuse = AttenuationCurve.from_seds(self.total_sed, self.transparent_sed)
+
+        # Find the V-band attenuation for the diffuse dust component
+        v_band_attenuation_diffuse = self.attenuation_diffuse.attenuation_at(self.v_band_wavelength)
+
+        # Debugging
+        log.debug("The V-band attenuation from diffuse dust is " + str(v_band_attenuation_diffuse))
+
+        # Normalize the attenuation curve to the V-band attenuation
+        self.attenuation_diffuse.normalize_at(self.v_band_wavelength)
+
+    # -----------------------------------------------------------------
+
+    def calculate_sfr_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the SFR contribution to the attenuation curve ...")
+
+        # Load the MAPPINGS attenuation curve
+        #self.mappings_attenuation = MappingsAttenuationCurve()
+        wavelengths, abs_mappings = np.loadtxt(MappingsAttenuationCurve.path, unpack=True)
+
+        # This factor (~2e6) is the conversion factor from a SFR of 1 (1 M_sun / yr) to one M_sun
+        sfr_to_dust_mass = 2143279.799
+
+        # Get the mappings template for the best model
+        mappings = self.analysis_run.model.mappings
+
         # V band attenuation = total dust mass / total surface of M31 / 1e5 * 0.67 see data file.
-        # Av_mappings = 2143279.799 / (0.137 ** 2 * 15230) / 1e5 * 0.67
-        # Attenuation law (not normalized). abs for V band is 2.23403e-01
-        # A_mappings = abs_mappings / 2.23403e-01 * Av_mappings
-        # Create interpolation function
-        # A_interpfunc = interpolate.interp1d(wl_mappings, A_mappings, kind='linear')
+        a_v_mappings = sfr_to_dust_mass / (0.137 ** 2 * 15230) / 1e5 * 0.67
+
+        # The ABS for the V band
+        abs_v = 2.23403e-01
+
+        # Attenuation law (not normalized)
+        attenuations_mappings = abs_mappings / abs_v * a_v_mappings
+
+        # Create the attenuation curve
+        self.attenuation_sfr = AttenuationCurve(wavelengths, attenuations_mappings)
+
+        # Find the V-band attenuation for the SFR dust component
+        v_band_attenuation_sfr = self.attenuation_diffuse.attenuation_at(self.v_band_wavelength)
+
+        # Debugging
+        log.debug("The V-band attenuation from dust in SF clouds is " + str(v_band_attenuation_sfr))
+
+        # Normalize the attenuation curve to the V-band attenuation
+        self.attenuation_sfr.normalize_at(self.v_band_wavelength)
+
+    # -----------------------------------------------------------------
+
+    def calculate_total_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the total attenuation curve ...")
+
+        wavelengths = None
 
         # load the MAPPINGS SED
-        # input = np.loadtxt(refSED_MAPPINGS)
-        # flux_mappings = input[:, 1]  # in Jy
+        input = np.loadtxt(refSED_MAPPINGS)
+        flux_mappings = input[:, 1]  # in Jy
 
-        # atts_mappings = A_interpfunc(modWls)  # Attenuation from dust in star forming regions
-        # delta_flux_mappings = flux_mappings * (10 ** (atts_mappings / 2.5) - 1)  # additional flux from mappings attenuation
+        #atts_mappings = A_interpfunc(modWls)  # Attenuation from dust in star forming regions
 
-        pass
+        atts_mappings = []
+        for wavelength in wavelengths:
+            att_mappings = self.attenuation_sfr.attenuation_at(wavelength)
+            atts_mappings.append(att_mappings)
+        atts_mappings = np.array(atts_mappings)
+
+        delta_flux_mappings = flux_mappings * (10 ** (atts_mappings / 2.5) - 1)  # additional flux from mappings attenuation
+
+        # SED of transparent + delta flux mappings
+        transparent_sfr_sed = self.transparent_sed + delta_flux_mappings
+
+        atts_tot = -2.5 * np.log10(modFlux / (modTrans + delta_flux_mappings))
+        interpfunc = interpolate.interp1d(modWls, atts_tot, kind='linear')
+        att_tot_V = interpfunc(0.55)  # Interpolate to find attenuation at V band central wavelengths
+        n_atts_tot = atts_tot / att_tot_V
+
+        # Calculate the attenuations for all the dust
+        # self.attenuation_total = AttenuationCurve.from_seds(self.total_sed, transparent_sfr_sed)
+        # Find the total V-band attenuation
+        # v_band_attenuation_total = self.attenuation_total.attenuation_at(v_band_wavelength)
+
+
+        # print(' V band attenuation from star-forming regions:   ' + str(att_mappings_V))
+
+        # print(' total V band attenuation:          ' + str(att_tot_V))
+
+        # proportion = delta_flux_mappings / (modTrans - modFlux)
+
+        # print(' V band energy fraction of mappings attenuation to total: ' + str(proportion[np.argmin(np.abs(modWls - 0.55))]))
+        # print(' NUV band energy fraction of mappings attenuation to total: ' + str(proportion[np.argmin(np.abs(modWls - 0.227))]))
+        # print(' FUV band energy fraction of mappings attenuation to total: ' + str(proportion[np.argmin(np.abs(modWls - 0.153))]))
+        # print(' Mean energy fraction of mappings attenuation to total:   ' + str(np.mean(proportion[modWls < 5])))
+        # print(' Median energy fraction of mappings attenuation to total: ' + str(np.median(proportion[modWls < 5])))
 
     # -----------------------------------------------------------------
 
@@ -253,17 +336,23 @@ class AttenuationAnalyser(AnalysisComponent):
         # Inform the user
         log.info("Writing the attenuations ...")
 
-        # Determine the path to the SFR attenuation file
-        sfr_path = fs.join(self.analysis_attenuation_path, "sfr.dat")
-
         # Determine the path to the diffuse dust attenuation file
-        diffuse_path = fs.join(self.analysis_attenuation_path, "diffuse.dat")
-
-        # Determine the path to the total dust attenuation file
-        total_path = fs.join(self.analysis_attenuation_path, "total.dat")
+        diffuse_path = fs.join(self.analysis_run.attenuation_path, "diffuse.dat")
 
         # Write the diffuse dust attenuations
         self.attenuation_diffuse.save(diffuse_path)
+
+        # Determine the path to the SFR attenuation file
+        sfr_path = fs.join(self.analysis_run.attenuation_path, "sfr.dat")
+
+        # Write the SFR attenuation curve
+        self.attenuation_sfr.save(sfr_path)
+
+        # Determine the path to the total dust attenuation file
+        total_path = fs.join(self.analysis_run.attenuation_path, "total.dat")
+
+        # Write the total attenuation curve
+        self.attenuation_total.save(total_path)
 
     # -----------------------------------------------------------------
 
@@ -283,13 +372,19 @@ class AttenuationAnalyser(AnalysisComponent):
         # Add the diffuse attenuation curve
         plotter.add_attenuation_curve(self.attenuation_diffuse, "diffuse")
 
+        # Add the SFR attenuation curve
+        plotter.add_attenuation_curve(self.attenuation_sfr, "SFR")
+
+        # Add the total attenuation curve
+        plotter.add_attenuation_curve(self.attenuation_total, "total")
+
         # Add the reference attenuation curves
         for name in self.references: plotter.add_attenuation_curve(self.references[name], name)
 
-        # Determine the path to the diffuse attenuation plot file
-        diffuse_path = fs.join(self.analysis_attenuation_path, "diffuse.pdf")
+        # Determine the path to the attenuation plot file
+        path = fs.join(self.analysis_run.attenuation_path, "attenuation.pdf")
 
         # Run the plotter
-        plotter.run(diffuse_path)
+        plotter.run(path)
 
 # -----------------------------------------------------------------

@@ -57,18 +57,6 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def features(cls):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return cls.plot_functions.keys()
-
-    # -----------------------------------------------------------------
-
     def __init__(self, config=None):
 
         """
@@ -103,8 +91,8 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # The runtimes
         self.runtimes = None
 
-        # The SEDs of all the models
-        self.seds = []
+        # The simulated SEDs of all models, as lists for each generation
+        self.seds = dict()
 
         # The SEDs of the different stellar contributions (total, old, young, ionizing)
         self.sed_contributions = OrderedDict()
@@ -124,32 +112,6 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # The prior and posterior probability distributions
         self.prior_distributions = dict()     # indexed on generation, then on the free parameter labels
         self.posterior_distributions = dict() # indexed on the free parameter labels
-
-    # -----------------------------------------------------------------
-
-    def run(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
-
-        # Check which features should be plotted
-        if self.config.features is None: features_to_plot = self.features()
-        else: features_to_plot = self.config.features
-
-        # Plot the features
-        for feature in features_to_plot:
-
-            # Call the load function (if necessary)
-            if feature in self.load_functions: self.load_functions[feature](self)
-
-            # Call the plot function
-            self.plot_functions[feature](self)
 
     # -----------------------------------------------------------------
 
@@ -409,8 +371,16 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the SEDs ...")
+
+        # Load the observed SEDs
         self.load_observed_sed()
+
+        # Load the simulated SEDs
         self.load_model_seds()
+
+        # Load the contributions to the SEDs
         self.load_sed_contributions()
 
     # -----------------------------------------------------------------
@@ -440,21 +410,42 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Loading the SEDs of all the fit models ...")
 
-        # Determine the path to the fit/out directory
-        fit_out_path = fs.join(self.fit_path, "out")
+        # Loop over all finished generations
+        for generation_name in self.finished_generations:
 
-        # Loop over all directories in the fit/out directory
-        for path in fs.directories_in_path(fit_out_path):
+            # Initialize dictionary to contain SEDs for this generation
+            #seds_generation = dict()
+            seds_generation = []
 
-            # Check whether the SED file is present in the simulation's output directory
-            sed_path = fs.join(path, "out", self.galaxy_name + "_earth_sed.dat")
-            if not fs.is_file(sed_path): continue
+            # Loop over all simulations in this generation
+            for simulation_name in self.get_simulations_in_generation(generation_name):
 
-            # Load the SED
-            sed = SED.from_skirt(sed_path)
+                # Determine the path to the 'plot' directory for this simulation
+                #plot_path = fs.join(self.fit_generations_path, generation_name, simulation_name, "plot")
+
+                out_path = fs.join(self.fit_generations_path, generation_name, simulation_name, "out")
+
+                # Determine the path to the SED plot
+                #sed_path = fs.join(plot_path, self.galaxy_name + "_earth_sed.dat")
+
+                # Determine the path to the SED data file
+                sed_path = fs.join(out_path, self.galaxy_name + "_earth_sed.dat")
+
+                # Check whether the SED file is present
+                if not fs.is_file(sed_path):
+
+                    # Give warning and continue
+                    log.warning("The SED file for simulation " + simulation_name + " of generation " + generation_name + " is missing")
+                    continue
+
+                # Load the SED
+                sed = SED.from_skirt(sed_path)
+
+                # Add the SED
+                seds_generation.append(sed)
 
             # Add the sed to the list of SEDs
-            self.seds.append(sed)
+            self.seds[generation_name] = seds_generation
 
     # -----------------------------------------------------------------
 
@@ -466,44 +457,31 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         """
 
         # Inform the user
-        log.info("Loading the SEDs of the various stellar contributions ...")
+        log.info("Loading the SEDs of the various stellar contributions for the best models of each generation ...")
 
-        # Determine the path to the fit/best directory
-        fit_best_path = fs.join(self.fit_path, "best")
+        # Loop over the directories in the fit_best directory
+        for path, generation_name in fs.directories_in_path(self.fit_best_path, returns=["path", "name"]):
 
-        # Determine the path to the fit/best/images directory
-        images_path = fs.join(fit_best_path, "images")
+            # Initialize ...
+            seds_generation = dict()
 
-        # Determine the path to the SED file from the 'images' simulation
-        sed_path = fs.join(images_path, self.galaxy_name + "_earth_sed.dat")
+            # Loop over the contributions that have been simulated
+            for contribution in fs.directories_in_path(path, returns="name"):
 
-        # Load the SED if the file exists
-        if fs.is_file(sed_path):
+                # Determine the path to the output directory
+                out_path = fs.join(path, contribution, "out")
 
-            # Load the SED
-            sed = SED.from_skirt(sed_path)
+                # Determine the path to the SED file
+                sed_path = fs.join(out_path, self.galaxy_name + "_earth_sed.dat")
 
-            # Add the total SED to the dictionary of SEDs
-            self.sed_contributions["total"] = sed
+                # Load the SED
+                sed = SED.from_skirt(sed_path)
 
-        # Add the SEDs of the simulations with the individual stellar populations
-        contributions = ["old", "young", "ionizing"]
-        for contribution in contributions:
+                # Add the SED
+                seds_generation[contribution] = sed
 
-            # Determine the output path for this simulation
-            out_path = fs.join(fit_best_path, contribution)
-
-            # Determine the path to the SED file
-            sed_path = fs.join(out_path, self.galaxy_name + "_earth_sed.dat")
-
-            # Skip if the file does not exist
-            if not fs.is_file(sed_path): continue
-
-            # Load the SED
-            sed = SED.from_skirt(sed_path)
-
-            # Add the SED to the dictionary of SEDs
-            self.sed_contributions[contribution] = sed
+            # Add the SEDS
+            self.sed_contributions[generation_name] = seds_generation
 
     # -----------------------------------------------------------------
 
@@ -944,7 +922,13 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the SEDs ...")
+
+        # Plot model SEDs
         self.plot_model_seds()
+
+        # Plot contributions to the SED
         self.plot_sed_contributions()
 
     # -----------------------------------------------------------------
@@ -959,26 +943,31 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Plotting the SEDs of all the models ...")
 
-        # Create the SEDPlotter object
-        plotter = SEDPlotter(self.galaxy_name)
+        # Loop over the generations
+        for generation_name in self.seds:
 
-        # Add all model SEDs (these have to be plotted in gray)
-        counter = 0
-        for sed in self.seds:
-            plotter.add_modeled_sed(sed, str(counter), ghost=True)
-            counter += 1
+            # Create the SEDPlotter object
+            plotter = SEDPlotter(self.galaxy_name)
 
-        # Add the 'best' model total SED
-        plotter.add_modeled_sed(self.sed_contributions["total"], "best") # this SED has to be plotted in black
+            # Add all model SEDs (these have to be plotted in gray)
+            counter = 0
+            for sed in self.seds[generation_name]:
 
-        # Add the observed SED to the plotter
-        plotter.add_observed_sed(self.observed_sed, "observation")
+                # Add the model SEDs
+                plotter.add_modeled_sed(sed, str(counter), ghost=True)
+                counter += 1
 
-        # Determine the path to the SED plot file
-        path = fs.join(self.plot_fitting_path, "model_seds.pdf")
+            # Add the 'best' model total SED
+            if generation_name in self.sed_contributions: plotter.add_modeled_sed(self.sed_contributions[generation_name]["total"], "best") # this SED has to be plotted in black
 
-        # Run the plotter
-        plotter.run(path)
+            # Add the observed SED to the plotter
+            plotter.add_observed_sed(self.observed_sed, "observation")
+
+            # Determine the path to the SED plot file
+            path = fs.join(self.plot_fitting_path, "model_seds_" + generation_name + ".pdf")
+
+            # Run the plotter
+            plotter.run(path)
 
     # -----------------------------------------------------------------
 
@@ -992,23 +981,26 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         # Inform the user
         log.info("Plotting SEDs of various contributions ...")
 
-        # Create the SEDPlotter object
-        plotter = SEDPlotter(self.galaxy_name)
+        # Loop over the generations
+        for generation_name in self.sed_contributions:
 
-        # Loop over the simulated SEDs of the various stellar contributions
-        for label in self.sed_contributions:
+            # Create the SEDPlotter object
+            plotter = SEDPlotter(self.galaxy_name)
 
-            # Add the simulated SED to the plotter
-            plotter.add_modeled_sed(self.sed_contributions[label], label, residuals=(label=="total"))
+            # Loop over the contributions
+            for contribution in self.sed_contributions[generation_name]:
 
-        # Add the observed SED to the plotter
-        plotter.add_observed_sed(self.observed_sed, "observation")
+                # Add the simulated SED to the plotter
+                plotter.add_modeled_sed(self.sed_contributions[generation_name][contribution], contribution, residuals=(contribution=="total"))
 
-        # Determine the path to the SED plot file
-        path = fs.join(self.plot_fitting_path, "sed_contributions.pdf")
+            # Add the observed SED to the plotter
+            plotter.add_observed_sed(self.observed_sed, "observation")
 
-        # Run the plotter
-        plotter.run(path)
+            # Determine the path to the SED plot file
+            path = fs.join(self.plot_fitting_path, "sed_contributions_" + generation_name + ".pdf")
+
+            # Run the plotter
+            plotter.run(path)
 
     # -----------------------------------------------------------------
 

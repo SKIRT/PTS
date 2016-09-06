@@ -381,6 +381,18 @@ class ParametersTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def parameter_labels(self):
 
         """

@@ -229,6 +229,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_run_info.generation_name = self.config.generation
         self.analysis_run_info.simulation_name = self.best_model.simulation_name
         self.analysis_run_info.parameter_values = self.best_model.parameter_values
+        self.analysis_run_info.chi_squared = self.best_model.chi_squared
 
     # -----------------------------------------------------------------
 

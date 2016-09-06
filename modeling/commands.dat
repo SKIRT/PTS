@@ -27,11 +27,11 @@ analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Ana
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating in the best fitting model
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residuals of the best fitting model
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
-plot_data | plot | plotting.data.DataPlotter | arguments | Make plots of the data
-plot_preparation | plot | plotting.preparation.PreparationPlotter | arguments | Make plots of the preparation step
-plot_decomposition | plot | plotting.decomposition.DecompositionPlotter | arguments | Make plots of the decomposition step
-plot_truncation | plot | plotting.truncation.TruncationPlotter | arguments | Make plots of the truncation step
-plot_photometry | plot | plotting.photometry.PhotometryPlotter | arguments | Make plots of the photometry step
-plot_maps | plot | plotting.maps.MapsPlotter | arguments | Make plots of the map making step
+plot_data | plot_data | plotting.data.DataPlotter | arguments | Make plots of the data
+plot_preparation | plot_preparation | plotting.preparation.PreparationPlotter | arguments | Make plots of the preparation step
+plot_decomposition | plot_decomposition | plotting.decomposition.DecompositionPlotter | arguments | Make plots of the decomposition step
+plot_truncation | plot_truncation | plotting.truncation.TruncationPlotter | arguments | Make plots of the truncation step
+plot_photometry | plot_photometry | plotting.photometry.PhotometryPlotter | arguments | Make plots of the photometry step
+plot_maps | plot_maps | plotting.maps.MapsPlotter | arguments | Make plots of the map making step
 plot_fitting | plot_fitting | plotting.fitting.FittingPlotter | interactive | Make plots of the fitting step
-plot_analysis | plot | plotting.analysis.AnalysisPlotter | arguments | Make plots of the analysis step
+plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | arguments | Make plots of the analysis step
