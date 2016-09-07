@@ -389,11 +389,32 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Adjusting the ski template ...")
 
-        # 1. Set basic properties
+        # 1. Set the best parameter values
+        self.set_parameter_values()
+
+        # 2. Set basic properties
         self.set_properties()
 
-        # 2. Adjust the ski files for simulating the contributions of the various stellar components
+        # 3. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
+
+    # -----------------------------------------------------------------
+
+    def set_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the best parameter values ...")
+
+        # Assert that the parameter values are quantities
+        for label in self.parameter_values: assert hasattr(self.parameter_values[label], "unit")
+
+        # Set the parameter values in the ski file template
+        self.ski_template.set_labeled_values(self.parameter_values)
 
     # -----------------------------------------------------------------
 
