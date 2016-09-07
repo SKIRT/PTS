@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from scipy import interpolate
 
 # Import astronomical modules
 from astropy.units import Unit, spectral
@@ -76,6 +77,19 @@ class IntrinsicSED(object):
 
         if asarray: return tables.column_as_array(self.table["Luminosity"], unit=unit)
         else: return tables.column_as_list(self.table["Luminosity"], unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def luminosity_at(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        interpolated = interpolate.interp1d(self.wavelengths(unit="micron", asarray=True), self.luminosities(asarray=True), kind='linear')
+        return interpolated(wavelength.to("micron").value) * self.table["Luminosity"].unit
 
     # -----------------------------------------------------------------
 
@@ -569,7 +583,7 @@ class SED(object):
         """
 
         # Attributes
-        self.table = Table(names=["Wavelength", "Flux", "Error-", "Error+"], dtype=('f8', 'f8', 'f8', 'f8'))
+        self.table = Table(names=["Wavelength", "Flux", "Error-", "Error+"], dtype=('f8', 'f8', 'f8', 'f8'), masked=True)
         self.table["Wavelength"].unit = Unit(wavelength_unit)
         self.table["Flux"].unit = Unit(flux_unit)
         self.table["Error-"].unit = Unit(flux_unit)
@@ -597,6 +611,9 @@ class SED(object):
         error_upper = error.upper.to(flux_unit).value if error is not None else None
 
         self.table.add_row([wavelength, flux, error_lower, error_upper])
+
+        if error_lower is None: self.table["Error-"].mask[-1] = True
+        if error_upper is None: self.table["Error+"].mask[-1] = True
 
     # -----------------------------------------------------------------
 

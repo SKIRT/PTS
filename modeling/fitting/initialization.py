@@ -363,7 +363,7 @@ class FittingInitializer(FittingComponent):
         fluxdensity = self.bulge2d_model.fluxdensity
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_i1).value
@@ -401,7 +401,7 @@ class FittingInitializer(FittingComponent):
         fluxdensity = self.observed_flux(self.i1_filter, unit="Jy") - bulge_fluxdensity
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
 
         ## NEW: SET FIXED PARAMETERS
         self.fixed["metallicity"] = disk_metallicity
@@ -450,7 +450,7 @@ class FittingInitializer(FittingComponent):
         fluxdensity = 2. * self.observed_flux(self.fuv_filter, unit="Jy")
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv_filter.pivotwavelength() * Unit("micron"), self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
 
         # Get the spectral luminosity in solar units
         #luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
@@ -490,7 +490,7 @@ class FittingInitializer(FittingComponent):
         # Like M51 and M31
         #ionizing_metallicity = 0.02
         ionizing_metallicity = 0.03 # XU KONG et al. 2000
-        ionizing_compactness = 6
+        ionizing_compactness = 6.
         ionizing_pressure = 1e12 * Unit("K/m3")
         ionizing_covering_factor = 0.2
 
@@ -508,10 +508,13 @@ class FittingInitializer(FittingComponent):
         # Convert the SFR into a FUV luminosity
         sfr = 0.8 # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
-        luminosity = mappings.luminosity_for_filter(self.fuv_filter) * 1e6
+        #luminosity = mappings.luminosity_for_filter(self.fuv_filter) # * 1e6
         # the times 1e6 is just a fix because these luminosities are otherwise much too small!! (what does the mappings luminosity really represent??)
         # TODO: investigate how to get a valid guess for the ionizing stellar luminosity here!!!
         #luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
+
+        # Get the spectral luminosity at the FUV wavelength
+        luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
 
         # Set the parameters of the ionizing stellar component
         deprojection = self.deprojection.copy()

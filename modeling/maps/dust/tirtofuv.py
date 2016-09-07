@@ -151,7 +151,7 @@ class TIRtoFUVMapMaker(MapsComponent):
 
             # Get pixelscale and wavelength
             pixelscale = frame.average_pixelscale
-            wavelength = frame.filter.pivotwavelength() * Unit("micron")
+            wavelength = frame.filter.pivot
 
             ##
 

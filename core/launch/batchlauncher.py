@@ -613,16 +613,13 @@ class BatchLauncher(OldConfigurable):
                     scheduling_options = self.scheduling_options[remote.host_id][name]
                 else: scheduling_options = None
 
-                # Check whether analysis options are specified
-                if analysis_options_item is None:
-                    logging_options = self.logging_options.copy()
-                    analysis_options_item = self.create_analysis_options(definition, name, logging_options)
-                else: logging_options = self.logging_options
+                # Generate the analysis options
+                logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
 
                 # Queue the simulation
                 simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
                                                  scheduling_options=scheduling_options, remote_input_path=remote_input_path,
-                                                 analysis_options=analysis_options_item)
+                                                 analysis_options=analysis_options)
                 simulations_remote.append(simulation)
 
                 # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
@@ -684,6 +681,53 @@ class BatchLauncher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
+    def generate_options(self, name, definition, analysis_options_item):
+
+        """
+        This function ...
+        :param name:
+        :param definition:
+        :param analysis_options_item:
+        :return:
+        """
+
+        # Check whether analysis options are specified
+        if analysis_options_item is None:
+
+            # Get a copy of the default logging options, create the default analysis options and adjust logging options according to the analysis options
+            logging_options = self.logging_options.copy()
+            analysis_options_item = self.create_analysis_options(definition, name, logging_options)
+
+        elif isinstance(analysis_options_item, AnalysisOptions):
+
+            # Get the default logging options
+            logging_options = self.logging_options
+
+        elif isinstance(analysis_options_item, dict):
+
+            # Create the default analysis options from the configuration of the batch launcher
+            default_analysis_options = self.create_analysis_options(definition, name)
+
+            # Set the options specified in the analysis_options_item dictionary
+            default_analysis_options.set_options(analysis_options_item)
+
+            # Set the modified default analysis options object as the analysis options for this item
+            analysis_options_item = default_analysis_options
+
+            # Get logging options
+            logging_options = self.logging_options.copy()
+
+            # Check the analysis options
+            analysis_options_item.check(logging_options)
+
+        # Invalid type for the analysis options
+        else: raise ValueError("Invalid type for the analysis options of simulation " + name + ": " + str(type(analysis_options_item)) + " (must be dictionary-like or AnalyisOptions instance)")
+
+        # Return the logging and analysis options
+        return logging_options, analysis_options_item
+
+    # -----------------------------------------------------------------
+
     def retrieve(self):
 
         """
@@ -727,7 +771,7 @@ class BatchLauncher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def create_analysis_options(self, definition, simulation_name, logging_options):
+    def create_analysis_options(self, definition, simulation_name, logging_options=None):
 
         """
         This function ...
@@ -794,7 +838,7 @@ class BatchLauncher(OldConfigurable):
         if self.config.memory_table_path is not None: analysis_options.memory_table_path = self.config.memory_table_path
 
         # Check the analysis options
-        analysis_options.check(logging_options)
+        if logging_options is not None: analysis_options.check(logging_options)
 
         # Return the analysis options
         return analysis_options

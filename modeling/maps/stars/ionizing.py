@@ -203,7 +203,7 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Get pixelscale and wavelength
         pixelscale = self.mips24.average_pixelscale
-        wavelength = self.mips24.filter.pivotwavelength() * Unit("micron")
+        wavelength = self.mips24.filter.pivot
 
         # Conversion from MJy / sr to Jy / sr
         conversion_factor = 1e6

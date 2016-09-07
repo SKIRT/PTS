@@ -393,7 +393,7 @@ class ObservedImageMaker(object):
 
                 # Get the pivot wavelength of the filter
                 fltr = self.filters[filter_name]
-                pivot = fltr.pivotwavelength() * Unit("micron")
+                pivot = fltr.pivot
 
                 # Determine the conversion factor
                 conversion_factor = 1.0

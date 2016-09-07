@@ -433,7 +433,7 @@ class DataSet(object):
 
             # Get the wavelength
             header = self.get_header(name)
-            header_wavelength = headers.get_filter(name, header).pivotwavelength() * Unit("micron")
+            header_wavelength = headers.get_filter(name, header).pivot
 
             if wavelength is None or header_wavelength < wavelength: wavelength = header_wavelength
 
@@ -456,7 +456,7 @@ class DataSet(object):
 
             # Get the wavelength
             header = self.get_header(name)
-            header_wavelength = headers.get_filter(name, header).pivotwavelength() * Unit("micron")
+            header_wavelength = headers.get_filter(name, header).pivot
 
             if wavelength is None or header_wavelength > wavelength: wavelength = header_wavelength
 
