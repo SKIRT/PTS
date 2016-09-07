@@ -382,23 +382,58 @@ class Filter:
     def meanwavelength(self):
         return self._WavelengthMean
 
+    ## This function returns the mean wavelength for the filter as a quantity. Astropy is imported inside this
+    # function to support PTS installations without Astropy for users that don't use this (new) function.
+    @property
+    def mean(self):
+        from astropy.units import Unit
+        return self.meanwavelength() * Unit("micron")
+
     ## This function returns the effective wavelength for the filter, in micron.
     def effectivewavelength(self):
         return self._WavelengthEff
+
+    ## This function returns the effective wavelength for the filter as a quantity. Astropy is imported inside this
+    # function to support PTS installations without Astropy for users that don't use this (new) function.
+    @property
+    def effective(self):
+        from astropy.units import Unit
+        return self.effectivewavelength() * Unit("micron")
 
     ## This function returns the minimum wavelength for the filter, in micron.
     def minwavelength(self):
         return self._WavelengthMin
 
+    ## This function returns the minimum wavelength for the filter as a quantity. Astropy is imported inside this
+    # function to support PTS installations without Astropy for users that don't use this (new) function.
+    @property
+    def min(self):
+        from astropy.units import Unit
+        return self.minwavelength() * Unit("micron")
+
     ## This function returns the maximum wavelength for the filter, in micron.
     def maxwavelength(self):
         return self._WavelengthMax
+
+    ## This function returns the maximum wavelength for the filter as a quantity. Astropy is imported inside this
+    #  function to support PTS installations without Astropy for users that don't use this (new) function.
+    @property
+    def max(self):
+        from astropy.units import Unit
+        return self.maxwavelength() * Unit("micron")
 
     ## This function returns the center wavelength for the filter, in micron. The center wavelength is
     # defined as the wavelength halfway between the two points for which filter response or transmission
     # (depending on the filter type) is half maximum.
     def centerwavelength(self):
         return self._WavelengthCen
+
+    ## This function returns the center wavelength as a quantity. Astropy is imported inside this function to
+    #  support PTS installations without Astropy for users that don't use this (new) function.
+    @property
+    def center(self):
+        from astropy.units import Unit
+        return self.centerwavelength() * Unit("micron")
 
     ## This function returns the pivot wavelength for the filter, in micron. The pivot wavelength is defined
     # as the wavelength that connects the filter-averaged wavelength and frequency-style fluxes through
@@ -412,7 +447,14 @@ class Filter:
     def pivotwavelength(self):
         return self._WavelengthPivot
 
-    ## This functino returns the effective bandwith, in micron.
+    ## This function returns the pivot wavelength as a quantity. Astropy is imported inside this function to
+    #  support PTS installations without Astropy for users that don't use this (new) function.
+    @property
+    def pivot(self):
+        from astropy.units import Unit
+        return self.pivotwavelength() * Unit("micron")
+
+    ## This function returns the effective bandwith, in micron.
     def effective_bandwidth(self):
         return self._EffWidth
 

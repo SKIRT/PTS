@@ -61,6 +61,9 @@ class BestModelLauncher(FittingComponent):
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
 
+        # The analysis options for the simulation of the total stellar contribution
+        self.analysis_options_total = dict()
+
         # The ski files for simulating the contributions of the various stellar components
         self.ski_contributions = dict()
 
@@ -143,6 +146,9 @@ class BestModelLauncher(FittingComponent):
         # Set options for the batch launcher
         self.set_launcher_options()
 
+        # Set the analysis options for the simulation of the total stellar contribution
+        self.set_analysis_options_total()
+
         # Create a directory for the simulation of the best model of the specified generation
         self.best_generation_path = fs.join(self.fit_best_path, self.config.generation)
         if fs.is_directory(self.best_generation_path): raise RuntimeError("The best model has already been launched for this generation (" + self.config.generation + ")")
@@ -212,6 +218,28 @@ class BestModelLauncher(FittingComponent):
         self.launcher.config.analysis.plotting.reference_sed = self.observed_sed_path  # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.plotting.format = "png"     # plot in PNG format so that an animation can be made from the fit SEDs
 
+        ## Miscellaneous
+        self.launcher.config.analysis.misc.path = "misc"          # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
+        #self.launcher.config.analysis.misc.images = True          # create observed images
+        self.launcher.config.analysis.misc.fluxes = True          # calculate observed fluxes
+        self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names  # The filters for which to create the observations
+        #self.launcher.config.analysis.misc.make_images_remote = self.config.images_remote
+        #self.launcher.config.analysis.misc.images_wcs = self.reference_wcs_path
+        #self.launcher.config.analysis.misc.images_unit = "MJy/sr"
+        #self.launcher.config.analysis.misc.images_kernels = kernel_paths
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_options_total(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the analysis options for the simulation of the total stellar contribution ...")
+
         # Set the paths to the kernel for each image (except for the SPIRE images)
         kernel_paths = dict()
         aniano = AnianoKernels()
@@ -220,15 +248,13 @@ class BestModelLauncher(FittingComponent):
             if "SPIRE" in filter_name: continue
             kernel_paths[filter_name] = pacs_red_psf_path
 
-        ## Miscellaneous
-        self.launcher.config.analysis.misc.path = "misc"          # The base directory where all of the simulations will have a seperate directory with the 'misc' analysis output
-        self.launcher.config.analysis.misc.images = True          # create observed images
-        self.launcher.config.analysis.misc.fluxes = True          # calculate observed fluxes
-        self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names  # The filters for which to create the observations
-        self.launcher.config.analysis.misc.make_images_remote = self.config.images_remote
-        self.launcher.config.analysis.misc.images_wcs = self.reference_wcs_path
-        self.launcher.config.analysis.misc.images_unit = "MJy/sr"
-        self.launcher.config.analysis.misc.images_kernels = kernel_paths
+        # Set the analysis options that are different from those used for the simulations of the other stellar contributions
+        self.analysis_options_total["misc"] = dict()
+        self.analysis_options_total["misc"]["images"] = True
+        self.analysis_options_total["misc"]["make_images_remote"] = self.config.images_remote
+        self.analysis_options_total["misc"]["images_wcs"] = self.reference_wcs_path
+        self.analysis_options_total["misc"]["images_unit"] = "MJy/sr"
+        self.analysis_options_total["misc"]["images_kernels"] = kernel_paths
 
     # -----------------------------------------------------------------
 
@@ -363,11 +389,32 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Adjusting the ski template ...")
 
-        # 1. Set basic properties
+        # 1. Set the best parameter values
+        self.set_parameter_values()
+
+        # 2. Set basic properties
         self.set_properties()
 
-        # 2. Adjust the ski files for simulating the contributions of the various stellar components
+        # 3. Adjust the ski files for simulating the contributions of the various stellar components
         self.adjust_ski_contributions()
+
+    # -----------------------------------------------------------------
+
+    def set_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the best parameter values ...")
+
+        # Assert that the parameter values are quantities
+        for label in self.parameter_values: assert hasattr(self.parameter_values[label], "unit")
+
+        # Set the parameter values in the ski file template
+        self.ski_template.set_labeled_values(self.parameter_values)
 
     # -----------------------------------------------------------------
 
@@ -666,8 +713,11 @@ class BestModelLauncher(FittingComponent):
             log.debug(" - ski path: " + definition.ski_path)
             log.debug(" - output path: " + definition.output_path)
 
+            # Set special analysis options for the simulation of the total stellar contribution
+            analysis_options = self.analysis_options_total if contribution == "total" else None
+
             # Put the parameters in the queue and get the simulation object
-            self.launcher.add_to_queue(definition, simulation_name)
+            self.launcher.add_to_queue(definition, simulation_name, analysis_options=analysis_options)
 
             # Set scheduling options for this simulation
             if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options[contribution])

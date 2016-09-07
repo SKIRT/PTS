@@ -185,7 +185,7 @@ class ObservedFluxCalculator(object):
 
                 # Calculate the flux: flux densities must be per wavelength instead of per frequency!
                 fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * Unit("W / (m2 * micron)")
-                fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivotwavelength() * Unit("micron"))).value # convert back to Jy
+                fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value # convert back to Jy
 
                 # Add an entry to the flux table
                 table.add_row([fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), fluxdensity_value])

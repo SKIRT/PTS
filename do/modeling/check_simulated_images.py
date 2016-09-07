@@ -181,7 +181,7 @@ for filter_name in images:
     frame = images[filter_name]
 
     # Get the wavelength
-    wavelength = frame.filter.pivotwavelength() * Unit("micron")
+    wavelength = frame.filter.pivot
 
     # Determine the conversion factor
     conversion_factor = 1.0

@@ -209,6 +209,19 @@ class Mappings(object):
 
     # -----------------------------------------------------------------
 
+    def luminosity_at(self, wavelength, unit="W/micron"):
+
+        """
+        This function ...
+        :param wavelength:
+        :param unit:
+        :return:
+        """
+
+        return self.sed.luminosity_at(wavelength).to(unit)
+
+    # -----------------------------------------------------------------
+
     def luminosity_for_filter(self, fltr, unit="W/micron"):
 
         """

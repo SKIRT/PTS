@@ -81,6 +81,30 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def log_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.log10(self.min)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def log_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.log10(self.max)
+
+    # -----------------------------------------------------------------
+
     def linear(self, npoints, as_list=False):
 
         """
@@ -105,7 +129,7 @@ class Range(object):
         :return:
         """
 
-        values = np.logspace(self.min, self.max, npoints, endpoint=self.inclusive)
+        values = np.logspace(self.log_min, self.log_max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
 
         if as_list: return list(values)

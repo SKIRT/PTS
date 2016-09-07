@@ -928,9 +928,15 @@ class SEDPlotter(object):
         # Plot errors
         if errors is not None:
 
+            errors_wavelengths = []
+
             bottom = []
             top = []
             for j in range(len(errors)):
+
+                if errors[j] is None: continue
+
+                errors_wavelengths.append(wavelengths[j])
 
                 value = fluxes[j]
                 error = errors[j]
@@ -944,7 +950,7 @@ class SEDPlotter(object):
             log_bottom = np.log10(bottom)
             log_top = np.log10(top)
 
-            axis.fill_between(wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor=errorcolor, edgecolor=errorcolor, interpolate=True, alpha=0.5)
+            axis.fill_between(errors_wavelengths, log_bottom, log_top, where=log_top<=log_bottom, facecolor=errorcolor, edgecolor=errorcolor, interpolate=True, alpha=0.5)
             axis.plot([], [], color=errorcolor, linewidth=10, label='spread')
 
     # -----------------------------------------------------------------
