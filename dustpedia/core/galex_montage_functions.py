@@ -420,7 +420,7 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
     # The list of image names to be used for the mosaic
     image_names_for_mosaic = []
 
-    # Loop over the files in the temp_swarp_path directory, where the tiles from temp_reproject_path are rebinned and saved to
+    # Loop over the files in the temp_swarp_path directory, where the tiles from temp_reproject_path are _peakand saved to
     for filename in os.listdir(temp_swarp_path):
 
         # SKIP WEIGHT FILES
@@ -469,10 +469,10 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
     # DO THE COMBINING
     # rebinned_path, footprints_path, mosaics_path, wcs
     wcs = CoordinateSystem(Header.fromtextfile(header_path))
-    combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs)
+    mosaic,errors = combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs)
 
     # CONVERT BACK TO JUST COUNTS/S
-    convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output_path)
+    #convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output_path)
 
     #######################
 
@@ -490,6 +490,30 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
     swarp_output_path = fs.join(output_path, id_string + "_swarp.fits")
     out_image.save(swarp_output_path)
 
+    # SOME THINGS
+    mosaic[mosaic.data == 0] = np.NaN
+    mosaic[mosaic.data < -1E3] = np.NaN
+    mosaic[mosaic.data <= 1E-8] = 0
+
+    # CALCULATE RELATIVE POISSON ERROR MAP
+    relerrors = errors / mosaic
+    relerrors[relerrors < 0.] = 0.0  # set negative values for relative error map to zero
+    relerrors.replace_nans(0.0)  # set NaN values (because mosaic was zero) to zero
+
+    ### SAVE
+
+    # Save mosaic as FITS file
+    mosaic_output_path = fs.join(output_path, id_string + ".fits")
+    mosaic.save(mosaic_output_path)
+
+    # Save error map as FITS file
+    errors_output_path = fs.join(output_path, id_string + "_errors.fits")
+    errors.save(errors_output_path)
+
+    # Save relative error map as FITS file
+    relerrors_output_path = fs.join(output_path, id_string + "_relerrors.fits")
+    relerrors.save(relerrors_output_path)
+    
 # -----------------------------------------------------------------
 
 def filter_galex_tiles(galaxy_name, meta_path, overlap_path, ra, dec, width_deg, temp_raw_path, band_dict):
@@ -1011,39 +1035,50 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
         errors = Frame.from_file(errorpath)
         weights = Frame.from_file(weightpath)
 
+        # Calculate the weighted frame
+        frame_weighted = frame * weights
+        errors_weighted = errors / weights
+
+        # Convert the units from counts/s/sr to counts/s
+        pixelsr = frame_weighted.pixelarea.to("sr").value
+        frame_weighted *= pixelsr
+        errors_weighted *= pixelsr
+
         # Create mask where the weights are nans
         mask = weights.nans()
 
         # Set zero
-        frame[mask] = 0.0
-        errors[mask] = 0.0
+        frame_weighted[mask] = 0.0
+        errors_weighted[mask] = 0.0
         weights[mask] = 0.0
 
         # Add to the list
-        primary_frames.append(frame)
-        error_frames.append(errors)
+        primary_frames.append(frame_weighted)
+        error_frames.append(errors_weighted)
         weight_frames.append(weights)
 
-    # Calculate denominator for weighted average (mosaicing)
+    #  Calculate denominator for weighted average (mosaicing)
     normalization = sum_frames(*weight_frames)
 
-    # CALCULATE THE MOSAIC FRAME IN COUNTS/S/SR
+    # CALCULATE THE MOSAIC FRAME IN COUNTS/S
     mosaic_frame = sum_frames(*primary_frames) / normalization
     mosaic_frame.wcs = wcs
 
-    # CALCULATE THE MOSAIC ERROR MAP IN NANOMAGGIES
+    # CALCULATE THE MOSAIC ERROR MAP IN COUNTS/S
     mosaic_errormap = sum_frames_quadratically(*error_frames) / normalization
     mosaic_errormap.wcs = wcs
 
     ## DONE
 
-    # SAVE THE MOSAIC IN NANOMAGGIES
+    # SAVE THE MOSAIC IN COUNTS/S
     mosaic_path = fs.join(temp_mosaic_path, "mosaic.fits")
     mosaic_frame.save(mosaic_path)
 
-    # SAVE THE MOSAIC ERROR MAP IN NANOMAGGIES
+    # SAVE THE MOSAIC ERROR MAP IN COUNTS/S
     mosaic_error_path = fs.join(temp_mosaic_path, "mosaic_errors.fits")
     mosaic_errormap.save(mosaic_error_path)
+
+    return mosaic_frame, mosaic_errormap
 
 # -----------------------------------------------------------------
 

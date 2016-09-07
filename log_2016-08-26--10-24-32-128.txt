@@ -1,0 +1,26 @@
+26/08/2016 10:24:32.128 - Starting make_galex ...
+26/08/2016 10:24:32.131   Making the GALEX mosaics ...
+26/08/2016 10:24:32.131   Making GALEX mosaic for NGC0628 and map of relative poisson errors ...
+26/08/2016 10:24:32.132   Creating directories ...
+26/08/2016 10:24:32.134   Downloading the GALEX observations for NGC0628 to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ...
+26/08/2016 10:24:37.134 D Number of observations that will be downloaded: 175
+26/08/2016 10:24:37.134 D Downloading 'MISDR2_17173_0426_css7661-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (1 of 175)
+26/08/2016 10:24:37.134 D URL: http://galex.stsci.edu/data/GR7/pipe/02-vsn/52529-MISDR2_17173_0426_css7661/d/01-main/0001-img/07-try/MISDR2_17173_0426_css7661-nd-int.fits.gz
+26/08/2016 10:24:59.698 D Downloading 'MISDR2_17173_0426_css7661-fd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (2 of 175)
+26/08/2016 10:24:59.698 D URL: http://galex.stsci.edu/data/GR7/pipe/02-vsn/52529-MISDR2_17173_0426_css7661/d/01-main/0001-img/07-try/MISDR2_17173_0426_css7661-fd-int.fits.gz
+26/08/2016 10:25:11.421 D Downloading 'AIS_183_sg01-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (3 of 175)
+26/08/2016 10:25:11.421 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg01-nd-int.fits.gz
+26/08/2016 10:25:22.439 D Downloading 'AIS_183_sg05-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (4 of 175)
+26/08/2016 10:25:22.440 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg05-nd-int.fits.gz
+26/08/2016 10:25:30.734 D Downloading 'AIS_183_sg04-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (5 of 175)
+26/08/2016 10:25:30.735 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg04-nd-int.fits.gz
+26/08/2016 10:25:43.353 D Downloading 'AIS_183_sg11-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (6 of 175)
+26/08/2016 10:25:43.353 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg11-nd-int.fits.gz
+26/08/2016 10:25:51.723 D Downloading 'AIS_183_sg03-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (7 of 175)
+26/08/2016 10:25:51.723 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg03-nd-int.fits.gz
+26/08/2016 10:26:02.308 D Downloading 'AIS_183_sg10-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (8 of 175)
+26/08/2016 10:26:02.308 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg10-nd-int.fits.gz
+26/08/2016 10:26:10.514 D Downloading 'AIS_183_sg19-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (9 of 175)
+26/08/2016 10:26:10.515 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg19-nd-int.fits.gz
+26/08/2016 10:26:19.133 D Downloading 'AIS_183_sg09-nd-int.fits.gz' to '/Users/mdcleir/GALEX_NGC0628_2016-08-26--10-24-32-132/download/images' ... (10 of 175)
+26/08/2016 10:26:19.133 D URL: http://galex.stsci.edu/data/GR6/pipe/02-vsn/50183-AIS_183/d/01-main/0001-img/07-try/AIS_183_sg09-nd-int.fits.gz
