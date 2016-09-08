@@ -469,14 +469,14 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
     # DO THE COMBINING
     # rebinned_path, footprints_path, mosaics_path, wcs
     wcs = CoordinateSystem(Header.fromtextfile(header_path))
-    mosaic,errors = combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs)
+    mosaic, errors = combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs)
 
     # CONVERT BACK TO JUST COUNTS/S
     #convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output_path)
 
     #######################
 
-    #### LOAD SWARP RESULT, PRESUMABLY IN COUNT/S
+    #### LOAD SWARP RESULT, PRESUMABLY IN COUNTS/S
 
     # Load the resulting frame
     out_image = Frame.from_file(swarp_result_path)
@@ -490,6 +490,8 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
     swarp_output_path = fs.join(output_path, id_string + "_swarp.fits")
     out_image.save(swarp_output_path)
 
+    ### WRITE THE MOSAIC, ERROR MAP AND RELATIVE ERROR MAP IN COUNTS/S
+
     # SOME THINGS
     mosaic[mosaic.data == 0] = np.NaN
     mosaic[mosaic.data < -1E3] = np.NaN
@@ -499,8 +501,6 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
     relerrors = errors / mosaic
     relerrors[relerrors < 0.] = 0.0  # set negative values for relative error map to zero
     relerrors.replace_nans(0.0)  # set NaN values (because mosaic was zero) to zero
-
-    ### SAVE
 
     # Save mosaic as FITS file
     mosaic_output_path = fs.join(output_path, id_string + ".fits")
@@ -1078,6 +1078,7 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
     mosaic_error_path = fs.join(temp_mosaic_path, "mosaic_errors.fits")
     mosaic_errormap.save(mosaic_error_path)
 
+    # Return the mosaic and the mosaic error map in counts/s
     return mosaic_frame, mosaic_errormap
 
 # -----------------------------------------------------------------
