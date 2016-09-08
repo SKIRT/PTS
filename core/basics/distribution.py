@@ -797,7 +797,9 @@ class Distribution(object):
 
         sp1 = canvas.add_subplot(1, 1, 1, axisbg='w')
 
-        sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
+        #sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_width, alpha=0.5)
+
+        sp1.bar(self.edges[:-1], self.counts, linewidth=0, width=self.bin_widths, alpha=0.5)
 
         # Determine the x limits
         if x_limits is None:

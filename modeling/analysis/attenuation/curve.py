@@ -305,19 +305,19 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         log.info("Writing the attenuations ...")
 
         # Determine the path to the diffuse dust attenuation file
-        diffuse_path = fs.join(self.analysis_run.attenuation_path, "diffuse.dat")
+        diffuse_path = fs.join(self.attenuation_curve_path, "diffuse.dat")
 
         # Write the diffuse dust attenuations
         self.attenuation_diffuse.save(diffuse_path)
 
         # Determine the path to the SFR attenuation file
-        sfr_path = fs.join(self.analysis_run.attenuation_path, "sfr.dat")
+        sfr_path = fs.join(self.attenuation_curve_path, "sfr.dat")
 
         # Write the SFR attenuation curve
         self.attenuation_sfr.save(sfr_path)
 
         # Determine the path to the total dust attenuation file
-        total_path = fs.join(self.analysis_run.attenuation_path, "total.dat")
+        total_path = fs.join(self.attenuation_curve_path, "total.dat")
 
         # Write the total attenuation curve
         self.attenuation_total.save(total_path)
@@ -350,7 +350,7 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         for name in self.references: plotter.add_attenuation_curve(self.references[name], name)
 
         # Determine the path to the attenuation plot file
-        path = fs.join(self.analysis_run.attenuation_path, "attenuation.pdf")
+        path = fs.join(self.attenuation_curve_path, "attenuation.pdf")
 
         # Run the plotter
         plotter.run(path)

@@ -182,6 +182,43 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def get_frame_index_for_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength_grid.closest_wavelength_index(wavelength)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_name_for_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        index = self.get_frame_index_for_wavelength(wavelength)
+        return self.frames.keys()[index]
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_wavelength(self, wavelength):
+
+        """
+        This function ...
+        :param wavelength:
+        :return:
+        """
+
+        index = self.get_frame_index_for_wavelength(wavelength)
+        return self.frames[index]
+
+    # -----------------------------------------------------------------
+
     def __getitem__(self, item):
 
         """
@@ -350,13 +387,12 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def convolve_with_filters(self, filters, nprocesses=8, shared_memory=False):
+    def convolve_with_filters(self, filters, nprocesses=8):
 
         """
         This function ...
         :param filters:
         :param nprocesses:
-        :param shared_memory:
         :return:
         """
 
@@ -371,73 +407,51 @@ class DataCube(Image):
         # PARALLEL EXECUTION
         if nprocesses > 1:
 
-            # EXPERIMENTAL
-            if shared_memory:
+            # Save the datacube to a temporary directory
+            temp_dir_path = fs.join(introspection.pts_temp_dir, time.unique_name("datacube-parallel-filter-convolution"))
+            fs.create_directory(temp_dir_path)
 
-                # Create process pool
-                pool = Pool(processes=nprocesses)
+            # Save the datacube
+            temp_datacube_path = fs.join(temp_dir_path, "datacube.fits")
+            self.save(temp_datacube_path)
 
-                # EXECUTE THE LOOP IN PARALLEL
-                for index in range(nfilters):
+            # Save the wavelength grid
+            temp_wavelengthgrid_path = fs.join(temp_dir_path, "wavelengthgrid.dat")
+            self.wavelength_grid.save(temp_wavelengthgrid_path)
 
-                    # Get the current filter
-                    fltr = filters[index]
+            # Create process pool
+            pool = Pool(processes=nprocesses)
 
-                    # Run the filter convolution in parallel
-                    pool.apply_async(_do_one_filter_convolution, args=(fltr, wavelengths, array, frames, index, self.unit, self.wcs,))
+            # Get string for the unit of the datacube
+            unitstring = str(self.unit)
 
-                # CLOSE AND JOIN THE PROCESS POOL
-                pool.close()
-                pool.join()
+            # EXECUTE THE LOOP IN PARALLEL
+            for index in range(nfilters):
 
-            #
-            else:
+                # Get filtername
+                fltrname = str(filters[index])
 
-                # Save the datacube to a temporary directory
-                temp_dir_path = fs.join(introspection.pts_temp_dir, time.unique_name("datacube-parallel-filter-convolution"))
-                fs.create_directory(temp_dir_path)
+                # Determine path for resulting frame
+                result_path = fs.join(temp_dir_path, str(index) + ".fits")
 
-                # Save the datacube
-                temp_datacube_path = fs.join(temp_dir_path, "datacube.fits")
-                self.save(temp_datacube_path)
+                # Get the current filter
+                pool.apply_async(_do_one_filter_convolution_from_file, args=(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname,)) # All simple types (strings)
 
-                # Save the wavelength grid
-                temp_wavelengthgrid_path = fs.join(temp_dir_path, "wavelengthgrid.dat")
-                self.wavelength_grid.save(temp_wavelengthgrid_path)
+            # CLOSE AND JOIN THE PROCESS POOL
+            pool.close()
+            pool.join()
 
-                # Create process pool
-                pool = Pool(processes=nprocesses)
+            # Load the resulting frames
+            for index in range(nfilters):
 
-                # Get string for the unit of the datacube
-                unitstring = str(self.unit)
+                # Determine path of resulting frame
+                result_path = fs.join(temp_dir_path, str(index) + ".fits")
 
-                # EXECUTE THE LOOP IN PARALLEL
-                for index in range(nfilters):
+                # Inform the user
+                log.debug("Loading the frame for filter " + str(filters[index]) + " from '" + result_path + "' ...")
 
-                    # Get filtername
-                    fltrname = str(filters[index])
-
-                    # Determine path for resulting frame
-                    result_path = fs.join(temp_dir_path, str(index) + ".fits")
-
-                    # Get the current filter
-                    pool.apply_async(_do_one_filter_convolution_from_file, args=(temp_datacube_path, temp_wavelengthgrid_path, result_path, unitstring, fltrname,)) # All simple types (strings)
-
-                # CLOSE AND JOIN THE PROCESS POOL
-                pool.close()
-                pool.join()
-
-                # Load the resulting frames
-                for index in range(nfilters):
-
-                    # Determine path of resulting frame
-                    result_path = fs.join(temp_dir_path, str(index) + ".fits")
-
-                    # Inform the user
-                    log.debug("Loading the frame for filter " + str(filters[index]) + " from '" + result_path + "' ...")
-
-                    # Load the frame and set it in the list
-                    frames[index] = Frame.from_file(result_path)
+                # Load the frame and set it in the list
+                frames[index] = Frame.from_file(result_path)
 
         # SERIAL EXECUTION
         else:

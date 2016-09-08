@@ -237,14 +237,7 @@ class CorteseDustMapMaker(MapsComponent):
             fuv_attenuation = self.make_fuv_attenuation_map(ssfr_colour)
 
             # Set attenuation to zero where the original FUV map is smaller than zero
-            #fuv_attenuation[self.frames["GALEX FUV"] <= 0.0] = 0.0
             fuv_attenuation[self.frames["GALEX FUV"] < 0.0] = 0.0
-
-            # Make sure all pixel values are larger than or equal to zero
-            #a_fuv_cortese[a_fuv_cortese < 0.0] = 0.0
-
-            # Cutoff
-            #a_fuv_cortese[self.cutoff_masks["160mu"]] = 0.0
 
             # Add the attenuation map to the dictionary
             self.attenuation_maps[ssfr_colour] = fuv_attenuation

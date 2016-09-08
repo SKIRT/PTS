@@ -78,7 +78,7 @@ class BestParametersTable(SmartTable):
         labels = []
 
         for name in self.colnames:
-            if name == "Generation name": continue
+            if name == "Generation name" or name == "Chi squared": continue
             labels.append(name)
 
         return labels
@@ -612,7 +612,7 @@ class ParameterProbabilitiesTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Parameter value", float, None, "value of the parameter"),
+    column_info = [("Value", float, None, "value of the parameter"),
                    ("Probability", float, None, "probability for this parameter value")]
 
     # -----------------------------------------------------------------

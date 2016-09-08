@@ -41,6 +41,30 @@ class AttenuationAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def attenuation_curve_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.attenuation_path, "curve")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_map_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.create_directory_in(self.analysis_run.attenuation_path, "map")
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """

@@ -65,7 +65,7 @@ class SEDFitter(FittingComponent):
         # The directory with the probability tables for all finished generations
         self.prob_generations_path = None
 
-        #
+        # The dictionary with ...
         self.prob_generations_table_paths = dict()
 
     # -----------------------------------------------------------------
@@ -205,7 +205,7 @@ class SEDFitter(FittingComponent):
                 probabilities_table = ModelProbabilitiesTable.initialize(self.free_parameter_labels, self.parameter_units)
 
                 # Add the entries to the model probabilities table
-                for i in range(len(probabilities_table)):
+                for i in range(len(chi_squared_table)):
 
                     # Get the simulation name
                     simulation_name = chi_squared_table["Simulation name"][i]
@@ -372,7 +372,7 @@ class SEDFitter(FittingComponent):
         for label in self.free_parameter_labels:
 
             # Save the table
-            self.parameter_probabilities[label].saveto(self.get_parameter_distribution_path(label))
+            self.parameter_probabilities[label].saveto(self.get_parameter_probabilities_path(label))
 
     # -----------------------------------------------------------------
 
@@ -402,13 +402,13 @@ class SEDFitter(FittingComponent):
         log.info("Writing the probability distributions ...")
 
         # Loop over the entries in the 'probabilities' table
-        for parameter_name in self.distributions:
+        for label in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[parameter_name] + " parameter ...")
+            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[label] + " parameter ...")
 
             # Write the table of probabilities for this parameter
-            self.distributions[parameter_name].save(self.distribution_table_paths[parameter_name])
+            self.distributions[label].save(self.get_parameter_distribution_path(label))
 
     # -----------------------------------------------------------------
 

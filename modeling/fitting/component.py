@@ -676,7 +676,7 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_parameter_distribution_path(self, label):
+    def get_parameter_probabilities_path(self, label):
 
         """
         This function ...
@@ -686,6 +686,22 @@ class FittingComponent(ModelingComponent):
 
         # Determine the path for the table
         path = fs.join(self.prob_parameters_path, label + ".dat")
+
+        # Return the path to the table
+        return path
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_distribution_path(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        # Determine the path for the table
+        path = fs.join(self.prob_distributions_path, label + ".dat")
 
         # Return the path to the table
         return path

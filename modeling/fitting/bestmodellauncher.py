@@ -410,6 +410,8 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Setting the best parameter values ...")
 
+        print(self.parameter_values)
+
         # Assert that the parameter values are quantities
         for label in self.parameter_values: assert hasattr(self.parameter_values[label], "unit")
 
