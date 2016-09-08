@@ -583,6 +583,9 @@ class SkiFile:
             parent.set("type", "OligoWavelengthGrid")
             parent.remove(wavelength_grid)
 
+            # If the wavelength is a quantity, make a list of the one wavelength
+            if hasattr(wavelengths, "unit"): wavelengths = [wavelengths]
+
             # Make the oligochromatic wavelength grid
             attrs = {"wavelengths": ", ".join(map(str_from_quantity, wavelengths))}
             parent.append(parent.makeelement("OligoWavelengthGrid", attrs))

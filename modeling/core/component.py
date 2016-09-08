@@ -76,6 +76,7 @@ class ModelingComponent(Configurable):
         self.phot_path = None
         self.maps_path = None
         self.components_path = None
+        self.deprojection_path = None
         self.fit_path = None
         self.analysis_path = None
         self.reports_path = None
@@ -190,6 +191,7 @@ class ModelingComponent(Configurable):
         self.phot_path = fs.create_directory_in(self.config.path, "phot")
         self.maps_path = fs.create_directory_in(self.config.path, "maps")
         self.components_path = fs.create_directory_in(self.config.path, "components")
+        self.deprojection_path = fs.create_directory_in(self.config.path, "deprojection")
         self.fit_path = fs.create_directory_in(self.config.path, "fit")
         self.analysis_path = fs.create_directory_in(self.config.path, "analysis")
         self.reports_path = fs.create_directory_in(self.config.path, "reports")
@@ -1074,6 +1076,54 @@ class ModelingComponent(Configurable):
 
         # Return the paths to the maps of stars and dust
         return [self.old_stellar_map_path, self.young_stellar_map_path, self.ionizing_stellar_map_path, self.dust_map_path]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stellar_map_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.old_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stellar_map_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.young_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stellar_map_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.ionizing_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.dust_map_path)
 
     # -----------------------------------------------------------------
 

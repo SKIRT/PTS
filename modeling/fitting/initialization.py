@@ -414,7 +414,7 @@ class FittingInitializer(FittingComponent):
 
         # Set the parameters of the evolved stellar component
         deprojection = self.deprojection.copy()
-        deprojection.filename = "old_stars.fits"
+        deprojection.filename = self.old_stellar_map_filename
         deprojection.scale_height = scale_height
         self.deprojections["old stars"] = deprojection
 
@@ -461,7 +461,7 @@ class FittingInitializer(FittingComponent):
 
         # Set the parameters of the young stellar component
         deprojection = self.deprojection.copy()
-        deprojection.filename = "young_stars.fits"
+        deprojection.filename = self.young_stellar_map_filename
         deprojection.scale_height = scale_height
         self.deprojections["young stars"] = deprojection
 
@@ -518,7 +518,7 @@ class FittingInitializer(FittingComponent):
 
         # Set the parameters of the ionizing stellar component
         deprojection = self.deprojection.copy()
-        deprojection.filename = "ionizing_stars.fits"
+        deprojection.filename = self.ionizing_stellar_map_filename
         deprojection.scale_height = scale_height
         self.deprojections["ionizing stars"] = deprojection
 
@@ -558,7 +558,7 @@ class FittingInitializer(FittingComponent):
 
         # Set the parameters of the dust component
         deprojection = self.deprojection.copy()
-        deprojection.filename = "dust.fits"
+        deprojection.filename = self.dust_map_filename
         deprojection.scale_height = scale_height
         self.deprojections["dust"] = deprojection
 

@@ -14,6 +14,7 @@ make_old_map | -- | maps.stars.old.OldStellarMapMaker | arguments | Make the map
 make_young_map | -- | maps.stars.young.YoungStellarMapMaker | interactive | Make the map of the young stellar disk
 make_ionizing_map | -- | maps.stars.ionizing.IonizingStellarMapMaker | interactive | Make the map of the ionizing stellar population
 make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make the map of the dust distribution
+deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure
 initialize_fit | -- | fitting.initialization.FittingInitializer | arguments | Do the initialization before starting the fitting
 explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the parameter space for the radiative transfer modeling
