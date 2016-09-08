@@ -16,6 +16,6 @@ from pts.core.tools import filesystem as fs
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Positional option
-definition.add_positional_optional("run", "string", "name of the analysis run for which to launch the heating simulations", get_last_run_name(fs.cwd()), get_analysis_run_names(fs.cwd()))
+definition.add_positional_optional("run", "string", "name of the analysis run", get_last_run_name(fs.cwd()), get_analysis_run_names(fs.cwd()))
 
 # -----------------------------------------------------------------

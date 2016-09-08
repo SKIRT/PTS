@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..core.mappings import Mappings
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -50,6 +51,62 @@ class Model(object):
     # -----------------------------------------------------------------
 
     @property
+    def sfr(self):
+
+        """
+        This function derives the SFR (in Msun / year) from the FUV luminosity of the model and the intrinsic MAPPINGS SED
+        :return:
+        """
+
+        # Get the relevant parameters
+        metallicity = self.parameter_values["metallicity"]
+        compactness = self.parameter_values["sfr_compactness"]
+        pressure = self.parameter_values["sfr_pressure"]
+        covering_factor = self.parameter_values["sfr_covering"]
+
+        # Get the FUV luminosity of the ionizing stella
+        fuv_luminosity = self.parameter_values["fuv_ionizing"]
+
+        # Get the FUV pivot wavelength
+        fuv_wavelength = Filter.from_string("GALEX FUV").pivot
+
+        # Get the SFR
+        sfr = Mappings.sfr_for_luminosity(metallicity, compactness, pressure, covering_factor, fuv_luminosity, fuv_wavelength)
+
+        # Return the SFR
+        return sfr
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sfr_dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the relevant parameters
+        metallicity = self.parameter_values["metallicity"]
+        compactness = self.parameter_values["sfr_compactness"]
+        pressure = self.parameter_values["sfr_pressure"]
+        covering_factor = self.parameter_values["sfr_covering"]
+
+        # Get the FUV luminosity of the ionizing stella
+        fuv_luminosity = self.parameter_values["fuv_ionizing"]
+
+        # Get the FUV pivot wavelength
+        fuv_wavelength = Filter.from_string("GALEX FUV").pivot
+
+        # Get the dust mass
+        dust_mass = Mappings.dust_mass_for_luminosity(metallicity, compactness, pressure, covering_factor, fuv_luminosity, fuv_wavelength)
+
+        # Return the dust mass
+        return dust_mass
+
+    # -----------------------------------------------------------------
+
+    @property
     def mappings(self):
 
         """
@@ -62,11 +119,9 @@ class Model(object):
         compactness = self.parameter_values["sfr_compactness"]
         pressure = self.parameter_values["sfr_pressure"]
         covering_factor = self.parameter_values["sfr_covering"]
-        #sfr = self.parameter_values[""] # has to be derived from the MAPPINGS SED from the FUV luminosity
-        sfr = 1.
 
         # Create the MAPPINGS template
-        mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
+        mappings = Mappings(metallicity, compactness, pressure, covering_factor, self.sfr.to("Msun / yr").value)
 
         # Return the mappings template
         return mappings

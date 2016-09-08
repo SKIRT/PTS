@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.analysis.attenuation Contains the AttenuationAnalyser class
+## \package pts.modeling.analysis.attenuation Contains the AttenuationCurveAnalyser class.
 
 # -----------------------------------------------------------------
 
@@ -14,15 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 import numpy as np
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from .component import AnalysisComponent
-from ...core.tools.logging import log
-from ...core.tools import filesystem as fs
-from ..core.sed import SED
-from ..core.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve, MappingsAttenuationCurve
-from ...core.plot.attenuation import AttenuationPlotter
+from .component import AttenuationAnalysisComponent
+from ....core.tools.logging import log
+from ....core.tools import filesystem as fs
+from ...core.sed import SED
+from ...core.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve, MappingsAttenuationCurve
+from ....core.plot.attenuation import AttenuationPlotter
 
 # -----------------------------------------------------------------
 
@@ -37,7 +36,7 @@ from ...core.plot.attenuation import AttenuationPlotter
 
 # -----------------------------------------------------------------
 
-class AttenuationAnalyser(AnalysisComponent):
+class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
     
     """
     This class...
@@ -52,12 +51,9 @@ class AttenuationAnalyser(AnalysisComponent):
         """
 
         # Call the constructor of the base class
-        super(AttenuationAnalyser, self).__init__(config)
+        super(AttenuationCurveAnalyser, self).__init__(config)
 
         # -- Attributes --
-
-        # The analysis run
-        self.analysis_run = None
 
         # The SEDs
         self.total_sed = None
@@ -108,25 +104,7 @@ class AttenuationAnalyser(AnalysisComponent):
         """
 
         # Call the setup function of the base class
-        super(AttenuationAnalyser, self).setup()
-
-        # Load the analysis run
-        self.load_run()
-
-    # -----------------------------------------------------------------
-
-    def load_run(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the analysis run " + self.config.run + " ...")
-
-        # Get the run
-        self.analysis_run = self.get_run(self.config.run)
+        super(AttenuationCurveAnalyser, self).setup()
 
     # -----------------------------------------------------------------
 
@@ -210,14 +188,13 @@ class AttenuationAnalyser(AnalysisComponent):
         #self.mappings_attenuation = MappingsAttenuationCurve()
         wavelengths, abs_mappings = np.loadtxt(MappingsAttenuationCurve.path, unpack=True)
 
-        # This factor (~2e6) is the conversion factor from a SFR of 1 (1 M_sun / yr) to one M_sun
-        sfr_to_dust_mass = 2143279.799
+        # Get the dust mass in SFR clouds for the model
+        dust_mass = self.analysis_run.model.sfr_dust_mass
 
-        # Get the mappings template for the best model
-        mappings = self.analysis_run.model.mappings
 
-        # V band attenuation = total dust mass / total surface of M31 / 1e5 * 0.67 see data file.
-        a_v_mappings = sfr_to_dust_mass / (0.137 ** 2 * 15230) / 1e5 * 0.67
+
+        # V band attenuation = total dust mass in SFR clouds / total surface of M31 / 1e5 * 0.67
+        a_v_mappings = dust_mass / (0.137 ** 2 * 15230) / 1e5 * 0.67
 
         # The ABS for the V band
         abs_v = 2.23403e-01

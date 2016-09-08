@@ -21,11 +21,12 @@ fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation
 launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a simulation for analysis
 launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
-analyse_attenuation | -- | analysis.attenuation.AttenuationAnalyser | arguments | Analyse the dust attenuation of the best fitting model
-analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating in the best fitting model
-analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours of the best fitting model
-analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating in the best fitting model
-analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residuals of the best fitting model
+analyse_attenuation_curve | -- | analysis.attenuation.curve.AttenuationCurveAnalyser | arguments | Analyse the dust attenuation curve
+analyse_attenuation_map | -- | analysis.attenuation.map.AttenuationMapAnalyser | arguments | Analyse the attenuation map
+analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | arguments | Analyse the dust cell heating
+analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours
+analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
+analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residual images
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
 plot_data | plot_data | plotting.data.DataPlotter | arguments | Make plots of the data
 plot_preparation | plot_preparation | plotting.preparation.PreparationPlotter | arguments | Make plots of the preparation step
