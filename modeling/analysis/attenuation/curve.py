@@ -184,29 +184,20 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         # Inform the user
         log.info("Calculating the SFR contribution to the attenuation curve ...")
 
-        # Load the MAPPINGS attenuation curve
-        #self.mappings_attenuation = MappingsAttenuationCurve()
-        wavelengths, abs_mappings = np.loadtxt(MappingsAttenuationCurve.path, unpack=True)
-
         # Get the dust mass in SFR clouds for the model
         dust_mass = self.analysis_run.model.sfr_dust_mass
 
-
+        # Get the dust mass column density
+        average_column_density = (dust_mass / self.truncation_area).to("Msun / kpc2").value
 
         # V band attenuation = total dust mass in SFR clouds / total surface of M31 / 1e5 * 0.67
-        a_v_mappings = dust_mass / (0.137 ** 2 * 15230) / 1e5 * 0.67
+        a_v_mappings = 0.67 * average_column_density / 1e5
 
-        # The ABS for the V band
-        abs_v = 2.23403e-01
-
-        # Attenuation law (not normalized)
-        attenuations_mappings = abs_mappings / abs_v * a_v_mappings
-
-        # Create the attenuation curve
-        self.attenuation_sfr = AttenuationCurve(wavelengths, attenuations_mappings)
+        # Creat the attenuation curve for the SFR dust
+        self.attenuation_sfr = MappingsAttenuationCurve(a_v_mappings, self.v_band_wavelength)
 
         # Find the V-band attenuation for the SFR dust component
-        v_band_attenuation_sfr = self.attenuation_diffuse.attenuation_at(self.v_band_wavelength)
+        v_band_attenuation_sfr = self.attenuation_sfr.attenuation_at(self.v_band_wavelength)
 
         # Debugging
         log.debug("The V-band attenuation from dust in SF clouds is " + str(v_band_attenuation_sfr))

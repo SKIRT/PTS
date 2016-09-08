@@ -13,11 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
-from astropy.units import Unit
+from astropy.units import Unit, dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -733,6 +734,27 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def truncation_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert the semi minor and semi major axis lengths from angular to physical sizes
+        major = (self.truncation_ellipse.major * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
+        minor = (self.truncation_ellipse.minor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
+
+        # Calculate the area in kpc^2
+        # A = pi * a * b
+        area = math.pi * major * minor
+
+        # Return the area
+        return area
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def truncation_box(self):
 
         """
@@ -882,6 +904,18 @@ class ModelingComponent(Configurable):
 
         # Return the property map
         return properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.distance
 
     # -----------------------------------------------------------------
 

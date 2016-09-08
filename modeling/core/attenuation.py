@@ -325,7 +325,7 @@ class MappingsAttenuationCurve(AttenuationCurve):
 
     # -----------------------------------------------------------------
 
-    def __init__(self):
+    def __init__(self, attenuation, wavelength):
 
         """
         This function ...
@@ -333,11 +333,29 @@ class MappingsAttenuationCurve(AttenuationCurve):
 
         # Load the data
         # wl in micron from long to short wl.
-        # ABS
+        # ABS attenuations (see header of data file)
         wavelengths, abs_attenuations = np.loadtxt(self.path, unpack=True)
 
+        # CREATE A TABLE SO WE CAN EASILY SORT THE COLUMNS FOR INCREASING WAVELENGTH
+        names = ["Wavelength", "ABS attenuation"]
+        # Create the table
+        abs_table = tables.new([wavelengths, abs_attenuations], names)
+        abs_table["Wavelength"].unit = Unit("micron")
+        # Sort the table on wavelength
+        abs_table.sort("Wavelength")
+
+        wavelengths = np.array(list(abs_table["Wavelength"]))
+        abs_attenuations = np.array(list(abs_table["ABS attenuation"]))
+
+        # Find the ABS attenuation at the specified wavelength
+        interpolated = interpolate.interp1d(wavelengths, abs_attenuations, kind='linear')
+        abs_wavelength = interpolated(wavelength.to("micron").value)
+
+        # 'Real' attenuations
+        attenuations_mappings = abs_attenuations / abs_wavelength * attenuation
+
         # Call the constructor of the base class
-        super(MappingsAttenuationCurve, self).__init__(wavelengths, abs_attenuations)
+        super(MappingsAttenuationCurve, self).__init__(wavelengths, attenuations_mappings)
 
 # -----------------------------------------------------------------
 
