@@ -61,9 +61,9 @@ class SkirtExec:
     ## This function invokes the <tt>SKIRT</tt> executable with the simulations and command line options corresponding to the
     #  values of the function arguments:
     #
-    # - simulations: the list of simulations (instances of SkirtSimulation) to be executed
-    # - recursive: if one or more simulations passed to the execute function contain wildcards in their \em ski file
-    #   path, the recursive argument can be used to specify whether all directories recursively nested within the base
+    # - skipattern: the paths/names of the ski file(s) to be executed
+    # - recursive: if one or more ski filename patterns passed to the execute function contain wildcards,
+    #   the recursive argument can be used to specify whether all directories recursively nested within the base
     #   path are searched as well, using the same filename pattern.
     # - inpath: a string specifying the absolute or relative path for simulation input files.
     # - outpath: a string specifying the absolute or relative path for simulation output files.
@@ -76,6 +76,10 @@ class SkirtExec:
     # - processes: the number of parallel MPI processes to be launched. The default value is one, which means MPI
     #   is not used. If the specified number of processes is larger than one, the value of \em parallel argument is
     #   ignored (i.e. you can't run multiple simulations in parallel when using MPI).
+    # - dataparallel: if \c True and multiple processes are specified, the simulation will run in data-parallelized
+    #   mode; if missing of False the simulation will run in task-parallelized mode.
+    # - mpistyle: a string specifying the MPI implementation of the host system; if missing defaults to 'generic'.
+    # - brief: if \c True, causes brief console logging; if missing defaults to False.
     # - verbose: This option has effect only if the number of processes is larger than one. If set to \c True, each
     #   process creates its own complete log file. If missing or set to \em False, only the root process creates a
     #   full log file, and the other processes only create a log file when there are errors or warnings.
@@ -92,8 +96,9 @@ class SkirtExec:
     # The function returns a list of SkirtSimulation instances corresponding to the simulations to be performed
     # (after processing any wildcards in the ski filenames), in arbitrary order.
     #
-    def execute(self, skipattern, recursive=False, inpath=None, outpath=None, skirel=False, threads=0, parallel=1,
-                processes=1, mpistyle='generic', brief=False, verbose=False, memory=False, allocation=False,
+    def execute(self, skipattern, recursive=False, inpath=None, outpath=None, skirel=False,
+                threads=0, parallel=1, processes=1, dataparallel=False, mpistyle='generic',
+                brief=False, verbose=False, memory=False, allocation=False,
                 emulate=False, single=False, wait=True, silent=False):
 
         self.mpi_style = mpistyle
@@ -114,6 +119,7 @@ class SkirtExec:
         arguments.parallel.threads = threads
         arguments.parallel.processes = processes
         arguments.parallel.simulations = parallel
+        arguments.parallel.dataparallel = dataparallel
 
         # Logging settings
         arguments.logging.brief = brief

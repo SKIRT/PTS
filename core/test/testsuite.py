@@ -129,22 +129,25 @@ class SkirtTestSuite(object):
         # Check in which modes the test suite should be executed (singleprocessing and/or multiprocessing mode)
         # and create the appropriate ski file pattern(s).
         if self._subsuitepath == self._suitepath:
-            # Add configurations for both singleprocessing and multiprocessing modes
-            self._modes = [(cores, threads, 1), (1, threadspp, processes)]
-            self._modenames = ["in singleprocessing mode ", "in multiprocessing mode "]
-            self._skipatterns = [os.path.join(self._suitepath, "Singleprocessing", "*.ski"), os.path.join(self._suitepath, "Multiprocessing", "*.ski")]
+            # Add configurations for all three modes
+            self._modes = [(cores, threads, 1, False), (1, threadspp, processes, False), (1, threadspp, processes, True)]
+            self._modenames = ["in single-processing mode ", "in multi-processing mode ", "in data-parallelization mode "]
+            self._skipatterns = [os.path.join(self._suitepath, "Singleprocessing", "*.ski"),
+                                 os.path.join(self._suitepath, "Multiprocessing", "*.ski"),
+                                 os.path.join(self._suitepath, "Dataparallelization", "*.ski")]
 
         elif "Singleprocessing" in self._subsuitepath:
-            # Add the proper configuration, where 4 stands for the number of parallel simulations and 1 stands for
-            # the number of processes to use
-            self._modes = [(cores, threads, 1)]
+            self._modes = [(cores, threads, 1, False)]
             self._modenames = [""]
             self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
 
         elif "Multiprocessing" in self._subsuitepath:
-            # Add the proper configuration, where 1 stands for the number of parallel simulations and 4 stands for
-            # the number of processes per simulation
-            self._modes = [(1, threadspp, processes)]
+            self._modes = [(1, threadspp, processes, False)]
+            self._modenames = [""]
+            self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
+
+        elif "Dataparallelization" in self._subsuitepath:
+            self._modes = [(1, threadspp, processes, True)]
             self._modenames = [""]
             self._skipatterns = [os.path.join(self._subsuitepath, "*.ski")]
 
@@ -176,7 +179,8 @@ class SkirtTestSuite(object):
         for mode, modename, skipattern in zip(self._modes, self._modenames, self._skipatterns):
 
             # Start performing the simulations
-            simulations = self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True, parallel=mode[0], threads=mode[1], processes=mode[2], wait=False)
+            simulations = self._skirt.execute(skipattern, recursive=True, inpath="in", outpath="out", skirel=True,
+                            parallel=mode[0], threads=mode[1], processes=mode[2], dataparallel=mode[3], wait=False)
             numsimulations = len(simulations)
 
             # Inform the user on the number of test cases (in this mode)
