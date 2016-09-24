@@ -21,9 +21,9 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..core.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar, sum_errorbars_quadratically
-from ...core.tools import tables
 from ...core.plot.sed import SEDPlotter
-from ...magic.misc.kernels import AnianoKernels, HerschelKernels
+from ...magic.misc.kernels import AnianoKernels
+from ...magic.misc.psfs import HerschelPSFs
 from ...magic.core.kernel import ConvolutionKernel
 from ...core.launch.pts import PTSRemoteLauncher
 from ...magic.misc.calibration import CalibrationError
@@ -117,7 +117,7 @@ class PhotoMeter(PhotometryComponent):
 
         # The instances that keep track of PSFs and convolution kernels
         self.aniano = AnianoKernels()
-        self.herschel = HerschelKernels()
+        self.herschel = HerschelPSFs()
 
         # The flux error table
         self.error_table = None

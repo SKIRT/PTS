@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.basics.skygeometry Contains geometry related classes in sky coordinates.
+## \package pts.magic.basics.physicalgeometry Contains geometry related classes in physical coordinates.
 
 # -----------------------------------------------------------------
 
@@ -28,26 +28,26 @@ from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
-class SkyExtent(object):
+class PhysicalExtent(object):
 
     """
     This class ...
     """
 
-    def __init__(self, ra, dec):
+    def __init__(self, x, y):
 
         """
         The constructor ...
-        :param ra:
-        :param dec:
+        :param x:
+        :param y:
         """
 
-        self.ra = ra
-        self.dec = dec
+        self.x = x
+        self.y = y
 
 # -----------------------------------------------------------------
 
-class SkyComposite(object):
+class PhysicalComposite(object):
 
     """
     This class ...
@@ -71,6 +71,7 @@ class SkyComposite(object):
 
     @property
     def x(self):
+            
         """
         This function ...
         :return:
@@ -82,31 +83,13 @@ class SkyComposite(object):
 
     @property
     def y(self):
+            
         """
         This function ...
         :return:
         """
 
         return self.base.y
-
-    # -----------------------------------------------------------------
-
-    def to_region_string(self, coordinate_system=True):
-
-        """
-        This function ...
-        :param coordinate_system:
-        :return:
-        """
-
-        # Create the suffix
-        if len(self.meta) > 0:
-            suffix = " #"
-            for key in self.meta: suffix += " " + key + " = " + str(self.meta[key])
-        else:
-            suffix = ""
-
-        pass
 
     # -----------------------------------------------------------------
 
@@ -117,7 +100,7 @@ class SkyComposite(object):
         :return:
         """
 
-        return SkyComposite(self.base + extent, self.exclude + extent, self.meta)
+        return PhysicalComposite(self.base + extent, self.exclude + extent, self.meta)
 
     # -----------------------------------------------------------------
 
@@ -142,7 +125,7 @@ class SkyComposite(object):
         :return:
         """
 
-        return SkyComposite(self.base - extent, self.exclude - extent, self.meta)
+        return PhysicalComposite(self.base - extent, self.exclude - extent, self.meta)
 
     # -----------------------------------------------------------------
 
@@ -167,7 +150,7 @@ class SkyComposite(object):
         :return:
         """
 
-        return SkyComposite(self.base * value, self.exclude * value, self.meta)
+        return PhysicalComposite(self.base * value, self.exclude * value, self.meta)
 
     # -----------------------------------------------------------------
 
@@ -192,7 +175,7 @@ class SkyComposite(object):
         :return:
         """
 
-        return SkyComposite(self.base / value, self.exclude / value, self.meta)
+        return PhysicalComposite(self.base / value, self.exclude / value, self.meta)
 
     # -----------------------------------------------------------------
 
@@ -233,33 +216,29 @@ class SkyComposite(object):
 
 # -----------------------------------------------------------------
 
-class SkyCoordinate(SkyCoord):
+class PhysicalCoordinate(object):
 
     """
     This class ...
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, x, y, meta=None):
 
         """
         The constructor ...
-        :param args:
-        :param kwargs:
+        :param x:
+        :param y:
         :return:
         """
 
-        meta = kwargs.pop("meta", None)
+        self.x = x
+        self.y = y
 
-        # Call the constructor of the base class
-        super(SkyCoordinate, self).__init__(*args, **kwargs)
-
-        # Set meta information
-        if meta is not None: self.meta = meta
-        else: self.meta = dict()
+        self.meta = meta if meta is not None else dict()
 
     # -----------------------------------------------------------------
 
-    def to_pixel(self, wcs, mode='wcs'):
+    def to_pixel(self, wcs):
 
         """
         This function ...
@@ -268,56 +247,7 @@ class SkyCoordinate(SkyCoord):
         :return:
         """
 
-        x, y = super(SkyCoordinate, self).to_pixel(wcs, origin=0, mode=mode)
-        return Coordinate(float(x), float(y), meta=self.meta)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_ra(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ra
-
-    # -----------------------------------------------------------------
-
-    @property
-    def max_ra(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ra
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_dec(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.dec
-
-    # -----------------------------------------------------------------
-
-    @property
-    def max_dec(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.dec
+        pass
 
     # -----------------------------------------------------------------
 
@@ -332,50 +262,11 @@ class SkyCoordinate(SkyCoord):
         :return:
         """
 
-        skycoordinate = super(SkyCoordinate, cls).from_pixel(coordinate.x, coordinate.y, wcs, origin=0, mode=mode)
-        return cls(ra=skycoordinate.ra.deg, dec=skycoordinate.dec.deg, unit="deg", meta=coordinate.meta)
-
-    # -----------------------------------------------------------------
-
-    def to_astropy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SkyCoord(ra=self.ra.to("deg").value, dec=self.dec.to("deg").value, unit="deg", frame="fk5")
-
-    # -----------------------------------------------------------------
-
-    def to_region_string(self, coordinate_system=True):
-
-        """
-        This function ...
-        :param coordinate_system:
-        :return:
-        """
-
-        # Create the suffix
-        if len(self.meta) > 0:
-            suffix = " #"
-            for key in self.meta:
-                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
-                else: suffix += " " + key + " = " + str(self.meta[key])
-        else: suffix = ""
-
-        # Get the RA and DEC
-        ra_deg = self.ra.to("deg").value
-        dec_deg = self.dec.to("deg").value
-
-        # Create and return the line
-        if coordinate_system: line = "fk5;point({},{})".format(ra_deg, dec_deg) + suffix
-        else: line = "point({},{})".format(ra_deg, dec_deg) + suffix
-        return line
+        pass
 
 # -----------------------------------------------------------------
 
-class SkyLine(object):
+class PhysicalLine(object):
 
     """
     This function ...
@@ -426,7 +317,7 @@ class SkyLine(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_ra(self):
+    def min_x(self):
 
         """
         This function ...
@@ -535,7 +426,7 @@ class SkyLine(object):
 
 # -----------------------------------------------------------------
 
-class SkyEllipse(object):
+class PhysicalEllipse(object):
 
     """
     This class ...
@@ -790,7 +681,7 @@ class SkyEllipse(object):
 
 # -----------------------------------------------------------------
 
-class SkyCircle(object):
+class PhysicalCircle(object):
 
     """
     This class ...
@@ -964,7 +855,7 @@ class SkyCircle(object):
 
 # -----------------------------------------------------------------
 
-class SkyRectangle(object):
+class PhysicalRectangle(object):
 
     """
     This class
@@ -1115,126 +1006,6 @@ class SkyRectangle(object):
         if coordinate_system: line = "fk5;box(%s,%s,%.2f\",%.2f\",%s)" % (center_ra, center_dec, width, height, angle)
         else: line = "box(%s,%s,%.2f\",%.2f\",%s)" % (center_ra, center_dec, width, height, angle)
         line += suffix
-        return line
-
-# -----------------------------------------------------------------
-
-class SkyPolygon(object):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, meta=None):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.points = []
-
-        # Set meta information
-        self.meta = meta if meta is not None else dict()
-
-    # -----------------------------------------------------------------
-
-    def add_point(self, point):
-
-        """
-        This function ...
-        :param point:
-        :return:
-        """
-
-        self.points.append(point)
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_pixel(cls, polygon, wcs):
-
-        """
-        This function ...
-        :param polygon:
-        :param wcs:
-        :return:
-        """
-
-        # Create the SkyPolygon object
-        skypolygon = cls(meta=polygon.meta)
-
-        # Loop over the points in the polygon
-        for point in polygon.points:
-
-            # Convert the coordinate to a SkyCoordinate
-            coordinate = point.to_sky(wcs)
-
-            # Add the SkyCoordinate to the points of the new SkyPolygon
-            skypolygon.add_point(coordinate)
-
-        # Return the new sky polygon
-        return skypolygon
-
-    # -----------------------------------------------------------------
-
-    def to_pixel(self, wcs):
-
-        """
-        This function ...
-        :param wcs:
-        :return:
-        """
-
-        # Create a new polygon
-        polygon = Polygon(meta=self.meta)
-
-        # Loop over the points in this SkyPolygon
-        for point in self.points:
-
-            # Convert the coordinate to a pixel position
-            position = point.to_pixel(wcs)
-
-            # Add the pixel position to the points
-            polygon.add_point(position)
-
-        # Return the new polygon
-        return polygon
-
-    # -----------------------------------------------------------------
-
-    def to_region_string(self, coordinate_system=True):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the suffix
-        if len(self.meta) > 0:
-            suffix = " #"
-            for key in self.meta:
-                if key == "text": suffix += " " + key + " = {" + str(self.meta[key]) + "}"
-                else: suffix += " " + key + " = " + str(self.meta[key])
-        else: suffix = ""
-
-        # Initialize line
-        if coordinate_system: line = "fk5;polygon("
-        else: line = "polygon("
-
-        lines = []
-
-        # Add the points to the line
-        for point in self.points:
-
-            ra = point.ra.to("deg").value
-            dec = point.dec.to("deg").value
-            lines.append("{},{}".format(ra, dec))
-
-        # Finish line
-        line += ",".join(lines) + ")" + suffix
-
-        # Return the line
         return line
 
 # -----------------------------------------------------------------

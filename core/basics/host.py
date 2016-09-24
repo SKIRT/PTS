@@ -151,6 +151,7 @@ class Host(object):
         self.force_process_binding = config.force_process_binding
         self.use_hyperthreading = config.use_hyperthreading
         self.modules = config.modules
+        self.installation_modules = config.installation_modules
         self.clusters = config.clusters
         self.vpn = config.vpn
 

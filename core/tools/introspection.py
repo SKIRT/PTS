@@ -48,6 +48,9 @@ pts_run_dir = os.path.join(pts_root_dir, "run")
 # The path to the PTS user directory (PTS/user)
 pts_user_dir = os.path.join(pts_root_dir, "user")
 
+# The path to the PTS ext directory (PTS/ext)
+pts_ext_dir = os.path.join(pts_root_dir, "ext")
+
 # The path to the PTS temp directory (PTS/temp)
 pts_temp_dir = os.path.join(pts_root_dir, "temp")
 

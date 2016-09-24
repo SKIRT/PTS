@@ -38,14 +38,8 @@ class PreparationComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # The path to the preparation info table
-        self.prep_info_path = None
-
         # The names of the different images for the preparation components
         self.prep_names = dict()
-
-        # The original names of the different images, based on the preparation names
-        self.original_names = dict()
 
         # The paths to the preparation subdirectories for each image
         self.prep_paths = dict()
@@ -65,26 +59,21 @@ class PreparationComponent(ModelingComponent):
         # Call the setup function of the base class
         super(PreparationComponent, self).setup()
 
-        # Set the path to the preparation info table
-        self.prep_info_path = fs.join(self.prep_path, "prep_info.dat")
+        # Check for presence of dataset
+        if not fs.is_file(self.initial_dataset_path): raise RuntimeError("Dataset has not been created yet. Run create_dataset first.")
 
-        # If the table has already been created, load the info
-        if fs.is_file(self.prep_info_path):
+        # Set the image names
+        for prep_name in self.initial_dataset.paths:
 
-            # Load the info table
-            info = tables.from_file(self.prep_info_path, format="ascii.ecsv")
+            # Path
+            image_path = self.initial_dataset.paths[prep_name]
 
-            # Set the image names
-            for i in range(len(info)):
+            # Name
+            image_name = fs.strip_extension(fs.name(image_path))
 
-                original_name = info["Image name"][i]
-                original_path = info["Image path"][i]
-                prep_name = info["Preparation name"][i]
-
-                self.prep_names[original_name] = prep_name
-                self.original_names[prep_name] = original_name
-                self.prep_paths[prep_name] = fs.join(self.prep_path, prep_name)
-                self.original_paths[prep_name] = original_path
+            self.prep_names[image_name] = prep_name
+            self.prep_paths[prep_name] = fs.join(self.prep_path, prep_name)
+            self.original_paths[prep_name] = image_path
 
         # Create the preparation subdirectories for each image
         #fs.create_directories(self.prep_paths.values())

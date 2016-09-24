@@ -94,11 +94,8 @@ class Remote(object):
 
         # TODO: swap to cluster here?
 
-        # Load the necessary modules
-        if self.host.modules is not None:
-
-            log.info("Loading necessary modules...")
-            self.execute("module load " + " ".join(self.host.modules), output=False)
+        # Load modules
+        self.load_modules()
 
         # Check whether the output directory exists
         if not self.is_directory(self.host.output_path): raise ValueError("The specified output path does not exist")
@@ -114,6 +111,51 @@ class Remote(object):
 
         # Disconnect from the remote host
         self.logout()
+
+    # -----------------------------------------------------------------
+
+    def load_modules(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the necessary modules
+        if self.host.modules is not None:
+
+            log.info("Loading necessary modules...")
+            self.execute("module load " + " ".join(self.host.modules), output=False)
+
+    # -----------------------------------------------------------------
+
+    def load_installation_modules(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the modules
+        if self.host.installation_modules is not None:
+
+            log.info("Loading installation modules ...")
+            self.execute("module load " + " ".join(self.host.installation_modules), output=False)
+
+    # -----------------------------------------------------------------
+
+    def unload_all_modules(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Unloading all modules ...")
+
+        # Module purge
+        self.execute("module purge", output=False)
 
     # -----------------------------------------------------------------
 
@@ -1414,6 +1456,18 @@ class Remote(object):
 
         # Only one line is expected
         return output[0]
+
+    # -----------------------------------------------------------------
+
+    def is_executable(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.find_executable(name) is not None
 
     # -----------------------------------------------------------------
 

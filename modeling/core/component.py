@@ -161,6 +161,9 @@ class ModelingComponent(Configurable):
         # The path to the disk region file
         self.disk_region_path = None
 
+        # The path to the initial data set file
+        self.initial_dataset_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -274,6 +277,9 @@ class ModelingComponent(Configurable):
 
         # Set the path to the disk region file
         self.disk_region_path = fs.join(self.components_path, "disk.reg")
+
+        # Set the path to the initial dataset file
+        self.initial_dataset_path = fs.join(self.data_path, "dataset.dat")
 
     # -----------------------------------------------------------------
 
@@ -448,6 +454,18 @@ class ModelingComponent(Configurable):
 
         from ..config.parameters import units as parameter_units
         return parameter_units
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DataSet.from_file(self.initial_dataset_path)
 
     # -----------------------------------------------------------------
 

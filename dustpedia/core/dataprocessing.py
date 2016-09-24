@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.dustpedia.dataprocessing Contains the DustPediaDataProcessing class.
+## \package pts.dustpedia.core.dataprocessing Contains the DustPediaDataProcessing class.
 
 # -----------------------------------------------------------------
 
@@ -47,11 +47,15 @@ dustpedia_dat_path = fs.join(introspection.pts_dat_dir("dustpedia"))
 
 # -----------------------------------------------------------------
 
+dustpedia_data_path = fs.join(dustpedia_dat_path, "data")
+
+# -----------------------------------------------------------------
+
 # Paths to Chris' tables
-galex_url_table_path = fs.join(dustpedia_dat_path, "GALEX_DustPedia_Herschel_Tile_URLs.dat")
-galex_observations_table_path = fs.join(dustpedia_dat_path, "DustPedia_Herschel_GALEX_Results.csv")
-sdss_fields_table_path = fs.join(dustpedia_dat_path, "SDSS_DR12_Primary_Fields.dat")
-ledawise_table_path = fs.join(dustpedia_dat_path, "DustPedia_LEDAWISE_Herschel.csv")
+galex_url_table_path = fs.join(dustpedia_data_path, "GALEX_DustPedia_Herschel_Tile_URLs.dat")
+galex_observations_table_path = fs.join(dustpedia_data_path, "DustPedia_Herschel_GALEX_Results.csv")
+sdss_fields_table_path = fs.join(dustpedia_data_path, "SDSS_DR12_Primary_Fields.dat")
+ledawise_table_path = fs.join(dustpedia_data_path, "DustPedia_LEDAWISE_Herschel.csv")
 
 # -----------------------------------------------------------------
 

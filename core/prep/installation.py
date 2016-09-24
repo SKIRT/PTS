@@ -202,6 +202,9 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
+        # Check if Qt is installed
+        self.check_qt_local()
+
         # Install Qt
         self.install_qt_local()
 
@@ -210,6 +213,17 @@ class SKIRTInstaller(Installer):
 
         # Install SKIRT
         self.install_skirt_local()
+
+    # -----------------------------------------------------------------
+
+    def check_qt_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -269,14 +283,44 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing remotely ...")
 
+        # Check Qt installation
+        has_qt = self.check_qt_remote()
+
         # Install Qt
-        self.install_qt_remote()
+        if not has_qt: self.install_qt_remote()
 
         # Get the SKIRT code
         self.get_skirt_remote()
 
         # Install SKIRT
         self.install_skirt_remote()
+
+    # -----------------------------------------------------------------
+
+    def check_qt_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking for Qt installation on remote ...")
+
+        # Installation modules are defined
+        if self.remote.host.installation_modules is None:
+
+            # Unload modules that are already loaded
+            self.remote.unload_all_modules()
+
+            # Load modules necessary for installation (this will hopefully bring out the qmake executable)
+            self.remote.load_installation_modules()
+
+        # Check if qmake can be found
+        has_qt = self.remote.is_executable("qmake")
+
+        # Return
+        return has_qt
 
     # -----------------------------------------------------------------
 
@@ -297,6 +341,8 @@ class SKIRTInstaller(Installer):
 
         # FOR HPC: module load Qt/5.2.1-intel-2015a
 
+        # CHECK IF QMAKE CAN BE FOUND
+
     # -----------------------------------------------------------------
 
     def get_skirt_remote(self):
@@ -306,6 +352,7 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
+
     # -----------------------------------------------------------------
 
     def install_skirt_remote(self):
@@ -314,6 +361,33 @@ class SKIRTInstaller(Installer):
         This function ...
         :return:
         """
+
+        local_script_path =
+
+        screen_name = "SKIRT installation"
+
+        # Open the job script file
+        script_file = open(local_script_path, 'w')
+
+        # Write a general header to the batch script
+        script_file.write("#!/bin/sh\n")
+        script_file.write("# Batch script for running SKIRT on a remote system\n")
+        script_file.write("# To execute manualy, copy this file to the remote filesystem and enter the following commmand:\n")
+        script_file.write("# screen -S " + screen_name + " -L -d -m " + fs.name(local_script_path) + "'\n")
+        script_file.write("\n")
+
+        # Load modules
+        script_file.write("module load lxml/3.4.2-intel-2015a-Python-2.7.9")
+        script_file.write("module load Qt/5.2.1-intel-2015a")
+
+        #
+        script_file.write("./makeSKIRT.sh")
+
+
+
+
+
+        self.remote.start_screen(name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False)
 
     # -----------------------------------------------------------------
 

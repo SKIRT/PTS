@@ -107,7 +107,7 @@ class PreparationInitializer(PreparationComponent):
         self.setup()
 
         # 2. Create the preparation info table
-        self.create_info_table()
+        #self.create_info_table() # NOW MOVED TO DATASETCREATOR!
 
         # 2. Load the images
         self.load_reference_image()
@@ -140,54 +140,6 @@ class PreparationInitializer(PreparationComponent):
 
         # Call the setup function of the base class
         super(PreparationInitializer, self).setup()
-
-    # -----------------------------------------------------------------
-
-    def create_info_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        names_column = []
-        paths_column = []
-        prep_names_column = []
-        names = ["Image name", "Image path", "Preparation name"]
-
-        # Loop over all subdirectories of the data directory
-        for path, name in fs.directories_in_path(fs.join(config.path, "data"), not_contains="bad",
-                                                 returns=["path", "name"]):
-
-            # Loop over all FITS files found in the current subdirectory
-            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="_Error",
-                                                           returns=["path", "name"]):
-
-                # Open the image frame
-                frame = Frame.from_file(image_path)
-
-                # Determine the preparation name
-                if frame.filter is not None:
-                    prep_name = str(frame.filter)
-                else:
-                    prep_name = image_name
-
-                # Set the row entries
-                names_column.append(image_name)
-                paths_column.append(image_path)
-                prep_names_column.append(prep_name)
-
-        # Create the table
-        data = [names_column, paths_column, prep_names_column]
-        table = tables.new(data, names)
-
-        # Check whether the preparation directory exists
-        prep_path = fs.join(config.path, "prep")
-        if not fs.is_directory(prep_path): fs.create_directory(prep_path)
-
-        # Save the table
-        prep_info_table_path = fs.join(prep_path, "prep_info.dat")
-        tables.write(table, prep_info_table_path, format="ascii.ecsv")
 
     # -----------------------------------------------------------------
 
@@ -237,33 +189,33 @@ class PreparationInitializer(PreparationComponent):
         log.info("Checking the input images ...")
 
         # Loop over all subdirectories of the data directory
-        for path in fs.directories_in_path(self.data_path, not_contains="bad", returns="path"):
+        #for path in fs.directories_in_path(self.data_path, not_contains="bad", returns="path"):
+
+        # Loop over all images in the initial dataset
+        for prep_name in self.initial_dataset.paths:
 
             # Debugging
-            log.debug("Opening " + path + " ...")
+            log.debug("Opening " + prep_name + " ...")
 
-            # Loop over all FITS files found in the current subdirectory
-            for image_path in fs.files_in_path(path, extension="fits", not_contains="_Error", returns="path"):
+            # Image path
+            image_path = self.initial_dataset.paths[prep_name]
 
-                # Ignore the Planck data (for now)
-                if "Planck" in image_path: continue
+            # Name
+            image_name = fs.strip_extension(fs.name(image_path))
 
-                # Name
-                image_name = fs.strip_extension(fs.name(image_path))
+            # Debugging
+            log.debug("Checking " + image_path + " ...")
 
-                # Debugging
-                log.debug("Checking " + image_path + " ...")
+            # Determine the output path for this image
+            prep_name = self.prep_names[image_name]
+            output_path = self.prep_paths[prep_name]
 
-                # Determine the output path for this image
-                prep_name = self.prep_names[image_name]
-                output_path = self.prep_paths[prep_name]
+            # Check whether this image already has an initialized image
+            final_path = fs.join(output_path, "initialized.fits")
+            if fs.is_file(final_path): continue
 
-                # Check whether this image already has an initialized image
-                final_path = fs.join(output_path, "initialized.fits")
-                if fs.is_file(final_path): continue
-
-                # Add the image path to the list
-                self.paths.append(image_path)
+            # Add the image path to the list
+            self.paths.append(image_path)
 
     # -----------------------------------------------------------------
 
