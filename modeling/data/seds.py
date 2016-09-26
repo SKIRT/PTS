@@ -26,6 +26,7 @@ from ...core.basics.errorbar import ErrorBar
 from ..preparation import unitconversion
 from .component import DataComponent
 from ...dustpedia.core.database import DustPediaDatabase, get_account
+from ...dustpedia.core.photometry import DustPediaPhotometry
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,10 @@ class SEDFetcher(DataComponent):
         # -- Attributes --
 
         # The DustPedia database
-        self.database = DustPediaDatabase()
+        #self.database = DustPediaDatabase()
+
+        # The DustPedia photometry object
+        self.dustpedia = DustPediaPhotometry()
 
         # The Vizier querying object
         self.vizier = Vizier(keywords=["galaxies"])
@@ -75,7 +79,7 @@ class SEDFetcher(DataComponent):
         self.setup()
 
         # 2. Get the dustpedia SED
-        #self.get_dustpedia()
+        self.get_dustpedia()
 
         # 2. If requested, query the GALEX ultraviolet atlas of nearby galaxies catalog (Gil de Paz+, 2007)
         if "GALEX" in self.config.catalogs: self.get_galex()
@@ -150,13 +154,13 @@ class SEDFetcher(DataComponent):
         # LOGIN TO DUSTPEDIA DATABASE
 
         # Get username and password for the DustPedia database
-        if self.config.database.username is not None:
-            username = self.config.database.username
-            password = self.config.database.password
-        else: username, password = get_account()
+        #if self.config.database.username is not None:
+        #    username = self.config.database.username
+        #    password = self.config.database.password
+        #else: username, password = get_account()
 
         # Login to the DustPedia database
-        self.database.login(username, password)
+        #self.database.login(username, password)
 
     # -----------------------------------------------------------------
 
@@ -168,7 +172,13 @@ class SEDFetcher(DataComponent):
         """
 
         # Get the SED
-        sed = self.database.get_sed(self.ngc_id_nospaces)
+        #sed = self.database.get_sed(self.ngc_id_nospaces)
+
+        # Add the SED
+        #self.seds["DustPedia"] = sed
+
+        # Get the SED
+        sed = self.dustpedia.get_sed(self.galaxy_name)
 
         # Add the SED
         self.seds["DustPedia"] = sed

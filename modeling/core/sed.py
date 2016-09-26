@@ -26,6 +26,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.basics.errorbar import ErrorBar
 from ...core.basics.filter import Filter
+from ...core.basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
@@ -288,7 +289,7 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, fltr, flux, error):
+    def add_entry(self, fltr, flux, error=None):
 
         """
         This function ...
@@ -298,7 +299,13 @@ class ObservedSED(object):
         :return:
         """
 
-        self.table.add_row([fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), flux, error.lower, error.upper])
+        if error is not None:
+            error_lower = error.lower if hasattr(error, "lower") else -abs(float(error))
+            error_upper = error.upper if hasattr(error, "upper") else abs(float(error))
+        else: error_lower = error_upper = None
+
+        self.table.add_row([fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), flux, error_lower, error_upper])
+        self.table.sort("Wavelength") # sort on wavelength
 
     # -----------------------------------------------------------------
 

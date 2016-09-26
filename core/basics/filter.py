@@ -24,6 +24,30 @@ from scipy.interpolate import interp1d
 from lxml import etree
 
 # -----------------------------------------------------------------
+
+# Filtername , Frequency, filename
+# Planck_350    857 GHz   857   HFI
+# Planck_550    545 GHz   545   HFI
+# Planck_850    352 GHz   353   HFI
+# Planck_1380   222 GHz   217   HFI
+# Planck_2100   142 GHz   143   HFI
+# Planck_3000   100 GHz   100   HFI
+# Planck_4260   70 GHz    070   LFI
+# Planck_6810   44 GHz    044   LFI
+# Planck_10600  28 GHz    030   LFI
+
+planck_info = dict()
+planck_info["Planck_350"] = ("857", "HFI")
+planck_info["Planck_550"] = ("545", "HFI")
+planck_info["Planck_850"] = ("353", "HFI")
+planck_info["Planck_1380"] = ("217", "HFI")
+planck_info["Planck_2100"] = ("143", "HFI")
+planck_info["Planck_3000"] = ("100", "HFI")
+planck_info["Planck_4260"] = ("070", "LFI")
+planck_info["Planck_6810"] = ("044", "LFI")
+planck_info["Planck_10600"] = ("030", "LFI")
+
+# -----------------------------------------------------------------
 #  Filter class
 # -----------------------------------------------------------------
 
@@ -107,8 +131,79 @@ class Filter:
     #| Generic/Johnson.M | Johnson M
     def __init__(self, filterspec, name=None):
 
+        # Planck filters have to be handled seperately
+        if isinstance(filterspec, types.StringTypes) and "planck" in filterspec.lower():
+
+            # Import Astropy stuff
+            from astropy.units import Unit, spectral
+
+            this_path = os.path.dirname(os.path.abspath(__file__))
+            core_path = os.path.dirname(this_path)
+            planck_transmissions_path = os.path.join(core_path, "dat", "filters", "Planck")
+
+            # Get info
+            frequency_string = planck_info[filterspec][0]
+            instrument = planck_info[filterspec][1]
+
+            filename = instrument + "_BANDPASS_F" + frequency_string + ".txt"
+            filepath = os.path.join(planck_transmissions_path, filename)
+
+            wavenumbers, transmissions = np.loadtxt(filepath, unpack=True, skiprows=2, usecols=(0,1))
+
+            # Remove zero from the wavenumbers
+            if wavenumbers[0] == 0:
+                wavenumbers = wavenumbers[1:]
+                transmissions = transmissions[1:]
+
+            # HFI
+            if instrument == "HFI":
+                wavenumbers = wavenumbers * Unit("1/cm")
+                wavelengths = (1.0/wavenumbers).to("micron").value
+
+            # LFI
+            else:
+                frequencies = wavenumbers * Unit("GHz")
+                wavelengths = frequencies.to("micron", equivalencies=spectral()).value
+
+            # REVERSE
+            wavelengths = np.flipud(wavelengths)
+            transmissions = np.flipud(transmissions)
+
+            self._WavelengthMin = np.min(wavelengths)
+            self._WavelengthMax = np.max(wavelengths)
+            self._WavelengthCen = None
+
+            self._Wavelengths = wavelengths
+            self._Transmission = transmissions
+
+            # Calculate integrals
+            integral1 = np.trapz(x=self._Wavelengths, y=self._Transmission)
+            integral2 = np.trapz(x=self._Wavelengths, y=self._Transmission / (self._Wavelengths ** 2))
+
+            integral3 = np.trapz(x=self._Wavelengths, y=self._Transmission * self._Wavelengths)
+
+            # Mean wavelength, ID and description
+            self._WavelengthMean = integral3 / integral1
+            self._WavelengthEff = None
+            self._FilterID = "Planck/" + instrument + "." + frequency_string
+            self._Description = instrument + " " + frequency_string
+
+            # Not photon counter
+            self._PhotonCounter = False
+
+            # Calculate integrated transmission and pivot wavelength
+            self._IntegratedTransmission = integral1
+            self._WavelengthPivot = np.sqrt(integral1 / integral2)
+
+            self._EffWidth = None
+
+            self.true_filter = True
+
+            # Success
+            return
+
         # string --> load from appropriate resource file
-        if isinstance(filterspec, types.StringTypes):
+        elif isinstance(filterspec, types.StringTypes):
             for pythondir in sys.path:
                 filterdir = os.path.join(pythondir, "pts", "core", "dat", "filters")
                 if os.path.isdir(filterdir):
@@ -204,23 +299,33 @@ class Filter:
         mass_h_names = ["2MASS.H", "2MASS H", "H", "SDSSh", "the H-band", "2MASS_H"]
         mass_j_names = ["2MASS.J", "2MASS J", "J", "SDSSj", "the J-band", "2MASS_J"]
         mass_k_names = ["2MASS.K", "2MASS.Ks", "2MASS K", "2MASS Ks", "K", "Ks", "the K-band", "2MASS_K", "2MASS_Ks"]
-        irac_i1_names = ["IRAC.I1", "IRAC I1", "IRAC 3.6", "IRAC 3.6um", "IRAC 3.6mu", "I1", "IRAC1", "IRAC-1", "the IRAC-1 band", "Spitzer 3.6", "IRAC_I1"]
-        irac_i2_names = ["IRAC.I2", "IRAC I2", "IRAC 4.5", "IRAC 4.5um", "IRAC 4.5mu", "I2", "IRAC2", "IRAC-2", "the IRAC-2 band", "Spitzer 4.5", "IRAC_I2"]
-        irac_i3_names = ["IRAC.I3", "IRAC I3", "IRAC 5.8", "IRAC 5.8um", "IRAC 5.8mu", "I3", "IRAC3", "IRAC-3", "the IRAC-3 band", "Spitzer 5.8", "IRAC_I3"]
-        irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4", "IRAC4", "IRAC-4", "the IRAC-4 band", "Spitzer 8.0", "IRAC_I4"]
-        wise_w1_names = ["WISE.W1", "WISE W1", "W1", "WISE1", "WISE-1", "the WISE-1 band", "w1", "WISE 3.4", "WISE_W1"]
-        wise_w2_names = ["WISE.W2", "WISE W2", "W2", "WISE2", "WISE-2", "the WISE-2 band", "w2", "WISE 4.6", "WISE_W2"]
-        wise_w3_names = ["WISE.W3", "WISE W3", "W3", "WISE3", "WISE-3", "the WISE-3 band", "w3", "WISE 12", "WISE_W3"]
-        wise_w4_names = ["WISE.W4", "WISE W4", "W4", "WISE4", "WISE-4", "the WISE-4 band", "w4", "WISE 22", "WISE_W4"]
-        mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um", "MIPS-24", "the MIPS-24 band", "Spitzer 24", "MIPS_24mu", "MIPS_24um"]
-        mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70", "MIPS-70", "the MIPS-70 band", "Spitzer 70", "MIPS_70mu", "MIPS_70um"]
-        mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160", "MIPS-160", "the MIPS-160 band", "Spitzer 160", "MIPS_160mu", "MIPS_160um"]
-        pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um", "PACS-70", "the PACS-70 band", "Pacs 70", "Pacs blue", "PACS 70", "Pacs_blue", "PACS_BLUE"]
-        pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um", "PACS-100", "the PACS-100 band", "Pacs 100", "Pacs green", "PACS 100", "Pacs_green", "PACS_GREEN"]
-        pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um", "PACS-160", "the PACS-160 band", "Pacs 160", "Pacs red", "PACS 160", "Pacs_red", "PACS_RED"]
-        spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um", "SPIRE-250", "the SPIRE-250 band", "SPIRE.PSW_ext", "SPIRE 250", "SPIRE PSW_ext", "SPIRE_PSW"]
-        spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um", "SPIRE-350", "the SPIRE-250 band", "SPIRE.PMW_ext", "SPIRE 350", "SPIRE PMW_ext", "SPIRE_PMW"]
-        spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um", "SPIRE-500", "the SPIRE-500 band", "SPIRE.PLW_ext", "SPIRE 500", "SPIRE PLW_ext", "SPIRE_PLW"]
+        irac_i1_names = ["IRAC.I1", "IRAC I1", "IRAC 3.6", "IRAC 3.6um", "IRAC 3.6mu", "I1", "IRAC1", "IRAC-1", "the IRAC-1 band", "Spitzer 3.6", "IRAC_I1", "Spitzer_3.6"]
+        irac_i2_names = ["IRAC.I2", "IRAC I2", "IRAC 4.5", "IRAC 4.5um", "IRAC 4.5mu", "I2", "IRAC2", "IRAC-2", "the IRAC-2 band", "Spitzer 4.5", "IRAC_I2", "Spitzer_4.5"]
+        irac_i3_names = ["IRAC.I3", "IRAC I3", "IRAC 5.8", "IRAC 5.8um", "IRAC 5.8mu", "I3", "IRAC3", "IRAC-3", "the IRAC-3 band", "Spitzer 5.8", "IRAC_I3", "Spitzer_5.8"]
+        irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4", "IRAC4", "IRAC-4", "the IRAC-4 band", "Spitzer 8.0", "IRAC_I4", "Spitzer_8.0"]
+        wise_w1_names = ["WISE.W1", "WISE W1", "W1", "WISE1", "WISE-1", "the WISE-1 band", "w1", "WISE 3.4", "WISE_W1", "WISE_3.4"]
+        wise_w2_names = ["WISE.W2", "WISE W2", "W2", "WISE2", "WISE-2", "the WISE-2 band", "w2", "WISE 4.6", "WISE_W2", "WISE_4.6"]
+        wise_w3_names = ["WISE.W3", "WISE W3", "W3", "WISE3", "WISE-3", "the WISE-3 band", "w3", "WISE 12", "WISE_W3", "WISE_12"]
+        wise_w4_names = ["WISE.W4", "WISE W4", "W4", "WISE4", "WISE-4", "the WISE-4 band", "w4", "WISE 22", "WISE_W4", "WISE_22"]
+        mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um", "MIPS-24", "the MIPS-24 band", "Spitzer 24", "MIPS_24mu", "MIPS_24um", "Spitzer_24"]
+        mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70", "MIPS-70", "the MIPS-70 band", "Spitzer 70", "MIPS_70mu", "MIPS_70um", "Spitzer_70"]
+        mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160", "MIPS-160", "the MIPS-160 band", "Spitzer 160", "MIPS_160mu", "MIPS_160um", "Spitzer_160"]
+        pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um", "PACS-70", "the PACS-70 band", "Pacs 70", "Pacs blue", "PACS 70", "Pacs_blue", "PACS_BLUE", "PACS_70"]
+        pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um", "PACS-100", "the PACS-100 band", "Pacs 100", "Pacs green", "PACS 100", "Pacs_green", "PACS_GREEN", "PACS_100"]
+        pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um", "PACS-160", "the PACS-160 band", "Pacs 160", "Pacs red", "PACS 160", "Pacs_red", "PACS_RED", "PACS_160"]
+        spire_psw_names = ["SPIRE.PSW", "SPIRE PSW", "SPIRE 250mu", "SPIRE 250um", "SPIRE-250", "the SPIRE-250 band", "SPIRE.PSW_ext", "SPIRE 250", "SPIRE PSW_ext", "SPIRE_PSW", "SPIRE_250"]
+        spire_pmw_names = ["SPIRE.PMW", "SPIRE PMW", "SPIRE 350mu", "SPIRE 350um", "SPIRE-350", "the SPIRE-250 band", "SPIRE.PMW_ext", "SPIRE 350", "SPIRE PMW_ext", "SPIRE_PMW", "SPIRE_350"]
+        spire_plw_names = ["SPIRE.PLW", "SPIRE PLW", "SPIRE 500mu", "SPIRE 500um", "SPIRE-500", "the SPIRE-500 band", "SPIRE.PLW_ext", "SPIRE 500", "SPIRE PLW_ext", "SPIRE_PLW", "SPIRE_500"]
+
+        planck_350_names = ["Planck 350", "Planck_350", "Planck 857 GHz"]
+        planck_550_names = ["Planck 550", "Planck_550", "Planck 545 GHz"]
+        planck_850_names = ["Planck 850", "Planck_850", "Planck 353 GHz"]
+        planck_1380_names = ["Planck 1380", "Planck_1380", "Planck 217 GHz"]
+        planck_2100_names = ["Planck 2100", "Planck_2100", "Planck 143 GHz"]
+        planck_3000_names = ["Planck 3000", "Planck_3000", "Planck 100 GHz"]
+        planck_4260_names = ["Planck 4260", "Planck_4260", "Planck 70 GHz"]
+        planck_6810_names = ["Planck 6810", "Planck_6810", "Planck 44 GHz"]
+        planck_10600_names = ["Planck 10600", "Planck_10600", "Planck 30 GHz"]
 
         # Generic filters
         johnson_u_names = ["Johnson U", "U"]
@@ -288,6 +393,15 @@ class Filter:
         elif name in uvot_uvw2_names: return cls("UVOT.UVW2")
         elif name in uvot_uvm2_names: return cls("UVOT.UVM2")
         elif name in uvot_uvw1_names: return cls("UVOT.UVW1")
+        elif name in planck_350_names: return cls("Planck_350")
+        elif name in planck_550_names: return cls("Planck_550")
+        elif name in planck_850_names: return cls("Planck_850")
+        elif name in planck_1380_names: return cls("Planck_1380")
+        elif name in planck_2100_names: return cls("Planck_2100")
+        elif name in planck_3000_names: return cls("Planck_3000")
+        elif name in planck_4260_names: return cls("Planck_4260")
+        elif name in planck_6810_names: return cls("Planck_6810")
+        elif name in planck_10600_names: return cls("Planck_10600")
         else: raise ValueError("No corresponding filter found (name = " + name + ")")
 
     @classmethod

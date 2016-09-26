@@ -25,6 +25,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.basics.filter import Filter
+from ...modeling.core.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -42,6 +43,8 @@ planck_phot_table_path = fs.join(dustpedia_photometry_path, "DustPedia_Planck_CC
 
 # -----------------------------------------------------------------
 
+# CHRIS:
+#
 # I'm very pleased to say that the DustPedia photometry is now ready for everyone to enjoy! The files are attached.
 #
 # There is a short(ish) PDF describing the photometry, along with 3 tables. One main table of aperture-matched
@@ -81,6 +84,8 @@ class DustPediaPhotometry(object):
         self.planck = Table.read(planck_phot_table_path)
 
         self.aperture_filters = dict()
+        self.iras_filters = dict()
+        self.planck_filters = dict()
 
         self.set_filters()
 
@@ -93,6 +98,8 @@ class DustPediaPhotometry(object):
         :return:
         """
 
+        # APERTURE
+
         for colname in self.aperture.colnames:
 
             if colname in non_flux_columns: continue
@@ -102,6 +109,28 @@ class DustPediaPhotometry(object):
             fltr = Filter.from_string(colname)
 
             self.aperture_filters[colname] = fltr
+
+        # IRAS
+
+        for colname in self.iras_scanpi.colnames:
+
+            if colname in non_flux_columns: continue
+            if colname.endswith("_err") or colname.endswith("_flag"): continue
+
+            fltr = Filter.from_string(colname)
+
+            self.iras_filters[colname] = fltr
+
+        # PLANCK
+
+        for colname in self.planck.colnames:
+
+            if colname in non_flux_columns: continue
+            if colname.endswith("_err") or colname.endswith("_flag"): continue
+
+            fltr = Filter.from_string(colname)
+
+            self.planck_filters[colname] = fltr
 
     # -----------------------------------------------------------------
 
@@ -134,10 +163,13 @@ class DustPediaPhotometry(object):
 
     # -----------------------------------------------------------------
 
-    def get_sed(self, galaxy_name):
+    def get_sed(self, galaxy_name, add_iras=True, add_planck=True):
             
         """
         This function ...
+        :param galaxy_name:
+        :param add_iras:
+        :param add_planck:
         """
 
         objname = self.get_hyperleda_name(galaxy_name)
@@ -146,14 +178,67 @@ class DustPediaPhotometry(object):
 
         filters = []
         fluxes = []
+        errors = []
 
         for colname in self.aperture_filters:
+
+            # Masked entry
+            if hasattr(self.aperture[colname], "mask") and self.aperture[colname].mask[index]: continue
 
             flux = self.aperture[colname][index]
 
             filters.append(self.aperture_filters[colname])
             fluxes.append(flux)
 
-        return filters, fluxes
+            if colname + "_err" in self.aperture.colnames:
+                errors.append(self.aperture[colname + "_err"][index])
+            else: errors.append(None)
+
+        index = tables.find_index(self.iras_scanpi, objname, "name")
+
+        # Add IRAS
+        if add_iras:
+
+            for colname in self.iras_filters:
+
+                # Masked entry
+                if hasattr(self.iras_scanpi[colname], "mask") and self.iras_scanpi[colname].mask[index]: continue
+
+                flux = self.iras_scanpi[colname][index]
+
+                # Filter and flux
+                filters.append(self.iras_filters[colname])
+                fluxes.append(flux)
+
+                # Add error
+                if colname + "_err" in self.iras_scanpi.colnames:
+                    errors.append(self.iras_scanpi[colname + "_err"][index])
+                else: errors.append(None)
+
+        index = tables.find_index(self.planck, objname, "name")
+
+        # Add Planck fluxes
+        if add_planck:
+
+            for colname in self.planck_filters:
+
+                # Masked entry
+                if hasattr(self.planck[colname], "mask") and self.planck[colname].mask[index]: continue
+
+                flux = self.planck[colname][index]
+
+                filters.append(self.planck_filters[colname])
+                fluxes.append(flux)
+
+                if colname + "_err" in self.planck.colnames:
+                    errors.append(self.planck[colname + "_err"][index])
+                else: errors.append(None)
+
+        sed = ObservedSED()
+
+        for i in range(len(filters)):
+            sed.add_entry(filters[i], fluxes[i], errors[i])
+
+        return sed
 
 # -----------------------------------------------------------------
