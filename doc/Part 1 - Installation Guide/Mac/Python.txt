@@ -9,8 +9,6 @@ offer Python distributions that include a selection of pre-installed packages.
 <tt>PTS</tt> has been developed and tested with the academic edition of Enthought Canopy Python (version 1.5.1).
 This academic edition fortunately is available to academic institutions at no cost. It includes a large number of scientific
 packages, and it is offered as a one-click installer for various platforms. To obtain Canopy, follow the instructions below.
-If you rather want to install the required packages manually on top of your current python distribution, see this page for
-a list of the packages used by <tt>PTS</tt>: \ref InstallPython_packages .
 
 <i>Step-by-step instructions:</i>
 
@@ -58,13 +56,5 @@ a list of the packages used by <tt>PTS</tt>: \ref InstallPython_packages .
 
      \image html canopy-welcome.png
      \image latex canopy-welcome.png
-
-- Back on the welcome screen, select "Package Manager".
-- In the pop up window, select the "Updates" tab. On the bottom, press "Install all Updates".
-- When the updates have been completed, select the "Available Packages" tab. Then, manually search for the following additional packages and install them (select them in the list and press "Install"):
-
-      lxml  pyfits  h5py  Reportlab  pysqlite
-
-- Finally, close the Package Manager as well as the Canopy welcome screen.
 
 */
