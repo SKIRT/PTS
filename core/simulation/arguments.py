@@ -68,6 +68,7 @@ class SkirtArguments(object):
         self.parallel.simulations = None  # The number of parallel simulations
         self.parallel.threads = parallelization.threads if parallelization is not None else None # The number of parallel threads per simulation
         self.parallel.processes = parallelization.processes if parallelization is not None else None # The number of parallel processes per simulation
+        self.parallel.dataparallel = False  # Run in data parallelization mode
 
     # -----------------------------------------------------------------
 
@@ -188,6 +189,7 @@ class SkirtArguments(object):
         # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
         if self.parallel.simulations > 1 and self.parallel.processes <= 1: arguments += ["-s", str(self.parallel.simulations)]
+        if self.parallel.dataparallel and self.parallel.processes > 1: arguments += ["-d"]
 
         # Logging options
         if self.logging.brief: arguments += ["-b"]
@@ -259,6 +261,7 @@ class SkirtArguments(object):
         arguments.parallel.simulations = self.parallel.simulations  # The number of parallel simulations
         arguments.parallel.threads = self.parallel.threads          # The number of parallel threads per simulation
         arguments.parallel.processes = self.parallel.processes      # The number of parallel processes per simulation
+        arguments.parallel.dataparallel = self.parallel.dataparallel # Run in data parallelization mode
 
         # Return the new object
         return arguments
