@@ -61,7 +61,7 @@ else:
         show_all_available(scripts, tables)
         exit()
 
-    # More mathces
+    # More matches
     elif len(matches) + len(table_matches) > 1:
         show_possible_matches(matches, table_matches, tables)
         exit()

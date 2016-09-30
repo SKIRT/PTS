@@ -14,12 +14,12 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-import scaling
-import selectors
-import initializators
-import mutators
-import crossovers
-from tree import GTreeGP
+from pts.evolve import scaling
+from pts.evolve import selectors
+from pts.evolve import initializators
+from pts.evolve import mutators
+from pts.evolve import crossovers
+from pts.evolve.tree import GTreeGP
 
 # -----------------------------------------------------------------
 
