@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import argparse
+import requests
+from lxml import html
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -111,17 +113,11 @@ if arguments.canopy:
 
     url = "https://www.enthought.com/products/canopy/package-index/"
 
-    import requests
-    from lxml import html
-
     page_as_string = requests.get(url).content
     tree = html.fromstring(page_as_string)
 
     tables = [e for e in tree.iter() if e.tag == 'table']
     table = tables[-1]
-
-    table_rows = [e for e in table.iter() if e.tag == 'tr']
-    column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
 
     table_rows = [e for e in table.iter() if e.tag == 'tr']
     column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']

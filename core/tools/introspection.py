@@ -414,7 +414,7 @@ def get_all_dependencies():
 
                     if module_name in local_module_names_in_dir: continue
 
-                    if module_name == "constants" or module_name == "genome": print(module_name, filepath, local_module_names_in_dir)
+                    #if module_name == "constants" or module_name == "genome": print(module_name, filepath, local_module_names_in_dir)
 
                     modules[module_name].add(filepath)
 
