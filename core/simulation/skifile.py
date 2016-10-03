@@ -263,10 +263,6 @@ class SkiFile:
         except:
             return False
 
-    ## This function returns whether data parallelization is enabled
-    def dataparallel(self):
-        return False # Not merged into the main SKIRT version yet
-
     def enable_selfabsorption(self):
 
         # Get the dust system

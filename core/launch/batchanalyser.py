@@ -204,7 +204,7 @@ class BatchAnalyser(OldConfigurable):
         transient_heating = self.ski.transientheating()
 
         # Check whether data parallelization was enabled for the simulation
-        data_parallel = self.ski.dataparallel()
+        data_parallel = self.log_file.data_parallel()
 
         # Get the different contributions to the simulation's runtime
         setup_time = self.timeline.setup
@@ -280,7 +280,7 @@ class BatchAnalyser(OldConfigurable):
         transient_heating = self.ski.transientheating()
 
         # Check whether data parallelization was enabled for the simulation
-        data_parallel = self.ski.dataparallel()
+        data_parallel = self.log_file.data_parallel()
 
         # Determine the total number of pixels from all the instruments defined in the ski file
         npixels = self.ski.nspatialpixels()

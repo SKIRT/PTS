@@ -258,9 +258,9 @@ class SkirtArguments(object):
         arguments.logging.allocation_limit = self.logging.allocation_limit  # The lower limit for the amount of (de)allocated memory to be logged
 
         # Options for parallelization
-        arguments.parallel.simulations = self.parallel.simulations  # The number of parallel simulations
-        arguments.parallel.threads = self.parallel.threads          # The number of parallel threads per simulation
-        arguments.parallel.processes = self.parallel.processes      # The number of parallel processes per simulation
+        arguments.parallel.simulations = self.parallel.simulations   # The number of parallel simulations
+        arguments.parallel.threads = self.parallel.threads           # The number of parallel threads per simulation
+        arguments.parallel.processes = self.parallel.processes       # The number of parallel processes per simulation
         arguments.parallel.dataparallel = self.parallel.dataparallel # Run in data parallelization mode
 
         # Return the new object
@@ -290,12 +290,13 @@ class SkirtArguments(object):
         properties.append("simulations: " + str(self.parallel.simulations))
         properties.append("threads: " + str(self.parallel.threads))
         properties.append("processes: " + str(self.parallel.processes))
+        properties.append("data-parallization: " + str(self.parallel.dataparallel))
 
         return_str = self.__class__.__name__ + ":\n"
         for property in properties: return_str += " -" + property + "\n"
         return return_str
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def __repr__(self):
 

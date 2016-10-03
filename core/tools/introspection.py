@@ -396,6 +396,9 @@ def get_all_dependencies():
                     # Skip "pts"
                     if module == "pts": continue
 
+                    # Skip "mpl_toolkits"
+                    if module == "mpl_toolkits": continue
+
                     # Add the module name to the list
                     if module: modules_file.append(module)
 
@@ -579,6 +582,9 @@ def get_modules(import_statement, script_path, debug=False):
             subpackage_dir = os.path.join(subpackage_dir, part)
 
         for name in imported: which.append(which_module(subpackage_dir, name))
+
+    # MPL toolkits
+    elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
 
     # External module
     else:

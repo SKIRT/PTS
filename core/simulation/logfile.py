@@ -424,6 +424,20 @@ class LogFile(object):
         # We should not get here
         raise ValueError("The number of threads could not be determined from the log file")
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def data_parallel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: implement this function !
+
+        return False
+
 # -----------------------------------------------------------------
 
 def parse(path):
