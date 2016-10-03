@@ -24,6 +24,7 @@ from pts.do.commandline import show_all_available, show_possible_matches
 from pts.core.tools import introspection
 from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
+from pts.do.pypi import search
 
 # -----------------------------------------------------------------
 
@@ -34,8 +35,8 @@ parser.add_argument("-m", "--modules", action="store_true", help="show the PTS m
 parser.add_argument("-s", "--standard", action="store_true", help="show import packages from the python standard library")
 parser.add_argument("-v", "--version", action="store_true", help="show the version numbers of the required packages")
 parser.add_argument("-c", "--canopy", action="store_true", help="show whether the package is available through Canopy")
-parser.add_argument("-p", "--pip", action="store_true", help="show whether the package is available through pip") # not working yet
-parser.add_argument("-d", "--description", action="store_true", help="show a description") # not working yet
+parser.add_argument("-p", "--pip", action="store_true", help="show whether the package is available through pip")
+parser.add_argument("-d", "--description", action="store_true", help="show a description")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
@@ -159,18 +160,40 @@ for dependency in sorted(dependencies, key=str.lower):
     in_canopy_string = " <<CANOPY>>" if in_canopy else ""
 
     # Check whether the package is available through pip
-    #if arguments.pip:
-    #else: pip = None
+    if arguments.pip:
+
+        results = list(search(dependency))
+        in_pip = False
+        for result in results:
+            if result["name"] == dependency:
+                in_pip = True
+                break
+        #else: in_pip = False
+
+    else: in_pip = None
+    in_pip_string = " <<PIP>>" if in_pip else ""
+
+    # Get description
+    if arguments.description:
+
+        results = list(search(dependency))
+        description = None
+        for result in results:
+            if result["name"] == dependency:
+                description = result["summary"]
+                break
+    else: description = None
+    description = " [" + description + "]" if description is not None else ""
 
     # Check whether the current package is present
     if present:
 
         # Show package name, whether it's present and version number (if requested)
-        if version is not None: log.success(dependency + ": present (version " + version + ")" + in_canopy_string)
-        else: log.success(dependency + ": present" + in_canopy_string)
+        if version is not None: log.success(dependency + ": present (version " + version + ")" + in_canopy_string + in_pip_string + description)
+        else: log.success(dependency + ": present" + in_canopy_string + in_pip_string + description)
 
     # The package is not present
-    else: log.error(dependency + ": not found" + in_canopy_string)
+    else: log.error(dependency + ": not found" + in_canopy_string + in_pip_string + description)
 
     # List the PTS modules that have this dependency
     if arguments.modules:
