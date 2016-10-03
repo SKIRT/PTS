@@ -37,7 +37,8 @@ from . import filesystem as fs
 subprojects = ["core", "magic", "eagle", "modeling", "dustpedia"]
 
 # The path to the root PTS directory
-pts_root_dir = inspect.getfile(inspect.currentframe()).split("/pts")[0]
+#pts_root_dir = inspect.getfile(inspect.currentframe()).split("/pts")[0] # BUG: this won't give the correct result when the PTS root directory is named 'pts' in lowercase
+pts_root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(inspect.getfile(inspect.currentframe())))))
 
 # The path to the PTS package directory (PTS/pts)
 pts_package_dir = os.path.join(pts_root_dir, "pts")
