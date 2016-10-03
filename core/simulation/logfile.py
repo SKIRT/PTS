@@ -109,7 +109,7 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def total_runtime(self):
+    def finished_simulation_message(self):
 
         """
         This function ...
@@ -123,12 +123,26 @@ class LogFile(object):
             message = self.contents["Message"][i]
 
             # Look for the message that indicates the start of the simulation
-            if "Finished simulation" in message:
+            if "Finished simulation" in message: return message
 
-                seconds = float(message.split(" in ")[1].split(" s")[0])
-                return seconds
-
+        # Return None if the message could not be found
         return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_runtime(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Cannot determine total runtime
+        if self.finished_simulation_message is None: return None
+
+        seconds = float(self.finished_simulation_message.split(" in ")[1].split(" s")[0])
+        return seconds
 
     # -----------------------------------------------------------------
 
@@ -434,9 +448,26 @@ class LogFile(object):
         :return:
         """
 
-        # TODO: implement this function !
+        # Loop over all log file entries
+        #for i in range(len(self.contents)):
 
-        return False
+            # Get the current log message
+            #message = self.contents["Message"][i]
+
+            # Look for a message that indicates whether the Absorbed Stellar Luminosity Table is distributed or not
+            #if "Absorbed Stellar Luminosity Table" in message:
+
+                #if "is not distributed" in message: return False
+                #elif "is distributed" in message: return True
+                #else: raise ValueError("Log message truncated")
+
+            # Alternatively, look at the Dust Emission Spectra Table
+
+        # Return false if no messages regarding the distributed-ness of the tables was encountered
+        #return False
+
+        # Simple implementation (only works if the log file is complete)
+        return "in data parallelization mode" in self.finished_simulation_message
 
 # -----------------------------------------------------------------
 
