@@ -188,6 +188,14 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     ##
 
+    # Mark begin of modeling command for history
+    if subproject == "modeling":
+
+        from ..modeling.core.component import load_modeling_history
+        history = load_modeling_history(fs.cwd())
+        history.add_entry(command_name)
+        history.save()
+
     # If the PTS command has to be executed remotely
     if args.remote is not None:
 
@@ -247,6 +255,11 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
         # Succesfully finished
         log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
+
+    # Mark the end of this modeling script
+    if subproject == "modeling":
+        history.mark_end()
+        history.save()
 
 # Show possible matches if there are more than just one
 else: show_possible_matches(matches, table_matches, tables)

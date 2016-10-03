@@ -39,6 +39,7 @@ from ...magic.core.mask import Mask
 from ...core.tools.logging import log
 from ...core.basics.configuration import Configuration
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
+from .history import ModelingHistory
 
 # -----------------------------------------------------------------
 
@@ -68,6 +69,9 @@ class ModelingComponent(Configurable):
 
         # The modeling meta file
         self.meta_file_path = None
+
+        # The modeling history file
+        self.history_file_path = None
 
         # Modeling directories
         self.data_path = None
@@ -187,6 +191,14 @@ class ModelingComponent(Configurable):
         # Check for the presence of the meta file
         if not fs.is_file(self.meta_file_path): raise ValueError("The current working directory is not a radiative transfer modeling directory (the meta file is missing)")
 
+        # Determine the path to the modeling history file
+        self.history_file_path = fs.join(self.config.path, "history.dat")
+
+        # Initialize the history file
+        if not fs.is_file(self.history_file_path):
+            history = ModelingHistory.initialize()
+            history.saveto(self.history_file_path)
+
         # Get the full paths to the necessary subdirectories and CREATE THEM
         self.data_path = fs.create_directory_in(self.config.path, "data")
         self.prep_path = fs.create_directory_in(self.config.path, "prep")
@@ -280,6 +292,19 @@ class ModelingComponent(Configurable):
 
         # Set the path to the initial dataset file
         self.initial_dataset_path = fs.join(self.data_path, "dataset.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the modeling history
+        return ModelingHistory.from_file(self.history_file_path)
 
     # -----------------------------------------------------------------
 
@@ -1320,5 +1345,26 @@ def load_fitting_configuration(modeling_path):
 
     # Open the configuration and return it
     return Configuration.from_file(fitting_configuration_path)
+
+# -----------------------------------------------------------------
+
+def load_modeling_history(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    history_file_path = fs.join(modeling_path, "history.dat")
+
+    if not fs.is_file(history_file_path):
+
+        history = ModelingHistory.initialize()
+        history.saveto(history_file_path)
+
+    else: history = ModelingHistory.from_file(history_file_path)
+
+    return history
 
 # -----------------------------------------------------------------
