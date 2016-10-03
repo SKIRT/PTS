@@ -11,10 +11,10 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-import utils
-import network
-import constants
-from functionslot import FunctionSlot
+from pts.evolve import utils
+from pts.evolve import network
+from pts.evolve import constants
+from pts.evolve.functionslot import FunctionSlot
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
