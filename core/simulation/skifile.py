@@ -164,7 +164,7 @@ class SkiFile:
     def nxcells(self):
         try:
             xpoints = int(self.tree.xpath("//meshX/*")[0].get("numBins"))
-        except TypeError:
+        except (TypeError, IndexError):
             raise ValueError("The number of dust cels is not defined within the ski file")
         return xpoints
 
@@ -172,7 +172,7 @@ class SkiFile:
     def nycells(self):
         try:
             ypoints = int(self.tree.xpath("//meshY/*")[0].get("numBins"))
-        except TypeError:
+        except (TypeError, IndexError):
             raise ValueError("The dimension of the dust grid is lower than 2")
         return ypoints
 
@@ -180,7 +180,7 @@ class SkiFile:
     def nzcells(self):
         try:
             zpoints = int(self.tree.xpath("//meshZ/*")[0].get("numBins"))
-        except TypeError:
+        except (TypeError, IndexError):
             raise ValueError("The dimension of the dust grid is lower than 3")
         return zpoints
 

@@ -495,7 +495,7 @@ class BestModelLauncher(FittingComponent):
 
                 # Debugging
                 log.debug("Adjusting ski file for simulating the contribution of the " + contribution + " stellar population ...")
-                log.debug("Removing all stellar components other than: " + " ".join(component_names[contribution]) + " ...")
+                log.debug("Removing all stellar components other than: " + ", ".join(component_names[contribution]) + " ...")
 
                 # Remove the other components
                 ski.remove_stellar_components_except(component_names[contribution])
@@ -557,7 +557,7 @@ class BestModelLauncher(FittingComponent):
             ski = self.ski_contributions[contribution]
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel)
+            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid))
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")

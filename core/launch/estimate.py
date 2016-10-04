@@ -61,7 +61,7 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def runtime_for(self, ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, fos=1.2, plot_path=None):
+    def runtime_for(self, ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None, fos=1.2, plot_path=None):
 
         """
         This function ...
@@ -70,13 +70,15 @@ class RuntimeEstimator(object):
         :param host_id:
         :param cluster_name:
         :param data_parallel:
+        :param in_path:
+        :param nwavelengths:
         :param fos: factor of safety
         :param plot_path:
         :return:
         """
 
         # Get the parameters that are relevant for timing
-        parameters = timing_parameters(ski_file, parallelization, host_id, cluster_name, data_parallel)
+        parameters = timing_parameters(ski_file, parallelization, host_id, cluster_name, data_parallel, in_path, nwavelengths)
 
         # TODO: greatly expand the number of parameters that are used to estimate the runtime
         # such as: nwavelengths, self-absorption, transient heating, data parallel, ...
@@ -141,24 +143,44 @@ class RuntimeEstimator(object):
                 estimated_runtimes = self.estimated_runtimes_for_all_hosts(parameters, parallelization)
 
                 # Check how many runtimes could be estimated based on previous simulations on other hosts
+                if len(estimated_runtimes) != 0: #raise RuntimeError("The runtime could not be estimated: no reference with the same number of photon packages")
+
+                    # Create the probability distribution of estimated runtimes
+                    distribution = Distribution.from_values(estimated_runtimes, bins=25)
+
+                    # If requested, plot the distribution
+                    if plot_path is not None:
+                        title = "Distribution of runtimes estimated based on " \
+                                  "simulations with the same number of photon packages " \
+                                  "on various hosts and with various parallelization " \
+                                  "schemes"
+                        plotter.add_distribution(distribution, "Test")
+                        plotter.set_title(title)
+                        plotter.run(plot_path)
+
+                    # Return the most probable runtime, times the safety factor
+                    return distribution.most_frequent * fos
+
                 # If not a single simulation had the same number of photon packages, the runtime could not be estimated (currently?)
-                if len(estimated_runtimes) == 0: raise RuntimeError("The runtime could not be estimated: no reference with the same number of photon packages")
+                else:
 
-                # Else, create the probability distribution of estimated runtimes
-                distribution = Distribution.from_values(estimated_runtimes, bins=25)
+                    estimated_runtimes = self.estimated_runtimes_for_all_hosts_all_npackages(parameters, parallelization)
 
-                # If requested, plot the distribution
-                if plot_path is not None:
-                    title = "Distribution of runtimes estimated based on " \
-                              "simulations with the same number of photon packages " \
-                              "on various hosts and with various parallelization " \
-                              "schemes"
-                    plotter.add_distribution(distribution, "Test")
-                    plotter.set_title(title)
-                    plotter.run(plot_path)
+                    # Create the probability distribution of estimated runtimes
+                    distribution = Distribution.from_values(estimated_runtimes, bins=25)
 
-                # Return the most probable runtime, times the safety factor
-                return distribution.most_frequent * fos
+                    # If requested, plot the distribution
+                    if plot_path is not None:
+                        title = "Distribution of runtimes estimated based on " \
+                                "simulations with a different number of photon packages " \
+                                "on various hosts and with various parallelization " \
+                                "schemes"
+                        plotter.add_distribution(distribution, "Test")
+                        plotter.set_title(title)
+                        plotter.run(plot_path)
+
+                    # Return the most probable runtime, times the safety factor
+                    return distribution.most_frequent * fos
 
     # -----------------------------------------------------------------
 
@@ -268,6 +290,64 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
+    def estimated_runtimes_for_all_hosts_all_npackages(self, parameters, parallelization):
+
+        """
+        This function ...
+        :param parameters:
+        :param parallelization:
+        :return:
+        """
+
+        # Get the number of packages
+        packages = parameters.npackages
+
+        # Initialize a list to contain the runtimes estimated from previous simulations
+        estimated_runtimes = []
+
+        # Loop over the entire timing table
+        for i in range(len(self.timing_table)):
+
+            packages_i = self.timing_table["Packages"][i]
+            packages_ratio_i = float(packages) / float(packages_i)
+
+            # Get the parallelization scheme for this simulation
+            parallelization_sim = self.parallelization_for_entry(i)
+
+            setup_time = self.timing_table["Setup time"][i]
+            writing_time = self.timing_table["Writing time"][i]
+            intermediate_time = self.timing_table["Intermediate time"][i]
+
+            stellar_emission_time = self.timing_table["Stellar emission time"][i] * packages_ratio_i
+            spectra_calculation_time = self.timing_table["Spectra calculation time"][i]
+            dust_emission_time = self.timing_table["Dust emission time"][i] * packages_ratio_i
+
+            communication_time = self.timing_table["Communication time"][i]
+            waiting_time = self.timing_table["Waiting time"][i]
+
+            ## THIS IS IDENTICAL AS IN THE FUNCTION BELOW
+
+            # Get the serial runtime, parallel runtime and runtime overhead
+            serial = setup_time + writing_time + intermediate_time
+            parallel = stellar_emission_time + spectra_calculation_time + dust_emission_time
+            overhead = communication_time + waiting_time
+
+            # TODO: the steps below can be more advanced (cores is not necessarily the total number of threads
+            # (hyperthreading), hyperthreading gives 30% performance boost?)
+            parallel_times_cores = parallel * parallelization_sim.cores
+            overhead_per_core = overhead / parallelization_sim.cores
+
+            # Estimate the runtime
+            runtime = serial + parallel_times_cores / parallelization.cores + overhead_per_core * parallelization.cores
+
+            # Add the estimated runtime to the list
+            estimated_runtimes.append(runtime)
+
+        # Return the list of estimated runtimes
+        return estimated_runtimes
+
+    # -----------------------------------------------------------------
+
     def estimated_runtimes_from_entries(self, indices, parallelization):
 
         """
@@ -288,9 +368,9 @@ class RuntimeEstimator(object):
             parallelization_sim = self.parallelization_for_entry(index)
 
             # Get the serial runtime, parallel runtime and runtime overhead
-            serial = self.timing_table["Setup time"] + self.timing_table["Writing time"] + self.timing_table["Intermediate time"]
-            parallel = self.timing_table["Stellar emission time"] + self.timing_table["Spectra calculation time"] + self.timing_table["Dust emission time"]
-            overhead = self.timing_table["Communication time"] + self.timing_table["Waiting time"]
+            serial = self.timing_table["Setup time"][index] + self.timing_table["Writing time"][index] + self.timing_table["Intermediate time"][index]
+            parallel = self.timing_table["Stellar emission time"][index] + self.timing_table["Spectra calculation time"][index] + self.timing_table["Dust emission time"][index]
+            overhead = self.timing_table["Communication time"][index] + self.timing_table["Waiting time"][index]
 
             # TODO: the steps below can be more advanced (cores is not necessarily the total number of threads
             # (hyperthreading), hyperthreading gives 30% performance boost?)
@@ -326,7 +406,7 @@ class RuntimeEstimator(object):
 
 # -----------------------------------------------------------------
 
-def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, data_parallel=False):
+def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None):
 
     """
     This function ...
@@ -335,6 +415,8 @@ def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, dat
     :param host_id:
     :param cluster_name:
     :param data_parallel:
+    :param in_path:
+    :param nwavelengths:
     :return:
     """
 
@@ -354,9 +436,16 @@ def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, dat
     parameters.processes = parallelization.processes
 
     # Ski file parameters
-    parameters.nwavelengths = ski_file.nwavelengths()
+    try: parameters.nwavelengths = ski_file.nwavelengths()
+    except ValueError:
+        if nwavelengths is not None: parameters.nwavelengths = nwavelengths
+        elif in_path is not None: parameters.nwavelengths = ski_file.nwavelengthsfile(in_path)
+        else: raise ValueError("Cannot determine the number of wavelengths: either the input path should be specified (so that the wavelengths file can be found) or the number of wavelengths should be specified explicitly")
     parameters.npackages = ski_file.packages()
-    parameters.ncells = ski_file.ncells()
+    try: parameters.ncells = ski_file.ncells()
+    except ValueError: parameters.ncells = None # the number of dust cells cannot be predicted if using a tree
+    # dust grid, but we esimate runtimes based on ski files with the same model anyway, so the number of dust cells
+    # can be expected to be the same (if the dust grid parameters are identical, that is...)
     parameters.selfabsorption = ski_file.dustselfabsorption()
     parameters.transient_heating = ski_file.transientheating()
 

@@ -469,7 +469,7 @@ class AnalysisLauncher(AnalysisComponent):
         estimator = RuntimeEstimator(self.timing_table)
 
         # Estimate the runtime for the configured number of photon packages and the configured remote host
-        runtime = estimator.runtime_for(self.ski, self.parallelization, self.remote.host_id, self.remote.cluster_name, self.config.data_parallel)
+        runtime = estimator.runtime_for(self.ski, self.parallelization, self.remote.host_id, self.remote.cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid))
 
         # Debugging
         log.debug("The estimated runtime for the simulation is " + str(runtime) + " seconds")

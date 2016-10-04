@@ -32,6 +32,7 @@ from ...core.launch.options import SchedulingOptions
 from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
 from ...core.basics.configuration import stringify_not_list
+from ...core.simulation.wavelengthgrid import WavelengthGrid
 
 # -----------------------------------------------------------------
 
@@ -81,6 +82,9 @@ class ParameterExplorer(FittingComponent):
 
         # A dictionary with the scheduling options for the different remote hosts
         self.scheduling_options = dict()
+
+        # The number of wavelengths used
+        self.nwavelengths = None
 
     # -----------------------------------------------------------------
 
@@ -403,6 +407,12 @@ class ParameterExplorer(FittingComponent):
         wavelength_grid_path = self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])
         self.input_paths.append(wavelength_grid_path)
 
+        # Get the number of wavelengths
+        self.nwavelengths = len(WavelengthGrid.from_skirt_input(wavelength_grid_path))
+
+        # Debugging
+        log.debug("The wavelength grid for the simulations contains " + str(self.nwavelengths) + " wavelength points")
+
     # -----------------------------------------------------------------
 
     def create_generation_directory(self):
@@ -532,7 +542,7 @@ class ParameterExplorer(FittingComponent):
             else: plot_path = None
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(self.ski_template, parallelization, host.id, host.cluster_name, self.config.data_parallel)
+            runtime = estimator.runtime_for(self.ski_template, parallelization, host.id, host.cluster_name, self.config.data_parallel, nwavelengths=self.nwavelengths)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
