@@ -14,11 +14,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import tempfile
 
 # Import the relevant PTS classes and modules
 from ..basics.remote import Remote
-from .jobscript import JobScript
+from .jobscript import JobScript, MultiJobScript
 from ..tools import time, introspection
 from ..tools import filesystem as fs
 from .simulation import RemoteSimulation
@@ -126,6 +127,9 @@ class SkirtRemote(Remote):
         # Inform the user
         log.info("Adding simulation to the queue ...")
 
+        # If a name is given for the simulation, check whether it doesn't contain spaces
+        if name is not None and " " in name: raise ValueError("The simulation name cannot contain spaces")
+
         # Get local input and output path
         local_input_path = definition.input_path
         local_output_path = definition.output_path
@@ -187,16 +191,20 @@ class SkirtRemote(Remote):
         log.info("Starting the queued simulations remotely ...")
 
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
-        if self.scheduler: screen_name = self.start_queue_jobs(group_simulations)
+        if self.scheduler:
+            job_ids = self.start_queue_jobs(group_simulations)
+            screen_name_or_job_ids = job_ids
 
         # Else, initiate a screen session in which the simulations are executed
-        else: screen_name = self.start_queue_screen(screen_name, local_script_path, screen_output_path)
+        else:
+            screen_name = self.start_queue_screen(screen_name, local_script_path, screen_output_path)
+            screen_name_or_job_ids = screen_name
 
         # Clear the queue
         self.clear_queue()
 
-        # Return the screen name
-        return screen_name
+        # Return the screen name or job IDs
+        return screen_name_or_job_ids
 
     # -----------------------------------------------------------------
 
@@ -211,8 +219,65 @@ class SkirtRemote(Remote):
         # Inform the user
         log.info("Starting the queue by scheduling the simulation as seperate jobs ...")
 
+        # Initialize a list to contain the job IDs
+        job_ids = dict()
+
         # Group simulations in one job script
-        if group_simulations: raise NotImplementedError("Group simulations is not implemented yet")
+        if group_simulations:
+
+            current_walltime = 0.
+
+            threads_for_job = None
+            processes_for_job = None
+            scheduling_options_for_job = SchedulingOptions()
+            scheduling_options_for_job.walltime = (0.99 * self.host.maximum_walltime) * 3600. # in seconds
+            simulations_for_job = []
+
+            # Loop over the items in the queue
+            for arguments, name in self.queue:
+
+                # Get the estimated walltime
+                estimated_walltime = self.scheduling_options[name].walltime
+
+                # If this simulation doesn't fit in the current job anymore
+                if current_walltime + estimated_walltime > self.host.maximum_walltime:
+
+                    # Schedule
+                    job_id = self.schedule_multisim(simulations_for_job, scheduling_options_for_job)
+                    job_ids[name] = job_id
+
+                    # Reset the current walltime
+                    current_walltime = 0.0
+
+                    # Reset threads and processes for job
+                    threads_for_job = None
+                    processes_for_job = None
+
+                    # Reset the scheduling options
+                    scheduling_options_for_job = SchedulingOptions()
+                    scheduling_options_for_job.walltime = (0.99 * self.host.maximum_walltime) * 3600.  # in seconds
+
+                    # Reset the list of simulations for job
+                    simulations_for_job = []
+
+                # If this simulation still fits in the current job
+                else:
+
+                    # Check the scheduling options and parallelization
+                    threads = arguments.parallel.threads
+                    processes = arguments.parallel.processes
+
+                    if threads_for_job is None: threads_for_job = threads
+                    elif threads_for_job != threads: raise ValueError("Number of threads must be equal for all simulations in job")
+
+                    if processes_for_job is None: processes_for_job = processes
+                    elif processes_for_job != processes: raise ValueError("Number of processes must be equal for all simulations in job")
+
+                    # Add this simulation to the list for the current job
+                    simulations_for_job.append(arguments)
+
+                    # Update the current walltime
+                    current_walltime += estimated_walltime
 
         # Don't group simulations
         else:
@@ -226,8 +291,11 @@ class SkirtRemote(Remote):
                 # Submit the simulation to the remote scheduling system
                 job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, remote_simulation_path=None)
 
+                # Add the job ID
+                job_ids[name] = job_id
+
         # Return the screen name = None
-        return None
+        return job_ids
 
     # -----------------------------------------------------------------
 
@@ -531,6 +599,51 @@ class SkirtRemote(Remote):
 
         # Submit the job script to the remote scheduling system
         #output = self.execute("qsub " + remote_jobscript_path, contains_extra_eof=True)
+        output = self.execute("qsub " + remote_jobscript_path)
+
+        # The queue number of the submitted job is used to identify this simulation
+        job_id = int(output[0].split(".")[0])
+
+        # Return the job ID
+        return job_id
+
+    # -----------------------------------------------------------------
+
+    def schedule_multisim(self, arguments, scheduling_options):
+
+        """
+        This function ...
+        :param simulations:
+        :param scheduling_options:
+        :return:
+        """
+
+        # Inform the suer
+        log.info("Scheduling a job of " + str(len(arguments)) +  " simulations on the remote host ...")
+
+        arguments_of_first_simulation = arguments[0] # for verifying the scheduling options (ALL SIMULATION HAVE THE SAME PARALLELIZATION MODE IN THIS MULTISIM FUNCTION)
+
+        # Verify the scheduling options
+        scheduling_options = self._verify_scheduling_options(scheduling_options, arguments_of_first_simulation)
+
+        # Now get the options
+        nodes = scheduling_options.nodes
+        ppn = scheduling_options.ppn
+        mail = scheduling_options.mail
+        full_node = scheduling_options.full_node
+        walltime = scheduling_options.walltime
+        local_jobscript_path = scheduling_options.local_jobscript_path
+
+        # Jobscript name
+        jobscript_name = fs.name(local_jobscript_path)
+        jobscript = MultiJobScript(local_jobscript_path, )
+
+        # Copy the job script to the remote simulation directory
+        remote_simulation_path = fs.directory_of(arguments.ski_pattern)  # NEW, to avoid having to pass this as an argument
+        remote_jobscript_path = fs.join(remote_simulation_path, jobscript_name)
+        self.upload(local_jobscript_path, remote_simulation_path)
+
+        # SUBMIT THE JOB
         output = self.execute("qsub " + remote_jobscript_path)
 
         # The queue number of the submitted job is used to identify this simulation
@@ -1056,13 +1169,12 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def _verify_scheduling_options(self, options, arguments, local_ski_path):
+    def _verify_scheduling_options(self, options, arguments):
 
         """
         This function ...
         :param options:
         :param arguments:
-        :param local_ski_path:
         :return:
         """
 
@@ -1072,8 +1184,13 @@ class SkirtRemote(Remote):
         # Test the presence of the 'nodes' and 'ppn' options
         if options.nodes is None or options.ppn is None:
 
+            # The number of threads per core that should be used
+            threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
+
             # Get the requirements in number of nodes and ppn
-            processors = arguments.parallel.processes * arguments.parallel.threads
+            processors = arguments.parallel.processes * arguments.parallel.threads / threads_per_core
+            assert math.ceil(processors) == math.floor(processors) # make sure is integer
+            processors = int(processors)
             nodes, ppn = self.get_requirements(processors)
 
             # Set the nodes and pppn
@@ -1087,20 +1204,7 @@ class SkirtRemote(Remote):
         if options.full_node is None: options.full_node = True
 
         # We want to estimate the walltime here if it is not defined in the options
-        if options.walltime is None:
-
-            #factor = 1.2
-
-            # Create and run a ResourceEstimator instance
-            #estimator = ResourceEstimator()
-            ##estimator.run(local_ski_path, arguments.parallel.processes, arguments.parallel.threads)
-            #estimator.run(local_ski_path, 1, 1)
-
-            # Return the estimated walltime
-            ##walltime = estimator.walltime * factor
-            #options.walltime = estimator.walltime_for(arguments.parallel.processes, arguments.parallel.threads) * factor
-
-            raise RuntimeError("The walltime is not defined in the scheduling options")
+        if options.walltime is None: raise RuntimeError("The walltime is not defined in the scheduling options")
 
         # Check if job script path is defined
         if options.local_jobscript_path is None:
@@ -1108,7 +1212,9 @@ class SkirtRemote(Remote):
             # Determine the jobscript path
             #local_simulation_path = fs.directory_of(local_ski_path)
             #local_jobscript_path = fs.join(local_simulation_path, "job.sh")
-            local_jobscript_path = fs.join(fs.home(), time.unique_name("job") + ".sh")
+            local_simulation_path = fs.directory_of(arguments.ski_pattern)
+            #local_jobscript_path = fs.join(fs.home(), time.unique_name("job") + ".sh")
+            local_jobscript_path = fs.join(local_simulation_path, time.unique_name("job") + ".sh")
 
             # Set the local jobscript path
             options.local_jobscript_path = local_jobscript_path

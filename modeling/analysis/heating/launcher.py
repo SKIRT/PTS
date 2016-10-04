@@ -166,7 +166,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # Basic options
         self.launcher.config.shared_input = True              # The input directories for the different simulations are shared
-        self.launcher.config.group_simulations = True         # group multiple simulations into a single job
+        #self.launcher.config.group_simulations = True         # group multiple simulations into a single job TODO: IMPLEMENT THIS
         self.launcher.config.remotes = [self.config.remotes]  # the remote hosts on which to run the simulations
 
         # Logging options

@@ -97,6 +97,9 @@ class BatchLauncher(OldConfigurable):
         :return:
         """
 
+        # Check whether the simulation name doesn't contain spaces
+        if name is not None and " " in name: raise ValueError("The simulation name cannot contain spaces")
+
         # Add the simulation definition object to the queue
         self.queue.append((definition, name, parallelization, analysis_options))
 
@@ -667,14 +670,32 @@ class BatchLauncher(OldConfigurable):
             else: screen_output_path = None
 
             # Start the queue
-            remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, local_script_path=local_script_path, screen_output_path=screen_output_path)
+            screen_name_or_job_ids = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, local_script_path=local_script_path, screen_output_path=screen_output_path)
 
-            # Set the screen name for all of the simulation objects
-            for simulation in simulations_remote:
+            # If the remote works with a scheduling system
+            if remote.scheduler:
 
-                simulation.screen_name = screen_name
-                simulation.remote_screen_output_path = screen_output_path
-                simulation.save()
+                for simulation in simulations_remote:
+
+                    # Get the simulation name
+                    simulation_name = simulation.name
+
+                    # Get the job ID
+                    job_id = screen_name_or_job_ids[simulation_name]
+
+                    # Set the job ID
+                    simulation.job_id = job_id
+
+            else:
+
+                # Set the screen name for all of the simulation objects
+                for simulation in simulations_remote:
+
+                    simulation.screen_name = screen_name
+                    simulation.remote_screen_output_path = screen_output_path
+                    simulation.save()
+
+
 
             # Add the simulations of this remote to the total list of simulations
             simulations += simulations_remote

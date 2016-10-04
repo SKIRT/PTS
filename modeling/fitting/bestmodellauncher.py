@@ -188,7 +188,7 @@ class BestModelLauncher(FittingComponent):
 
         # Basic options
         self.launcher.config.shared_input = True             # The input directories (or files) for the different simulations are shared
-        self.launcher.config.group_simulations = True        # group multiple simulations into a single job
+        #self.launcher.config.group_simulations = True        # group multiple simulations into a single job # TODO: IMPLEMENT THIS
         self.launcher.config.remotes = [self.config.remote]  # the remote host(s) on which to run the simulations
         #self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         #self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
@@ -714,7 +714,7 @@ class BestModelLauncher(FittingComponent):
             output_path = self.contributions_output_paths[contribution]
 
             # Set the simulation name
-            simulation_name = self.config.generation + "_" + contribution
+            simulation_name = self.config.generation.replace(" ", "") + "_" + contribution
 
             # Create the SKIRT simulation definition
             definition = SingleSimulationDefinition(ski_path, self.input_paths, output_path)

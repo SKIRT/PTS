@@ -131,6 +131,28 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def starting_simulation_message(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all the log file entries
+        for i in range(len(self.contents)):
+
+            # Get the current log message
+            message = self.contents["Message"][i]
+
+            # Look for the message that indicates the start of the simulation
+            if "Starting simulation" in message: return message
+
+        # Return None if the message could not be found
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def total_runtime(self):
 
         """
@@ -383,22 +405,13 @@ class LogFile(object):
         :return:
         """
 
-        # Loop over all the log file entries
-        for i in range(len(self.contents)):
+        if self.starting_simulation_message is None: raise ValueError("There is something wrong with the log file")
 
-            # Get the current log message
-            message = self.contents["Message"][i]
-
-            # Look for the message that indicates the start of the simulation
-            if "Starting simulation" in message:
-
-                if "with" in message:
-                    processes = int(message.split(' with ')[1].split()[0])
-                    return processes
-                else: return 1
-
-        # We should not get here
-        raise ValueError("The number of processes could not be determined from the log file")
+        # Read number of processes from "Starting simulation ..." message
+        if "with" in self.starting_simulation_message:
+            processes = int(self.starting_simulation_message.split(' with ')[1].split()[0])
+            return processes
+        else: return 1
 
     # -----------------------------------------------------------------
 
@@ -467,7 +480,10 @@ class LogFile(object):
         #return False
 
         # Simple implementation (only works if the log file is complete)
-        return "in data parallelization mode" in self.finished_simulation_message
+        #return "in data parallelization mode" in self.finished_simulation_message
+
+        # Simple implementation
+        return "in data parallelization mode" in self.starting_simulation_message
 
 # -----------------------------------------------------------------
 

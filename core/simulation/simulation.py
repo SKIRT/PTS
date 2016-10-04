@@ -579,6 +579,9 @@ class RemoteSimulation(SkirtSimulation):
         self.screen_name = None
         self.remote_screen_output_path = None
 
+        # Job ID
+        self.job_id = None
+
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
 

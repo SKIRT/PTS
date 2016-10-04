@@ -151,3 +151,134 @@ class JobScript(object):
         if os.path.isfile(self.path): os.remove(self.path)
 
 # -----------------------------------------------------------------
+
+class MultiJobScript(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, path, arguments, cluster, skirt_path, mpi_command, modules, walltime, nodes, ppn, name=None,
+                 mail=False, full_node=False, bind_to_cores=False, threads_per_core=1):
+
+        """
+        The constructor ...
+        :param path:
+        :param arguments: IS A LIST OF SKIRTARGUMENT OBJECTS
+        :param cluster:
+        :param skirt_path:
+        :param mpi_command:
+        :param modules:
+        :param walltime:
+        :param nodes:
+        :param ppn:
+        :param name:
+        :param mail:
+        :param full_node:
+        :param bind_to_cores:
+        :param threads_per_core:
+        """
+
+        # Set the file path
+        self.path = path
+
+        # Open the job script file
+        self.script = open(path, 'w')
+
+        # Write a general header to the job script
+        self.script.write("#!/bin/sh\n")
+        self.script.write("# Batch script for running SKIRT on a remote system\n")
+        self.script.write("#\n")
+
+        # Determine the walltime in "hours, minutes and seconds" format
+        minutes, seconds = divmod(walltime, 60)
+        hours, minutes = divmod(minutes, 60)
+
+        # Determine an appropriate name for this job
+        if name is None:
+            prefix = os.path.basename(arguments.ski_pattern)
+            name = prefix + "_" + str(nodes) + "_" + str(ppn)
+
+        # Check whether we are dealing with multithreading. If so, we calculate the number of processes per
+        # node and the requested number of processors per node is set to the maximum (for performance reasons).
+        hybrid_processes = 1
+        if arguments.parallel.threads > 1:
+
+            # The number of processes per node = [processors per node] //(integer division) [threads (processors) per process]
+            hybrid_processes = ppn // arguments.parallel.threads
+
+            # For hybrid (or threads) mode we always request the full node.
+            # Therefore, we determine the number of cores on the node.
+            ppn = cluster.cores
+
+        # In MPI mode, we also request a full node for processors < cpu count of a node, if specified by the fullnode flag
+        elif full_node:
+
+            # Set the number of processes per node
+            hybrid_processes = ppn
+
+            # Set the requested number of processors on the node to the maximum (a full node)
+            ppn = cluster.cores
+
+        # Determine the paths to the output and error files
+        output_file_path = os.path.join(arguments.output_path, "output_" + name + ".txt")
+        error_file_path = os.path.join(arguments.output_path, "error_" + name + ".txt")
+
+        # Set the environment variables
+        self.script.write("#PBS -N " + name + "\n")
+        self.script.write("#PBS -o " + output_file_path + "\n")
+        self.script.write("#PBS -e " + error_file_path + "\n")
+        self.script.write("#PBS -l walltime=%d:%02d:%02d\n" % (hours, minutes, seconds))
+        self.script.write("#PBS -l nodes=" + str(nodes) + ":ppn=" + str(ppn) + "\n")
+        if mail: self.script.write("#PBS -m bae\n")
+        self.script.write("#\n")
+        self.script.write("\n")
+
+        # Load cluster modules if specified
+        if modules:
+
+            self.script.write("# Load the necessary modules\n")
+            for module_name in modules: self.script.write("module load " + module_name + "\n")
+
+        # Add whiteline
+        self.script.write("\n")
+
+        # Run the simulation
+        self.script.write("# Run the simulation\n")
+
+        # Add the appropriate syntax for hybrid / multithreaded runs
+        if arguments.parallel.threads > 1 or full_node: mpi_command += " --hybrid " + str(hybrid_processes)
+
+        # Write the command string to the job script
+        command = arguments.to_command(skirt_path, mpi_command, scheduler=True, bind_to_cores=bind_to_cores,
+                                       threads_per_core=threads_per_core, to_string=True)
+        self.script.write(command + "\n")
+
+        # Close the script file
+        self.close()
+
+    # -----------------------------------------------------------------
+
+    def close(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Close the file
+        self.script.close()
+
+    # -----------------------------------------------------------------
+
+    def remove(self):
+
+        """
+        This function removes the jobscript
+        :return:
+        """
+
+        # Remove the script file from disk
+        if os.path.isfile(self.path): os.remove(self.path)
+
+# -----------------------------------------------------------------

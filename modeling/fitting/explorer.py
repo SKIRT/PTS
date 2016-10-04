@@ -168,7 +168,7 @@ class ParameterExplorer(FittingComponent):
 
         # Basic options
         self.launcher.config.shared_input = True                 # The input directories (or files) for the different simulations are shared
-        self.launcher.config.group_simulations = True            # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
+        #self.launcher.config.group_simulations = True            # group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
         self.launcher.config.remotes = self.config.remotes       # the remote host(s) on which to run the simulations
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file

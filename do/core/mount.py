@@ -30,6 +30,7 @@ from pts.core.tools.logging import log
 # Create the configuration definition
 definition = ConfigurationDefinition()
 definition.add_required("remote", "string", "the remote host to mount")
+definition.add_positional_optional("path", "string", "the directory to mount")
 
 # Read the command line arguments
 setter = ArgumentConfigurationSetter("mount", "Mount a remote configured in PTS into a local directory")
