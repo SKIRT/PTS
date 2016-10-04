@@ -433,7 +433,7 @@ class AnalysisLauncher(AnalysisComponent):
             log.debug("Remote host (" + self.remote.host_id + ") uses a scheduling system; determining parallelization scheme based on the requested number of nodes (" + str(self.config.nnodes) + ") ...")
 
             # Create the parallelization scheme from the host configuration and the requested number of nodes
-            self.parallelization = Parallelization.for_host(self.remote.host, self.config.nnodes)
+            self.parallelization = Parallelization.for_host(self.remote.host, self.config.nnodes, self.config.data_parallel)
 
         # If the remote host does not use a scheduling system
         else:
@@ -448,7 +448,7 @@ class AnalysisLauncher(AnalysisComponent):
             threads_per_core = self.remote.threads_per_core if self.remote.use_hyperthreading else 1
 
             # Create the parallelization object
-            self.parallelization = Parallelization.from_free_cores(cores, self.config.cores_per_process, threads_per_core)
+            self.parallelization = Parallelization.from_free_cores(cores, self.config.cores_per_process, threads_per_core, self.config.data_parallel)
 
         # Debugging
         log.debug("Parallelization scheme that will be used: " + str(self.parallelization))
@@ -469,7 +469,7 @@ class AnalysisLauncher(AnalysisComponent):
         estimator = RuntimeEstimator(self.timing_table)
 
         # Estimate the runtime for the configured number of photon packages and the configured remote host
-        runtime = estimator.runtime_for(self.config.remote, self.ski, self.parallelization)
+        runtime = estimator.runtime_for(self.ski, self.parallelization, self.remote.host_id, self.remote.cluster_name, self.config.data_parallel)
 
         # Debugging
         log.debug("The estimated runtime for the simulation is " + str(runtime) + " seconds")

@@ -63,6 +63,7 @@ definition.add_flag("transient_heating", "transient (non-LTE) dust heating", Tru
 # Parallelization options
 definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations (for scheduler)", 4)
 definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 4)
+definition.add_flag("data_parallel", "data parallelization mode", False)
 
 # Special options
 definition.add_flag("dry", "dry-run (don't actually launch simulations)")

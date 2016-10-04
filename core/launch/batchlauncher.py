@@ -525,6 +525,9 @@ class BatchLauncher(OldConfigurable):
             # Get the number of cores per process as defined in the configuration
             cores_per_process = self.config.cores_per_process
 
+            # Get the flag indicating whether data parallelization mode should be enabled
+            data_parallel = self.config.data_parallel
+
             # Get the amount of (currently) free cores on the remote host
             cores = int(remote.free_cores)
 
@@ -532,7 +535,7 @@ class BatchLauncher(OldConfigurable):
             threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
 
             # Create the parallelization object
-            parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core)
+            parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core, data_parallel)
 
             # Debugging
             log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")

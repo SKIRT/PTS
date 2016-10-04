@@ -333,7 +333,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
 
         try:
             # Load the timing table
-            timing_table = TimingTable.read(timing_table_path)
+            timing_table = TimingTable.from_file(timing_table_path)
         except ValueError: return # ValueError: Column Timestamp failed to convert
 
         # Keep a list of all the runtimes recorded for a certain remote host

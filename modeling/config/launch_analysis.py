@@ -48,5 +48,6 @@ definition.add_optional("npackages", "real", "the number of photon packages per 
 # Parallelization options
 definition.add_optional("nnodes", "integer", "number of nodes to use for the simulations (for scheduler)", 4)
 definition.add_optional("cores_per_process", "integer", "number of cores per process (for non-scheduler)", 10)
+definition.add_flag("data_parallel", "data parallelization mode", False)
 
 # -----------------------------------------------------------------

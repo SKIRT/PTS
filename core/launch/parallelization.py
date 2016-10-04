@@ -23,13 +23,14 @@ class Parallelization(object):
     This class ...
     """
 
-    def __init__(self, cores, threads_per_core, processes):
+    def __init__(self, cores, threads_per_core, processes, data_parallel=False):
 
         """
         This function ...
         :param cores:
         :param threads_per_core:
         :param processes:
+        :param data_parallel:
         """
 
         # The number of cores
@@ -40,6 +41,9 @@ class Parallelization(object):
 
         # The number of processes
         self.processes = processes
+
+        # Data parallelization mode
+        self.data_parallel = data_parallel
 
     # -----------------------------------------------------------------
 
@@ -72,12 +76,13 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def for_host(cls, host, nnodes):
+    def for_host(cls, host, nnodes, data_parallel=False):
 
         """
         This function ...
         :param host:
         :param nnodes:
+        :param data_parallel:
         :return:
         """
 
@@ -98,7 +103,7 @@ class Parallelization(object):
         else: threads_per_core = 1
 
         # Create a Parallelization instance
-        parallelization = cls(cores, threads_per_core, processes)
+        parallelization = cls(cores, threads_per_core, processes, data_parallel)
 
         # Return the parallelization scheme
         return parallelization
@@ -106,13 +111,14 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_processes_and_threads(cls, processes, threads, threads_per_core=1):
+    def from_processes_and_threads(cls, processes, threads, threads_per_core=1, data_parallel=False):
 
         """
         This function ...
         :param processes:
         :param threads:
         :param threads_per_core:
+        :param data_parallel:
         :return:
         """
 
@@ -121,12 +127,12 @@ class Parallelization(object):
         cores = cores_per_process * processes
 
         # Create a new class instance and return it
-        return cls(cores, threads_per_core, processes)
+        return cls(cores, threads_per_core, processes, data_parallel)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_mode(cls, mode, cores, threads_per_core, threads_per_process=None):
+    def from_mode(cls, mode, cores, threads_per_core, threads_per_process=None, data_parallel=False):
 
         """
         This function calculates the number of processes and the number of threads (per process) for
@@ -137,6 +143,7 @@ class Parallelization(object):
         :param cores:
         :param threads_per_core:
         :param threads_per_process:
+        :param data_parallel:
         :return:
         """
 
@@ -162,18 +169,19 @@ class Parallelization(object):
             used_threads_per_core = threads_per_core
 
         # Create a new class instance and return it
-        return cls(cores, used_threads_per_core, processes)
+        return cls(cores, used_threads_per_core, processes, data_parallel)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_free_cores(cls, free_cores, cores_per_process, threads_per_core):
+    def from_free_cores(cls, free_cores, cores_per_process, threads_per_core, data_parallel=False):
 
         """
         This function ...
         :param free_cores:
         :param cores_per_process:
         :param threads_per_core:
+        :param data_parallel:
         :return:
         """
 
@@ -184,7 +192,7 @@ class Parallelization(object):
         cores = processes * cores_per_process
 
         # Create a new class instance and return it
-        return cls(cores, threads_per_core, processes)
+        return cls(cores, threads_per_core, processes, data_parallel)
 
     # -----------------------------------------------------------------
 

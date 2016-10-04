@@ -222,7 +222,7 @@ class ScalingTest(Configurable):
         # Set options for the batch launcher: basic options
         self.launcher.config.shared_input = True  # The input directories for the different simulations are shared
         self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
-        self.launcher.config.remotes = self.config.remote  # the remote hosts on which to run the simulations
+        self.launcher.config.remotes = [self.config.remote]  # the remote hosts on which to run the simulations
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
         self.launcher.config.retrieve_types = ["log"] # only log files should be retrieved from the simulation output
@@ -615,7 +615,7 @@ class ScalingTest(Configurable):
         #  - the number of dust cells (?)
 
         # Estimate the runtime for the configured remote host and the simulation properties
-        runtime = self.estimator.runtime_for(self.config.remote, packages, parallelization)
+        runtime = self.estimator.runtime_for(ski, parallelization, self.launcher.single_remote.host_id, self.launcher.single_remote.cluster_name, data_parallel)
 
         # Return the runtime
         return runtime

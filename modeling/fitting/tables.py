@@ -424,7 +424,7 @@ class ParametersTable(SmartTable):
 
         for name in self.colnames:
             if name == "Simulation name": continue
-            values[name] = self[name][index]
+            values[name] = self[name][index] * self[name].unit
 
         # Return the values
         return values

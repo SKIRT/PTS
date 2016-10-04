@@ -386,7 +386,7 @@ def create_one_bintree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     """
 
     # Inform the user
-    log.info("Creating a binary tree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
+    log.info("Creating a binary tree dust grid with a smallest physical scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
 
     # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
     extent_x = x_extent.to("pc").value
@@ -419,7 +419,7 @@ def create_one_octtree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     """
 
     # Inform the user
-    log.info("Creating a octtree dust grid with a smallest physiscal scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
+    log.info("Creating a octtree dust grid with a smallest physical scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
 
     # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
     extent_x = x_extent.to("pc").value

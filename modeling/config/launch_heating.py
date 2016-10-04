@@ -39,5 +39,6 @@ definition.sections["dg"].add_optional("max_mass_fraction", "real", "the maximum
 
 # Parallelization options
 definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations", 4)
+definition.add_flag("data_parallel", "data parallelization mode", False)
 
 # -----------------------------------------------------------------

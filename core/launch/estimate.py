@@ -20,6 +20,7 @@ from ..tools import tables
 from .timing import TimingTable
 from .memory import MemoryTable
 from ..plot.distribution import DistributionPlotter
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -53,34 +54,37 @@ class RuntimeEstimator(object):
         """
 
         # Load the timing table
-        timing_table = TimingTable.read(path)
+        timing_table = TimingTable.from_file(path)
 
         # Create the RuntimeEstimator object
         return cls(timing_table)
 
     # -----------------------------------------------------------------
 
-    def runtime_for(self, host_id, ski_file, parallelization, fos=1.2, plot_path=None):
+    def runtime_for(self, ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, fos=1.2, plot_path=None):
 
         """
         This function ...
-        :param host_id:
         :param ski_file:
         :param parallelization:
+        :param host_id:
+        :param cluster_name:
+        :param data_parallel:
         :param fos: factor of safety
         :param plot_path:
         :return:
         """
 
-        # Get the number of photon packages (per wavelength) for this batch of simulations
-        packages = ski_file.packages()
+        # Get the parameters that are relevant for timing
+        parameters = timing_parameters(ski_file, parallelization, host_id, cluster_name, data_parallel)
 
         # TODO: greatly expand the number of parameters that are used to estimate the runtime
         # such as: nwavelengths, self-absorption, transient heating, data parallel, ...
 
         # Get the list of runtimes for the specified host for the specified configuration of packages and parallelization
-        previous_runtimes = self.previous_runtimes_for(host_id, packages, parallelization)
+        previous_runtimes = self.previous_runtimes_for(parameters, parallelization)
 
+        # Create the distribution plotter
         plotter = DistributionPlotter()
 
         # Check how many runtimes were found from previous simulations on the same host and with the same configuration
@@ -109,7 +113,7 @@ class RuntimeEstimator(object):
             log.debug("No simulations were found that had been run on the same remote host and with the same number of photon packages and parallelization")
 
             # Calculate estimated runtimes based on simulations run on the specified remote host and with the specified number of photon pacakages, but regardless of the parallelization scheme
-            estimated_runtimes = self.estimated_runtimes_for(host_id, packages, parallelization)
+            estimated_runtimes = self.estimated_runtimes_for(parameters, parallelization)
 
             # Check how many runtimes could be estimated based on previous simulations on the same host and with the same number of photon packages
             if len(estimated_runtimes) != 0:
@@ -134,7 +138,7 @@ class RuntimeEstimator(object):
             else:
 
                 # Calculate estimated runtimes based on simulations run on no-matter-which remote host with no-matter-which parallelization scheme, but with the specified number of photon packages
-                estimated_runtimes = self.estimated_runtimes_for_all_hosts(packages, parallelization)
+                estimated_runtimes = self.estimated_runtimes_for_all_hosts(parameters, parallelization)
 
                 # Check how many runtimes could be estimated based on previous simulations on other hosts
                 # If not a single simulation had the same number of photon packages, the runtime could not be estimated (currently?)
@@ -158,15 +162,18 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def previous_runtimes_for(self, host_id, packages, parallelization):
+    def previous_runtimes_for(self, parameters, parallelization):
 
         """
         This function ...
-        :param host_id:
-        :param packages:
+        :param parameters:
         :param parallelization:
         :return:
         """
+
+        # Get host ID and packages (TODO: this set is way to limited)
+        host_id = parameters.host_id
+        packages = parameters.npackages
 
         # Initialize a list to contain the runtimes found for the specified host and configuration
         runtimes = []
@@ -214,15 +221,18 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def estimated_runtimes_for(self, host_id, packages, parallelization):
+    def estimated_runtimes_for(self, parameters, parallelization):
 
         """
         This function ...
-        :param host_id:
-        :param packages:
+        :param parameters:
         :param parallelization:
         :return:
         """
+
+        # Get host ID and npackages (TODO: this set is way to limited)
+        host_id = parameters.host_id
+        packages = parameters.npackages
 
         # Indices of the simulations in the timing table from the specified host and for the specified number of photon packages
         indices_configuration = tables.find_indices(self.timing_table, [host_id, packages], ["Host id", "Packages"])
@@ -235,14 +245,17 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def estimated_runtimes_for_all_hosts(self, packages, parallelization):
+    def estimated_runtimes_for_all_hosts(self, parameters, parallelization):
 
         """
         This function ...
-        :param packages:
+        :param parameters:
         :param parallelization:
         :return:
         """
+
+        # Get the number of packages
+        packages = parameters.npackages
 
         # Indices of the simulations in the runtime table with the current number of photon packages
         indices_configuration = tables.find_indices(self.timing_table, packages, "Packages")
@@ -313,6 +326,48 @@ class RuntimeEstimator(object):
 
 # -----------------------------------------------------------------
 
+def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, data_parallel=False):
+
+    """
+    This function ...
+    :param ski_file:
+    :param parallelization:
+    :param host_id:
+    :param cluster_name:
+    :param data_parallel:
+    :return:
+    """
+
+    #values = [name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths, packages,
+    #          cells, selfabsorption, transient_heating, data_parallel, total_runtime, setup_time, stellar_time,
+    #          spectra_time, dust_time, writing_time, waiting_time, communication_time, intermediate_time]
+
+    parameters = Map()
+
+    # Remote host
+    parameters.host_id = host_id
+    parameters.cluster_name = cluster_name
+
+    # Parallelization
+    parameters.cores = parallelization.cores
+    parameters.threads_per_core = parallelization.threads_per_core
+    parameters.processes = parallelization.processes
+
+    # Ski file parameters
+    parameters.nwavelengths = ski_file.nwavelengths()
+    parameters.npackages = ski_file.packages()
+    parameters.ncells = ski_file.ncells()
+    parameters.selfabsorption = ski_file.dustselfabsorption()
+    parameters.transient_heating = ski_file.transientheating()
+
+    # Other
+    parameters.data_parallel = data_parallel
+
+    # Return the parameters
+    return parameters
+
+# -----------------------------------------------------------------
+
 class MemoryEstimator(object):
 
     """
@@ -343,7 +398,7 @@ class MemoryEstimator(object):
         """
 
         # Load the memory table
-        memory_table = MemoryTable.read(path)
+        memory_table = MemoryTable.from_file(path)
 
         # Create the MemoryEstimator object
         return cls(memory_table)

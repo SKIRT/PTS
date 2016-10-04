@@ -218,7 +218,7 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
         if not fs.is_file(timing_table_path): return
 
         # Load the timing table
-        timing_table = TimingTable.read(timing_table_path)
+        timing_table = TimingTable.from_file(timing_table_path)
 
         # Keep a list of all the runtimes recorded for a certain remote host
         self.runtimes = defaultdict(lambda: defaultdict(list))

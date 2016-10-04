@@ -492,7 +492,7 @@ class ParameterExplorer(FittingComponent):
         for host in self.launcher.scheduler_hosts:
 
             # Get the parallelization scheme for this host
-            parallelization = Parallelization.for_host(host, self.config.nnodes)
+            parallelization = Parallelization.for_host(host, self.config.nnodes, self.config.data_parallel)
 
             # Debugging
             log.debug("Parallelization scheme for host " + host.id + ": " + str(parallelization))
@@ -519,26 +519,26 @@ class ParameterExplorer(FittingComponent):
         walltimes = dict()
 
         # Loop over the hosts which use a scheduling system and estimate the walltime
-        for host_id in self.launcher.scheduler_host_ids:
+        for host in self.launcher.scheduler_hosts:
 
             # Debugging
-            log.debug("Estimating the runtime for host '" + host_id + "' ...")
+            log.debug("Estimating the runtime for host '" + host.id + "' ...")
 
             # Get the parallelization scheme that we have defined for this remote host
-            parallelization = self.launcher.parallelization_for_host(host_id)
+            parallelization = self.launcher.parallelization_for_host(host.id)
 
             # Visualisation of the distribution of estimated runtimes
-            if self.config.visualise: plot_path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_runtime_" + host_id) + ".pdf")
+            if self.config.visualise: plot_path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_runtime_" + host.id) + ".pdf")
             else: plot_path = None
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(host_id, self.ski_template, parallelization, plot_path=plot_path)
+            runtime = estimator.runtime_for(self.ski_template, parallelization, host.id, host.cluster_name, self.config.data_parallel)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
 
             # Set the estimated walltime
-            walltimes[host_id] = runtime
+            walltimes[host.id] = runtime
 
         # Create and set scheduling options for each host that uses a scheduling system
         for host_id in walltimes: self.scheduling_options[host_id] = SchedulingOptions.from_dict({"walltime": walltimes[host_id]})

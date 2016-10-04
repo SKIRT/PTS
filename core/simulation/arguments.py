@@ -68,7 +68,7 @@ class SkirtArguments(object):
         self.parallel.simulations = None  # The number of parallel simulations
         self.parallel.threads = parallelization.threads if parallelization is not None else None # The number of parallel threads per simulation
         self.parallel.processes = parallelization.processes if parallelization is not None else None # The number of parallel processes per simulation
-        self.parallel.dataparallel = False  # Run in data parallelization mode
+        self.parallel.dataparallel = parallelization.data_parallel if parallelization is not None else False  # Run in data parallelization mode
 
     # -----------------------------------------------------------------
 

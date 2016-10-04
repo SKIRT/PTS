@@ -34,8 +34,8 @@ from ...core.simulation.definition import SingleSimulationDefinition
 
 contributions = ["total", "old", "young", "ionizing"]
 component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
-                   "young": "Young stars",
-                   "ionizing": "Ionizing stars"}
+                   "young": ["Young stars"],
+                   "ionizing": ["Ionizing stars"]}
 
 # -----------------------------------------------------------------
 
@@ -410,8 +410,6 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Setting the best parameter values ...")
 
-        print(self.parameter_values)
-
         # Assert that the parameter values are quantities
         for label in self.parameter_values: assert hasattr(self.parameter_values[label], "unit")
 
@@ -520,7 +518,7 @@ class BestModelLauncher(FittingComponent):
         log.info("Setting the parallelization scheme for the remote host (" + self.config.remote + ") ...")
 
         # Get the parallelization scheme for this host
-        parallelization = Parallelization.for_host(self.remote_host, self.config.nnodes)
+        parallelization = Parallelization.for_host(self.remote_host, self.config.nnodes, self.config.data_parallel)
 
         # Debugging
         log.debug("Parallelization scheme for host " + self.remote_host_id + ": " + str(parallelization))
@@ -559,7 +557,7 @@ class BestModelLauncher(FittingComponent):
             ski = self.ski_contributions[contribution]
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(self.remote_host_id, ski, parallelization)
+            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
@@ -661,6 +659,18 @@ class BestModelLauncher(FittingComponent):
         """
 
         return self.remote_host.id
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote_cluster_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote_host.cluster_name
 
     # -----------------------------------------------------------------
 
