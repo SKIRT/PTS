@@ -173,7 +173,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False):
+    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False, jobscripts_path=None):
 
         """
         This function ...
@@ -181,6 +181,7 @@ class SkirtRemote(Remote):
         :param local_script_path:
         :param screen_output_path:
         :param group_simulations:
+        :param jobscripts_path:
         :return:
         """
 
@@ -192,7 +193,7 @@ class SkirtRemote(Remote):
 
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
         if self.scheduler:
-            job_ids = self.start_queue_jobs(group_simulations)
+            job_ids = self.start_queue_jobs(group_simulations, jobscripts_path=jobscripts_path)
             screen_name_or_job_ids = job_ids
 
         # Else, initiate a screen session in which the simulations are executed
@@ -208,11 +209,12 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_jobs(self, group_simulations=False):
+    def start_queue_jobs(self, group_simulations=False, jobscripts_path=None):
 
         """
         This function ...
         :param group_simulations:
+        :param jobscripts_path:
         :return:
         """
 
@@ -243,7 +245,7 @@ class SkirtRemote(Remote):
                 if current_walltime + estimated_walltime > self.host.maximum_walltime:
 
                     # Schedule
-                    job_id = self.schedule_multisim(simulations_for_job, scheduling_options_for_job)
+                    job_id = self.schedule_multisim(simulations_for_job, scheduling_options_for_job, jobscripts_path)
                     job_ids[name] = job_id
 
                     # Reset the current walltime
@@ -289,7 +291,7 @@ class SkirtRemote(Remote):
                 scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
 
                 # Submit the simulation to the remote scheduling system
-                job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, remote_simulation_path=None)
+                job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, jobscript_dir_path=jobscripts_path)
 
                 # Add the job ID
                 job_ids[name] = job_id
@@ -556,7 +558,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def schedule(self, arguments, name, scheduling_options, local_ski_path, remote_simulation_path):
+    def schedule(self, arguments, name, scheduling_options, local_ski_path, jobscript_dir_path=None):
 
         """
         This function ...
@@ -564,15 +566,21 @@ class SkirtRemote(Remote):
         :param name:
         :param scheduling_options:
         :param local_ski_path:
-        :param remote_simulation_path:
+        :param jobscript_dir_path:
         :return:
         """
 
         # Inform the suer
         log.info("Scheduling simulation '" + name + "' on the remote host ...")
 
+        if jobscript_dir_path is None:
+
+            # Determine the jobscript path
+            local_simulation_path = fs.directory_of(local_ski_path)
+            jobscript_dir_path = local_simulation_path
+
         # Verify the scheduling options
-        scheduling_options = self._verify_scheduling_options(scheduling_options, arguments, local_ski_path)
+        scheduling_options = self._verify_scheduling_options(scheduling_options, arguments, jobscript_dir_path)
 
         # Now get the options
         nodes = scheduling_options.nodes
@@ -609,11 +617,11 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def schedule_multisim(self, arguments, scheduling_options):
+    def schedule_multisim(self, arguments, scheduling_options, jobscripts_path):
 
         """
         This function ...
-        :param simulations:
+        :param arguments:
         :param scheduling_options:
         :return:
         """
@@ -624,7 +632,7 @@ class SkirtRemote(Remote):
         arguments_of_first_simulation = arguments[0] # for verifying the scheduling options (ALL SIMULATION HAVE THE SAME PARALLELIZATION MODE IN THIS MULTISIM FUNCTION)
 
         # Verify the scheduling options
-        scheduling_options = self._verify_scheduling_options(scheduling_options, arguments_of_first_simulation)
+        scheduling_options = self._verify_scheduling_options(scheduling_options, arguments_of_first_simulation, jobscripts_path)
 
         # Now get the options
         nodes = scheduling_options.nodes
@@ -1169,12 +1177,13 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def _verify_scheduling_options(self, options, arguments):
+    def _verify_scheduling_options(self, options, arguments, jobscript_dir_path=None):
 
         """
         This function ...
         :param options:
         :param arguments:
+        :param jobscript_dir_path:
         :return:
         """
 
@@ -1209,12 +1218,11 @@ class SkirtRemote(Remote):
         # Check if job script path is defined
         if options.local_jobscript_path is None:
 
-            # Determine the jobscript path
-            #local_simulation_path = fs.directory_of(local_ski_path)
-            #local_jobscript_path = fs.join(local_simulation_path, "job.sh")
-            local_simulation_path = fs.directory_of(arguments.ski_pattern)
-            #local_jobscript_path = fs.join(fs.home(), time.unique_name("job") + ".sh")
-            local_jobscript_path = fs.join(local_simulation_path, time.unique_name("job") + ".sh")
+            # Check whether path to directory where jobscript should be saved locally is given
+            if jobscript_dir_path is None: raise ValueError("Jobscript directory path must be specified in this function if the local jobscript path has not been set in the scheduling options")
+
+            # Determine the job script path
+            local_jobscript_path = fs.join(jobscript_dir_path, time.unique_name("job") + ".sh")
 
             # Set the local jobscript path
             options.local_jobscript_path = local_jobscript_path
