@@ -61,7 +61,7 @@ class RuntimeEstimator(object):
 
     # -----------------------------------------------------------------
 
-    def runtime_for(self, ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None, fos=1.2, plot_path=None):
+    def runtime_for(self, ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None, ncells=None, fos=1.2, plot_path=None):
 
         """
         This function ...
@@ -78,7 +78,7 @@ class RuntimeEstimator(object):
         """
 
         # Get the parameters that are relevant for timing
-        parameters = timing_parameters(ski_file, parallelization, host_id, cluster_name, data_parallel, in_path, nwavelengths)
+        parameters = timing_parameters(ski_file, parallelization, host_id, cluster_name, data_parallel, in_path, nwavelengths, ncells)
 
         # TODO: greatly expand the number of parameters that are used to estimate the runtime
         # such as: nwavelengths, self-absorption, transient heating, data parallel, ...
@@ -302,6 +302,9 @@ class RuntimeEstimator(object):
         # Get the number of packages
         packages = parameters.npackages
 
+        # Get the number of dust cells
+        ncells = parameters.ncells
+
         # Initialize a list to contain the runtimes estimated from previous simulations
         estimated_runtimes = []
 
@@ -311,10 +314,16 @@ class RuntimeEstimator(object):
             packages_i = self.timing_table["Packages"][i]
             packages_ratio_i = float(packages) / float(packages_i)
 
+            ncells_i = self.timing_table["Dust cells"][i]
+            ncells_ratio_i = float(ncells) / float(ncells_i)
+
+            # print("PACKAGES RATIO", packages_ratio_i)
+            # print("NCELLS RATIO", ncells_ratio_i)
+
             # Get the parallelization scheme for this simulation
             parallelization_sim = self.parallelization_for_entry(i)
 
-            setup_time = self.timing_table["Setup time"][i]
+            setup_time = self.timing_table["Setup time"][i] * ncells_ratio_i # TODO: incorporate the ncells better (number of tree levels, other parameters?)
             writing_time = self.timing_table["Writing time"][i]
             intermediate_time = self.timing_table["Intermediate time"][i]
 
@@ -406,7 +415,7 @@ class RuntimeEstimator(object):
 
 # -----------------------------------------------------------------
 
-def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None):
+def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, data_parallel=False, in_path=None, nwavelengths=None, ncells=None):
 
     """
     This function ...
@@ -443,9 +452,22 @@ def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, dat
         else: raise ValueError("Cannot determine the number of wavelengths: either the input path should be specified (so that the wavelengths file can be found) or the number of wavelengths should be specified explicitly")
     parameters.npackages = ski_file.packages()
     try: parameters.ncells = ski_file.ncells()
-    except ValueError: parameters.ncells = None # the number of dust cells cannot be predicted if using a tree
-    # dust grid, but we esimate runtimes based on ski files with the same model anyway, so the number of dust cells
-    # can be expected to be the same (if the dust grid parameters are identical, that is...)
+    except ValueError:
+
+        if ncells is None: raise ValueError("Cannot determine the number of dust cells: if a tree dust grid structure is used, the approximate number of cells should be specified explicitly")
+
+        # Set the number of dust cells
+        parameters.ncells = ncells
+
+        #parameters.ncells = None # the number of dust cells cannot be predicted if using a tree
+        # dust grid, but we esimate runtimes based on ski files with the same model anyway, so the number of dust cells
+        # can be expected to be the same (if the dust grid parameters are identical, that is...)
+
+        #parameters.grid_type = None
+        #parameters.rel_scale = None
+        #parameters.min_level = None
+        #parameters.max_mass_fraction = None
+
     parameters.selfabsorption = ski_file.dustselfabsorption()
     parameters.transient_heating = ski_file.transientheating()
 

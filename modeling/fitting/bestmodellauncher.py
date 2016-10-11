@@ -29,6 +29,8 @@ from .wavelengthgrids import create_one_subgrid_wavelength_grid
 from .dustgrids import create_one_dust_grid
 from ..core.emissionlines import EmissionLines
 from ...core.simulation.definition import SingleSimulationDefinition
+from ...core.simulation.execute import SkirtExec
+from ...core.simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
 
@@ -91,6 +93,9 @@ class BestModelLauncher(FittingComponent):
 
         # The scheduling options for the different simulations (if using a remote host with scheduling system)
         self.scheduling_options = dict()
+
+        # Local SKIRT execution environment
+        self.skirt = SkirtExec()
 
     # -----------------------------------------------------------------
 
@@ -550,6 +555,9 @@ class BestModelLauncher(FittingComponent):
         # Dictionary of estimated walltimes for the different simulations
         walltimes = dict()
 
+        # Determine the number of dust cells by building the tree locally
+        ncells = self.estimate_ncells()
+
         # Loop over the different ski files`
         for contribution in self.ski_contributions:
 
@@ -557,16 +565,68 @@ class BestModelLauncher(FittingComponent):
             ski = self.ski_contributions[contribution]
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid))
+            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid), ncells=ncells)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
 
             # Set the estimated walltime
-            walltimes[contribution] = runtime
+            walltimes[contribution] = runtime * 5. # * 5 is temporary
 
         # Create and set scheduling options for each host that uses a scheduling system
         for contribution in walltimes: self.scheduling_options[contribution] = SchedulingOptions.from_dict({"walltime": walltimes[contribution]})
+
+    # -----------------------------------------------------------------
+
+    def estimate_ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the number of dust cells ...")
+
+        # Get a copy of the ski file
+        ski = self.ski_contributions["total"].copy()
+
+        # Create simulation directory and output directory
+        simulation_path = fs.create_directory_in(self.best_generation_path, "temp")
+        out_path = fs.create_directory_in(simulation_path, "out")
+
+        # Set npackages to zero
+        ski.to_oligochromatic(1. * Unit("micron"))
+        ski.setpackages(0)
+
+        #ski.remove_all_stellar_components()
+        ski.remove_all_instruments()
+
+        # Save the ski file
+        ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
+        ski.saveto(ski_path)
+
+        # Create arguments
+        arguments = SkirtArguments()
+
+        arguments.input_path = self.maps_path
+        arguments.output_path = out_path
+
+        arguments.single = True
+        arguments.ski_pattern = ski_path
+        arguments.logging.verbose = True
+
+        # Run SKIRT
+        simulation = self.skirt.run(arguments)
+
+        # Get and parse the log file
+        log_file = simulation.log_file
+
+        # Get the number of dust cells
+        ncells = log_file.dust_cells
+
+        # Return the number of dust cells
+        return ncells
 
     # -----------------------------------------------------------------
 

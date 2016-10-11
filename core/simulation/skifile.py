@@ -88,6 +88,12 @@ class SkiFile:
 
     # ---------- Retrieving information -------------------------------
 
+    ## This property gives the simulation prefix
+    @property
+    def prefix(self):
+        if self.path is None: raise RuntimeError("Ski file has no path, so prefix cannot be determined")
+        return os.path.basename(self.path).split(".ski")[0]
+
     ## This function returns a SkirtUnits object initialized with the SKIRT unit system ('SI', 'stellar', or
     # 'extragalactic') and the flux style ('neutral', 'wavelength' or 'frequency') specified in the ski file.
     def units(self):
@@ -1032,7 +1038,7 @@ class SkiFile:
 
         if isinstance(component_ids, basestring): component_ids = [component_ids]
 
-        # Loop over the stellar component IDs
+        # Loop over the dust component IDs
         for id_i in self.get_dust_component_ids():
 
             # Skip IDs that are specified by the user
@@ -1040,6 +1046,18 @@ class SkiFile:
 
             # Remove all other dust components
             self.remove_dust_component(id_i)
+
+    ## This function removes all stellar components
+    def remove_all_stellar_components(self):
+
+        # Loop over the stellar component IDs
+        for id_i in self.get_stellar_component_ids(): self.remove_stellar_component(id_i)
+
+    ## This function removes all dust components
+    def remove_all_dust_components(self):
+
+        # Loop over the dust component IDs
+        for id_i in self.get_dust_component_ids(): self.remove_dust_component(id_i)
 
     ## This function returns all properties of the stellar component with the specified id
     def get_stellar_component_properties(self, component_id):
