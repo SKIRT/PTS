@@ -26,6 +26,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.basics.filter import Filter
 from ...modeling.core.sed import ObservedSED
+from .sample import DustPediaSample
 
 # -----------------------------------------------------------------
 
@@ -89,6 +90,8 @@ class DustPediaPhotometry(object):
 
         self.set_filters()
 
+        self.sample = DustPediaSample()
+
     # -----------------------------------------------------------------
 
     def set_filters(self):
@@ -134,35 +137,6 @@ class DustPediaPhotometry(object):
 
     # -----------------------------------------------------------------
 
-    def get_hyperleda_name(self, galaxy_name):
-
-        """
-        This function ...
-        :param galaxy_name:
-        :return:
-        """
-
-        url = leda_search_object_url + galaxy_name
-
-        page_as_string = requests.get(url).content
-
-        tree = html.fromstring(page_as_string)
-
-        tables = [e for e in tree.iter() if e.tag == 'table']
-
-        table = tables[1]
-
-        table_rows = [e for e in table.iter() if e.tag == 'tr']
-        column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
-
-        #return table_rows, column_headings
-
-        objname = str(table_rows[1].text_content().split("\n")[1]).strip()
-
-        return objname
-
-    # -----------------------------------------------------------------
-
     def get_sed(self, galaxy_name, add_iras=True, add_planck=True):
             
         """
@@ -172,7 +146,7 @@ class DustPediaPhotometry(object):
         :param add_planck:
         """
 
-        objname = self.get_hyperleda_name(galaxy_name)
+        objname = self.sample.get_name(galaxy_name)
 
         index = tables.find_index(self.aperture, objname, "name")
 

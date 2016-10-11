@@ -15,13 +15,13 @@ from __future__ import absolute_import, division, print_function
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
 from astropy.coordinates import Angle
+from astroquery.vizier import Vizier
 
 # Import the relevant PTS classes and modules
 from .component import DecompositionComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import tables, introspection
-from astroquery.vizier import Vizier
 from ...core.basics.map import Map
 from ..preparation import unitconversion
 from ..basics.models import SersicModel2D, ExponentialDiskModel2D

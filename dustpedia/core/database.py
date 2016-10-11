@@ -26,6 +26,8 @@ from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
+from .sample import DustPediaSample
+from ...core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -72,6 +74,9 @@ class DustPediaDatabase(object):
 
         # A flag that states whether we are connected
         self.connected = False
+
+        # DustPedia sample
+        self.sample = DustPediaSample()
 
     # -----------------------------------------------------------------
 
@@ -376,6 +381,38 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_image_filters(self, galaxy_name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        galaxy_name = self.sample.get_name(galaxy_name)
+
+        names = self.get_image_names(galaxy_name)
+
+        filters = []
+
+        for name in names:
+
+            if "Error" in name: continue
+
+            # Skip DSS
+            if "DSS" in name and "SDSS" not in name: continue
+
+            # Get the filter
+            fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
+            fltr = Filter.from_string(fltr_string)
+
+            # Add the filter
+            filters.append(fltr)
+
+        # Return the list of filters
+        return filters
+
+    # -----------------------------------------------------------------
+
     def get_image(self, galaxy_name, image_name):
 
         """
@@ -447,6 +484,30 @@ class DustPediaDatabase(object):
                 break
 
         self.download_file(get_link, path)
+
+    # -----------------------------------------------------------------
+
+    def download_images(self, galaxy_name, path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param path: directory
+        :return:
+        """
+
+        # Inform the user
+        log.info("Downloading all images for galaxy '" + galaxy_name + "' to '" + path + " ...")
+
+        # Loop over the image URLS found for this galaxy
+        for url in self.get_image_urls(galaxy_name):
+
+            # Determine path
+            image_name = url.split("imageName=")[1].split("&instrument")[0]
+            image_path = fs.join(path, image_name)
+
+            # Download this image
+            self.download_file(url, image_path)
 
     # -----------------------------------------------------------------
 
