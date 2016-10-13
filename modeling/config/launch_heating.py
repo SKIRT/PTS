@@ -21,6 +21,8 @@ definition.add_positional_optional("run", "string", "name of the analysis run fo
 
 # Optional settings
 definition.add_optional("remote", "string", "remote host on which to launch the simulations", "nancy", choices=find_host_ids())
+definition.add_flag("group", "group simulations in larger jobs")
+definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 
 # Simulation options
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 1e7)

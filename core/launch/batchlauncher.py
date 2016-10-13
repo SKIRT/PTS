@@ -670,7 +670,7 @@ class BatchLauncher(OldConfigurable):
             else: screen_output_path = None
 
             # Start the queue
-            screen_name_or_job_ids = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=self.script_paths[remote.host_id])
+            screen_name_or_job_ids = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, group_walltime=self.config.group_walltime, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=self.script_paths[remote.host_id])
 
             # If the remote works with a scheduling system
             if remote.scheduler:
@@ -694,8 +694,6 @@ class BatchLauncher(OldConfigurable):
                     simulation.screen_name = screen_name
                     simulation.remote_screen_output_path = screen_output_path
                     simulation.save()
-
-
 
             # Add the simulations of this remote to the total list of simulations
             simulations += simulations_remote

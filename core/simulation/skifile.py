@@ -190,6 +190,42 @@ class SkiFile:
             raise ValueError("The dimension of the dust grid is lower than 3")
         return zpoints
 
+    ## This function returns the grid type
+    def gridtype(self):
+        return self.get_dust_grid().tag
+
+    ## This function returns True if a tree dust grid is used and False otherwise
+    def treegrid(self):
+        return "Tree" in self.gridtype()
+
+    ## This function returns the minimum level of the tree
+    def tree_min_level(self):
+        return int(self.get_dust_grid().attrib["minLevel"])
+
+    ## This function returns the maximum level of the tree
+    def tree_max_level(self):
+        return int(self.get_dust_grid().attrib["maxLevel"])
+
+    ## This function returns the search method for the tree
+    def tree_search_method(self):
+        return self.get_dust_grid().attrib["searchMethod"]
+
+    ## This function returns the tree sample count
+    def tree_sample_count(self):
+        return int(self.get_dust_grid().attrib["sampleCount"])
+
+    ## This function returns the maximum optical depth of the tree
+    def tree_max_optical_depth(self):
+        return float(self.get_dust_grid().attrib["maxOpticalDepth"])
+
+    ## This function returns the maximum mass fraction of the tree
+    def tree_max_mass_fraction(self):
+        return float(self.get_dust_grid().attrib["maxMassFraction"])
+
+    # This function returns the maximum density dispersion of the tree
+    def tree_max_dens_disp(self):
+        return float(self.get_dust_grid().attrib["maxDensDispFraction"])
+
     ## This function returns the dimension of the dust grid
     def dimension(self):
         # Try to find the number of points in the y direction

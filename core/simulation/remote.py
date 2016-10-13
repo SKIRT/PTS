@@ -173,7 +173,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False, jobscripts_path=None):
+    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False, group_walltime=None, jobscripts_path=None):
 
         """
         This function ...
@@ -181,6 +181,7 @@ class SkirtRemote(Remote):
         :param local_script_path:
         :param screen_output_path:
         :param group_simulations:
+        :param group_walltime:
         :param jobscripts_path:
         :return:
         """
@@ -193,7 +194,7 @@ class SkirtRemote(Remote):
 
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
         if self.scheduler:
-            job_ids = self.start_queue_jobs(group_simulations, jobscripts_path=jobscripts_path)
+            job_ids = self.start_queue_jobs(group_simulations, group_walltime=group_walltime, jobscripts_path=jobscripts_path)
             screen_name_or_job_ids = job_ids
 
         # Else, initiate a screen session in which the simulations are executed
@@ -209,11 +210,12 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_jobs(self, group_simulations=False, jobscripts_path=None):
+    def start_queue_jobs(self, group_simulations=False, group_walltime=None, jobscripts_path=None):
 
         """
         This function ...
         :param group_simulations:
+        :param group_walltime:
         :param jobscripts_path:
         :return:
         """
@@ -227,12 +229,15 @@ class SkirtRemote(Remote):
         # Group simulations in one job script
         if group_simulations:
 
+            # Determine the preferred walltime per job
+            preferred_walltime = group_walltime if group_walltime is not None else self.host.preferred_walltime
+
             current_walltime = 0.
 
             threads_for_job = None
             processes_for_job = None
             scheduling_options_for_job = SchedulingOptions()
-            scheduling_options_for_job.walltime = (0.99 * self.host.maximum_walltime) * 3600. # in seconds
+            scheduling_options_for_job.walltime = preferred_walltime * 3600. # in seconds
             simulations_for_job = []
 
             # Loop over the items in the queue
@@ -242,7 +247,7 @@ class SkirtRemote(Remote):
                 estimated_walltime = self.scheduling_options[name].walltime
 
                 # If this simulation doesn't fit in the current job anymore
-                if current_walltime + estimated_walltime > self.host.maximum_walltime:
+                if current_walltime + estimated_walltime > preferred_walltime:
 
                     # Schedule
                     job_id = self.schedule_multisim(simulations_for_job, scheduling_options_for_job, jobscripts_path)
@@ -257,7 +262,7 @@ class SkirtRemote(Remote):
 
                     # Reset the scheduling options
                     scheduling_options_for_job = SchedulingOptions()
-                    scheduling_options_for_job.walltime = (0.99 * self.host.maximum_walltime) * 3600.  # in seconds
+                    scheduling_options_for_job.walltime = preferred_walltime * 3600.  # in seconds
 
                     # Reset the list of simulations for job
                     simulations_for_job = []

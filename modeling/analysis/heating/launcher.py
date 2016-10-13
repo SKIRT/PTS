@@ -165,9 +165,10 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         log.info("Setting options for the batch simulation launcher ...")
 
         # Basic options
-        self.launcher.config.shared_input = True              # The input directories for the different simulations are shared
-        #self.launcher.config.group_simulations = True         # group multiple simulations into a single job TODO: IMPLEMENT THIS
-        self.launcher.config.remotes = [self.config.remotes]  # the remote hosts on which to run the simulations
+        self.launcher.config.shared_input = True                    # The input directories for the different simulations are shared
+        self.launcher.config.remotes = [self.config.remotes]        # the remote hosts on which to run the simulations
+        self.launcher.config.group_simulations = self.config.group  # group simulations into larger jobs
+        self.launcher.config.group_walltime = self.config.walltime  # the preferred walltime for jobs of a group of simulations
 
         # Logging options
         self.launcher.config.logging.verbose = True           # verbose logging mode

@@ -41,6 +41,8 @@ definition.sections["dg"].add_optional("max_mass_fraction", "real", "the maximum
 # Add optional arguments
 definition.add_optional("remote", "string", "the remote host on which to launch the simulations", "nancy", choices=find_host_ids())
 definition.add_optional("images_remote", "string", "the remote host on which to make the observed images", "nancy", choices=find_host_ids())
+definition.add_flag("group", "group simulations in larger jobs")
+definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 
 # Simulation options
 definition.add_optional("npackages", "real", "number of photon packages per wavelength", 1e6)

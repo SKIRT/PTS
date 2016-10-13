@@ -195,7 +195,24 @@ class BatchAnalyser(OldConfigurable):
         packages = self.ski.packages()
 
         # Get the number of dust cells
-        cells = self.log_file.dust_cells
+        ncells = self.log_file.dust_cells
+
+        # Get the dust grid type
+        grid_type = self.ski.gridtype()
+
+        # If the grid is a tree grid, get additional properties
+        if self.ski.treegrid():
+
+            min_level = self.ski.tree_min_level()
+            max_level = self.ski.tree_max_level()
+            search_method = self.ski.tree_search_method()
+            sample_count = self.ski.tree_sample_count()
+            max_optical_depth = self.ski.tree_max_optical_depth()
+            max_mass_fraction = self.ski.tree_max_mass_fraction()
+            max_dens_disp = self.ski.tree_max_dens_disp()
+
+        # Else, set all properties to None
+        else: min_level = max_level = search_method = sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None
 
         # Check whether dust self-absorption was enabled for the simulation
         selfabsorption = self.ski.dustselfabsorption()
@@ -220,13 +237,12 @@ class BatchAnalyser(OldConfigurable):
         timing_table = TimingTable.from_file(self.timing_table_path)
 
         # Add an entry to the timing table
-        # Simulation name, Timestamp, Host id, Cluster name, Cores, Hyperthreads per core, Processes, Wavelengths,
-        # Packages, cells, Self-absorption, Total runtime, Setup time, Stellar emission time, Spectra calculation time,
-        # Dust emission time, Writing time, Waiting time, Communication time, Intermediate time
         timing_table.add_entry(self.simulation.name, self.simulation.submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, wavelengths, packages, cells, selfabsorption, transient_heating,
-                               data_parallel, total_runtime, setup_time, stellar_time, spectra_time, dust_time,
-                               writing_time, waiting_time, communication_time, intermediate_time)
+                               hyperthreads, processes, wavelengths, packages, ncells, grid_type, min_level, max_level,
+                               search_method, sample_count, max_optical_depth, max_mass_fraction, max_dens_disp,
+                               selfabsorption, transient_heating, data_parallel, total_runtime, setup_time,
+                               stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
+                               intermediate_time)
 
         # Save the table
         timing_table.save()

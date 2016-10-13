@@ -33,6 +33,14 @@ class TimingTable(SmartTable):
                    ("Wavelengths", int, None, "number of wavelengths"),
                    ("Packages", int, None, "number of photon packages per wavelength"),
                    ("Dust cells", int, None, "number of dust cells"),
+                   ("Grid type", str, None, "type of grid"),
+                   ("Min level", int, None, "minimum division level for the tree"),
+                   ("Max level", int, None, "maximum division level for the tree"),
+                   ("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)"),
+                   ("Sample count", int, None, "sample count"),
+                   ("Max optical depth", float, None, "maximum optical depth"),
+                   ("Max mass fraction", float, None, "maximum mass fraction"),
+                   ("Max density dispersion", float, None, "maximum density dispersion"),
                    ("Self-absorption", bool, None, "self-absorption enabled"),
                    ("Transient heating", bool, None, "transient (non-LTE) heating enabled"),
                    ("Data-parallel", bool, None, "data parallelization enabled"),
@@ -49,9 +57,10 @@ class TimingTable(SmartTable):
     # -----------------------------------------------------------------
 
     def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
-                  packages, cells, selfabsorption, transient_heating, data_parallel, total_runtime, setup_time,
-                  stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
-                  intermediate_time):
+                  packages, ncells, grid_type, min_level, max_level, search_method, sample_count, max_optical_depth,
+                  max_mass_fraction, max_density_dispersion, selfabsorption, transient_heating, data_parallel,
+                  total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
+                  communication_time, intermediate_time):
 
         """
         This function ...
@@ -64,7 +73,15 @@ class TimingTable(SmartTable):
         :param processes:
         :param wavelengths:
         :param packages:
-        :param cells:
+        :param ncells:
+        :param grid_type:
+        :param min_level:
+        :param max_level:
+        :param search_method:
+        :param sample_count:
+        :param max_optical_depth:
+        :param max_mass_fraction:
+        :param max_density_dispersion:
         :param selfabsorption:
         :param transient_heating:
         :param data_parallel:
@@ -82,8 +99,10 @@ class TimingTable(SmartTable):
 
         # Set the values
         values = [name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths, packages,
-                  cells, selfabsorption, transient_heating, data_parallel, total_runtime, setup_time, stellar_time,
-                  spectra_time, dust_time, writing_time, waiting_time, communication_time, intermediate_time]
+                  ncells, grid_type, min_level, max_level, search_method, sample_count, max_optical_depth,
+                  max_mass_fraction, max_density_dispersion, selfabsorption, transient_heating, data_parallel,
+                  total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
+                  communication_time, intermediate_time]
 
         # Add a row to the table
         self.add_row(values)

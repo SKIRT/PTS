@@ -28,8 +28,10 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_positional_optional("generation_method", "string", "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
 
 # Optional parameters
-definition.add_optional("remotes", "string", "the remote host on which to run the parameter exploration", ["nancy"], choices=find_host_ids())
+definition.add_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", ["nancy"], choices=find_host_ids())
 definition.add_optional("nsimulations", "integer", "the number of simulations to launch in one batch/generation", 100)
+definition.add_flag("group", "group simulations in larger jobs")
+definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 
 # Advanced options for the genetic engine
 definition.add_optional("crossover_rate", "fraction", "the crossover rate", 0.5)
