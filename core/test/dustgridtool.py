@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.fitting.dustgridadjuster Contains the DustGridAdjuster class.
+## \package pts.core.test.dustgridtool Contains the DustGridTool class.
 
 # -----------------------------------------------------------------
 

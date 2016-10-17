@@ -33,6 +33,7 @@ from ..fitting.wavelengthgrids import create_one_subgrid_wavelength_grid
 from ..fitting.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
 from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
+from ...core.test.dustgridtool import DustGridTool
 
 # -----------------------------------------------------------------
 
@@ -468,8 +469,11 @@ class AnalysisLauncher(AnalysisComponent):
         # Create a RuntimeEstimator instance
         estimator = RuntimeEstimator(self.timing_table)
 
+        # Determine the number of dust cells by building the tree locally
+        ncells = self.estimate_ncells()
+
         # Estimate the runtime for the configured number of photon packages and the configured remote host
-        runtime = estimator.runtime_for(self.ski, self.parallelization, self.remote.host_id, self.remote.cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid))
+        runtime = estimator.runtime_for(self.ski, self.parallelization, self.remote.host_id, self.remote.cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid), ncells=ncells)
 
         # Debugging
         log.debug("The estimated runtime for the simulation is " + str(runtime) + " seconds")
@@ -477,6 +481,28 @@ class AnalysisLauncher(AnalysisComponent):
         # Create the scheduling options, set the walltime
         self.scheduling_options = SchedulingOptions()
         self.scheduling_options.walltime = runtime
+
+    # -----------------------------------------------------------------
+
+    def estimate_ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the number of dust cells ...")
+
+        # Create simulation directory and output directory
+        simulation_path = fs.create_directory_in(self.analysis_run_path, "temp")
+
+        # Initialize dust grid tool
+        tool = DustGridTool()
+
+        # Get the dust grid statistics
+        statistics = tool.get_statistics(self.ski, simulation_path, self.maps_path, self.galaxy_name)
+        return statistics.ncells
 
     # -----------------------------------------------------------------
 

@@ -27,6 +27,7 @@ from ...fitting.wavelengthgrids import create_one_logarithmic_wavelength_grid
 from ....core.launch.parallelization import Parallelization
 from ....core.launch.estimate import RuntimeEstimator
 from ....core.launch.options import SchedulingOptions
+from ....core.test.dustgridtool import DustGridTool
 
 # -----------------------------------------------------------------
 
@@ -373,6 +374,9 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         # Dictionary of estimated walltimes for the different simulations
         walltimes = dict()
 
+        # Determine the number of dust cells by building the tree locally
+        ncells = self.estimate_ncells()
+
         # Loop over the different ski files`
         for contribution in self.ski_contributions:
 
@@ -380,7 +384,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             ski = self.ski_contributions[contribution]
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid))
+            runtime = estimator.runtime_for(ski, parallelization, self.remote_host_id, self.remote_cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid), ncells=ncells)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
@@ -390,6 +394,28 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
         # Create and set scheduling options for each host that uses a scheduling system
         for contribution in walltimes: self.scheduling_options[contribution] = SchedulingOptions.from_dict({"walltime": walltimes[contribution]})
+
+    # -----------------------------------------------------------------
+
+    def estimate_ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Estimating the number of dust cells ...")
+
+        # Create simulation directory and output directory
+        simulation_path = fs.create_directory_in(self.analysis_run.path, "temp_heating")
+
+        # Initialize dust grid tool
+        tool = DustGridTool()
+
+        # Get the dust grid statistics
+        statistics = tool.get_statistics(self.ski_contributions["total"], simulation_path, self.maps_path, self.galaxy_name)
+        return statistics.ncells
 
     # -----------------------------------------------------------------
 
