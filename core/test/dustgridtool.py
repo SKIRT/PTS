@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.dustgridadjuster Contains the DustGridAdjuster class.
+## \package pts.core.fitting.dustgridadjuster Contains the DustGridAdjuster class.
 
 # -----------------------------------------------------------------
 
@@ -16,17 +16,15 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from .component import FittingComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.arguments import SkirtArguments
-from ...core.simulation.skifile import SkiFile
-from ..basics.grids import load_grid
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
-class DustGridAdjuster(FittingComponent):
+class DustGridTool(object):
     
     """
     This class...
@@ -40,61 +38,97 @@ class DustGridAdjuster(FittingComponent):
         :return:
         """
 
-        # Call the constructor of the base class
-        super(DustGridAdjuster, self).__init__(config)
-
         # -- Attributes --
 
-        # The ski file
-        self.ski = None
-
-        # The adjusted dust grids
-        self.grids = []
+        # Local SKIRT execution environment
+        self.skirt = SkirtExec()
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def optimize(self, ski):
+
+        """
+        This function ...
+        :param ski:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def get_statistics(self, ski, simulation_path, input_path, prefix):
 
         """
         This function ...
         :return:
         """
 
-        # 1. Call the setup function
-        self.setup()
+        out_path = fs.create_directory_in(simulation_path, "out")
 
-        # 2. Load the ski file
-        self.load_ski()
+        # Make a copy of the ski file
+        ski = ski.copy()
 
-        # 3. Adjust
-        self.adjust()
+        # Set npackages to zero
+        ski.to_oligochromatic(1. * Unit("micron"))
+        ski.setpackages(0)
 
-        # 4. Writing
-        self.write()
+        # ski.remove_all_stellar_components()
+        ski.remove_all_instruments()
 
-    # -----------------------------------------------------------------
+        # Disable all writing options, except the one for writing the dust grid and cell properties
+        ski.disable_all_writing_options()
+        ski.set_write_grid()
+        ski.set_write_cell_properties()
 
-    def setup(self):
+        # Save the ski file
+        ski_path = fs.join(simulation_path, prefix + ".ski")
+        ski.saveto(ski_path)
 
-        """
-        This function ...
-        :return:
-        """
+        # Create arguments
+        arguments = SkirtArguments()
 
-        # Call the setup function of the base class
-        super(DustGridAdjuster, self).setup()
+        arguments.input_path = input_path
+        arguments.output_path = out_path
 
-    # -----------------------------------------------------------------
+        arguments.single = True
+        arguments.ski_pattern = ski_path
+        arguments.logging.verbose = True
 
-    def load_ski(self):
+        # Run SKIRT
+        simulation = self.skirt.run(arguments)
 
-        """
-        This function ...
-        :return:
-        """
+        # Get and parse the log file
+        log_file = simulation.log_file
 
-        # Open the ski file
-        self.ski = SkiFile(self.fit_ski_path)
+        # Initilize statistics map
+        statistics = Map()
+
+        # Get the number of dust cells
+        statistics.ncells = log_file.dust_cells
+
+        # Get the number of tree nodes
+        statistics.tree_nodes = log_file.tree_nodes
+
+        # Get the tree leaf distribution
+        statistics.tree_leaf_distribution = log_file.tree_leaf_distribution
+
+        # Get the number of tree levels
+        statistics.tree_levels = log_file.tree_levels
+
+        # Determine the path to the cell properties file
+        cellprops_path = fs.join(out_path, prefix + "_ds_cellprops.dat")
+
+        # Get the optical depth for which 90% of the cells have a smaller value
+        optical_depth = None
+        for line in reversed(open(cellprops_path).readlines()):
+            if "of the cells have optical depth smaller than" in line:
+                optical_depth = float(line.split("than: ")[1])
+                break
+        statistics.optical_depth_90 = optical_depth
+
+        # Return the statistics
+        return statistics
 
     # -----------------------------------------------------------------
 
@@ -197,31 +231,5 @@ class DustGridAdjuster(FittingComponent):
 
         # Return the optical depth
         return optical_depth
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.write_grids()
-
-    # -----------------------------------------------------------------
-
-    def write_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the grids
-        for index, grid in enumerate(self.grids):
-
-            path = fs.join(self.fit_dust_grids_path, str(index) + ".dg")
-            grid.save(path)
 
 # -----------------------------------------------------------------

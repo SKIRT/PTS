@@ -29,8 +29,7 @@ from .wavelengthgrids import create_one_subgrid_wavelength_grid
 from .dustgrids import create_one_dust_grid
 from ..core.emissionlines import EmissionLines
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.simulation.execute import SkirtExec
-from ...core.simulation.arguments import SkirtArguments
+from ...core.test.dustgridtool import DustGridTool
 
 # -----------------------------------------------------------------
 
@@ -93,9 +92,6 @@ class BestModelLauncher(FittingComponent):
 
         # The scheduling options for the different simulations (if using a remote host with scheduling system)
         self.scheduling_options = dict()
-
-        # Local SKIRT execution environment
-        self.skirt = SkirtExec()
 
     # -----------------------------------------------------------------
 
@@ -589,45 +585,15 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Estimating the number of dust cells ...")
 
-        # Get a copy of the ski file
-        ski = self.ski_contributions["total"].copy()
-
         # Create simulation directory and output directory
         simulation_path = fs.create_directory_in(self.best_generation_path, "temp")
-        out_path = fs.create_directory_in(simulation_path, "out")
 
-        # Set npackages to zero
-        ski.to_oligochromatic(1. * Unit("micron"))
-        ski.setpackages(0)
+        # Initialize dust grid tool
+        tool = DustGridTool()
 
-        #ski.remove_all_stellar_components()
-        ski.remove_all_instruments()
-
-        # Save the ski file
-        ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
-        ski.saveto(ski_path)
-
-        # Create arguments
-        arguments = SkirtArguments()
-
-        arguments.input_path = self.maps_path
-        arguments.output_path = out_path
-
-        arguments.single = True
-        arguments.ski_pattern = ski_path
-        arguments.logging.verbose = True
-
-        # Run SKIRT
-        simulation = self.skirt.run(arguments)
-
-        # Get and parse the log file
-        log_file = simulation.log_file
-
-        # Get the number of dust cells
-        ncells = log_file.dust_cells
-
-        # Return the number of dust cells
-        return ncells
+        # Get the dust grid statistics
+        statistics = tool.get_statistics(self.ski_contributions["total"], simulation_path, self.maps_path, self.galaxy_name)
+        return statistics.ncells
 
     # -----------------------------------------------------------------
 
