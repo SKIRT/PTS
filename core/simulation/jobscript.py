@@ -79,7 +79,7 @@ class JobScript(object):
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.
-            ppn = cluster.cores
+            ppn = cluster.cores_per_socket * cluster.sockets_per_node
 
         # In MPI mode, we also request a full node for processors < cpu count of a node, if specified by the fullnode flag
         elif full_node:
@@ -88,7 +88,7 @@ class JobScript(object):
             hybrid_processes = ppn
 
             # Set the requested number of processors on the node to the maximum (a full node)
-            ppn = cluster.cores
+            ppn = cluster.cores_per_socket * cluster.sockets_per_node
 
         # Determine the paths to the output and error files
         output_file_path = os.path.join(arguments.output_path, "output_" + name + ".txt")
@@ -209,7 +209,7 @@ class MultiJobScript(object):
 
             # For hybrid (or threads) mode we always request the full node.
             # Therefore, we determine the number of cores on the node.
-            ppn = cluster.cores
+            ppn = cluster.cores_per_socket * cluster.sockets_per_node
 
         # In MPI mode, we also request a full node for processors < cpu count of a node, if specified by the fullnode flag
         elif full_node:
@@ -218,7 +218,7 @@ class MultiJobScript(object):
             hybrid_processes = ppn
 
             # Set the requested number of processors on the node to the maximum (a full node)
-            ppn = cluster.cores
+            ppn = cluster.cores_per_socket * cluster.sockets_per_node
 
         # Determine the paths to the output and error files
         output_file_path = os.path.join(arguments.output_path, "output_" + name + ".txt")

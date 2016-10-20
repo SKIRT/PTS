@@ -5,15 +5,215 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.launch.parallelization Contains the Parallelization class.
+## \package pts.core.launch.parallelization Contains the ParallelizationTool class and the Parallelization class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import random
+
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
+from ..basics.configurable import Configurable
+from .estimate import MemoryEstimator
+from ..simulation.skifile import SkiFile
+
+# -----------------------------------------------------------------
+
+def factors(n):
+    return set(reduce(list.__add__, ([i, n // i] for i in range(1, int(n ** 0.5) + 1) if n % i == 0)))
+
+# -----------------------------------------------------------------
+
+class ParallelizationTool(Configurable):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(ParallelizationTool, self).__init__(config)
+
+        # The ski file
+        self.ski = None
+
+        # The memory estimator
+        self.estimator = MemoryEstimator()
+
+        # The parallelization object
+        self.parallelization = None
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 2. Set the parallelization scheme
+        self.set_parallelization()
+
+        # 3. Show the parallelization scheme
+        self.show_parallelization()
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.config.mpi:
+
+            # Determine the number of cores per node
+            cores_per_node = self.config.nsockets * self.config.ncores
+
+            # Determine optimal number of cores used for threading (not more than 12)
+            cores = min(cores_per_node, 12)
+
+            #if self.config.hyperthreading: threads = cores * self.config.threads_per_core
+            #else: threads = cores
+
+            # Determine number of threads per core
+            threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
+
+            # Create the parallelization object
+            self.parallelization = Parallelization.from_mode("threads", cores, threads_per_core)
+
+            # Show the parallelization scheme
+            #print(self.parallelization)
+
+        else:
+
+            # Estimate the memory
+            self.estimator.run()
+
+            memory = self.estimator.memory
+
+            if memory > self.config.memory: # Ms > Mn
+
+                if self.config.nnodes > 1:
+
+                    # Mn x Nn < Ms?
+                    if self.config.memory * self.config.nnodes < memory:
+                        raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
+
+                    else:
+
+                        # Arbitrarily pick a divisor (DIV) of Npps between 4 and 10
+                        divisors = factors(self.config.ncores)
+                        divisor = random.choice(divisors)
+
+                        # Nt = min(Npps, DIV)
+                        nthreads = min(self.config.ncores, divisor)
+
+                        # Np = Nn x Nppn / Nt
+                        ppn = self.config.nsockets * self.config.ncores
+                        nprocesses = self.config.nnodes * ppn / nthreads
+
+                        total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
+
+                        # Nlambda >= 10 x Np
+                        nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+                        if nwavelengths >= 10 * nprocesses:
+
+                            # Determine number of threads per core
+                            threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
+
+                            # data parallelization
+                            # Create the parallelization object
+                            self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=True)
+
+                            # Show the parallelization scheme
+                            #print(self.parallelization)
+
+                        # try again from picking divisor, but now a larger one (less processes)
+                        else: pass
+
+
+                else: raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
+
+            else:
+
+                #Np = min(Mn / Ms, Nppn)
+                ppn = self.config.nsockets * self.config.ncores
+                nprocesses_per_node = min(self.config.memory / memory, ppn)
+
+                nprocesses = nprocesses_per_node * self.config.nnodes
+
+                nthreads = ppn / nprocesses_per_node
+
+                # Determine number of threads per core
+                threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
+
+                total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
+
+
+                # Nlambda >= 10 * Np?
+                nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+                if nwavelengths >= 10 * nprocesses:
+
+                    # data parallelization
+                    # Create the parallelization object
+                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=True)
+
+                    # Show the parallelization scheme
+                    #print(self.parallelization)
+
+                else:
+
+                    # task parallelization
+                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=False)
+
+                    # Show the parallelization scheme
+                    #print(self.parallelization)
+
+    # -----------------------------------------------------------------
+
+    def show_parallelization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.parallelization is not None:
+
+            log.info("The paralleliation scheme is:")
+            print(self.parallelization)
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ParallelizationTool, self).setup(**kwargs)
+
+        # Open the ski file
+        self.ski = self.config.ski if isinstance(self.config.ski, SkiFile) else SkiFile(self.config.ski)
 
 # -----------------------------------------------------------------
 
@@ -76,12 +276,13 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def for_host(cls, host, nnodes, data_parallel=False):
+    def for_host(cls, host, nnodes, processes_per_socket=1, data_parallel=False):
 
         """
         This function ...
         :param host:
         :param nnodes:
+        :param processes_per_socket:
         :param data_parallel:
         :return:
         """
@@ -90,16 +291,17 @@ class Parallelization(object):
         log.debug("Determining the parallelization scheme for host " + host.id + " ...")
 
         # Get the number of cores per node for this host
-        cores_per_node = host.clusters[host.cluster_name].cores
+        cores_per_node = host.cluster.cores_per_socket * host.cluster.sockets_per_node
 
         # Determine the number of cores corresponding to the number of requested cores
         cores = cores_per_node * nnodes
 
-        # Use 1 core for each process (assume there is enough memory)
-        processes = cores
+        # Determine the total number of processes based on the number of process per socket (assume there is enough memory)
+        processes_per_node = processes_per_socket * host.cluster.sockets_per_node
+        processes = processes_per_node * nnodes
 
         # Determine the number of threads per core
-        if host.use_hyperthreading: threads_per_core = host.clusters[host.cluster_name].threads_per_core
+        if host.use_hyperthreading: threads_per_core = host.cluster.threads_per_core
         else: threads_per_core = 1
 
         # Create a Parallelization instance

@@ -33,6 +33,7 @@ from ...core.launch.estimate import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
 from ...core.basics.configuration import stringify_not_list
 from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ...core.launch.parallelization import ParallelizationTool
 
 # -----------------------------------------------------------------
 
@@ -501,6 +502,30 @@ class ParameterExplorer(FittingComponent):
 
         # Loop over the IDs of the hosts used by the batch launcher that use a scheduling system
         for host in self.launcher.scheduler_hosts:
+
+            # Create the parallelization tool
+            tool = ParallelizationTool()
+
+            # Set configuration options
+            tool.config.ski = self.ski_template
+            tool.config.input = self.input_paths
+
+            # Set host properties
+            tool.config.nnodes = self.config.nnodes
+            tool.config.nsockets = host.cluster.sockets_per_node
+            tool.config.ncores = host.cluster.cores_per_sockets
+            tool.config.memory = host.cluster.memory
+
+            # MPI available and used
+            tool.config.mpi = True
+            tool.config.hyperthreading = False
+            tool.config.threads_per_core = None
+
+            # Number of dust cells
+            tool.config.ncells = None # number of dust cells (relevant if ski file uses a tree dust grid)
+
+            # Run the tool
+            tool.run()
 
             # Get the parallelization scheme for this host
             parallelization = Parallelization.for_host(host, self.config.nnodes, self.config.data_parallel)

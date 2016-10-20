@@ -7,3 +7,5 @@ configure_host | -- | prep.hostconfigurer.HostConfigurer | interactive | Configu
 scaling | -- | test.scaling.ScalingTest | interactive | Test the scaling of SKIRT on a particular system
 launch | -- | launch.launcher.SkirtLauncher | interactive | Launch a SKIRT simulation locally or remotely with the best performance, based on the current load of the system
 status | -- | launch.synchronizer.RemoteSynchronizer | arguments | Check the status of SKIRT simulations and PTS tasks running remotely
+estimate_memory | -- | launch.estimate.MemoryEstimator | interactive | Estimate the memory required for a certain ski file
+parallelization | -- | launch.parallelization.ParallelizationTool | interactive | Determine the optimal parallelization strategy for a certain ski file

@@ -63,17 +63,17 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster=None):
+    def setup(self, host_id, cluster_name=None):
 
         """
         This function ...
         :param host_id:
-        :param cluster:
+        :param cluster_name:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SkirtRemote, self).setup(host_id, cluster)
+        super(SkirtRemote, self).setup(host_id, cluster_name)
 
         # Obtain some information about the SKIRT installation on the remote machine
         self.skirt_path = self.find_executable("skirt")
@@ -597,9 +597,9 @@ class SkirtRemote(Remote):
 
         # Create a job script next to the (local) simulation's ski file
         jobscript_name = fs.name(local_jobscript_path)
-        jobscript = JobScript(local_jobscript_path, arguments, self.host.clusters[self.host.cluster_name],
-                              self.skirt_path, self.host.mpi_command, self.host.modules, walltime, nodes, ppn,
-                              name=name, mail=mail, full_node=full_node, bind_to_cores=self.host.force_process_binding)
+        jobscript = JobScript(local_jobscript_path, arguments, self.host.cluster, self.skirt_path,
+                              self.host.mpi_command, self.host.modules, walltime, nodes, ppn, name=name, mail=mail,
+                              full_node=full_node, bind_to_cores=self.host.force_process_binding)
 
         # Copy the job script to the remote simulation directory
         remote_simulation_path = fs.directory_of(arguments.ski_pattern) # NEW, to avoid having to pass this as an argument

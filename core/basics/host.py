@@ -106,12 +106,12 @@ class Host(object):
     This class ...
     """
 
-    def __init__(self, host_id, cluster=None):
+    def __init__(self, host_id, clustername=None):
 
         """
         The constructor ...
         :param host_id:
-        :param cluster:
+        :param clustername:
         :return:
         """
 
@@ -136,10 +136,10 @@ class Host(object):
         if config.scheduler:
 
             # If no cluster name is given, use the default cluster (defined in the configuration file)
-            if cluster is None: self.cluster_name = config.clusters.default
+            if clustername is None: self.cluster_name = config.clusters.default
 
             # If a cluster name is given, use that one
-            else: self.cluster_name = cluster
+            else: self.cluster_name = clustername
 
         # Set the entries in the configuration object as attributes of this object
         self.name = config.name
@@ -154,6 +154,18 @@ class Host(object):
         self.installation_modules = config.installation_modules
         self.clusters = config.clusters
         self.vpn = config.vpn
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cluster(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.clusters[self.cluster_name]
 
     # -----------------------------------------------------------------
 

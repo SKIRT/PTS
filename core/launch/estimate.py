@@ -18,9 +18,13 @@ from .parallelization import Parallelization
 from ..basics.distribution import Distribution
 from ..tools import tables
 from .timing import TimingTable
-from .memory import MemoryTable
 from ..plot.distribution import DistributionPlotter
 from ..basics.map import Map
+from ..basics.configurable import Configurable
+from ..simulation.skifile import SkiFile
+from ..tools import introspection
+from ..tools import filesystem as fs
+from ..test.dustgridtool import DustGridTool
 
 # -----------------------------------------------------------------
 
@@ -426,6 +430,7 @@ def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, dat
     :param data_parallel:
     :param in_path:
     :param nwavelengths:
+    :param ncells:
     :return:
     """
 
@@ -479,39 +484,111 @@ def timing_parameters(ski_file, parallelization, host_id, cluster_name=None, dat
 
 # -----------------------------------------------------------------
 
-class MemoryEstimator(object):
+class MemoryEstimator(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, memory_table):
+    def __init__(self, config=None):
 
         """
         This function ...
-        :param memory_table:
         """
 
-        # -- Attributes --
+        # Call the constructor of the base class
+        super(MemoryEstimator, self).__init__(config)
 
-        # Set the memory table
-        self.memory_table = memory_table
+        # The ski file
+        self.ski = None
+
+        self.temp_path = None
+
+        self.ncells = None
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_file(cls, path):
+    def run(self):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
-        # Load the memory table
-        memory_table = MemoryTable.from_file(path)
+        self.setup()
 
-        # Create the MemoryEstimator object
-        return cls(memory_table)
+        self.estimate()
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(MemoryEstimator, self).setup()
+
+        # Load the ski file
+        self.ski = SkiFile(self.config.ski)
+
+        # Path to temporary directory
+        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, "memory_estimator")
+
+    # -----------------------------------------------------------------
+
+    def estimate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.ski.treegrid(): self.estimate_ncells()
+        else: self.ncells = self.ski.ncells()
+
+        if self.ski.oligochromatic(): self.estimate_oligo()
+        elif self.ski.panchromatic(): self.estimate_pan()
+        else: pass
+
+    # -----------------------------------------------------------------
+
+    def estimate_ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the dust grid tool
+        tool = DustGridTool()
+
+        # Get the dust grid statistics
+        statistics = tool.get_statistics(self.ski, self.temp_path, self.config.input, "test")
+
+        # Get the number of dust cells
+        self.ncells = statistics.ncells
+
+    # -----------------------------------------------------------------
+
+    def estimate_oligo(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    def estimate_pan(self):
+
+        """
+        This function ...
+        :return:
+        """
 
 # -----------------------------------------------------------------

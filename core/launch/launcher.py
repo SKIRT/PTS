@@ -13,6 +13,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import the relevant PTS classes and modules
 from .analyser import SimulationAnalyser
 from ..simulation.execute import SkirtExec
@@ -40,7 +43,7 @@ class SKIRTLauncher(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SKIRTLauncher, self).__init__(config, "core")
+        super(SKIRTLauncher, self).__init__(config)
 
         # -- Attributes --
 
@@ -555,7 +558,7 @@ class SkirtRemoteLauncher(OldConfigurable):
         if self.remote.scheduler:
 
             # Determine the total number of hardware threads that can be used on the remote cluster
-            hardware_threads_per_node = self.remote.cores
+            hardware_threads_per_node = self.remote.cores_per_node
             if self.remote.use_hyperthreading: hardware_threads_per_node *= self.remote.threads_per_core
 
             # Raise an error if the number of requested threads per process exceeds the number of hardware threads
@@ -565,7 +568,7 @@ class SkirtRemoteLauncher(OldConfigurable):
 
             # Determine the number of processes per node (this same calculation is also done in JobScript)
             # self.remote.cores = cores per node
-            processes_per_node = self.remote.cores // self.config.arguments.parallel.threads
+            processes_per_node = self.remote.cores_per_node // self.config.arguments.parallel.threads
 
             # Determine the amount of requested nodes based on the total number of processes and the number of processes per node
             requested_nodes = math.ceil(self.config.arguments.parallel.processes / processes_per_node)
@@ -582,7 +585,7 @@ class SkirtRemoteLauncher(OldConfigurable):
             requested_threads = self.config.arguments.parallel.processes * self.config.arguments.parallel.threads
 
             # Determine the total number of hardware threads that can be used on the remote host
-            hardware_threads = self.remote.cores
+            hardware_threads = self.remote.cores_per_node
             if self.remote.use_hyperthreading: hardware_threads *= self.remote.threads_per_core
 
             # If the number of requested threads is greater than the allowed number of hardware threads, raise

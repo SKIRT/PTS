@@ -270,7 +270,7 @@ class ScalingTest(Configurable):
         remote = self.launcher.single_remote
 
         # Get the number of cores (per node) on the remote system
-        self.cores_per_node = remote.cores
+        self.cores_per_node = remote.cores_per_node
 
         # Check whether hyperthreading is enabled for the
         hyperthreading = remote.use_hyperthreading

@@ -478,7 +478,7 @@ class BatchLauncher(OldConfigurable):
             cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
 
             # Setup the remote for the specified host
-            remote.setup(host_id, cluster=cluster_name)
+            remote.setup(host_id, cluster_name=cluster_name)
 
             # Add the remote to the list of remote objects
             self.remotes.append(remote)

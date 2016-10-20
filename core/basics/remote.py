@@ -74,17 +74,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster=None):
+    def setup(self, host_id, cluster_name=None):
 
         """
         This function ...
         :param host_id:
-        :param cluster:
+        :param cluster_name:
         :return:
         """
 
         # Create the host object
-        self.host = Host(host_id, cluster)
+        self.host = Host(host_id, cluster_name)
 
         # If a VPN connection is required for the remote host
         if self.host.requires_vpn: self.connect_to_vpn()
@@ -371,10 +371,10 @@ class Remote(object):
         """
 
         # Calculate the necessary amount of nodes
-        nodes = processors // self.cores + (processors % self.cores > 0)
+        nodes = processors // self.cores_per_node + (processors % self.cores_per_node > 0)
 
         # Determine the number of processors per node
-        ppn = processors if nodes == 1 else self.cores
+        ppn = processors if nodes == 1 else self.cores_per_node
 
         # Return the number of nodes and processors per node
         return nodes, ppn
@@ -1493,7 +1493,11 @@ class Remote(object):
         :return:
         """
 
-        return self.cores * (1.0 - self.cpu_load)
+        # The calculation doesn't work for multiple nodes
+        if self.nodes > 1: raise ValueError("This function cannot be called for systems with multiple nodes")
+
+        # Determine the number of free cores on the only node
+        return self.cores_per_node * (1.0 - self.cpu_load)
 
     # -----------------------------------------------------------------
 
@@ -1582,7 +1586,7 @@ class Remote(object):
 
         # If the remote host uses a scheduling system, check whether multi node communication is possible based on
         # the configuration of the current cluster
-        if self.scheduler: return self.host.clusters[self.host.cluster_name].multi_node_communication
+        if self.scheduler: return self.host.cluster.multi_node_communication
 
         # If no scheduler is used, raise an error (this function should not get called)
         else: raise RuntimeError("This function should only be called when using a remote with a scheduling system")
@@ -1599,7 +1603,7 @@ class Remote(object):
 
         # If the remote host uses a scheduling system, the amount of virtual memory memory per node is defined
         # in the configuration (this is in GB)
-        if self.scheduler: return self.host.clusters[self.host.cluster_name].memory
+        if self.scheduler: return self.host.cluster.memory
 
         # If no scheduler is used, assume the number of nodes is 1 and get the total virtual memory (total swap)
         else:
@@ -1624,7 +1628,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of nodes is defined in the host configuration
-        if self.scheduler: return self.host.clusters[self.host.cluster_name].nodes
+        if self.scheduler: return self.host.cluster.nodes
 
         # If no scheduling system is used, assume the system is only concised of one node
         else: return 1
@@ -1632,7 +1636,7 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
-    def cores(self):
+    def cores_per_node(self):
 
         """
         This function ...
@@ -1640,7 +1644,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of cores on the computing nodes is defined in the configuration
-        if self.scheduler: return self.host.clusters[self.host.cluster_name].cores
+        if self.scheduler: return self.host.cluster.cores_per_socket * self.host.cluster.sockets_per_node
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
@@ -1663,7 +1667,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of threads per core is defined in the configuration
-        if self.scheduler: return self.host.clusters[self.host.cluster_name].threads_per_core
+        if self.scheduler: return self.host.cluster.threads_per_core
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
@@ -1686,7 +1690,7 @@ class Remote(object):
         """
 
         # If the remote host uses a scheduling system, the number of numa domains is defined in the configuration
-        if self.scheduler: return self.host.clusters[self.host.cluster_name].numa_domains
+        if self.scheduler: return self.host.cluster.numa_domains
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
