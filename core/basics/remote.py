@@ -1685,12 +1685,12 @@ class Remote(object):
     def numa_domains(self):
 
         """
-        This function ...
+        This function returns the number of NUMA domains (per node)
         :return:
         """
 
         # If the remote host uses a scheduling system, the number of numa domains is defined in the configuration
-        if self.scheduler: return self.host.cluster.numa_domains
+        if self.scheduler: return self.host.cluster.numa_domains_per_node
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
@@ -1712,8 +1712,8 @@ class Remote(object):
         :return:
         """
 
-        # Initialize a list to contain the
-        cpus = [[] for i in range(self.numa_domains)]
+        # Initialize a list to contain the CPU ranks
+        cpus = [[] for _ in range(self.numa_domains)]
 
         # Only works for up to 10 domains!
         output = self.execute("lscpu")
