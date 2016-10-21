@@ -223,7 +223,8 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def start_screen(self, name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False):
+    def start_screen(self, name, local_script_path, script_destination, screen_output_path=None,
+                     keep_remote_script=False, attached=False):
 
         """
         This function ...
@@ -232,6 +233,7 @@ class Remote(object):
         :param script_destination:
         :param screen_output_path:
         :param keep_remote_script:
+        :param attached:
         :return:
         """
 
@@ -261,7 +263,8 @@ class Remote(object):
             self.change_cwd(screen_output_path)
 
         # Create the screen session and execute the batch script
-        self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False)
+        if attached: self.execute("screen -S " + name + " -L -m " + remote_script_path, output=False, show_output=True)
+        else: self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False, timeout=None)
 
         # Remove the remote shell script
         if not keep_remote_script: self.execute("rm " + remote_script_path, output=False)

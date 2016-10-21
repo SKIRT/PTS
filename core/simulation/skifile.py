@@ -171,7 +171,7 @@ class SkiFile:
         try:
             xpoints = int(self.tree.xpath("//meshX/*")[0].get("numBins"))
         except (TypeError, IndexError):
-            raise ValueError("The number of dust cels is not defined within the ski file")
+            raise ValueError("The number of dust cells is not defined within the ski file")
         return xpoints
 
     ## This function returns the number of dust cells in the y direction

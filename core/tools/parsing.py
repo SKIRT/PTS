@@ -348,6 +348,20 @@ def integer_list(string):
 
 # -----------------------------------------------------------------
 
+def dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = eval(argument)
+    if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
+    return d
+
+# -----------------------------------------------------------------
+
 def simulation_ids(string):
 
     """

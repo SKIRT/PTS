@@ -6,6 +6,8 @@ update_skirt | update | prep.update.SKIRTUpdater | arguments | Update SKIRT loca
 configure_host | -- | prep.hostconfigurer.HostConfigurer | interactive | Configure and add a new host to use with PTS
 scaling | -- | test.scaling.ScalingTest | interactive | Test the scaling of SKIRT on a particular system
 launch | -- | launch.launcher.SkirtLauncher | interactive | Launch a SKIRT simulation locally or remotely with the best performance, based on the current load of the system
+launch_batch | -- | launch.batchlauncher.BatchLauncher | interactive | Launch a batch of SKIRT simulations remotely on one or more remote hosts
 status | -- | launch.synchronizer.RemoteSynchronizer | arguments | Check the status of SKIRT simulations and PTS tasks running remotely
 estimate_memory | -- | launch.estimate.MemoryEstimator | interactive | Estimate the memory required for a certain ski file
+test_memory | -- | test.memory.MemoryTester | arguments | Test the memory estimation for a certain ski file with the actual memory consumption
 parallelization | -- | launch.parallelization.ParallelizationTool | interactive | Determine the optimal parallelization strategy for a certain ski file

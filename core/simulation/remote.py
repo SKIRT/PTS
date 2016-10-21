@@ -173,7 +173,8 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False, group_walltime=None, jobscripts_path=None):
+    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False,
+                    group_walltime=None, jobscripts_path=None, attached=False):
 
         """
         This function ...
@@ -183,6 +184,7 @@ class SkirtRemote(Remote):
         :param group_simulations:
         :param group_walltime:
         :param jobscripts_path:
+        :param attached:
         :return:
         """
 
@@ -194,12 +196,13 @@ class SkirtRemote(Remote):
 
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
         if self.scheduler:
+            if attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
             job_ids = self.start_queue_jobs(group_simulations, group_walltime=group_walltime, jobscripts_path=jobscripts_path)
             screen_name_or_job_ids = job_ids
 
         # Else, initiate a screen session in which the simulations are executed
         else:
-            screen_name = self.start_queue_screen(screen_name, local_script_path, screen_output_path)
+            screen_name = self.start_queue_screen(screen_name, local_script_path, screen_output_path, attached=attached)
             screen_name_or_job_ids = screen_name
 
         # Clear the queue
@@ -306,13 +309,14 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_screen(self, screen_name, local_script_path, screen_output_path=None):
+    def start_queue_screen(self, screen_name, local_script_path, screen_output_path=None, attached=False):
 
         """
         This function ...
         :param screen_name:
         :param local_script_path:
         :param screen_output_path:
+        :param attached:
         :return:
         """
 
@@ -349,7 +353,7 @@ class SkirtRemote(Remote):
         script_file.flush()
 
         # Start a screen session
-        self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path)
+        self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path, attached=attached)
 
         # Close the script file (if it is temporary it will automatically be removed)
         script_file.close()

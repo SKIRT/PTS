@@ -7,23 +7,17 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.basics.host import find_host_ids
 
 # -----------------------------------------------------------------
 
 # Create configuration definition
 definition = ConfigurationDefinition()
 
-# Add required
-definition.add_required("ski", "file_path", "path to the ski file")
+# Add optional
+definition.add_positional_optional("ski", "file_path", "ski file to be used (if not specified, all ski files in the current directory will be used)")
 
 # Add optional
-definition.add_optional("input", "directory_path", "path to the input directory")
-
-# Add optional
-definition.add_optional("nwavelengths", "integer", "the number of wavelengths (useful for when a file wavelength grid is used and the file is not present)")
-definition.add_optional("ncells", "integer", "number of dust cells (useful only when the ski file includes a tree dust grid)")
-
-# Add flag
-definition.add_flag("probe", "probe the number of cells (or memory usage) by launching a dry-run of the simulation, if necessary (tree dust grid and ncells not specified)", True)
+definition.add_optional("remote", "string", "the remote host on which to launch the simulations", "nancy", choices=find_host_ids())
 
 # -----------------------------------------------------------------

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import OldConfigurable, Configurable
 from ..simulation.remote import SkirtRemote
 from .options import LoggingOptions
 from ..tools import introspection, time
@@ -26,10 +26,11 @@ from ..basics.host import Host
 from .parallelization import Parallelization
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
+from ..simulation.definition import SingleSimulationDefinition
 
 # -----------------------------------------------------------------
 
-class BatchLauncher(OldConfigurable):
+class BatchLauncher(Configurable):
 
     """
     This class ...
@@ -44,7 +45,7 @@ class BatchLauncher(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(BatchLauncher, self).__init__(config, "core")
+        super(BatchLauncher, self).__init__(config)
 
         # -- Attributes --
 
@@ -373,15 +374,16 @@ class BatchLauncher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Determine how many simulations are assigned to each remote
         self.assign()
@@ -436,15 +438,16 @@ class BatchLauncher(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(BatchLauncher, self).setup()
+        super(BatchLauncher, self).setup(**kwargs)
 
         # Setup the remote instances
         if len(self.remotes) == 0: self.setup_remotes()
@@ -452,6 +455,12 @@ class BatchLauncher(OldConfigurable):
         # Create the logging options
         self.logging_options = LoggingOptions()
         self.logging_options.set_options(self.config.logging)
+
+        # Add simulation definitions for ski file present in the current working directory (if nothing is added to the queue manually)
+        if len(self.queue) == 0: self.load_queue()
+
+        # If attached mode is enabled, check whether all remotes are non-schedulers
+        if self.config.attached and self.uses_schedulers: raise ValueError("Cannot use attached mode when remotes with scheduling system are used")
 
     # -----------------------------------------------------------------
 
@@ -482,6 +491,34 @@ class BatchLauncher(OldConfigurable):
 
             # Add the remote to the list of remote objects
             self.remotes.append(remote)
+
+    # -----------------------------------------------------------------
+
+    def load_queue(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading ski files in the current working directory into the queue ...")
+
+        # Create an 'out' directory if the output directory is not specified
+        if self.config.output is None: output_path = fs.create_directory_in(self.config.path, "out")
+        else: output_path = fs.absolute(self.config.output)
+
+        # Loop over all files in the current working directory
+        for ski_path, prefix in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"]):
+
+            # Determine output directory
+            simulation_output_path = fs.create_directory_in(output_path, prefix)
+
+            # Create the simulation definition
+            definition = SingleSimulationDefinition(ski_path, self.config.input, simulation_output_path)
+
+            # Add the definition to the queue
+            self.add_to_queue(definition)
 
     # -----------------------------------------------------------------
 
