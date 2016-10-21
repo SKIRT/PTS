@@ -24,7 +24,7 @@ from ...core.tools.logging import log
 from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.options import LoggingOptions
-from ...core.launch.estimate import RuntimeEstimator
+from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.launch.parallelization import Parallelization
 from ...core.simulation.remote import SkirtRemote
 from ...magic.misc.kernels import AnianoKernels
@@ -33,7 +33,7 @@ from ..fitting.wavelengthgrids import create_one_subgrid_wavelength_grid
 from ..fitting.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
 from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
-from ...core.test.dustgridtool import DustGridTool
+from ...core.advanced.dustgridtool import DustGridTool
 
 # -----------------------------------------------------------------
 

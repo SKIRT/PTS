@@ -26,7 +26,7 @@ from ..launch.batchlauncher import BatchLauncher
 from ..launch.timing import TimingTable
 from ..launch.memory import MemoryTable
 from ..tools import tables
-from ..launch.estimate import RuntimeEstimator
+from ..advanced.runtimeestimator import RuntimeEstimator
 
 # -----------------------------------------------------------------
 

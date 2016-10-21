@@ -29,11 +29,10 @@ from ...core.basics.range import range_around
 from ...core.simulation.definition import SingleSimulationDefinition
 from .tables import ParametersTable, ChiSquaredTable
 from ...core.launch.options import SchedulingOptions
-from ...core.launch.estimate import RuntimeEstimator
-from ...core.launch.parallelization import Parallelization
+from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.basics.configuration import stringify_not_list
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ...core.launch.parallelization import ParallelizationTool
+from ...core.advanced.parallelizationtool import ParallelizationTool
 
 # -----------------------------------------------------------------
 

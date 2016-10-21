@@ -21,16 +21,15 @@ from .component import FittingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.launch.batchlauncher import BatchLauncher
-from ...core.launch.parallelization import Parallelization
-from ...core.launch.estimate import RuntimeEstimator
+from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.launch.options import SchedulingOptions
 from ...magic.misc.kernels import AnianoKernels
 from .wavelengthgrids import create_one_subgrid_wavelength_grid
 from .dustgrids import create_one_dust_grid
 from ..core.emissionlines import EmissionLines
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.test.dustgridtool import DustGridTool
-from ...core.launch.parallelization import ParallelizationTool
+from ...core.advanced.dustgridtool import DustGridTool
+from ...core.advanced.parallelizationtool import ParallelizationTool
 
 # -----------------------------------------------------------------
 

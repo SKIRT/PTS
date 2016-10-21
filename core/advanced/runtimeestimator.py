@@ -14,17 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
-from .parallelization import Parallelization
+from ..launch.parallelization import Parallelization
 from ..basics.distribution import Distribution
 from ..tools import tables
-from .timing import TimingTable
+from ..launch.timing import TimingTable
 from ..plot.distribution import DistributionPlotter
 from ..basics.map import Map
 from ..basics.configurable import Configurable
 from ..simulation.skifile import SkiFile
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..test.dustgridtool import DustGridTool
+from ..advanced.dustgridtool import DustGridTool
 
 # -----------------------------------------------------------------
 

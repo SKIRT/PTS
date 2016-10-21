@@ -18,8 +18,9 @@ import random
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..basics.configurable import Configurable
-from .estimate import MemoryEstimator
+from .memoryestimator import MemoryEstimator
 from ..simulation.skifile import SkiFile
+from ..launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
