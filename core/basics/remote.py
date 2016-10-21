@@ -263,7 +263,9 @@ class Remote(object):
             self.change_cwd(screen_output_path)
 
         # Create the screen session and execute the batch script
-        if attached: self.execute("screen -S " + name + " -L -m " + remote_script_path, output=False, show_output=True)
+        if attached:
+            #self.execute("screen -S " + name + " -L -m " + remote_script_path, output=False, show_output=True)
+            self.execute("sh " + remote_script_path, output=False, show_output=True)
         else: self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False, timeout=None)
 
         # Remove the remote shell script

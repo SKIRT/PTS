@@ -707,7 +707,8 @@ class BatchLauncher(Configurable):
             else: screen_output_path = None
 
             # Start the queue
-            screen_name_or_job_ids = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, group_walltime=self.config.group_walltime, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=self.script_paths[remote.host_id])
+            jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
+            screen_name_or_job_ids = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, group_walltime=self.config.group_walltime, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=jobscripts_path, attached=self.config.attached)
 
             # If the remote works with a scheduling system
             if remote.scheduler:
