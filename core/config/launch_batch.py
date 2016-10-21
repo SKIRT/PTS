@@ -46,7 +46,7 @@ definition.sections["logging"].add_flag("brief", "brief console logging", False)
 definition.sections["logging"].add_flag("verbose", "verbose logging mode", False)
 definition.sections["logging"].add_flag("memory", "memory logging", False)
 definition.sections["logging"].add_flag("allocation", "memory (de)allocation logging", False)
-definition.sections["logging"].add_optional("allocation_limit", "memory (de)allocation logging lower limit (GB)", 1e-5)
+definition.sections["logging"].add_optional("allocation_limit", "real", "memory (de)allocation logging lower limit (GB)", 1e-5)
 
 definition.add_section("analysis", "simulation analysis options")
 
@@ -74,7 +74,7 @@ definition.sections["analysis"].sections["misc"].add_flag("fluxes", "calculate o
 definition.sections["analysis"].sections["misc"].add_flag("images", "create observed images")
 definition.sections["analysis"].sections["misc"].add_optional("observation_filters", "string_list", "observation filters")
 definition.sections["analysis"].sections["misc"].add_optional("observation_instruments", "string_list", "simulation instruments for which to create observations")
-definition.sections["analysis"].sections["misc"].add_optional("make_images_remote", "string", choices=find_host_ids())
+definition.sections["analysis"].sections["misc"].add_optional("make_images_remote", "string", "remote host ID to create the observed images on", choices=find_host_ids())
 definition.sections["analysis"].sections["misc"].add_optional("images_wcs", "file_path", "FITS file with WCS info for the observations")
 definition.sections["analysis"].sections["misc"].add_optional("images_unit", "string", "unit for the images")
 definition.sections["analysis"].sections["misc"].add_optional("images_kernels", "dictionary", "kernel paths for convolving the observed images")

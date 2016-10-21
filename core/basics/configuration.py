@@ -1697,6 +1697,12 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         choice_descriptions = definition.pos_optional[name][4]
         dynamic_list = definition.pos_optional[name][5]
 
+        if not prompt_optional:
+            value = default
+            # Set the value
+            config[name] = value
+            continue
+
         # Give name and description
         log.success(name + ": " + description)
 
@@ -1816,6 +1822,12 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         letter = definition.optional[name][5]
         dynamic_list = definition.optional[name][6]
 
+        if not prompt_optional:
+            value = default
+            # Set the value
+            config[name] = value
+            continue
+
         # Give name and description
         log.success(name + ": " + description)
 
@@ -1933,6 +1945,12 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         description = definition.flags[name][0]
         letter = definition.flags[name][1]
         default = definition.flags[name][2]  # True or False
+
+        if not prompt_optional:
+            value = default
+            # Set the value
+            config[name] = value
+            continue
 
         # Give name and description
         log.success(name + ": " + description)

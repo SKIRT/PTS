@@ -21,6 +21,7 @@ from ..simulation.skifile import SkiFile
 from ..simulation.logfile import LogFile
 from ..advanced.memoryestimator import MemoryEstimator
 from ..launch.batchlauncher import BatchLauncher
+from ..simulation.definition import SingleSimulationDefinition
 
 # -----------------------------------------------------------------
 
@@ -63,6 +64,9 @@ class MemoryTester(Configurable):
         # Call the setup function
         self.setup(**kwargs)
 
+        # Launch the simulations
+        self.launch()
+
         # Load the data
         self.load_data()
 
@@ -79,6 +83,7 @@ class MemoryTester(Configurable):
         # Call the setup function of the base class
         super(MemoryTester, self).setup(**kwargs)
 
+        # Setup the batch launcher
         self.setup_launcher()
 
     # -----------------------------------------------------------------
@@ -89,6 +94,18 @@ class MemoryTester(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Preparing the batch launcher ...")
+
+        from ..config.launch_batch import definition
+        from ..basics.configuration import InteractiveConfigurationSetter
+
+        #definition = ConfigurationDefinition(write_config=False)
+        setter = InteractiveConfigurationSetter(self.class_name, add_logging=False)
+
+        # Create new config
+        self.launcher.config = setter.run(definition, prompt_optional=False)
 
         # Set working directory
         self.launcher.config.path = self.config.path
@@ -105,6 +122,31 @@ class MemoryTester(Configurable):
 
         # Run in attached mode
         self.launcher.config.attached = True
+
+        self.launcher.config.cores_per_process = 4
+
+    # -----------------------------------------------------------------
+
+    def launch(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.ski is None:
+
+            # Loop over all files in the current working directory
+            #for ski_path, prefix in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"]):
+
+                # Create simulation definition
+                #definition = SingleSimulationDefinition(ski_path, input_path, output_path)
+
+                # Add to the queue
+                #self.launcher.add_to_queue(definition)
+
+            # Run the batch launcher
+            self.launcher.run()
 
     # -----------------------------------------------------------------
 
