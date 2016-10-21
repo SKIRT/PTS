@@ -494,7 +494,7 @@ class SkiFile:
             type = instrument.tag
             name = instrument.attrib["instrumentName"]
             datacube = int(instrument.attrib["pixelsX"])*int(instrument.attrib["pixelsY"])*nwavelengths
-            if type == "SimpleInstrument":
+            if type == "SimpleInstrument" or type == "FrameInstrument":
                 pixels.append([name, type, datacube])
             elif type == "FullInstrument":
                 scattlevels = int(instrument.attrib["scatteringLevels"])

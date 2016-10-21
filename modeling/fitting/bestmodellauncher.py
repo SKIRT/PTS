@@ -30,6 +30,7 @@ from .dustgrids import create_one_dust_grid
 from ..core.emissionlines import EmissionLines
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.test.dustgridtool import DustGridTool
+from ...core.launch.parallelization import ParallelizationTool
 
 # -----------------------------------------------------------------
 
@@ -519,8 +520,35 @@ class BestModelLauncher(FittingComponent):
         # Inform the user
         log.info("Setting the parallelization scheme for the remote host (" + self.config.remote + ") ...")
 
+        # Create the parallelization tool
+        tool = ParallelizationTool()
+
+        # Set configuration options
+        tool.config.ski = self.ski_template
+        tool.config.input = self.input_paths
+
+        # Set host properties
+        tool.config.nnodes = self.config.nnodes
+        tool.config.nsockets = self.remote_host.cluster.sockets_per_node
+        tool.config.ncores = self.remote_host.cluster.cores_per_sockets
+        tool.config.memory = self.remote_host.cluster.memory
+
+        # MPI available and used
+        tool.config.mpi = True
+        tool.config.hyperthreading = False
+        tool.config.threads_per_core = None
+
+        # Number of dust cells
+        tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+        # Run the parallelization tool
+        tool.run()
+
+        # Get the parallelization scheme
+        parallelization = tool.parallelization
+
         # Get the parallelization scheme for this host
-        parallelization = Parallelization.for_host(self.remote_host, self.config.nnodes, self.config.data_parallel)
+        #parallelization = Parallelization.for_host(self.remote_host, self.config.nnodes, self.config.data_parallel)
 
         # Debugging
         log.debug("Parallelization scheme for host " + self.remote_host_id + ": " + str(parallelization))

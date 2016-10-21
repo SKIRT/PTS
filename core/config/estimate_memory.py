@@ -19,4 +19,7 @@ definition.add_required("ski", "file_path", "path to the ski file")
 # Add optional
 definition.add_optional("input", "directory_path", "path to the input directory")
 
+# Add optional
+definition.add_optional("ncells", "integer", "number of dust cells (useful only when the ski file includes a tree dust grid)")
+
 # -----------------------------------------------------------------

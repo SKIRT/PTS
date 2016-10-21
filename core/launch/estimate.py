@@ -502,9 +502,17 @@ class MemoryEstimator(Configurable):
         # The ski file
         self.ski = None
 
+        # The path to a temporary directory
         self.temp_path = None
 
+        # Properties of the simulation
         self.ncells = None
+        self.nwavelengths = None
+        self.npixels = None
+
+        # The calculated serial and parallel part of the memory
+        self.serial_memory = None
+        self.parallel_memory = None
 
     # -----------------------------------------------------------------
 
@@ -515,8 +523,10 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
+        # 1. Call the setup function
         self.setup()
 
+        # 2. Estimate
         self.estimate()
 
     # -----------------------------------------------------------------
@@ -532,7 +542,7 @@ class MemoryEstimator(Configurable):
         super(MemoryEstimator, self).setup()
 
         # Load the ski file
-        self.ski = SkiFile(self.config.ski)
+        self.ski = self.config.ski if isinstance(self.config.ski, SkiFile) else SkiFile(self.config.ski)
 
         # Path to temporary directory
         self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, "memory_estimator")
@@ -546,12 +556,60 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
-        if self.ski.treegrid(): self.estimate_ncells()
-        else: self.ncells = self.ski.ncells()
+        # Get the number of dust cells
+        self.get_ncells()
 
+        # Get the number of wavelengths
+        self.get_nwavelengths()
+
+        # Get the number of instrument pixels
+        self.get_npixels()
+
+        # Estimate depending on the type of simulation
         if self.ski.oligochromatic(): self.estimate_oligo()
         elif self.ski.panchromatic(): self.estimate_pan()
-        else: pass
+        else: raise ValueError("Invalid ski file")
+
+    # -----------------------------------------------------------------
+
+    def get_ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the number of dust cells
+        if self.ski.treegrid():
+            if self.config.ncells is not None:
+                self.ncells = self.config.ncells
+            else: self.estimate_ncells()
+        else: self.ncells = self.ski.ncells()
+
+    # -----------------------------------------------------------------
+
+    def get_nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the number of wavelengths
+        self.nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
+
+    # -----------------------------------------------------------------
+
+    def get_npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.npixels = 0
+        for name, instrument_type, npixels in self.ski.npixels(self.nwavelengths):
+            self.npixels += npixels
 
     # -----------------------------------------------------------------
 
@@ -590,5 +648,25 @@ class MemoryEstimator(Configurable):
         This function ...
         :return:
         """
+
+        # Size of the parallel tables (in number of values)
+        table_size = self.nwavelengths * self.ncells
+
+        # Size of the instruments
+        instruments_size = self.npixels
+
+        # A Gigabyte is 1,073,741,824 (2^30) bytes
+        bytes_per_gigabyte = 1073741824.
+
+        # Memory requirements for the parallel tables (in GB)
+        tables_memory = 8 * 3 * table_size / bytes_per_gigabyte
+
+        # Memory requirements for the instruments (in GB)
+        instruments_memory = 8 * instruments_size / bytes_per_gigabyte
+
+        # Determine the parallel memory requirement
+        self.parallel_memory = tables_memory + instruments_memory
+
+        # TODO: determine the serial memory requirement
 
 # -----------------------------------------------------------------

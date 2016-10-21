@@ -24,6 +24,13 @@ from ..simulation.skifile import SkiFile
 # -----------------------------------------------------------------
 
 def factors(n):
+
+    """
+    This function ...
+    :param n:
+    :return:
+    """
+
     return set(reduce(list.__add__, ([i, n // i] for i in range(1, int(n ** 0.5) + 1) if n % i == 0)))
 
 # -----------------------------------------------------------------
@@ -73,6 +80,22 @@ class ParallelizationTool(Configurable):
 
     # -----------------------------------------------------------------
 
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ParallelizationTool, self).setup(**kwargs)
+
+        # Open the ski file
+        self.ski = self.config.ski if isinstance(self.config.ski, SkiFile) else SkiFile(self.config.ski)
+
+    # -----------------------------------------------------------------
+
     def set_parallelization(self):
 
         """
@@ -102,12 +125,23 @@ class ParallelizationTool(Configurable):
 
         else:
 
+            # Configure the memory estimator
+            self.estimator.config.ski = self.ski
+            self.estimator.config.input = self.config.input
+            self.estimator.config.ncells = self.config.ncells
+
             # Estimate the memory
             self.estimator.run()
 
-            memory = self.estimator.memory
+            # Get the serial and parallel parts of the simulation's memory
+            serial_memory = self.estimator.serial_memory
+            parallel_memory = self.estimator.parallel_memory
 
-            if memory > self.config.memory: # Ms > Mn
+            # Calculate the total memory of one process without data parallelization
+            total_memory = serial_memory + parallel_memory
+
+            #
+            if total_memory > self.config.memory: # Ms > Mn
 
                 if self.config.nnodes > 1:
 
@@ -154,7 +188,7 @@ class ParallelizationTool(Configurable):
 
                 #Np = min(Mn / Ms, Nppn)
                 ppn = self.config.nsockets * self.config.ncores
-                nprocesses_per_node = min(self.config.memory / memory, ppn)
+                nprocesses_per_node = min(self.config.memory / total_memory, ppn)
 
                 nprocesses = nprocesses_per_node * self.config.nnodes
 
@@ -165,7 +199,6 @@ class ParallelizationTool(Configurable):
 
                 total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
 
-
                 # Nlambda >= 10 * Np?
                 nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
                 if nwavelengths >= 10 * nprocesses:
@@ -174,16 +207,10 @@ class ParallelizationTool(Configurable):
                     # Create the parallelization object
                     self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=True)
 
-                    # Show the parallelization scheme
-                    #print(self.parallelization)
-
                 else:
 
                     # task parallelization
                     self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=False)
-
-                    # Show the parallelization scheme
-                    #print(self.parallelization)
 
     # -----------------------------------------------------------------
 
@@ -198,22 +225,6 @@ class ParallelizationTool(Configurable):
 
             log.info("The paralleliation scheme is:")
             print(self.parallelization)
-
-    # -----------------------------------------------------------------
-
-    def setup(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(ParallelizationTool, self).setup(**kwargs)
-
-        # Open the ski file
-        self.ski = self.config.ski if isinstance(self.config.ski, SkiFile) else SkiFile(self.config.ski)
 
 # -----------------------------------------------------------------
 

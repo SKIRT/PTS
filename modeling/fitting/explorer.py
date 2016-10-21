@@ -518,8 +518,8 @@ class ParameterExplorer(FittingComponent):
 
             # MPI available and used
             tool.config.mpi = True
-            tool.config.hyperthreading = False
-            tool.config.threads_per_core = None
+            tool.config.hyperthreading = False # no hyperthreading
+            #tool.config.threads_per_core = None
 
             # Number of dust cells
             tool.config.ncells = None # number of dust cells (relevant if ski file uses a tree dust grid)
@@ -527,8 +527,11 @@ class ParameterExplorer(FittingComponent):
             # Run the tool
             tool.run()
 
+            # Get the parallelization
+            parallelization = tool.parallelization
+
             # Get the parallelization scheme for this host
-            parallelization = Parallelization.for_host(host, self.config.nnodes, self.config.data_parallel)
+            #parallelization = Parallelization.for_host(host, self.config.nnodes, self.config.data_parallel)
 
             # Debugging
             log.debug("Parallelization scheme for host " + host.id + ": " + str(parallelization))
