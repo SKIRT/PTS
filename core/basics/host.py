@@ -130,7 +130,6 @@ class Host(object):
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
         # Open the host configuration file
-        #config = configuration.open(host_file_path)
         config = Configuration.from_file(host_file_path)
 
         # Set the host ID and cluster name (if a scheduling system is used)
@@ -153,8 +152,10 @@ class Host(object):
         self.use_hyperthreading = config.use_hyperthreading
         self.modules = config.modules
         self.installation_modules = config.installation_modules
-        self.clusters = config.clusters
-        self.vpn = config.vpn
+        self.maximum_walltime = config.maximal_walltime
+        self.preferred_walltime = config.preferred_waltime
+        self.clusters = config.clusters # mapping
+        self.vpn = config.vpn # mapping
 
     # -----------------------------------------------------------------
 
