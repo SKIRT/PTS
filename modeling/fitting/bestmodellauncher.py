@@ -771,7 +771,7 @@ class BestModelLauncher(FittingComponent):
             simulation_name = self.config.generation.replace(" ", "") + "_" + contribution
 
             # Create the SKIRT simulation definition
-            definition = SingleSimulationDefinition(ski_path, self.input_paths, output_path)
+            definition = SingleSimulationDefinition(ski_path, output_path, self.input_paths)
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")

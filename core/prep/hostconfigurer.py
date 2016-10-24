@@ -115,7 +115,7 @@ class HostConfigurer(Configurable):
         """
 
         # Create the configuration
-        self.config = self.setter.run(self.definition)
+        self.host_config = self.setter.run(self.definition)
 
     # -----------------------------------------------------------------
 

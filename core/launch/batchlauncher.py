@@ -515,7 +515,7 @@ class BatchLauncher(Configurable):
             simulation_output_path = fs.create_directory_in(output_path, prefix)
 
             # Create the simulation definition
-            definition = SingleSimulationDefinition(ski_path, self.config.input, simulation_output_path)
+            definition = SingleSimulationDefinition(ski_path, simulation_output_path, self.config.input)
 
             # Add the definition to the queue
             self.add_to_queue(definition)
@@ -824,7 +824,7 @@ class BatchLauncher(Configurable):
         for simulation in self.simulations:
 
             # Run the analyser on the simulation
-            self.analyser.run(simulation)
+            self.analyser.run(simulation=simulation)
 
             # Clear the analyser
             self.analyser.clear()

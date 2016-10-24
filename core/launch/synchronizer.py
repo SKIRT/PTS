@@ -253,7 +253,7 @@ class RemoteSynchronizer(Configurable):
         for simulation in self.simulations:
 
             # Run the analyser on the simulation
-            self.analyser.run(simulation)
+            self.analyser.run(simulation=simulation)
 
             # Loop over the 'extra' analyser classes that are defined for this simulation
             for analyser_class in simulation.analyser_classes:

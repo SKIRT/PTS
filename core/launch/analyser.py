@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import OldConfigurable, Configurable
 from ..launch.basicanalyser import BasicAnalyser
 from ..launch.batchanalyser import BatchAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
@@ -21,7 +21,7 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class SimulationAnalyser(OldConfigurable):
+class SimulationAnalyser(Configurable):
 
     """
     This class ...
@@ -36,7 +36,7 @@ class SimulationAnalyser(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SimulationAnalyser, self).__init__(config, "core")
+        super(SimulationAnalyser, self).__init__(config)
 
         # -- Attributes --
 
@@ -50,16 +50,16 @@ class SimulationAnalyser(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param simulation
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation)
+        self.setup(**kwargs)
 
         # If the simulation has no analysis options, finish the procedure right away
         if self.simulation.analysis is None: return
@@ -75,19 +75,19 @@ class SimulationAnalyser(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SimulationAnalyser, self).setup()
+        super(SimulationAnalyser, self).setup(**kwargs)
 
         # Make a local reference to the simulation object
-        self.simulation = simulation
+        self.simulation = kwargs.pop("simulation")
 
     # -----------------------------------------------------------------
 
@@ -121,7 +121,7 @@ class SimulationAnalyser(OldConfigurable):
         log.info("Analysing the simulation output ...")
 
         # Run the analyser on the simulation
-        self.basic_analyser.run(self.simulation)
+        self.basic_analyser.run(simulation=self.simulation)
 
     # -----------------------------------------------------------------
 
@@ -136,7 +136,7 @@ class SimulationAnalyser(OldConfigurable):
         log.info("Analysing the properties relevant for the batch of simulations ...")
 
         # Run the batch analyser on the simulation
-        self.batch_analyser.run(self.simulation, self.basic_analyser.timeline, self.basic_analyser.memory)
+        self.batch_analyser.run(simulation=self.simulation, timeline=self.basic_analyser.timeline, memory=self.basic_analyser.memory)
 
     # -----------------------------------------------------------------
 
@@ -151,6 +151,6 @@ class SimulationAnalyser(OldConfigurable):
         log.info("Analysing the scaling results ...")
 
         # Run the scaling analyser
-        self.scaling_analyser.run(self.simulation, self.basic_analyser.timeline, self.basic_analyser.memory)
+        self.scaling_analyser.run(simulation=self.simulation, timeline=self.basic_analyser.timeline, memory=self.basic_analyser.memory)
 
 # -----------------------------------------------------------------

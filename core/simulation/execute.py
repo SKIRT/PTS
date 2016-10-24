@@ -18,6 +18,7 @@ import subprocess
 
 # Import the relevant PTS classes and modules
 from .arguments import SkirtArguments
+from .definition import SingleSimulationDefinition, MultiSimulationDefinition
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -132,10 +133,26 @@ class SkirtExec:
         arguments.single = single
 
         # Run SKIRT with the specified parameters
-        return self.run(arguments, wait, silent)
+        return self.run(arguments, wait=wait, silent=silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
-    def run(self, arguments, wait=True, silent=False):
+    def run(self, definition_or_arguments, logging_options=None, parallelization=None, wait=True, silent=False):
+
+        if isinstance(definition_or_arguments, SingleSimulationDefinition):
+
+            # The logging options cannot be None
+            if logging_options is None: raise ValueError("Logging options must be specified")
+
+            # Create the SkirtArguments object
+            arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization)
+
+            # Set the base simulation options such as ski path, input path and output path (remote)
+            arguments.ski_pattern = definition_or_arguments.ski_path
+            arguments.input_path = definition_or_arguments.input_path
+            arguments.output_path = definition_or_arguments.output_path
+
+        elif isinstance(definition_or_arguments, SkirtArguments): arguments = definition_or_arguments
+        else: raise ValueError("Invalid argument: should be simulation definition or SKIRT arguments instance")
 
         # Check whether MPI is present on this system if multiple processe are requested
         if arguments.parallel.processes > 1 and not introspection.has_mpi():

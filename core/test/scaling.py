@@ -539,7 +539,7 @@ class ScalingTest(Configurable):
         fs.create_directory(output_path_simulation)
 
         # Create the SKIRT simulation definition
-        definition = SingleSimulationDefinition(self.config.ski_path, self.main_paths.input, output_path_simulation, name=simulation_name)
+        definition = SingleSimulationDefinition(self.config.ski_path, output_path_simulation, self.main_paths.input, name=simulation_name)
 
         # Determine the required number of nodes (and in case of a single node, the number of cores on that node)
         nodes, ppn = parallelization.get_requirements(self.cores_per_node) # give the number of cores per node

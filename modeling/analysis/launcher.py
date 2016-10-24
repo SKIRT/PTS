@@ -683,7 +683,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Launching the simulation ...")
 
         # Create the simulation definition
-        definition = SingleSimulationDefinition(self.ski_file_path, self.input_paths, self.run_output_path)
+        definition = SingleSimulationDefinition(self.ski_file_path, self.run_output_path, self.input_paths)
 
         # Create the logging options
         logging = LoggingOptions(verbose=True, memory=True)

@@ -34,7 +34,7 @@ def boolean(entry):
     :return:
     """
 
-    lowercase = entry.lower()
+    lowercase = entry.lower().strip()
 
     if lowercase == "true" or lowercase == "y" or lowercase == "yes" or lowercase == "t": return True
     elif lowercase == "false" or lowercase == "n" or lowercase == "no" or lowercase == "f": return False

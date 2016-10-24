@@ -583,7 +583,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             fs.create_directory(output_path)
 
             # Create the SKIRT simulation definition
-            definition = SingleSimulationDefinition(ski_path, self.input_paths, output_path)
+            definition = SingleSimulationDefinition(ski_path, output_path, self.input_paths)
 
             # Debugging
             log.debug("Adding the simulation of the contribution of the " + contribution + " stellar population to the queue ...")

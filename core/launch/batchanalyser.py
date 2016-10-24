@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
@@ -21,7 +21,7 @@ from ...core.launch.memory import MemoryTable
 
 # -----------------------------------------------------------------
 
-class BatchAnalyser(OldConfigurable):
+class BatchAnalyser(Configurable):
 
     """
     This class ...
@@ -36,7 +36,7 @@ class BatchAnalyser(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(BatchAnalyser, self).__init__(config, "core")
+        super(BatchAnalyser, self).__init__(config)
 
         # -- Attributes --
 
@@ -59,18 +59,16 @@ class BatchAnalyser(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline, memory):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param timeline:
-        :param memory:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, timeline, memory)
+        self.setup(**kwargs)
 
         # 2. Load the log file of the simulation
         self.load_log_file()
@@ -101,29 +99,27 @@ class BatchAnalyser(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, timeline, memory):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param timeline:
-        :param memory:
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(BatchAnalyser, self).setup()
+        super(BatchAnalyser, self).setup(**kwargs)
 
         # Make a local reference to the simulation object
-        self.simulation = simulation
+        self.simulation = kwargs.pop("simulation")
 
         # Also make references to the timing and memory table files (for shortness of notation)
         self.timing_table_path = self.simulation.analysis.timing_table_path
         self.memory_table_path = self.simulation.analysis.memory_table_path
 
         # Make a reference to the timeline and memory usage tables
-        self.timeline = timeline
-        self.memory = memory
+        self.timeline = kwargs.pop("timeline")
+        self.memory = kwargs.pop("memory")
 
         # Load the ski file
         self.ski = self.simulation.parameters()

@@ -14,14 +14,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ..extract.scaling import ScalingExtractor
 from ..plot.scaling import ScalingPlotter
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class ScalingAnalyser(OldConfigurable):
+class ScalingAnalyser(Configurable):
 
     """
     This class ...
@@ -36,7 +36,7 @@ class ScalingAnalyser(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(ScalingAnalyser, self).__init__(config, "core")
+        super(ScalingAnalyser, self).__init__(config)
 
         # -- Attributes --
 
@@ -52,35 +52,30 @@ class ScalingAnalyser(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, timeline, memory, plot=True):
+    def run(self, **kwargs):
 
         """
         This function ...
         :return:
-        :param simulation:
-        :param timeline:
-        :param memory:
-        :param plot:
+        :param kwargs:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, timeline, memory)
+        self.setup(**kwargs)
 
         # 2. Extract scaling information
         self.extract()
 
         # 3. Make the scaling plots
-        if plot: self.plot()
+        if kwargs.pop("plot", True): self.plot()
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, timeline, memory):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param timeline:
-        :param memory:
+        :param kwargs:
         :return:
         """
 
@@ -88,11 +83,11 @@ class ScalingAnalyser(OldConfigurable):
         super(ScalingAnalyser, self).setup()
 
         # Make a local reference to the simulation object
-        self.simulation = simulation
+        self.simulation = kwargs.pop("simulation")
 
         # Make local references to the timeline and memory extractors
-        self.timeline = timeline
-        self.memory = memory
+        self.timeline = kwargs.pop("timeline")
+        self.memory = kwargs.pop("memory")
 
     # -----------------------------------------------------------------
 

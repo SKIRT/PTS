@@ -16,9 +16,9 @@ from __future__ import absolute_import, division, print_function
 import os
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration, introspection, network
+from ..tools import introspection, network
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from .configuration import Configuration
 
 # -----------------------------------------------------------------
 
@@ -130,7 +130,8 @@ class Host(object):
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
         # Open the host configuration file
-        config = configuration.open(host_file_path)
+        #config = configuration.open(host_file_path)
+        config = Configuration.from_file(host_file_path)
 
         # Set the host ID and cluster name (if a scheduling system is used)
         if config.scheduler:

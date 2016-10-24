@@ -23,13 +23,13 @@ class SingleSimulationDefinition(object):
     This class ...
     """
 
-    def __init__(self, ski_path, input_path, output_path, name=None):
+    def __init__(self, ski_path, output_path, input_path=None, name=None):
 
         """
         The constructor ...
         :param ski_path:
-        :param input_path: can be path to input directory or list of file paths
         :param output_path:
+        :param input_path: can be path to input directory or list of file paths
         :param name:
         :return:
         """
@@ -78,7 +78,7 @@ class SingleSimulationDefinition(object):
 
         properties = []
         properties.append("ski path: " + self.ski_path)
-        properties.append("input path(s): " + str(self.input_path))
+        if self.input_path is not None: properties.append("input path(s): " + str(self.input_path))
         properties.append("output path: " + str(self.output_path))
     
         return_str = self.__class__.__name__ + ":\n"

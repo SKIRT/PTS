@@ -1228,15 +1228,18 @@ def load_definition(configfile, definition):
     state = 0
     description = None
 
+    index = 0
+
     # Loop over the lines in the file
     for line in configfile:
 
         # Strip end-of-line character
-        line = line.rstrip("\n")
+        line = line.rstrip("\n").lstrip()
 
         # Empty line
         if line == "":
-            assert state == 2  # 2 means we got everything for a certain name
+            if state != 2:
+                raise RuntimeError("State is not 2 (but " + str(state) + " and empty line encountered")  # 2 means we got everything for a certain name
             state = 0
             description = None
             continue
@@ -1258,7 +1261,10 @@ def load_definition(configfile, definition):
 
             before, after = line.split(":")
 
-            if after.strip() == "":
+            #after_after = after.split(" #")[0] if len(after.split(" #")) > 1 else ""
+            after_without_comment = after.split(" #")[0]
+            #print("after after", after_after)
+            if after_without_comment.strip() == "":
 
                 state = 3  # state 3: just before "{" is expected to start subdefinition
                 continue
@@ -1278,7 +1284,7 @@ def load_definition(configfile, definition):
                 else: value = after
 
                 kind = specification[0]
-                user_type = specification[1] if kind != "flag" else None
+                user_type = specification[1].strip() if kind != "flag" else None
 
                 #if user_type == "str": user_type = str
                 #elif user_type == "int": user_type = int
@@ -1291,8 +1297,8 @@ def load_definition(configfile, definition):
                 if user_type == "None":
                     user_type = NoneType
                     value = None
-                else: user_type = getattr(parsing, user_type)
-
+                elif kind != "flag":
+                    user_type = getattr(parsing, user_type)
 
                 # Convert choices to real list of the user_type-'list' type
                 choices = None
@@ -1305,7 +1311,6 @@ def load_definition(configfile, definition):
                 if kind == "fixed":
 
                     value = user_type(value) if value is not None else None # convert here because the add_fixed function doesn't bother with types now
-
                     definition.add_fixed(name, description, value)
 
                 elif kind == "required":
@@ -1322,6 +1327,7 @@ def load_definition(configfile, definition):
 
                 elif kind == "flag":
 
+                    value = parsing.boolean(value) if value is not None else False
                     definition.add_flag(name, description, default=value, letter=None)
 
                 else: raise ValueError("Invalid kind of argument: " + kind)
@@ -1956,6 +1962,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         log.success(name + ": " + description)
 
         # Ask the question
+        print(type(default))
         log.info("Do you want '" + name + "' to be enabled or not (y or n) or press ENTER for the default (" + str(default) + ")")
 
         value = default  # to remove warning from IDE that value could be referenced (below) without assignment

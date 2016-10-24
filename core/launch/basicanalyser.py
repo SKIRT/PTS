@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ..extract.progress import ProgressExtractor
 from ..extract.timeline import TimeLineExtractor
 from ..extract.memory import MemoryExtractor
@@ -33,7 +33,7 @@ from ...modeling.core.sed import SED, ObservedSED
 
 # -----------------------------------------------------------------
 
-class BasicAnalyser(OldConfigurable):
+class BasicAnalyser(Configurable):
 
     """
     This class ...
@@ -48,7 +48,7 @@ class BasicAnalyser(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(BasicAnalyser, self).__init__(config, "core")
+        super(BasicAnalyser, self).__init__(config)
 
         # -- Attributes --
 
@@ -71,16 +71,16 @@ class BasicAnalyser(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param simulation
+        :param kwargs
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation)
+        self.setup(**kwargs)
 
         # 2. Extract information from the simulation's log files
         self.extract()
@@ -93,11 +93,11 @@ class BasicAnalyser(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
+        :param kwargs:
         :return:
         """
 
@@ -105,7 +105,7 @@ class BasicAnalyser(OldConfigurable):
         super(BasicAnalyser, self).setup()
 
         # Make a local reference to the simulation object
-        self.simulation = simulation
+        self.simulation = kwargs.pop("simulation")
 
         # Also make references to the simulation's analysis options for extraction, plotting and misc (for shorter notation)
         self.extraction_options = self.simulation.analysis.extraction

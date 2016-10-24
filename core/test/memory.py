@@ -140,7 +140,7 @@ class MemoryTester(Configurable):
             #for ski_path, prefix in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"]):
 
                 # Create simulation definition
-                #definition = SingleSimulationDefinition(ski_path, input_path, output_path)
+                #definition = SingleSimulationDefinition(ski_path, output_path, input_path)
 
                 # Add to the queue
                 #self.launcher.add_to_queue(definition)
