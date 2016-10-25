@@ -80,19 +80,24 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def for_local(cls):
+    def for_local(cls, nprocesses=1):
 
         """
         This function ...
+        :param nprocesses
         :return:
         """
 
         # Determine the number of threads
         free_cpus = monitoring.free_cpus()
-        threads = math.floor(free_cpus)
+        ncores = math.floor(free_cpus)
+
+        # Determine nthreads
+        if nprocesses == 1: threads = ncores
+        else: threads = 1
 
         # Create the parallelization
-        parallelization = cls(threads, 1, 1)
+        parallelization = cls(threads, 1, nprocesses)
 
         # Return the parallelization scheme
         return parallelization

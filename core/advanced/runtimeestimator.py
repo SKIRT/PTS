@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
-from ..launch.parallelization import Parallelization
+from ..simulation.parallelization import Parallelization
 from ..basics.distribution import Distribution
 from ..tools import tables
 from ..launch.timing import TimingTable

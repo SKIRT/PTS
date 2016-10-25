@@ -23,4 +23,7 @@ definition.add_flag("recursive", "look for ski files recursively")
 # Add optional
 definition.add_optional("remote", "string", "the remote host (no schedulers) on which to launch the simulations", choices=find_host_ids(schedulers=False))
 
+# Add optional
+definition.add_optional("nprocesses", "integer", "number of processes to use", 1)
+
 # -----------------------------------------------------------------

@@ -22,7 +22,7 @@ definition.add_optional("extra_remote", "string", "remote host ID to use for the
 
 definition.add_flag("shared_input", "whether the different simulations share their input folder", False)
 
-definition.add_optional("cores_per_process", "integer", "the number of cores to use per process (if the parallelization is not specified by the user for a certain remote host)")
+definition.add_optional("nnodes", "integer", "number of computing nodes to be used (for remote hosts that use a scheduling system, for other remotes the current load of the system will be probed)")
 
 definition.add_flag("data_parallel", "enable data parallelization mode (if the parallelization is not specified by the user of the batch launcher for a certain remote host)")
 

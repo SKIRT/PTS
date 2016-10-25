@@ -28,6 +28,7 @@ from ..simulation.remote import SkirtRemote
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from .options import SchedulingOptions
+from ..advanced.parallelizationtool import ParallelizationTool
 
 # -----------------------------------------------------------------
 
@@ -227,6 +228,16 @@ class SKIRTLauncher(Configurable):
         #log.info("cores: " + str(self.remote.cores))
         #log.info("cpu load: " + str(self.remote.cpu_load))
         #log.info("memory load: " + str(self.remote.memory_load))
+
+        # Create the parallelization tool
+        tool = ParallelizationTool()
+
+        # Configure the parallelization tool
+
+        # Run the tool
+        tool.run()
+
+
 
         # Inform the user
         log.info("Determining the parallelization scheme by estimating the memory requirements...")

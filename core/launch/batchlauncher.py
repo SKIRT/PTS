@@ -13,20 +13,22 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable, Configurable
+from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.host import Host
-from .parallelization import Parallelization
+from ..simulation.parallelization import Parallelization
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions
+from ..advanced.parallelizationtool import ParallelizationTool
 
 # -----------------------------------------------------------------
 
@@ -56,8 +58,8 @@ class BatchLauncher(Configurable):
         # (the default cluster will be used if not defined)
         self.cluster_names = dict()
 
-        # The queue
-        self.queue = []
+        # The queues for the different remote hosts
+        self.queues = defaultdict(list)
 
         # The scheduling options for (some of) the simulations and (some of) the remote hosts. This is a nested
         # dictionary where the first key represents the remote host ID and the next key represents the name of the
@@ -68,7 +70,10 @@ class BatchLauncher(Configurable):
         self.assignment = None
 
         # The parallelization scheme for the different remote hosts
-        self.parallelization = dict()
+        self.parallelization_hosts = dict()
+
+        # THe parallelization scheme for the different simulations
+        self.parallelization_simulations = dict()
 
         # The paths to the directories for placing the (screen/job) scripts (for manual inspection) for the different remote hosts
         self.script_paths = dict()
@@ -87,13 +92,48 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, definition, name=None, parallelization=None, analysis_options=None):
+    def in_queue_for_host(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return len(self.queues[host_id])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def shortest_queue_host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        size = float('inf')
+        host_id = None
+
+        for host in self.hosts:
+            queue_size = self.in_queue_for_host(host.id)
+            if queue_size < size:
+                size = queue_size
+                host_id = host.id
+
+        # Return the ID of the shortest
+        return host_id
+
+    # -----------------------------------------------------------------
+
+    def add_to_queue(self, definition, name=None, host_id=None, parallelization=None, analysis_options=None):
 
         """
         This function ...
         :param definition:
         :param name: a name that is given to the simulation
-        :param parallelization: individual parallelization scheme for this particular simulation
+        :param host_id: the host on which this simulation should be executed
+        :param parallelization: individual parallelization scheme for this particular simulation (only allowed if host_id is also specified)
         :param analysis_options: analysis options (if None, analysis options will be created from batch launcher configuration)
         :return:
         """
@@ -101,8 +141,28 @@ class BatchLauncher(Configurable):
         # Check whether the simulation name doesn't contain spaces
         if name is not None and " " in name: raise ValueError("The simulation name cannot contain spaces")
 
-        # Add the simulation definition object to the queue
-        self.queue.append((definition, name, parallelization, analysis_options))
+        # If a host ID is specified
+        if host_id is not None:
+
+            # Check if this is a valid host ID
+            if not host_id in self.host_ids: raise ValueError("Invalid host ID")
+
+            # Add to the queue of the specified host
+            self.queues[host_id].append((definition, name, analysis_options))
+
+            # If parallelization is specified, set it
+            if parallelization is not None: self.set_parallelization_for_simulation(name, parallelization)
+
+        else:
+
+            # Check whether, if parallelization is specified, that host ID is also specified
+            if parallelization is not None: raise ValueError("If parallelization is specified, host ID must also be specified")
+
+            # Determine the ID of the hosts with the shortest queue (or the first if the queues are equally long)
+            host_id = self.shortest_queue_host_id
+
+            # Add to the queue of the host
+            self.queues[host_id].append((definition, name, analysis_options))
 
     # -----------------------------------------------------------------
 
@@ -142,7 +202,9 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return len(self.queue)
+        total_in_queue = 0
+        for host_id in self.host_ids: total_in_queue += self.in_queue_for_host(host_id)
+        return total_in_queue
 
     # -----------------------------------------------------------------
 
@@ -157,6 +219,18 @@ class BatchLauncher(Configurable):
         if len(self.remotes) == 0: raise RuntimeError("The setup has not been called yet")
         elif len(self.remotes) == 1: return self.remotes[0]
         else: raise RuntimeError("Multiple remotes have been configured for this batch launcher")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.single_remote.host
 
     # -----------------------------------------------------------------
 
@@ -257,10 +331,10 @@ class BatchLauncher(Configurable):
             hosts = []
 
             # Loop over the IDs of all the hosts used by the BatchLauncher
-            for id in self.host_ids:
+            for host_id in self.host_ids:
 
                 # Create a Host instance
-                host = Host(id)
+                host = Host(host_id)
 
                 # If it's a scheulder, add it to the list
                 if host.scheduler: hosts.append(host)
@@ -320,10 +394,10 @@ class BatchLauncher(Configurable):
             hosts = []
 
             # Loop over the IDs of all the hosts used by the BatchLauncher
-            for id in self.host_ids:
+            for host_id in self.host_ids:
 
                 # Create a Host instance
-                host = Host(id)
+                host = Host(host_id)
 
                 # If it's a not scheulder, add it to the list
                 if not host.scheduler: hosts.append(host)
@@ -358,7 +432,21 @@ class BatchLauncher(Configurable):
         """
 
         # Set the parallelization properties for the specified host
-        self.parallelization[host_id] = parallelization
+        self.parallelization_hosts[host_id] = parallelization
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_for_simulation(self, name, parallelization):
+
+        """
+        This function ...
+        :param name:
+        :param parallelization:
+        :return:
+        """
+
+        # Set the parallelization for this host and this simulation
+        self.parallelization_simulations[name] = parallelization
 
     # -----------------------------------------------------------------
 
@@ -370,7 +458,19 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return self.parallelization[host_id] if host_id in self.parallelization else None
+        return self.parallelization_hosts[host_id] if host_id in self.parallelization_hosts else None
+
+    # -----------------------------------------------------------------
+
+    def parallelization_for_simulation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.parallelization_simulations[name] if name in self.parallelization_simulations else None
 
     # -----------------------------------------------------------------
 
@@ -385,22 +485,19 @@ class BatchLauncher(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Determine how many simulations are assigned to each remote
-        self.assign()
-
-        # 3. Set the parallelization scheme for the remote hosts for which this was not specified by the user
+        # 2. Set the parallelization scheme for the remote hosts for which this was not specified by the user
         self.set_parallelization()
 
-        # 4. Launch the simulations
-        simulations = self.simulate()
+        # 3. Launch the simulations
+        simulations = self.launch()
 
-        # 5. Retrieve the simulations that are finished
+        # 4. Retrieve the simulations that are finished
         self.retrieve()
 
-        # 6. Analyse the output of the retrieved simulations
+        # 5. Analyse the output of the retrieved simulations
         self.analyse()
 
-        # 7. Return the simulations that are just scheduled
+        # 6. Return the simulations that are just scheduled
         return simulations
 
     # -----------------------------------------------------------------
@@ -421,8 +518,8 @@ class BatchLauncher(Configurable):
         # Clear the cluster names
         self.cluster_names = dict()
 
-        # Clear the queue
-        self.queue = []
+        # Clear the queues
+        self.queues = defaultdict(list)
 
         # Clear the scheduling options
         self.scheduling_options = defaultdict(dict())
@@ -512,27 +609,6 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def assign(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine how many simulations are assigned to each remote
-        queue_length = len(self.queue)
-        quotient = queue_length // len(self.remotes)
-        remainder = queue_length % len(self.remotes)
-        assignment = []
-        for i in range(len(self.remotes)):
-            nvalues = quotient + 1 if i < remainder else quotient
-            assignment.append(nvalues)
-
-        # Set the assignment
-        self.assignment = iter(assignment)
-
-    # -----------------------------------------------------------------
-
     def set_parallelization(self):
 
         """
@@ -541,38 +617,95 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Setting the parallelization scheme for the different remote hosts ...")
+        log.info("Setting the parallelization scheme for the different remote hosts (for hosts and simulation for which"
+                 "the parallelization scheme has not been defined yet) ...")
 
         # Loop over the different remote hosts
         for remote in self.remotes:
 
             # Check whether the parallelization has already been defined by the user for this remote host
-            if remote.host_id in self.parallelization: continue
+            if remote.host_id in self.parallelization_hosts: continue
 
             # Debugging
-            log.debug("Setting the parallelization scheme for host '" + remote.host_id + "' ...")
+            log.debug("Getting properties of remote host '" + remote.host_id + "' ...")
 
-            # Get the number of cores per process as defined in the configuration
-            cores_per_process = self.config.cores_per_process
+            # If the remote uses a scheduling system
+            if remote.scheduler:
 
-            # Get the flag indicating whether data parallelization mode should be enabled
-            data_parallel = self.config.data_parallel
+                # Set host properties
+                nnodes = self.config.nnodes
+                nsockets = remote.host.cluster.sockets_per_node
+                ncores = remote.host.cluster.cores_per_socket
+                memory = remote.host.cluster.memory
 
-            # Get the amount of (currently) free cores on the remote host
-            cores = int(remote.free_cores)
+                mpi = True
+                hyperthreading = remote.host.use_hyperthreading
+                threads_per_core = remote.host.cluster.threads_per_core
 
-            # Determine the number of thread to be used per core
-            threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
+            # Remote does not use a scheduling system
+            else:
 
-            # Create the parallelization object
-            parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core, data_parallel)
+                # Get host properties
+                nnodes = 1
+                nsockets = math.floor(remote.free_sockets)
+                ncores = remote.cores_per_socket
+                memory = remote.free_memory
+
+                mpi = True
+                hyperthreading = remote.host.use_hyperthreading
+                threads_per_core = remote.threads_per_core
 
             # Debugging
-            log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
-            log.debug("Parallelization scheme: " + str(parallelization))
+            log.debug("Setting the parallelization schemes for host '" + remote.host_id + "' ...")
 
-            # Set the parallelization scheme for this host
-            self.parallelization[remote.host_id] = parallelization
+            # Loop over the simulations in the queue for the current remote host
+            for definition, simulation_name, _ in self.queues[remote.host_id]:
+
+                # Debugging
+                log.debug("Setting the parallelization scheme for simulation '" + simulation_name + "' ...")
+
+                # Create the parallelization tool
+                tool = ParallelizationTool()
+
+                # Set configuration options
+                tool.config.ski = definition.ski_path
+                tool.config.input = definition.input_path
+
+                # Set host properties
+                tool.config.nnodes = nnodes
+                tool.config.nsockets = nsockets
+                tool.config.ncores = ncores
+                tool.config.memory = memory
+
+                # MPI available and used
+                tool.config.mpi = mpi
+                tool.config.hyperthreading = hyperthreading
+                tool.config.threads_per_core = threads_per_core
+
+                # Number of dust cells
+                tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+                # Get the flag indicating whether data parallelization mode should be enabled
+                #data_parallel = self.config.data_parallel
+
+                # Get the amount of (currently) free cores on the remote host
+                #cores = int(remote.free_cores)
+
+                # Determine the number of thread to be used per core
+                #threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
+
+                # Create the parallelization object
+                #parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core, data_parallel)
+
+                # Debugging
+                #log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
+                #log.debug("Parallelization scheme: " + str(parallelization))
+
+                # Get the parallelization scheme
+                parallelization = tool.parallelization
+
+                # Set the parallelization scheme for this host
+                self.set_parallelization_for_simulation(simulation_name, parallelization)
 
     # -----------------------------------------------------------------
 
@@ -609,7 +742,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def simulate(self):
+    def launch(self):
 
         """
         This function ...
@@ -629,17 +762,23 @@ class BatchLauncher(Configurable):
         for remote in self.remotes:
 
             # Get the parallelization scheme for this remote host
-            parallelization = self.parallelization[remote.host_id]
+            parallelization_host = self.parallelization_for_host(remote.host_id)
 
             # Cache the simulation objects scheduled to the current remote
             simulations_remote = []
 
-            # Repeat for a specified number of times
-            for _ in range(next(self.assignment)):
+            # Loop over the simulation in the queue for this remote host
+            for _ in range(len(self.queues[remote.host_id])):
 
                 # Get the last item from the queue (it is removed)
-                definition, name, parallelization_item, analysis_options_item = self.queue.pop()
-                if parallelization_item is None: parallelization_item = parallelization
+                definition, name, analysis_options_item = self.queues[remote.host_id].pop()
+
+                # Get the parallelization scheme that has been defined for this simulation
+                parallelization_item = self.parallelization_simulations[name]
+
+                # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
+                # defined for the current remote host
+                if parallelization_item is None: parallelization_item = parallelization_host
 
                 # Check whether scheduling options are defined for this simulation and for this remote host
                 if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:

@@ -219,7 +219,7 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
-
+        pass
 
     # -----------------------------------------------------------------
 

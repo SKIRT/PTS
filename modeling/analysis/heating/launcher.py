@@ -24,7 +24,7 @@ from ....core.tools.logging import log
 from ...core.emissionlines import EmissionLines
 from ....core.basics.range import RealRange
 from ...fitting.wavelengthgrids import create_one_logarithmic_wavelength_grid
-from ....core.launch.parallelization import Parallelization
+from ....core.simulation.parallelization import Parallelization
 from ....core.advanced.runtimeestimator import RuntimeEstimator
 from ....core.launch.options import SchedulingOptions
 from ....core.advanced.dustgridtool import DustGridTool

@@ -25,7 +25,7 @@ from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.options import LoggingOptions
 from ...core.advanced.runtimeestimator import RuntimeEstimator
-from ...core.launch.parallelization import Parallelization
+from ...core.simulation.parallelization import Parallelization
 from ...core.simulation.remote import SkirtRemote
 from ...magic.misc.kernels import AnianoKernels
 from ..core.emissionlines import EmissionLines

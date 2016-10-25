@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -24,7 +27,7 @@ from ..simulation.definition import SingleSimulationDefinition, create_definitio
 from ..config.launch_batch import definition
 from ..basics.configuration import InteractiveConfigurationSetter
 from ..launch.options import LoggingOptions
-from ..launch.parallelization import Parallelization
+from ..simulation.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -209,7 +212,7 @@ class MemoryTester(Configurable):
         self.logging = LoggingOptions(verbose=True, memory=True, allocation=False, allocation_limit=1e-5)
 
         # Set the parallelization scheme
-        self.parallelization = Parallelization.for_local()
+        self.parallelization = Parallelization.for_local(nprocesses=self.config.nprocesses)
 
         # If a single ski file was specified
         if self.definition is not None:
@@ -242,6 +245,12 @@ class MemoryTester(Configurable):
 
         # Inform the user
         log.info("Launching remotely ...")
+
+        # Set the parallelization scheme
+        #ncores = math.floor(self.launcher.single_remote.free_sockets) * self.launcher.single_remote.cores_per_socket
+        threads_per_core = 1
+        ncores = self.config.nprocesses
+        self.parallelization = Parallelization(ncores, threads_per_core, self.config.nprocesses)
 
         # If single ski file was specified
         if self.definition is not None: self.launcher.add_to_queue(definition)
@@ -282,6 +291,10 @@ class MemoryTester(Configurable):
             # Get the parallel and serial part of the memory
             parallel = self.estimator.parallel_memory
             serial = self.estimator.serial_memory
+
+            # Calculate the total memory requirement
+            total = parallel + serial
+
 
             print(memory, parallel, serial, parallel + serial)
 

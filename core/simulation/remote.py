@@ -25,7 +25,7 @@ from ..tools import filesystem as fs
 from .simulation import RemoteSimulation
 from ..tools.logging import log
 from ..launch.options import SchedulingOptions
-from ..launch.parallelization import Parallelization
+from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------

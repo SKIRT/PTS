@@ -20,7 +20,7 @@ from ..tools.logging import log
 from ..basics.configurable import Configurable
 from .memoryestimator import MemoryEstimator
 from ..simulation.skifile import SkiFile
-from ..launch.parallelization import Parallelization
+from ..simulation.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -33,6 +33,28 @@ def factors(n):
     """
 
     return set(reduce(list.__add__, ([i, n // i] for i in range(1, int(n ** 0.5) + 1) if n % i == 0)))
+
+# -----------------------------------------------------------------
+
+# Parameters important for determining parallelization scheme:
+
+# input", "directory_path", "path to the input directory")
+
+# nnodes", "integer", "number of nodes")
+# nsockets", "integer", "number of sockets per node")
+# ncores", "integer", "number of cores per socket")
+# memory", "real", "available virtual memory per node")
+
+# mpi", "mpi available", True)
+# hyperthreading", "use hyperthreading", False)
+# threads_per_core", "integer", "number of hyperthreads per core")
+
+# Add optional
+# ncells", "integer", "number of dust cells (relevant if ski file uses a tree dust grid)")
+
+## MEMORYTOOL:
+
+#
 
 # -----------------------------------------------------------------
 
@@ -104,6 +126,7 @@ class ParallelizationTool(Configurable):
         :return:
         """
 
+        # If MPI cannot be used
         if not self.config.mpi:
 
             # Determine the number of cores per node
@@ -121,9 +144,7 @@ class ParallelizationTool(Configurable):
             # Create the parallelization object
             self.parallelization = Parallelization.from_mode("threads", cores, threads_per_core)
 
-            # Show the parallelization scheme
-            #print(self.parallelization)
-
+        # If MPI can be used
         else:
 
             # Configure the memory estimator
@@ -183,15 +204,13 @@ class ParallelizationTool(Configurable):
                             # Create the parallelization object
                             self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=True)
 
-                            # Show the parallelization scheme
-                            #print(self.parallelization)
-
                         # try again from picking divisor, but now a larger one (less processes)
                         else: pass
 
-
+                # If only one node can be used
                 else: raise ValueError("Simulation cannot be run: decrease resolution, use system with more memory per node, or use more nodes")
 
+            # If more than one simulation memory fits on a node
             else:
 
                 #Np = min(Mn / Ms, Nppn)

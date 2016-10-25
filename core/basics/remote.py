@@ -1507,6 +1507,22 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def free_sockets(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # The calculation doesn't work for multiple nodes
+        if self.nodes > 1: raise ValueError("This function cannot be called for systems with multiple nodes")
+
+        # Determine the number of free cores on the only node
+        return self.sockets_per_node * (1.0 - self.cpu_load)
+
+    # -----------------------------------------------------------------
+
+    @property
     def free_memory(self):
 
         """
@@ -1683,6 +1699,52 @@ class Remote(object):
 
             # Return the amount of hyperthreads or 'hardware' threads per physical core
             return threads_per_core
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sockets_per_node(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the number of sockets per node is defined in the configuration
+        if self.scheduler: return self.host.cluster.sockets_per_node
+
+        # If no scheduler is used, the computing node is the actual node we are logged in to
+        else:
+
+            # Use the 'lscpu' command to get the number of NUMA domains
+            output = self.execute("lscpu | grep '^Socket(s):'")
+            nsockets = int(output[0])
+
+            # Return the number of sockets
+            return nsockets
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cores_per_socket(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote host uses a scheduling system, the number of cores per socket is defined in the configuration
+        if self.scheduler: return self.host.cluster.cores_per_socket
+
+        # If no scheduler is used, the computing node is the actual node we are logged in to
+        else:
+
+            # Use the 'lscpu' command
+            output = self.execute("lscpu | grep '^Core(s) per socket:'")
+            ncores = int(output[0])
+
+            # Return the number of cores per socket
+            return ncores
 
     # -----------------------------------------------------------------
 
@@ -1944,7 +2006,7 @@ class Remote(object):
         command = "if [ " + expression + " ]; then echo True; else echo False; fi"
 
         # Launch a bash command to check whether the path exists as a directory on the remote file system
-        output = self.execute(command, show_output=True)
+        output = self.execute(command)
 
         # Return the result
         return output[0] == "True"
