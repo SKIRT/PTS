@@ -73,14 +73,15 @@ def free_cpus():
     total = multiprocessing.cpu_count()
 
     # Get the load of the different processors
-    load = np.array(psutil.cpu_percent(percpu=True))/100.0
+    load = np.array(psutil.cpu_percent(percpu=True)) / 100.0
 
     # Calculate the the number of full processors (where 2 processors with loads x and y contribute as a processor with load x+y)
     full = np.sum(load)
 
     # Get the number of free processors
     free = total - full
-    
+
+    # Return the number of free processors (real number)
     return free
 
 # -----------------------------------------------------------------

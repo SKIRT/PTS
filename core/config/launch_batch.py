@@ -13,6 +13,9 @@ from pts.core.config.simulation.analysis import definition as analysis_definitio
 
 # -----------------------------------------------------------------
 
+# Flags
+definition.add_flag("recursive", "look for ski files recursively")
+
 # Remote
 definition.add_optional("remotes", "string_list", "remote host IDs to use", choices=find_host_ids(), default=find_host_ids())
 definition.add_optional("extra_remote", "string", "remote host ID to use for the extra simulations", choices=find_host_ids())

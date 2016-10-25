@@ -22,10 +22,11 @@ from .configuration import Configuration
 
 # -----------------------------------------------------------------
 
-def find_host_ids():
+def find_host_ids(schedulers=None):
 
     """
     This function ...
+    :param schedulers: None, True or False
     :return:
     """
 
@@ -47,6 +48,11 @@ def find_host_ids():
 
         # Get the host id for this line
         host_id = filename.split(".")[0]
+
+        # If schedulers is specified (False or True)
+        if schedulers is not None:
+            host = Host(host_id)
+            if schedulers != host.scheduler: continue
 
         # Add the id to the list
         ids.append(host_id)

@@ -21,6 +21,7 @@ import fnmatch
 from .simulation import SkirtSimulation
 from ..basics.map import Map
 from ..tools import filesystem as fs
+from .definition import SingleSimulationDefinition, MultiSimulationDefinition
 
 # -----------------------------------------------------------------
 
@@ -89,6 +90,40 @@ class SkirtArguments(object):
 
         # Return the arguments instance
         return arguments
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_definition(cls, definition, logging_options, parallelization):
+
+        """
+        This function ...
+        :param definition:
+        :param logging_options:
+        :param parallelization:
+        :return:
+        """
+
+        # If the first argument defines a single simulation
+        if isinstance(definition, SingleSimulationDefinition):
+
+            # Create the SkirtArguments object
+            arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization)
+
+            # Set the base simulation options such as ski path, input path and output path (remote)
+            arguments.ski_pattern = definition.ski_path
+            arguments.input_path = definition.input_path
+            arguments.output_path = definition.output_path
+
+            arguments.single = True
+
+            return arguments
+
+        # If the first argument defines multiple simulations
+        elif isinstance(definition, MultiSimulationDefinition): raise NotImplementedError("Not implemented yet")
+
+        # Invalid first argument
+        else: raise ValueError("Invalid argument for 'definition'")
 
     # -----------------------------------------------------------------
 

@@ -13,10 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import random
+import math
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
+from ..tools import monitoring
 
 # -----------------------------------------------------------------
 
@@ -75,6 +76,26 @@ class Parallelization(object):
         corespp = self.cores / self.processes
         assert int(corespp) == corespp
         return int(corespp)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def for_local(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the number of threads
+        free_cpus = monitoring.free_cpus()
+        threads = math.floor(free_cpus)
+
+        # Create the parallelization
+        parallelization = cls(threads, 1, 1)
+
+        # Return the parallelization scheme
+        return parallelization
 
     # -----------------------------------------------------------------
 

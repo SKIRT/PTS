@@ -17,7 +17,10 @@ definition = ConfigurationDefinition()
 # Add optional
 definition.add_positional_optional("ski", "file_path", "ski file to be used (if not specified, all ski files in the current directory will be used)")
 
+# Add flag
+definition.add_flag("recursive", "look for ski files recursively")
+
 # Add optional
-definition.add_optional("remote", "string", "the remote host on which to launch the simulations", "nancy", choices=find_host_ids())
+definition.add_optional("remote", "string", "the remote host (no schedulers) on which to launch the simulations", choices=find_host_ids(schedulers=False))
 
 # -----------------------------------------------------------------

@@ -143,13 +143,8 @@ class SkirtExec:
             # The logging options cannot be None
             if logging_options is None: raise ValueError("Logging options must be specified")
 
-            # Create the SkirtArguments object
-            arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization)
-
-            # Set the base simulation options such as ski path, input path and output path (remote)
-            arguments.ski_pattern = definition_or_arguments.ski_path
-            arguments.input_path = definition_or_arguments.input_path
-            arguments.output_path = definition_or_arguments.output_path
+            # Create the arguments
+            arguments = SkirtArguments.from_definition(definition_or_arguments, logging_options, parallelization)
 
         elif isinstance(definition_or_arguments, SkirtArguments): arguments = definition_or_arguments
         else: raise ValueError("Invalid argument: should be simulation definition or SKIRT arguments instance")

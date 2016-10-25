@@ -18,10 +18,13 @@ from ...core.tools import filesystem as fs
 from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
 from ..simulation.skifile import SkiFile
-from ..simulation.logfile import LogFile
 from ..advanced.memoryestimator import MemoryEstimator
 from ..launch.batchlauncher import BatchLauncher
-from ..simulation.definition import SingleSimulationDefinition
+from ..simulation.definition import SingleSimulationDefinition, create_definitions
+from ..config.launch_batch import definition
+from ..basics.configuration import InteractiveConfigurationSetter
+from ..launch.options import LoggingOptions
+from ..launch.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -53,6 +56,18 @@ class MemoryTester(Configurable):
 
         # The path to the output directory
         self.out_path = None
+
+        # The simulation definition file (if single ski path is specified)
+        self.definition = None
+
+        # The logging options
+        self.logging = None
+
+        # The parallelization scheme
+        self.parallelization = None
+
+        # The simulations that have been run
+        self.simulations = []
 
     # -----------------------------------------------------------------
 
@@ -93,8 +108,8 @@ class MemoryTester(Configurable):
         if fs.is_directory(self.out_path): raise RuntimeError("The output directory already exists")
         else: fs.create_directory(self.out_path)
 
-        # Setup the batch launcher
-        self.setup_launcher()
+        # If a remote is specified, setup the batch launcher
+        if self.config.remote: self.setup_launcher()
 
     # -----------------------------------------------------------------
 
@@ -107,9 +122,6 @@ class MemoryTester(Configurable):
 
         # Inform the user
         log.info("Preparing the batch launcher ...")
-
-        from ..config.launch_batch import definition
-        from ..basics.configuration import InteractiveConfigurationSetter
 
         #definition = ConfigurationDefinition(write_config=False)
         setter = InteractiveConfigurationSetter(self.class_name, add_logging=False)
@@ -133,9 +145,18 @@ class MemoryTester(Configurable):
         #self.launcher.config.retrieve_types = ["log"]  # only log files should be retrieved from the simulation output
         #self.launcher.config.keep = self.config.keep
 
+        # Logging options
+        self.launcher.config.logging.verbose = True
+        self.launcher.config.logging.memory = True
+        self.launcher.config.logging.allocation = True
+
+        # Look for ski files recursively if necessary
+        self.launcher.config.recursive = self.config.recursive
+
         # Run in attached mode
         self.launcher.config.attached = True
 
+        # Number of cores per process
         self.launcher.config.cores_per_process = 4
 
     # -----------------------------------------------------------------
@@ -146,6 +167,9 @@ class MemoryTester(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Launching simulation(s) ...")
 
         # If no ski file is specified, the batch launcher will take all ski files in the working directory
         # If a ski file is specified
@@ -162,13 +186,67 @@ class MemoryTester(Configurable):
             else: input_paths = None
 
             # Create simulation definition
-            definition = SingleSimulationDefinition(ski_path, self.out_path, input_paths)
+            self.definition = SingleSimulationDefinition(ski_path, self.out_path, input_paths)
 
-            # Add to the queue
-            self.launcher.add_to_queue(definition)
+        # Launch locally or remotely
+        if self.config.remote: self.launch_remote()
+        else: self.launch_local()
+
+    # -----------------------------------------------------------------
+
+    def launch_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching locally ...")
+
+        # Create the logging options
+        self.logging = LoggingOptions(verbose=True, memory=True, allocation=True, allocation_limit=1e-5)
+
+        # Set the parallelization scheme
+        self.parallelization = Parallelization.for_local()
+
+        # If a single ski file was specified
+        if self.definition is not None:
+
+            # Run the simulation
+            simulation = self.skirt.run(self.definition, self.logging, self.parallelization)
+
+            # Set the list of simulations
+            self.simulations = [simulation]
+
+        else:
+
+            # Create simulation definitions from the working directory and add them to the queue
+            for definition in create_definitions(self.config.path, self.config.output, self.config.input, recursive=self.config.recursive):
+
+                # Run the simulation
+                simulation = self.skirt.run(definition, self.logging, self.parallelization)
+
+                # Add to the list of simulation
+                self.simulations.append(simulation)
+
+    # -----------------------------------------------------------------
+
+    def launch_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching remotely ...")
+
+        # If single ski file was specified
+        if self.definition is not None: self.launcher.add_to_queue(definition)
 
         # Run the batch launcher
-        self.launcher.run()
+        self.simulations = self.launcher.run()
 
     # -----------------------------------------------------------------
 
@@ -179,46 +257,32 @@ class MemoryTester(Configurable):
         :return:
         """
 
-        if self.config.ski is None:
+        # Loop over the simulations
+        for simulation in self.simulations:
 
-            # Loop over all files in the current working directory
-            for path, name in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"]):
+            # Get the log file
+            log_file = simulation.log_file
 
-                # Log path
-                log_path = fs.join(self.config.path, name + "_log.txt")
+            # Get the peak memory usage
+            memory = log_file.peak_memory
 
-                # Check if the log file is present
-                if not fs.is_file(log_path): continue
+            # Load the ski file
+            ski = SkiFile(simulation.ski_path)
 
-                # Open the log file
-                log_file = LogFile(log_path)
+            # Configure the memory estimator tool
+            self.estimator.config.ski = ski
+            self.estimator.config.input = self.config.path
+            self.estimator.config.ncells = None
+            self.estimator.config.probe = False
 
-                # Get the peak memory usage
-                memory = log_file.peak_memory
+            # Run the estimator
+            self.estimator.run()
 
-                # Load the ski file
-                ski = SkiFile(path)
+            # Get the parallel and serial part of the memory
+            parallel = self.estimator.parallel_memory
+            serial = self.estimator.serial_memory
 
-                # Configure the memory estimator tool
-                self.estimator.config.ski = ski
-                self.estimator.config.input = self.config.path
-                self.estimator.config.ncells = None
-                self.estimator.config.probe = False
-
-                try:
-                    # Run the estimator
-                    self.estimator.run()
-                except ValueError:
-                    print(name)
-                    exit()
-
-                # Get the parallel and serial part of the memory
-                parallel = self.estimator.parallel_memory
-                serial = self.estimator.serial_memory
-
-                print(memory, parallel, serial, parallel + serial)
-
-        else: pass #
+            print(memory, parallel, serial, parallel + serial)
 
             # Calculate the procentual difference
             #diff = (consumed_memory - estimated_memory) / consumed_memory * 100.0

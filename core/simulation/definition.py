@@ -14,6 +14,71 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
+from .skifile import SkiFile
+
+# -----------------------------------------------------------------
+
+def create_definitions(path, output_path, input_path, recursive=False):
+
+    """
+    This function ...
+    :param path:
+    :param output_path:
+    :param input_path:
+    :return:
+    """
+
+    definitions = []
+
+    # If ski files don't have to be found recursively (in seperate subdirectories)
+    if not self.config.recursive:
+
+        # Create an 'out' directory if the output directory is not specified
+        if self.config.output is None: output_path = fs.create_directory_in(self.config.path, "out")
+        else: output_path = fs.absolute(self.config.output)
+
+    else: output_path = None
+
+    # Keep track of the directories where ski files were found
+    ski_dir_paths = []
+
+    # Loop over all files in the current working directory
+    for ski_path, prefix in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"], recursive=self.config.recursive):
+
+        # Determine the path of the directory in which the ski file is found
+        dir_path = fs.directory_of(ski_path)
+
+        # Open the ski file and check whether input is required
+        ski = SkiFile(ski_path)
+        if ski.needs_input:
+            input_paths = ski.input_paths(self.config.input, self.config.path)
+        else:
+            input_paths = None
+
+        # Determine output directory
+        if self.config.recursive:
+
+            # Check if the ski file directory is not yet encountered (multiple ski files in a directory)
+            if dir_path in ski_dir_paths: raise RuntimeError("There can't be multiple ski files in a directory in recursive mode")
+
+            # Determine output directory
+            simulation_output_path = fs.create_directory_in(dir_path, "out")
+
+            # Add the ski directory path
+            ski_dir_paths.append(dir_path)
+
+        # Create a directory in the output directory
+        else:
+            simulation_output_path = fs.create_directory_in(output_path, prefix)
+
+        # Create the simulation definition
+        definition = SingleSimulationDefinition(ski_path, simulation_output_path, input_paths)
+
+        # Add the definition
+        definitions.append(definition)
+
+    # Return the list of definitions
+    return definitions
 
 # -----------------------------------------------------------------
 
