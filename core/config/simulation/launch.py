@@ -18,10 +18,6 @@ definition.add_optional("output", "directory_path", "output directory for the si
 
 # Various flags
 definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
-definition.add_flag("brief", "enable brief console logging", letter="b")
-definition.add_flag("verbose", "enable verbose logging", letter="v")
-definition.add_flag("memory", "enable memory logging", letter="m")
-definition.add_flag("allocation", "enable memory (de)allocation logging", letter="a")
 definition.add_flag("emulate", "emulate the simulation while limiting computation", letter="e")
 
 # Other

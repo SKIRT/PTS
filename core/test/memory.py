@@ -205,7 +205,8 @@ class MemoryTester(Configurable):
         log.info("Launching locally ...")
 
         # Create the logging options
-        self.logging = LoggingOptions(verbose=True, memory=True, allocation=True, allocation_limit=1e-5)
+        #self.logging = LoggingOptions(verbose=True, memory=True, allocation=True, allocation_limit=1e-5)
+        self.logging = LoggingOptions(verbose=True, memory=True, allocation=False, allocation_limit=1e-5)
 
         # Set the parallelization scheme
         self.parallelization = Parallelization.for_local()
@@ -214,7 +215,7 @@ class MemoryTester(Configurable):
         if self.definition is not None:
 
             # Run the simulation
-            simulation = self.skirt.run(self.definition, self.logging, self.parallelization)
+            simulation = self.skirt.run(self.definition, self.logging, self.parallelization, emulate=True)
 
             # Set the list of simulations
             self.simulations = [simulation]
@@ -225,7 +226,7 @@ class MemoryTester(Configurable):
             for definition in create_definitions(self.config.path, self.config.output, self.config.input, recursive=self.config.recursive):
 
                 # Run the simulation
-                simulation = self.skirt.run(definition, self.logging, self.parallelization)
+                simulation = self.skirt.run(definition, self.logging, self.parallelization, emulate=True)
 
                 # Add to the list of simulation
                 self.simulations.append(simulation)

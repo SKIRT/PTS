@@ -136,7 +136,7 @@ class SkirtExec:
         return self.run(arguments, wait=wait, silent=silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
-    def run(self, definition_or_arguments, logging_options=None, parallelization=None, wait=True, silent=False):
+    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False):
 
         if isinstance(definition_or_arguments, SingleSimulationDefinition):
 
@@ -144,7 +144,7 @@ class SkirtExec:
             if logging_options is None: raise ValueError("Logging options must be specified")
 
             # Create the arguments
-            arguments = SkirtArguments.from_definition(definition_or_arguments, logging_options, parallelization)
+            arguments = SkirtArguments.from_definition(definition_or_arguments, logging_options, parallelization, emulate=emulate)
 
         elif isinstance(definition_or_arguments, SkirtArguments): arguments = definition_or_arguments
         else: raise ValueError("Invalid argument: should be simulation definition or SKIRT arguments instance")

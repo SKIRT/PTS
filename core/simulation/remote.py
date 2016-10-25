@@ -110,7 +110,8 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None, remote_input_path=None, analysis_options=None):
+    def add_to_queue(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
+                     remote_input_path=None, analysis_options=None, emulate=False):
 
         """
         This function ...
@@ -121,6 +122,7 @@ class SkirtRemote(Remote):
         :param scheduling_options:
         :param remote_input_path:
         :param analysis_options:
+        :param emulate:
         :return:
         """
 
@@ -142,7 +144,7 @@ class SkirtRemote(Remote):
         if name is None: name = remote_simulation_name
 
         # Make preparations for this simulation, create the SkirtArguments object
-        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path)
+        arguments = self.prepare(definition, logging_options, parallelization, remote_simulation_path, remote_input_path, emulate=emulate)
 
         # Add the SkirtArguments object to the queue
         self.queue.append((arguments, name))
@@ -433,7 +435,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None):
+    def prepare(self, definition, logging_options, parallelization, remote_simulation_path, remote_input_path=None, emulate=False):
 
         """
         This function ...
@@ -442,11 +444,12 @@ class SkirtRemote(Remote):
         :param parallelization:
         :param remote_simulation_path:
         :param remote_input_path:
+        :param emulate:
         :return:
         """
 
         # Create the SkirtArguments object
-        arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization)
+        arguments = SkirtArguments(logging_options=logging_options, parallelization=parallelization, emulate=emulate)
 
         # If an output path is defined in the remote host configuration file, use it for the simulation output
         if self.host.output_path is not None:

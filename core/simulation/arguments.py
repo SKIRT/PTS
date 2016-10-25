@@ -31,7 +31,7 @@ class SkirtArguments(object):
     This class ...
     """
 
-    def __init__(self, definition=None, logging_options=None, parallelization=None):
+    def __init__(self, definition=None, logging_options=None, parallelization=None, emulate=False):
 
         """
         The constructor ...
@@ -53,8 +53,8 @@ class SkirtArguments(object):
         self.output_path = definition.output_path if definition is not None else None
 
         # Other options
-        self.emulate = False    # Run in emulation mode
-        self.single = False     # True if only a single simulation is expected
+        self.emulate = emulate    # Run in emulation mode
+        self.single = False       # True if only a single simulation is expected
 
         # Options for logging
         self.logging = Map()
@@ -94,13 +94,14 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_definition(cls, definition, logging_options, parallelization):
+    def from_definition(cls, definition, logging_options, parallelization, emulate=False):
 
         """
         This function ...
         :param definition:
         :param logging_options:
         :param parallelization:
+        :param emulate:
         :return:
         """
 
@@ -116,6 +117,8 @@ class SkirtArguments(object):
             arguments.output_path = definition.output_path
 
             arguments.single = True
+
+            arguments.emulate = emulate
 
             return arguments
 
@@ -217,6 +220,16 @@ class SkirtArguments(object):
         :param to_string:
         :return:
         """
+
+        # If the input consists of a list of paths, check whether they represent files in the same directory
+        if isinstance(self.input_path, list):
+
+            dir_path = None
+            for path in self.input_path:
+                this_dir_path = fs.directory_of(path)
+                if dir_path is None: dir_path = this_dir_path
+                elif dir_path != this_dir_path: raise RuntimeError("Cannot convert this SkirtArguments instance to a command: input files should be placed in the same directory!")
+            self.input_path = dir_path
 
         # Create the argument list
         arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler)

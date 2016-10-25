@@ -652,7 +652,7 @@ class BatchLauncher(Configurable):
                 # Queue the simulation
                 simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
                                                  scheduling_options=scheduling_options, remote_input_path=remote_input_path,
-                                                 analysis_options=analysis_options)
+                                                 analysis_options=analysis_options, emulate=self.config.emulate)
                 simulations_remote.append(simulation)
 
                 # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
