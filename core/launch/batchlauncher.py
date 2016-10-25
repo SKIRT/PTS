@@ -27,6 +27,7 @@ from .parallelization import Parallelization
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import SingleSimulationDefinition
+from ..simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -511,11 +512,16 @@ class BatchLauncher(Configurable):
         # Loop over all files in the current working directory
         for ski_path, prefix in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"]):
 
+            # Open the ski file and check whether input is required
+            ski = SkiFile(ski_path)
+            if ski.needs_input: input_paths = ski.input_paths(self.config.input, self.config.path)
+            else: input_paths = None
+
             # Determine output directory
             simulation_output_path = fs.create_directory_in(output_path, prefix)
 
             # Create the simulation definition
-            definition = SingleSimulationDefinition(ski_path, simulation_output_path, self.config.input)
+            definition = SingleSimulationDefinition(ski_path, simulation_output_path, input_paths)
 
             # Add the definition to the queue
             self.add_to_queue(definition)

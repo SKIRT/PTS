@@ -1940,8 +1940,11 @@ class Remote(object):
         :return:
         """
 
+        # The commmand
+        command = "if [ " + expression + " ]; then echo True; else echo False; fi"
+
         # Launch a bash command to check whether the path exists as a directory on the remote file system
-        output = self.execute("if [ " + expression + " ]; then echo True; else echo False; fi")
+        output = self.execute(command, show_output=True)
 
         # Return the result
         return output[0] == "True"

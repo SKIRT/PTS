@@ -23,6 +23,7 @@ import warnings
 from .units import SkirtUnits
 from ..basics.filter import Filter
 from ..tools import archive as arch
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 #  SkiFile class
@@ -87,6 +88,71 @@ class SkiFile:
         return ski
 
     # ---------- Retrieving information -------------------------------
+
+    ## This property returns whether the ski file required input
+    @property
+    def needs_input(self): return len(self.input_files) > 0
+
+    # This property returns the names of the input files
+    @property
+    def input_files(self):
+
+        elements = get_all_elements(self.tree.getroot())
+
+        filenames = []
+
+        for el in elements:
+            for label in el.attrib:
+                value = el.attrib[label]
+                if "." in value:
+                    before, after = value.split(".")
+                    if after[0].isdigit() or after[0] == " ": continue
+                    assert after[0].isalpha() # equivalent
+                    filenames.append(value)
+        return filenames
+
+    ## This function returns the paths to the input files
+    def input_paths(self, input_path=None, working_directory=None):
+
+        # Get the input file names
+        filenames = self.input_files
+
+        # Check whether the input path has been specified
+        if input_path is None:
+
+            # Initilize the input setting as a list
+            input_paths = []
+
+            # Loop over the files
+            for filename in filenames:
+
+                # Check whether the file is present in the working directory
+                if not fs.contains_file(working_directory, filename): raise IOError("The input file " + filename + " is not present in the working directory")
+                else: input_paths.append(fs.join(working_directory, filename))
+
+        # If a list of input paths has been specified
+        elif isinstance(input_path, list):
+
+            input_names = [fs.name(path) for path in input_path]
+
+            # Loop over the files
+            for filename in filenames:
+
+                # Check if in list
+                if filename not in input_names: raise ValueError("The list of input files does not specify the file '" + filename + "' needed for ski file " + ski.prefix)
+
+            # Set the input paths
+            input_paths = input_path
+
+        # If a directory is specified
+        else:
+            if not fs.contains_files(input_path, filenames): raise IOError("Some input files are missing from the input directory")
+
+            # Set the input paths
+            input_paths = [fs.join(input_path, filename) for filename in filenames]
+
+        # Return the input paths
+        return input_paths
 
     ## This property gives the simulation prefix
     @property
@@ -1144,20 +1210,20 @@ class SkiFile:
         if normalization.tag == "BolLuminosityStellarCompNormalization":
 
             # Return the total luminosity and None for the band
-            return get_quantity(normalization, "luminosity", default_unit="Lsun"), None
+            return self.get_quantity(normalization, "luminosity", default_unit="Lsun"), None
 
         elif normalization.tag == "LuminosityStellarCompNormalization":
 
             # Return the luminosity and the corresponding band
-            return get_quantity(normalization, "luminosity"), Filter.from_string(normalization.get("band"))
+            return self.get_quantity(normalization, "luminosity"), Filter.from_string(normalization.get("band"))
 
         elif normalization.tag == "SpectralLuminosityStellarCompNormalization":
 
             # The (spectral) luminosity
-            luminosity = get_quantity(normalization, "luminosity")
+            luminosity = self.get_quantity(normalization, "luminosity")
 
             # The wavelength
-            wavelength = get_quantity(normalization, "wavelength")
+            wavelength = self.get_quantity(normalization, "wavelength")
 
             # Return the luminosity and the wavelength as quantities
             return luminosity, wavelength
@@ -1268,7 +1334,7 @@ class SkiFile:
         if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
 
         # Get the dust mass and return it as a quantity
-        return get_quantity(normalization, "dustMass")
+        return self.get_quantity(normalization, "dustMass")
 
     ## This function sets the mass of the dust component with the specified id. The mass should be an Astropy quantity.
     def set_dust_component_mass(self, component_id, mass):
@@ -2211,7 +2277,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Return the distance
-        return get_quantity(instrument, "distance")
+        return self.get_quantity(instrument, "distance")
 
     ## This function sets the distance of the specified instruments. The distance should be an Astropy quantity.
     def set_instrument_distance(self, name, value):
@@ -2220,7 +2286,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Set the distance
-        set_quantity(instrument, "distance", value)
+        self.set_quantity(instrument, "distance", value)
 
     ## This function returns the inclination of the specified instrument as an Astropy Angle.
     def get_instrument_inclination(self, name):
@@ -2229,7 +2295,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Return the inclination
-        return get_quantity(instrument, "inclination")
+        return self.get_quantity(instrument, "inclination")
 
     ## This function sets the inclination of the specified instrument. The inclination should be an Astropy Angle or quantity.
     def set_instrument_inclination(self, name, value):
@@ -2238,7 +2304,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Set the inclination
-        set_quantity(instrument, "inclination", value)
+        self.set_quantity(instrument, "inclination", value)
 
     ## This function returns the azimuth angle of the specified instrument as an Astropy Angle.
     def get_instrument_azimuth(self, name):
@@ -2247,7 +2313,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Return the azimuth
-        return get_quantity(instrument, "azimuth")
+        return self.get_quantity(instrument, "azimuth")
 
     ## This function sets the azimuth angle of the specified instrument. The angle should be an Astropy Angle or quantity.
     def set_instrument_azimuth(self, name, value):
@@ -2256,7 +2322,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Set the azimuth angle
-        set_quantity(instrument, "azimuth", value)
+        self.set_quantity(instrument, "azimuth", value)
 
     ## This function returns the position angle of the specified instrument as an Astropy Angle.
     def get_instrument_pa(self, name):
@@ -2274,7 +2340,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Set the position angle
-        set_quantity(instrument, "positionAngle", value)
+        self.set_quantity(instrument, "positionAngle", value)
 
     ## This function sets the orientation of the specified instrument. The angles should be Astropy Angle or Quantity instances.
     def set_instrument_orientation(self, name, inclination, position_angle, azimuth):
@@ -2283,9 +2349,9 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Set the inclination
-        set_quantity(instrument, "inclination", inclination)
-        set_quantity(instrument, "positionAngle", position_angle)
-        set_quantity(instrument, "azimuth", azimuth)
+        self.set_quantity(instrument, "inclination", inclination)
+        self.set_quantity(instrument, "positionAngle", position_angle)
+        self.set_quantity(instrument, "azimuth", azimuth)
 
     ## This function sets the orientation of the specified instrument to a face-on orientation.
     def set_instrument_orientation_faceon(self, name):
@@ -2339,7 +2405,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Get the field of view
-        return get_quantity(instrument, "fieldOfViewX"), get_quantity(instrument, "fieldOfViewY")
+        return self.get_quantity(instrument, "fieldOfViewX"), self.get_quantity(instrument, "fieldOfViewY")
 
     ## This function sets the field of view of the specified instrument
     def set_instrument_field(self, name, x_field, y_field):
@@ -2348,8 +2414,8 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Set the field of view
-        set_quantity(instrument, "fieldOfViewX", x_field)
-        set_quantity(instrument, "fieldOfViewY", y_field)
+        self.set_quantity(instrument, "fieldOfViewX", x_field)
+        self.set_quantity(instrument, "fieldOfViewY", y_field)
 
     ## This (experimental) function converts the ski file structure into a (nested) python dictionary
     def to_dict(self):
@@ -2732,5 +2798,34 @@ def get_properties(element):
     add_properties(element, properties)
     add_children(element, properties)
     return properties
+
+# -----------------------------------------------------------------
+
+def get_all_elements(root):
+
+    """
+    This function ...
+    :param root:
+    :return:
+    """
+
+    elements = []
+    add_all_elements(root, elements)
+    return elements
+
+# -----------------------------------------------------------------
+
+def add_all_elements(root, elements):
+
+    """
+    This function ...
+    :param root:
+    :param elements:
+    :return:
+    """
+
+    for child in root.getchildren():
+        elements.append(child)
+        add_all_elements(child, elements)
 
 # -----------------------------------------------------------------

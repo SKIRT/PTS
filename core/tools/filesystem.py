@@ -108,6 +108,38 @@ def is_subdirectory(path, parent_path):
 
 # -----------------------------------------------------------------
 
+def contains_file(directory, filename):
+
+    """
+    This function ...
+    :param directory:
+    :param filename:
+    :return:
+    """
+
+    return is_file(join(directory, filename))
+
+# -----------------------------------------------------------------
+
+def contains_files(directory, filenames):
+
+    """
+    This function ...
+    :param directory:
+    :param filenames:
+    :return:
+    """
+
+    # Loop over the filenames
+    for filename in filenames:
+
+        filepath = join(directory, filename)
+        if not is_file(filepath): return False
+
+    return True
+
+# -----------------------------------------------------------------
+
 def join(*args):
 
     """

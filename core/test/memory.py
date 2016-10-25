@@ -51,6 +51,9 @@ class MemoryTester(Configurable):
         # The memory estimator
         self.estimator = MemoryEstimator()
 
+        # The path to the output directory
+        self.out_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -83,6 +86,13 @@ class MemoryTester(Configurable):
         # Call the setup function of the base class
         super(MemoryTester, self).setup(**kwargs)
 
+        # Set the output path
+        self.out_path = fs.join(self.config.path, "out")
+
+        # Create the output directory
+        if fs.is_directory(self.out_path): raise RuntimeError("The output directory already exists")
+        else: fs.create_directory(self.out_path)
+
         # Setup the batch launcher
         self.setup_launcher()
 
@@ -110,6 +120,9 @@ class MemoryTester(Configurable):
         # Set working directory
         self.launcher.config.path = self.config.path
 
+        # Set output directory path
+        self.launcher.config.output = self.out_path
+
         # Set options for the batch launcher: basic options
         self.launcher.config.shared_input = True
         #self.launcher.config.group_simulations = True  # group multiple simulations into a single job (because a very large number of simulations will be scheduled)
@@ -134,19 +147,28 @@ class MemoryTester(Configurable):
         :return:
         """
 
-        if self.config.ski is None:
+        # If no ski file is specified, the batch launcher will take all ski files in the working directory
+        # If a ski file is specified
+        if self.config.ski is not None:
 
-            # Loop over all files in the current working directory
-            #for ski_path, prefix in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"]):
+            # Determine the full ski path
+            ski_path = fs.join(self.config.path, self.config.ski)
 
-                # Create simulation definition
-                #definition = SingleSimulationDefinition(ski_path, output_path, input_path)
+            # Open the ski file
+            ski = SkiFile(ski_path)
 
-                # Add to the queue
-                #self.launcher.add_to_queue(definition)
+            # Check whether input is required
+            if ski.needs_input: input_paths = ski.input_paths(self.config.input, self.config.path)
+            else: input_paths = None
 
-            # Run the batch launcher
-            self.launcher.run()
+            # Create simulation definition
+            definition = SingleSimulationDefinition(ski_path, self.out_path, input_paths)
+
+            # Add to the queue
+            self.launcher.add_to_queue(definition)
+
+        # Run the batch launcher
+        self.launcher.run()
 
     # -----------------------------------------------------------------
 
@@ -158,13 +180,6 @@ class MemoryTester(Configurable):
         """
 
         if self.config.ski is None:
-
-            # Loop over all xml files
-            #for path, name in fs.files_in_path(self.config.path, extension="xml", returns=["path", "name"]):
-
-                #original_name = name + ".xml"
-                #new_name = name.replace("_parameters", "") + ".ski"
-                #fs.rename_file(self.config.path, original_name, new_name)
 
             # Loop over all files in the current working directory
             for path, name in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"]):
