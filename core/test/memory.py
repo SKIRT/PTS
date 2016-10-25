@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import math
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -151,13 +148,16 @@ class MemoryTester(Configurable):
         # Logging options
         self.launcher.config.logging.verbose = True
         self.launcher.config.logging.memory = True
-        self.launcher.config.logging.allocation = True
+        self.launcher.config.logging.allocation = False
 
         # Look for ski files recursively if necessary
         self.launcher.config.recursive = self.config.recursive
 
         # Run in attached mode
         self.launcher.config.attached = True
+
+        # Run in emulation mode
+        self.launcher.config.emulate = True
 
         # Number of cores per process
         self.launcher.config.cores_per_process = 4
