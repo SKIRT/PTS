@@ -25,25 +25,24 @@ def create_definitions(path, output_path, input_path, recursive=False):
     :param path:
     :param output_path:
     :param input_path:
+    :param recursive:
     :return:
     """
 
     definitions = []
 
     # If ski files don't have to be found recursively (in seperate subdirectories)
-    if not self.config.recursive:
-
+    if not recursive:
         # Create an 'out' directory if the output directory is not specified
-        if self.config.output is None: output_path = fs.create_directory_in(self.config.path, "out")
-        else: output_path = fs.absolute(self.config.output)
-
+        if output_path is None: output_path = fs.create_directory_in(path, "out")
+        else: output_path = fs.absolute(output_path)
     else: output_path = None
 
     # Keep track of the directories where ski files were found
     ski_dir_paths = []
 
     # Loop over all files in the current working directory
-    for ski_path, prefix in fs.files_in_path(self.config.path, extension="ski", returns=["path", "name"], recursive=self.config.recursive):
+    for ski_path, prefix in fs.files_in_path(path, extension="ski", returns=["path", "name"], recursive=recursive):
 
         # Determine the path of the directory in which the ski file is found
         dir_path = fs.directory_of(ski_path)
@@ -51,12 +50,12 @@ def create_definitions(path, output_path, input_path, recursive=False):
         # Open the ski file and check whether input is required
         ski = SkiFile(ski_path)
         if ski.needs_input:
-            input_paths = ski.input_paths(self.config.input, self.config.path)
+            input_paths = ski.input_paths(input_path, path)
         else:
             input_paths = None
 
         # Determine output directory
-        if self.config.recursive:
+        if recursive:
 
             # Check if the ski file directory is not yet encountered (multiple ski files in a directory)
             if dir_path in ski_dir_paths: raise RuntimeError("There can't be multiple ski files in a directory in recursive mode")

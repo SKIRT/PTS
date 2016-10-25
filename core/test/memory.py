@@ -253,7 +253,10 @@ class MemoryTester(Configurable):
         self.parallelization = Parallelization(ncores, threads_per_core, self.config.nprocesses)
 
         # If single ski file was specified
-        if self.definition is not None: self.launcher.add_to_queue(definition)
+        if self.definition is not None: self.launcher.add_to_queue(definition, definition.prefix, parallelization=self.parallelization)
+
+        # Else, set the parallelization
+        else: self.launcher.set_parallelization_for_host(self.launcher.single_host.id, self.parallelization)
 
         # Run the batch launcher
         self.simulations = self.launcher.run()

@@ -24,7 +24,6 @@ from ..tools import introspection, time
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.host import Host
-from ..simulation.parallelization import Parallelization
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions
@@ -126,7 +125,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, definition, name=None, host_id=None, parallelization=None, analysis_options=None):
+    def add_to_queue(self, definition, name, host_id=None, parallelization=None, analysis_options=None):
 
         """
         This function ...
@@ -139,7 +138,7 @@ class BatchLauncher(Configurable):
         """
 
         # Check whether the simulation name doesn't contain spaces
-        if name is not None and " " in name: raise ValueError("The simulation name cannot contain spaces")
+        if " " in name: raise ValueError("The simulation name cannot contain spaces")
 
         # If a host ID is specified
         if host_id is not None:
@@ -230,7 +229,31 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        return self.single_remote.host
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
+
+            if len(self.host_ids) != 1: raise RuntimeError("Multiple remotes have been configured for this batch launcher")
+            else: return self.hosts[0]
+
+        else: return self.single_remote.host
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the setup has not been called yet
+        if len(self.remotes) == 0:
+
+            if len(self.host_ids) != 1: raise RuntimeError("Multiple remotes have been configured for this batch launcher")
+            else: return self.host_ids[0]
+
+        else: return self.single_remote.host_id
 
     # -----------------------------------------------------------------
 
@@ -554,7 +577,7 @@ class BatchLauncher(Configurable):
         self.logging_options.set_options(self.config.logging)
 
         # Add simulation definitions for ski file present in the current working directory (if nothing is added to the queue manually)
-        if len(self.queue) == 0: self.load_queue()
+        if self.in_queue == 0: self.load_queue()
 
         # If attached mode is enabled, check whether all remotes are non-schedulers
         if self.config.attached and self.uses_schedulers: raise ValueError("Cannot use attached mode when remotes with scheduling system are used")
@@ -605,7 +628,7 @@ class BatchLauncher(Configurable):
         for definition in create_definitions(self.config.path, self.config.output, self.config.input, recursive=self.config.recursive):
 
             # Add the definition to the queue
-            self.add_to_queue(definition)
+            self.add_to_queue(definition, definition.prefix)
 
     # -----------------------------------------------------------------
 
@@ -685,6 +708,9 @@ class BatchLauncher(Configurable):
                 # Number of dust cells
                 tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
 
+                # Run the parallelization tool
+                tool.run()
+
                 # Get the flag indicating whether data parallelization mode should be enabled
                 #data_parallel = self.config.data_parallel
 
@@ -703,6 +729,9 @@ class BatchLauncher(Configurable):
 
                 # Get the parallelization scheme
                 parallelization = tool.parallelization
+
+                # Debugging
+                log.debug("The parallelization scheme for simulation '" + simulation_name + "' is " + str(parallelization))
 
                 # Set the parallelization scheme for this host
                 self.set_parallelization_for_simulation(simulation_name, parallelization)
@@ -774,7 +803,7 @@ class BatchLauncher(Configurable):
                 definition, name, analysis_options_item = self.queues[remote.host_id].pop()
 
                 # Get the parallelization scheme that has been defined for this simulation
-                parallelization_item = self.parallelization_simulations[name]
+                parallelization_item = self.parallelization_for_simulation(name)
 
                 # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
                 # defined for the current remote host
