@@ -841,7 +841,8 @@ class BatchLauncher(Configurable):
                 # Retrieval
                 simulation.retrieve_types = self.config.retrieve_types
 
-                ##
+                # Set whether simulation is going to be run in attached mode
+                if not remote.scheduler and self.config.attached: simulation.attached = True
 
                 # Save the simulation object
                 simulation.save()
@@ -871,6 +872,7 @@ class BatchLauncher(Configurable):
             # If the remote works with a scheduling system
             if remote.scheduler:
 
+                # Loop over the simulations launched with this remote
                 for simulation in simulations_remote:
 
                     # Get the simulation name
@@ -881,6 +883,9 @@ class BatchLauncher(Configurable):
 
                     # Set the job ID
                     simulation.job_id = job_id
+
+                    # Save the simulation object
+                    simulation.save()
 
             else:
 

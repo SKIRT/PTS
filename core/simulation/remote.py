@@ -378,7 +378,8 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None, analysis_options=None, local_script_path=None, screen_output_path=None):
+    def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
+            analysis_options=None, local_script_path=None, screen_output_path=None, attached=False):
 
         """
         This function ...
@@ -390,6 +391,7 @@ class SkirtRemote(Remote):
         :param analysis_options:
         :param local_script_path:
         :param screen_output_path:
+        :param attached:
         :return:
         """
 
@@ -402,8 +404,13 @@ class SkirtRemote(Remote):
         # Add the simulation arguments to the queue
         simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options)
 
+        # Indicate whether the simulation is going to be run in attached mode
+        if not self.scheduler and attached:
+            simulation.attached = True
+            simulation.save()
+
         # Start the queue
-        screen_name = self.start_queue(name, local_script_path, screen_output_path)
+        screen_name = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
         simulation.screen_name = screen_name
         simulation.save()
 

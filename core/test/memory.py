@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -246,10 +249,14 @@ class MemoryTester(Configurable):
         # Inform the user
         log.info("Launching remotely ...")
 
-        # Set the parallelization scheme
-        #ncores = math.floor(self.launcher.single_remote.free_sockets) * self.launcher.single_remote.cores_per_socket
-        threads_per_core = 1
-        ncores = self.config.nprocesses
+        # Get the number of free cores
+        ncores = math.floor(self.launcher.single_remote.free_sockets) * self.launcher.single_remote.cores_per_socket
+
+        # Determine the number of cores per process, the number of threads per core and thus the number of threads per process
+        cores_per_process = max(math.floor(ncores / self.config.nprocesses), 1)
+        threads_per_core = self.launcher.single_remote.threads_per_core if self.launcher.single_host.use_hyperthreading else 1
+        nthreads = cores_per_process * threads_per_core
+        ncores = nthreads / threads_per_core * self.config.nprocesses
         self.parallelization = Parallelization(ncores, threads_per_core, self.config.nprocesses)
 
         # If single ski file was specified

@@ -51,6 +51,7 @@ class DataSetCreator(DataComponent):
         # 1. Call the setup function
         self.setup()
 
+        # 2. Add the images
         self.add_images()
 
         # Writing

@@ -13,7 +13,14 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition()
 
-# Add required
-definition.add_required("image_paths", "filepath_list", "list of image files to add to the dataset", dynamic_list=True)
+# Flags
+definition.add_flag("manual", "set the image paths manually (pass a list of image paths or ask for image paths interactively")
+definition.add_flag("recursive", "search for image files recursively (within subdirectories)")
+
+# Optional settings
+definition.add_optional("error_suffix", "string", "the suffix used for the names of the error maps")
+definition.add_optional("contains", "string", "only load files which contain this string")
+definition.add_optional("not_contains", "string", "files with names that contain this string will be ignored")
+definition.add_optional("exclude", "string", "exclude files with this (exact) name")
 
 # -----------------------------------------------------------------

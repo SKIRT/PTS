@@ -18,7 +18,6 @@ from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.io import fits
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -844,6 +843,10 @@ class DataSet(object):
 
 # -----------------------------------------------------------------
 
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+
+# -----------------------------------------------------------------
+
 class DataSetCreator(Configurable):
 
     """
@@ -860,9 +863,15 @@ class DataSetCreator(Configurable):
         # Call the constructor of the base class
         super(DataSetCreator, self).__init__(config)
 
+        # The list of image paths
+        self.image_paths = None
+
+        # The list of error map paths
+        self.error_paths = None
+
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -870,11 +879,14 @@ class DataSetCreator(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
+
+        # 2. Load the image paths
+        if self.image_paths is None: self.load_paths()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -882,6 +894,81 @@ class DataSetCreator(Configurable):
         """
 
         # Call the setup function of the base class
-        super(DataSetCreator, self).setup()
+        super(DataSetCreator, self).setup(**kwargs)
+
+        # Get the image and error map paths
+        self.image_paths = kwargs.pop("image_paths", [])
+        self.error_paths = kwargs.pop("error_paths", [])
+
+    # -----------------------------------------------------------------
+
+    def load_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the image paths ...")
+
+        # Interactive or from file
+        if self.config.interactive: self.load_interactive()
+        else: self.load_from_cwd()
+
+    # -----------------------------------------------------------------
+
+    def load_interactive(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading interactive prompt for image paths ...")
+
+        # The configuration setter
+        setter = InteractiveConfigurationSetter("host")
+
+        definition = ConfigurationDefinition()
+        definition.add_required("image_paths", "filepath_list", "paths to the images")
+
+        # Create the configuration and get the paths
+        config = setter.run(definition)
+        self.image_paths = config.image_paths
+
+    # -----------------------------------------------------------------
+
+    def load_from_cwd(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading image paths from '" + self.config.path + "' ...")
+
+        # Loop over the FITS files in the current directory
+        for image_path, image_name in fs.files_in_path(self.config.path, extension="fits", contains=self.config.contains,
+                                                       not_contains=self.config.not_contains, returns=["path", "name"],
+                                                       recursive=self.config.recursive):
+
+            # Open the image frame
+            frame = Frame.from_file(image_path)
+
+            # Determine the preparation name
+            if frame.filter is not None: prep_name = str(frame.filter)
+            else: prep_name = image_name
+
+            # Add the image path
+            self.set.add_path(prep_name, image_path)
+
+            # Determine path to poisson error map
+            poisson_path = fs.join(path, image_name + "_poisson.fits")
+
+            # Set the path to the poisson error map
+            if fs.is_file(poisson_path): self.set.add_error_path(prep_name, poisson_path)
 
 # -----------------------------------------------------------------

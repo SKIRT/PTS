@@ -216,6 +216,18 @@ def file_path(argument):
 
 # -----------------------------------------------------------------
 
+def filepath_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [file_path(path) for path in string_list(argument)]
+
+# -----------------------------------------------------------------
+
 def integer_tuple(argument):
 
     """

@@ -579,6 +579,9 @@ class RemoteSimulation(SkirtSimulation):
         self.screen_name = None
         self.remote_screen_output_path = None
 
+        # Flag that indicates whether a simulation is run in attached mode (no screen)
+        self.attached = False
+
         # Job ID
         self.job_id = None
 

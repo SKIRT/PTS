@@ -16,24 +16,22 @@ from pts.core.config.simulation.analysis import definition as analysis_definitio
 # Flags
 definition.add_flag("recursive", "look for ski files recursively")
 
-# Remote
+# Settings for the remote
 definition.add_optional("remotes", "string_list", "remote host IDs to use", choices=find_host_ids(), default=find_host_ids())
-definition.add_optional("extra_remote", "string", "remote host ID to use for the extra simulations", choices=find_host_ids())
 
-definition.add_flag("shared_input", "whether the different simulations share their input folder", False)
-
+# Parallelization options
 definition.add_optional("nnodes", "integer", "number of computing nodes to be used (for remote hosts that use a scheduling system, for other remotes the current load of the system will be probed)")
 
-definition.add_flag("data_parallel", "enable data parallelization mode (if the parallelization is not specified by the user of the batch launcher for a certain remote host)")
-
+# Advanced options
+definition.add_flag("shared_input", "whether the different simulations share their input folder", False)
 definition.add_flag("group_simulations", "group multiple simulations in one job", False)
-
 definition.add_optional("group_walltime", "real", "preferred walltime per job of grouped simulations")
 
+# The timing and memory table
 definition.add_optional("timing_table_path", "file_path", "path to the timing table")
 definition.add_optional("memory_table_path", "file_path", "path to the memory table")
 
-# Logging
+# Logging options
 definition.import_section("logging", "logging options", logging_definition)
 
 # Analysis options
