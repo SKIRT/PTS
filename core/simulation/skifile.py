@@ -697,8 +697,10 @@ class SkiFile:
             components = self.get_stellar_components()
             for component in components:
 
+                luminosities = ", ".join(["1"] * len(wavelengths))
+
                 component.tag = "OligoStellarComp"
-                component.set("luminosities", "1")
+                component.set("luminosities", luminosities)
 
                 for child in component.getchildren():
                     if child.tag == "sed" or child.tag == "normalization": component.remove(child)
@@ -708,12 +710,15 @@ class SkiFile:
             parent.set("type", "OligoDustSystem")
             dust_system.tag = "OligoDustSystem"
 
-            dust_system.attrib.pop("writeAbsorption")
+            if "writeAbsorption" in dust_system.attrib: dust_system.attrib.pop("writeAbsorption")
             dust_system.attrib.pop("writeISRF")
             dust_system.attrib.pop("writeTemperature")
             dust_system.attrib.pop("writeEmissivity")
             dust_system.attrib.pop("selfAbsorption")
             dust_system.attrib.pop("emissionBoost")
+
+            if "cycles" in dust_system.attrib: dust_system.attrib.pop("cycles")
+            if "emissionBias" in dust_system.attrib: dust_system.attrib.pop("emissionBias")
 
             for child in dust_system.getchildren():
                 if child.tag == "dustEmissivity" or child.tag == "dustLib": dust_system.remove(child)
