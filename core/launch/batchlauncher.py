@@ -29,6 +29,7 @@ from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions
 from ..advanced.parallelizationtool import ParallelizationTool
+from ..basics.handle import ExecutionHandle
 
 # -----------------------------------------------------------------
 
@@ -862,9 +863,6 @@ class BatchLauncher(Configurable):
                 # Retrieval
                 simulation.retrieve_types = self.config.retrieve_types
 
-                # Set whether simulation is going to be run in attached mode
-                if not remote.scheduler and self.config.attached: simulation.attached = True
-
                 # Save the simulation object
                 simulation.save()
 
@@ -888,34 +886,15 @@ class BatchLauncher(Configurable):
 
             # Start the queue
             jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
-            screen_name_or_job_ids = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, group_walltime=self.config.group_walltime, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=jobscripts_path, attached=self.config.attached)
+            handles = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, group_walltime=self.config.group_walltime, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=jobscripts_path, attached=self.config.attached)
 
-            # If the remote works with a scheduling system
-            if remote.scheduler:
+            # SET THE EXECUTION HANDLES
+            # Loop over the simulation for this remote
+            for simulation in simulations_remote:
 
-                # Loop over the simulations launched with this remote
-                for simulation in simulations_remote:
-
-                    # Get the simulation name
-                    simulation_name = simulation.name
-
-                    # Get the job ID
-                    job_id = screen_name_or_job_ids[simulation_name]
-
-                    # Set the job ID
-                    simulation.job_id = job_id
-
-                    # Save the simulation object
-                    simulation.save()
-
-            else:
-
-                # Set the screen name for all of the simulation objects
-                for simulation in simulations_remote:
-
-                    simulation.screen_name = screen_name
-                    simulation.remote_screen_output_path = screen_output_path
-                    simulation.save()
+                # If all simulations should have the same handle
+                if isinstance(handles, ExecutionHandle): simulation.handle = handles
+                else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
 
             # Add the simulations of this remote to the total list of simulations
             simulations += simulations_remote

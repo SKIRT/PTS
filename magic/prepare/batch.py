@@ -14,7 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
+from ...core.tools import filesystem as fs
+from ...core.basics.filter import Filter
 from ...core.basics.configurable import Configurable
+from ..misc.calibration import CalibrationError
+from ..misc.extinction import GalacticExtinction
 
 # -----------------------------------------------------------------
 
@@ -52,6 +56,9 @@ class BatchImagePreparer(Configurable):
         # 2. Get the galactic attenuation
         self.get_extinction()
 
+        # Getting calibration error
+        #CalibrationError.from_filter(image.filter)
+
         # 3. Prepare the images
         self.prepare()
 
@@ -85,6 +92,23 @@ class BatchImagePreparer(Configurable):
 
         # Inform the user
         log.info("Getting the galactic extinction ...")
+
+        # From modeling preparation:
+
+        # Create the galactic extinction calculator
+        extinction = GalacticExtinction(self.center_coordinate)
+
+        # Loop over all image paths
+        for image_path in self.paths:
+
+            # Get the filter name
+            filter_name = fs.name(fs.directory_of(image_path))
+
+            # Create a filter instance
+            fltr = Filter.from_string(filter_name)
+
+            # Get the exintinction
+            self.attenuations[filter_name] = extinction.extinction_for_filter(fltr)
 
     # -----------------------------------------------------------------
 

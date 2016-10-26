@@ -575,15 +575,8 @@ class RemoteSimulation(SkirtSimulation):
         self.remove_remote_simulation_directory = True  # After retrieval
         self.remove_local_output = False                # After analysis
 
-        # Screen session name and remote screen output path
-        self.screen_name = None
-        self.remote_screen_output_path = None
-
-        # Flag that indicates whether a simulation is run in attached mode (no screen)
-        self.attached = False
-
-        # Job ID
-        self.job_id = None
+        # The execution handle
+        self.handle = None
 
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False

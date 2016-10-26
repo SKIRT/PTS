@@ -1615,6 +1615,35 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def tty(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("tty")
+        return int(output.split("pts/")[1])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ttys(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("who | awk '{print $2,$NF}' |grep -v '(:[0-9]'")
+
+        session_numbers = []
+        for line in output: session_numbers.append(int(line.split("pts/")[1].split(" ")[0]))
+        return session_numbers
+
+    # -----------------------------------------------------------------
+
+    @property
     def virtual_memory_per_node(self):
 
         """

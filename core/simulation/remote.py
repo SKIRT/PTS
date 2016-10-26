@@ -27,6 +27,7 @@ from ..tools.logging import log
 from ..launch.options import SchedulingOptions
 from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments
+from ..basics.handle import ExecutionHandle
 
 # -----------------------------------------------------------------
 
@@ -196,22 +197,20 @@ class SkirtRemote(Remote):
         # Inform the user
         log.info("Starting the queued simulations remotely ...")
 
+        # Check whether attached mode is not requested for a scheduling remote
+        if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
+
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
-        if self.scheduler:
-            if attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
-            job_ids = self.start_queue_jobs(group_simulations, group_walltime=group_walltime, jobscripts_path=jobscripts_path)
-            screen_name_or_job_ids = job_ids
+        if self.scheduler: handles = self.start_queue_jobs(group_simulations, group_walltime=group_walltime, jobscripts_path=jobscripts_path)
 
         # Else, initiate a screen session in which the simulations are executed
-        else:
-            screen_name = self.start_queue_screen(screen_name, local_script_path, screen_output_path, attached=attached)
-            screen_name_or_job_ids = screen_name
+        else: handles = self.start_queue_screen(screen_name, local_script_path, screen_output_path, attached=attached)
 
         # Clear the queue
         self.clear_queue()
 
-        # Return the screen name or job IDs
-        return screen_name_or_job_ids
+        # Return the execution handles
+        return handles
 
     # -----------------------------------------------------------------
 
@@ -228,8 +227,8 @@ class SkirtRemote(Remote):
         # Inform the user
         log.info("Starting the queue by scheduling the simulation as seperate jobs ...")
 
-        # Initialize a list to contain the job IDs
-        job_ids = dict()
+        # Initialize a list to contain the execution handles
+        handles = dict()
 
         # Group simulations in one job script
         if group_simulations:
@@ -256,7 +255,7 @@ class SkirtRemote(Remote):
 
                     # Schedule
                     job_id = self.schedule_multisim(simulations_for_job, scheduling_options_for_job, jobscripts_path)
-                    job_ids[name] = job_id
+                    handles[name] = ExecutionHandle.job(job_id, self.host_id)
 
                     # Reset the current walltime
                     current_walltime = 0.0
@@ -303,11 +302,11 @@ class SkirtRemote(Remote):
                 # Submit the simulation to the remote scheduling system
                 job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, jobscript_dir_path=jobscripts_path)
 
-                # Add the job ID
-                job_ids[name] = job_id
+                # Set the execution handle
+                handles[name] = ExecutionHandle.job(job_id, self.host_id)
 
-        # Return the screen name = None
-        return job_ids
+        # Return execution handles
+        return handles
 
     # -----------------------------------------------------------------
 
@@ -360,8 +359,12 @@ class SkirtRemote(Remote):
         # Close the script file (if it is temporary it will automatically be removed)
         script_file.close()
 
-        # Return the screen name
-        return screen_name
+        # Create the execution handle
+        if attached: handle = ExecutionHandle.tty(self.tty, self.host_id)
+        else: handle = ExecutionHandle.screen(screen_name, self.host_id, screen_output_path)
+
+        # Return the execution handle(s)
+        return handle
 
     # -----------------------------------------------------------------
 
@@ -404,14 +407,11 @@ class SkirtRemote(Remote):
         # Add the simulation arguments to the queue
         simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options)
 
-        # Indicate whether the simulation is going to be run in attached mode
-        if not self.scheduler and attached:
-            simulation.attached = True
-            simulation.save()
+        # Start the queue, get execution handle(s)
+        handles = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
 
-        # Start the queue
-        screen_name = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
-        simulation.screen_name = screen_name
+        # Set the execution handle for the simulation
+        simulation.handle = handles if isinstance(handles, ExecutionHandle) else handles[0]
         simulation.save()
 
         # Return the simulation object
@@ -977,7 +977,7 @@ class SkirtRemote(Remote):
                 elif simulation.retrieved: simulation_status = "retrieved"
 
                 # Get the simulation status from the remote log file if not yet retrieved
-                else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.screen_name, ski_name)
+                else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name)
 
                 # Add the simulation properties to the list
                 entries.append((path, simulation_status))
@@ -1066,12 +1066,12 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def status_from_log_file(self, file_path, screen_name, simulation_prefix):
+    def status_from_log_file(self, file_path, handle, simulation_prefix):
 
         """
         This function ...
         :param file_path:
-        :param screen_name:
+        :param handle:
         :param simulation_prefix:
         :return:
         """
@@ -1092,16 +1092,44 @@ class SkirtRemote(Remote):
             if " Finished simulation " + simulation_prefix in last: simulation_status = "finished"
             elif " *** Error: " in last: simulation_status = "crashed"
             else:
-                # The simulation is either still running or has been aborted
-                if self.is_active_screen(screen_name): simulation_status = self.running_status_from_log_file(file_path)
-                else: simulation_status = "aborted"
+
+                # Screen session
+                if handle.type == "screen":
+
+                    screen_name = handle.value
+                    if self.is_active_screen(screen_name): simulation_status = self.running_status_from_log_file(file_path)
+                    else: simulation_status = "aborted"
+
+                # Attached terminal session
+                elif handle.type == "tty":
+
+                    session_rank = handle.value
+                    if session_rank in self.ttys: simulation_status = self.running_status_from_log_file(file_path)
+                    else: simulation_status = "aborted"
+
+                # Invalid execution handle
+                else: raise ValueError("Invalid execution handle")
 
         # If the log file does not exist, the simulation has not started yet or has been cancelled
         else:
 
-            # The simulation has not started or it's screen session has been cancelled
-            if self.is_active_screen(screen_name): simulation_status = "queued"
-            else: simulation_status = "cancelled"
+            # Screen session
+            if handle.type == "screen":
+
+                # The simulation has not started or it's screen session has been cancelled
+                screen_name = handle.value
+                if self.is_active_screen(screen_name): simulation_status = "queued"
+                else: simulation_status = "cancelled"
+
+            # Attached terminal session
+            elif handle.type == "tty":
+
+                session_rank = handle.value
+                if session_rank in self.ttys: simulation_status = "queued"
+                else: simulation_status = "cancelled"
+
+            # Invalid execution handle
+            else: raise ValueError("Invalid execution handle")
 
         # Return the string that indicates the simulation status
         return simulation_status
