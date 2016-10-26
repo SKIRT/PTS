@@ -25,5 +25,6 @@ definition.add_optional("remote", "string", "the remote host (no schedulers) on 
 
 # Add optional
 definition.add_optional("nprocesses", "integer", "number of processes to use", 1)
+definition.add_flag("data_parallel", "use data parallelization mode")
 
 # -----------------------------------------------------------------

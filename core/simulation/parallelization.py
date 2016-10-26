@@ -80,11 +80,12 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def for_local(cls, nprocesses=1):
+    def for_local(cls, nprocesses=1, data_parallel=False):
 
         """
         This function ...
-        :param nprocesses
+        :param nprocesses:
+        :param data_parallel:
         :return:
         """
 
@@ -97,7 +98,7 @@ class Parallelization(object):
         else: threads = 1
 
         # Create the parallelization
-        parallelization = cls(threads, 1, nprocesses)
+        parallelization = cls(threads, 1, nprocesses, data_parallel=data_parallel)
 
         # Return the parallelization scheme
         return parallelization

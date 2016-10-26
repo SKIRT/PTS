@@ -215,7 +215,7 @@ class MemoryTester(Configurable):
         self.logging = LoggingOptions(verbose=True, memory=True, allocation=False, allocation_limit=1e-5)
 
         # Set the parallelization scheme
-        self.parallelization = Parallelization.for_local(nprocesses=self.config.nprocesses)
+        self.parallelization = Parallelization.for_local(nprocesses=self.config.nprocesses, data_parallel=self.config.data_parallel)
 
         # If a single ski file was specified
         if self.definition is not None:
@@ -257,7 +257,7 @@ class MemoryTester(Configurable):
         threads_per_core = self.launcher.single_remote.threads_per_core if self.launcher.single_host.use_hyperthreading else 1
         nthreads = cores_per_process * threads_per_core
         ncores = nthreads / threads_per_core * self.config.nprocesses
-        self.parallelization = Parallelization(ncores, threads_per_core, self.config.nprocesses)
+        self.parallelization = Parallelization(ncores, threads_per_core, self.config.nprocesses, self.config.data_parallel)
 
         # If single ski file was specified
         if self.definition is not None: self.launcher.add_to_queue(definition, definition.prefix, parallelization=self.parallelization)

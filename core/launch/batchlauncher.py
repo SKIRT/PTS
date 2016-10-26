@@ -19,6 +19,7 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
+from ..basics.remote import Remote
 from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
@@ -215,7 +216,27 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        if len(self.remotes) == 0: raise RuntimeError("The setup has not been called yet")
+        # The setup has not been called yet
+        if len(self.remotes) == 0:
+
+            # Warning
+            log.warning("The setup has not been called yet, creating temporary remote execution environment (limited to basic capabilities)")
+
+            # Get the single host ID
+            host_id = self.single_host_id
+
+            # Create a remote execution context
+            remote = Remote()
+
+            # Check whether a cluster name is defined
+            cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
+
+            # Setup the remote for the specified host
+            remote.setup(host_id, cluster_name=cluster_name)
+
+            # Return the remote environment
+            return remote
+
         elif len(self.remotes) == 1: return self.remotes[0]
         else: raise RuntimeError("Multiple remotes have been configured for this batch launcher")
 
