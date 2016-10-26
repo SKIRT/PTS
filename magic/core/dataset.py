@@ -869,6 +869,9 @@ class DataSetCreator(Configurable):
         # The list of error map paths
         self.error_paths = None
 
+        # The data set
+        self.dataset = DataSet()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -884,6 +887,12 @@ class DataSetCreator(Configurable):
         # 2. Load the image paths
         if self.image_paths is None: self.load_paths()
 
+        # 3. Create the dataset
+        self.create()
+
+        # 4. Write the dataset
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -897,8 +906,8 @@ class DataSetCreator(Configurable):
         super(DataSetCreator, self).setup(**kwargs)
 
         # Get the image and error map paths
-        self.image_paths = kwargs.pop("image_paths", [])
-        self.error_paths = kwargs.pop("error_paths", [])
+        self.image_paths = kwargs.pop("image_paths", None)
+        self.error_paths = kwargs.pop("error_paths", None)
 
     # -----------------------------------------------------------------
 
@@ -929,7 +938,7 @@ class DataSetCreator(Configurable):
         log.info("Loading interactive prompt for image paths ...")
 
         # The configuration setter
-        setter = InteractiveConfigurationSetter("host")
+        setter = InteractiveConfigurationSetter("datasetcreator_images")
 
         definition = ConfigurationDefinition()
         definition.add_required("image_paths", "filepath_list", "paths to the images")
@@ -937,6 +946,23 @@ class DataSetCreator(Configurable):
         # Create the configuration and get the paths
         config = setter.run(definition)
         self.image_paths = config.image_paths
+
+        self.error_paths = dict()
+
+        for path in self.image_paths:
+
+            name = fs.strip_extension(fs.name(path))
+
+            definition = ConfigurationDefinition()
+            definition.add_optional("error_path", "filepath", "path to the error map for " + name)
+
+            setter = InteractiveConfigurationSetter("datasetcreator_errors")
+
+            # Get the error path
+            config = setter.run(definition)
+            error_path = config.error_path
+
+            if error_path is not None: self.error_paths[name] = error_path
 
     # -----------------------------------------------------------------
 
@@ -950,25 +976,62 @@ class DataSetCreator(Configurable):
         # Inform the user
         log.info("Loading image paths from '" + self.config.path + "' ...")
 
+        self.image_paths = []
+        self.error_paths = dict()
+
         # Loop over the FITS files in the current directory
         for image_path, image_name in fs.files_in_path(self.config.path, extension="fits", contains=self.config.contains,
                                                        not_contains=self.config.not_contains, returns=["path", "name"],
                                                        recursive=self.config.recursive):
 
-            # Open the image frame
-            frame = Frame.from_file(image_path)
-
-            # Determine the preparation name
-            if frame.filter is not None: prep_name = str(frame.filter)
-            else: prep_name = image_name
+            # Skip error maps
+            if self.config.error_suffix is not None and image_name.endswith(self.config.error_suffix): continue
 
             # Add the image path
-            self.set.add_path(prep_name, image_path)
+            self.image_paths.append(image_path)
 
-            # Determine path to poisson error map
-            poisson_path = fs.join(path, image_name + "_poisson.fits")
+            # Look for the error map
+            error_path = fs.join(fs.directory_of(image_path), image_name + self.config.error_suffix + ".fits")
+            if fs.is_file(error_path): self.error_paths[image_name] = error_path
 
-            # Set the path to the poisson error map
-            if fs.is_file(poisson_path): self.set.add_error_path(prep_name, poisson_path)
+    # -----------------------------------------------------------------
+
+    def create(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the dataset ...")
+
+        # Loop over the image paths
+        for path in self.image_paths:
+
+            # Determine the filename
+            filename = fs.strip_extension(fs.name(path))
+
+            # Open the image frame
+            frame = Frame.from_file(path)
+
+            # Determine the preparation name
+            if frame.filter is not None: name = str(frame.filter)
+            else: name = filename
+
+            # Add the path to the dataset
+            self.dataset.add_path(name, path)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.config.path, "dataset.dat")
+        self.dataset.saveto(path)
 
 # -----------------------------------------------------------------

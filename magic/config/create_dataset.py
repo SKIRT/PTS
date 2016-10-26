@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Flags
-definition.add_flag("manual", "set the image paths manually (pass a list of image paths or ask for image paths interactively")
+definition.add_flag("interactive", "set the image paths manually (pass a list of image paths or ask for image paths interactively")
 definition.add_flag("recursive", "search for image files recursively (within subdirectories)")
 
 # Optional settings
