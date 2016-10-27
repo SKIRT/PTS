@@ -205,6 +205,7 @@ class DustPediaSample(object):
         # CHECK WHETHER IN DUSTPEDIA SAMPLE
         if objname not in self.primary_sample: raise ValueError("This galaxy is not in the DustPedia primary sample")
 
+        # Return the name of the galaxy
         return objname
 
     # -----------------------------------------------------------------

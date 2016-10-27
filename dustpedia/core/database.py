@@ -28,6 +28,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from .sample import DustPediaSample
 from ...core.basics.filter import Filter
+from ...core.tools import network
 
 # -----------------------------------------------------------------
 
@@ -442,24 +443,6 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def download_url(self, galaxy_name, image_url, path):
-
-        """
-        This function ...
-        :param galaxy_name:
-        :param image_url:
-        :param path:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Downloading '" + image_url + "' for galaxy '" + galaxy_name + "' to '" + path + " ...")
-
-        # Download
-        self.download_file(image_url, path)
-
-    # -----------------------------------------------------------------
-
     def download_image(self, galaxy_name, image_name, path):
 
         """
@@ -590,15 +573,25 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def get_sed(self, galaxy_name):
+    def download_photometry(self, dir_path):
 
         """
         This function ...
-        :param galaxy_name:
+        :param dir_path:
         :return:
         """
 
-        pass
+        # main photometry: http://dustpedia.astro.noa.gr/Content/tempFiles/DustPedia_Aperture_Photometry.csv
+        # IRAS: http://dustpedia.astro.noa.gr/Content/tempFiles/DustPedia_IRAS_SCANPI.csv
+        # Planck: http://dustpedia.astro.noa.gr/Content/tempFiles/DustPedia_Planck_CCS2.csv
+        # Release notes: http://dustpedia.astro.noa.gr/Content/tempFiles/Photometry_Notes.pdf
+
+        urls = ["http://dustpedia.astro.noa.gr/Content/tempFiles/DustPedia_Aperture_Photometry.csv",
+                "http://dustpedia.astro.noa.gr/Content/tempFiles/DustPedia_IRAS_SCANPI.csv",
+                "http://dustpedia.astro.noa.gr/Content/tempFiles/DustPedia_Planck_CCS2.csv"]
+
+        # Download the photometry files
+        network.download_files(urls, dir_path)
 
     # -----------------------------------------------------------------
 

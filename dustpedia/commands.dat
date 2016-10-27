@@ -1,4 +1,5 @@
 # Command | Configuration | Class | Configuration method | Description
-get_images | -- | core.database.DustPediaDatabase | interactive | Get images for a DustPedia galaxy (not implemented yet)
+get_images | -- | data.images.ImageFetcher | arguments | Get the images for a DustPedia galaxy
+get_sed | -- | data.seds.SEDFetcher | arguments | Get the SED for a DustPedia galaxy
 make_galex | -- | core.galex.GALEXMosaicMaker | interactive | Make the DustPedia mosaics of the GALEX images of a galaxy and make the maps of the Poisson errors.
 make_sdss | -- | core.sdss.SDSSMosaicMaker | interactive | Make the DustPedia mosaic of the SDSS image of a galaxy in a certain band and make a map of the Poisson errors.
