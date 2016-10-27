@@ -3,3 +3,4 @@ aperture_correction | -- | photometry.aperturecorrector.ApertureCorrector | inte
 prepare_image | -- | prepare.single.SingleImagePreparer | arguments | Prepare a galaxy image
 prepare_images | -- | prepare.batch.BatchImagePreparer | arguments | Prepare a batch of images of a galaxy
 create_dataset | -- | core.dataset.DataSetCreator | arguments | Create a dataset for prepare_images
+list_ned | -- | misc.ned.NED | arguments | List images found on NED

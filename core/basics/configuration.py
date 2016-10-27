@@ -391,6 +391,8 @@ def stringify_not_list(value):
 
     from .range import RealRange, IntegerRange, QuantityRange
 
+    from .filter import Filter
+
     if isinstance(value, bool): return "boolean", str(value)
     elif isinstance(value, int): return "integer", str(value)
     elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64): return "real", repr(value)
@@ -402,6 +404,7 @@ def stringify_not_list(value):
     elif isinstance(value, IntegerRange): return "integer_range", repr(value)
     elif isinstance(value, QuantityRange): return "quantity_range", repr(value)
     elif isinstance(value, SkyCoordinate): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
+    elif isinstance(value, Filter): return "filter", str(value)
     else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------

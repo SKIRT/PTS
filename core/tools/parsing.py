@@ -23,6 +23,7 @@ from astropy.units import Unit
 from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
+from ..basics.filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -556,6 +557,18 @@ def image_path(argument):
 
     if path.endswith("fits"): raise ValueError("Unrecognized file type")
     else: return path
+
+# -----------------------------------------------------------------
+
+def filter(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return Filter.from_string(argument)
 
 # -----------------------------------------------------------------
 

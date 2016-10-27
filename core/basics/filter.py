@@ -299,17 +299,17 @@ class Filter:
         mass_h_names = ["2MASS.H", "2MASS H", "H", "SDSSh", "the H-band", "2MASS_H"]
         mass_j_names = ["2MASS.J", "2MASS J", "J", "SDSSj", "the J-band", "2MASS_J"]
         mass_k_names = ["2MASS.K", "2MASS.Ks", "2MASS K", "2MASS Ks", "K", "Ks", "the K-band", "2MASS_K", "2MASS_Ks"]
-        irac_i1_names = ["IRAC.I1", "IRAC I1", "IRAC 3.6", "IRAC 3.6um", "IRAC 3.6mu", "I1", "IRAC1", "IRAC-1", "the IRAC-1 band", "Spitzer 3.6", "IRAC_I1", "Spitzer_3.6"]
-        irac_i2_names = ["IRAC.I2", "IRAC I2", "IRAC 4.5", "IRAC 4.5um", "IRAC 4.5mu", "I2", "IRAC2", "IRAC-2", "the IRAC-2 band", "Spitzer 4.5", "IRAC_I2", "Spitzer_4.5"]
-        irac_i3_names = ["IRAC.I3", "IRAC I3", "IRAC 5.8", "IRAC 5.8um", "IRAC 5.8mu", "I3", "IRAC3", "IRAC-3", "the IRAC-3 band", "Spitzer 5.8", "IRAC_I3", "Spitzer_5.8"]
-        irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4", "IRAC4", "IRAC-4", "the IRAC-4 band", "Spitzer 8.0", "IRAC_I4", "Spitzer_8.0"]
+        irac_i1_names = ["IRAC.I1", "IRAC I1", "IRAC 3.6", "IRAC 3.6um", "IRAC 3.6mu", "I1", "IRAC1", "IRAC-1", "the IRAC-1 band", "Spitzer 3.6", "IRAC_I1", "Spitzer_3.6", "IRAC_3.6"]
+        irac_i2_names = ["IRAC.I2", "IRAC I2", "IRAC 4.5", "IRAC 4.5um", "IRAC 4.5mu", "I2", "IRAC2", "IRAC-2", "the IRAC-2 band", "Spitzer 4.5", "IRAC_I2", "Spitzer_4.5", "IRAC_4.5"]
+        irac_i3_names = ["IRAC.I3", "IRAC I3", "IRAC 5.8", "IRAC 5.8um", "IRAC 5.8mu", "I3", "IRAC3", "IRAC-3", "the IRAC-3 band", "Spitzer 5.8", "IRAC_I3", "Spitzer_5.8", "IRAC_5.8"]
+        irac_i4_names = ["IRAC.I4", "IRAC I4", "IRAC 8.0", "IRAC 8.0um", "IRAC 8.0mu", "I4", "IRAC4", "IRAC-4", "the IRAC-4 band", "Spitzer 8.0", "IRAC_I4", "Spitzer_8.0", "IRAC_8.0"]
         wise_w1_names = ["WISE.W1", "WISE W1", "W1", "WISE1", "WISE-1", "the WISE-1 band", "w1", "WISE 3.4", "WISE_W1", "WISE_3.4"]
         wise_w2_names = ["WISE.W2", "WISE W2", "W2", "WISE2", "WISE-2", "the WISE-2 band", "w2", "WISE 4.6", "WISE_W2", "WISE_4.6"]
         wise_w3_names = ["WISE.W3", "WISE W3", "W3", "WISE3", "WISE-3", "the WISE-3 band", "w3", "WISE 12", "WISE_W3", "WISE_12"]
         wise_w4_names = ["WISE.W4", "WISE W4", "W4", "WISE4", "WISE-4", "the WISE-4 band", "w4", "WISE 22", "WISE_W4", "WISE_22"]
-        mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um", "MIPS-24", "the MIPS-24 band", "Spitzer 24", "MIPS_24mu", "MIPS_24um", "Spitzer_24"]
-        mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70", "MIPS-70", "the MIPS-70 band", "Spitzer 70", "MIPS_70mu", "MIPS_70um", "Spitzer_70"]
-        mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160", "MIPS-160", "the MIPS-160 band", "Spitzer 160", "MIPS_160mu", "MIPS_160um", "Spitzer_160"]
+        mips_24_names = ["MIPS.24mu", "MIPS.24um", "MIPS.24", "MIPS 24mu", "MIPS 24um", "MIPS 24", "24mu", "24um", "MIPS-24", "the MIPS-24 band", "Spitzer 24", "MIPS_24mu", "MIPS_24um", "Spitzer_24", "MIPS24", "Mips24"]
+        mips_70_names = ["MIPS.70mu", "MIPS.70um", "MIPS.70", "MIPS 70mu", "MIPS 70um", "MIPS 70", "MIPS-70", "the MIPS-70 band", "Spitzer 70", "MIPS_70mu", "MIPS_70um", "Spitzer_70", "MIPS70", "Mips70"]
+        mips_160_names = ["MIPS.160mu", "MIPS.160um", "MIPS.160", "MIPS 160mu", "MIPS 160um", "MIPS 160", "MIPS-160", "the MIPS-160 band", "Spitzer 160", "MIPS_160mu", "MIPS_160um", "Spitzer_160", "MIPS160", "Mips160"]
         pacs_blue_names = ["Pacs.blue", "PACS.BLUE", "PACS blue", "PACS BLUE", "Pacs 70mu", "Pacs 70um", "PACS 70mu", "PACS 70um", "PACS-70", "the PACS-70 band", "Pacs 70", "Pacs blue", "PACS 70", "Pacs_blue", "PACS_BLUE", "PACS_70"]
         pacs_green_names = ["Pacs.green", "PACS.GREEN", "PACS green", "PACS GREEN", "Pacs 100mu", "Pacs 100um", "PACS 100mu", "PACS 100um", "PACS-100", "the PACS-100 band", "Pacs 100", "Pacs green", "PACS 100", "Pacs_green", "PACS_GREEN", "PACS_100"]
         pacs_red_names = ["Pacs.red", "PACS.RED", "PACS red", "PACS RED", "Pacs 160mu", "Pacs 160um", "PACS 160mu", "PACS 160um", "PACS-160", "the PACS-160 band", "Pacs 160", "Pacs red", "PACS 160", "Pacs_red", "PACS_RED", "PACS_160"]
@@ -345,12 +345,12 @@ class Filter:
         ha_names = ["Ha", "H alpha", "H-alpha", "H-a", "Halpha", "H_alpha", "Mosaic Halpha", "H_alph"]
 
         # SWIFT UVOT filters
-        uvot_u_names = ["UVOT U", "Swift U", "Swift_U"]
-        uvot_b_names = ["UVOT B", "Swift B", "Swift_B"]
-        uvot_v_names = ["UVOT V", "Swift V", "Swift_V"]
-        uvot_uvw2_names = ["UVOT W2", "UVW2", "W2", "Swift W2", "SWIFT W2", "UVOT_W2", "Swift_"]
-        uvot_uvm2_names = ["UVOT M2", "UVM2", "M2", "Swift M2", "SWIFT M2", "UVOT_M2"]
-        uvot_uvw1_names = ["UVOT W1", "UVW1", "W1", "Swift W1", "SWIFT W1", "UVOT_W1"]
+        uvot_u_names = ["UVOT U", "Swift U", "Swift_U", "Swift_U"]
+        uvot_b_names = ["UVOT B", "Swift B", "Swift_B", "Swift_B"]
+        uvot_v_names = ["UVOT V", "Swift V", "Swift_V", "Swift_V"]
+        uvot_uvw2_names = ["UVOT W2", "UVW2", "W2", "Swift W2", "SWIFT W2", "UVOT_W2", "Swift_UVW2"]
+        uvot_uvm2_names = ["UVOT M2", "UVM2", "M2", "Swift M2", "SWIFT M2", "UVOT_M2", "Swift_UVM2"]
+        uvot_uvw1_names = ["UVOT W1", "UVW1", "W1", "Swift W1", "SWIFT W1", "UVOT_W1", "Swift_UVW1"]
 
         # Select the right filter
         if name in galex_fuv_names: return cls("GALEX.FUV")
@@ -390,6 +390,9 @@ class Filter:
         elif name in iras_60_names: return cls("IRAS.60mu")
         elif name in iras_100_names: return cls("IRAS.100mu")
         elif name in ha_names: return cls("Halpha")
+        elif name in uvot_u_names: return cls("Swift.UVOT.Uband")
+        elif name in uvot_b_names: return cls("Swift.UVOT.B")
+        elif name in uvot_v_names: return cls("Swift.UVOT.V")
         elif name in uvot_uvw2_names: return cls("UVOT.UVW2")
         elif name in uvot_uvm2_names: return cls("UVOT.UVM2")
         elif name in uvot_uvw1_names: return cls("UVOT.UVW1")
