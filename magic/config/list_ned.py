@@ -20,6 +20,6 @@ definition.add_required("galaxy", "string", "galaxy name")
 definition.add_positional_optional("filter", "filter", "the filter for which to look for images")
 
 # Add flag
-definition.add_flag("list_unknown", "list images of unknown filters", False)
+definition.add_flag("unknown", "list images of unknown filters", False)
 
 # -----------------------------------------------------------------

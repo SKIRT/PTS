@@ -13,16 +13,23 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import re
 from collections import defaultdict
+
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 # Import astronomical modules
 from astroquery.ned import Ned
+from astroquery import nasa_ads as ads
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from pts.core.basics.filter import Filter
+from ...core.basics.filter import Filter
 from ...core.basics.configurable import Configurable
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -47,6 +54,9 @@ class NED(Configurable):
 
         # Images of unknown filters
         self.unknown = []
+
+        # A regular expression object that strips away special unicode characters, used on the remote console output
+        self.ansi_escape = re.compile(r'\x1b[^m]*m')
 
     # -----------------------------------------------------------------
 
@@ -187,16 +197,33 @@ class NED(Configurable):
 
             else:
 
-                log.success("Found images:")
-                log.info("")
+                print(fmt.green + fmt.bold + "Found images: (" + str(len(self.images[str(self.config.filter)])) + ")" + fmt.reset)
+                print("")
 
                 for bibcode, year, url in self.images[str(self.config.filter)]:
 
                     name = fs.name(url)
 
-                    log.info(" - " + name)
+                    results = ads.ADS.query_simple(bibcode)
+                    authors = results["authors"][0]
 
-                log.info("")
+                    if len(authors) == 1: authorstring = authors[0]
+                    elif len(authors) == 2: authorstring = "and".join(authors)
+                    else: authorstring = authors[0] + " et al."
+
+                    title = results["title"][0][0]
+                    journal = results["journal"][0][0].split(",")[0]
+                    citations = results["citations"][0][0]
+
+                    print(fmt.underlined + name + fmt.reset)
+                    print("")
+                    if year is not None: print(" * year:", year)
+                    print(" * title:", title)
+                    print(" * journal:", journal)
+                    print(" * citations:", citations)
+                    print(" * authors:", authorstring)
+                    print(" * url:", url)
+                    print("")
 
         else:
 
@@ -204,7 +231,7 @@ class NED(Configurable):
             self.list_filters()
 
             # List unknown
-            if self.config.list_unknown: self.list_unknown()
+            if self.config.unknown: self.list_unknown()
 
     # -----------------------------------------------------------------
 
@@ -216,20 +243,35 @@ class NED(Configurable):
         """
 
         # Loop over the filters
-        for fltrstring in self.images:
+        for fltrstring in self.sorted_filter_names:
 
-            #if self.config.filter is not None and str(self.config.filter) != fltrstring: continue
-
-            log.success(fltrstring + ":")
-            log.info("")
+            print(fmt.bold + fmt.green + fltrstring + ": (" + str(len(self.images[fltrstring])) + ")" + fmt.reset)
+            print("")
 
             for bibcode, year, url in self.images[fltrstring]:
 
                 name = fs.name(url)
 
-                log.info(" - " + name)
+                results = ads.ADS.query_simple(bibcode)
+                authors = results["authors"][0]
 
-            log.info("")
+                if len(authors) == 1: authorstring = authors[0]
+                elif len(authors) == 2: authorstring = "and".join(authors)
+                else: authorstring = authors[0] + " et al."
+
+                title = results["title"][0][0]
+                journal = results["journal"][0][0].split(",")[0]
+                citations = results["citations"][0][0]
+
+                print(fmt.underlined + name + fmt.reset)
+                print("")
+                if year is not None: print(" * year:", year)
+                print(" * title:", title)
+                print(" * journal:", journal)
+                print(" * citations:", citations)
+                print(" * authors:", authorstring)
+                print(" * url:", url)
+                print("")
 
     # -----------------------------------------------------------------
 
@@ -240,15 +282,59 @@ class NED(Configurable):
         :return:
         """
 
-        log.error("Unknown filters:")
-        log.info("")
+        print(fmt.red + fmt.bold + "Unknown filters: (" + str(len(self.unknown)) + ")" + fmt.reset)
+        print("")
 
         for bibcode, year, url in self.unknown:
 
             name = fs.name(url)
 
-            log.info(" - " + name)
+            results = ads.ADS.query_simple(bibcode)
 
-        log.info("")
+            if len(results) > 0:
+
+                authors = results["authors"][0]
+
+                if len(authors) == 1: authorstring = authors[0]
+                elif len(authors) == 2: authorstring = "and".join(authors)
+                else: authorstring = authors[0] + " et al."
+
+                title = results["title"][0][0]
+                journal = results["journal"][0][0].split(",")[0]
+                citations = results["citations"][0][0]
+
+            else: title = journal = citations = authorstring = None
+
+            #print(type(title))
+            #print(str(title))
+            #print(self.ansi_escape.sub('', str(title)).replace('\x1b[K', '').split("\r\n")[1:-1])
+            #print(title.replace("\u2014", "")) if title is not None else print("")
+
+            #print(title.astype('U')) if title is not None else print("")
+
+            #print(title.encode('utf-8')) if title is not None else print("")
+
+            print(fmt.underlined + name + fmt.reset)
+            print("")
+            if year is not None: print(" * year:", year)
+            if title is not None: print(" * title:", title)
+            if journal is not None: print(" * journal:", journal)
+            if citations is not None: print(" * citations:", citations)
+            if authorstring is not None: print(" * authors:", authorstring)
+            print(" * url:", url)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sorted_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = sorted(self.images.keys(), key=lambda key: Filter.from_string(key).pivotwavelength())
+        return names
 
 # -----------------------------------------------------------------

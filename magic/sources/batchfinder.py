@@ -12,6 +12,8 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+
 # Import the relevant PTS classes and modules
 from .galaxyfinder import GalaxyFinder
 from .starfinder import StarFinder
@@ -21,12 +23,12 @@ from ..catalog.builder import CatalogBuilder
 from ..catalog.synchronizer import CatalogSynchronizer
 from ..tools import wavelengths
 from ...core.tools import tables
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class BatchSourceFinder(OldConfigurable):
+class BatchSourceFinder(Configurable):
 
     """
     This class ...
@@ -41,7 +43,7 @@ class BatchSourceFinder(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(BatchSourceFinder, self).__init__(config, "magic")
+        super(BatchSourceFinder, self).__init__(config)
 
         # -- Attributes --
 

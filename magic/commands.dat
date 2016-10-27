@@ -4,3 +4,5 @@ prepare_image | -- | prepare.single.SingleImagePreparer | arguments | Prepare a 
 prepare_images | -- | prepare.batch.BatchImagePreparer | arguments | Prepare a batch of images of a galaxy
 create_dataset | -- | core.dataset.DataSetCreator | arguments | Create a dataset for prepare_images
 list_ned | -- | misc.ned.NED | arguments | List images found on NED
+get_seds | -- | misc.seds.SEDFetcher | arguments | Fetch reference SEDs for a certain galaxy
+find_sources_dataset | -- | sources.batchfinder.BatchSourceFinder | arguments | Find sources for the images in a dataset

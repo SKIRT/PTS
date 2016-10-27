@@ -990,9 +990,11 @@ class DataSetCreator(Configurable):
             # Add the image path
             self.image_paths.append(image_path)
 
-            # Look for the error map
-            error_path = fs.join(fs.directory_of(image_path), image_name + self.config.error_suffix + ".fits")
-            if fs.is_file(error_path): self.error_paths[image_name] = error_path
+            # Look for the error map, if error suffix is specified
+            if self.config.error_suffix is not None:
+
+                error_path = fs.join(fs.directory_of(image_path), image_name + self.config.error_suffix + ".fits")
+                if fs.is_file(error_path): self.error_paths[image_name] = error_path
 
     # -----------------------------------------------------------------
 
