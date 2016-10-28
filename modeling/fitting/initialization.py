@@ -25,7 +25,7 @@ from .component import FittingComponent
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
-from ..core.sun import Sun
+from ...core.data.sun import Sun
 from ..core.mappings import Mappings
 from ...magic.tools import wavelengths
 from ...core.tools.logging import log

@@ -22,7 +22,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.simulation import SkirtSimulation
-from ..core.sed import IntrinsicSED
+from ...core.data.sed import IntrinsicSED
 from ...core.simulation.skifile import SkiFile
 from ..core.mappings import Mappings
 

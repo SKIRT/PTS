@@ -26,7 +26,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.basics.filter import Filter
 from pts.core.simulation.execute import SkirtExec
 from pts.modeling.core.mappings import Mappings
-from pts.modeling.core.sed import IntrinsicSED, SED
+from pts.core.data.sed import IntrinsicSED, SED
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.map import Map
 from pts.core.basics.configuration import load_mapping

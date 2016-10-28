@@ -19,7 +19,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from .image import Image
 from .frame import Frame
-from ...modeling.core.sed import SED, ObservedSED
+from ...core.data.sed import SED, ObservedSED
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.tools.logging import log
 from ..basics.mask import Mask, MaskBase

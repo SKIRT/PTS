@@ -23,12 +23,12 @@ from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.basics.distribution import Distribution
 from ...core.launch.timing import TimingTable
-from ..core.transmission import TransmissionCurve
+from ...core.data.transmission import TransmissionCurve
 from ...core.plot.transmission import TransmissionPlotter
 from ...core.plot.grids import plotgrids
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.logfile import LogFile
-from ..core.sed import SED, ObservedSED
+from ...core.data.sed import SED, ObservedSED
 from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------

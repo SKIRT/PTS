@@ -19,8 +19,8 @@ import numpy as np
 from .component import AttenuationAnalysisComponent
 from ....core.tools.logging import log
 from ....core.tools import filesystem as fs
-from ...core.sed import SED
-from ...core.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve, MappingsAttenuationCurve
+from ....core.data.sed import SED
+from ....core.data.attenuation import AttenuationCurve, SMCAttenuationCurve, MilkyWayAttenuationCurve, CalzettiAttenuationCurve, BattistiAttenuationCurve, MappingsAttenuationCurve
 from ....core.plot.attenuation import AttenuationPlotter
 
 # -----------------------------------------------------------------

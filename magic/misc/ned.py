@@ -71,8 +71,10 @@ class NED(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Find the images
         self.find()
 
+        # 3. List the images
         self.list()
 
     # -----------------------------------------------------------------

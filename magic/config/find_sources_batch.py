@@ -10,16 +10,10 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
-# Configuration
+# Create the configuration definition
 definition = ConfigurationDefinition()
 
-# Galaxy name
-definition.add_required("galaxy_name", "string", "the name of the galaxy")
-
-# Flags
-definition.add_flag("iras", "include IRAS fluxes", True)
-definition.add_flag("planck", "include Planck fluxes", True)
-
-definition.add_flag("write", "write the results", True)
+# The galaxy name
+definition.add_required("dataset", "file_path", "name of the dataset file")
 
 # -----------------------------------------------------------------

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.transmission Contains the TransmissionCurve class.
+## \package pts.core.data.transmission Contains the TransmissionCurve class.
 
 # -----------------------------------------------------------------
 

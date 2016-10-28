@@ -20,7 +20,7 @@ from ...core.tools.logging import log
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import StandardImageGridPlotter
 from ...core.plot.sed import SEDPlotter
-from ..core.sed import ObservedSED
+from ...core.data.sed import ObservedSED
 
 # -----------------------------------------------------------------
 

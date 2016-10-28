@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.sun Contains the Sun class
+## \package pts.core.data.sun Contains the Sun class
 
 # -----------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..core.sed import IntrinsicSED
+from ...core.data.sed import IntrinsicSED
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 

@@ -24,7 +24,7 @@ from ..tools import tables
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.filter import Filter
-from ...modeling.core.sed import SED
+from ..data.sed import SED
 
 # -----------------------------------------------------------------
 

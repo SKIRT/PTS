@@ -17,7 +17,7 @@ from .component import PlottingComponent
 from ..photometry.component import PhotometryComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from ..core.sed import ObservedSED
+from ...core.data.sed import ObservedSED
 from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------

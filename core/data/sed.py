@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.sed Contains the SED class.
+## \package pts.core.data.sed Contains the SED class.
 
 # -----------------------------------------------------------------
 

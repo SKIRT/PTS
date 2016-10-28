@@ -7,10 +7,10 @@
 
 # Import the relevant PTS classes and modules
 from .fetch import definition
+from pts.magic.misc.seds import catalog_names
 
 # -----------------------------------------------------------------
 
-definition.add_optional("catalogs", "string_list", "names of the catalogs to query", ["GALEX", "2MASS", "SINGS", "LVL", "Spitzer", "Spitzer/IRS", "IRAS", "IRAS-FSC", "S4G", "Emission lines", "Brown", "Planck"])
-#["GALEX", "2MASS", "SINGS", "LVL", "Spitzer", "Spitzer/IRS", "IRAS", "IRAS-FSC", "S4G", "Brown", "Planck"]
+definition.add_optional("catalogs", "string_list", "names of the catalogs to query", default=catalog_names, choices=catalog_names)
 
 # -----------------------------------------------------------------

@@ -7,19 +7,20 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.magic.misc.seds import catalog_names
 
 # -----------------------------------------------------------------
 
-# Configuration
+# Create the configuration definition
 definition = ConfigurationDefinition()
 
-# Galaxy name
-definition.add_required("galaxy_name", "string", "the name of the galaxy")
+# The galaxy name
+definition.add_required("galaxy_name", "string", "galaxy name")
 
-# Flags
-definition.add_flag("iras", "include IRAS fluxes", True)
-definition.add_flag("planck", "include Planck fluxes", True)
+# The filter
+definition.add_optional("catalogs", "string_list", "names of the catalogs to query", default=catalog_names, choices=catalog_names)
 
+# Write
 definition.add_flag("write", "write the results", True)
 
 # -----------------------------------------------------------------

@@ -253,7 +253,7 @@ class BatchSourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -262,12 +262,11 @@ class BatchSourceFinder(Configurable):
         :param special_region:
         :param ignore_region:
         :param bad_mask:
-        :param animation:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask)
+        self.setup(**kwargs)
 
         # 2. Find the galaxies
         self.find_galaxies()
@@ -316,6 +315,10 @@ class BatchSourceFinder(Configurable):
         :param animation:
         :return:
         """
+
+        #self.galactic_catalog = kwargs.pop("galactic_catalog")
+        #self.stellar_catalog = kwargs.pop("stellar_catalog")
+
 
         # -- Create children --
 

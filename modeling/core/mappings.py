@@ -20,7 +20,7 @@ from astropy.units import Unit
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ..core.sed import IntrinsicSED
+from ...core.data.sed import IntrinsicSED
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 

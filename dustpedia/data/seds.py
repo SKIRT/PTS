@@ -66,7 +66,7 @@ class SEDFetcher(Configurable):
         self.get_sed()
 
         # 3. Write
-        self.write()
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -110,6 +110,18 @@ class SEDFetcher(Configurable):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the SED
+        self.write_sed()
+
+    # -----------------------------------------------------------------
+
+    def write_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Determine the path
         path = fs.join(self.config.path, self.config.galaxy_name + ".dat")

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.attenuation Contains the AttenuationCurve class.
+## \package pts.core.data.attenuation Contains the AttenuationCurve class.
 
 # -----------------------------------------------------------------
 
@@ -26,7 +26,7 @@ from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-attenuation_data_path = fs.join(introspection.pts_dat_dir("modeling"), "attenuation")
+attenuation_data_path = fs.join(introspection.pts_dat_dir("core"), "attenuation")
 
 # -----------------------------------------------------------------
 

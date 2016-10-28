@@ -24,7 +24,7 @@ from astropy.units import Unit, dimensionless_angles
 from ...core.basics.configurable import Configurable
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ..core.sed import ObservedSED
+from ...core.data.sed import ObservedSED
 from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
 from ...magic.core.frame import Frame

@@ -29,7 +29,7 @@ from ..misc.images import ObservedImageMaker
 from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..plot.sed import SEDPlotter
-from ...modeling.core.sed import SED, ObservedSED
+from ..data.sed import SED, ObservedSED
 
 # -----------------------------------------------------------------
 

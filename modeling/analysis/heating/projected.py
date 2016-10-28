@@ -21,7 +21,7 @@ from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ....core.tools import tables
-from ...core.sed import SED
+from ....core.data.sed import SED
 from ....core.simulation.wavelengthgrid import WavelengthGrid
 from ....magic.core.datacube import DataCube
 from ....magic.plot.imagegrid import StandardImageGridPlotter

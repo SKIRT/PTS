@@ -25,7 +25,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.basics.filter import Filter
-from ...modeling.core.sed import ObservedSED
+from ...core.data.sed import ObservedSED
 from .sample import DustPediaSample
 
 # -----------------------------------------------------------------
