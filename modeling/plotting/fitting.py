@@ -947,7 +947,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         for generation_name in self.seds:
 
             # Create the SEDPlotter object
-            plotter = SEDPlotter(self.galaxy_name)
+            plotter = SEDPlotter()
 
             # Add all model SEDs (these have to be plotted in gray)
             counter = 0
@@ -967,7 +967,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
             path = fs.join(self.plot_fitting_path, "model_seds_" + generation_name + ".pdf")
 
             # Run the plotter
-            plotter.run(path)
+            plotter.run(title=self.galaxy_name, output=path)
 
     # -----------------------------------------------------------------
 

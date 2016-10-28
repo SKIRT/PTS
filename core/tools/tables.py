@@ -461,7 +461,10 @@ def columns_as_objects(columns, cls, add_unit=True, unit=None):
         for j in range(ncols): arguments.append(column_lists[j][i])
 
         if all(argument is None for argument in arguments): obj = None
-        else: obj = cls(*arguments)
+        else:
+
+            try: obj = cls(*arguments)
+            except Exception: obj = None
 
         result.append(obj)
 

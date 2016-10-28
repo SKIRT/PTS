@@ -12,3 +12,4 @@ estimate_memory | -- | launch.estimate.MemoryEstimator | interactive | Estimate 
 test_memory | -- | test.memory.MemoryTester | arguments | Test the memory estimation for a certain ski file with the actual memory consumption
 parallelization | -- | launch.parallelization.ParallelizationTool | interactive | Determine the optimal parallelization strategy for a certain ski file
 test_performance | -- | test.performance.PerformanceTest | interactive | Run the SKIRT performance test suite
+plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs

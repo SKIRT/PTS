@@ -170,7 +170,7 @@ class DataPlotter(PlottingComponent, DataComponent):
         path = fs.join(self.plot_data_path, "sed.pdf")
 
         # Run the plotter
-        plotter.run(path)
+        plotter.run(output=path)
 
     # -----------------------------------------------------------------
 

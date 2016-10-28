@@ -146,6 +146,6 @@ class PhotometryPlotter(PlottingComponent, PhotometryComponent):
         path = fs.join(self.plot_photometry_path, "seds.pdf")
 
         # Run the plotter
-        plotter.run(path)
+        plotter.run(output=path)
 
 # -----------------------------------------------------------------

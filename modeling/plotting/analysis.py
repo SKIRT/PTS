@@ -435,7 +435,7 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
         log.info("Plotting SEDs of various contributions ...")
 
         # Create the SEDPlotter object
-        plotter = SEDPlotter(self.galaxy_name)
+        plotter = SEDPlotter()
 
         # Loop over the simulated SEDs of the various stellar contributions
         for label in self.seds:
@@ -450,6 +450,6 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
         path = fs.join(self.plot_analysis_path, "sed_contributions.pdf")
 
         # Run the plotter
-        plotter.run(path)
+        plotter.run(title=self.galaxy_name, output=path)
 
 # -----------------------------------------------------------------

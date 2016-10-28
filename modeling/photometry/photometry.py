@@ -500,7 +500,7 @@ class PhotoMeter(PhotometryComponent):
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed.pdf")
-        plotter.run(path)
+        plotter.run(output=path)
 
     # -----------------------------------------------------------------
 
@@ -525,7 +525,7 @@ class PhotoMeter(PhotometryComponent):
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_references.pdf")
-        plotter.run(path)
+        plotter.run(ouput=path)
 
     # -----------------------------------------------------------------
 

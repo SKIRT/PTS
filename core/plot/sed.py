@@ -23,6 +23,9 @@ from textwrap import wrap
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
+from ..basics.configurable import Configurable
+from ..tools import filesystem as fs
+from ..data.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -50,21 +53,24 @@ pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow
 
 # -----------------------------------------------------------------
 
-class SEDPlotter(object):
+class SEDPlotter(Configurable):
     
     """
     This class ...
     """
 
-    def __init__(self, title=None):
+    def __init__(self, config=None):
 
         """
         This function ...
         :return:
         """
 
-        # Set the title
-        self.title = title
+        # Call the constructor of the base class
+        super(SEDPlotter, self).__init__(config)
+
+        # The plot title
+        self.title = None
 
         # Create ordered dictionaries for the model and observed SEDs (the order of adding SEDs is remembered)
         #self.models = OrderedDict()
@@ -84,6 +90,9 @@ class SEDPlotter(object):
         self.min_flux = None
         self.max_flux = None
 
+        # The output path
+        self.out_path = None
+
         # Store the figure and its axes as references
         self._figure = None
         self._main_axis = None
@@ -95,15 +104,15 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def set_title(self, title):
+    @property
+    def added_seds(self):
 
         """
         This function ...
-        :param title:
         :return:
         """
 
-        self.title = title
+        return len(self.models) + len(self.observations)
 
     # -----------------------------------------------------------------
 
@@ -115,6 +124,7 @@ class SEDPlotter(object):
         :param label:
         :param residuals: whether plotting the residual curve makes sense for this SED
         (it does not when the SED is only for one component, or a contribution to the total SED)
+        :param ghost:
         :return:
         """
 
@@ -140,26 +150,73 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path=None, min_wavelength=None, max_wavelength=None, min_flux=None, max_flux=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param output_path:
-        :param min_wavelength:
-        :param max_wavelength:
-        :param min_flux:
-        :param max_flux:
+        :param kwargs:
         :return:
         """
 
-        # Set the axis limits
-        self.min_wavelength = min_wavelength
-        self.max_wavelength = max_wavelength
-        self.min_flux = min_flux
-        self.max_flux = max_flux
+        # 1. Call the setup function
+        self.setup(**kwargs)
 
-        # Make the plot
-        self.plot(output_path)
+        # 2. Make the plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(SEDPlotter, self).setup(**kwargs)
+
+        # Set the title
+        self.title = kwargs.pop("title", None)
+
+        # Set the axis limits
+        self.min_wavelength = kwargs.pop("min_wavelength", None)
+        self.max_wavelength = kwargs.pop("max_wavelength", None)
+        self.min_flux = kwargs.pop("min_flux", None)
+        self.max_flux = kwargs.pop("max_flux", None)
+
+        # Set the output path
+        self.out_path = kwargs.pop("output", self.config.path)
+
+        # Add SED files present in the current working directory (if nothing is added manually)
+        if self.added_seds == 0: self.load_seds()
+
+    # -----------------------------------------------------------------
+
+    def load_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading SED files in the current working directory ...")
+
+        # Create simulation definitions from the working directory and add them to the queue
+        for path, name in fs.files_in_path(self.config.path, extension="dat", returns=["path", "name"]):
+
+            # Skip emission lines
+            if "Lines" in name: continue
+
+            # Load the SED
+            sed = ObservedSED.from_file(path)
+
+            label = name
+
+            # Add the definition to the queue
+            self.add_observed_sed(sed, label)
 
     # -----------------------------------------------------------------
 
@@ -192,7 +249,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    def plot(self):
 
         """
         This function ...
@@ -203,12 +260,12 @@ class SEDPlotter(object):
         # Inform the user
         log.info("Making the SED plot ...")
 
-        if len(self.models) == 0: self.plot_no_models(path)
-        else: self.plot_with_models(path)
+        if len(self.models) == 0: self.plot_no_models()
+        else: self.plot_with_models()
 
     # -----------------------------------------------------------------
 
-    def plot_no_models(self, path):
+    def plot_no_models(self):
 
         """
         This function ...
@@ -216,12 +273,12 @@ class SEDPlotter(object):
         :return:
         """
 
-        if len(self.observations) == 1: self.plot_one_observation(path)
-        else: self.plot_more_observations(path)
+        if len(self.observations) == 1: self.plot_one_observation()
+        else: self.plot_more_observations()
 
     # -----------------------------------------------------------------
 
-    def plot_one_observation(self, path):
+    def plot_one_observation(self):
 
         """
         This function ...
@@ -256,11 +313,11 @@ class SEDPlotter(object):
         self.draw_observation(instruments, bands, wavelengths, fluxes, errors, colors)
 
         # Finish the plot
-        self.finish_plot(path)
+        self.finish_plot()
 
     # -----------------------------------------------------------------
 
-    def plot_more_observations(self, path):
+    def plot_more_observations(self):
 
         """
         This function ...
@@ -403,24 +460,24 @@ class SEDPlotter(object):
         observations_legend = self._main_axis.legend(legend_rectangles, rectangle_labels, loc='upper left', shadow=False, fontsize=11, ncol=3)
 
         # Finish the plot
-        self.finish_plot(path, for_legend_patches=legend_patches, for_legend_parameters=legend_labels, extra_legend=observations_legend)
+        self.finish_plot(for_legend_patches=legend_patches, for_legend_parameters=legend_labels, extra_legend=observations_legend)
 
     # -----------------------------------------------------------------
 
-    def plot_with_models(self, path):
+    def plot_with_models(self):
 
         """
         This function ...
         :return:
         """
 
-        if len(self.observations) == 0: self.plot_only_models(path)
-        elif len(self.observations) == 1: self.plot_one_observation_with_models(path)
-        else: self.plot_more_observations_with_models(path)
+        if len(self.observations) == 0: self.plot_only_models()
+        elif len(self.observations) == 1: self.plot_one_observation_with_models()
+        else: self.plot_more_observations_with_models()
 
     # -----------------------------------------------------------------
 
-    def plot_only_models(self, path):
+    def plot_only_models(self):
 
         """
         This function ...
@@ -479,11 +536,11 @@ class SEDPlotter(object):
                 counter_no_residals += 1
 
         # Finish the plot
-        self.finish_plot(path)
+        self.finish_plot()
 
     # -----------------------------------------------------------------
 
-    def plot_one_observation_with_models(self, path):
+    def plot_one_observation_with_models(self):
 
         """
         This function ...
@@ -648,11 +705,11 @@ class SEDPlotter(object):
                 counter_no_residuals += 1
 
         # Finish the plot
-        self.finish_plot(path)
+        self.finish_plot()
 
     # -----------------------------------------------------------------
 
-    def plot_more_observations_with_models(self, path):
+    def plot_more_observations_with_models(self):
 
         """
         This function ...
@@ -788,7 +845,7 @@ class SEDPlotter(object):
                 counter_no_residuals += 1
 
         # Finish the plot
-        self.finish_plot(path)
+        self.finish_plot()
 
     # -----------------------------------------------------------------
 
@@ -821,26 +878,39 @@ class SEDPlotter(object):
         # Check if a data point of this instrument has already been plotted
         if label not in used_labels:
 
-            lower_flux = flux + error.lower
-            upper_flux = flux + error.upper
+            if error is not None:
 
-            if lower_flux <= 0:
-                flux_lower_flux = float("-inf")
-            else: flux_lower_flux = flux/lower_flux
+                lower_flux = flux + error.lower
+                upper_flux = flux + error.upper
 
-            flux_upper_flux = flux/upper_flux
+                if lower_flux <= 0:
+                    flux_lower_flux = float("-inf")
+                else: flux_lower_flux = flux/lower_flux
 
-            error_bar = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
-            used_labels.append(label)
+                flux_upper_flux = flux/upper_flux
 
-            axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                error_bar = np.array([[np.fabs(np.log10(flux_lower_flux)), np.fabs(np.log10(flux_upper_flux))]]).T
+                used_labels.append(label)
+
+                axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+
+            #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+            else:
+                axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
+
             patch = axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
 
         # A data point of this instrument has already been plotted
         else:
 
-            error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
-            axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+            if error is not None:
+
+                error_bar = np.array([[np.fabs(np.log10(flux)-np.log10(flux + error.lower)), np.fabs(np.log10(flux) - np.log10(flux + error.upper))]]).T
+                axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+
+            #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+            else:
+                axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
 
         # Return the patch if requested
         if return_patch: return patch
@@ -955,7 +1025,7 @@ class SEDPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def finish_plot(self, path, for_legend_patches=None, for_legend_parameters=None, extra_legend=None):
+    def finish_plot(self, for_legend_patches=None, for_legend_parameters=None, extra_legend=None):
 
         """
         This function ...
@@ -1019,11 +1089,13 @@ class SEDPlotter(object):
         if self.title is not None: self._figure.suptitle("\n".join(wrap(self.title, 60)))
 
         # Debugging
-        if type(path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
-        elif path is None: log.debug("Showing the SED plot ...")
-        else: log.debug("Saving the SED plot to " + str(path) + " ...")
+        if type(self.out_path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
+        elif self.out_path is None: log.debug("Showing the SED plot ...")
+        else: log.debug("Saving the SED plot to " + str(self.out_path) + " ...")
 
-        if path is not None:
+        if self.out_path is not None:
+            if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds")
+            else: path = self.out_path
             # Save the figure
             plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
         else: plt.show()

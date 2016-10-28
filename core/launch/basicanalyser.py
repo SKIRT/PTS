@@ -283,7 +283,7 @@ class BasicAnalyser(Configurable):
             log.info("Plotting the SED with reference fluxes ...")
 
             # Create a new SEDPlotter instance
-            plotter = SEDPlotter(self.simulation.name)
+            plotter = SEDPlotter()
 
             # Get the simulation prefix
             prefix = self.simulation.prefix()
@@ -306,7 +306,7 @@ class BasicAnalyser(Configurable):
 
             # Determine the path to the plot file
             path = fs.join(self.plotting_options.path, "sed." + self.plotting_options.format)
-            plotter.run(path)
+            plotter.run(title=self.simulation.name, output=path)
 
             # Get the axis limits
             min_wavelength = plotter.min_wavelength
