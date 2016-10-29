@@ -71,6 +71,7 @@ class SkyComposite(object):
 
     @property
     def x(self):
+
         """
         This function ...
         :return:
@@ -82,6 +83,7 @@ class SkyComposite(object):
 
     @property
     def y(self):
+
         """
         This function ...
         :return:
@@ -1011,6 +1013,54 @@ class SkyRectangle(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ra_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center.ra - self.radius.ra
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ra_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center.ra + self.radius.ra
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dec_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center.dec - self.radius.dec
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dec_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.center.dec + self.radius.dec
+
+    # -----------------------------------------------------------------
+
     def __mul__(self, value):
 
         """
@@ -1116,6 +1166,20 @@ class SkyRectangle(object):
         else: line = "box(%s,%s,%.2f\",%.2f\",%s)" % (center_ra, center_dec, width, height, angle)
         line += suffix
         return line
+
+    # -----------------------------------------------------------------
+
+    def contains(self, coordinate):
+
+        """
+        This function ...
+        :param coordinate:
+        :return:
+        """
+
+        if coordinate.ra > self.ra_max or coordinate.ra < self.ra_min: return False
+        if coordinate.dec > self.dec_max or coordinate.dec < self.dec_min: return False
+        return True
 
 # -----------------------------------------------------------------
 

@@ -30,7 +30,7 @@ from ...core.tools import tables
 from ...core.tools.logging import log
 from ..basics.skygeometry import SkyCoordinate
 from . import regions
-from ..basics.vector import Position
+from ..basics.vector import Position, Extent
 
 # -----------------------------------------------------------------
 
@@ -256,10 +256,13 @@ def from_galaxies(galaxies):
 
 # -----------------------------------------------------------------
 
-def create_star_catalog(frame, catalogs=None):
+def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
 
     """
     This function ...
+    :param coordinate_box:
+    :param pixelscale:
+    :param catalogs:
     :return:
     """
 
@@ -276,7 +279,11 @@ def create_star_catalog(frame, catalogs=None):
     confidence_level_column = []
 
     # Get the range of right ascension and declination of this image
-    center, ra_span, dec_span = frame.coordinate_range
+    #center, ra_span, dec_span = frame.coordinate_range
+
+    center = coordinate_box.center
+    ra_span = 2.0 * coordinate_box.radius.ra
+    dec_span = 2.0 * coordinate_box.radius.dec
 
     # Create a new Vizier object and set the row limit to -1 (unlimited)
     viz = Vizier(keywords=["stars", "optical"])
@@ -334,7 +341,7 @@ def create_star_catalog(frame, catalogs=None):
 
             # Get the position of the star as a SkyCoord object and as pixel coordinate
             position = SkyCoordinate(ra=table["_RAJ2000"][i], dec=table["_DEJ2000"][i], unit="deg", frame="fk5")
-            pixel_position = position.to_pixel(frame.wcs)
+            #pixel_position = position.to_pixel(frame.wcs)
 
             # Get the right ascension and declination for the current star
             star_ra = table["_RAJ2000"][i]
@@ -343,7 +350,8 @@ def create_star_catalog(frame, catalogs=None):
             number_of_stars += 1
 
             # If this star does not lie within the frame, skip it
-            if not frame.contains(position): continue
+            #if not frame.contains(position): continue
+            if not coordinate_box.contains(position): continue
 
             number_of_stars_in_frame += 1
 
@@ -403,10 +411,14 @@ def create_star_catalog(frame, catalogs=None):
                 if encountered[index]: continue
 
                 saved_star_position = SkyCoordinate(ra=ra_column[index], dec=dec_column[index], unit="deg", frame="fk5")
-                saved_star_pixel_position = saved_star_position.to_pixel(frame.wcs)
+                #saved_star_pixel_position = saved_star_position.to_pixel(frame.wcs)
 
                 # Calculate the distance between the star already in the list and the new star
-                difference = saved_star_pixel_position - pixel_position
+                #difference = saved_star_pixel_position - pixel_position
+
+                difference_ra = saved_star_position.ra - position.ra
+                difference_dec = saved_star_position.dec - position.dec
+                difference = Extent((difference_ra * pixelscale.average).to("pix").value, (difference_dec * pixelscale.average).to("pix").value)
 
                 # Check whether the distance is less then 3 pixels
                 if difference.norm < 3.0:
@@ -488,11 +500,11 @@ def create_star_catalog(frame, catalogs=None):
 
 # -----------------------------------------------------------------
 
-def create_galaxy_catalog(frame):
+def create_galaxy_catalog(coordinate_box):
 
     """
     This function ...
-    :param frame:
+    :param coordinate_box:
     :return:
     """
 
@@ -511,7 +523,11 @@ def create_galaxy_catalog(frame):
     pa_column = []
 
     # Get the range of right ascension and declination of the image
-    center, ra_span, dec_span = frame.coordinate_range
+    #center, ra_span, dec_span = frame.coordinate_range
+
+    center = coordinate_box.center
+    ra_span = 2.0 * coordinate_box.radius.ra
+    dec_span = 2.0 * coordinate_box.radius.dec
 
     # Find galaxies in the box defined by the center and RA/DEC ranges
     for name, position in galaxies_in_box(center, ra_span, dec_span):
@@ -520,11 +536,13 @@ def create_galaxy_catalog(frame):
         gal_name, position, gal_redshift, gal_type, gal_names, gal_distance, gal_inclination, gal_d25, gal_major, gal_minor, gal_pa = get_galaxy_info(name, position)
 
         # Calculate pixel position in the frame
-        pixel_position = position.to_pixel(frame.wcs)
+        #pixel_position = position.to_pixel(frame.wcs)
 
         # Check whether the pixel position falls within the frame
-        if pixel_position.x < 0.0 or pixel_position.x >= frame.xsize: continue
-        if pixel_position.y < 0.0 or pixel_position.y >= frame.ysize: continue
+        #if pixel_position.x < 0.0 or pixel_position.x >= frame.xsize: continue
+        #if pixel_position.y < 0.0 or pixel_position.y >= frame.ysize: continue
+
+        if not coordinate_box.contains(position): continue
 
         # Fill the columns
         name_column.append(gal_name)

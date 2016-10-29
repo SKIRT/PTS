@@ -203,8 +203,12 @@ class BatchSourceFinder(Configurable):
             catalog_importer.config.stars.use_catalog_file = True
             catalog_importer.config.stars.catalog_path = self.config.stellar_catalog_file
 
+        # Get the coordinate box and minimum pixelscale
+        coordinate_box = self.dataset.get_bounding_box()
+        min_pixelscale = self.dataset.min_pixelscale
+
         # Run the catalog importer
-        catalog_importer.run(coordinate_box=self.dataset.get_bounding_box())  # work with coordinate box instead ? image.coordinate_box ?
+        catalog_importer.run(coordinate_box=coordinate_box, pixelscale=min_pixelscale)  # work with coordinate box instead ? image.coordinate_box ?
 
         # Set the catalogs
         self.galactic_catalog = catalog_importer.galactic_catalog

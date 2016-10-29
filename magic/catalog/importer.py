@@ -45,6 +45,9 @@ class CatalogImporter(Configurable):
         # The catalog box
         self.coordinate_box = None
 
+        # The pixelscale
+        self.pixelscale = None
+
         # The name of the galaxy
         self._has_dustpedia_catalog = None
         self.galaxy_name = None
@@ -86,6 +89,7 @@ class CatalogImporter(Configurable):
 
         # Set attributes to None
         self.coordinate_box = None
+        self.pixelscale = None
         self.galaxy_name = None
         self.galactic_catalog = None
         self.stellar_catalog = None
@@ -105,6 +109,9 @@ class CatalogImporter(Configurable):
 
         # Set the coordinate box
         self.coordinate_box = kwargs.pop("coordinate_box")
+
+        # Set the pixelscale
+        self.pixelscale = kwargs.pop("pixelscale")
 
     # -----------------------------------------------------------------
 
@@ -160,7 +167,7 @@ class CatalogImporter(Configurable):
         for galaxy_path in fs.directories_in_path(self.catalogs_user_path):
 
             # Get the galaxy name
-            galaxy_name = os.path.basename(galaxy_path)
+            galaxy_name = fs.name(galaxy_path)
 
             # Get the catalog coverage for this galaxy
             coverage = CatalogCoverage(galaxy_name)
@@ -192,7 +199,7 @@ class CatalogImporter(Configurable):
         """
 
         # Determine the full path to the catalog file
-        path = self.full_input_path(self.config.galaxies.catalog_path)
+        path = fs.absolute(self.config.galaxies.catalog_path)
 
         # Inform the user
         log.info("Importing galactic catalog from file " + path + " ...")
@@ -210,7 +217,7 @@ class CatalogImporter(Configurable):
         """
 
         # Determine the full path to the catalog file
-        path = self.full_input_path(self.config.stars.catalog_path)
+        path = fs.absolute(self.config.stars.catalog_path)
 
         # Inform the user
         log.info("Importing stellar catalog from file " + path + " ...")
@@ -231,8 +238,8 @@ class CatalogImporter(Configurable):
         log.info("Importing galactic DustPedia catalog for " + self.galaxy_name)
 
         # Determine the path to the DustPedia galactic catalog for this galaxy
-        galaxy_path = os.path.join(self.catalogs_user_path, self.galaxy_name)
-        galactic_catalog_path = os.path.join(galaxy_path, "galaxies.cat")
+        galaxy_path = fs.join(self.catalogs_user_path, self.galaxy_name)
+        galactic_catalog_path = fs.join(galaxy_path, "galaxies.cat")
 
         # Load the galactic catalog
         self.galactic_catalog = tables.from_file(galactic_catalog_path)
@@ -250,8 +257,8 @@ class CatalogImporter(Configurable):
         log.info("Importing stellar DustPedia catalog for " + self.galaxy_name)
 
         # Determine the path to the DustPedia stellar catalog for this galaxy
-        galaxy_path = os.path.join(self.catalogs_user_path, self.galaxy_name)
-        stellar_catalog_path = os.path.join(galaxy_path, "stars.cat")
+        galaxy_path = fs.join(self.catalogs_user_path, self.galaxy_name)
+        stellar_catalog_path = fs.join(galaxy_path, "stars.cat")
 
         # Load the stellar catalog
         self.stellar_catalog = tables.from_file(stellar_catalog_path)
@@ -292,7 +299,7 @@ class CatalogImporter(Configurable):
         else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
 
         # Create the star catalog
-        self.stellar_catalog = catalogs.create_star_catalog(self.coordinate_box, catalog_list)
+        self.stellar_catalog = catalogs.create_star_catalog(self.coordinate_box, self.pixelscale, catalog_list)
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.stellar_catalog)))

@@ -59,7 +59,7 @@ class GalacticCatalog(object):
         if not fs.is_file(self.path):
 
             # Get the table
-            self.table = catalogs.create_galaxy_catalog(frame_or_wcs)
+            self.table = catalogs.create_galaxy_catalog(frame_or_wcs.bounding_box)
 
             # Save the table
             tables.write(self.table, self.path, format="ascii.ecsv")
@@ -118,7 +118,7 @@ class StellarCatalog(object):
         if not fs.is_file(self.path):
 
             # Get the table
-            self.table = catalogs.create_star_catalog(frame_or_wcs, catalog_names)
+            self.table = catalogs.create_star_catalog(frame_or_wcs.bounding_box, frame_or_wcs.pixelscale, catalog_names)
 
             # Save the table
             tables.write(self.table, self.path, format="ascii.ecsv")
