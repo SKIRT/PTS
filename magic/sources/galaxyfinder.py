@@ -26,14 +26,14 @@ from ..basics.skygeometry import SkyCoordinate
 from ..core.frame import Frame
 from ..object.galaxy import Galaxy
 from ..basics.skygeometry import SkyEllipse
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class GalaxyFinder(OldConfigurable):
+class GalaxyFinder(Configurable):
 
     """
     This class ...
@@ -46,7 +46,7 @@ class GalaxyFinder(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(GalaxyFinder, self).__init__(config, "magic")
+        super(GalaxyFinder, self).__init__(config)
 
         # -- Attributes --
 
@@ -107,15 +107,11 @@ class GalaxyFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, catalog, special_mask=None, ignore_mask=None, bad_mask=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param catalog
-        :param special_mask:
-        :param ignore_mask:
-        :param bad_mask:
+        :param kwargs:
         """
 
         # Call the setup function of the base class
@@ -124,15 +120,14 @@ class GalaxyFinder(OldConfigurable):
         # Inform the user
         log.info("Setting up the galaxy extractor ...")
 
-        # Make a local reference to the image frame
-        self.frame = frame
-
-        self.catalog = catalog
+        # Make a local reference to the image frame and catalog
+        self.frame = kwargs.pop("frame")
+        self.catalog = kwargs.pop("catalog")
 
         # Masks
-        self.special_mask = special_mask
-        self.ignore_mask = ignore_mask
-        self.bad_mask = bad_mask
+        self.special_mask = kwargs.pop("special_mask", None)
+        self.ignore_mask = kwargs.pop("ignore_mask", None)
+        self.bad_mask = kwargs.pop("bad_mask", None)
 
         # Create an empty frame for the segments
         self.segments = Frame.zeros_like(self.frame)
@@ -607,7 +602,9 @@ class GalaxyFinder(OldConfigurable):
         """
 
         # Determine the full path to the cutouts directory
-        directory_path = self.full_output_path(self.config.writing.cutouts_path)
+        #directory_path = self.full_output_path(self.config.writing.cutouts_path)
+
+        directory_path = fs.join(self.config.output_path, self.config.writing.cutouts_path)
 
         # Inform the user
         log.info("Writing cutout boxes to " + directory_path + " ...")

@@ -26,4 +26,8 @@ definition.add_flag("find_other_sources", "find other contaminating sources")
 definition.add_optional("galactic_catalog_file", "file_path", "galactic catalog file")
 definition.add_optional("stellar_catalog_file", "file_path", "stellar catalog file")
 
+# Regions
+definition.add_optional("special_region", "file_path", "region indicating areas that require special attention")
+definition.add_optional("ignore_region", "file_path", "region indicating areas that should be ignored")
+
 # -----------------------------------------------------------------

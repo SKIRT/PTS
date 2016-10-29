@@ -111,42 +111,16 @@ class BatchSourceFinder(Configurable):
         # Load the dataset
         self.dataset = DataSet.from_file(self.config.dataset)
 
-        # If a special region is defined
-        if arguments.special is not None:
-
-            # Determine the full path to the special region file
-            path = fs.join(input_path, arguments.special)
-
-            # Inform the user
-            log.info("Loading region indicating areas that require special attention from " + path + " ...")
-
-            # Load the region and create a mask from it
-            special_region = SkyRegion.from_file(path)
-
-        # No special region
-        else: special_region = None
-
-        # If an ignore region is defined
-        if arguments.ignore is not None:
-
-            # Determine the full path to the ignore region file
-            path = fs.join(input_path, arguments.ignore)
-
-            # Inform the user
-            log.info("Loading region indicating areas that should be ignored from " + path + " ...")
-
-            # Load the region and create a mask from it
-            ignore_region = SkyRegion.from_file(path)
-
-        # No ignore region
-        else: ignore_region = None
-
         # Load special region
         self.special_region = SkyRegion.from_file(self.config.special_region) if self.config.special_region is not None else None
 
         # Load ignore region
         self.ignore_region = SkyRegion.from_file(self.config.ignore_region) if self.config.ignore_region is not None else None
 
+        # Create the finders
+        self.galaxy_finder = GalaxyFinder(self.config.galaxies)
+        self.star_finder = StarFinder(self.config.stars)
+        self.trained_finder = TrainedFinder(self.config.other_sources)
 
         #self.galactic_catalog = kwargs.pop("galactic_catalog")
         #self.stellar_catalog = kwargs.pop("stellar_catalog")
@@ -176,8 +150,9 @@ class BatchSourceFinder(Configurable):
         #self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
         #self.ignore_mask = Mask.from_region(ignore_region, self.frame.xsize, self.frame.ysize) if ignore_region is not None else None
 
+
         # Set a reference to the mask of bad pixels
-        self.bad_mask = bad_mask
+        #self.bad_mask = bad_mask
 
     # -----------------------------------------------------------------
 
@@ -237,8 +212,8 @@ class BatchSourceFinder(Configurable):
             # Set the name of the principal galaxy
             #self.galaxy_name = self.galaxy_finder.principal.name
 
-        # Inform the user
-        log.success("Finished finding the galaxies")
+            # Inform the user
+            log.success("Finished finding the galaxies for '" + name + "' ...")
 
     # -----------------------------------------------------------------
     
@@ -258,7 +233,7 @@ class BatchSourceFinder(Configurable):
             frame = self.dataset.get_frame(name)
 
             # Run the star finder if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
-            if self.frame.wavelength is None or self.frame.wavelength < wavelengths.ranges.ir.mir.max:
+            if frame.wavelength is None or frame.wavelength < wavelengths.ranges.ir.mir.max:
 
                 # Inform the user
                 log.info("Finding the stars ...")
@@ -270,7 +245,7 @@ class BatchSourceFinder(Configurable):
                 self.star_finder.run(frame, self.galaxy_finder, self.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
 
                 # Inform the user
-                log.success("Finished finding the stars")
+                log.success("Finished finding the stars for '" + name + "' ...")
 
             # No star subtraction for this image
             else: log.info("Finding stars will not be performed on this frame")
@@ -294,14 +269,14 @@ class BatchSourceFinder(Configurable):
             frame = self.dataset.get_frame(name)
 
             # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
-            if self.frame.wavelength is not None and self.frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
+            if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
             else: self.trained_finder.config.classify = True
 
             # Run the trained finder just to find sources
-            self.trained_finder.run(self.frame, self.galaxy_finder, self.star_finder, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+            self.trained_finder.run(frame, self.galaxy_finder, self.star_finder, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
 
-        # Inform the user
-        log.success("Finished finding other sources")
+            # Inform the user
+            log.success("Finished finding other sources for '" + name + "' ...")
 
     # -----------------------------------------------------------------
 
@@ -369,11 +344,18 @@ class BatchSourceFinder(Configurable):
         :return:
         """
 
+        # 1. Write
+        self.write_galactic_catalogs()
 
+        # 2. Write
+        self.write_stellar_catalogs()
+
+        # 3. Write ...
+        self.write_statistics()
 
     # -----------------------------------------------------------------
 
-    def write_galactic_catalog(self):
+    def write_galactic_catalogs(self):
 
         """
         This function ...
@@ -394,7 +376,7 @@ class BatchSourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write_stellar_catalog(self):
+    def write_stellar_catalogs(self):
 
         """
         This function ...
