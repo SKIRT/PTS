@@ -214,23 +214,48 @@ class SkiFile:
         # Get the number of packages
         return int(float(elems[0].get("packages")))
 
+    ## This function looks for elements with a given name
+    def find_elements(self, name):
+        return self.tree.xpath("//"+name+"/*")
+
+    ## This function looks for a single element with a given name
+    def find_element(self, name):
+        elements = self.find_elements(name)
+        if len(elements) > 1: raise ValueError("Ambigious result")
+        elif len(elements) == 0: return None
+        else: return elements[0]
+
+    ## This function checks whether an element with the specified name is present in the hierarchy
+    def has_element(self, name):
+        return self.find_element(name) is not None
+
+    ## This property returns the dimension of the dust grid
+    @property
+    def griddimension(self):
+        if self.has_element("meshX") and self.has_element("meshY") and self.has_element("meshZ"): return 3
+        elif self.has_element("meshR") and self.has_element("meshZ"): return 2
+        elif self.has_element("meshR"): return 1
+        else: raise ValueError("The grid dimension could not be determined")
+
     ## This function returns the number of dust cells
     def ncells(self):
 
-        xpoints = self.nxcells()
-        ypoints = 1
-        zpoints = 1
+        if self.griddimension == 1: return self.nrcells()
+        elif self.griddimension == 2:
 
-        try:
-            ypoints = self.nycells()
-        except ValueError: pass
-
-        try:
+            rpoints = self.nrcells()
             zpoints = self.nzcells()
-        except ValueError: pass
 
-        # Return the total number of dust cells
-        return xpoints*ypoints*zpoints
+            return rpoints * zpoints
+
+        else:
+
+            xpoints = self.nxcells()
+            ypoints = self.nycells()
+            zpoints = self.nzcells()
+
+            # Return the total number of dust cells
+            return xpoints * ypoints * zpoints
 
     ## This function returns the number of dust cells in the x direction
     def nxcells(self):
@@ -255,6 +280,10 @@ class SkiFile:
         except (TypeError, IndexError):
             raise ValueError("The dimension of the dust grid is lower than 3")
         return zpoints
+
+    ## This function returns the number of dust cells in the radial direction
+    def nrcells(self):
+        return int(self.tree.xpath("//meshR/*")[0].get("numBins"))
 
     ## This function returns the grid type
     def gridtype(self):
@@ -292,23 +321,6 @@ class SkiFile:
     def tree_max_dens_disp(self):
         return float(self.get_dust_grid().attrib["maxDensDispFraction"])
 
-    ## This function returns the dimension of the dust grid
-    def dimension(self):
-        # Try to find the number of points in the y direction
-        try:
-            int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsY"))
-        except TypeError:
-            return 1
-
-        # Try to find the number of points in the z direction
-        try:
-            int(self.tree.xpath("//dustGridStructure/*[1]")[0].get("pointsZ"))
-        except TypeError:
-            return 2
-
-        # If finding the number of ypoints and zpoints succeeded, the grid is 3-dimensional
-        return 3
-
     ## This function returns the number of dust components
     def ncomponents(self):
         components = self.tree.xpath("//CompDustDistribution/components/*")
@@ -320,7 +332,9 @@ class SkiFile:
         if dustlib.tag == "AllCellsDustLib":
             return self.ncells()
         elif dustlib.tag == "Dim2DustLib":
-            return dustlib.attrib["pointsTemperature"] * dustlib.attrib["pointsWavelength"]
+            temppoints = dustlib.attrib["pointsTemperature"] if "pointsTemperature" in dustlib.attrib else 25
+            wavelengthpoints = dustlib.attrib["pointsWavelength"] if "pointsWavelength" in dustlib.attrib else 10
+            return temppoints * wavelengthpoints
         elif dustlib.tag == "Dim1DustLib":
             return dustlib.attrib["entries"]
 
@@ -563,7 +577,8 @@ class SkiFile:
             if type == "SimpleInstrument" or type == "FrameInstrument":
                 pixels.append([name, type, datacube])
             elif type == "FullInstrument":
-                scattlevels = int(instrument.attrib["scatteringLevels"])
+                try: scattlevels = int(instrument.attrib["scatteringLevels"])
+                except KeyError: scattlevels = 0
                 scattering = scattlevels + 1 if scattlevels > 0 else 0
                 dustemission = 1 if self.dustemission() else 0
                 npixels = datacube * (3 + scattering + dustemission)
@@ -796,7 +811,7 @@ class SkiFile:
     ## This function increases the number of dust cells by a certain factor
     def increasedustcells(self, factor):
         # Get the dimension of the dust grid
-        dimension = self.dimension()
+        dimension = self.griddimension
         # Set the increased number of dust cells in the x direction
         self.setxdustcells(int(round(self.nxcells() * factor**(1 / float(dimension)))))
         # Set the increased number of dust cells in the y direction
@@ -884,17 +899,14 @@ class SkiFile:
 
     ## This function returns the stellar system
     def get_stellar_system(self):
-
         return self.get_unique_base_element("stellarSystem")
 
     ## This function returns the dust system
     def get_dust_system(self):
-
         return self.get_unique_base_element("dustSystem")
 
     ## This function removes the complete dust system
     def remove_dust_system(self):
-
         dust_system = self.get_dust_system()
         parent = dust_system.getparent()
         parent.getparent().remove(parent)
@@ -1642,12 +1654,12 @@ class SkiFile:
             # Rotate the exponential disk geometry with the tilt angle
             alpha = Angle(0.0, "deg")
             beta = model.tilt
-            print("beta", beta)
+            #print("beta", beta)
             gamma = Angle(0.0, "deg")
             if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
                 alpha = Angle(180, "deg")
                 beta = - beta
-            print(alpha, beta, gamma)
+            #print(alpha, beta, gamma)
             self.rotate_dust_component(component_id, alpha, beta, gamma)
 
         # Deprojection model
@@ -2336,7 +2348,7 @@ class SkiFile:
         instrument = self.get_instrument(name)
 
         # Return the position angle
-        return get_quantity(instrument, "positionAngle")
+        return self.get_quantity(instrument, "positionAngle")
 
     ## This function sets the position angle of the specified instrument. The angle should be an Astropy Angle or quantity.
     def set_instrument_pa(self, name, value):
@@ -2429,11 +2441,6 @@ class SkiFile:
 
     ## This (experimental) function converts the ski file structure into json format
     def to_json(self):
-
-        """
-        This function returns the ski file to a json format
-        :return:
-        """
 
         import json
         return json.dumps(self.to_dict())

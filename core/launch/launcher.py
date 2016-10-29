@@ -29,45 +29,8 @@ from ..tools import filesystem as fs
 from ..tools.logging import log
 from .options import SchedulingOptions
 from ..advanced.parallelizationtool import ParallelizationTool
-
-# -----------------------------------------------------------------
-
-def set_parallelization(self):
-
-    """
-    This function ...
-    :return:
-    """
-
-    # Inform the user
-    log.info("Determining the parallelization scheme by estimating the memory requirements...")
-
-    # Create and run a ResourceEstimator instance
-    estimator = ResourceEstimator()
-    estimator.run(self.config.arguments.ski_pattern)
-
-    # Calculate the maximum number of processes based on the memory requirements
-    processes = int(monitoring.free_memory() / estimator.memory)
-
-    # If there is too little free memory for the simulation, the number of processes will be smaller than one
-    if processes < 1:
-
-        # Exit with an error
-        log.error("Not enough memory available to run this simulation")
-        exit()
-
-    # Calculate the maximum number of threads per process based on the current cpu load of the system
-    threads = int(monitoring.free_cpus() / processes)
-
-    # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
-    if threads < 1:
-
-        processes = int(monitoring.free_cpus())
-        threads = 1
-
-    # Set the parallelization options
-    self.config.arguments.parallel.processes = processes
-    self.config.arguments.parallel.threads = threads
+from ..advanced.memoryestimator import MemoryEstimator
+from ..simulation.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -114,13 +77,6 @@ class SKIRTLauncher(Configurable):
         # Initialize a list to contain the retrieved finished simulations
         self.simulations = []
 
-        # Set the paths to None initialy
-        self.base_path = None
-
-        self.extr_path = None
-        self.plot_path = None
-        self.misc_path = None
-
     # -----------------------------------------------------------------
 
     @property
@@ -132,7 +88,8 @@ class SKIRTLauncher(Configurable):
         """
 
         # Check whether the number of processes and the number of threads are both defined
-        return self.config.arguments.parallel.processes is not None and self.config.arguments.parallel.threads is not None
+        #return self.config.arguments.parallel.processes is not None and self.config.arguments.parallel.threads is not None
+        return False
 
     # -----------------------------------------------------------------
 
@@ -145,6 +102,9 @@ class SKIRTLauncher(Configurable):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # 2. Create the simulation definition
+        self.create_definition()
 
         # 2. Set the parallelization scheme
         if not self.has_parallelization: self.set_parallelization()
@@ -179,36 +139,20 @@ class SKIRTLauncher(Configurable):
         self.logging_options = LoggingOptions()
         self.logging_options.set_options(self.config.logging)
 
-        # Set the paths
-        #self.base_path = fs.directory_of(self.config.arguments.ski_pattern) if "/" in self.config.arguments.ski_pattern else fs.cwd()
-        #self.input_path = fs.join(self.base_path, "in")
-        #self.output_path = fs.join(self.base_path, "out")
-        #self.extr_path = fs.join(self.base_path, "extr")
-        #self.plot_path = fs.join(self.base_path, "plot")
-        #self.misc_path = fs.join(self.base_path, "misc")
+    # -----------------------------------------------------------------
 
-        # Check if an input directory exists
-        #if not fs.is_directory(self.input_path): self.input_path = None
+    def create_definition(self):
 
-        # Set the paths for the simulation
-        #self.config.arguments.input_path = self.input_path
-        #self.config.arguments.output_path = self.output_path
+        """
+        This function ...
+        :return:
+        """
 
-        # Create the output directory if necessary
-        if not fs.is_directory(self.config.output): fs.create_directory(self.config.output, recursive=True)
+        # Inform the user
+        log.info("Creating the simulation definition ...")
 
-        # Create the extraction directory if necessary
-        #if self.config.extraction.progress or self.config.extraction.timeline or self.config.extraction.memory:
-        #    if not fs.is_directory(self.extr_path): fs.create_directory(self.extr_path, recursive=True)
-
-        # Create the plotting directory if necessary
-        #if self.config.plotting.seds or self.config.plotting.grids or self.config.plotting.progress \
-        #    or self.config.plotting.timeline or self.config.plotting.memory:
-        #    if not fs.is_directory(self.plot_path): fs.create_directory(self.plot_path, recursive=True)
-
-        # Create the 'misc' directory if necessary
-        #if self.config.misc.fluxes or self.config.misc.images:
-        #    if not fs.is_directory(self.misc_path): fs.create_directory(self.misc_path, recursive=True)
+        # Create the simulation definition
+        self.definition = SingleSimulationDefinition(self.config.ski, self.config.output, self.config.input)
 
     # -----------------------------------------------------------------
 
@@ -222,55 +166,138 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Setting the parallelization scheme ...")
 
-        #log.info("free cores: " + str(self.remote.free_cores))
-        #log.info("free memory: " + str(self.remote.free_memory))
-        #log.info("free space: " + str(self.remote.free_space))
-        #log.info("cores: " + str(self.remote.cores))
-        #log.info("cpu load: " + str(self.remote.cpu_load))
-        #log.info("memory load: " + str(self.remote.memory_load))
+        # Set parallelization
+        if self.config.remote: self.set_parallelization_remote()
+        else: self.set_parallelization_local()
 
-        # Create the parallelization tool
-        tool = ParallelizationTool()
+    # -----------------------------------------------------------------
 
-        # Configure the parallelization tool
+    def set_parallelization_local(self):
 
-        # Run the tool
-        tool.run()
+        """
+        This function ...
+        :return:
+        """
 
-
+        # Set the parallelization scheme
+        #self.parallelization = Parallelization.for_local(nprocesses=self.config.nprocesses,
+        #                                                 data_parallel=self.config.data_parallel)
 
         # Inform the user
-        log.info("Determining the parallelization scheme by estimating the memory requirements...")
+        log.info("Determining the optimal parallelization scheme ...")
 
-        # Calculate the amount of required memory for this simulation
-        estimator = ResourceEstimator()
-        estimator.run(self.config.arguments.ski_pattern)
+        # Create and run a ResourceEstimator instance
+        #estimator = ResourceEstimator()
+        #estimator.run(self.config.arguments.ski_pattern)
+
+        # The memory estimator
+        estimator = MemoryEstimator()
+
+        # Configure the memory estimator
+        estimator.config.ski = self.definition.ski_path
+        estimator.config.input = self.config.input_path
+        #estimator.config.ncells =
+
+        # Estimate the memory
+        estimator.run()
+
+        # Get the serial and parallel parts of the simulation's memory
+        serial_memory = estimator.serial_memory
+        parallel_memory = estimator.parallel_memory
+
+        # Calculate the total memory of one process without data parallelization
+        total_memory = serial_memory + parallel_memory
 
         # Calculate the maximum number of processes based on the memory requirements
-        processes = int(self.remote.free_memory / estimator.memory)
+        processes = int(monitoring.free_memory() / total_memory)
 
         # If there is too little free memory for the simulation, the number of processes will be smaller than one
         if processes < 1:
-
             # Exit with an error
             log.error("Not enough memory available to run this simulation")
             exit()
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
-        threads = int(self.remote.free_cores / processes)
-
-        # If hyperthreading should be used for the remote host, we can even use more threads
-        if self.remote.use_hyperthreading: threads *= self.remote.threads_per_core
+        threads = int(monitoring.free_cpus() / processes)
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
-
-            processes = int(self.remote.free_cores)
+            processes = int(monitoring.free_cpus())
             threads = 1
 
         # Set the parallelization options
-        self.config.arguments.parallel.processes = processes
-        self.config.arguments.parallel.threads = threads
+        #self.config.arguments.parallel.processes = processes
+        #self.config.arguments.parallel.threads = threads
+
+        cores = processes * threads
+        threads_per_core = 2
+
+        self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=False)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If the remote uses a scheduling system
+        if self.remote.scheduler:
+
+            # Set host properties
+            nnodes = self.config.nnodes
+            nsockets = self.remote.host.cluster.sockets_per_node
+            ncores = self.remote.host.cluster.cores_per_socket
+            memory = self.remote.host.cluster.memory
+
+            mpi = True
+            hyperthreading = self.remote.host.use_hyperthreading
+            threads_per_core = self.remote.host.cluster.threads_per_core
+
+        # Remote does not use a scheduling system
+        else:
+
+            # Get host properties
+            nnodes = 1
+            nsockets = math.floor(self.remote.free_sockets)
+            ncores = self.remote.cores_per_socket
+            memory = self.remote.free_memory
+
+            mpi = True
+            hyperthreading = self.remote.host.use_hyperthreading
+            threads_per_core = self.remote.threads_per_core
+
+        # Create the parallelization tool
+        tool = ParallelizationTool()
+
+        # Set configuration options
+        tool.config.ski = self.definition.ski_path
+        tool.config.input = self.definition.input_path
+
+        # Set host properties
+        tool.config.nnodes = nnodes
+        tool.config.nsockets = nsockets
+        tool.config.ncores = ncores
+        tool.config.memory = memory
+
+        # MPI available and used
+        tool.config.mpi = mpi
+        tool.config.hyperthreading = hyperthreading
+        tool.config.threads_per_core = threads_per_core
+
+        # Number of dust cells
+        tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+        # Run the parallelization tool
+        tool.run()
+
+        # Get the parallelization scheme
+        self.parallelization = tool.parallelization
+
+        # Debugging
+        #log.debug("The parallelization scheme for simulation '" + simulation_name + "' is " + str(parallelization))
 
     # -----------------------------------------------------------------
 
@@ -334,9 +361,6 @@ class SKIRTLauncher(Configurable):
         # Inform the user
         log.info("Launching the simulation ...")
 
-        # Create the simulation definition
-        self.definition = SingleSimulationDefinition(self.config.ski, self.config.output, self.config.input)
-
         # Launch remotely or locally
         if self.config.remote is not None: self.launch_remote()
         else: self.launch_local()
@@ -354,7 +378,7 @@ class SKIRTLauncher(Configurable):
         log.info("Launching the simulation locally...")
 
         # Run the simulation
-        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=True, wait=True)
+        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True)
 
     # -----------------------------------------------------------------
 
@@ -376,13 +400,13 @@ class SKIRTLauncher(Configurable):
             scheduling_options = None
 
         # Run the simulation
-        simulation = self.remote.run(self.definition, self.logging_options, self.parallelization, scheduling_options=scheduling_options)
+        self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization, scheduling_options=scheduling_options, attached=self.config.attached)
 
         # Set the analysis options for the simulation
-        self.set_analysis_options(simulation)
+        self.set_analysis_options()
 
         # Save the simulation object
-        simulation.save()
+        #simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -445,23 +469,22 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_analysis_options(self, simulation):
+    def set_analysis_options(self):
 
         """
         This function ...
-        :param simulation:
         :return:
         """
 
         # Set the analysis options from the configuration settings
-        simulation.set_analysis_options(self.config.analysis)
+        self.simulation.set_analysis_options(self.config.analysis)
 
         # Remove remote files
-        simulation.remove_remote_input = not self.config.keep
-        simulation.remove_remote_output = not self.config.keep
-        simulation.remove_remote_simulation_directory = not self.config.keep
+        self.simulation.remove_remote_input = not self.config.keep
+        self.simulation.remove_remote_output = not self.config.keep
+        self.simulation.remove_remote_simulation_directory = not self.config.keep
 
         # Retrieval
-        simulation.retrieve_types = self.config.retrieve_types
+        self.simulation.retrieve_types = self.config.retrieve_types
 
 # -----------------------------------------------------------------

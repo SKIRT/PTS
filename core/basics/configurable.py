@@ -20,6 +20,7 @@ from abc import ABCMeta
 # Import the relevant PTS classes and modules
 from ..tools import configuration
 from ..tools import filesystem as fs
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -43,18 +44,96 @@ class Configurable(object):
         if config is not None: self.config = config
 
         # Look for the config
-        #else:
-
         else:
 
-            from .configuration import ConfigurationDefinition
-            from .configuration import InteractiveConfigurationSetter
+            from ..tools import introspection
 
-            definition = ConfigurationDefinition(write_config=False)
-            setter = InteractiveConfigurationSetter(self.class_name, add_logging=False)
+            tables = introspection.get_arguments_tables()
+            #table_matches = introspection.find_matches_tables(script_name, tables)
 
-            # Create new config
-            self.config = setter.run(definition, prompt_optional=False)
+            import inspect
+
+            class_name = self.__class__.__name__
+
+            class_path = inspect.getfile(self.__class__).split(".py")[0]
+
+            relative_class_path = class_path.rsplit("pts/")[1]
+
+            relative_class_pts = relative_class_path.replace("/", ".") + "." + class_name
+
+            subproject, relative_class_subproject = relative_class_pts.split(".", 1)
+
+            #print(subproject, relative_class_subproject)
+
+            #exit()
+
+            # Get the correct table
+            table = tables[subproject]
+
+            command_name = None
+            description = None
+            configuration_name = None
+            configuration_module_path = None
+
+            #print(table)
+
+            for i in range(len(table["Path"])):
+
+                #print(table["Path"][i], relative_class_subproject)
+
+                if table["Path"][i] == relative_class_subproject:
+
+                    command_name = table["Command"][i]
+                    description = table["Description"][i]
+
+                    configuration_name = table["Configuration"][i]
+                    if configuration_name == "--": configuration_name = command_name
+                    configuration_module_path = "pts." + subproject + ".config." + configuration_name
+
+                    break
+
+            if command_name is not None:
+
+                #print(configuration_module_path)
+
+                import importlib
+
+                # Import things
+                #from pts.core.tools import logging
+                from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
+
+                ## GET THE CONFIGURATION DEFINITION
+                try:
+                    configuration_module = importlib.import_module(configuration_module_path)
+                    # has_configuration = True
+                    definition = getattr(configuration_module, "definition")
+                except ImportError:
+                    log.warning("No configuration definition found for the " + class_name + " class")
+                    # has_configuration = False
+                    definition = ConfigurationDefinition(write_config=False)  # Create new configuration definition
+
+                #print(definition.sections)
+
+                ## CREATE THE CONFIGURATION
+
+                # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
+                #if configuration_method is None: configuration_method = configuration_method_table
+
+                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+
+                # Create the configuration from the definition and from reading the command line arguments
+                self.config = setter.run(definition, prompt_optional=False)
+
+            else:
+
+                from .configuration import ConfigurationDefinition
+                from .configuration import InteractiveConfigurationSetter
+
+                definition = ConfigurationDefinition(write_config=False)
+                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+
+                # Create new config
+                self.config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 

@@ -13,20 +13,19 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 from config import Sequence
 
 # Import the relevant PTS classes and modules
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class CatalogImporter(OldConfigurable):
+class CatalogImporter(Configurable):
 
     """
     This class ...
@@ -41,10 +40,10 @@ class CatalogImporter(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(CatalogImporter, self).__init__(config, "magic")
+        super(CatalogImporter, self).__init__(config)
 
-        # The image frame
-        self.frame = None
+        # The catalog box
+        self.coordinate_box = None
 
         # The name of the galaxy
         self._has_dustpedia_catalog = None
@@ -55,20 +54,20 @@ class CatalogImporter(OldConfigurable):
         self.stellar_catalog = None
 
         # Determine the path to the catalogs user directory (where the DustPedia catalogs are now stored)
-        self.catalogs_user_path = os.path.join(introspection.pts_user_dir, "magic", "catalogs")
+        self.catalogs_user_path = fs.join(introspection.pts_user_dir, "magic", "catalogs")
 
     # -----------------------------------------------------------------
 
-    def run(self, frame):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param frame:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame)
+        self.setup(**kwargs)
         
         # 2. Import the galactic catalog
         self.import_galactic_catalog()
@@ -86,26 +85,26 @@ class CatalogImporter(OldConfigurable):
         """
 
         # Set attributes to None
-        self.frame = None
+        self.coordinate_box = None
         self.galaxy_name = None
         self.galactic_catalog = None
         self.stellar_catalog = None
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param frame:
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(CatalogImporter, self).setup()
+        super(CatalogImporter, self).setup(**kwargs)
 
-        # Set the frame
-        self.frame = frame
+        # Set the coordinate box
+        self.coordinate_box = kwargs.pop("coordinate_box")
 
     # -----------------------------------------------------------------
 
@@ -155,7 +154,7 @@ class CatalogImporter(OldConfigurable):
         if self._has_dustpedia_catalog is not None: return self._has_dustpedia_catalog
 
         # Get bounding box of the frame
-        bounding_box = self.frame.bounding_box
+        bounding_box = self.coordinate_box
 
         # Loop over all directories within the catalogs directory (different galaxies)
         for galaxy_path in fs.directories_in_path(self.catalogs_user_path):
@@ -270,7 +269,7 @@ class CatalogImporter(OldConfigurable):
         log.info("Fetching galaxy positions from an online catalog ...")
 
         # Create the galaxy catalog
-        self.galactic_catalog = catalogs.create_galaxy_catalog(self.frame)
+        self.galactic_catalog = catalogs.create_galaxy_catalog(self.coordinate_box)
 
         # Inform the user
         log.debug("Number of galaxies: " + str(len(self.galactic_catalog)))
@@ -293,7 +292,7 @@ class CatalogImporter(OldConfigurable):
         else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
 
         # Create the star catalog
-        self.stellar_catalog = catalogs.create_star_catalog(self.frame, catalog_list)
+        self.stellar_catalog = catalogs.create_star_catalog(self.coordinate_box, catalog_list)
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.stellar_catalog)))

@@ -1965,7 +1965,6 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         log.success(name + ": " + description)
 
         # Ask the question
-        print(type(default))
         log.info("Do you want '" + name + "' to be enabled or not (y or n) or press ENTER for the default (" + str(default) + ")")
 
         value = default  # to remove warning from IDE that value could be referenced (below) without assignment
