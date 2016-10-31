@@ -15,5 +15,6 @@ definition = ConfigurationDefinition()
 
 # Flags
 definition.add_flag("recursive", "look for simulations in directories recursively", True)
+definition.add_flag("list", "list the found simulations", True)
 
 # -----------------------------------------------------------------

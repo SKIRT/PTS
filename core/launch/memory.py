@@ -207,6 +207,13 @@ class MemoryTable(SmartTable):
         # Determine the total number of pixels from all the instruments defined in the ski file
         npixels = ski.nspatialpixels()
 
+        # Get additional memory info
+        setup_peak_memory = log_file.setup_peak_memory
+        stellar_peak_memory = log_file.stellar_peak_memory
+        spectra_peak_memory = log_file.spectra_peak_memory
+        dust_peak_memory = log_file.dust_peak_memory
+        writing_peak_memory = log_file.writing_peak_memory
+
         # Add an entry to the memory table
         self.add_entry(simulation_name, submitted_at, host_id, cluster_name, cores,
                        hyperthreads, processes, wavelengths, ncells, grid_type, min_level, max_level,

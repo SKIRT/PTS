@@ -203,7 +203,19 @@ class LogFile(object):
         :return:
         """
 
-        pass
+        peak_memory = None
+
+        # Loop over all log file entries
+        for i in range(len(self.contents)):
+
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "setup": continue
+
+            # Replace peak memory if appropriate
+            if peak_memory is None or self.contents["Memory"][i] > peak_memory: peak_memory = self.contents["Memory"][i]
+
+        # Return the peak memory
+        return peak_memory
 
     # -----------------------------------------------------------------
 
@@ -215,7 +227,19 @@ class LogFile(object):
         :return:
         """
 
-        pass
+        peak_memory = None
+
+        # Loop over all log file entries
+        for i in range(len(self.contents)):
+
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "stellar": continue
+
+            # Replace peak memory if appropriate
+            if peak_memory is None or self.contents["Memory"][i] > peak_memory: peak_memory = self.contents["Memory"][i]
+
+        # Return the peak memory
+        return peak_memory
 
     # -----------------------------------------------------------------
 
@@ -227,7 +251,19 @@ class LogFile(object):
         :return:
         """
 
-        pass
+        peak_memory = None
+
+        # Loop over all log file entries
+        for i in range(len(self.contents)):
+
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "spectra": continue
+
+            # Replace peak memory if appropriate
+            if peak_memory is None or self.contents["Memory"][i] > peak_memory: peak_memory = self.contents["Memory"][i]
+
+        # Return the peak memory
+        return peak_memory
 
     # -----------------------------------------------------------------
 
@@ -239,7 +275,19 @@ class LogFile(object):
         :return:
         """
 
-        pass
+        peak_memory = None
+
+        # Loop over all log file entries
+        for i in range(len(self.contents)):
+
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "dust": continue
+
+            # Replace peak memory if appropriate
+            if peak_memory is None or self.contents["Memory"][i] > peak_memory: peak_memory = self.contents["Memory"][i]
+
+        # Return the peak memory
+        return peak_memory
 
     # -----------------------------------------------------------------
 
@@ -250,6 +298,20 @@ class LogFile(object):
         This function ...
         :return:
         """
+
+        peak_memory = None
+
+        # Loop over all log file entries
+        for i in range(len(self.contents)):
+
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "writing": continue
+
+            # Replace peak memory if appropriate
+            if peak_memory is None or self.contents["Memory"][i] > peak_memory: peak_memory = self.contents["Memory"][i]
+
+        # Return the peak memory
+        return peak_memory
 
     # -----------------------------------------------------------------
 

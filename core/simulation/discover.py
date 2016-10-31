@@ -61,7 +61,7 @@ class SimulationDiscoverer(Configurable):
         self.find()
 
         # List the simulations
-        self.list()
+        if self.config.list: self.list()
 
         # Writing
         self.write()

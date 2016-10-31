@@ -26,7 +26,6 @@ from collections import defaultdict
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from .plotter import Plotter
 from ..basics.quantity import Quantity
 from ..basics.map import Map
 from .timeline import create_timeline_plot
@@ -50,7 +49,7 @@ phase_labels = {"total": "Total runtime", "setup": "Setup time", "stellar": "Ste
 
 # -----------------------------------------------------------------
 
-scaling_properties = ["runtime", "speedup", "efficiency", "memory", "total memory", "timeline"]
+scaling_properties = ["runtime", "speedup", "efficiency", "CPU time", "memory", "memory gain", "total memory", "timeline"]
 simulation_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication", "intermediate"]
 
 # -----------------------------------------------------------------
@@ -192,6 +191,7 @@ class BatchScalingPlotter(Configurable):
         # Create the simulation discoverer
         discoverer = SimulationDiscoverer()
         discoverer.config.path = self.config.path
+        discoverer.config.list = False
 
         # Run the simulation discoverer
         discoverer.run()
@@ -469,8 +469,14 @@ class BatchScalingPlotter(Configurable):
         # Efficiency
         if "efficiency" in self.config.properties: self.plot_efficiencies()
 
+        # CPU time
+        if "CPU time" in self.config.properties: self.plot_cpu_times()
+
         # Memory
         if "memory" in self.config.properties: self.plot_memory()
+
+        # Memory gain
+        if "memory gain" in self.config.properties: self.plot_memory_gain()
 
         # Total memory
         if "total memory" in self.config.properties: self.plot_total_memory()
@@ -534,6 +540,24 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def plot_cpu_times(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the CPU times ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Plot
+            self.plot_cpu_times_phase(phase)
+
+    # -----------------------------------------------------------------
+
     def plot_memory(self):
 
         """
@@ -549,6 +573,24 @@ class BatchScalingPlotter(Configurable):
 
             # Plot
             self.plot_memory_phase(phase)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_gain(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the memory gain ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Plot
+            self.plot_memory_gain_phase(phase)
 
     # -----------------------------------------------------------------
 
@@ -570,7 +612,7 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_runtimes_phase(self, phase, file_path=None, size=(12, 8)):
+    def plot_runtimes_phase(self, phase, file_path=None, figsize=(12, 8)):
 
         """
         This function ...
@@ -584,7 +626,7 @@ class BatchScalingPlotter(Configurable):
         log.info("Plotting the runtimes for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=size)
+        plt.figure(figsize=figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -628,7 +670,7 @@ class BatchScalingPlotter(Configurable):
         plt.legend(title="Modes")
 
         # Set the plot title
-        #plt.title("Scaling of the " + phase_labels[phase].lower() + " for " + self.system_name)
+        plt.title("Scaling of the " + phase_labels[phase].lower())
 
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
@@ -637,7 +679,7 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_speedups_phase(self, phase, file_path=None, size=(12, 8), plot_fit=True):
+    def plot_speedups_phase(self, phase, file_path=None, figsize=(12, 8), plot_fit=True):
 
         """
         This function ...
@@ -649,10 +691,10 @@ class BatchScalingPlotter(Configurable):
         """
 
         # Inform the user of the fact that the speedups are being calculated and plotted
-        log.info("Calculating and plotting the speedups for the " + phase_names[phase] + "...")
+        log.info("Plotting the speedups for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=size)
+        plt.figure(figsize=figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -662,8 +704,8 @@ class BatchScalingPlotter(Configurable):
         parameters = dict()
 
         # Get the serial runtime (and error) for this phase (create a Quantity object)
-        serial_time = self.serial[phase].time
-        serial_error = self.serial[phase].error
+        serial_time = self.serial_timing[phase].time
+        serial_error = self.serial_timing[phase].error
         serial = Quantity(serial_time, serial_error)
 
         # Loop over the different parallelization modes (the different curves)
@@ -722,10 +764,6 @@ class BatchScalingPlotter(Configurable):
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
-        # Create a data file to contain the fitted parameters
-        directory = os.path.dirname(file_path)
-        parameter_file_path = fs.join(directory, "parameters.dat")
-
         # Fit parameters for the speedups to Amdahl's law
         #  S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
         mode_list = []
@@ -750,11 +788,17 @@ class BatchScalingPlotter(Configurable):
             c_list.append(parameters[mode].c)
             c_error_list.append(parameters[mode].c_error)
 
-        # Create the parameters table and write to file
-        data = [p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
-        names = ["Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
-        table = Table(data=data, names=names)
-        table.write(parameter_file_path, format="ascii.commented_header")
+        if file_path is not None:
+
+            # Create a data file to contain the fitted parameters
+            directory = os.path.dirname(file_path)
+            parameter_file_path = fs.join(directory, "parameters.dat")
+
+            # Create the parameters table and write to file
+            data = [p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
+            names = ["Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
+            table = Table(data=data, names=names)
+            table.write(parameter_file_path, format="ascii.commented_header")
 
         # Plot the fitted speedup curves and write the parameters to the file
         fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
@@ -803,7 +847,7 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_efficiencies_phase(self, phase, file_path=None, size=(12, 8), plot_fit=True):
+    def plot_efficiencies_phase(self, phase, file_path=None, figsize=(12, 8), plot_fit=True):
 
         """
         This function creates a PDF plot showing the efficiency as a function of the number of threads.
@@ -820,15 +864,15 @@ class BatchScalingPlotter(Configurable):
         log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=size)
+        plt.figure(figsize=figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
         # Get the serial runtime (and error) for this phase (create a Quantity object)
-        serial_time = self.serial[phase].time
-        serial_error = self.serial[phase].error
+        serial_time = self.serial_timing[phase].time
+        serial_error = self.serial_timing[phase].error
         serial = Quantity(serial_time, serial_error)
 
         # Loop over the different parallelization modes (the different curves)
@@ -896,6 +940,85 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def plot_cpu_times_phase(self, phase, file_path=None, figsize=(12,8)):
+
+        """
+        This function ...
+        :param phase:
+        :param file_path:
+        :param figsize:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the CPU times for the " + phase_names[phase] + "...")
+
+        # Initialize figure with the appropriate size
+        plt.figure(figsize=figsize)
+        plt.clf()
+
+        # Create a set that stores the tick labels for the plot
+        ticks = set()
+
+        # Loop over the different parallelization modes (the different curves)
+        for mode in self.timing_data[phase]:
+
+            # Get the list of processor counts, runtimes and errors
+            processor_counts = self.timing_data[phase][mode].processor_counts
+            times = self.timing_data[phase][mode].times
+            errors = self.timing_data[phase][mode].errors
+
+            # Sort the lists
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
+
+            # Create numpy arrays
+            processor_counts = np.array(processor_counts)
+            times = np.array(times)
+            errors = np.array(errors)
+
+            # Get list of process count
+            #processes = nprocesses_from_mode(mode, processor_counts)
+
+            # Multiply to get total
+            times *= processor_counts
+            errors *= processor_counts
+
+            # Plot the data points for this mode
+            plt.errorbar(processor_counts, times, errors, marker='.', label=mode)
+
+            # Add the appropriate ticks
+            ticks |= set(processor_counts)
+
+        # Use a logarithmic scale for the x axis (nthreads)
+        plt.xscale('log')
+
+        # Add one more tick for esthetic reasons
+        ticks = sorted(ticks)
+        ticks.append(ticks[-1] * 2)
+
+        # Format the axis ticks and create a grid
+        ax = plt.gca()
+        ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(ScalarFormatter())
+        plt.xlim(ticks[0], ticks[-1])
+        plt.grid(True)
+
+        # Add axis labels and a legend
+        plt.xlabel("Number of processors $n$", fontsize='large')
+        plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
+        plt.legend(title="Modes")
+
+        # Set the plot title
+        plt.title("Scaling of the total CPU time of the " + phase_labels[phase].lower())
+
+        # Save the figure
+        if file_path is not None: plt.savefig(file_path)
+        else: plt.show()
+        plt.close()
+
+    # -----------------------------------------------------------------
+
     def plot_memory_phase(self, phase, file_path=None, figsize=(12,8)):
 
         """
@@ -954,7 +1077,96 @@ class BatchScalingPlotter(Configurable):
         plt.legend(title="Modes")
 
         # Set the plot title
-        #plt.title("Memory scaling for " + self.system_name)
+        plt.title("Scaling of the memory usage of the " + phase + " phase")
+
+        # Save the figure
+        if file_path is not None: plt.savefig(file_path)
+        else: plt.show()
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_gain_phase(self, phase, file_path=None, figsize=(12,8)):
+
+        """
+        This function ...
+        :param phase:
+        :param file_path:
+        :param figsize:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the memory scaling...")
+
+        # Initialize figure with the appropriate size
+        plt.figure(figsize=figsize)
+        plt.clf()
+
+        # Create a set that stores the tick labels for the plot
+        ticks = set()
+
+        # Get the serial memory (and error) for this phase (create a Quantity object)
+        serial_memory = self.serial_memory[phase].time
+        serial_error = self.serial_memory[phase].error
+        serial = Quantity(serial_memory, serial_error)
+
+        # Loop over the different parallelization modes (the different curves)
+        for mode in self.memory_data[phase]:
+
+            # Get the list of processor counts, runtimes and errors
+            processor_counts = self.memory_data[phase][mode].processor_counts
+            memories = self.memory_data[phase][mode].memory
+            errors = self.memory_data[phase][mode].errors
+
+            # Sort the lists
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+
+            # Calculate the gains and the errors on the gains
+            gains = []
+            gain_errors = []
+            for i in range(len(processor_counts)):
+
+                # Create a quantity for the current memory usage
+                memory = Quantity(memories[i], errors[i])
+
+                # Calculate the efficiency based on the current memory usage and the serial memory usage
+                gain = serial / memory
+                #efficiency = speedup.value / processor_counts[i]
+                #efficiency_error = speedup.error / processor_counts[i]
+
+                # Add the value and the propagated error of the gain to the appropriate lists
+                gains.append(gain.value)
+                gain_errors.append(gain.error)
+
+            # Plot the data points for this mode
+            plt.errorbar(processor_counts, gains, gain_errors, marker='.', label=mode)
+
+            # Add the appropriate ticks
+            ticks |= set(processor_counts)
+
+        # Use a logarithmic scale for the x axis (nthreads)
+        plt.xscale('log')
+
+        # Add one more tick for esthetic reasons
+        ticks = sorted(ticks)
+        ticks.append(ticks[-1] * 2)
+
+        # Format the axis ticks and create a grid
+        ax = plt.gca()
+        ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(ScalarFormatter())
+        plt.xlim(ticks[0], ticks[-1])
+        plt.grid(True)
+
+        # Add axis labels and a legend
+        plt.xlabel("Number of processors $n$", fontsize='large')
+        plt.ylabel("Memory gain", fontsize='large')
+        plt.legend(title="Modes")
+
+        # Set the plot title
+        plt.title("Scaling of the memory gain (serial memory usage / memory usage) of the " + phase_labels[phase].lower())
 
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
@@ -991,18 +1203,20 @@ class BatchScalingPlotter(Configurable):
             memories = self.memory_data[phase][mode].memory
             errors = self.memory_data[phase][mode].errors
 
-            if mode == "multithreading": processes = np.ones(len(processor_counts))
-            elif "mpi" in mode: processes = processor_counts
-            elif "hybrid" in mode:
-                threads = int(mode.split("(")[1].split(")")[0])
-                processes = processor_counts / threads
-            else: raise ValueError("Invalid mode: " + mode)
+            # Sort the lists
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+
+            # Create arrays
+            processor_counts = np.array(processor_counts)
+            memories = np.array(memories)
+            errors = np.array(errors)
+
+            # Get list of process count
+            processes = nprocesses_from_mode(mode, processor_counts)
 
             # Multiply the memory usage for each processor count with the corresponding number of processes (to get the total)
             memories *= processes
-
-            # Sort the lists
-            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+            errors *= processes
 
             # Plot the data points for this mode
             plt.errorbar(processor_counts, memories, errors, marker='.', label=mode)
@@ -1197,6 +1411,28 @@ class BatchScalingPlotter(Configurable):
         """
 
         pass
+
+# -----------------------------------------------------------------
+
+def nprocesses_from_mode(mode, processor_counts):
+
+    """
+    This function ...
+    :param mode:
+    :param processor_counts:
+    :return:
+    """
+
+    # Get number of processes
+    if mode == "multithreading": processes = np.ones(len(processor_counts))
+    elif "mpi" in mode: processes = processor_counts
+    elif "hybrid" in mode:
+        threads = int(mode.split("(")[1].split(")")[0])
+        processes = processor_counts / threads
+    else: raise ValueError("Invalid mode: " + mode)
+
+    # Return the list of proces count
+    return processes
 
 # -----------------------------------------------------------------
 

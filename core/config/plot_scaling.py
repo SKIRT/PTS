@@ -17,9 +17,8 @@ definition = ConfigurationDefinition()
 # Flags
 definition.add_flag("recursive", "look for simulation in directories recursively", True)
 
-#
+# Add optional
 definition.add_positional_optional("properties", "string_list", "plot the scaling of these properties", choices=scaling_properties, default=scaling_properties)
-
 definition.add_positional_optional("phases", "string_list", "the simulation phases for which to do the plotting", choices=simulation_phases, default=["total"])
 
 # -----------------------------------------------------------------
