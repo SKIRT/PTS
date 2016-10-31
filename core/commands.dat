@@ -15,3 +15,4 @@ test_performance | -- | test.performance.PerformanceTest | interactive | Run the
 plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs
 plot_scaling | -- | plot.scaling.BatchScalingPlotter | arguments | Plot the performance and or memory scaling of a (batch of) simulation(s)
 plot_timelines | -- | plot.timeline.BatchTimeLinePlotter | arguments | Plot timelines of a (batch of) simulation(s)
+discover | -- | simulation.discover.SimulationDiscoverer | arguments | Discover simulations in current working directory (and subdirectories)

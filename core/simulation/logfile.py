@@ -196,6 +196,64 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def setup_peak_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_peak_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectra_peak_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_peak_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def writing_peak_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def last_message(self):
 
         """

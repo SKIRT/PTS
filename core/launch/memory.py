@@ -45,14 +45,20 @@ class MemoryTable(SmartTable):
                    ("Transient heating", bool, None, "transient (non-LTE) heating enabled"),
                    ("Data-parallel", bool, None, "data parallelization enabled"),
                    ("Number of pixels", int, None, "total number of spatial pixels for all instruments"),
-                   ("Peak memory usage", float, "GB", "peak memory usage")]
+                   ("Total peak memory", float, "GB", "peak memory usage during total simulation"),
+                   ("Setup peak memory", float, "GB", "peak memory usage during setup"),
+                   ("Stellar emission peak memory", float, "GB", "peak memory usage during stellar emission"),
+                   ("Spectra calculation peak memory", float, "GB", "peak memory usage during spectra calculation"),
+                   ("Dust emission peak memory", float, "GB", "peak memory usage during dust emission"),
+                   ("Writing peak memory", float, "GB", "peak memory usage during writing")]
 
     # -----------------------------------------------------------------
 
     def add_entry(self, name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
                   ncells, grid_type, min_level, max_level, search_method, sample_count, max_optical_depth,
                   max_mass_fraction, max_density_dispersion, selfabsorption, transient_heating, data_parallel,
-                  npixels, peak_memory_usage):
+                  npixels, total_peak_memory, setup_peak_memory, stellar_peak_memory, spectra_peak_memory, dust_peak_memory,
+                  writing_peak_memory):
 
         """
         This function ...
@@ -77,7 +83,12 @@ class MemoryTable(SmartTable):
         :param transient_heating:
         :param data_parallel:
         :param npixels
-        :param peak_memory_usage:
+        :param total_peak_memory:
+        :param setup_peak_memory:
+        :param stellar_peak_memory:
+        :param spectra_peak_memory:
+        :param dust_peak_memory:
+        :param writing_peak_memory:
         :return:
         """
 
@@ -85,7 +96,8 @@ class MemoryTable(SmartTable):
         values = [name, timestamp, host_id, cluster_name, cores, threads_per_core, processes, wavelengths,
                   ncells, grid_type, min_level, max_level, search_method, sample_count, max_optical_depth,
                   max_mass_fraction, max_density_dispersion, selfabsorption, transient_heating, data_parallel,
-                  npixels, peak_memory_usage]
+                  npixels, total_peak_memory, setup_peak_memory, stellar_peak_memory, spectra_peak_memory, dust_peak_memory,
+                  writing_peak_memory]
 
         # Add a row to the table
         self.add_row(values)
@@ -199,6 +211,7 @@ class MemoryTable(SmartTable):
         self.add_entry(simulation_name, submitted_at, host_id, cluster_name, cores,
                        hyperthreads, processes, wavelengths, ncells, grid_type, min_level, max_level,
                        search_method, sample_count, max_optical_depth, max_mass_fraction, max_dens_disp,
-                       selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage)
+                       selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage, setup_peak_memory,
+                       stellar_peak_memory, spectra_peak_memory, dust_peak_memory, writing_peak_memory)
 
 # -----------------------------------------------------------------

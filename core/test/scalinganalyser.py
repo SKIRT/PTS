@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..extract.scaling import ScalingExtractor
-from ..plot.scaling import ScalingPlotter
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
@@ -65,9 +64,6 @@ class ScalingAnalyser(Configurable):
 
         # 2. Extract scaling information
         self.extract()
-
-        # 3. Make the scaling plots
-        if kwargs.pop("plot", True): self.plot()
 
     # -----------------------------------------------------------------
 
@@ -118,23 +114,5 @@ class ScalingAnalyser(Configurable):
 
         # Run the scaling extractor
         self.scaling = extractor.run(self.simulation, self.timeline, self.memory)
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the scaling information ...")
-
-        # Create a ScalingPlotter object
-        plotter = ScalingPlotter()
-
-        # Run the scaling plotter
-        plotter.run(self.scaling, self.simulation.analysis.scaling_plot_path)
 
 # -----------------------------------------------------------------

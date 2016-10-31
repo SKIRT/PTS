@@ -33,11 +33,10 @@ from .timeline import create_timeline_plot
 from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..basics.configurable import Configurable
-from ..simulation.simulation import SkirtSimulation, load_simulations
-from ..simulation.skifile import SkiFile
 from ..launch.timing import TimingTable
 from ..launch.memory import MemoryTable
 from ..extract.timeline import TimeLineExtractor
+from ..simulation.discover import SimulationDiscoverer
 
 # -----------------------------------------------------------------
 
@@ -52,7 +51,7 @@ phase_labels = {"total": "Total runtime", "setup": "Setup time", "stellar": "Ste
 # -----------------------------------------------------------------
 
 scaling_properties = ["runtime", "speedup", "efficiency", "memory", "total memory", "timeline"]
-simulation_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication"]
+simulation_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication", "intermediate"]
 
 # -----------------------------------------------------------------
 
@@ -80,10 +79,36 @@ class BatchScalingPlotter(Configurable):
         self.memory = None
 
         # The data
-        self.data = None
+        self.timing_data = None
+        self.memory_data = None
 
-        # Serial runtimes
-        self.serial = None
+        # Serial
+        self.serial_timing = None
+        self.serial_memory = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_serial_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.serial_timing) != 0 if self.serial_timing is not None else False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_serial_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.serial_memory) != 0 if self.serial_memory is not None else False
 
     # -----------------------------------------------------------------
 
@@ -95,19 +120,16 @@ class BatchScalingPlotter(Configurable):
         :return:
         """
 
-        # Call the setup function
+        # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Extract into timing and memory tables
-        self.extract()
-
-        # Prepare data into plottable format
+        # 2. Prepare data into plottable format
         self.prepare()
 
-        # Plot
+        # 3. Plot
         self.plot()
 
-        # Write
+        # 4. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -136,14 +158,46 @@ class BatchScalingPlotter(Configurable):
         # Call the setup function of the base class
         super(BatchScalingPlotter, self).setup(**kwargs)
 
-        # Load simulations from working directory if none have been added
-        if len(self.simulations) == 0: self.simulations = load_simulations(self.config.path)
+        # Timing or memory specified
+        self.timing = kwargs.pop("timing", None)
+        self.memory = kwargs.pop("memory", None)
 
-        # Initialize a timing table
-        self.timing = TimingTable.initialize()
+        # If either extracted timing or memory information is not passed
+        if self.timing is None or self.memory is None:
 
-        # Initialize a memory table
-        self.memory = MemoryTable.initialize()
+            # If simulations are passed
+            if "simulations" in kwargs: self.simulations = kwargs.pop("simulations")
+
+            # If simulations have been added
+            elif len(self.simulations) > 0: pass
+
+            # Load simulations from working directory if none have been added
+            else: self.load_simulations()
+
+            # Do extraction
+            self.extract()
+
+    # -----------------------------------------------------------------
+
+    def load_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading simulations ...")
+
+        # Create the simulation discoverer
+        discoverer = SimulationDiscoverer()
+        discoverer.config.path = self.config.path
+
+        # Run the simulation discoverer
+        discoverer.run()
+
+        # Set the simulations
+        self.simulations = discoverer.simulations_single_ski
 
     # -----------------------------------------------------------------
 
@@ -154,14 +208,20 @@ class BatchScalingPlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Extracting the timing and memory information ...")
+
+        extract_timing = self.timing is None
+        extract_memory = self.memory is None
+
+        # Initialize a timing table
+        if extract_timing: self.timing = TimingTable.initialize()
+
+        # Initialize a memory table
+        if extract_memory: self.memory = MemoryTable.initialize()
+
         # Loop over the simulations
         for simulation in self.simulations:
-
-            # Create a TimeLineExtractor instance
-            extractor = TimeLineExtractor()
-
-            # Run the timeline extractor
-            timeline = extractor.run(simulation)
 
             # Load the log file
             log_file = simulation.log_file
@@ -169,11 +229,22 @@ class BatchScalingPlotter(Configurable):
             # Load the ski file
             ski = simulation.parameters()
 
-            # Add an entry to the timing table
-            self.timing.add_from_simulation(simulation, ski, log_file, timeline)
+            # If timing has to be extracted
+            if extract_timing:
 
-            # Add an entry to the memory table
-            self.memory.add_from_simulation(simulation, ski, log_file)
+                # Create a TimeLineExtractor instance
+                extractor = TimeLineExtractor()
+
+                # Run the timeline extractor
+                timeline = extractor.run(simulation)
+
+                # Add an entry to the timing table
+                self.timing.add_from_simulation(simulation, ski, log_file, timeline)
+
+            if extract_memory:
+
+                # Add an entry to the memory table
+                self.memory.add_from_simulation(simulation, ski, log_file)
 
     # -----------------------------------------------------------------
 
@@ -184,17 +255,27 @@ class BatchScalingPlotter(Configurable):
         :return:
         """
 
-        # Initialize a data structure to contain the scaling information in plottable format
-        self.data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "times": [], "errors": []})))
+        # Inform the user
+        log.info("Preparing the data for plotting ...")
 
-        # Create an attribute to store the serial runtimes
-        self.serial = defaultdict(lambda: Map({"time": None, "error": None}))
+        # Initialize a data structure to contain the performance scaling information in plottable format
+        self.timing_data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "times": [], "errors": []})))
+
+        # Initialize a data structure to contain the memory scaling information in plottable format
+        self.memory_data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "memory": [], "errors": []})))
+
+        # Create an attribute to store the serial runtimes (one core)
+        self.serial_timing = defaultdict(lambda: Map({"time": None, "error": None}))
+
+        # Create an attribute to store the serial memory (one process)
+        self.serial_memory = defaultdict(lambda: Map({"memory": None, "error": None}))
 
         sigma_level = 1.0
 
         # Create a dictionary to store the runtimes for the different simulation phases of the simulations
         # performed on one processor
         serial_times = defaultdict(list)
+        serial_memory = defaultdict(list)
 
         # Keep track of the different processor counts encountered for the different parallelization modes
         modes = defaultdict(set)
@@ -208,7 +289,14 @@ class BatchScalingPlotter(Configurable):
         writing_times = defaultdict(lambda: defaultdict(list))
         waiting_times = defaultdict(lambda: defaultdict(list))
         communication_times = defaultdict(lambda: defaultdict(list))
-        memory = defaultdict(lambda: defaultdict(list))
+        intermediate_times = defaultdict(lambda: defaultdict(list))
+
+        total_memory = defaultdict(lambda: defaultdict(list))
+        setup_memory =  defaultdict(lambda: defaultdict(list))
+        stellar_memory = defaultdict(lambda: defaultdict(list))
+        spectra_memory =  defaultdict(lambda: defaultdict(list))
+        dust_memory =  defaultdict(lambda: defaultdict(list))
+        writing_memory =  defaultdict(lambda: defaultdict(list))
 
         # Loop over the different entries in the timing table
         for i in range(len(self.timing)):
@@ -222,11 +310,11 @@ class BatchScalingPlotter(Configurable):
 
             data_parallel = self.timing["Data-parallel"][i]
 
-            if processes > 1:
-                if threads > 1:
-                    scaling_mode = "hybrid-" + str(threads)
-                else: scaling_mode = "mpi"
-            else: scaling_mode = "threads"
+            #if processes > 1:
+            #    if threads > 1:
+            #        scaling_mode = "hybrid-" + str(threads)
+            #    else: scaling_mode = "mpi"
+            #else: scaling_mode = "threads"
 
             if processes > 1:
                 if threads > 1:
@@ -250,6 +338,16 @@ class BatchScalingPlotter(Configurable):
                 serial_times["waiting"].append(self.timing["Waiting time"][i])
                 serial_times["communication"].append(self.timing["Communication time"][i])
 
+            # Number of processes = 1: equivalent to 'serial' in terms of memory consumption
+            if processes == 1:
+
+                serial_memory["total"].append(self.memory["Total peak memory"][i])
+                serial_memory["setup"].append(self.memory["Setup peak memory"][i])
+                serial_memory["stellar"].append(self.memory["Stellar emission peak memory"][i])
+                serial_memory["spectra"].append(self.memory["Spectra calculation peak memory"][i])
+                serial_memory["dust"].append(self.memory["Dust emission peak memory"][i])
+                serial_memory["writing"].append(self.memory["Writing peak memory"][i])
+
             # Add the processor count for this parallelization mode
             modes[mode].add(processors)
 
@@ -262,14 +360,21 @@ class BatchScalingPlotter(Configurable):
             writing_times[mode][processors].append(self.timing["Writing time"][i])
             waiting_times[mode][processors].append(self.timing["Waiting time"][i])
             communication_times[mode][processors].append(self.timing["Communication time"][i])
-            #memory[mode][processors].append(self.timing["Peak memory usage"][i])
-            memory[mode][processors].append(self.memory["Peak memory usage"][i])
+            intermediate_times[mode][processors].append(self.timing["Intermediate time"][i])
+
+            # Fill in the memory usage at the appropriate place in the dictionaries
+            total_memory[mode][processors].append(self.memory["Total peak memory"][i])
+            setup_memory[mode][processors].append(self.memory["Setup peak memory"][i])
+            stellar_memory[mode][processors].append(self.memory["Stellar emission peak memory"][i])
+            spectra_memory[mode][processors].append(self.memory["Spectra calculation peak memory"][i])
+            dust_memory[mode][processors].append(self.memory["Dust emission peak memory"][i])
+            writing_memory[mode][processors].append(self.memory["Writing peak memory"][i])
 
         # Average the serial runtimes, loop over each phase
         for phase in serial_times:
 
-            self.serial[phase].time = np.mean(serial_times[phase])
-            self.serial[phase].error = sigma_level * np.std(serial_times[phase])
+            self.serial_timing[phase].time = np.mean(serial_times[phase])
+            self.serial_timing[phase].error = sigma_level * np.std(serial_times[phase])
 
         # Loop over all encountered parallelization modes
         for mode in modes:
@@ -277,46 +382,71 @@ class BatchScalingPlotter(Configurable):
             # Loop over all processor counts encountered for this mode
             for processors in modes[mode]:
 
+                ## TIMING
+
                 # Average the runtimes for the different simulation phases and the memory usage for the different
                 # runs for a certain parallelization mode and number of processors
-                self.data["total"][mode].processor_counts.append(processors)
-                self.data["total"][mode].times.append(np.mean(total_times[mode][processors]))
-                self.data["total"][mode].errors.append(sigma_level * np.std(total_times[mode][processors]))
+                self.timing_data["total"][mode].processor_counts.append(processors)
+                self.timing_data["total"][mode].times.append(np.mean(total_times[mode][processors]))
+                self.timing_data["total"][mode].errors.append(sigma_level * np.std(total_times[mode][processors]))
 
-                self.data["setup"][mode].processor_counts.append(processors)
-                self.data["setup"][mode].times.append(np.mean(setup_times[mode][processors]))
-                self.data["setup"][mode].errors.append(sigma_level * np.std(setup_times[mode][processors]))
+                self.timing_data["setup"][mode].processor_counts.append(processors)
+                self.timing_data["setup"][mode].times.append(np.mean(setup_times[mode][processors]))
+                self.timing_data["setup"][mode].errors.append(sigma_level * np.std(setup_times[mode][processors]))
 
-                self.data["stellar"][mode].processor_counts.append(processors)
-                self.data["stellar"][mode].times.append(np.mean(stellar_times[mode][processors]))
-                self.data["stellar"][mode].errors.append(sigma_level * np.std(stellar_times[mode][processors]))
+                self.timing_data["stellar"][mode].processor_counts.append(processors)
+                self.timing_data["stellar"][mode].times.append(np.mean(stellar_times[mode][processors]))
+                self.timing_data["stellar"][mode].errors.append(sigma_level * np.std(stellar_times[mode][processors]))
 
-                self.data["spectra"][mode].processor_counts.append(processors)
-                self.data["spectra"][mode].times.append(np.mean(spectra_times[mode][processors]))
-                self.data["spectra"][mode].errors.append(sigma_level * np.std(spectra_times[mode][processors]))
+                self.timing_data["spectra"][mode].processor_counts.append(processors)
+                self.timing_data["spectra"][mode].times.append(np.mean(spectra_times[mode][processors]))
+                self.timing_data["spectra"][mode].errors.append(sigma_level * np.std(spectra_times[mode][processors]))
 
-                self.data["dust"][mode].processor_counts.append(processors)
-                self.data["dust"][mode].times.append(np.mean(dust_times[mode][processors]))
-                self.data["dust"][mode].errors.append(sigma_level * np.std(dust_times[mode][processors]))
+                self.timing_data["dust"][mode].processor_counts.append(processors)
+                self.timing_data["dust"][mode].times.append(np.mean(dust_times[mode][processors]))
+                self.timing_data["dust"][mode].errors.append(sigma_level * np.std(dust_times[mode][processors]))
 
-                self.data["writing"][mode].processor_counts.append(processors)
-                self.data["writing"][mode].times.append(np.mean(writing_times[mode][processors]))
-                self.data["writing"][mode].errors.append(sigma_level * np.std(writing_times[mode][processors]))
+                self.timing_data["writing"][mode].processor_counts.append(processors)
+                self.timing_data["writing"][mode].times.append(np.mean(writing_times[mode][processors]))
+                self.timing_data["writing"][mode].errors.append(sigma_level * np.std(writing_times[mode][processors]))
 
-                self.data["waiting"][mode].processor_counts.append(processors)
-                self.data["waiting"][mode].times.append(np.mean(waiting_times[mode][processors]))
-                self.data["waiting"][mode].errors.append(sigma_level * np.std(waiting_times[mode][processors]))
+                self.timing_data["waiting"][mode].processor_counts.append(processors)
+                self.timing_data["waiting"][mode].times.append(np.mean(waiting_times[mode][processors]))
+                self.timing_data["waiting"][mode].errors.append(sigma_level * np.std(waiting_times[mode][processors]))
 
-                self.data["communication"][mode].processor_counts.append(processors)
-                self.data["communication"][mode].times.append(np.mean(communication_times[mode][processors]))
-                self.data["communication"][mode].errors.append(sigma_level * np.std(communication_times[mode][processors]))
+                self.timing_data["communication"][mode].processor_counts.append(processors)
+                self.timing_data["communication"][mode].times.append(np.mean(communication_times[mode][processors]))
+                self.timing_data["communication"][mode].errors.append(sigma_level * np.std(communication_times[mode][processors]))
 
-                self.data["memory"][mode].processor_counts.append(processors)
-                self.data["memory"][mode].times.append(np.mean(memory[mode][processors]))
-                self.data["memory"][mode].errors.append(sigma_level * np.std(memory[mode][processors]))
+                self.timing_data["intermediate"][mode].processor_counts.append(processors)
+                self.timing_data["intermediate"][mode].times.append(np.mean(intermediate_times[mode][processors]))
+                self.timing_data["intermediate"][mode].errors.append(sigma_level * np.std(intermediate_times[mode][processors]))
 
-        # Determine the name of the system used for the scaling test
-        #self.system_name = os.path.basename(self.output_path)
+                ## MEMORY
+
+                self.memory_data["total"][mode].processor_counts.append(processors)
+                self.memory_data["total"][mode].memory.append(np.mean(total_memory[mode][processors]))
+                self.memory_data["total"][mode].errors.append(sigma_level * np.std(total_memory[mode][processors]))
+
+                self.memory_data["setup"][mode].processor_counts.append(processors)
+                self.memory_data["setup"][mode].memory.append(np.mean(setup_memory[mode][processors]))
+                self.memory_data["setup"][mode].errors.append(sigma_level * np.std(setup_memory[mode][processors]))
+
+                self.memory_data["stellar"][mode].processor_counts.append(processors)
+                self.memory_data["stellar"][mode].memory.append(np.mean(stellar_memory[mode][processors]))
+                self.memory_data["stellar"][mode].errors.append(sigma_level * np.std(stellar_memory[mode][processors]))
+
+                self.memory_data["spectra"][mode].processor_counts.append(processors)
+                self.memory_data["spectra"][mode].memory.append(np.mean(spectra_memory[mode][processors]))
+                self.memory_data["spectra"][mode].errors.append(sigma_level * np.std(spectra_memory[mode][processors]))
+
+                self.memory_data["dust"][mode].processor_counts.append(processors)
+                self.memory_data["dust"][mode].memory.append(np.mean(dust_memory[mode][processors]))
+                self.memory_data["dust"][mode].errors.append(sigma_level * np.std(dust_memory[mode][processors]))
+
+                self.memory_data["writing"][mode].processor_counts.append(processors)
+                self.memory_data["writing"][mode].memory.append(np.mean(writing_memory[mode][processors]))
+                self.memory_data["writing"][mode].errors.append(sigma_level * np.std(writing_memory[mode][processors]))
 
     # -----------------------------------------------------------------
 
@@ -327,39 +457,26 @@ class BatchScalingPlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting ...")
+
         # Runtime
         if "runtime" in self.config.properties: self.plot_runtimes()
 
         # Speedup
-        #if "speedup" in self.config.properties: self.plot_speedups()
+        if "speedup" in self.config.properties: self.plot_speedups()
 
         # Efficiency
-        #if "efficiency" in self.config.properties: self.plot_efficiencies()
+        if "efficiency" in self.config.properties: self.plot_efficiencies()
 
         # Memory
-        #if "memory" in self.config.properties: self.plot_memory()
+        if "memory" in self.config.properties: self.plot_memory()
 
         # Total memory
-        #if "total memory" in self.config.properties: self.plot_total_memory()
+        if "total memory" in self.config.properties: self.plot_total_memory()
 
         # Timeline
-        #if "timeline" in self.config.properties: self.plot_timeline()
-
-    # -----------------------------------------------------------------
-
-        # Plot the total runtimes
-        #times_path = fs.join(self.output_path, "times.pdf")
-        #self.plot_times("total", times_path)
-
-        # Plot the speedups and efficiencies if serial runtimes are available
-        #if self.has_serial:
-            # Plot the total speedups
-            #speedups_path = fs.join(self.output_path, "speedups.pdf")
-            #self.plot_speedups("total", speedups_path)
-
-            # Plot the total efficiencies
-            #efficiencies_path = fs.join(self.output_path, "efficiencies.pdf")
-            #self.plot_efficiencies("total", efficiencies_path)
+        if "timeline" in self.config.properties: self.plot_timeline()
 
     # -----------------------------------------------------------------
 
@@ -370,15 +487,90 @@ class BatchScalingPlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the runtimes ...")
+
         # Loop over the phases
         for phase in self.config.phases:
 
             # Plot
-            self.plot_times(phase)
+            self.plot_runtimes_phase(phase)
 
     # -----------------------------------------------------------------
 
-    def plot_times(self, phase, file_path=None, size=(12, 8)):
+    def plot_speedups(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the speedups ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Plot
+            self.plot_speedups_phase(phase)
+
+    # -----------------------------------------------------------------
+
+    def plot_efficiencies(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the efficiencies ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Plot
+            self.plot_efficiencies_phase(phase)
+
+    # -----------------------------------------------------------------
+
+    def plot_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the memory usage ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Plot
+            self.plot_memory_phase(phase)
+
+    # -----------------------------------------------------------------
+
+    def plot_total_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the total memory usage ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Plot
+            self.plot_total_memory_phase(phase)
+
+    # -----------------------------------------------------------------
+
+    def plot_runtimes_phase(self, phase, file_path=None, size=(12, 8)):
 
         """
         This function ...
@@ -399,12 +591,12 @@ class BatchScalingPlotter(Configurable):
         ticks = set()
 
         # Loop over the different parallelization modes (the different curves)
-        for mode in self.data[phase]:
+        for mode in self.timing_data[phase]:
 
             # Get the list of processor counts, runtimes and errors
-            processor_counts = self.data[phase][mode].processor_counts
-            times = self.data[phase][mode].times
-            errors = self.data[phase][mode].errors
+            processor_counts = self.timing_data[phase][mode].processor_counts
+            times = self.timing_data[phase][mode].times
+            errors = self.timing_data[phase][mode].errors
 
             # Sort the lists
             processor_counts, times, errors = sort_lists(processor_counts, times, errors)
@@ -445,384 +637,7 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_dries(self):
-
-        dmpiTimes = np.loadtxt("dmpiTimes.dat", usecols=range(1, 8))
-        smpiTimes = np.loadtxt("smpiTimes.dat", usecols=range(1, 8))
-        tTimes = np.loadtxt("tTimes.dat", usecols=range(1, 8))
-
-        def sortByCores(times):
-            times[:] = times[times[:, 6].argsort()]
-
-        sortByCores(tTimes)
-        sortByCores(smpiTimes)
-        sortByCores(dmpiTimes)
-
-        singlecore = tTimes[0, 5]
-
-        plt.figure(figsize=(8, 5))
-
-        def plot(times, key):
-            cores = times[:, 6]
-            values = singlecore / times[:, 5] / cores
-            plt.semilogx(cores, values, label=key, basex=2, marker='D')
-            ax = plt.gca()
-            for axis in [ax.xaxis, ax.yaxis]:
-                axis.set_major_formatter(ScalarFormatter())
-
-        plot(tTimes, "Threads")
-        plot(smpiTimes, "MPI task-based")
-        plot(dmpiTimes, "MPI data-parallel")
-        plt.plot([1, 16], [1, 1], color='k', linewidth=3, linestyle='dashed')
-        plt.title("Single node scaling", y=1.025)
-        plt.xlabel("Number of cores used")
-        plt.ylabel("Efficiency")
-        plt.grid()
-        plt.legend(loc="best")
-        #plt.savefig("efficiency.pdf")
-
-        plt.show()
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-# -----------------------------------------------------------------
-
-class ScalingPlotter(Plotter):
-
-    """
-    An instance of the ScalingPlotter is used to create plots of the runtimes, speedups and efficiencies as a function
-    of the number of threads, based on the results of (multiple) SKIRT scaling benchmark tests.
-    """
-
-    def __init__(self):
-
-        """
-        The constructor ...
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(ScalingPlotter, self).__init__()
-
-        # -- Attributes --
-
-        # A data structure to store the serial runtimes
-        self.serial = None
-
-        # The name of the system used for the scaling test
-        self.system_name = None
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def default_input():
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "scaling.dat"
-
-    # -----------------------------------------------------------------
-
-    def prepare_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Preparing the input data into plottable format...")
-
-        # Initialize a data structure to contain the scaling information in plottable format
-        self.data = defaultdict(lambda: defaultdict(lambda: Map({"processor_counts": [], "times": [], "errors": []})))
-
-        # Create an attribute to store the serial runtimes
-        self.serial = defaultdict(lambda: Map({"time": None, "error": None}))
-
-        sigma_level = 1.0
-
-        # Create a dictionary to store the runtimes for the different simulation phases of the simulations
-        # performed on one processor
-        serial_times = defaultdict(list)
-
-        # Keep track of the different processor counts encountered for the different parallelization modes
-        modes = defaultdict(set)
-
-        # Create dictionaries to contain the data before it is averaged over the different simulations
-        total_times = defaultdict(lambda: defaultdict(list))
-        setup_times = defaultdict(lambda: defaultdict(list))
-        stellar_times = defaultdict(lambda: defaultdict(list))
-        spectra_times = defaultdict(lambda: defaultdict(list))
-        dust_times = defaultdict(lambda: defaultdict(list))
-        writing_times = defaultdict(lambda: defaultdict(list))
-        waiting_times = defaultdict(lambda: defaultdict(list))
-        communication_times = defaultdict(lambda: defaultdict(list))
-        memory = defaultdict(lambda: defaultdict(list))
-
-        # Loop over the different entries in the scaling table
-        for i in range(len(self.table)):
-
-            # Get the parallelization mode
-            mode = self.table["Parallelization mode"][i]
-
-            # Get the number of processes and threads
-            processes = self.table["Processes"][i]
-            threads = self.table["Threads"][i]
-            processors = processes * threads
-
-            # If the number of processors is 1, add the runtimes for the different simulation phases to the
-            # dictionary that contains the serial runtimes
-            if processors == 1:
-
-                serial_times["total"].append(self.table["Total time"][i])
-                serial_times["setup"].append(self.table["Setup time"][i])
-                serial_times["stellar"].append(self.table["Stellar emission time"][i])
-                serial_times["spectra"].append(self.table["Spectra calculation time"][i])
-                serial_times["dust"].append(self.table["Dust emission time"][i])
-                serial_times["writing"].append(self.table["Writing time"][i])
-                serial_times["waiting"].append(self.table["Waiting time"][i])
-                serial_times["communication"].append(self.table["Communication time"][i])
-
-            # Add the processor count for this parallelization mode
-            modes[mode].add(processors)
-
-            # Fill in the runtimes and memory usage at the appropriate place in the dictionaries
-            total_times[mode][processors].append(self.table["Total time"][i])
-            setup_times[mode][processors].append(self.table["Setup time"][i])
-            stellar_times[mode][processors].append(self.table["Stellar emission time"][i])
-            spectra_times[mode][processors].append(self.table["Spectra calculation time"][i])
-            dust_times[mode][processors].append(self.table["Dust emission time"][i])
-            writing_times[mode][processors].append(self.table["Writing time"][i])
-            waiting_times[mode][processors].append(self.table["Waiting time"][i])
-            communication_times[mode][processors].append(self.table["Communication time"][i])
-            memory[mode][processors].append(self.table["Peak memory usage"][i])
-
-        # Average the serial runtimes, loop over each phase
-        for phase in serial_times:
-
-            self.serial[phase].time = np.mean(serial_times[phase])
-            self.serial[phase].error = sigma_level * np.std(serial_times[phase])
-
-        # Loop over all encountered parallelization modes
-        for mode in modes:
-
-            # Loop over all processor counts encountered for this mode
-            for processors in modes[mode]:
-
-                # Average the runtimes for the different simulation phases and the memory usage for the different
-                # runs for a certain parallelization mode and number of processors
-                self.data["total"][mode].processor_counts.append(processors)
-                self.data["total"][mode].times.append(np.mean(total_times[mode][processors]))
-                self.data["total"][mode].errors.append(sigma_level * np.std(total_times[mode][processors]))
-
-                self.data["setup"][mode].processor_counts.append(processors)
-                self.data["setup"][mode].times.append(np.mean(setup_times[mode][processors]))
-                self.data["setup"][mode].errors.append(sigma_level * np.std(setup_times[mode][processors]))
-
-                self.data["stellar"][mode].processor_counts.append(processors)
-                self.data["stellar"][mode].times.append(np.mean(stellar_times[mode][processors]))
-                self.data["stellar"][mode].errors.append(sigma_level * np.std(stellar_times[mode][processors]))
-
-                self.data["spectra"][mode].processor_counts.append(processors)
-                self.data["spectra"][mode].times.append(np.mean(spectra_times[mode][processors]))
-                self.data["spectra"][mode].errors.append(sigma_level * np.std(spectra_times[mode][processors]))
-
-                self.data["dust"][mode].processor_counts.append(processors)
-                self.data["dust"][mode].times.append(np.mean(dust_times[mode][processors]))
-                self.data["dust"][mode].errors.append(sigma_level * np.std(dust_times[mode][processors]))
-
-                self.data["writing"][mode].processor_counts.append(processors)
-                self.data["writing"][mode].times.append(np.mean(writing_times[mode][processors]))
-                self.data["writing"][mode].errors.append(sigma_level * np.std(writing_times[mode][processors]))
-
-                self.data["waiting"][mode].processor_counts.append(processors)
-                self.data["waiting"][mode].times.append(np.mean(waiting_times[mode][processors]))
-                self.data["waiting"][mode].errors.append(sigma_level * np.std(waiting_times[mode][processors]))
-
-                self.data["communication"][mode].processor_counts.append(processors)
-                self.data["communication"][mode].times.append(np.mean(communication_times[mode][processors]))
-                self.data["communication"][mode].errors.append(sigma_level * np.std(communication_times[mode][processors]))
-
-                self.data["memory"][mode].processor_counts.append(processors)
-                self.data["memory"][mode].times.append(np.mean(memory[mode][processors]))
-                self.data["memory"][mode].errors.append(sigma_level * np.std(memory[mode][processors]))
-
-        # Determine the name of the system used for the scaling test
-        self.system_name = os.path.basename(self.output_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_serial(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.serial) != 0
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the plots...")
-
-        # Plot the runtimes, speedups and efficiencies for the total simulation
-        self.plot_total()
-
-        # Plot the runtimes, speedups and efficiencies for the different simulation phases
-        self.plot_phases()
-
-        # Plot the scaling relation of the memory usage
-        self.plot_memory()
-
-        # Plot a timeline of the CPU time spent in the different simulation phases
-        self.plot_timeline()
-
-    # -----------------------------------------------------------------
-
-    def plot_total(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Plot the total runtimes
-        times_path = fs.join(self.output_path, "times.pdf")
-        self.plot_times("total", times_path)
-
-        # Plot the speedups and efficiencies if serial runtimes are available
-        if self.has_serial:
-
-            # Plot the total speedups
-            speedups_path = fs.join(self.output_path, "speedups.pdf")
-            self.plot_speedups("total", speedups_path)
-
-            # Plot the total efficiencies
-            efficiencies_path = fs.join(self.output_path, "efficiencies.pdf")
-            self.plot_efficiencies("total", efficiencies_path)
-
-    # -----------------------------------------------------------------
-
-    def plot_phases(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the different simulation phases and plot the runtimes, speedups and efficiencies
-        for phase in self.data:
-
-            # Skip the total simulation runtimes and the memory information
-            if phase == "total" or phase == "memory": continue
-
-            # Make a seperate directory in the output directory to contain the plots for the current phase
-            output_path_phase = fs.join(self.output_path, phase)
-            if not os.path.isdir(output_path_phase): os.mkdir(output_path_phase)
-
-            # Plot the total runtimes
-            times_path = fs.join(output_path_phase, "times.pdf")
-            self.plot_times(phase, times_path)
-
-            # Plot the speedups and efficiencies if serial runtimes are available
-            if self.has_serial:
-
-                # Plot the total speedups
-                speedups_path = fs.join(output_path_phase, "speedups.pdf")
-                self.plot_speedups("total", speedups_path)
-
-                # Plot the total efficiencies
-                efficiencies_path = fs.join(output_path_phase, "efficiencies.pdf")
-                self.plot_efficiencies("total", efficiencies_path)
-
-    # -----------------------------------------------------------------
-
-    def plot_times(self, phase, file_path, size=(12, 8)):
-
-        """
-        This function ...
-        :param phase:
-        :param file_path:
-        :param size:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the runtimes for the " + phase_names[phase] + "...")
-
-        # Initialize figure with the appropriate size
-        plt.figure(figsize=size)
-        plt.clf()
-
-        # Create a set that stores the tick labels for the plot
-        ticks = set()
-
-        # Loop over the different parallelization modes (the different curves)
-        for mode in self.data[phase]:
-
-            # Get the list of processor counts, runtimes and errors
-            processor_counts = self.data[phase][mode].processor_counts
-            times = self.data[phase][mode].times
-            errors = self.data[phase][mode].errors
-
-            # Sort the lists
-            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
-
-            # Plot the data points for this mode
-            plt.errorbar(processor_counts, times, errors, marker='.', label=mode)
-
-            # Add the appropriate ticks
-            ticks |= set(processor_counts)
-
-        # Use a logarithmic scale for the x axis (nthreads)
-        plt.xscale('log')
-
-        # Add one more tick for esthetic reasons
-        ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
-
-        # Format the axis ticks and create a grid
-        ax = plt.gca()
-        ax.set_xticks(ticks)
-        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter())
-        plt.xlim(ticks[0], ticks[-1])
-        plt.grid(True)
-
-        # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
-        plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
-        plt.legend(title="Modes")
-
-        # Set the plot title
-        plt.title("Scaling of the " + phase_labels[phase].lower() + " for " + self.system_name)
-
-        # Save the figure
-        plt.savefig(file_path)
-        plt.close()
-
-    # -----------------------------------------------------------------
-
-    def plot_speedups(self, phase, file_path, size=(12, 8), plot_fit=True):
+    def plot_speedups_phase(self, phase, file_path=None, size=(12, 8), plot_fit=True):
 
         """
         This function ...
@@ -852,12 +667,12 @@ class ScalingPlotter(Plotter):
         serial = Quantity(serial_time, serial_error)
 
         # Loop over the different parallelization modes (the different curves)
-        for mode in self.data[phase]:
+        for mode in self.timing_data[phase]:
 
             # Get the list of processor counts, runtimes and errors
-            processor_counts = self.data[phase][mode].processor_counts
-            times = self.data[phase][mode].times
-            errors = self.data[phase][mode].errors
+            processor_counts = self.timing_data[phase][mode].processor_counts
+            times = self.timing_data[phase][mode].times
+            errors = self.timing_data[phase][mode].errors
 
             # Sort the lists
             processor_counts, times, errors = sort_lists(processor_counts, times, errors)
@@ -979,15 +794,16 @@ class ScalingPlotter(Plotter):
         plt.legend(title="Modes")
 
         # Set the plot title
-        plt.title("Speedup of the " + phase_labels[phase].lower() + " for " + self.system_name)
+        #plt.title("Speedup of the " + phase_labels[phase].lower() + " for " + self.system_name)
 
         # Save the figure
-        plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path)
+        else: plt.show()
         plt.close()
 
     # -----------------------------------------------------------------
 
-    def plot_efficiencies(self, phase, file_path, size=(12, 8), plot_fit=True):
+    def plot_efficiencies_phase(self, phase, file_path=None, size=(12, 8), plot_fit=True):
 
         """
         This function creates a PDF plot showing the efficiency as a function of the number of threads.
@@ -1016,12 +832,12 @@ class ScalingPlotter(Plotter):
         serial = Quantity(serial_time, serial_error)
 
         # Loop over the different parallelization modes (the different curves)
-        for mode in self.data[phase]:
+        for mode in self.timing_data[phase]:
 
             # Get the list of processor counts, runtimes and errors
-            processor_counts = self.data[phase][mode].processor_counts
-            times = self.data[phase][mode].times
-            errors = self.data[phase][mode].errors
+            processor_counts = self.timing_data[phase][mode].processor_counts
+            times = self.timing_data[phase][mode].times
+            errors = self.timing_data[phase][mode].errors
 
             # Sort the lists
             processor_counts, times, errors = sort_lists(processor_counts, times, errors)
@@ -1071,10 +887,155 @@ class ScalingPlotter(Plotter):
         plt.legend(title="Parallelization modes")
 
         # Set the plot title
-        plt.title("Efficiency of the " + phase_labels[phase].lower() + " for " + self.system_name)
+        #plt.title("Efficiency of the " + phase_labels[phase].lower() + " for " + self.system_name)
 
         # Save the figure
-        plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path)
+        else: plt.show()
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_memory_phase(self, phase, file_path=None, figsize=(12,8)):
+
+        """
+        This function ...
+        :param phase:
+        :param file_path:
+        :param figsize:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the memory scaling...")
+
+        # Initialize figure with the appropriate size
+        plt.figure(figsize=figsize)
+        plt.clf()
+
+        # Create a set that stores the tick labels for the plot
+        ticks = set()
+
+        # Loop over the different parallelization modes (the different curves)
+        for mode in self.memory_data[phase]:
+
+            # Get the list of processor counts, runtimes and errors
+            processor_counts = self.memory_data[phase][mode].processor_counts
+            memories = self.memory_data[phase][mode].memory
+            errors = self.memory_data[phase][mode].errors
+
+            # Sort the lists
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+
+            # Plot the data points for this mode
+            plt.errorbar(processor_counts, memories, errors, marker='.', label=mode)
+
+            # Add the appropriate ticks
+            ticks |= set(processor_counts)
+
+        # Use a logarithmic scale for the x axis (nthreads)
+        plt.xscale('log')
+
+        # Add one more tick for esthetic reasons
+        ticks = sorted(ticks)
+        ticks.append(ticks[-1] * 2)
+
+        # Format the axis ticks and create a grid
+        ax = plt.gca()
+        ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(ScalarFormatter())
+        plt.xlim(ticks[0], ticks[-1])
+        plt.grid(True)
+
+        # Add axis labels and a legend
+        plt.xlabel("Number of processors $n$", fontsize='large')
+        plt.ylabel("Memory usage (GB)", fontsize='large')
+        plt.legend(title="Modes")
+
+        # Set the plot title
+        #plt.title("Memory scaling for " + self.system_name)
+
+        # Save the figure
+        if file_path is not None: plt.savefig(file_path)
+        else: plt.show()
+        plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_total_memory_phase(self, phase, file_path=None, figsize=(12,8)):
+
+        """
+        This function ...
+        :param phase:
+        :param file_path:
+        :param figsize:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the total memory scaling (all processes combined)...")
+
+        # Initialize figure with the appropriate size
+        plt.figure(figsize=figsize)
+        plt.clf()
+
+        # Create a set that stores the tick labels for the plot
+        ticks = set()
+
+        # Loop over the different parallelization modes (the different curves)
+        for mode in self.memory_data[phase]:
+
+            # Get the list of processor counts, runtimes and errors
+            processor_counts = self.memory_data[phase][mode].processor_counts
+            memories = self.memory_data[phase][mode].memory
+            errors = self.memory_data[phase][mode].errors
+
+            if mode == "multithreading": processes = np.ones(len(processor_counts))
+            elif "mpi" in mode: processes = processor_counts
+            elif "hybrid" in mode:
+                threads = int(mode.split("(")[1].split(")")[0])
+                processes = processor_counts / threads
+            else: raise ValueError("Invalid mode: " + mode)
+
+            # Multiply the memory usage for each processor count with the corresponding number of processes (to get the total)
+            memories *= processes
+
+            # Sort the lists
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+
+            # Plot the data points for this mode
+            plt.errorbar(processor_counts, memories, errors, marker='.', label=mode)
+
+            # Add the appropriate ticks
+            ticks |= set(processor_counts)
+
+        # Use a logarithmic scale for the x axis (nthreads)
+        plt.xscale('log')
+
+        # Add one more tick for esthetic reasons
+        ticks = sorted(ticks)
+        ticks.append(ticks[-1] * 2)
+
+        # Format the axis ticks and create a grid
+        ax = plt.gca()
+        ax.set_xticks(ticks)
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(ScalarFormatter())
+        plt.xlim(ticks[0], ticks[-1])
+        plt.grid(True)
+
+        # Add axis labels and a legend
+        plt.xlabel("Number of processors $n$", fontsize='large')
+        plt.ylabel("Total memory usage (all processes) (GB)", fontsize='large')
+        plt.legend(title="Modes")
+
+        # Set the plot title
+        # plt.title("Memory scaling for " + self.system_name)
+
+        # Save the figure
+        if file_path is not None: plt.savefig(file_path)
+        else: plt.show()
         plt.close()
 
     # -----------------------------------------------------------------
@@ -1090,7 +1051,7 @@ class ScalingPlotter(Plotter):
         log.info("Plotting the scaling timeline...")
 
         # Loop over the different parallelization modes
-        for mode in self.data["total"]:
+        for mode in self.timing_data["total"]:
 
             # Determine the path to the timeline plot file
             plot_file_path = fs.join(self.output_path, "timeline_" + mode + ".pdf")
@@ -1101,19 +1062,19 @@ class ScalingPlotter(Plotter):
             nprocs_list = []
 
             # Loop over the different processor counts
-            for j in range(len(self.data["total"][mode].processor_counts)):
+            for j in range(len(self.timing_data["total"][mode].processor_counts)):
 
                 # Get the processor count
-                processors = self.data["total"][mode].processor_counts[j]
+                processors = self.timing_data["total"][mode].processor_counts[j]
 
                 # Get the average runtimes for the different phases corresponding to the current processor count
-                setup_time = self.data["setup"][mode].times[j] * processors
-                stellar_time = self.data["stellar"][mode].times[j] * processors
-                spectra_time = self.data["spectra"][mode].times[j] * processors
-                dust_time = self.data["dust"][mode].times[j] * processors
-                writing_time = self.data["writing"][mode].times[j] * processors
-                waiting_time = self.data["waiting"][mode].times[j] * processors
-                communication_time = self.data["communication"][mode].times[j] * processors
+                setup_time = self.timing_data["setup"][mode].times[j] * processors
+                stellar_time = self.timing_data["stellar"][mode].times[j] * processors
+                spectra_time = self.timing_data["spectra"][mode].times[j] * processors
+                dust_time = self.timing_data["dust"][mode].times[j] * processors
+                writing_time = self.timing_data["writing"][mode].times[j] * processors
+                waiting_time = self.timing_data["waiting"][mode].times[j] * processors
+                communication_time = self.timing_data["communication"][mode].times[j] * processors
 
                 # Add the processor count
                 nprocs_list.append(processors)
@@ -1176,76 +1137,66 @@ class ScalingPlotter(Plotter):
                     data[6][2].append(total)
 
             # Set the plot title
-            title = "Scaling timeline for " + self.system_name
+            #title = "Scaling timeline for " + self.system_name
 
             # Create the plot
             create_timeline_plot(data, plot_file_path, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True, title=title)
 
     # -----------------------------------------------------------------
 
-    def plot_memory(self, figsize=(12,8)):
+    def plot_dries(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Plotting the memory scaling...")
+        dmpiTimes = np.loadtxt("dmpiTimes.dat", usecols=range(1, 8))
+        smpiTimes = np.loadtxt("smpiTimes.dat", usecols=range(1, 8))
+        tTimes = np.loadtxt("tTimes.dat", usecols=range(1, 8))
 
-        # Determine the file path for this plot
-        file_path = fs.join(self.output_path, "memory.pdf")
+        def sortByCores(times):
+            times[:] = times[times[:, 6].argsort()]
 
-        # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
-        plt.clf()
+        sortByCores(tTimes)
+        sortByCores(smpiTimes)
+        sortByCores(dmpiTimes)
 
-        # Create a set that stores the tick labels for the plot
-        ticks = set()
+        singlecore = tTimes[0, 5]
 
-        # Loop over the different parallelization modes (the different curves)
-        for mode in self.data["memory"]:
+        plt.figure(figsize=(8, 5))
 
-            # Get the list of processor counts, runtimes and errors
-            processor_counts = self.data["memory"][mode].processor_counts
-            memories = self.data["memory"][mode].times
-            errors = self.data["memory"][mode].errors
+        def plot(times, key):
+            cores = times[:, 6]
+            values = singlecore / times[:, 5] / cores
+            plt.semilogx(cores, values, label=key, basex=2, marker='D')
+            ax = plt.gca()
+            for axis in [ax.xaxis, ax.yaxis]:
+                axis.set_major_formatter(ScalarFormatter())
 
-            # Sort the lists
-            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+        plot(tTimes, "Threads")
+        plot(smpiTimes, "MPI task-based")
+        plot(dmpiTimes, "MPI data-parallel")
+        plt.plot([1, 16], [1, 1], color='k', linewidth=3, linestyle='dashed')
+        plt.title("Single node scaling", y=1.025)
+        plt.xlabel("Number of cores used")
+        plt.ylabel("Efficiency")
+        plt.grid()
+        plt.legend(loc="best")
+        #plt.savefig("efficiency.pdf")
 
-            # Plot the data points for this mode
-            plt.errorbar(processor_counts, memories, errors, marker='.', label=mode)
+        plt.show()
 
-            # Add the appropriate ticks
-            ticks |= set(processor_counts)
+    # -----------------------------------------------------------------
 
-        # Use a logarithmic scale for the x axis (nthreads)
-        plt.xscale('log')
+    def write(self):
 
-        # Add one more tick for esthetic reasons
-        ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        """
+        This function ...
+        :return:
+        """
 
-        # Format the axis ticks and create a grid
-        ax = plt.gca()
-        ax.set_xticks(ticks)
-        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter())
-        plt.xlim(ticks[0], ticks[-1])
-        plt.grid(True)
-
-        # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
-        plt.ylabel("Memory usage (GB)", fontsize='large')
-        plt.legend(title="Modes")
-
-        # Set the plot title
-        plt.title("Memory scaling for " + self.system_name)
-
-        # Save the figure
-        plt.savefig(file_path)
-        plt.close()
+        pass
 
 # -----------------------------------------------------------------
 
