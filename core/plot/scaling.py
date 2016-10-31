@@ -52,6 +52,7 @@ phase_labels = {"total": "Total runtime", "setup": "Setup time", "stellar": "Ste
 # -----------------------------------------------------------------
 
 scaling_properties = ["runtime", "speedup", "efficiency", "memory", "total memory", "timeline"]
+simulation_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication"]
 
 # -----------------------------------------------------------------
 
@@ -219,7 +220,7 @@ class BatchScalingPlotter(Configurable):
             threads = threads_per_core * cores_per_process
             processors = processes * threads
 
-            data_parallel = self.timing["Data-parallel"]
+            data_parallel = self.timing["Data-parallel"][i]
 
             if processes > 1:
                 if threads > 1:
@@ -364,8 +365,16 @@ class BatchScalingPlotter(Configurable):
 
     def plot_runtimes(self):
 
-        # Plot
-        self.plot_times("total")
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Plot
+            self.plot_times(phase)
 
     # -----------------------------------------------------------------
 

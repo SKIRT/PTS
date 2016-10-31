@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.plot.scaling import scaling_properties
+from pts.core.plot.scaling import scaling_properties, simulation_phases
 
 # -----------------------------------------------------------------
 
@@ -19,5 +19,7 @@ definition.add_flag("recursive", "look for simulation in directories recursively
 
 #
 definition.add_positional_optional("properties", "string_list", "plot the scaling of these properties", choices=scaling_properties, default=scaling_properties)
+
+definition.add_positional_optional("phases", "string_list", "the simulation phases for which to do the plotting", choices=simulation_phases, default=["total"])
 
 # -----------------------------------------------------------------
