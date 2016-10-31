@@ -376,6 +376,12 @@ class BatchScalingPlotter(Configurable):
             self.serial_timing[phase].time = np.mean(serial_times[phase])
             self.serial_timing[phase].error = sigma_level * np.std(serial_times[phase])
 
+        # Average the serial memory usages, loop over each phase
+        for phase in serial_memory:
+
+            self.serial_memory[phase].memory = np.mean(serial_memory[phase])
+            self.serial_memory[phase].error = sigma_level * np.std(serial_memory[phase])
+
         # Loop over all encountered parallelization modes
         for mode in modes:
 
@@ -990,7 +996,8 @@ class BatchScalingPlotter(Configurable):
             ticks |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
-        plt.xscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
@@ -1107,7 +1114,7 @@ class BatchScalingPlotter(Configurable):
         ticks = set()
 
         # Get the serial memory (and error) for this phase (create a Quantity object)
-        serial_memory = self.serial_memory[phase].time
+        serial_memory = self.serial_memory[phase].memory
         serial_error = self.serial_memory[phase].error
         serial = Quantity(serial_memory, serial_error)
 
@@ -1146,7 +1153,8 @@ class BatchScalingPlotter(Configurable):
             ticks |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
-        plt.xscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
@@ -1225,7 +1233,8 @@ class BatchScalingPlotter(Configurable):
             ticks |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
-        plt.xscale('log')
+        plt.xscale("log")
+        plt.yscale("log")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
@@ -1268,7 +1277,8 @@ class BatchScalingPlotter(Configurable):
         for mode in self.timing_data["total"]:
 
             # Determine the path to the timeline plot file
-            plot_file_path = fs.join(self.output_path, "timeline_" + mode + ".pdf")
+            #plot_file_path = fs.join(self.output_path, "timeline_" + mode + ".pdf")
+            plot_file_path = None
 
             # Initialize a data structure to contain the start times and endtimes of the different simulation phases,
             # for the different processor counts (data is indexed on the simulation phase)
@@ -1351,10 +1361,10 @@ class BatchScalingPlotter(Configurable):
                     data[6][2].append(total)
 
             # Set the plot title
-            #title = "Scaling timeline for " + self.system_name
+            title = "Scaling timeline"
 
             # Create the plot
-            create_timeline_plot(data, plot_file_path, nprocs_list, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True, title=title)
+            create_timeline_plot(data, nprocs_list, plot_file_path, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True, title=title)
 
     # -----------------------------------------------------------------
 

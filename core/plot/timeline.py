@@ -226,7 +226,7 @@ class BatchTimeLinePlotter(Configurable):
             plot_path = None
 
             # Create the plot
-            create_timeline_plot(data, plot_path, ranks)
+            create_timeline_plot(data, ranks, plot_path)
 
 # -----------------------------------------------------------------
 
@@ -315,11 +315,11 @@ class TimeLinePlotter(Plotter):
 
         # Create the plot
         plot_path = fs.join(self.output_path, "timeline.pdf")
-        create_timeline_plot(self.data, plot_path, self.ranks)
+        create_timeline_plot(self.data, self.ranks, plot_path)
 
 # -----------------------------------------------------------------
 
-def create_timeline_plot(data, path, procranks, figsize=(12, 8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False, title=None):
+def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False, title=None):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
