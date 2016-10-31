@@ -439,7 +439,7 @@ def ls(path=None):
 # -----------------------------------------------------------------
 
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                  extensions=False, returns="path", exact_name=None, startswith=None, endswith=None, sort=None):
+                  extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None, sort=None):
 
     """
     This function ...
@@ -452,6 +452,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param extensions:
     :param returns: a string ("path", "name", or "directory") OR a list [], with elements equal to "path", "name" or "directory" (e.g. [path, name] or [name, directory])
     :param exact_name:
+    :param exact_not_name:
     :param startswith:
     :param endswith:
     :param sort: a function which determines how the files should be sorted based on their filename. Hidden items (starting with .) are placed first.
@@ -511,6 +512,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         # Ignore filenames that do not match the exact filename, if specified
         if exact_name is not None and exact_name != item_name: continue
 
+        # If the filename matches the 'exact not name', skip it
+        if exact_not_name is not None and exact_not_name == item_name: continue
+
         # Ignore filenames that do not start or end with the specified strings
         if startswith is not None and not item_name.startswith(startswith): continue
         if endswith is not None and not item_name.endswith(endswith): continue
@@ -545,7 +549,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 # -----------------------------------------------------------------
 
 def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains=None, not_contains=None,
-                        returns="path", exact_name=None, startswith=None, endswith=None, sort=None):
+                        returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None, sort=None):
 
     """
     This function ...
@@ -556,6 +560,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
     :param not_contains:
     :param returns: a string ("path", "name", or "directory") OR a list [], with elements equal to "path", "name" or "directory" (e.g. [path, name] or [name, directory])
     :param exact_name:
+    :param exact_not_name:
     :param startswith:
     :param endswith:
     :param sort: a function which determines how the directories should be sorted based on their name. Hidden items (starting with .) are placed first.
@@ -607,6 +612,9 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
 
         # If the directory name does not match the exact name, skip it
         if exact_name is not None and exact_name != item: continue
+
+        # If the directory name matches the 'exact not name', skip it
+        if exact_not_name is not None and exact_not_name == item: continue
 
         # Ignore directory names that do not start or end with the specified strings
         if startswith is not None and not item.startswith(startswith): continue

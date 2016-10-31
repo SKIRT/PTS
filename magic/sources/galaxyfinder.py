@@ -79,19 +79,14 @@ class GalaxyFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, catalog, special=None, ignore=None, bad=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param catalog:
-        :param special:
-        :param ignore:
-        :param bad:
         """
 
         # 1. Call the setup function
-        self.setup(frame, catalog, special, ignore, bad)
+        self.setup(**kwargs)
 
         # 2. Find the galaxies
         self.find_galaxies()

@@ -13,3 +13,5 @@ test_memory | -- | test.memory.MemoryTester | arguments | Test the memory estima
 parallelization | -- | launch.parallelization.ParallelizationTool | interactive | Determine the optimal parallelization strategy for a certain ski file
 test_performance | -- | test.performance.PerformanceTest | interactive | Run the SKIRT performance test suite
 plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs
+plot_scaling | -- | plot.scaling.BatchScalingPlotter | arguments | Plot the performance and or memory scaling of a (batch of) simulation(s)
+plot_timelines | -- | plot.timeline.BatchTimeLinePlotter | arguments | Plot timelines of a (batch of) simulation(s)

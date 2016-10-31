@@ -138,7 +138,7 @@ class SourceFinder(OldConfigurable):
         if self.downsampled:
             sky_region = self.galaxy_sky_region
             return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-        return self.galaxy_finder.region
+        else: return self.galaxy_finder.region
 
     # -----------------------------------------------------------------
 
@@ -515,7 +515,6 @@ class SourceFinder(OldConfigurable):
         # TRAINED FINDER
 
 
-
     # -----------------------------------------------------------------
 
     def find_galaxies(self):
@@ -528,7 +527,7 @@ class SourceFinder(OldConfigurable):
         log.info("Finding the galaxies ...")
 
         # Run the galaxy finder
-        self.galaxy_finder.run(self.frame, self.galactic_catalog, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+        self.galaxy_finder.run(frame=self.frame, catalog=self.galactic_catalog, special_mask=self.special_mask, ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
 
         # Set the name of the principal galaxy
         self.galaxy_name = self.galaxy_finder.principal.name
@@ -551,7 +550,7 @@ class SourceFinder(OldConfigurable):
             log.info("Finding the stars ...")
 
             # Run the star finder
-            self.star_finder.run(self.frame, self.galaxy_finder, self.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+            self.star_finder.run(frame=self.frame, galaxy_finder=self.galaxy_finder, catalog=self.stellar_catalog, special_mask=self.special_mask, ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
 
             # Inform the user
             log.success("Finished finding the stars")

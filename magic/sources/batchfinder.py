@@ -29,6 +29,7 @@ from ..core.dataset import DataSet
 from ..catalog.importer import CatalogImporter
 from ...core.tools import filesystem as fs
 from ..basics.skyregion import SkyRegion
+from ..core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -54,6 +55,10 @@ class BatchSourceFinder(Configurable):
         # The data set
         self.dataset = None
 
+        # Downsampled images
+        self.downsampled = None
+        self.original_wcs = None
+
         # The galactic and stellar catalog
         self.galactic_catalog = None
         self.stellar_catalog = None
@@ -65,6 +70,15 @@ class BatchSourceFinder(Configurable):
 
         # The name of the principal galaxy
         self.galaxy_name = None
+
+        # The regions
+        self.galaxy_regions = dict()
+        self.star_regions = dict()
+        self.saturation_regions = dict()
+        self.other_regions = dict()
+
+        # The segmentation maps
+        self.segments = dict()
 
     # -----------------------------------------------------------------
 
@@ -154,6 +168,9 @@ class BatchSourceFinder(Configurable):
         # Set a reference to the mask of bad pixels
         #self.bad_mask = bad_mask
 
+
+        # DOWNSAMPLE ??
+
     # -----------------------------------------------------------------
 
     def get_catalogs(self):
@@ -207,13 +224,53 @@ class BatchSourceFinder(Configurable):
             frame = self.dataset.get_frame(name)
 
             # Run the galaxy finder
-            self.galaxy_finder.run(frame, self.galactic_catalog, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+            self.galaxy_finder.run(frame=frame, catalog=self.galactic_catalog, special_mask=self.special_mask,
+                                   ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
 
             # Set the name of the principal galaxy
             #self.galaxy_name = self.galaxy_finder.principal.name
 
+            # Get the galaxy region
+            #galaxy_sky_region = self.galaxy_finder.finder.galaxy_sky_region
+            #if galaxy_sky_region is not None:
+            #    galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+
+            if self.galaxy_finder.region is not None:
+
+                galaxy_sky_region = self.galaxy_finder.region.to_sky(frame.wcs)
+
+                #if self.downsampled:
+                #    sky_region = self.galaxy_sky_region
+                #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                #ele: return self.galaxy_finder.region
+
+                self.galaxy_regions[name] = galaxy_sky_region
+
+            if self.galaxy_finder.segments is not None:
+
+                # Create an image with the segmentation maps
+                self.segments[name] = Image("segments")
+
+                #if self.galaxy_finder.segments is None: return None
+                #if self.downsampled:
+
+                #    segments = self.galaxy_finder.segments
+                #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+                #    upsampled.unpad(self.pad_x, self.pad_y)
+                #    return upsampled
+
+                #else: return self.galaxy_finder.segments
+
+                galaxy_segments = self.galaxy_finder.segments
+
+                # Add the segmentation map of the galaxies
+                self.segments[name].add_frame(galaxy_segments, "galaxies")
+
             # Inform the user
             log.success("Finished finding the galaxies for '" + name + "' ...")
+
+            # Clear the galaxy finder
+            self.galaxy_finder.clear()
 
     # -----------------------------------------------------------------
     
@@ -242,7 +299,45 @@ class BatchSourceFinder(Configurable):
                 frame = self.dataset.get_frame(name)
 
                 # Run the star finder
-                self.star_finder.run(frame, self.galaxy_finder, self.stellar_catalog, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+                self.star_finder.run(frame=frame, galaxy_finder=self.galaxy_finder, catalog=self.stellar_catalog,
+                                     special_mask=self.special_mask, ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
+
+                if self.star_finder.star_region is not None:
+
+                    star_sky_region = self.star_finder.star_region.to_sky(frame.wcs)
+
+                    #if self.downsampled:
+                    #    sky_region = self.star_sky_region
+                    #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                    #else: return self.star_finder.star_region
+
+                    self.star_regions[name] = star_sky_region
+
+                if self.star_finder.saturation_region is not None:
+
+                    saturation_sky_region = self.star_finder.saturation_region.to_sky(frame.wcs)
+
+                    #if self.downsampled:
+                    #    sky_region = self.saturation_sky_region
+                    #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                    #else: return self.star_finder.saturation_region
+
+                    self.saturation_regions[name] = saturation_sky_region
+
+                if self.star_finder.segments is not None:
+
+                    #if self.star_finder.segments is None: return None
+                    #if self.downsampled:
+                    #    segments = self.star_finder.segments
+                    #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+                    #    upsampled.unpad(self.pad_x, self.pad_y)
+                    #    return upsampled
+                    #else: return self.star_finder.segments
+
+                    star_segments = self.star_finder.segments
+
+                    # Add the segmentation map of the saturated stars
+                    self.segments[name].add_frame(star_segments, "stars")
 
                 # Inform the user
                 log.success("Finished finding the stars for '" + name + "' ...")
@@ -274,6 +369,33 @@ class BatchSourceFinder(Configurable):
 
             # Run the trained finder just to find sources
             self.trained_finder.run(frame, self.galaxy_finder, self.star_finder, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+
+            if self.trained_finder.region is not None:
+
+                other_sky_region = self.trained_finder.region.to_sky(frame.wcs)
+
+                #if self.downsampled:
+                #    sky_region = self.other_sky_region
+                #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                #else: return self.trained_finder.region
+
+                # Add the region
+                self.other_regions[name] = other_sky_region
+
+            if self.trained_finder.segments is not None:
+
+                #if self.trained_finder.segments is None: return None
+                #if self.downsampled:
+                #    segments = self.trained_finder.segments
+                #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+                #    upsampled.unpad(self.pad_x, self.pad_y)
+                #    return upsampled
+                #else: return self.trained_finder.segments
+
+                other_segments = self.trained_finder.segments
+
+                # Add the segmentation map of the other sources
+                self.segments[name].add_frame(other_segments, "other_sources")
 
             # Inform the user
             log.success("Finished finding other sources for '" + name + "' ...")
@@ -344,6 +466,12 @@ class BatchSourceFinder(Configurable):
         :return:
         """
 
+        # Write regions
+        self.write_regions()
+
+        # Write segmentation maps
+        self.write_segments()
+
         # 1. Write
         self.write_galactic_catalogs()
 
@@ -352,6 +480,81 @@ class BatchSourceFinder(Configurable):
 
         # 3. Write ...
         self.write_statistics()
+
+    # -----------------------------------------------------------------
+
+    def write_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the regions ...")
+
+        # Loop over the regions
+        for name in self.galaxy_regions:
+
+            #galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = fs.join(output_path, "galaxies.reg")
+
+            # Save
+            self.galaxy_regions[name].save(path)
+
+        # Loop over the star regions
+        for name in self.star_regions:
+
+            #star_region = star_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = fs.join(output_path, "stars.reg")
+
+            # Save
+            self.star_regions[name].save(path)
+
+        # Loop over the saturation regions
+        for name in self.saturation_regions:
+
+            #saturation_region = saturation_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = fs.join(output_path, "saturation.reg")
+
+            # Save
+            saturation_region.save(path)
+
+        # Loop over the other regions
+        for name in self.other_regions:
+
+            #other_region = other_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = fs.join(output_path, "other_sources.reg")
+
+            # Save
+            other_region.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the segmentation maps ...")
+
+        for name in self.segments:
+
+            # Save the FITS file with the segmentation maps
+            #path = fs.join(output_path, "segments.fits")
+
+            self.segments[name].save(path)
 
     # -----------------------------------------------------------------
 
@@ -397,7 +600,7 @@ class BatchSourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write_statistics(self, path):
+    def write_statistics(self):
 
         """
         This function ...
@@ -405,8 +608,15 @@ class BatchSourceFinder(Configurable):
         :return:
         """
 
+        # Show the FWHM
+        log.info("The FWHM that could be fitted to the point sources is " + str(finder.fwhm))
+
         # Inform the user
         log.info("Writing statistics to '" + path + "' ...")
+
+        # Write statistics file
+        #statistics_path = fs.join(output_path, "statistics.dat")
+        #finder.write_statistics(statistics_path)
 
         # Open the file, write the info
         with open(path, 'w') as statistics_file:

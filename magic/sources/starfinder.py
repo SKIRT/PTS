@@ -28,7 +28,7 @@ from ..core.frame import Frame
 from ..core.source import Source
 from ..object.star import Star
 from ..tools import statistics, fitting
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
@@ -36,7 +36,7 @@ from ..tools import plotting
 
 # -----------------------------------------------------------------
 
-class StarFinder(OldConfigurable):
+class StarFinder(Configurable):
 
     """
     This class ...
@@ -49,7 +49,7 @@ class StarFinder(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(StarFinder, self).__init__(config, "magic")
+        super(StarFinder, self).__init__(config)
 
         # -- Attributes --
 
@@ -86,20 +86,15 @@ class StarFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxy_finder, catalog, special=None, ignore=None, bad=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param galaxy_finder:
-        :param catalog:
-        :param special:
-        :param ignore:
-        :param bad:
+        :param kwargs:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxy_finder, catalog, special, ignore, bad)
+        self.setup(**kwargs)
 
         # 2. Find the stars
         self.find_stars()
@@ -121,34 +116,29 @@ class StarFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxy_finder, catalog, special_mask=None, ignore_mask=None, bad_mask=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param galaxy_finder:
-        :param catalog:
-        :param special_mask:
-        :param ignore_mask:
-        :param bad_mask:
+        :param kwargs:
         """
 
         # Call the setup function of the base class
         super(StarFinder, self).setup()
 
         # Make a local reference to the frame
-        self.frame = frame
+        self.frame = kwargs.pop("frame")
 
         # Make a local reference to the catalog
-        self.catalog = catalog
+        self.catalog = kwargs.pop("catalog")
 
         # Special and ignore masks
-        self.special_mask = special_mask
-        self.ignore_mask = ignore_mask
-        self.bad_mask = bad_mask
+        self.special_mask = kwargs.pop("special_mask", None)
+        self.ignore_mask = kwargs.pop("ignore_mask", None)
+        self.bad_mask = kwargs.pop("bad_mask", None)
 
         # Make a local reference to the galaxy finder
-        self.galaxy_finder = galaxy_finder
+        self.galaxy_finder = kwargs.pop("galaxy_finder")
 
         # Create an empty frame for the segments
         self.segments = Frame.zeros_like(self.frame)
