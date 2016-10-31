@@ -212,25 +212,35 @@ class BatchScalingPlotter(Configurable):
         # Loop over the different entries in the timing table
         for i in range(len(self.timing)):
 
-            # Get the parallelization mode
-            #mode = self.table["Parallelization mode"][i]
-
             # Get the number of processes and threads
             processes = self.timing["Processes"][i]
-            threads = self.timing["Threads"][i]
+            threads_per_core = self.timing["Threads per core"][i]
+            cores_per_process = self.timing["Cores"][i] / processes
+            threads = threads_per_core * cores_per_process
             processors = processes * threads
+
+            data_parallel = self.timing["Data-parallel"]
 
             if processes > 1:
                 if threads > 1:
-                    mode = "hybrid-" + str(threads)
-                else: mode = "mpi"
-            else: mode = "threads"
+                    scaling_mode = "hybrid-" + str(threads)
+                else: scaling_mode = "mpi"
+            else: scaling_mode = "threads"
+
+            if processes > 1:
+                if threads > 1:
+                    if data_parallel: mode = "hybrid task+data (" + str(threads) + ")"
+                    else: mode = "hybrid task (" + str(threads) + ")"
+                else:
+                    if data_parallel: mode = "mpi task+data"
+                    else: mode = "mpi task"
+            else: mode = "multithreading"
 
             # If the number of processors is 1, add the runtimes for the different simulation phases to the
             # dictionary that contains the serial runtimes
             if processors == 1:
 
-                serial_times["total"].append(self.timing["Total time"][i])
+                serial_times["total"].append(self.timing["Total runtime"][i])
                 serial_times["setup"].append(self.timing["Setup time"][i])
                 serial_times["stellar"].append(self.timing["Stellar emission time"][i])
                 serial_times["spectra"].append(self.timing["Spectra calculation time"][i])
@@ -243,7 +253,7 @@ class BatchScalingPlotter(Configurable):
             modes[mode].add(processors)
 
             # Fill in the runtimes and memory usage at the appropriate place in the dictionaries
-            total_times[mode][processors].append(self.timing["Total time"][i])
+            total_times[mode][processors].append(self.timing["Total runtime"][i])
             setup_times[mode][processors].append(self.timing["Setup time"][i])
             stellar_times[mode][processors].append(self.timing["Stellar emission time"][i])
             spectra_times[mode][processors].append(self.timing["Spectra calculation time"][i])
@@ -251,10 +261,12 @@ class BatchScalingPlotter(Configurable):
             writing_times[mode][processors].append(self.timing["Writing time"][i])
             waiting_times[mode][processors].append(self.timing["Waiting time"][i])
             communication_times[mode][processors].append(self.timing["Communication time"][i])
-            memory[mode][processors].append(self.timing["Peak memory usage"][i])
+            #memory[mode][processors].append(self.timing["Peak memory usage"][i])
+            memory[mode][processors].append(self.memory["Peak memory usage"][i])
 
         # Average the serial runtimes, loop over each phase
         for phase in serial_times:
+
             self.serial[phase].time = np.mean(serial_times[phase])
             self.serial[phase].error = sigma_level * np.std(serial_times[phase])
 
@@ -263,6 +275,7 @@ class BatchScalingPlotter(Configurable):
 
             # Loop over all processor counts encountered for this mode
             for processors in modes[mode]:
+
                 # Average the runtimes for the different simulation phases and the memory usage for the different
                 # runs for a certain parallelization mode and number of processors
                 self.data["total"][mode].processor_counts.append(processors)
@@ -295,8 +308,7 @@ class BatchScalingPlotter(Configurable):
 
                 self.data["communication"][mode].processor_counts.append(processors)
                 self.data["communication"][mode].times.append(np.mean(communication_times[mode][processors]))
-                self.data["communication"][mode].errors.append(
-                    sigma_level * np.std(communication_times[mode][processors]))
+                self.data["communication"][mode].errors.append(sigma_level * np.std(communication_times[mode][processors]))
 
                 self.data["memory"][mode].processor_counts.append(processors)
                 self.data["memory"][mode].times.append(np.mean(memory[mode][processors]))
