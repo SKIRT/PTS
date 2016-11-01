@@ -13,6 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import re
+from operator import itemgetter
+import filecmp
+import difflib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -88,6 +92,9 @@ class SimulationDiscoverer(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Finding simulations ...")
+
         search_path = self.config.path
 
         ski_files = defaultdict(list)
@@ -115,21 +122,96 @@ class SimulationDiscoverer(Configurable):
             # Add the path
             parameter_files[prefix].append(dirpath)
 
+        parpaths = dict()
+
+        # Compare the parameter files
+        for prefix in parameter_files:
+
+            distinct_parpaths = defaultdict(list)
+
+            for dirpath in parameter_files[prefix]:
+
+                parpath = fs.join(dirpath, prefix + "_parameters.xml")
+
+                if len(distinct_parpaths) == 0: distinct_parpaths[parpath].append(parpath)
+                else:
+
+                    for path in distinct_parpaths:
+
+                        if equaltextfiles(parpath, path, 1):
+                            distinct_parpaths[path].append(parpath)
+                            break
+
+                    else: distinct_parpaths[parpath].append(parpath)
+
+            # Set ...
+            parpaths[prefix] = distinct_parpaths
+
+        #print(parpaths[parpaths.keys()[0]])
+
         # Search for log files
-        for path, name in fs.files_in_path(search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
+        #for path, name in fs.files_in_path(search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
 
             # The simulation output path
-            output_path = fs.directory_of(path)
+            #output_path = fs.directory_of(path)
 
             # Determine the prefix
-            prefix = name.split("_log")[0]
+            #prefix = name.split("_log")[0]
 
             # Load simulation
-            simulation = get_simulation(prefix, output_path, ski_files, parameter_files)
+            #simulation = get_simulation(prefix, output_path, ski_files, parameter_files)
 
             # Add the simulation
             #simulations.append(simulation)
-            self.simulations[simulation.ski_path].append(simulation)
+            #self.simulations[simulation.ski_path].append(simulation)
+
+        for prefix in parpaths:
+
+            # Loop over the unique parameter files, find equal ski file
+            for parpath in parpaths[prefix]:
+
+                #rel_parpath = parpath.split(self.config.path)[1]
+                ski_found = False
+
+                # Loop over the ski files with this prefix
+                for dirpath in ski_files[prefix]:
+
+                    skipath = fs.join(dirpath, prefix + ".ski")
+                    rel_skipath = skipath.split(self.config.path)[1]
+
+                    #print("DIFFERENCES", parpath, skipath)
+                    #for line1, line2 in textfiledifferences(parpath, skipath):
+                    #    print(line1, line2)
+
+                    # Compare ski file with parameter file
+                    if equaltextfiles(parpath, skipath, 1):
+                        #key = rel_skipath
+                        key = skipath
+                        ski_found = True
+                        break
+
+                # String of relative parameter file paths concated together
+                #else: key = " + ".join(map(itemgetter(1), map(lambda x: str.split(x, self.config.config_path), parpaths[prefix][parpath]))) #
+                #else: key = "no ski file found"
+                else: key = tuple(parpaths[prefix][parpath])
+
+                # Loop over the parameter files, find the corresponding log file
+                for parameter_file_path in parpaths[prefix][parpath]:
+
+                    # The simulation output path
+                    output_path = fs.directory_of(parameter_file_path)
+
+                    # Get the input path
+                    input_path = find_input(parameter_file_path, output_path)
+
+                    # Determine ski file path
+                    ski_path = key if ski_found else parameter_file_path
+
+                    # Create simulation and return it
+                    simulation = SkirtSimulation(prefix, input_path, output_path, ski_path)
+
+                    # Add the simulation
+                    self.simulations[key].append(simulation)
 
     # -----------------------------------------------------------------
 
@@ -146,9 +228,10 @@ class SimulationDiscoverer(Configurable):
         # Loop over the ski files
         for ski_path in self.simulations:
 
-            rel_ski_path = ski_path.split(self.config.path)[1]
-
-            print(fmt.green + rel_ski_path + fmt.reset + ":")
+            if isinstance(ski_path, basestring):
+                rel_ski_path = ski_path.split(self.config.path)[1]
+                print(fmt.green + rel_ski_path + fmt.reset + ":")
+            else: print(fmt.yellow + "ski file not found (but identical parameters)" + fmt.reset + ":")
 
             print("")
 
@@ -276,5 +359,123 @@ def find_input(ski_path, output_path):
 
     # Needs no input
     else: return None
+
+# -----------------------------------------------------------------
+
+def equaltextfiles(filepath1, filepath2, allowedDiffs, ignore_empty=True):
+
+    """
+    This function ...
+    :param filepath1:
+    :param filepath2:
+    :param allowedDiffs:
+    :return:
+    """
+
+    lines1 = readlines(filepath1)
+    lines2 = readlines(filepath2)
+
+    if ignore_empty:
+
+        #lines1 = [line for line in lines1 if line.split("\n")[0].strip() != ""]
+        #lines2 = [line for line in lines2 if line.split("\n")[0].strip() != ""]
+
+        lines1 = [line for line in lines1 if line]
+        lines2 = [line for line in lines2 if line]
+
+    return equallists(lines1, lines2, allowedDiffs)
+
+# -----------------------------------------------------------------
+
+def textfiledifferences(filepath1, filepath2):
+
+    """
+    This function ...
+    :param filepath1:
+    :param filepath2:
+    :return:
+    """
+
+    lines1 = readlines(filepath1)
+    lines2 = readlines(filepath2)
+
+    indices = listdifferences(lines1, lines2)
+
+    # Return the different lines
+    return [(lines1[index], lines2[index]) for index in indices]
+
+# -----------------------------------------------------------------
+
+def equallists(list1, list2, allowedDiffs):
+
+    # The lists must have the same length, which must be at least 2 (to avoid everything being read into 1 line)
+    length = len(list1)
+    if length < 2 or length != len(list2): return False
+
+    # compare the lists item by item
+    diffs = 0
+    for index in range(length):
+        if list1[index] != list2[index]:
+            # verify against allowed number of differences
+            diffs += 1
+            if diffs > allowedDiffs: return False
+            # verify that the differing items are identical up to numerics and months
+            pattern = re.compile(r"(\d{1,4}-[0-9a-f]{7,7}(-dirty){0,1})|\d{1,4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")
+            item1 = re.sub(pattern, "*", list1[index])
+            item2 = re.sub(pattern, "*", list2[index])
+            #print(item1.strip())
+            #print(item2.strip())
+            if item1.strip() != item2.strip():
+                #print("here")
+                return False
+
+    # no relevant differences
+    return True
+
+# -----------------------------------------------------------------
+
+def listdifferences(list1, list2):
+
+    """
+    This function ...
+    :param list1:
+    :param list2:
+    :return:
+    """
+
+    # The lists must have the same length, which must be at least 2 (to avoid everything being read into 1 line)
+    length = min(len(list1), len(list2))
+    #if length < 2 or length != len(list2): return [-1]
+
+    indices = []
+
+    # compare the lists item by item
+    for index in range(length):
+
+        if list1[index] != list2[index]:
+
+            # verify that the differing items are identical up to numerics and months
+            pattern = re.compile(r"(\d{1,4}-[0-9a-f]{7,7}(-dirty){0,1})|\d{1,4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")
+            item1 = re.sub(pattern, "*", list1[index])
+            item2 = re.sub(pattern, "*", list2[index])
+
+            if item1 != item2: indices.append(index)
+
+    # Return the indices
+    return indices
+
+# -----------------------------------------------------------------
+
+def readlines(filepath):
+
+    """
+    This function reads the lines of the specified text file into a list of strings, and returns the list.
+    :param filepath:
+    :return:
+    """
+
+    with open(filepath) as f: result = f.readlines()
+    return [line.split("\n")[0] for line in result]
+    #return result
 
 # -----------------------------------------------------------------
