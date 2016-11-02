@@ -351,6 +351,14 @@ class SkiFile:
                 npops += int(dustmix.attrib["PAHPops"])
             elif dustmix.tag == "ConfigurableDustMix":
                 npops += len(self.tree.xpath("//ConfigurableDustMix/populations/*"))
+            elif dustmix.tag == "ThemisDustMix":
+                npops += int(dustmix.attrib["enstatitePops"])
+                npops += int(dustmix.attrib["forsteritePops"])
+                npops += int(dustmix.attrib["hydrocarbonPops"])
+            elif dustmix.tag == "ZubkoDustMix":
+                npops += int(dustmix.attrib["graphitePops"])
+                npops += int(dustmix.attrib["silicatePops"])
+                npops += int(dustmix.attrib["PAHPops"])*2
         return npops
 
     ## This function returns the number of simple instruments

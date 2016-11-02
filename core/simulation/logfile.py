@@ -390,6 +390,33 @@ class LogFile(object):
         # Loop over the log entries
         for i in range(len(self.contents)):
 
+            # Skip entries not corresponding to the setup
+            #if self.contents["Phase"][i] != "setup": continue
+
+            line = self.contents["Message"][i]
+
+            if "Absorbed Stellar Luminosity Table" in line:
+
+                # Example: "Absorbed Stellar Luminosity Table is not distributed. Size is (256000,160)"
+                ncells = int(line.split(" (")[1].split(",")[0])
+                return ncells
+
+        # Not found
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_cells_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
             # Search for the line stating the total number of leafs in the tree
             if "Total number of leaves" in self.contents["Message"][i]:
 
@@ -403,6 +430,111 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def uses_transient_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Only look during the setup
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "setup": continue
+
+            # Search for a particular line
+            if "Precalculating cached values for transient dust emissivity computations" in self.contents["Message"][i]: return True
+
+        # Not found
+        return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def selfabsorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Search for particular line
+            if "Starting the dust self-absorption phase" in self.contents["Message"][i]: return True
+
+        # Not found
+        return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def write_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+        #"Will be outputting 3D grid data up to level" # Only for tree dust grids ...
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Only look during the setup
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "setup": continue
+
+            line = self.contents["Message"][i]
+
+            # Search for a particular line
+            if "Reading wavelength grid data from file" in line:
+                filepath = line.split("from file ")[1].split("...")[0]
+                return filepath
+
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def uses_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Only look during the setup
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "setup": continue
+
+            # Search for a particular line
+            if "Starting subdivision of level" in self.contents["Message"][i]: return True
+
+        # If the line was not found
+        return False
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def tree_nodes(self):
 
         """
@@ -412,6 +544,10 @@ class LogFile(object):
 
         # Loop over the log entries
         for i in range(len(self.contents)):
+
+            # Only look during the setup
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "setup": continue
 
             # Search for the line stating the total number of nodes in the tree
             if "Total number of nodes" in self.contents["Message"][i]:
@@ -491,6 +627,59 @@ class LogFile(object):
 
         # If the number of tree levels could not be determined, return None
         return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def npopulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        npopulations = 0
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Only look during the setup
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "setup": continue
+
+            # Search for specific messages
+            if "Adding dust population" in self.contents["Message"][i]:
+                #current_npopulations = int(self.contents["Message"][i].split("#")[1].split(" based on")[0])+1
+                #npopulations = current_npopulations
+                npopulations += 1
+
+        # Return the number of populations
+        return npopulations
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grain_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        types = []
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Only look during the setup
+            # Skip entries corresponding to other phases
+            if self.contents["Phase"][i] != "setup": continue
+
+            if "Grain composition grid" in self.contents["Message"][i]:
+                types.append(self.contents["Message"][i].split("grid (")[1].split(")")[0])
+
+        # Return the dust grain types
+        return types
 
     # -----------------------------------------------------------------
 

@@ -26,6 +26,8 @@ from ..simulation.simulation import SkirtSimulation
 from ..simulation.skifile import SkiFile
 from ..tools import formatting as fmt
 from ..tools.logging import log
+from ..simulation.logfile import LogFile
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -46,7 +48,8 @@ class SimulationDiscoverer(Configurable):
         super(SimulationDiscoverer, self).__init__(config)
 
         # The simulations
-        self.simulations = defaultdict(list)
+        self.simulations_ski = defaultdict(list)
+        self.simulations_no_ski = defaultdict(list)
 
     # -----------------------------------------------------------------
 
@@ -80,8 +83,24 @@ class SimulationDiscoverer(Configurable):
         :return:
         """
 
-        if len(self.simulations) > 1: raise ValueError("The found simulations correspond to multiple ski files")
-        return self.simulations[self.simulations.keys()[0]]
+        if len(self.simulations_ski) == 0 and len(self.simulations_no_ski) == 0: raise ValueError("No simulations found")
+        elif len(self.simulations_ski) == 1 and len(self.simulations_no_ski) == 0:
+            return self.simulations_ski[self.simulations_ski.keys()[0]]
+        elif len(self.simulations_ski) == 0 and len(self.simulations_no_ski) == 1:
+            return self.simulations_no_ski[self.simulations_no_ski.keys()[0]]
+        else: raise ValueError("The found simulations correspond to multiple ski files")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulations_ski.values() + self.simulations_no_ski.values()
 
     # -----------------------------------------------------------------
 
@@ -149,22 +168,24 @@ class SimulationDiscoverer(Configurable):
 
         #print(parpaths[parpaths.keys()[0]])
 
+        log_files = defaultdict(list)
+
         # Search for log files
-        #for path, name in fs.files_in_path(search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
+        for path, name in fs.files_in_path(search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
+
+            # Determine the prefix
+            prefix = name.split("_log")[0]
 
             # The simulation output path
             #output_path = fs.directory_of(path)
 
-            # Determine the prefix
-            #prefix = name.split("_log")[0]
+            dirpath = fs.directory_of(path)
 
-            # Load simulation
-            #simulation = get_simulation(prefix, output_path, ski_files, parameter_files)
+            log_files[prefix].append(dirpath)
 
-            # Add the simulation
-            #simulations.append(simulation)
-            #self.simulations[simulation.ski_path].append(simulation)
+        input_paths_ski_files = dict()
 
+        # Loop over the ...
         for prefix in parpaths:
 
             # Loop over the unique parameter files, find equal ski file
@@ -185,7 +206,6 @@ class SimulationDiscoverer(Configurable):
 
                     # Compare ski file with parameter file
                     if equaltextfiles(parpath, skipath, 1):
-                        #key = rel_skipath
                         key = skipath
                         ski_found = True
                         break
@@ -207,11 +227,87 @@ class SimulationDiscoverer(Configurable):
                     # Determine ski file path
                     ski_path = key if ski_found else parameter_file_path
 
+                    # Determine the log file path
+                    #log_path = parameter_file_path.replace("parameters.xml", "log.txt")
+
+                    if ski_found: input_paths_ski_files[ski_path] = input_path
+
+                    log_files[prefix].remove(output_path)
+
                     # Create simulation and return it
                     simulation = SkirtSimulation(prefix, input_path, output_path, ski_path)
 
                     # Add the simulation
-                    self.simulations[key].append(simulation)
+                    self.simulations_ski[key].append(simulation)
+
+        # Loop over the log files without parameter file
+        for prefix in log_files:
+
+            parameters_ski_files = dict()
+
+            # Open the ski files with this prefix
+            for dirpath in ski_files[prefix]:
+
+                skipath = fs.join(dirpath, prefix + ".ski")
+
+                # Get the input path
+                #if prefix in input_paths_ski_files:
+                input_path = input_paths_ski_files[skipath] if skipath in input_paths_ski_files else None
+                #else: input_path = None
+
+                parameters = comparison_parameters_from_ski(skipath)
+
+                # Set ...
+                parameters_ski_files[skipath] = parameters
+
+            # Loop over the log files
+            for output_path in log_files[prefix]:
+
+                # Determine the log file path
+                logfile_path = fs.join(output_path, prefix + "_log.txt")
+
+                # Get the parameters
+                log_parameters = comparison_parameters_from_log(logfile_path)
+
+                # Loop over the ski files
+                for skipath in parameters_ski_files:
+
+                    #print(parameters_ski_files[skipath])
+                    #print(log_parameters)
+
+                    if log_parameters.ncells is None: print(output_path)
+
+                    if parameters_ski_files[skipath] == log_parameters:
+
+                        input_path = input_paths_ski_files[skipath] if skipath in input_paths_ski_files else None
+
+                        # Create simulation and return it
+                        simulation = SkirtSimulation(prefix, input_path, output_path, skipath)
+
+                        # Add the simulation
+                        key = skipath
+
+                        # Add the simulation
+                        self.simulations_ski[key].append(simulation)
+
+                        break
+
+                # No matching ski file found
+                else:
+
+                    # Create tuple for the parameters
+                    properties = (log_parameters.nwavelengths, log_parameters.treegrid, log_parameters.ncells,
+                                  log_parameters.npopulations, log_parameters.selfabsorption, log_parameters.transient_heating)
+
+                    # Get the input path
+                    #input_path = find_input(parameter_file_path, output_path)
+
+                    # Create simulation and return it
+                    simulation = SkirtSimulation(prefix, None, output_path, None)
+
+                    # Add the simulation
+                    #self.simulations_no_parameters.append(simulation)
+                    self.simulations_no_ski[properties].append(simulation)
 
     # -----------------------------------------------------------------
 
@@ -226,25 +322,70 @@ class SimulationDiscoverer(Configurable):
         log.info("Listing the found simulations ...")
 
         # Loop over the ski files
-        for ski_path in self.simulations:
+        for ski_path in self.simulations_ski:
 
             if isinstance(ski_path, basestring):
                 rel_ski_path = ski_path.split(self.config.path)[1]
                 print(fmt.green + rel_ski_path + fmt.reset + ":")
-            else: print(fmt.yellow + "ski file not found (but identical parameters)" + fmt.reset + ":")
+                input_path = self.simulations_ski[ski_path][0].input_path
+                parameters = comparison_parameters_from_ski(ski_path, input_path)
+            else:
+                print(fmt.yellow + "ski file not found (but identical parameters)" + fmt.reset + ":")
+                input_path = self.simulations_ski[ski_path][0].input_path
+                parameters = comparison_parameters_from_ski(ski_path[0], input_path)
 
+            print("")
+            print(" nwavelengths:", parameters.nwavelengths)
+            print(" treegrid:", parameters.treegrid)
+            print(" ncells:", parameters.ncells)
+            print(" npopulations:", parameters.npopulations)
+            print(" selfabsorption:", parameters.selfabsorption)
+            print(" transient heating:", parameters.transientheating)
             print("")
 
             counter = 1
-            for simulation in self.simulations[ski_path]:
+            for simulation in self.simulations_ski[ski_path]:
 
                 rel_output_path = simulation.output_path.split(self.config.path)[1]
                 rel_input_path = simulation.input_path.split(self.config.path)[1] if simulation.input_path is not None else None
 
-                print(" * " + fmt.bold + "(" + str(counter) + ") " + fs.name(rel_output_path) + fmt.reset + ":")
+                print(" * " + fmt.bold + "(" + str(counter) + ") '" + simulation.prefix() + "' in " + fs.name(rel_output_path) + fmt.reset + ":")
                 print("")
                 print("    output: " + rel_output_path)
                 if rel_input_path is not None: print("    input: " + rel_input_path)
+                print("    processes: " + str(simulation.processes()))
+                print("    threads: " + str(simulation.threads()))
+                print("")
+
+                counter += 1
+
+        #if len(self.simulations_no_parameters) > 0:
+        #    print(fmt.red + "no parameters found" + fmt.reset + ":")
+        #    print("")
+
+        for properties in self.simulations_no_ski:
+
+            print(fmt.red + "no parameter file found" + fmt.reset + ":")
+            print("")
+
+            print(" nwavelengths:", properties[0])
+            print(" treegrid:", properties[1])
+            print(" ncells:", properties[2])
+            print(" npopulations:", properties[3])
+            print(" selfabsorption:", properties[4])
+            print(" transient heating:", properties[5])
+
+            print("")
+
+            counter = 1
+            for simulation in self.simulations_no_ski[properties]:
+
+                rel_output_path = simulation.output_path.split(self.config.path)[1]
+
+                print(" * " + fmt.bold + "(" + str(counter) + ") '" + simulation.prefix() + "' in " + fs.name(rel_output_path) + fmt.reset + ":")
+                print("")
+                print("    output: " + rel_output_path)
+                #if rel_input_path is not None: print("    input: " + rel_input_path)
                 print("    processes: " + str(simulation.processes()))
                 print("    threads: " + str(simulation.threads()))
                 print("")
@@ -377,9 +518,6 @@ def equaltextfiles(filepath1, filepath2, allowedDiffs, ignore_empty=True):
 
     if ignore_empty:
 
-        #lines1 = [line for line in lines1 if line.split("\n")[0].strip() != ""]
-        #lines2 = [line for line in lines2 if line.split("\n")[0].strip() != ""]
-
         lines1 = [line for line in lines1 if line]
         lines2 = [line for line in lines2 if line]
 
@@ -423,11 +561,11 @@ def equallists(list1, list2, allowedDiffs):
             pattern = re.compile(r"(\d{1,4}-[0-9a-f]{7,7}(-dirty){0,1})|\d{1,4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec")
             item1 = re.sub(pattern, "*", list1[index])
             item2 = re.sub(pattern, "*", list2[index])
-            #print(item1.strip())
-            #print(item2.strip())
-            if item1.strip() != item2.strip():
-                #print("here")
-                return False
+
+            item1 = item1.replace(" k", "000 ")
+            item2 = item2.replace(" k", "000 ")
+
+            if item1.strip() != item2.strip(): return False
 
     # no relevant differences
     return True
@@ -459,7 +597,10 @@ def listdifferences(list1, list2):
             item1 = re.sub(pattern, "*", list1[index])
             item2 = re.sub(pattern, "*", list2[index])
 
-            if item1 != item2: indices.append(index)
+            item1 = item1.replace(" k", "000 ")
+            item2 = item2.replace(" k", "000 ")
+
+            if item1.strip() != item2.strip(): indices.append(index)
 
     # Return the indices
     return indices
@@ -477,5 +618,93 @@ def readlines(filepath):
     with open(filepath) as f: result = f.readlines()
     return [line.split("\n")[0] for line in result]
     #return result
+
+# -----------------------------------------------------------------
+
+def comparison_parameters_from_ski(ski_path, input_path=None):
+
+    """
+    This function ...
+    :param ski_path:
+    :param input_path:
+    """
+
+    ski = SkiFile(ski_path)
+
+    # Get the number of wavelengths
+    nwavelengths = ski.nwavelengthsfile(input_path) if ski.wavelengthsfile() else ski.nwavelengths()
+
+    # Get the dust grid type
+    grid_type = ski.gridtype()
+
+    # If the grid is a tree grid, get additional properties
+    if ski.treegrid():
+
+        ncells = None
+
+        min_level = ski.tree_min_level()
+        max_level = ski.tree_max_level()
+        search_method = ski.tree_search_method()
+        sample_count = ski.tree_sample_count()
+        max_optical_depth = ski.tree_max_optical_depth()
+        max_mass_fraction = ski.tree_max_mass_fraction()
+        max_dens_disp = ski.tree_max_dens_disp()
+
+    # Else, set all properties to None
+    else:
+
+        ncells = ski.ncells()
+        min_level = max_level = search_method = sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None
+
+    # Check whether dust self-absorption was enabled for the simulation
+    selfabsorption = ski.dustselfabsorption()
+
+    # Check whether transient heating was enabled for the simulation
+    transient_heating = ski.transientheating()
+
+    # Determine the total number of pixels from all the instruments defined in the ski file
+    npixels = ski.nspatialpixels()
+
+    # Get the number of dust populations
+    npopulations = ski.npopulations()
+
+    # Set the parameters
+    parameters = Map()
+    parameters.nwavelengths = nwavelengths
+    parameters.treegrid = ski.treegrid()
+    parameters.ncells = ncells
+    parameters.npopulations = npopulations
+    parameters.selfabsorption = selfabsorption
+    parameters.transient_heating = transient_heating
+
+    # Return the parameters
+    return parameters
+
+# -----------------------------------------------------------------
+
+def comparison_parameters_from_log(log_path):
+
+    """
+    This function ...
+    :param log_path:
+    :return:
+    """
+
+    # Open the log file
+    log_file = LogFile(log_path)
+
+    # Set the parameters
+    log_parameters = Map()
+
+    # Get the properties
+    log_parameters.nwavelengths = log_file.wavelengths
+    log_parameters.treegrid = log_file.uses_tree
+    log_parameters.ncells = log_file.dust_cells if not log_file.uses_tree else None
+    log_parameters.npopulations = log_file.npopulations
+    log_parameters.selfabsorption = log_file.selfabsorption
+    log_parameters.transient_heating = log_file.uses_transient_heating
+
+    # Return the parameters
+    return log_parameters
 
 # -----------------------------------------------------------------
