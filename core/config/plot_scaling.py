@@ -23,4 +23,9 @@ definition.add_positional_optional("phases", "string_list", "the simulation phas
 
 definition.add_flag("hybridisation", "plot as a function of number of processes for constant number of cores")
 
+definition.add_optional("output", "directory_path", "output directory", letter="o")
+definition.add_optional("figsize", "integer_tuple", "figure size", default=(12,8))
+
+definition.add_optional("sigma_level", "real", "sigma level for plotting error bars", 1.0)
+
 # -----------------------------------------------------------------

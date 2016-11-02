@@ -54,7 +54,7 @@ simulation_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", 
 
 # -----------------------------------------------------------------
 
-class BatchScalingPlotter(Configurable):
+class ScalingPlotter(Configurable):
 
     """
     This class ...
@@ -68,7 +68,7 @@ class BatchScalingPlotter(Configurable):
         """
 
         # Call the constructor of the base class
-        super(BatchScalingPlotter, self).__init__(config)
+        super(ScalingPlotter, self).__init__(config)
 
         # The list of simulations
         self.simulations = []
@@ -84,6 +84,10 @@ class BatchScalingPlotter(Configurable):
         # Serial
         self.serial_timing = None
         self.serial_memory = None
+
+        # Fit parameters
+        self.timing_fit_parameters = dict()
+        self.memory_fit_parameters = dict()
 
     # -----------------------------------------------------------------
 
@@ -125,6 +129,9 @@ class BatchScalingPlotter(Configurable):
         # 2. Prepare data into plottable format
         self.prepare()
 
+        # Do fitting
+        #self.fit()
+
         # 3. Plot
         self.plot()
 
@@ -155,7 +162,7 @@ class BatchScalingPlotter(Configurable):
         """
 
         # Call the setup function of the base class
-        super(BatchScalingPlotter, self).setup(**kwargs)
+        super(ScalingPlotter, self).setup(**kwargs)
 
         # Timing or memory specified
         self.timing = kwargs.pop("timing", None)
@@ -294,8 +301,6 @@ class BatchScalingPlotter(Configurable):
         # Create an attribute to store the serial memory (one process)
         self.serial_memory = defaultdict(lambda: Map({"memory": None, "error": None}))
 
-        sigma_level = 1.0
-
         # Create a dictionary to store the runtimes for the different simulation phases of the simulations
         # performed on one processor
         serial_times = defaultdict(list)
@@ -403,13 +408,13 @@ class BatchScalingPlotter(Configurable):
         for phase in serial_times:
 
             self.serial_timing[phase].time = np.mean(serial_times[phase])
-            self.serial_timing[phase].error = sigma_level * np.std(serial_times[phase])
+            self.serial_timing[phase].error = self.config.sigma_level * np.std(serial_times[phase])
 
         # Average the serial memory usages, loop over each phase
         for phase in serial_memory:
 
             self.serial_memory[phase].memory = np.mean(serial_memory[phase])
-            self.serial_memory[phase].error = sigma_level * np.std(serial_memory[phase])
+            self.serial_memory[phase].error = self.config.sigma_level * np.std(serial_memory[phase])
 
         # Loop over all encountered parallelization modes
         for mode in modes:
@@ -423,65 +428,65 @@ class BatchScalingPlotter(Configurable):
                 # runs for a certain parallelization mode and number of processors
                 self.timing_data["total"][mode].processor_counts.append(processors)
                 self.timing_data["total"][mode].times.append(np.mean(total_times[mode][processors]))
-                self.timing_data["total"][mode].errors.append(sigma_level * np.std(total_times[mode][processors]))
+                self.timing_data["total"][mode].errors.append(self.config.sigma_level * np.std(total_times[mode][processors]))
 
                 self.timing_data["setup"][mode].processor_counts.append(processors)
                 self.timing_data["setup"][mode].times.append(np.mean(setup_times[mode][processors]))
-                self.timing_data["setup"][mode].errors.append(sigma_level * np.std(setup_times[mode][processors]))
+                self.timing_data["setup"][mode].errors.append(self.config.sigma_level * np.std(setup_times[mode][processors]))
 
                 self.timing_data["stellar"][mode].processor_counts.append(processors)
                 self.timing_data["stellar"][mode].times.append(np.mean(stellar_times[mode][processors]))
-                self.timing_data["stellar"][mode].errors.append(sigma_level * np.std(stellar_times[mode][processors]))
+                self.timing_data["stellar"][mode].errors.append(self.config.sigma_level * np.std(stellar_times[mode][processors]))
 
                 self.timing_data["spectra"][mode].processor_counts.append(processors)
                 self.timing_data["spectra"][mode].times.append(np.mean(spectra_times[mode][processors]))
-                self.timing_data["spectra"][mode].errors.append(sigma_level * np.std(spectra_times[mode][processors]))
+                self.timing_data["spectra"][mode].errors.append(self.config.sigma_level * np.std(spectra_times[mode][processors]))
 
                 self.timing_data["dust"][mode].processor_counts.append(processors)
                 self.timing_data["dust"][mode].times.append(np.mean(dust_times[mode][processors]))
-                self.timing_data["dust"][mode].errors.append(sigma_level * np.std(dust_times[mode][processors]))
+                self.timing_data["dust"][mode].errors.append(self.config.sigma_level * np.std(dust_times[mode][processors]))
 
                 self.timing_data["writing"][mode].processor_counts.append(processors)
                 self.timing_data["writing"][mode].times.append(np.mean(writing_times[mode][processors]))
-                self.timing_data["writing"][mode].errors.append(sigma_level * np.std(writing_times[mode][processors]))
+                self.timing_data["writing"][mode].errors.append(self.config.sigma_level * np.std(writing_times[mode][processors]))
 
                 self.timing_data["waiting"][mode].processor_counts.append(processors)
                 self.timing_data["waiting"][mode].times.append(np.mean(waiting_times[mode][processors]))
-                self.timing_data["waiting"][mode].errors.append(sigma_level * np.std(waiting_times[mode][processors]))
+                self.timing_data["waiting"][mode].errors.append(self.config.sigma_level * np.std(waiting_times[mode][processors]))
 
                 self.timing_data["communication"][mode].processor_counts.append(processors)
                 self.timing_data["communication"][mode].times.append(np.mean(communication_times[mode][processors]))
-                self.timing_data["communication"][mode].errors.append(sigma_level * np.std(communication_times[mode][processors]))
+                self.timing_data["communication"][mode].errors.append(self.config.sigma_level * np.std(communication_times[mode][processors]))
 
                 self.timing_data["intermediate"][mode].processor_counts.append(processors)
                 self.timing_data["intermediate"][mode].times.append(np.mean(intermediate_times[mode][processors]))
-                self.timing_data["intermediate"][mode].errors.append(sigma_level * np.std(intermediate_times[mode][processors]))
+                self.timing_data["intermediate"][mode].errors.append(self.config.sigma_level * np.std(intermediate_times[mode][processors]))
 
                 ## MEMORY
 
                 self.memory_data["total"][mode].processor_counts.append(processors)
                 self.memory_data["total"][mode].memory.append(np.mean(total_memory[mode][processors]))
-                self.memory_data["total"][mode].errors.append(sigma_level * np.std(total_memory[mode][processors]))
+                self.memory_data["total"][mode].errors.append(self.config.sigma_level * np.std(total_memory[mode][processors]))
 
                 self.memory_data["setup"][mode].processor_counts.append(processors)
                 self.memory_data["setup"][mode].memory.append(np.mean(setup_memory[mode][processors]))
-                self.memory_data["setup"][mode].errors.append(sigma_level * np.std(setup_memory[mode][processors]))
+                self.memory_data["setup"][mode].errors.append(self.config.sigma_level * np.std(setup_memory[mode][processors]))
 
                 self.memory_data["stellar"][mode].processor_counts.append(processors)
                 self.memory_data["stellar"][mode].memory.append(np.mean(stellar_memory[mode][processors]))
-                self.memory_data["stellar"][mode].errors.append(sigma_level * np.std(stellar_memory[mode][processors]))
+                self.memory_data["stellar"][mode].errors.append(self.config.sigma_level * np.std(stellar_memory[mode][processors]))
 
                 self.memory_data["spectra"][mode].processor_counts.append(processors)
                 self.memory_data["spectra"][mode].memory.append(np.mean(spectra_memory[mode][processors]))
-                self.memory_data["spectra"][mode].errors.append(sigma_level * np.std(spectra_memory[mode][processors]))
+                self.memory_data["spectra"][mode].errors.append(self.config.sigma_level * np.std(spectra_memory[mode][processors]))
 
                 self.memory_data["dust"][mode].processor_counts.append(processors)
                 self.memory_data["dust"][mode].memory.append(np.mean(dust_memory[mode][processors]))
-                self.memory_data["dust"][mode].errors.append(sigma_level * np.std(dust_memory[mode][processors]))
+                self.memory_data["dust"][mode].errors.append(self.config.sigma_level * np.std(dust_memory[mode][processors]))
 
                 self.memory_data["writing"][mode].processor_counts.append(processors)
                 self.memory_data["writing"][mode].memory.append(np.mean(writing_memory[mode][processors]))
-                self.memory_data["writing"][mode].errors.append(sigma_level * np.std(writing_memory[mode][processors]))
+                self.memory_data["writing"][mode].errors.append(self.config.sigma_level * np.std(writing_memory[mode][processors]))
 
     # -----------------------------------------------------------------
 
@@ -647,12 +652,11 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_runtimes_phase(self, phase, file_path=None, figsize=(12, 8)):
+    def plot_runtimes_phase(self, phase, figsize=(12, 8)):
 
         """
         This function ...
         :param phase:
-        :param file_path:
         :param figsize:
         :return:
         """
@@ -708,6 +712,10 @@ class BatchScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Scaling of the " + phase_labels[phase].lower())
 
+        if self.config.output is not None:
+            file_path = fs.join(self.config.output, "runtimes_" + phase + ".pdf")
+        else: file_path = None
+
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
         else: plt.show()
@@ -715,12 +723,11 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_speedups_phase(self, phase, file_path=None, figsize=(12, 8), plot_fit=True):
+    def plot_speedups_phase(self, phase, figsize=(12, 8), plot_fit=True):
 
         """
         This function ...
         :param phase:
-        :param file_path:
         :param figsize:
         :param plot_fit:
         :return:
@@ -828,17 +835,20 @@ class BatchScalingPlotter(Configurable):
                 c_list.append(parameters[mode].c)
                 c_error_list.append(parameters[mode].c_error)
 
-            if file_path is not None:
+            if self.config.output is not None:
 
                 # Create a data file to contain the fitted parameters
-                directory = os.path.dirname(file_path)
-                parameter_file_path = fs.join(directory, "parameters.dat")
+                directory = self.config.output
+                parameter_file_path = fs.join(directory, "parameters_" + phase + ".dat")
 
                 # Create the parameters table and write to file
-                data = [p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
-                names = ["Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
+                data = [mode_list, p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
+                names = ["Parallelization mode", "Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
                 table = Table(data=data, names=names)
                 table.write(parameter_file_path, format="ascii.commented_header")
+
+            # Add the parameters
+            self.timing_fit_parameters[phase] = parameters
 
             # Plot the fitted speedup curves and write the parameters to the file
             fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
@@ -881,6 +891,10 @@ class BatchScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Speedup of the " + phase_labels[phase].lower())
 
+        if self.config.output is not None:
+            file_path = fs.join(self.config.output, "speedups_" + phase + ".pdf")
+        else: file_path = None
+
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
         else: plt.show()
@@ -888,14 +902,13 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_efficiencies_phase(self, phase, file_path=None, figsize=(12,8), plot_fit=True):
+    def plot_efficiencies_phase(self, phase, figsize=(12,8), plot_fit=True):
 
         """
         This function creates a PDF plot showing the efficiency as a function of the number of threads.
         Efficiency is defined as T(1)/T(N)/N. It is a dimensionless quantity <= 1.
         The function takes the following (optional) arguments:
         :param phase:
-        :param file_path:
         :param figsize:
         :param plot_fit:
         :return:
@@ -961,6 +974,25 @@ class BatchScalingPlotter(Configurable):
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
+        # Plot fit
+        if not self.config.hybridisation and plot_fit:
+
+            # Plot the fitted speedup curves
+            fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            for mode in self.timing_fit_parameters[phase]:
+
+                # Get the parameter values
+                p = self.timing_fit_parameters[phase][mode].p
+                a = self.timing_fit_parameters[phase][mode].a
+                b = self.timing_fit_parameters[phase][mode].b
+                c = self.timing_fit_parameters[phase][mode].c
+
+                # Calculate the fitted efficiencies
+                fit_efficiencies = [modAmdahl(n, p, a, b, c) / n for n in fit_ncores]
+
+                # Add the plot
+                plt.plot(fit_ncores, fit_efficiencies)
+
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
@@ -979,6 +1011,10 @@ class BatchScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Efficiency of the " + phase_labels[phase].lower())
 
+        if self.config.output is not None:
+            file_path = fs.join(self.config.output, "efficiencies_" + phase + ".pdf")
+        else: file_path = None
+
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
         else: plt.show()
@@ -986,12 +1022,11 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_cpu_times_phase(self, phase, file_path=None, figsize=(12,8)):
+    def plot_cpu_times_phase(self, phase, figsize=(12,8)):
 
         """
         This function ...
         :param phase:
-        :param file_path:
         :param figsize:
         :return:
         """
@@ -1064,6 +1099,10 @@ class BatchScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Scaling of the total CPU time of the " + phase_labels[phase].lower())
 
+        if self.config.output is not None:
+            file_path = fs.join(self.config.output, "cpu_" + phase + ".pdf")
+        else: file_path = None
+
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
         else: plt.show()
@@ -1071,13 +1110,11 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_memory_phase(self, phase, file_path=None, figsize=(12,8)):
+    def plot_memory_phase(self, phase):
 
         """
         This function ...
         :param phase:
-        :param file_path:
-        :param figsize:
         :return:
         """
 
@@ -1085,7 +1122,7 @@ class BatchScalingPlotter(Configurable):
         log.info("Plotting the memory scaling...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=self.config.figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -1132,6 +1169,10 @@ class BatchScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Scaling of the memory usage (per process) of the " + phase + " phase")
 
+        if self.config.output is not None:
+            file_path = fs.join(self.config.output, "memory_" + phase + ".pdf")
+        else: file_path = None
+
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
         else: plt.show()
@@ -1139,13 +1180,11 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_memory_gain_phase(self, phase, file_path=None, figsize=(12,8)):
+    def plot_memory_gain_phase(self, phase):
 
         """
         This function ...
         :param phase:
-        :param file_path:
-        :param figsize:
         :return:
         """
 
@@ -1153,7 +1192,7 @@ class BatchScalingPlotter(Configurable):
         log.info("Plotting the memory scaling...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=self.config.figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -1221,6 +1260,10 @@ class BatchScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Scaling of the memory gain (serial memory usage per process / memory usage per process) of the " + phase_labels[phase].lower())
 
+        if self.config.output is not None:
+            file_path = fs.join(self.config.output, "memorygain_" + phase + ".pdf")
+        else: file_path = None
+
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
         else: plt.show()
@@ -1228,13 +1271,11 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_total_memory_phase(self, phase, file_path=None, figsize=(12,8)):
+    def plot_total_memory_phase(self, phase):
 
         """
         This function ...
         :param phase:
-        :param file_path:
-        :param figsize:
         :return:
         """
 
@@ -1242,7 +1283,7 @@ class BatchScalingPlotter(Configurable):
         log.info("Plotting the total memory scaling (all processes combined)...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=self.config.figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -1303,6 +1344,10 @@ class BatchScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Memory scaling for " + phase_labels[phase])
 
+        if self.config.output is not None:
+            file_path = fs.join(self.config.output, "totalmemory_" + phase + ".pdf")
+        else: file_path = None
+
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
         else: plt.show()
@@ -1323,9 +1368,9 @@ class BatchScalingPlotter(Configurable):
         # Loop over the different parallelization modes
         for mode in self.timing_data["total"]:
 
-            # Determine the path to the timeline plot file
-            #plot_file_path = fs.join(self.output_path, "timeline_" + mode + ".pdf")
-            plot_file_path = None
+            if self.config.output is not None:
+                plot_file_path = fs.join(self.config.output, "timeline_" + mode + ".pdf")
+            else: plot_file_path = None
 
             # Initialize a data structure to contain the start times and endtimes of the different simulation phases,
             # for the different processor counts (data is indexed on the simulation phase)
@@ -1417,51 +1462,6 @@ class BatchScalingPlotter(Configurable):
 
             # Create the plot
             create_timeline_plot(data, nprocs_list, plot_file_path, percentages=True, totals=True, unordered=True, numberofproc=True, cpu=True, title=title)
-
-    # -----------------------------------------------------------------
-
-    def plot_dries(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        dmpiTimes = np.loadtxt("dmpiTimes.dat", usecols=range(1, 8))
-        smpiTimes = np.loadtxt("smpiTimes.dat", usecols=range(1, 8))
-        tTimes = np.loadtxt("tTimes.dat", usecols=range(1, 8))
-
-        def sortByCores(times):
-            times[:] = times[times[:, 6].argsort()]
-
-        sortByCores(tTimes)
-        sortByCores(smpiTimes)
-        sortByCores(dmpiTimes)
-
-        singlecore = tTimes[0, 5]
-
-        plt.figure(figsize=(8, 5))
-
-        def plot(times, key):
-            cores = times[:, 6]
-            values = singlecore / times[:, 5] / cores
-            plt.semilogx(cores, values, label=key, basex=2, marker='D')
-            ax = plt.gca()
-            for axis in [ax.xaxis, ax.yaxis]:
-                axis.set_major_formatter(ScalarFormatter())
-
-        plot(tTimes, "Threads")
-        plot(smpiTimes, "MPI task-based")
-        plot(dmpiTimes, "MPI data-parallel")
-        plt.plot([1, 16], [1, 1], color='k', linewidth=3, linestyle='dashed')
-        plt.title("Single node scaling", y=1.025)
-        plt.xlabel("Number of cores used")
-        plt.ylabel("Efficiency")
-        plt.grid()
-        plt.legend(loc="best")
-        #plt.savefig("efficiency.pdf")
-
-        plt.show()
 
     # -----------------------------------------------------------------
 

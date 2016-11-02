@@ -373,6 +373,21 @@ def stringify(value):
 
         return ptype + "_list", ",".join(strings)
 
+    elif isinstance(value, tuple):
+
+        strings = []
+        ptype = None
+        for entry in value:
+
+            parsetype, val = stringify_not_list(entry)
+
+            if ptype is None: ptype = parsetype
+            elif ptype != parsetype: raise ValueError("Nonuniform tuple")
+
+            strings.append(val)
+
+        return ptype + "_tuple", ",".join(strings)
+
     else: return stringify_not_list(value)
 
 # -----------------------------------------------------------------

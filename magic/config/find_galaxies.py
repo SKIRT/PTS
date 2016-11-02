@@ -88,21 +88,11 @@ definition.sections["detection"].add_optional("user_expansion_factor", "real", "
   
 definition.sections["detection"].add_flag("remove_appendages", "remove appendages from overlapping mask")
 
+definition.add_section("region", "region")
+definition.sections["region"].add_optional("default_radius", "real", "default radius", 4.0)
 
-
-# Region
-region:
-{
-  default_radius: 10.0
-}
-
-# Apertures
-apertures:
-{
-  sigma_level: 4.0 # approximate isophotal extent
-  
-  # Maximal offset between the aperture center and galaxy position (in number of pixels) (None=no limit)
-  max_offset: None
-}
+definition.add_section("apertures", "apertures")
+definition.sections["apertures"].add_optional("sigma_level", "real", "approximate isophotal extent", 4.0)
+definition.sections["apertures"].add_optional("max_offset", "real", "maximal offset between the aperture center and galaxy position (in number of pixels) (None=no limit)")
 
 # -----------------------------------------------------------------

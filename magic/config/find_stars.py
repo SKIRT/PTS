@@ -13,100 +13,64 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# If possible, avoid the fitting procedure and use the FWHM defined by the frame
-use_frame_fwhm: True
+definition.add_flag("use_frame_fwhm", "If possible, avoid the fitting procedure and use the FWHM defined by the frame", True)
 
-# The path to the input directory
-input_path: None
+definition.add_optional("input_path", "directory_path", "path to the input directory")
 
-# The path to the output directory
-output_path: None
+definition.add_optional("output_path", "directory_path", "path to the output directory")
 
-# Track record
-track_record: False
-plot_track_record_if_exception: True
+definition.add_flag("track_record", "track record", False)
+definition.add_flag("plot_track_record_if_exception", True)
 
-# Manual star region
-manual_region: None
+definition.add_optional("manual_region", "file_path", "manual star region")
 
-# Remove stars from the frame
-remove: True
+definition.add_flag("remove", "remove stars from the frame", True)
 
-# Find saturated stars
-find_saturation: True
+definition.add_flag("find_saturation", "find saturated stars", True)
 
-# Fetching
-fetching:
-{
-  # Use a catalog file
-  use_catalog_file: False
-  catalog_path: None
-  
-  # Use statistics file
-  use_statistics_file: False
-  statistics_path: None
+definition.add_section("fetching", "fetching")
+definition.sections["fetching"].add_flag("use_catalog_file", "use catalog file")
+definition.sections["fetching"].add_optional("catalog_path", "file_path", "catalog path")
 
-  cross_reference_with_galaxies: True
+definition.sections["fetching"].add_flag("use_statistics_file", "use statistics file")
+definition.sections["fetching"].add_optional("statistics_path", "file_path", "statistics file path")
 
-  # The minimum distance the star has to be seperated from the galaxy center to be positively identified as a star
-  min_distance_from_galaxy:
-  {
-    principal: 20.0   # in pixels
-    companion: 15.0   # in pixels
-    other: 15.0       # in pixels
-  } 
-}
+definition.sections["fetching"].add_flag("cross_reference_with_galaxies", "blabla", True)
 
-# Source detection
-detection:
-{
-  # Initial radius (in pixels)
-  initial_radius: 10.0
+definition.sections["fetching"].add_section("min_distance_from_galaxy", " minimum distance the star has to be seperated from the galaxy center to be positively identified as a star")
+definition.sections["fetching"].sections["min_distance_from_galaxy"].add_optional("principal", "real", "in pixels", 20.0)
+definition.sections["fetching"].sections["min_distance_from_galaxy"].add_optional("companion", "real", "in pixels", 15.0)
+definition.sections["fetching"].sections["min_distance_from_galaxy"].add_optional("other", "real", "in pixels", 15.0)
 
-  background_est_method: "polynomial"
-  sigma_clip_background: True
- 
-  # Detection method
-  detection_method: "peaks"
+definition.add_section("detection", "source detection")
 
-  # Minimum pixels
-  minimum_pixels: 5
+definition.sections["detection"].add_optional("initial_radius", "real", "initial radius (in pixels)", 10.0)
+definition.sections["detection"].add_optional("background_est_method", "string", "background estimation method", "polynomial")
+definition.sections["detection"].add_flag("sigma_clip_background", "sigma clip background", True)
 
-  # Threshold sigmas
-  sigma_level: 2.0
+definition.sections["detection"].add_optional("detection_method", "string", "detection method", "peaks")
+definition.sections["detection"].add_optional("minimum_pixels", "integer", "minimum pixels", 5)
+definition.sections["detection"].add_optional("sigma_level", "real", "threshold sigmas", 2.0)
+definition.sections["detection"].add_optional("peak_offset_tolerance", "real", "peak offset tolerance (in pixels)", 3.0)
 
-  # Peak offset tolerance (in pixels)
-  peak_offset_tolerance: 3.0
+definition.sections["detection"].add_optional("min_level", "negative_integer", "minimum level", -2)
+definition.sections["detection"].add_optional("max_level", "positive_integer", "maximum level", 2)
 
-  # Minimum level
-  min_level: -2
+definition.sections["detection"].add_optional("scale_factor", "real", "scale factor", 2.0)
 
-  # Maximum level
-  max_level: 2
+definition.sections["detection"].add_optional("background_outer_factor", "real", "background outer factor", 1.5)
 
-  # Scale factor
-  scale_factor: 2.0
+definition.sections["detection"].add_flag("always_subtract_background", "always subtract background")
 
-  # Background outer factor
-  background_outer_factor: 1.5
+definition.sections["detection"].add_optional("convolution_fwhm", "real", "perform convolution, define the FWHM (in pixels) (for detection_method: 'peaks'", 10.0)
 
-  # Always subtract background
-  always_subtract_background: False
-  
-  # Perform convolution, define the fwhm (in pixels) (for detection_method: "peaks")
-  convolution_fwhm: 10.0
-  
-  # Debug
-  debug:
-  {
-    zero_peaks_before: False
-    zero_peaks_after: False
-    zero_peaks: False
-    one_peak: False
-    more_peaks: False
-    off_center: False
-  }
-}
+definition.sections["detection"].add_section("debug", "debug")
+definition.sections["detection"].sections["debug"].add_flag("zero_peaks_before", "zero peaks before")
+definition.sections["detection"].sections["debug"].add_flag("zero_peaks_after", "zero peaks after")
+definition.sections["detection"].sections["debug"].add_flag("zero_peaks", "zero peaks")
+definition.sections["detection"].sections["debug"].add_flag("one_peak", "one peak")
+definition.sections["detection"].sections["debug"].add_flag("more_peaks", "more peaks")
+definition.sections["detection"].sections["debug"].add_flag("off_center", "off-center")
 
 # Fitting
 fitting:
