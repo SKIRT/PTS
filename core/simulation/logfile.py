@@ -76,7 +76,9 @@ class LogFile(object):
             if "Running on" in message:
 
                 host = message.split("on ")[1].split(" for")[0]
-                return host
+
+                if len(host.split(".")) == 3: return host.split(".")[1]
+                else: return host
 
         return None
 

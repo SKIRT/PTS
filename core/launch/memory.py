@@ -104,13 +104,14 @@ class MemoryTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_from_simulation(self, simulation, ski, log_file):
+    def add_from_simulation(self, simulation, ski, log_file, parameters=None):
 
         """
         This function ...
         :param simulation:
         :param ski:
         :param log_file:
+        :param parameters:
         :return:
         """
 
@@ -178,34 +179,53 @@ class MemoryTable(SmartTable):
         # Get the number of dust cells
         ncells = log_file.dust_cells
 
-        # Get the dust grid type
-        grid_type = ski.gridtype()
-
-        # If the grid is a tree grid, get additional properties
-        if ski.treegrid():
-
-            min_level = ski.tree_min_level()
-            max_level = ski.tree_max_level()
-            search_method = ski.tree_search_method()
-            sample_count = ski.tree_sample_count()
-            max_optical_depth = ski.tree_max_optical_depth()
-            max_mass_fraction = ski.tree_max_mass_fraction()
-            max_dens_disp = ski.tree_max_dens_disp()
-
-        # Else, set all properties to None
-        else: min_level = max_level = search_method = sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None
-
-        # Check whether dust self-absorption was enabled for the simulation
-        selfabsorption = ski.dustselfabsorption()
-
-        # Check whether transient heating was enabled for the simulation
-        transient_heating = ski.transientheating()
-
         # Check whether data parallelization was enabled for the simulation
         data_parallel = log_file.data_parallel
 
-        # Determine the total number of pixels from all the instruments defined in the ski file
-        npixels = ski.nspatialpixels()
+        if ski is not None:
+
+            # Get the dust grid type
+            grid_type = ski.gridtype()
+
+            # If the grid is a tree grid, get additional properties
+            if ski.treegrid():
+
+                min_level = ski.tree_min_level()
+                max_level = ski.tree_max_level()
+                search_method = ski.tree_search_method()
+                sample_count = ski.tree_sample_count()
+                max_optical_depth = ski.tree_max_optical_depth()
+                max_mass_fraction = ski.tree_max_mass_fraction()
+                max_dens_disp = ski.tree_max_dens_disp()
+
+            # Else, set all properties to None
+            else: min_level = max_level = search_method = sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None
+
+            # Check whether dust self-absorption was enabled for the simulation
+            selfabsorption = ski.dustselfabsorption()
+
+            # Check whether transient heating was enabled for the simulation
+            transient_heating = ski.transientheating()
+
+            # Determine the total number of pixels from all the instruments defined in the ski file
+            npixels = ski.nspatialpixels()
+
+        elif parameters is not None:
+
+            grid_type = None
+            min_level = None
+            max_level = None
+            search_method = None
+            sample_count = None
+            max_optical_depth = None
+            max_mass_fraction = None
+            max_dens_disp = None
+
+            selfabsorption = parameters.selfabsorption
+            transient_heating = parameters.transient_heating
+            npixels = None
+
+        else: raise ValueError("Ski file or parameters map must be specified")
 
         # Get additional memory info
         setup_peak_memory = log_file.setup_peak_memory

@@ -21,4 +21,6 @@ definition.add_flag("recursive", "look for simulation in directories recursively
 definition.add_positional_optional("properties", "string_list", "plot the scaling of these properties", choices=scaling_properties, default=scaling_properties)
 definition.add_positional_optional("phases", "string_list", "the simulation phases for which to do the plotting", choices=simulation_phases, default=["total"])
 
+definition.add_flag("hybridisation", "plot as a function of number of processes for constant number of cores")
+
 # -----------------------------------------------------------------

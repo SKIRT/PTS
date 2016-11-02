@@ -110,7 +110,7 @@ class TimingTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_from_simulation(self, simulation, ski, log_file, timeline):
+    def add_from_simulation(self, simulation, ski, log_file, timeline, parameters=None):
 
         """
         This function ...
@@ -118,6 +118,7 @@ class TimingTable(SmartTable):
         :param ski:
         :param log_file:
         :param timeline:
+        :param parameters:
         :return:
         """
 
@@ -173,34 +174,56 @@ class TimingTable(SmartTable):
         # Get the number of wavelengths
         wavelengths = log_file.wavelengths
 
-        # Get the number of photon packages
-        packages = ski.packages()
+        if ski is not None:
 
-        # Get the number of dust cells
-        ncells = log_file.dust_cells
+            # Get the number of photon packages
+            packages = ski.packages()
 
-        # Get the dust grid type
-        grid_type = ski.gridtype()
+            # Get the number of dust cells
+            ncells = log_file.dust_cells
 
-        # If the grid is a tree grid, get additional properties
-        if ski.treegrid():
+            # Get the dust grid type
+            grid_type = ski.gridtype()
 
-            min_level = ski.tree_min_level()
-            max_level = ski.tree_max_level()
-            search_method = ski.tree_search_method()
-            sample_count = ski.tree_sample_count()
-            max_optical_depth = ski.tree_max_optical_depth()
-            max_mass_fraction = ski.tree_max_mass_fraction()
-            max_dens_disp = ski.tree_max_dens_disp()
+            # If the grid is a tree grid, get additional properties
+            if ski.treegrid():
 
-        # Else, set all properties to None
-        else: min_level = max_level = search_method = sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None
+                min_level = ski.tree_min_level()
+                max_level = ski.tree_max_level()
+                search_method = ski.tree_search_method()
+                sample_count = ski.tree_sample_count()
+                max_optical_depth = ski.tree_max_optical_depth()
+                max_mass_fraction = ski.tree_max_mass_fraction()
+                max_dens_disp = ski.tree_max_dens_disp()
 
-        # Check whether dust self-absorption was enabled for the simulation
-        selfabsorption = ski.dustselfabsorption()
+            # Else, set all properties to None
+            else: min_level = max_level = search_method = sample_count = max_optical_depth = max_mass_fraction = max_dens_disp = None
 
-        # Check whether transient heating was enabled for the simulation
-        transient_heating = ski.transientheating()
+            # Check whether dust self-absorption was enabled for the simulation
+            selfabsorption = ski.dustselfabsorption()
+
+            # Check whether transient heating was enabled for the simulation
+            transient_heating = ski.transientheating()
+
+        elif parameters is not None:
+
+            packages = parameters.npackages
+            ncells = parameters.ncells
+
+            grid_type = None
+
+            min_level = None
+            max_level = None
+            search_method = None
+            sample_count = None
+            max_optical_depth = None
+            max_mass_fraction = None
+            max_dens_disp = None
+
+            selfabsorption = parameters.selfabsorption
+            transient_heating = parameters.transient_heating
+
+        else: raise ValueError("Ski file or parameters map must be specified")
 
         # Check whether data parallelization was enabled for the simulation
         data_parallel = log_file.data_parallel

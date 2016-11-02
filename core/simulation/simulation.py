@@ -105,7 +105,7 @@ class SkirtSimulation(object):
     # - outpath: the output path of the simulation; the path may be absolute, relative to a user's home folder,
     #   or relative to the current working directory. A missing or empty outpath means the current working directory.
     #
-    def __init__(self, prefix="", inpath="", outpath="", ski_path=None):
+    def __init__(self, prefix="", inpath="", outpath="", ski_path=None, parameters=None):
 
         # Set the full path to the input directory or the paths to the input files
         if inpath is not None:
@@ -132,7 +132,7 @@ class SkirtSimulation(object):
         self.base_path = fs.directory_of(self.ski_path)
 
         # provide placeholders for caching frequently-used objects
-        self._parameters = None
+        self._parameters = parameters
         self._units = None
         self._processes = None
         self._threads = None

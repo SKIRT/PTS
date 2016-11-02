@@ -296,14 +296,15 @@ class SimulationDiscoverer(Configurable):
                 else:
 
                     # Create tuple for the parameters
-                    properties = (log_parameters.nwavelengths, log_parameters.treegrid, log_parameters.ncells,
-                                  log_parameters.npopulations, log_parameters.selfabsorption, log_parameters.transient_heating)
+                    properties = (log_parameters.npackages, log_parameters.nwavelengths, log_parameters.treegrid,
+                                  log_parameters.ncells, log_parameters.npopulations, log_parameters.selfabsorption,
+                                  log_parameters.transient_heating)
 
                     # Get the input path
                     #input_path = find_input(parameter_file_path, output_path)
 
                     # Create simulation and return it
-                    simulation = SkirtSimulation(prefix, None, output_path, None)
+                    simulation = SkirtSimulation(prefix, None, output_path, None, parameters=log_parameters)
 
                     # Add the simulation
                     #self.simulations_no_parameters.append(simulation)
@@ -335,6 +336,7 @@ class SimulationDiscoverer(Configurable):
                 parameters = comparison_parameters_from_ski(ski_path[0], input_path)
 
             print("")
+            print(" npackages:", parameters.npackages)
             print(" nwavelengths:", parameters.nwavelengths)
             print(" treegrid:", parameters.treegrid)
             print(" ncells:", parameters.ncells)
@@ -355,6 +357,7 @@ class SimulationDiscoverer(Configurable):
                 if rel_input_path is not None: print("    input: " + rel_input_path)
                 print("    processes: " + str(simulation.processes()))
                 print("    threads: " + str(simulation.threads()))
+                print("    host: " + simulation.log_file.host)
                 print("")
 
                 counter += 1
@@ -368,12 +371,13 @@ class SimulationDiscoverer(Configurable):
             print(fmt.red + "no parameter file found" + fmt.reset + ":")
             print("")
 
-            print(" nwavelengths:", properties[0])
-            print(" treegrid:", properties[1])
-            print(" ncells:", properties[2])
-            print(" npopulations:", properties[3])
-            print(" selfabsorption:", properties[4])
-            print(" transient heating:", properties[5])
+            print(" npackages:", properties[0])
+            print(" nwavelengths:", properties[1])
+            print(" treegrid:", properties[2])
+            print(" ncells:", properties[3])
+            print(" npopulations:", properties[4])
+            print(" selfabsorption:", properties[5])
+            print(" transient heating:", properties[6])
 
             print("")
 
@@ -388,6 +392,7 @@ class SimulationDiscoverer(Configurable):
                 #if rel_input_path is not None: print("    input: " + rel_input_path)
                 print("    processes: " + str(simulation.processes()))
                 print("    threads: " + str(simulation.threads()))
+                print("    host: " + simulation.log_file.host)
                 print("")
 
                 counter += 1
@@ -546,6 +551,14 @@ def textfiledifferences(filepath1, filepath2):
 
 def equallists(list1, list2, allowedDiffs):
 
+    """
+    This function ...
+    :param list1:
+    :param list2:
+    :param allowedDiffs:
+    :return:
+    """
+
     # The lists must have the same length, which must be at least 2 (to avoid everything being read into 1 line)
     length = len(list1)
     if length < 2 or length != len(list2): return False
@@ -670,6 +683,7 @@ def comparison_parameters_from_ski(ski_path, input_path=None):
 
     # Set the parameters
     parameters = Map()
+    parameters.npackages = ski.packages()
     parameters.nwavelengths = nwavelengths
     parameters.treegrid = ski.treegrid()
     parameters.ncells = ncells
@@ -697,6 +711,7 @@ def comparison_parameters_from_log(log_path):
     log_parameters = Map()
 
     # Get the properties
+    log_parameters.npackages = log_file.stellar_packages
     log_parameters.nwavelengths = log_file.wavelengths
     log_parameters.treegrid = log_file.uses_tree
     log_parameters.ncells = log_file.dust_cells if not log_file.uses_tree else None

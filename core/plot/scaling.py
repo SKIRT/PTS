@@ -176,6 +176,9 @@ class BatchScalingPlotter(Configurable):
             # Do extraction
             self.extract()
 
+        # Check the coverage of the timing and memory data
+        self.check_coverage()
+
     # -----------------------------------------------------------------
 
     def load_simulations(self):
@@ -226,8 +229,12 @@ class BatchScalingPlotter(Configurable):
             # Load the log file
             log_file = simulation.log_file
 
-            # Load the ski file
+            # Load the ski file or parameters map
             ski = simulation.parameters()
+            parameters = None
+            if isinstance(ski, Map):
+                parameters = ski
+                ski = None
 
             # If timing has to be extracted
             if extract_timing:
@@ -239,12 +246,29 @@ class BatchScalingPlotter(Configurable):
                 timeline = extractor.run(simulation)
 
                 # Add an entry to the timing table
-                self.timing.add_from_simulation(simulation, ski, log_file, timeline)
+                self.timing.add_from_simulation(simulation, ski, log_file, timeline, parameters=parameters)
 
             if extract_memory:
 
                 # Add an entry to the memory table
-                self.memory.add_from_simulation(simulation, ski, log_file)
+                self.memory.add_from_simulation(simulation, ski, log_file, parameters=parameters)
+
+    # -----------------------------------------------------------------
+
+    def check_coverage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check if the data spans multiple number of cores
+        if self.config.hybridisation:
+            if np.min(self.timing["Processes"]) == np.max(self.timing["Processes"]): raise RuntimeError("All runtimes are generated with the same number of processes, you cannot run with --hybridisation")
+            if np.min(self.memory["Processes"]) == np.max(self.timing["Processes"]): raise RuntimeError("All memory data are generated with the same number of processes, you cannot run with --hybridisation")
+        else:
+            if np.min(self.timing["Cores"]) == np.max(self.timing["Cores"]): raise RuntimeError("All runtimes are generated on the same number of cores. Run with --hybridisation")
+            if np.min(self.memory["Cores"]) == np.max(self.memory["Cores"]): raise RuntimeError("All memory data are generated on the same number of cores. Run with --hybridisation")
 
     # -----------------------------------------------------------------
 
@@ -304,7 +328,7 @@ class BatchScalingPlotter(Configurable):
             # Get the number of processes and threads
             processes = self.timing["Processes"][i]
             threads_per_core = self.timing["Threads per core"][i]
-            cores_per_process = self.timing["Cores"][i] / processes
+            cores_per_process = int(self.timing["Cores"][i] / processes)
             threads = threads_per_core * cores_per_process
             processors = processes * threads
 
@@ -316,18 +340,21 @@ class BatchScalingPlotter(Configurable):
             #    else: scaling_mode = "mpi"
             #else: scaling_mode = "threads"
 
-            if processes > 1:
-                if threads > 1:
-                    if data_parallel: mode = "hybrid task+data (" + str(threads) + ")"
-                    else: mode = "hybrid task (" + str(threads) + ")"
-                else:
-                    if data_parallel: mode = "mpi task+data"
-                    else: mode = "mpi task"
-            else: mode = "multithreading"
+            if self.config.hybridisation: mode = str(self.timing["Cores"][i]) + " cores"
+            else:
+
+                if processes > 1:
+                    if threads > 1:
+                        if data_parallel: mode = "hybrid task+data (" + str(threads) + ")"
+                        else: mode = "hybrid task (" + str(threads) + ")"
+                    else:
+                        if data_parallel: mode = "mpi task+data"
+                        else: mode = "mpi task"
+                else: mode = "multithreading"
 
             # If the number of processors is 1, add the runtimes for the different simulation phases to the
             # dictionary that contains the serial runtimes
-            if processors == 1:
+            if (self.config.hybridisation and processes == 1) or (not self.config.hybridisation and processors == 1):
 
                 serial_times["total"].append(self.timing["Total runtime"][i])
                 serial_times["setup"].append(self.timing["Setup time"][i])
@@ -348,27 +375,29 @@ class BatchScalingPlotter(Configurable):
                 serial_memory["dust"].append(self.memory["Dust emission peak memory"][i])
                 serial_memory["writing"].append(self.memory["Writing peak memory"][i])
 
+            processes_or_processors = processes if self.config.hybridisation else processors
+
             # Add the processor count for this parallelization mode
-            modes[mode].add(processors)
+            modes[mode].add(processes_or_processors)
 
             # Fill in the runtimes and memory usage at the appropriate place in the dictionaries
-            total_times[mode][processors].append(self.timing["Total runtime"][i])
-            setup_times[mode][processors].append(self.timing["Setup time"][i])
-            stellar_times[mode][processors].append(self.timing["Stellar emission time"][i])
-            spectra_times[mode][processors].append(self.timing["Spectra calculation time"][i])
-            dust_times[mode][processors].append(self.timing["Dust emission time"][i])
-            writing_times[mode][processors].append(self.timing["Writing time"][i])
-            waiting_times[mode][processors].append(self.timing["Waiting time"][i])
-            communication_times[mode][processors].append(self.timing["Communication time"][i])
-            intermediate_times[mode][processors].append(self.timing["Intermediate time"][i])
+            total_times[mode][processes_or_processors].append(self.timing["Total runtime"][i])
+            setup_times[mode][processes_or_processors].append(self.timing["Setup time"][i])
+            stellar_times[mode][processes_or_processors].append(self.timing["Stellar emission time"][i])
+            spectra_times[mode][processes_or_processors].append(self.timing["Spectra calculation time"][i])
+            dust_times[mode][processes_or_processors].append(self.timing["Dust emission time"][i])
+            writing_times[mode][processes_or_processors].append(self.timing["Writing time"][i])
+            waiting_times[mode][processes_or_processors].append(self.timing["Waiting time"][i])
+            communication_times[mode][processes_or_processors].append(self.timing["Communication time"][i])
+            intermediate_times[mode][processes_or_processors].append(self.timing["Intermediate time"][i])
 
             # Fill in the memory usage at the appropriate place in the dictionaries
-            total_memory[mode][processors].append(self.memory["Total peak memory"][i])
-            setup_memory[mode][processors].append(self.memory["Setup peak memory"][i])
-            stellar_memory[mode][processors].append(self.memory["Stellar emission peak memory"][i])
-            spectra_memory[mode][processors].append(self.memory["Spectra calculation peak memory"][i])
-            dust_memory[mode][processors].append(self.memory["Dust emission peak memory"][i])
-            writing_memory[mode][processors].append(self.memory["Writing peak memory"][i])
+            total_memory[mode][processes_or_processors].append(self.memory["Total peak memory"][i])
+            setup_memory[mode][processes_or_processors].append(self.memory["Setup peak memory"][i])
+            stellar_memory[mode][processes_or_processors].append(self.memory["Stellar emission peak memory"][i])
+            spectra_memory[mode][processes_or_processors].append(self.memory["Spectra calculation peak memory"][i])
+            dust_memory[mode][processes_or_processors].append(self.memory["Dust emission peak memory"][i])
+            writing_memory[mode][processes_or_processors].append(self.memory["Writing peak memory"][i])
 
         # Average the serial runtimes, loop over each phase
         for phase in serial_times:
@@ -624,7 +653,7 @@ class BatchScalingPlotter(Configurable):
         This function ...
         :param phase:
         :param file_path:
-        :param size:
+        :param figsize:
         :return:
         """
 
@@ -671,7 +700,8 @@ class BatchScalingPlotter(Configurable):
         plt.grid(True)
 
         # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
+        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
+        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
         plt.legend(title="Modes")
 
@@ -691,7 +721,7 @@ class BatchScalingPlotter(Configurable):
         This function ...
         :param phase:
         :param file_path:
-        :param size:
+        :param figsize:
         :param plot_fit:
         :return:
         """
@@ -746,21 +776,23 @@ class BatchScalingPlotter(Configurable):
             # Add the appropriate ticks
             ticks |= set(processor_counts)
 
-            # Set the weights of the different speedup points for the fitting procedure
-            speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
+            if not self.config.hybridisation:
 
-            # Fit (standard or modified) Amdahl's law to the speedups
-            if len(processor_counts) < 10:
+                # Set the weights of the different speedup points for the fitting procedure
+                speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
 
-                popt, pcov = curve_fit(Amdahl, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
-                perr = np.sqrt(np.diag(pcov))
-                parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": 0.0, "a_error": 0.0, "b": 0.0, "b_error": 0.0, "c": 0.0, "c_error": 0.0})
+                # Fit (standard or modified) Amdahl's law to the speedups
+                if len(processor_counts) < 10:
 
-            else:
+                    popt, pcov = curve_fit(Amdahl, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                    perr = np.sqrt(np.diag(pcov))
+                    parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": 0.0, "a_error": 0.0, "b": 0.0, "b_error": 0.0, "c": 0.0, "c_error": 0.0})
 
-                popt, pcov = curve_fit(modAmdahl, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
-                perr = np.sqrt(np.diag(pcov))
-                parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": popt[1], "a_error": perr[1], "b": popt[2], "b_error": perr[2], "c": popt[3], "c_error": perr[3]})
+                else:
+
+                    popt, pcov = curve_fit(modAmdahl, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                    perr = np.sqrt(np.diag(pcov))
+                    parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": popt[1], "a_error": perr[1], "b": popt[2], "b_error": perr[2], "c": popt[3], "c_error": perr[3]})
 
         # Use a logarithmic scale for both axes
         plt.xscale('log')
@@ -770,60 +802,62 @@ class BatchScalingPlotter(Configurable):
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
-        # Fit parameters for the speedups to Amdahl's law
-        #  S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
-        mode_list = []
-        p_list = []
-        p_error_list = []
-        a_list = []
-        a_error_list = []
-        b_list = []
-        b_error_list = []
-        c_list = []
-        c_error_list = []
+        if not self.config.hybridisation:
 
-        for mode in parameters:
+            # Fit parameters for the speedups to Amdahl's law
+            #  S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
+            mode_list = []
+            p_list = []
+            p_error_list = []
+            a_list = []
+            a_error_list = []
+            b_list = []
+            b_error_list = []
+            c_list = []
+            c_error_list = []
 
-            mode_list.append(mode)
-            p_list.append(parameters[mode].p)
-            p_error_list.append(parameters[mode].p_error)
-            a_list.append(parameters[mode].a)
-            a_error_list.append(parameters[mode].a_error)
-            b_list.append(parameters[mode].b)
-            b_error_list.append(parameters[mode].b_error)
-            c_list.append(parameters[mode].c)
-            c_error_list.append(parameters[mode].c_error)
+            for mode in parameters:
 
-        if file_path is not None:
+                mode_list.append(mode)
+                p_list.append(parameters[mode].p)
+                p_error_list.append(parameters[mode].p_error)
+                a_list.append(parameters[mode].a)
+                a_error_list.append(parameters[mode].a_error)
+                b_list.append(parameters[mode].b)
+                b_error_list.append(parameters[mode].b_error)
+                c_list.append(parameters[mode].c)
+                c_error_list.append(parameters[mode].c_error)
 
-            # Create a data file to contain the fitted parameters
-            directory = os.path.dirname(file_path)
-            parameter_file_path = fs.join(directory, "parameters.dat")
+            if file_path is not None:
 
-            # Create the parameters table and write to file
-            data = [p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
-            names = ["Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
-            table = Table(data=data, names=names)
-            table.write(parameter_file_path, format="ascii.commented_header")
+                # Create a data file to contain the fitted parameters
+                directory = os.path.dirname(file_path)
+                parameter_file_path = fs.join(directory, "parameters.dat")
 
-        # Plot the fitted speedup curves and write the parameters to the file
-        fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-        for mode in parameters:
+                # Create the parameters table and write to file
+                data = [p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
+                names = ["Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
+                table = Table(data=data, names=names)
+                table.write(parameter_file_path, format="ascii.commented_header")
 
-            # Get the parameter values
-            p = parameters[mode].p
-            a = parameters[mode].a
-            b = parameters[mode].b
-            c = parameters[mode].c
+            # Plot the fitted speedup curves and write the parameters to the file
+            fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            for mode in parameters:
 
-            # Show the fitted curve
-            if plot_fit:
+                # Get the parameter values
+                p = parameters[mode].p
+                a = parameters[mode].a
+                b = parameters[mode].b
+                c = parameters[mode].c
 
-                # Calculate the fitted speedups
-                fit_speedups = [modAmdahl(n, p, a, b, c) for n in fit_nthreads]
+                # Show the fitted curve
+                if plot_fit:
 
-                # Add the plot
-                plt.plot(fit_nthreads, fit_speedups)
+                    # Calculate the fitted speedups
+                    fit_speedups = [modAmdahl(n, p, a, b, c) for n in fit_nthreads]
+
+                    # Add the plot
+                    plt.plot(fit_nthreads, fit_speedups)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -836,15 +870,16 @@ class BatchScalingPlotter(Configurable):
         plt.grid(True)
 
         # Plot a line that denotes linear scaling (speedup = nthreads)
-        plt.plot(ticks, ticks, linestyle='--')
+        if not self.config.hybridisation: plt.plot(ticks, ticks, linestyle='--')
 
         # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
+        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
+        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel(phase_labels[phase] + " speedup $S$", fontsize='large')
         plt.legend(title="Modes")
 
         # Set the plot title
-        #plt.title("Speedup of the " + phase_labels[phase].lower() + " for " + self.system_name)
+        plt.title("Speedup of the " + phase_labels[phase].lower())
 
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
@@ -892,6 +927,10 @@ class BatchScalingPlotter(Configurable):
             # Sort the lists
             processor_counts, times, errors = sort_lists(processor_counts, times, errors)
 
+            # Get array of number of used cores
+            if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
+            else: ncores = processor_counts
+
             # Calculate the efficiencies and the errors on the efficiencies
             efficiencies = []
             efficiency_errors = []
@@ -902,8 +941,8 @@ class BatchScalingPlotter(Configurable):
 
                 # Calculate the efficiency based on the current runtime and the serial runtime
                 speedup = serial / time
-                efficiency = speedup.value / processor_counts[i]
-                efficiency_error = speedup.error / processor_counts[i]
+                efficiency = speedup.value / ncores[i]
+                efficiency_error = speedup.error / ncores[i]
 
                 # Add the value and the propagated error of the efficiency to the appropriate lists
                 efficiencies.append(efficiency)
@@ -932,12 +971,13 @@ class BatchScalingPlotter(Configurable):
         plt.grid(True)
 
         # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
+        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
+        else: plt.xlabel("Number of cores $N_c$", fontsize="large")
         plt.ylabel(phase_labels[phase] + " efficiency $\epsilon$", fontsize='large')
         plt.legend(title="Parallelization modes")
 
         # Set the plot title
-        #plt.title("Efficiency of the " + phase_labels[phase].lower() + " for " + self.system_name)
+        plt.title("Efficiency of the " + phase_labels[phase].lower())
 
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
@@ -982,12 +1022,16 @@ class BatchScalingPlotter(Configurable):
             times = np.array(times)
             errors = np.array(errors)
 
+            # Get array of number of used cores
+            if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
+            else: ncores = processor_counts
+
             # Get list of process count
             #processes = nprocesses_from_mode(mode, processor_counts)
 
             # Multiply to get total
-            times *= processor_counts
-            errors *= processor_counts
+            times *= ncores
+            errors *= ncores
 
             # Plot the data points for this mode
             plt.errorbar(processor_counts, times, errors, marker='.', label=mode)
@@ -1012,7 +1056,8 @@ class BatchScalingPlotter(Configurable):
         plt.grid(True)
 
         # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
+        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
+        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
         plt.legend(title="Modes")
 
@@ -1079,12 +1124,13 @@ class BatchScalingPlotter(Configurable):
         plt.grid(True)
 
         # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
-        plt.ylabel("Memory usage (GB)", fontsize='large')
+        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
+        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
+        plt.ylabel("Memory usage per process (GB)", fontsize='large')
         plt.legend(title="Modes")
 
         # Set the plot title
-        plt.title("Scaling of the memory usage of the " + phase + " phase")
+        plt.title("Scaling of the memory usage (per process) of the " + phase + " phase")
 
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
@@ -1139,8 +1185,6 @@ class BatchScalingPlotter(Configurable):
 
                 # Calculate the efficiency based on the current memory usage and the serial memory usage
                 gain = serial / memory
-                #efficiency = speedup.value / processor_counts[i]
-                #efficiency_error = speedup.error / processor_counts[i]
 
                 # Add the value and the propagated error of the gain to the appropriate lists
                 gains.append(gain.value)
@@ -1169,12 +1213,13 @@ class BatchScalingPlotter(Configurable):
         plt.grid(True)
 
         # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
+        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
+        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel("Memory gain", fontsize='large')
         plt.legend(title="Modes")
 
         # Set the plot title
-        plt.title("Scaling of the memory gain (serial memory usage / memory usage) of the " + phase_labels[phase].lower())
+        plt.title("Scaling of the memory gain (serial memory usage per process / memory usage per process) of the " + phase_labels[phase].lower())
 
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
@@ -1220,7 +1265,8 @@ class BatchScalingPlotter(Configurable):
             errors = np.array(errors)
 
             # Get list of process count
-            processes = nprocesses_from_mode(mode, processor_counts)
+            if self.config.hybridisation: processes = processor_counts
+            else: processes = nprocesses_from_mode(mode, processor_counts)
 
             # Multiply the memory usage for each processor count with the corresponding number of processes (to get the total)
             memories *= processes
@@ -1249,12 +1295,13 @@ class BatchScalingPlotter(Configurable):
         plt.grid(True)
 
         # Add axis labels and a legend
-        plt.xlabel("Number of processors $n$", fontsize='large')
+        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
+        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel("Total memory usage (all processes) (GB)", fontsize='large')
         plt.legend(title="Modes")
 
         # Set the plot title
-        # plt.title("Memory scaling for " + self.system_name)
+        plt.title("Memory scaling for " + phase_labels[phase])
 
         # Save the figure
         if file_path is not None: plt.savefig(file_path)
