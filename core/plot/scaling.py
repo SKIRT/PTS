@@ -862,11 +862,11 @@ class BatchScalingPlotter(Configurable):
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
-        ax.set_yticks(ticks)
+        if not self.config.hybridisation: ax.set_yticks(ticks)
         ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
         ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
         plt.xlim(ticks[0], ticks[-1])
-        plt.ylim(ticks[0], ticks[-1])
+        if not self.config.hybridisation: plt.ylim(ticks[0], ticks[-1])
         plt.grid(True)
 
         # Plot a line that denotes linear scaling (speedup = nthreads)
@@ -888,7 +888,7 @@ class BatchScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_efficiencies_phase(self, phase, file_path=None, figsize=(12, 8), plot_fit=True):
+    def plot_efficiencies_phase(self, phase, file_path=None, figsize=(12,8), plot_fit=True):
 
         """
         This function creates a PDF plot showing the efficiency as a function of the number of threads.
@@ -896,7 +896,7 @@ class BatchScalingPlotter(Configurable):
         The function takes the following (optional) arguments:
         :param phase:
         :param file_path:
-        :param size:
+        :param figsize:
         :param plot_fit:
         :return:
         """
@@ -1336,7 +1336,12 @@ class BatchScalingPlotter(Configurable):
             for j in range(len(self.timing_data["total"][mode].processor_counts)):
 
                 # Get the processor count
-                processors = self.timing_data["total"][mode].processor_counts[j]
+                if self.config.hybridisation:
+                    processors = int(mode.split(" cores")[0])
+                    processes = self.timing_data["total"][mode].processor_counts[j]
+                else:
+                    processors = self.timing_data["total"][mode].processor_counts[j]
+                    processes = nprocesses_from_mode_single(mode, processors)
 
                 # Get the average runtimes for the different phases corresponding to the current processor count
                 setup_time = self.timing_data["setup"][mode].times[j] * processors
@@ -1347,8 +1352,8 @@ class BatchScalingPlotter(Configurable):
                 waiting_time = self.timing_data["waiting"][mode].times[j] * processors
                 communication_time = self.timing_data["communication"][mode].times[j] * processors
 
-                # Add the processor count
-                nprocs_list.append(processors)
+                # Add the process count
+                nprocs_list.append(processes)
 
                 total = 0.0
 
@@ -1468,6 +1473,28 @@ class BatchScalingPlotter(Configurable):
         """
 
         pass
+
+# -----------------------------------------------------------------
+
+def nprocesses_from_mode_single(mode, nprocessors):
+
+    """
+    This function ...
+    :param mode:
+    :param nprocessors:
+    :return:
+    """
+
+    # Get number of processes
+    if mode == "multithreading": processes = 1
+    elif "mpi" in mode: processes = nprocessors
+    elif "hybrid" in mode:
+        threads = int(mode.split("(")[1].split(")")[0])
+        processes = nprocessors / threads
+    else: raise ValueError("Invalid mode: " + mode)
+
+    # Return the number of processes
+    return processes
 
 # -----------------------------------------------------------------
 
