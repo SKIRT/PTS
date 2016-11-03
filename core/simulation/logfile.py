@@ -53,10 +53,6 @@ class LogFile(object):
         # Parse the log file
         self.contents = parse(path)
 
-        # Cache properties to avoid repeated calculation
-        self._stellar_packages = None
-        self._dust_packages = None
-
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -330,6 +326,28 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def nchunks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            line = self.contents["Message"][i]
+
+            if line.startswith("Using") and line.endswith("chunks."):
+                chunks = int(line.split("Using ")[1].split(" chunks")[0])
+                return chunks
+
+        # Number of chunks could not be determined
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def stellar_packages(self):
 
         """
@@ -356,6 +374,32 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stellar_packages_per_process(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries
+        for i in range(len(self.contents)):
+
+            # Skip entries corresponding to other phases
+            if not self.contents["Phase"][i] == "stellar": continue
+
+            # Search for the line
+            if "photon packages per wavelength per process" in self.contents["Message"][i]:
+
+                # Get the number of stellar photon packages per process
+                packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                return packages
+
+        # Not found
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def dust_packages(self):
 
         """
@@ -377,6 +421,32 @@ class LogFile(object):
                 return dust_packages
 
         # If the number of dust photon packages could not be determined, return None
+        return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_packages_per_process(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the log entries in reversed order
+        for i in reversed(range(len(self.contents))):
+
+            # Skip entries not corresponding to the dust emission phase
+            if not self.contents["Phase"][i] == "dust": continue
+
+            # Search for the line stating the number of photon packages per process
+            if "photon packages per wavelength per process" in self.contents["Message"][i]:
+
+                # Return the number of dust emission photon packages per process
+                dust_packages = int(self.contents["Message"][i].split("(")[1].split(" photon")[0])
+                return dust_packages
+
+        # If the number of dust photon packages per process could not be determined, return None
         return None
 
     # -----------------------------------------------------------------

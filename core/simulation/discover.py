@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
-from operator import itemgetter
+import math
 import filecmp
 import difflib
 from collections import defaultdict
@@ -269,6 +269,9 @@ class SimulationDiscoverer(Configurable):
                 # Get the parameters
                 log_parameters = comparison_parameters_from_log(logfile_path)
 
+                # Determine the number of processes
+                processes = LogFile(logfile_path).processes
+
                 # Loop over the ski files
                 for skipath in parameters_ski_files:
 
@@ -277,7 +280,13 @@ class SimulationDiscoverer(Configurable):
 
                     if log_parameters.ncells is None: print(output_path)
 
-                    if parameters_ski_files[skipath] == log_parameters:
+                    npackages_reference = parameters_ski_files[skipath].npackages
+                    npackages = log_parameters.npackages
+
+                    log_parameters.npackages = npackages_reference
+                    #parameters_ski_files[skipath].npackages = None
+
+                    if parameters_ski_files[skipath] == log_parameters and math.ceil(npackages_reference/float(processes)) == math.ceil(npackages/float(processes)):
 
                         input_path = input_paths_ski_files[skipath] if skipath in input_paths_ski_files else None
 
@@ -305,6 +314,21 @@ class SimulationDiscoverer(Configurable):
 
                     # Create simulation and return it
                     simulation = SkirtSimulation(prefix, None, output_path, None, parameters=log_parameters)
+
+                    # Match the npackages with properties of previous simulations without parameters
+                    for key in self.simulations_no_ski:
+
+                        npackages_reference = key[0]
+                        npackages = log_parameters.npackages
+
+                        #log_parameters.npackages = npackages_reference
+                        properties = list(properties)
+                        properties[0] = npackages_reference
+                        properties = tuple(properties)
+
+                        if key == properties and math.ceil(npackages_reference / float(processes)) == math.ceil(npackages / float(processes)):
+                            properties = key
+                            break
 
                     # Add the simulation
                     #self.simulations_no_parameters.append(simulation)
