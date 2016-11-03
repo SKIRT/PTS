@@ -76,164 +76,109 @@ definition.add_section("fitting", "fitting")
 
 definition.sections["fitting"].add_optional("use_center_or_peak", "string", "use center of peak for fitting", "peak")
 definition.sections["fitting"].add_optional("model_names", "string_list", "model names to use for fitting", ["Gaussian", "Airy"], choices=["Gaussian", "Airy"])
-definition.sections["fitting"].add_optional("initial_sigma", )
+definition.sections["fitting"].add_optional("minimum pixels", "integer", "minimum number of pixels", 5)
+definition.sections["fitting"].add_optional("max_model_offset", "real", "maximum model offset", 3.0)
+definition.sections["fitting"].add_optional("zoom_factor", "real", "zoom factor", 2.0)
+definition.sections["fitting"].add_optional("background_est_method", "string", "background estimation method", "polynomial")
+definition.sections["fitting"].add_flag("sigma_clip_background", "sigma clip background", True)
 
-# Fitting
-fitting:
-{
-  use_center_or_peak: "peak"
-  model_names: ["Gaussian", "Airy"]
-  initial_sigma: None
-  minimum_pixels: 5
-  max_model_offset: 3.0
-  zoom_factor: 2.0
-  background_est_method: "polynomial"
-  sigma_clip_background: True
+definition.sections["fitting"].add_flag("sigma_clip_fwhms", "sigma clip FWHMs", True)
+definition.sections["fitting"].add_optional("fwhm_sigma_level", "real", "FWHM sigma level (clipping)", 3.0)
 
-  # sigma-clipping
-  sigma_clip_fwhms: True
-  fwhm_sigma_level: 3.0
+definition.sections["fitting"].add_optional("upsample_factor", "real", "upsample factor", 1.0)
 
-  # Upsample factor
-  upsample_factor: 1.0
+definition.sections["fitting"].add_section("debug", "debug")
+definition.sections["fitting"].sections["debug"].add_flag("model_offset", "model offset")
+definition.sections["fitting"].sections["debug"].add_flag("success", "success")
 
-  # Debug
-  debug:
-  {
-    model_offset: False
-    success: False
-  }
-  
-  # Fit if undetected (no source (peak) found)
-  fit_if_undetected: False
-}
+definition.sections["fitting"].add_flag("fit_if_undetected", "fit if undetected (no source (peak) found)")
 
-source_psf_sigma_level: 4.0
-source_outer_factor: 1.6
+definition.add_optional("source_psf_sigma_level", "real", "source PSF sigma level", 4.0)
+definition.add_optional("source_outer_factor", "real", "source outer factor", 1.6)
 
-# Saturated stars
-saturation:
-{
-  only_brightest: False
-  brightest_method: "percentage"  # or: "sigma clipping"
-  brightest_level: 10.  # for "percentage": a percentage, for "sigma_clip": a sigma-level
-  
-  # For segmentation:
-  sigmas: 15.0
-  background_outer_factor: 1.2
-  always_subtract_background: True
-  background_est_method: "polynomial"
-  sigma_clip_background: True
-  sigma_level: 5.0
-  expansion_factor: 1.5
-  
-  # Minimum connected pixels (int)
-  min_pixels: 5
-  
-  # Kernel
-  kernel:
-  {
-    fwhm: 3.0
-    cutoff_level: 4.0 # in sigmas
-  }
-  
-  expand: True
-  max_expansion_level: 7
-  
-  # Do not normally allow overlap between the center segment and the background mask of the source
-  allow_overlap: False
-  
-  # For removing the saturation
-  interpolation_method: "local_mean"
-  sigma_clip: True
-  no_sigma_clip_on_galaxy: False
-  polynomial_on_galaxy: True
-  
-  # Debug mode
-  debug:
-  {
-    no_segment_before: False
-    no_segment_after: False
-    no_segment: False
-    expand: False
-    success: False
-    dilated: False
-    
-    user_expansion: False
-    
-    overlap_before: False
-    overlap_after: False
-  }
-  
-  dilate: True
-  dilation_factor: 1.4
-  iterations: 5
-  connectivity: 2
-  
-  # User expansion
-  user_expansion: False
-  user_expansion_factor: None
-  
-  # Remove if not fitted
-  remove_if_not_fitted: True
-  
-  # Remove if undetected
-  remove_if_undetected: False
-  
-  # Remove appendages from overlapping mask
-  remove_appendages: True
-  
-  # Remove foreground stars
-  remove_foreground: True
-  
-  check_centroid: True
-  max_centroid_offset: 10.0
-  max_centroid_ellipticity: 0.3
-  
-  # Apertures
-  apertures:
-  {
-    sigma_level: 4.0 # approximate isophotal extent
-    max_ellipticity: 0.1
-  
-    # Maximal offset between the aperture center and star position (in number of pixels) (None=no limit)
-    max_offset: 10.0
-  }
-  
-  # Aperture removal
-  remove_apertures: False
-  aperture_removal:
-  {
-    # Expansion factor
-    expansion_factor: 1.0
-  
-    # Background outer factor
-    background_outer_factor: 1.2
-  
-    # Sigma-clipping
-    no_sigma_clip_on_galaxy: True
-    sigma_clip: True
-  
-    # Interpolation
-    polynomial_on_galaxy: True
-    interpolation_method: "local_mean"
-  }
+definition.add_section("saturation", "saturated stars")
 
-  second_segmentation: False
-  second_sigma_level: 1.2
-}
+definition.sections["saturation"].add_flag("only_brightest", "only brightest")
+definition.sections["saturation"].add_optional("brightest_method", "string", "brightest method", "percentage", choices=["percentage", "sigma clipping"])
+definition.sections["saturation"].add_optional("brightest_level", "real", "for 'percentage': a percentage, for 'sigma clipping': a sigma level", 10.)
 
-# Region
-region:
-{
-  sigma_level: 5.0
-}
+definition.sections["saturation"].add_optional("sigmas", "real", "sigmas for segmentation", 15.0)
+definition.sections["saturation"].add_optional("background_outer_factor", "real", "background outer factor", 1.2)
+definition.sections["saturation"].add_flag("always_subtract_background", "always subtract background", True)
+definition.sections["saturation"].add_optional("background_est_method", "string", "background estimation method", "polynomial")
+definition.sections["saturation"].add_flag("sigma_cip_background", "sigma clip background", True)
+definition.sections["saturation"].add_optional("sigma_level", "real", "sigma level for clipping", 5.0)
+definition.sections["saturation"].add_optional("expansion_factor", "real", "expansion factor", 1.5)
 
-# Calculation of the default FWHM
-fwhm:
-{
-  measure: "mean"    # other options: "max", "median"
-  scale_factor: 1.0
-}
+definition.sections["saturation"].add_optional("min_pixels", "integer", "minimum connected pixels", 5)
+definition.sections["saturation"].add_section("kernel", "kernel")
+definition.sections["saturation"].sections["kernel"].add_optional("fwhm", "real", "FWHM", 3.0)
+definition.sections["saturation"].sections["kernel"].add_optional("cutoff_level", "real", "cutoff level (in sigmas)", 4.0)
+
+definition.sections["saturation"].add_flag("expand", "expand", True)
+definition.sections["saturation"].add_optional("max_expansion_level", "positive_integer", "maximum expansion level", 7)
+
+definition.sections["saturation"].add_flag("allow_overlap", "Do not normally allow overlap between the center segment and the background mask of the source")
+
+definition.sections["saturation"].add_optional("interpolation_method", "string", "interpolation method for removing the saturation", "local_mean")
+definition.sections["saturation"].add_flag("sigma_cip", "sigma clip", True)
+definition.sections["saturation"].add_flag("no_sigma_clip_on_galaxy", "no sigma clipping on galaxy")
+definition.sections["saturation"].add_flag("polynomial_on_galaxy", "polynomial on galaxy", True)
+
+definition.sections["saturation"].add_section("debug", "debug")
+
+definition.sections["saturation"].sections["debug"].add_flag("no_segment_before", "no segment before")
+definition.sections["saturation"].sections["debug"].add_flag("no_segment_after", "no segment after")
+definition.sections["saturation"].sections["debug"].add_flag("no_segment", "no segment")
+definition.sections["saturation"].sections["debug"].add_flag("expand", "expand")
+definition.sections["saturation"].sections["debug"].add_flag("success", "success")
+definition.sections["saturation"].sections["debug"].add_flag("dilated", "dilated")
+definition.sections["saturation"].sections["debug"].add_flag("user_expansion", "user expansion")
+definition.sections["saturation"].sections["debug"].add_flag("overlap_before", "overlap before")
+definition.sections["saturation"].sections["debug"].add_flag("overlap_after", "overlap after")
+
+definition.sections["saturation"].add_flag("dilate", "dilate", True)
+definition.sections["saturation"].add_optional("dilation_factor", "real", "dilation factor", 1.4)
+definition.sections["saturation"].add_optional("iterations", "positive_integer", "iterations", 5)
+definition.sections["saturation"].add_optional("connectiviy", "positive_integer", "connectivity", 2)
+
+definition.sections["saturation"].add_flag("user_expansion", "user expansion")
+definition.sections["saturation"].add_optional("user_expansion_factor", "user expansion factor")
+
+definition.sections["saturation"].add_flag("remove_if_not_fitted", "remove if not fitted", True)
+
+definition.sections["saturation"].add_flag("remove_if_undetected", "remove if undetected", False)
+
+definition.sections["saturation"].add_flag("remove_appendages", "remove appendages from overlapping mask", True)
+
+definition.sections["saturation"].add_flag("remove_foreground", "remove foreground stars", True)
+
+definition.sections["saturation"].add_flag("check_centroid", "check centroid")
+definition.sections["saturation"].add_optional("max_centroid_offset", "real", "max centroid offset", 10.0)
+definition.sections["saturation"].add_optional("max_centroid_ellipticity", "real", "max centroid ellipticity", 0.3)
+
+definition.sections["saturation"].add_section("apertures", "apertures")
+definition.sections["saturation"].sections["apertures"].add_optional("sigma_level", "real", "approximate isophotal extent", 4.0)
+definition.sections["saturation"].sections["apertures"].add_optional("max_ellipticity", "real", "maximum ellipticity", 0.1)
+definition.sections["saturation"].sections["apertures"].add_optional("max_offset", "real", "Maximal offset between the aperture center and star position (in number of pixels) (None=no limit)", 10.0)
+
+definition.sections["saturation"].add_flag("remove_apertures", "remove apertures")
+definition.sections["saturation"].add_section("aperture_removal", "aperture_removal")
+definition.sections["saturation"].sections["aperture_removal"].add_optional("expansion_factor", "real", "expansion factor", 1.0)
+definition.sections["saturation"].sections["aperture_removal"].add_optional("background_outer_factor", "real", "background outer factor", 1.2)
+definition.sections["saturation"].sections["aperture_removal"].add_flag("no_sigma_clip_on_galaxy", "no sigma clip on galaxy", True)
+definition.sections["saturation"].sections["aperture_removal"].add_flag("sigma_clip", "sigma clip", True)
+definition.sections["saturation"].sections["aperture_removal"].add_flag("polynomial_on_galaxy", "polynomial on galaxy", True)
+definition.sections["saturation"].sections["aperture_removal"].add_optional("interpolation_method", "string", "interpolation method", "local_mean")
+
+definition.sections["saturation"].add_flag("second_segmentation", "second segmentation", False)
+definition.sections["saturation"].add_optional("second_sigma_level", "second sigma level", 1.2)
+
+definition.add_section("region", "region")
+definition.sections["region"].add_optional("sigma_level", "real", "sigma level", 5.0)
+
+definition.add_section("fwhm", "calculation of the default FWHM")
+definition.sections["fwhm"].add_optional("measure", "string", "measure", "mean", choices=["mean", "max", "median"])
+definition.sections["fwhm"].add_optional("scale_factor", "real", "scale factor", 1.0)
 
 # -----------------------------------------------------------------

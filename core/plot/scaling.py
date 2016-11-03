@@ -399,8 +399,6 @@ class ScalingPlotter(Configurable):
             dust_memory[mode][processes_or_processors].append(self.memory["Dust emission peak memory"][i])
             writing_memory[mode][processes_or_processors].append(self.memory["Writing peak memory"][i])
 
-            print(writing_memory)
-
         # Average the serial runtimes, loop over each phase
         for phase in serial_times:
 
@@ -1299,11 +1297,6 @@ class ScalingPlotter(Configurable):
 
             # Add the appropriate ticks
             ticks |= set(processor_counts)
-
-            #if phase == "writing":
-            #    print(mode)
-            #    print(memories)
-            #    print(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
         plt.xscale('log')
