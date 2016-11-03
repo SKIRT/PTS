@@ -49,8 +49,18 @@ phase_labels = {"total": "Total runtime", "setup": "Setup time", "stellar": "Ste
 
 # -----------------------------------------------------------------
 
-scaling_properties = ["runtime", "speedup", "efficiency", "CPU time", "memory", "memory gain", "total memory", "timeline"]
+parallel_phases = ["total", "stellar", "spectra", "dust"]
+overhead_phases = ["waiting", "communication"]
+serial_phases = ["writing", "setup"]
+
+# -----------------------------------------------------------------
+
+scaling_properties = ["runtime", "speedup", "efficiency", "CPU-time", "memory", "memory-gain", "total-memory", "timeline"]
 simulation_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication", "intermediate"]
+
+# Seperate types of properties
+timing_properties = ["runtime", "speedup", "efficiency", "CPU-time", "timeline"]
+memory_properties = ["memory", "memory-gain", "total-memory"]
 
 # -----------------------------------------------------------------
 
@@ -112,6 +122,34 @@ class ScalingPlotter(Configurable):
         """
 
         return len(self.serial_memory) != 0 if self.serial_memory is not None else False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for property in self.config.properties:
+            if property in timing_properties: return True
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for property in self.config.properties:
+            if property in memory_properties: return True
+        return False
 
     # -----------------------------------------------------------------
 
@@ -483,6 +521,52 @@ class ScalingPlotter(Configurable):
                 self.memory_data["writing"][mode].memory.append(np.mean(writing_memory[mode][processors]))
                 self.memory_data["writing"][mode].errors.append(self.config.sigma_level * np.std(writing_memory[mode][processors]))
 
+        if len(self.serial_timing) == 0:
+
+            log.warning("Serial (one core) timing data not found, searching for longest runtime for each phase (any parallelization mode)")
+
+            # Loop over the phases
+            for phase in self.timing_data:
+
+                max_time = 0.0
+                max_time_error = None
+
+                # Loop over the modes
+                for mode in self.timing_data[phase]:
+
+                    index = np.argmax(self.timing_data[phase][mode].times)
+                    max_time_mode = self.timing_data[phase][mode].times[index]
+                    if max_time_mode > max_time:
+                        max_time = max_time_mode
+                        max_time_error = self.timing_data[phase][mode].errors[index]
+
+                # Set the time and error
+                self.serial_timing[phase].time = max_time
+                self.serial_timing[phase].error = max_time_error
+
+        if len(self.serial_memory) == 0:
+
+            log.warning("Serial (one core) memory data not found, searching for highest memory usage for each phase (any parallelization mode)")
+
+            # Loop over the phases
+            for phase in self.memory_data:
+
+                max_memory = 0.0
+                max_memory_error = None
+
+                # Loop over the modes
+                for mode in self.memory_data[phase]:
+
+                    index = np.argmax(self.memory_data[phase][mode].memory)
+                    max_memory_mode = self.memory_data[phase][mode].memory[index]
+                    if max_memory_mode > max_memory:
+                        max_memory = max_memory_mode
+                        max_memory_error = self.memory_data[phase][mode].errors[index]
+
+                # Set the memory usage and error
+                self.serial_memory[phase].memory = max_memory
+                self.serial_memory[phase].error = max_memory_error
+
     # -----------------------------------------------------------------
 
     def fit(self):
@@ -496,10 +580,10 @@ class ScalingPlotter(Configurable):
         log.info("Fitting ...")
 
         # Fit timing
-        if self.has_serial_timing: self.fit_timing()
+        if self.needs_timing and self.has_serial_timing: self.fit_timing()
 
         # Fit memory
-        self.fit_memory()
+        if self.needs_memory: self.fit_memory()
 
     # -----------------------------------------------------------------
 
@@ -515,6 +599,9 @@ class ScalingPlotter(Configurable):
 
         # Loop over the phases
         for phase in self.config.phases:
+
+            # Skip certain phases
+            if phase not in parallel_phases: continue
 
             # Get the serial runtime (and error) for this phase (create a Quantity object)
             serial_time = self.serial_timing[phase].time
@@ -609,6 +696,70 @@ class ScalingPlotter(Configurable):
 
             # Add the parameters
             self.timing_fit_parameters[phase] = parameters
+
+        ## COMMUNICATION
+
+        # Get the serial runtime (and error) for this phase (create a Quantity object)
+        #serial_time = self.serial_timing["communication"].time
+        #serial_error = self.serial_timing["communication"].error
+        #serial = Quantity(serial_time, serial_error)
+
+        # Create a dictionary that stores the fitted parameters for each different mode
+        parameters = dict()
+
+        # Loop over the different parallelization modes (the different curves)
+        for mode in self.timing_data["communication"]:
+
+            # Get the list of processor counts, runtimes and errors
+            processor_counts = self.timing_data[phase][mode].processor_counts
+            times = self.timing_data[phase][mode].times
+            errors = self.timing_data[phase][mode].errors
+
+            # Sort the lists
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
+
+            # Set the weights of the different runtime points for the fitting procedure
+            weights = errors if not np.any(np.isinf(errors)) else None
+            if np.count_nonzero(weights) == 0: weights = None
+
+            # Fit logarithmic + linear curve to the data
+            popt, pcov = curve_fit(communication_time_scaling, processor_counts, times, sigma=weights, absolute_sigma=False)
+            perr = np.sqrt(np.diag(pcov))
+            parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": popt[2], "c_error": perr[2]})
+
+        # If output path is specified, write parameter files
+        if self.config.output is not None:
+
+            mode_list = []
+            a_list = []
+            a_error_list = []
+            b_list = []
+            b_error_list = []
+            c_list = []
+            c_error_list = []
+
+            for mode in parameters:
+
+                mode_list.append(mode)
+                a_list.append(parameters[mode].a)
+                a_error_list.append(parameters[mode].a_error)
+                b_list.append(parameters[mode].b)
+                b_error_list.append(parameters[mode].b_error)
+                c_list.append(parameters[mode].c)
+                c_error_list.append(parameters[mode].c_error)
+
+            # Create a data file to contain the fitted parameters
+            directory = self.config.output
+            parameter_file_path = fs.join(directory, "parameters_timing_communication.dat")
+
+            # Create the parameters table and write to file
+            data = [mode_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
+            names = ["Parallelization mode", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
+            table = Table(data=data, names=names)
+            table.write(parameter_file_path, format="ascii.commented_header")
+
+        # Add the parameters
+        self.timing_fit_parameters["communication"] = parameters
 
     # -----------------------------------------------------------------
 
@@ -728,16 +879,16 @@ class ScalingPlotter(Configurable):
         if "efficiency" in self.config.properties: self.plot_efficiencies()
 
         # CPU time
-        if "CPU time" in self.config.properties: self.plot_cpu_times()
+        if "CPU-time" in self.config.properties: self.plot_cpu_times()
 
         # Memory
         if "memory" in self.config.properties: self.plot_memory()
 
         # Memory gain
-        if "memory gain" in self.config.properties: self.plot_memory_gain()
+        if "memory-gain" in self.config.properties: self.plot_memory_gain()
 
         # Total memory
-        if "total memory" in self.config.properties: self.plot_total_memory()
+        if "total-memory" in self.config.properties: self.plot_total_memory()
 
         # Timeline
         if "timeline" in self.config.properties: self.plot_timeline()
@@ -912,6 +1063,27 @@ class ScalingPlotter(Configurable):
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
+        # Plot curve of communication times
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit and phase == "communication":
+
+            # Get the fit parameters
+            parameters = self.timing_fit_parameters[phase]
+
+            # Plot the fitted speedup curves and write the parameters to the file
+            fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            for mode in parameters:
+
+                # Get the parameter values
+                a = parameters[mode].a
+                b = parameters[mode].b
+                c = parameters[mode].c
+
+                # Calculate the fitted times
+                fit_times = [communication_time_scaling(n, a, b, c) for n in fit_ncores]
+
+                # Add the plot
+                plt.plot(fit_ncores, fit_times, color="grey")
+
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
@@ -1010,7 +1182,7 @@ class ScalingPlotter(Configurable):
             parameters = self.timing_fit_parameters[phase]
 
             # Plot the fitted speedup curves and write the parameters to the file
-            fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
             for mode in parameters:
 
                 # Get the parameter values
@@ -1020,10 +1192,10 @@ class ScalingPlotter(Configurable):
                 c = parameters[mode].c
 
                 # Calculate the fitted speedups
-                fit_speedups = [modified_amdahl_law(n, p, a, b, c) for n in fit_nthreads]
+                fit_speedups = [modified_amdahl_law(n, p, a, b, c) for n in fit_ncores]
 
                 # Add the plot
-                plt.plot(fit_nthreads, fit_speedups, color="grey")
+                plt.plot(fit_ncores, fit_speedups, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -1066,8 +1238,6 @@ class ScalingPlotter(Configurable):
         Efficiency is defined as T(1)/T(N)/N. It is a dimensionless quantity <= 1.
         The function takes the following (optional) arguments:
         :param phase:
-        :param figsize:
-        :param plot_fit:
         :return:
         """
 
@@ -1234,6 +1404,27 @@ class ScalingPlotter(Configurable):
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
+        # Plot curve of communication times
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit and phase == "communication":
+
+            # Get the fit parameters
+            parameters = self.timing_fit_parameters[phase]
+
+            # Plot the fitted speedup curves and write the parameters to the file
+            fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            for mode in parameters:
+
+                # Get the parameter values
+                a = parameters[mode].a
+                b = parameters[mode].b
+                c = parameters[mode].c
+
+                # Calculate the fitted times
+                fit_times = [communication_time_scaling(n, a, b, c) * n for n in fit_ncores]
+
+                # Add the plot
+                plt.plot(fit_ncores, fit_times, color="grey")
+
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
@@ -1303,10 +1494,12 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        #ticks.append(ticks[-1] * 2)
 
         # Plot fit
         if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+
+            print(ticks)
 
             # Plot the fitted curves
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
@@ -1766,6 +1959,21 @@ def modified_memory_scaling(n, a, b, c):
     """
 
     return a / n + b + c * n
+
+# -----------------------------------------------------------------
+
+def communication_time_scaling(n, a, b, c):
+
+    """
+    This function ...
+    :param n:
+    :param a:
+    :param b:
+    :param c:
+    :return:
+    """
+
+    return a + b * n + c * np.log10(n)
 
 # -----------------------------------------------------------------
 

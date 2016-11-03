@@ -15,8 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import re
 import math
-import filecmp
-import difflib
+#import filecmp
+#import difflib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -381,6 +381,7 @@ class SimulationDiscoverer(Configurable):
                 if rel_input_path is not None: print("    input: " + rel_input_path)
                 print("    processes: " + str(simulation.processes()))
                 print("    threads: " + str(simulation.threads()))
+                print("    data-parallel: " + str(simulation.log_file.data_parallel))
                 print("    host: " + simulation.log_file.host)
                 print("")
 
@@ -416,6 +417,7 @@ class SimulationDiscoverer(Configurable):
                 #if rel_input_path is not None: print("    input: " + rel_input_path)
                 print("    processes: " + str(simulation.processes()))
                 print("    threads: " + str(simulation.threads()))
+                print("    data-parallel: " + str(simulation.log_file.data_parallel))
                 print("    host: " + simulation.log_file.host)
                 print("")
 
