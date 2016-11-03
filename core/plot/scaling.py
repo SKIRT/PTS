@@ -521,7 +521,8 @@ class ScalingPlotter(Configurable):
                 self.memory_data["writing"][mode].memory.append(np.mean(writing_memory[mode][processors]))
                 self.memory_data["writing"][mode].errors.append(self.config.sigma_level * np.std(writing_memory[mode][processors]))
 
-        if len(self.serial_timing) == 0:
+        # Check if serial data is found
+        if len(self.serial_timing) == 0 and self.needs_timing:
 
             log.warning("Serial (one core) timing data not found, searching for longest runtime for each phase (any parallelization mode)")
 
@@ -544,7 +545,8 @@ class ScalingPlotter(Configurable):
                 self.serial_timing[phase].time = max_time
                 self.serial_timing[phase].error = max_time_error
 
-        if len(self.serial_memory) == 0:
+        # Check if serial data is found
+        if len(self.serial_memory) == 0 and self.needs_memory:
 
             log.warning("Serial (one core) memory data not found, searching for highest memory usage for each phase (any parallelization mode)")
 
