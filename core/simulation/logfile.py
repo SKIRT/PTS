@@ -307,7 +307,7 @@ class LogFile(object):
         for i in range(len(self.contents)):
 
             # Skip entries corresponding to other phases
-            if self.contents["Phase"][i] != "writing": continue
+            if self.contents["Phase"][i] != "write": continue
 
             # Replace peak memory if appropriate
             if peak_memory is None or self.contents["Memory"][i] > peak_memory: peak_memory = self.contents["Memory"][i]
@@ -822,6 +822,12 @@ def parse(path):
         # The current phase
         current_phase = None
 
+        # The phase before that
+        previous_phase = None
+
+        # The phase even before that
+        previousprevious_phase = None
+
         # Loop over all lines in the log file
         for line in f:
 
@@ -861,7 +867,7 @@ def parse(path):
             else: raise ValueError("Could not determine the type of log message")
 
             # Get the simulation phase
-            current_phase = get_phase(line, current_phase)
+            current_phase, previous_phase, previousprevious_phase = get_phase(line, current_phase, previous_phase, previousprevious_phase)
             phases.append(current_phase)
 
     # Create the table data structures
@@ -879,26 +885,33 @@ def parse(path):
 
 # -----------------------------------------------------------------
 
-def get_phase(line, current):
+def get_phase(line, current, previous, previousprevious):
 
     """
     This function ...
     :param line:
     :param current:
+    :param previous:
+    :param previousprevious:
     :return:
     """
 
+    if current == "comm":
+        if search_end(line):
+            if previous == "wait" and (previousprevious == "stellar" or previousprevious == "write"): return previousprevious, current, None
+            elif previous == "stellar" or previous == "write": return previous, current, previous
+
     # Search for the different simulation phases
-    if search_start(line): return "start"
-    elif search_end(line): return None
-    elif search_setup(line): return "setup"
-    elif search_wait(line): return "wait"
-    elif search_comm(line): return "comm"
-    elif search_stellar(line): return "stellar"
-    elif search_spectra(line): return "spectra"
-    elif search_dust(line): return "dust"
-    elif search_write(line): return "write"
-    else: return current
+    if search_start(line): return "start", current, previous
+    elif search_end(line): return None, current, previous
+    elif search_setup(line): return "setup", current, previous
+    elif search_wait(line): return "wait", current, previous
+    elif search_comm(line): return "comm", current, previous
+    elif search_stellar(line): return "stellar", current, previous
+    elif search_spectra(line): return "spectra", current, previous
+    elif search_dust(line): return "dust", current, previous
+    elif search_write(line): return "write", current, previous
+    else: return current, previous, previousprevious # phase still going on
 
 # -----------------------------------------------------------------
 

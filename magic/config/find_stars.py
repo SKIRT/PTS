@@ -72,6 +72,12 @@ definition.sections["detection"].sections["debug"].add_flag("one_peak", "one pea
 definition.sections["detection"].sections["debug"].add_flag("more_peaks", "more peaks")
 definition.sections["detection"].sections["debug"].add_flag("off_center", "off-center")
 
+definition.add_section("fitting", "fitting")
+
+definition.sections["fitting"].add_optional("use_center_or_peak", "string", "use center of peak for fitting", "peak")
+definition.sections["fitting"].add_optional("model_names", "string_list", "model names to use for fitting", ["Gaussian", "Airy"], choices=["Gaussian", "Airy"])
+definition.sections["fitting"].add_optional("initial_sigma", )
+
 # Fitting
 fitting:
 {

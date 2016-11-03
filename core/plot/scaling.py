@@ -130,7 +130,7 @@ class ScalingPlotter(Configurable):
         self.prepare()
 
         # Do fitting
-        #self.fit()
+        if not self.config.hybridisation and self.config.fit: self.fit()
 
         # 3. Plot
         self.plot()
@@ -339,19 +339,14 @@ class ScalingPlotter(Configurable):
 
             data_parallel = self.timing["Data-parallel"][i]
 
-            #if processes > 1:
-            #    if threads > 1:
-            #        scaling_mode = "hybrid-" + str(threads)
-            #    else: scaling_mode = "mpi"
-            #else: scaling_mode = "threads"
-
+            # Determine the parallelization mode
             if self.config.hybridisation: mode = str(self.timing["Cores"][i]) + " cores"
             else:
 
                 if processes > 1:
                     if threads > 1:
-                        if data_parallel: mode = "hybrid task+data (" + str(threads) + ")"
-                        else: mode = "hybrid task (" + str(threads) + ")"
+                        if data_parallel: mode = "hybrid task+data (" + str(threads) + " threads)"
+                        else: mode = "hybrid task (" + str(threads) + " threads)"
                     else:
                         if data_parallel: mode = "mpi task+data"
                         else: mode = "mpi task"
@@ -403,6 +398,8 @@ class ScalingPlotter(Configurable):
             spectra_memory[mode][processes_or_processors].append(self.memory["Spectra calculation peak memory"][i])
             dust_memory[mode][processes_or_processors].append(self.memory["Dust emission peak memory"][i])
             writing_memory[mode][processes_or_processors].append(self.memory["Writing peak memory"][i])
+
+            print(writing_memory)
 
         # Average the serial runtimes, loop over each phase
         for phase in serial_times:
@@ -487,6 +484,229 @@ class ScalingPlotter(Configurable):
                 self.memory_data["writing"][mode].processor_counts.append(processors)
                 self.memory_data["writing"][mode].memory.append(np.mean(writing_memory[mode][processors]))
                 self.memory_data["writing"][mode].errors.append(self.config.sigma_level * np.std(writing_memory[mode][processors]))
+
+    # -----------------------------------------------------------------
+
+    def fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fitting ...")
+
+        # Fit timing
+        if self.has_serial_timing: self.fit_timing()
+
+        # Fit memory
+        self.fit_memory()
+
+    # -----------------------------------------------------------------
+
+    def fit_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fitting the timing data ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Get the serial runtime (and error) for this phase (create a Quantity object)
+            serial_time = self.serial_timing[phase].time
+            serial_error = self.serial_timing[phase].error
+            serial = Quantity(serial_time, serial_error)
+
+            # Create a dictionary that stores the fitted parameters for each different mode
+            parameters = dict()
+
+            # Loop over the different parallelization modes (the different curves)
+            for mode in self.timing_data[phase]:
+
+                # Get the list of processor counts, runtimes and errors
+                processor_counts = self.timing_data[phase][mode].processor_counts
+                times = self.timing_data[phase][mode].times
+                errors = self.timing_data[phase][mode].errors
+
+                # Sort the lists
+                processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
+
+                # Calculate the speedups and the errors on the speedups
+                speedups = []
+                speedup_errors = []
+                for i in range(len(processor_counts)):
+
+                    # Create a quantity for the current runtime
+                    time = Quantity(times[i], errors[i])
+
+                    # Calculate the speedup based on the current runtime and the serial runtime
+                    speedup = serial / time
+
+                    # Add the value and the propagated error of the speedup to the appropriate lists
+                    speedups.append(speedup.value)
+                    speedup_errors.append(speedup.error)
+
+                # Set the weights of the different speedup points for the fitting procedure
+                speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
+                if np.count_nonzero(speedup_weigths) == 0: speedup_weigths = None
+
+                # Fit (standard or modified) Amdahl's law to the speedups
+                if len(processor_counts) < 10:
+
+                    # Fit parameters for the speedups to Amdahl's law
+                    popt, pcov = curve_fit(amdahl_law, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                    perr = np.sqrt(np.diag(pcov))
+                    parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": 0.0, "a_error": 0.0, "b": 0.0, "b_error": 0.0, "c": 0.0, "c_error": 0.0})
+
+                else:
+
+                    # Fit parameters for the speedups to Amdahl's law
+                    popt, pcov = curve_fit(modified_amdahl_law, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                    perr = np.sqrt(np.diag(pcov))
+                    parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": popt[1], "a_error": perr[1], "b": popt[2], "b_error": perr[2], "c": popt[3], "c_error": perr[3]})
+
+            # If output path is specified, write parameter files
+            if self.config.output is not None:
+
+                #  S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
+                mode_list = []
+                p_list = []
+                p_error_list = []
+                a_list = []
+                a_error_list = []
+                b_list = []
+                b_error_list = []
+                c_list = []
+                c_error_list = []
+
+                for mode in parameters:
+
+                    mode_list.append(mode)
+                    p_list.append(parameters[mode].p)
+                    p_error_list.append(parameters[mode].p_error)
+                    a_list.append(parameters[mode].a)
+                    a_error_list.append(parameters[mode].a_error)
+                    b_list.append(parameters[mode].b)
+                    b_error_list.append(parameters[mode].b_error)
+                    c_list.append(parameters[mode].c)
+                    c_error_list.append(parameters[mode].c_error)
+
+                # Create a data file to contain the fitted parameters
+                directory = self.config.output
+                parameter_file_path = fs.join(directory, "parameters_timing_" + phase + ".dat")
+
+                # Create the parameters table and write to file
+                data = [mode_list, p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list,
+                        c_error_list]
+                names = ["Parallelization mode", "Parallel fraction p", "Error on p", "Parameter a",
+                         "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
+                table = Table(data=data, names=names)
+                table.write(parameter_file_path, format="ascii.commented_header")
+
+            # Add the parameters
+            self.timing_fit_parameters[phase] = parameters
+
+    # -----------------------------------------------------------------
+
+    def fit_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fitting the memory data ...")
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Get the serial (1 process) memory consumption (and error) for this phase (create a Quantity object)
+            #serial_memory = self.serial_memory[phase].memory
+            #serial_error = self.serial_memory[phase].error
+            #serial = Quantity(serial_memory, serial_error)
+
+            # Create a dictionary that stores the fitted parameters for each different mode
+            parameters = dict()
+
+            # Loop over the different parallelization modes (the different curves)
+            for mode in self.memory_data[phase]:
+
+                # Skip modes that are not data parallel
+                if not "task+data" in mode: continue
+
+                # Get the list of processor counts, memory and errors
+                processor_counts = self.memory_data[phase][mode].processor_counts
+                memories = self.memory_data[phase][mode].memory
+                errors = self.memory_data[phase][mode].errors
+
+                # Sort the lists
+                processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
+
+                # Set the weights of the different memory points for the fitting procedure
+                weights = errors if not np.any(np.isinf(errors)) else None
+                if np.count_nonzero(weights) == 0: weights = None
+
+                # Check data
+                if np.any(np.isinf(memories)) or np.any(np.isnan(memories)):
+                    log.warning("Fitting not possible to the memory data of " + mode + " for " + phase_names[phase].lower() + " (nans and/or infs)")
+                    continue
+
+                # Get list of nprocesses
+                nprocesses = nprocesses_from_mode(mode, processor_counts)
+
+                # Fit (standard or modified) memory scaling law
+                if len(processor_counts) < 5:
+
+                    popt, pcov = curve_fit(memory_scaling, nprocesses, memories, sigma=weights, absolute_sigma=False)
+                    perr = np.sqrt(np.diag(pcov))
+                    parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": 0.0, "c_error": 0.0})
+
+                else:
+
+                    popt, pcov = curve_fit(modified_memory_scaling, nprocesses, memories, sigma=weights, absolute_sigma=False)
+                    perr = np.sqrt(np.diag(pcov))
+                    parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": popt[2], "c_error": perr[2]})
+
+            # If output path is specified, write parameter files
+            if self.config.output is not None:
+
+                mode_list = []
+                a_list = []
+                a_error_list = []
+                b_list = []
+                b_error_list = []
+                c_list = []
+                c_error_list = []
+
+                for mode in parameters:
+
+                    mode_list.append(mode)
+                    a_list.append(parameters[mode].a)
+                    a_error_list.append(parameters[mode].a_error)
+                    b_list.append(parameters[mode].b)
+                    b_error_list.append(parameters[mode].b_error)
+                    c_list.append(parameters[mode].c)
+                    c_error_list.append(parameters[mode].c_error)
+
+                # Create a data file to contain the fitted parameters
+                directory = self.config.output
+                parameter_file_path = fs.join(directory, "parameters_memory_" + phase + ".dat")
+
+                # Create the parameters table and write to file
+                data = [mode_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
+                names = ["Parallelization mode", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
+                table = Table(data=data, names=names)
+                table.write(parameter_file_path, format="ascii.commented_header")
+
+            # Add the parameters
+            self.memory_fit_parameters[phase] = parameters
 
     # -----------------------------------------------------------------
 
@@ -652,12 +872,11 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_runtimes_phase(self, phase, figsize=(12, 8)):
+    def plot_runtimes_phase(self, phase):
 
         """
         This function ...
         :param phase:
-        :param figsize:
         :return:
         """
 
@@ -665,7 +884,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the runtimes for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=self.config.figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -680,7 +899,7 @@ class ScalingPlotter(Configurable):
             errors = self.timing_data[phase][mode].errors
 
             # Sort the lists
-            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
 
             # Plot the data points for this mode
             plt.errorbar(processor_counts, times, errors, marker='.', label=mode)
@@ -707,13 +926,14 @@ class ScalingPlotter(Configurable):
         if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
         else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
-        plt.legend(title="Modes")
+        if self.config.hybridisation: plt.legend(title="Number of cores")
+        else: plt.legend(title="Parallelization modes")
 
         # Set the plot title
         plt.title("Scaling of the " + phase_labels[phase].lower())
 
-        if self.config.output is not None:
-            file_path = fs.join(self.config.output, "runtimes_" + phase + ".pdf")
+        # Set file path
+        if self.config.output is not None: file_path = fs.join(self.config.output, "runtimes_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
@@ -723,13 +943,11 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_speedups_phase(self, phase, figsize=(12, 8), plot_fit=True):
+    def plot_speedups_phase(self, phase):
 
         """
         This function ...
         :param phase:
-        :param figsize:
-        :param plot_fit:
         :return:
         """
 
@@ -737,14 +955,11 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the speedups for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=self.config.figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
-
-        # Create a dictionary that stores the fitted parameters for each different mode
-        parameters = dict()
 
         # Get the serial runtime (and error) for this phase (create a Quantity object)
         serial_time = self.serial_timing[phase].time
@@ -760,7 +975,7 @@ class ScalingPlotter(Configurable):
             errors = self.timing_data[phase][mode].errors
 
             # Sort the lists
-            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
 
             # Calculate the speedups and the errors on the speedups
             speedups = []
@@ -783,24 +998,6 @@ class ScalingPlotter(Configurable):
             # Add the appropriate ticks
             ticks |= set(processor_counts)
 
-            if not self.config.hybridisation:
-
-                # Set the weights of the different speedup points for the fitting procedure
-                speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
-
-                # Fit (standard or modified) Amdahl's law to the speedups
-                if len(processor_counts) < 10:
-
-                    popt, pcov = curve_fit(Amdahl, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
-                    perr = np.sqrt(np.diag(pcov))
-                    parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": 0.0, "a_error": 0.0, "b": 0.0, "b_error": 0.0, "c": 0.0, "c_error": 0.0})
-
-                else:
-
-                    popt, pcov = curve_fit(modAmdahl, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
-                    perr = np.sqrt(np.diag(pcov))
-                    parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": popt[1], "a_error": perr[1], "b": popt[2], "b_error": perr[2], "c": popt[3], "c_error": perr[3]})
-
         # Use a logarithmic scale for both axes
         plt.xscale('log')
         plt.yscale('log')
@@ -809,46 +1006,10 @@ class ScalingPlotter(Configurable):
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
-        if not self.config.hybridisation:
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
-            # Fit parameters for the speedups to Amdahl's law
-            #  S_n = 1 / ( 1 - p + p/n + a + b*n + c*n^2 ) \n")
-            mode_list = []
-            p_list = []
-            p_error_list = []
-            a_list = []
-            a_error_list = []
-            b_list = []
-            b_error_list = []
-            c_list = []
-            c_error_list = []
-
-            for mode in parameters:
-
-                mode_list.append(mode)
-                p_list.append(parameters[mode].p)
-                p_error_list.append(parameters[mode].p_error)
-                a_list.append(parameters[mode].a)
-                a_error_list.append(parameters[mode].a_error)
-                b_list.append(parameters[mode].b)
-                b_error_list.append(parameters[mode].b_error)
-                c_list.append(parameters[mode].c)
-                c_error_list.append(parameters[mode].c_error)
-
-            if self.config.output is not None:
-
-                # Create a data file to contain the fitted parameters
-                directory = self.config.output
-                parameter_file_path = fs.join(directory, "parameters_" + phase + ".dat")
-
-                # Create the parameters table and write to file
-                data = [mode_list, p_list, p_error_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
-                names = ["Parallelization mode", "Parallel fraction p", "Error on p", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
-                table = Table(data=data, names=names)
-                table.write(parameter_file_path, format="ascii.commented_header")
-
-            # Add the parameters
-            self.timing_fit_parameters[phase] = parameters
+            # Get the fit parameters
+            parameters = self.timing_fit_parameters[phase]
 
             # Plot the fitted speedup curves and write the parameters to the file
             fit_nthreads = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
@@ -860,14 +1021,11 @@ class ScalingPlotter(Configurable):
                 b = parameters[mode].b
                 c = parameters[mode].c
 
-                # Show the fitted curve
-                if plot_fit:
+                # Calculate the fitted speedups
+                fit_speedups = [modified_amdahl_law(n, p, a, b, c) for n in fit_nthreads]
 
-                    # Calculate the fitted speedups
-                    fit_speedups = [modAmdahl(n, p, a, b, c) for n in fit_nthreads]
-
-                    # Add the plot
-                    plt.plot(fit_nthreads, fit_speedups)
+                # Add the plot
+                plt.plot(fit_nthreads, fit_speedups, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -886,13 +1044,14 @@ class ScalingPlotter(Configurable):
         if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
         else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel(phase_labels[phase] + " speedup $S$", fontsize='large')
-        plt.legend(title="Modes")
+        if self.config.hybridisation: plt.legend(title="Number of cores")
+        else: plt.legend(title="Parallelization modes")
 
         # Set the plot title
         plt.title("Speedup of the " + phase_labels[phase].lower())
 
-        if self.config.output is not None:
-            file_path = fs.join(self.config.output, "speedups_" + phase + ".pdf")
+        # Set file path
+        if self.config.output is not None: file_path = fs.join(self.config.output, "speedups_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
@@ -902,7 +1061,7 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_efficiencies_phase(self, phase, figsize=(12,8), plot_fit=True):
+    def plot_efficiencies_phase(self, phase):
 
         """
         This function creates a PDF plot showing the efficiency as a function of the number of threads.
@@ -918,7 +1077,7 @@ class ScalingPlotter(Configurable):
         log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=self.config.figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -938,7 +1097,7 @@ class ScalingPlotter(Configurable):
             errors = self.timing_data[phase][mode].errors
 
             # Sort the lists
-            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
 
             # Get array of number of used cores
             if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
@@ -975,7 +1134,7 @@ class ScalingPlotter(Configurable):
         ticks.append(ticks[-1] * 2)
 
         # Plot fit
-        if not self.config.hybridisation and plot_fit:
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
             # Plot the fitted speedup curves
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
@@ -988,10 +1147,10 @@ class ScalingPlotter(Configurable):
                 c = self.timing_fit_parameters[phase][mode].c
 
                 # Calculate the fitted efficiencies
-                fit_efficiencies = [modAmdahl(n, p, a, b, c) / n for n in fit_ncores]
+                fit_efficiencies = [modified_amdahl_law(n, p, a, b, c) / n for n in fit_ncores]
 
                 # Add the plot
-                plt.plot(fit_ncores, fit_efficiencies)
+                plt.plot(fit_ncores, fit_efficiencies, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -1006,7 +1165,8 @@ class ScalingPlotter(Configurable):
         if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
         else: plt.xlabel("Number of cores $N_c$", fontsize="large")
         plt.ylabel(phase_labels[phase] + " efficiency $\epsilon$", fontsize='large')
-        plt.legend(title="Parallelization modes")
+        if self.config.hybridisation: plt.legend(title="Number of cores")
+        else: plt.legend(title="Parallelization modes")
 
         # Set the plot title
         plt.title("Efficiency of the " + phase_labels[phase].lower())
@@ -1022,12 +1182,11 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def plot_cpu_times_phase(self, phase, figsize=(12,8)):
+    def plot_cpu_times_phase(self, phase):
 
         """
         This function ...
         :param phase:
-        :param figsize:
         :return:
         """
 
@@ -1035,7 +1194,7 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the CPU times for the " + phase_names[phase] + "...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=self.config.figsize)
         plt.clf()
 
         # Create a set that stores the tick labels for the plot
@@ -1050,12 +1209,7 @@ class ScalingPlotter(Configurable):
             errors = self.timing_data[phase][mode].errors
 
             # Sort the lists
-            processor_counts, times, errors = sort_lists(processor_counts, times, errors)
-
-            # Create numpy arrays
-            processor_counts = np.array(processor_counts)
-            times = np.array(times)
-            errors = np.array(errors)
+            processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
 
             # Get array of number of used cores
             if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
@@ -1094,13 +1248,14 @@ class ScalingPlotter(Configurable):
         if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
         else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
-        plt.legend(title="Modes")
+        if self.config.hybridisation: plt.legend(title="Number of cores")
+        else: plt.legend(title="Parallelization modes")
 
         # Set the plot title
         plt.title("Scaling of the total CPU time of the " + phase_labels[phase].lower())
 
-        if self.config.output is not None:
-            file_path = fs.join(self.config.output, "cpu_" + phase + ".pdf")
+        # Determine file path
+        if self.config.output is not None: file_path = fs.join(self.config.output, "cpu_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
@@ -1137,7 +1292,7 @@ class ScalingPlotter(Configurable):
             errors = self.memory_data[phase][mode].errors
 
             # Sort the lists
-            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
 
             # Plot the data points for this mode
             plt.errorbar(processor_counts, memories, errors, marker='.', label=mode)
@@ -1145,12 +1300,35 @@ class ScalingPlotter(Configurable):
             # Add the appropriate ticks
             ticks |= set(processor_counts)
 
+            #if phase == "writing":
+            #    print(mode)
+            #    print(memories)
+            #    print(processor_counts)
+
         # Use a logarithmic scale for the x axis (nthreads)
         plt.xscale('log')
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
+
+        # Plot fit
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+
+            # Plot the fitted curves
+            fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            for mode in self.memory_fit_parameters[phase]:
+
+                # Get the parameter values
+                a = self.memory_fit_parameters[phase][mode].a
+                b = self.memory_fit_parameters[phase][mode].b
+                c = self.memory_fit_parameters[phase][mode].c
+
+                # Calculate the fitted memory usages
+                fit_memories = [modified_memory_scaling(nprocesses_from_mode_single(mode, ncores), a, b, c) for ncores in fit_ncores]
+
+                # Add the plot
+                plt.plot(fit_ncores, fit_memories, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -1164,13 +1342,14 @@ class ScalingPlotter(Configurable):
         if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
         else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel("Memory usage per process (GB)", fontsize='large')
-        plt.legend(title="Modes")
+        if self.config.hybridisation: plt.legend(title="Number of cores")
+        else: plt.legend(title="Parallelization modes")
 
         # Set the plot title
         plt.title("Scaling of the memory usage (per process) of the " + phase + " phase")
 
-        if self.config.output is not None:
-            file_path = fs.join(self.config.output, "memory_" + phase + ".pdf")
+        # Determine file path
+        if self.config.output is not None: file_path = fs.join(self.config.output, "memory_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
@@ -1212,7 +1391,7 @@ class ScalingPlotter(Configurable):
             errors = self.memory_data[phase][mode].errors
 
             # Sort the lists
-            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
 
             # Calculate the gains and the errors on the gains
             gains = []
@@ -1255,13 +1434,14 @@ class ScalingPlotter(Configurable):
         if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
         else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel("Memory gain", fontsize='large')
-        plt.legend(title="Modes")
+        if self.config.hybridisation: plt.legend(title="Number of cores")
+        else: plt.legend(title="Parallelization modes")
 
         # Set the plot title
         plt.title("Scaling of the memory gain (serial memory usage per process / memory usage per process) of the " + phase_labels[phase].lower())
 
-        if self.config.output is not None:
-            file_path = fs.join(self.config.output, "memorygain_" + phase + ".pdf")
+        # Determine file path
+        if self.config.output is not None: file_path = fs.join(self.config.output, "memorygain_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
@@ -1298,12 +1478,7 @@ class ScalingPlotter(Configurable):
             errors = self.memory_data[phase][mode].errors
 
             # Sort the lists
-            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors)
-
-            # Create arrays
-            processor_counts = np.array(processor_counts)
-            memories = np.array(memories)
-            errors = np.array(errors)
+            processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
 
             # Get list of process count
             if self.config.hybridisation: processes = processor_counts
@@ -1339,13 +1514,14 @@ class ScalingPlotter(Configurable):
         if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
         else: plt.xlabel("Number of cores $N_c$", fontsize='large')
         plt.ylabel("Total memory usage (all processes) (GB)", fontsize='large')
-        plt.legend(title="Modes")
+        if self.config.hybridisation: plt.legend(title="Number of cores")
+        else: plt.legend(title="Parallelization modes")
 
         # Set the plot title
         plt.title("Memory scaling for " + phase_labels[phase])
 
-        if self.config.output is not None:
-            file_path = fs.join(self.config.output, "totalmemory_" + phase + ".pdf")
+        # Determine file path
+        if self.config.output is not None: file_path = fs.join(self.config.output, "totalmemory_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
@@ -1476,6 +1652,28 @@ class ScalingPlotter(Configurable):
 
 # -----------------------------------------------------------------
 
+def ncores_from_mode_single(mode, nprocesses):
+
+    """
+    This function ...
+    :param mode:
+    :param nprocesses:
+    :return:
+    """
+
+    # Get number of cores
+    if mode == "multithreading": raise RuntimeError("Number of cores cannot be determined from nprocesses = " + str(nprocesses) + " in " + mode + " mode")
+    elif "mpi" in mode: ncores = nprocesses
+    elif "hybrid" in mode:
+        threads = int(mode.split("(")[1].split(" threads)")[0])
+        ncores = nprocesses * threads
+    else: raise ValueError("Invalid mode: " + mode)
+
+    # Return the number of cores
+    return ncores
+
+# -----------------------------------------------------------------
+
 def nprocesses_from_mode_single(mode, nprocessors):
 
     """
@@ -1489,7 +1687,7 @@ def nprocesses_from_mode_single(mode, nprocessors):
     if mode == "multithreading": processes = 1
     elif "mpi" in mode: processes = nprocessors
     elif "hybrid" in mode:
-        threads = int(mode.split("(")[1].split(")")[0])
+        threads = int(mode.split("(")[1].split(" threads)")[0])
         processes = nprocessors / threads
     else: raise ValueError("Invalid mode: " + mode)
 
@@ -1511,7 +1709,7 @@ def nprocesses_from_mode(mode, processor_counts):
     if mode == "multithreading": processes = np.ones(len(processor_counts))
     elif "mpi" in mode: processes = processor_counts
     elif "hybrid" in mode:
-        threads = int(mode.split("(")[1].split(")")[0])
+        threads = int(mode.split("(")[1].split(" threads)")[0])
         processes = processor_counts / threads
     else: raise ValueError("Invalid mode: " + mode)
 
@@ -1520,14 +1718,75 @@ def nprocesses_from_mode(mode, processor_counts):
 
 # -----------------------------------------------------------------
 
-## This function defines Amdahl's law for the speedup
-def Amdahl(n, p): return 1.0 / (1 - p + p / n)
+def amdahl_law(n, p):
 
-# This function defines a modified version of Amdahl's law, which accounts for different kinds of overhead
-def modAmdahl(n, p, a, b, c): return 1.0 / (1 - p + p / n + a + b * n + c * n**2)
+    """
+    This function defines Amdahl's law for the speedup
+    :param n:
+    :param p:
+    :return:
+    """
+
+    return 1.0 / (1 - p + p / n)
 
 # -----------------------------------------------------------------
 
-def sort_lists(*args): return [list(t) for t in zip(*sorted(zip(*args)))]
+def modified_amdahl_law(n, p, a, b, c):
+
+    """
+    This function defines a modified version of Amdahl's law, which accounts for different kinds of overhead
+    :param n:
+    :param p:
+    :param a:
+    :param b:
+    :param c:
+    :return:
+    """
+
+    return 1.0 / (1 - p + p / n + a + b * n + c * n**2)
+
+# -----------------------------------------------------------------
+
+def memory_scaling(n, a, b):
+
+    """
+    This function ...
+    :param n: number of processes
+    :param a:
+    :param b:
+    :return:
+    """
+
+    return a / n + b
+
+# -----------------------------------------------------------------
+
+def modified_memory_scaling(n, a, b, c):
+
+    """
+    This function ...
+    :param n: number of processes
+    :param a:
+    :param b:
+    :param c:
+    :return:
+    """
+
+    return a / n + b + c * n
+
+# -----------------------------------------------------------------
+
+def sort_lists(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    to_arrays = kwargs.pop("to_arrays", False)
+
+    if to_arrays: return [np.array(list(t)) for t in zip(*sorted(zip(*args)))]
+    else: return [list(t) for t in zip(*sorted(zip(*args)))]
 
 # -----------------------------------------------------------------

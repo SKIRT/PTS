@@ -28,4 +28,7 @@ definition.add_optional("figsize", "integer_tuple", "figure size", default=(12,8
 
 definition.add_optional("sigma_level", "real", "sigma level for plotting error bars", 1.0)
 
+definition.add_flag("fit", "fit theoretical curves to timing and memory data", True)
+definition.add_flag("plot_fit", "plot the fitted relations", True)
+
 # -----------------------------------------------------------------
