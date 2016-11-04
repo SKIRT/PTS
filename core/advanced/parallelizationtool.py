@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import random
 
 # Import the relevant PTS classes and modules
@@ -99,7 +100,7 @@ class ParallelizationTool(Configurable):
         self.set_parallelization()
 
         # 3. Show the parallelization scheme
-        self.show_parallelization()
+        if self.config.show: self.show_parallelization()
 
     # -----------------------------------------------------------------
 
@@ -151,6 +152,9 @@ class ParallelizationTool(Configurable):
             self.estimator.config.ski = self.ski
             self.estimator.config.input = self.config.input
             self.estimator.config.ncells = self.config.ncells
+
+            # Don't show the memory
+            self.estimator.config.show = False
 
             # Estimate the memory
             self.estimator.run()
@@ -215,14 +219,17 @@ class ParallelizationTool(Configurable):
 
                 #Np = min(Mn / Ms, Nppn)
                 ppn = self.config.nsockets * self.config.ncores
-                nprocesses_per_node = min(self.config.memory / total_memory, ppn)
+                nprocesses_per_node = int(math.floor(min(self.config.memory / total_memory, ppn)))
 
                 nprocesses = nprocesses_per_node * self.config.nnodes
 
-                nthreads = ppn / nprocesses_per_node
+                #nthreads = ppn / nprocesses_per_node
+                ncores_per_process = ppn / nprocesses_per_node
 
                 # Determine number of threads per core
                 threads_per_core = self.config.threads_per_core if self.config.hyperthreading else 1
+
+                threads_per_process = threads_per_core * ncores_per_process
 
                 total_ncores = self.config.nnodes * self.config.nsockets * self.config.ncores
 
@@ -232,12 +239,12 @@ class ParallelizationTool(Configurable):
 
                     # data parallelization
                     # Create the parallelization object
-                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=True)
+                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=threads_per_process, data_parallel=True)
 
                 else:
 
                     # task parallelization
-                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=nthreads, data_parallel=False)
+                    self.parallelization = Parallelization.from_mode("hybrid", total_ncores, threads_per_core, threads_per_process=threads_per_process, data_parallel=False)
 
     # -----------------------------------------------------------------
 

@@ -195,6 +195,8 @@ class Parallelization(object):
 
             # Determine the number of processes
             cores_per_process = threads_per_process / threads_per_core
+            assert(cores_per_process == int(cores_per_process))
+            cores_per_process = int(cores_per_process)
             processes = cores // cores_per_process
 
             # Hyperthreading

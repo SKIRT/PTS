@@ -198,6 +198,8 @@ class SKIRTLauncher(Configurable):
         estimator.config.input = self.config.input_path
         #estimator.config.ncells =
 
+        estimator.config.show = False
+
         # Estimate the memory
         estimator.run()
 
@@ -261,7 +263,7 @@ class SKIRTLauncher(Configurable):
 
             # Get host properties
             nnodes = 1
-            nsockets = math.floor(self.remote.free_sockets)
+            nsockets = int(math.floor(self.remote.free_sockets))
             ncores = self.remote.cores_per_socket
             memory = self.remote.free_memory
 
@@ -289,6 +291,9 @@ class SKIRTLauncher(Configurable):
 
         # Number of dust cells
         tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+        # Don't show the parallelization
+        tool.config.show = False
 
         # Run the parallelization tool
         tool.run()

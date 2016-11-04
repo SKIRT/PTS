@@ -5,7 +5,7 @@ update_pts | update | prep.update.PTSUpdater | arguments | Update PTS locally or
 update_skirt | update | prep.update.SKIRTUpdater | arguments | Update SKIRT locally or remotely
 configure_host | -- | prep.hostconfigurer.HostConfigurer | interactive | Configure and add a new host to use with PTS
 scaling | -- | test.scaling.ScalingTest | interactive | Test the scaling of SKIRT on a particular system
-launch_simulation | -- | launch.launcher.SKIRTLauncher | interactive | Launch a SKIRT simulation locally or remotely with the best performance, based on the current load of the system
+launch_simulation | -- | launch.launcher.SKIRTLauncher | arguments | Launch a SKIRT simulation locally or remotely with the best performance, based on the current load of the system
 launch_batch | -- | launch.batchlauncher.BatchLauncher | interactive | Launch a batch of SKIRT simulations remotely on one or more remote hosts
 status | -- | launch.synchronizer.RemoteSynchronizer | arguments | Check the status of SKIRT simulations and PTS tasks running remotely
 estimate_memory | -- | advanced.memoryestimator.MemoryEstimator | arguments | Estimate the memory required for a certain ski file

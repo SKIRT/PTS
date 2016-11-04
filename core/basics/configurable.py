@@ -100,7 +100,7 @@ class Configurable(object):
 
                 # Import things
                 #from pts.core.tools import logging
-                from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
+                from pts.core.basics.configuration import ConfigurationDefinition, PassiveConfigurationSetter
 
                 ## GET THE CONFIGURATION DEFINITION
                 try:
@@ -119,10 +119,12 @@ class Configurable(object):
                 # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
                 #if configuration_method is None: configuration_method = configuration_method_table
 
-                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+                setter = PassiveConfigurationSetter(class_name, add_logging=False)
 
-                # Create the configuration from the definition and from reading the command line arguments
-                self.config = setter.run(definition, prompt_optional=False)
+                # Create the configuration from the definition
+                self.config = setter.run(definition)
+
+                #log.warning("The object has not been configured yet")
 
             else:
 

@@ -1163,6 +1163,61 @@ class DictConfigurationSetter(ConfigurationSetter):
 
 # -----------------------------------------------------------------
 
+class PassiveConfigurationSetter(ConfigurationSetter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, name, description=None, add_logging=True, add_cwd=True):
+
+        """
+        The constructor ...
+        :param name:
+        :param description:
+        :param add_logging:
+        :param add_cwd:
+        """
+
+        # Call the constructor of the base class
+        super(PassiveConfigurationSetter, self).__init__(name, description, add_logging, add_cwd)
+
+    # -----------------------------------------------------------------
+
+    def run(self, definition):
+
+        """
+        This function ...
+        :param definition:
+        :return:
+        """
+
+        # Set definition
+        self.definition = definition
+
+        # Set logging and cwd
+        self.set_logging_and_cwd()
+
+        # Create the configuration
+        self.create_config()
+
+        # Return the config
+        return self.config
+
+    # -----------------------------------------------------------------
+
+    def create_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add the settings to the configuration
+        add_settings_default(self.config, self.definition)
+
+# -----------------------------------------------------------------
+
 class GraphicalConfigurationSetter(ConfigurationSetter):
 
     """
@@ -1589,6 +1644,67 @@ def add_settings_from_dict(config, definition, dictionary):
 
     # Add leftover settings
     add_nested_dict_values_to_map(config, dict_that_is_emptied)
+
+# -----------------------------------------------------------------
+
+def add_settings_default(config, definition):
+
+    """
+    This function ...
+    :param config:
+    :param definition:
+    :return:
+    """
+
+    # Fixed
+    for name in definition.fixed:
+        value = definition.fixed[name][1]
+        config[name] = value
+
+    # Required
+    for name in definition.required:
+
+        # Set the value
+        config[name] = None
+
+    # Positional optional
+    for name in definition.pos_optional:
+
+        default = definition.pos_optional[name][2]
+
+        # Set the value
+        config[name] = default
+
+    # Optional
+    for name in definition.optional:
+
+        # (real_type, description, default, letter)
+        default = definition.optional[name][2]
+
+        # Set the value
+        config[name] = default
+
+    # Flags
+    for name in definition.flags:
+
+        # (description, letter, default)
+        # letter = definition.flags[name][1]
+        default = definition.flags[name][2]  # True or False
+
+        # Set the boolean value
+        config[name] = default
+
+    # Add the configuration settings of the various sections
+    for name in definition.sections:
+
+        # Create a map for the settings
+        config[name] = Map()
+
+        # Recursively add the settings
+        section_definition = definition.sections[name]
+
+        # Add the settings
+        add_settings_default(config[name], section_definition)
 
 # -----------------------------------------------------------------
 

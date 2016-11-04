@@ -603,7 +603,7 @@ class SkyEllipse(object):
         :return:
         """
 
-        return self.radius.x
+        return self.radius.ra
 
     # -----------------------------------------------------------------
 
@@ -615,7 +615,7 @@ class SkyEllipse(object):
         :return:
         """
 
-        return self.radius.y
+        return self.radius.dec
 
     # -----------------------------------------------------------------
 

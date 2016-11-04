@@ -15,12 +15,14 @@ class ExecutionHandle(object):
     This class ...
     """
 
-    def __init__(self, type, value, host_id):
+    def __init__(self, type, value, host_id, remote_screen_output_path=None):
 
         """
         The constructor ...
         :param type:
         :param value:
+        :param host_id:
+        :param remote_screen_output_path:
         """
 
         # Type (job, screen or tty) and value (job ID, screen name or session number)
@@ -31,7 +33,7 @@ class ExecutionHandle(object):
         self.host_id = host_id
 
         # Extra information
-        self.remote_screen_output_path = None
+        self.remote_screen_output_path = remote_screen_output_path
 
     # -----------------------------------------------------------------
 
