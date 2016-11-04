@@ -80,6 +80,11 @@ class BatchSourceFinder(Configurable):
         # The segmentation maps
         self.segments = dict()
 
+        # The finders
+        self.star_finder = None
+        self.galaxy_finder = None
+        self.trained_finder = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -473,13 +478,13 @@ class BatchSourceFinder(Configurable):
         self.write_segments()
 
         # 1. Write
-        self.write_galactic_catalogs()
+        #self.write_galactic_catalogs()
 
         # 2. Write
-        self.write_stellar_catalogs()
+        #self.write_stellar_catalogs()
 
         # 3. Write ...
-        self.write_statistics()
+        #self.write_statistics()
 
     # -----------------------------------------------------------------
 
@@ -499,7 +504,7 @@ class BatchSourceFinder(Configurable):
             #galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = fs.join(output_path, "galaxies.reg")
+            path = self.output_path_file("galaxies_" + name + ".reg")
 
             # Save
             self.galaxy_regions[name].save(path)
@@ -510,7 +515,7 @@ class BatchSourceFinder(Configurable):
             #star_region = star_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = fs.join(output_path, "stars.reg")
+            path = self.output_path_file("stars_" + name + ".reg")
 
             # Save
             self.star_regions[name].save(path)
@@ -521,10 +526,10 @@ class BatchSourceFinder(Configurable):
             #saturation_region = saturation_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = fs.join(output_path, "saturation.reg")
+            path = self.output_path_file("saturation_" + name + ".reg")
 
             # Save
-            saturation_region.save(path)
+            self.saturation_regions[name].save(path)
 
         # Loop over the other regions
         for name in self.other_regions:
@@ -532,10 +537,10 @@ class BatchSourceFinder(Configurable):
             #other_region = other_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = fs.join(output_path, "other_sources.reg")
+            path = self.output_path_file("other_sources_" + name + ".reg")
 
             # Save
-            other_region.save(path)
+            self.other_regions[name].save(path)
 
     # -----------------------------------------------------------------
 
@@ -552,8 +557,9 @@ class BatchSourceFinder(Configurable):
         for name in self.segments:
 
             # Save the FITS file with the segmentation maps
-            #path = fs.join(output_path, "segments.fits")
+            path = self.output_path_file("segments_" + name + ".fit")
 
+            # Save
             self.segments[name].save(path)
 
     # -----------------------------------------------------------------
@@ -604,7 +610,6 @@ class BatchSourceFinder(Configurable):
 
         """
         This function ...
-        :param path:
         :return:
         """
 

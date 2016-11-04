@@ -276,7 +276,7 @@ class SkyCoordinate(SkyCoord):
     # -----------------------------------------------------------------
 
     @property
-    def min_ra(self):
+    def ra_min(self):
 
         """
         This function ...
@@ -288,7 +288,7 @@ class SkyCoordinate(SkyCoord):
     # -----------------------------------------------------------------
 
     @property
-    def max_ra(self):
+    def ra_max(self):
 
         """
         This function ...
@@ -300,7 +300,7 @@ class SkyCoordinate(SkyCoord):
     # -----------------------------------------------------------------
 
     @property
-    def min_dec(self):
+    def dec_min(self):
 
         """
         This function ...
@@ -312,7 +312,7 @@ class SkyCoordinate(SkyCoord):
     # -----------------------------------------------------------------
 
     @property
-    def max_dec(self):
+    def dec_max(self):
 
         """
         This function ...
@@ -428,7 +428,7 @@ class SkyLine(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_ra(self):
+    def ra_min(self):
 
         """
         This function ...
@@ -440,7 +440,7 @@ class SkyLine(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_ra(self):
+    def ra_max(self):
 
         """
         This function ...
@@ -452,7 +452,7 @@ class SkyLine(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_dec(self):
+    def dec_min(self):
 
         """
         This function ...
@@ -464,7 +464,7 @@ class SkyLine(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_dec(self):
+    def dec_max(self):
 
         """
         This function ...
@@ -588,7 +588,7 @@ class SkyEllipse(object):
         major = ellipse.major * Unit("pix") * x_pixelscale
         minor = ellipse.minor * Unit("pix") * y_pixelscale
 
-        radius = Extent(major, minor)
+        radius = SkyExtent(major, minor)
 
         # Create a new SkyEllipse
         return cls(center, radius, ellipse.angle, meta=ellipse.meta)
@@ -620,7 +620,7 @@ class SkyEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_ra(self):
+    def ra_min(self):
 
         """
         This function ...
@@ -633,7 +633,7 @@ class SkyEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_ra(self):
+    def ra_max(self):
 
         """
         This function ...
@@ -646,7 +646,7 @@ class SkyEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_dec(self):
+    def dec_min(self):
 
         """
         This function ...
@@ -659,7 +659,7 @@ class SkyEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_dec(self):
+    def dec_max(self):
 
         """
         This function ...
@@ -715,18 +715,21 @@ class SkyEllipse(object):
         :return:
         """
 
-        x_radius = self.radius.x if isinstance(self.radius, Extent) else self.radius
-        y_radius = self.radius.y if isinstance(self.radius, Extent) else self.radius
+        #x_radius = self.radius.x if isinstance(self.radius, Extent) else self.radius
+        #y_radius = self.radius.y if isinstance(self.radius, Extent) else self.radius
+
+        x_radius = self.radius.ra.to("arcsec").value
+        y_radius = self.radius.dec.to("arcsec").value
 
         a_projected_x = x_radius * math.cos(self.angle.radian)
         b_projected_x = y_radius * math.sin(self.angle.radian)
         a_projected_y = x_radius * math.sin(self.angle.radian)
         b_projected_y = y_radius * math.cos(self.angle.radian)
 
-        box_x_radius = max(abs(a_projected_x), abs(b_projected_x))
-        box_y_radius = max(abs(a_projected_y), abs(b_projected_y))
+        box_x_radius = max(abs(a_projected_x), abs(b_projected_x)) * Unit("arcsec")
+        box_y_radius = max(abs(a_projected_y), abs(b_projected_y)) * Unit("arcsec")
 
-        radius = Extent(box_x_radius, box_y_radius)
+        radius = SkyExtent(box_x_radius, box_y_radius)
 
         # Return the bounding box
         return SkyRectangle(self.center, radius)
@@ -836,7 +839,7 @@ class SkyCircle(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_ra(self):
+    def ra_min(self):
 
         """
         This function ...
@@ -848,7 +851,7 @@ class SkyCircle(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_ra(self):
+    def ra_max(self):
 
         """
         This function ...
@@ -860,7 +863,7 @@ class SkyCircle(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_dec(self):
+    def dec_min(self):
 
         """
         This fucntion ...
@@ -872,7 +875,7 @@ class SkyCircle(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_dec(self):
+    def dec_max(self):
 
         """
         This function ...

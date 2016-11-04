@@ -30,4 +30,7 @@ definition.add_optional("stellar_catalog_file", "file_path", "stellar catalog fi
 definition.add_optional("special_region", "file_path", "region indicating areas that require special attention")
 definition.add_optional("ignore_region", "file_path", "region indicating areas that should be ignored")
 
+# Output
+definition.add_optional("output", "directory_path", "output directory", letter="o")
+
 # -----------------------------------------------------------------

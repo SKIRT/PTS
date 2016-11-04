@@ -26,9 +26,8 @@ from astropy.io import fits
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from .vector import Extent
 from .geometry import Coordinate
-from .skygeometry import SkyCoordinate, SkyRectangle
+from .skygeometry import SkyCoordinate, SkyRectangle, SkyExtent
 from ..tools import coordinates
 from .pixelscale import Pixelscale
 
@@ -401,7 +400,7 @@ class CoordinateSystem(wcs.WCS):
         #radius = Extent(0.5 * ra_span, 0.5 * dec_span)
         #box = Rectangle(center, radius)
 
-        radius = Extent(0.5 * ra_span, 0.5 * dec_span)
+        radius = SkyExtent(0.5 * ra_span, 0.5 * dec_span)
 
         box = SkyRectangle(center, radius)
 

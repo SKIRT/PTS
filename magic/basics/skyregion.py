@@ -19,7 +19,7 @@ from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from .vector import Extent
-from .skygeometry import SkyCoordinate, SkyLine, SkyCircle, SkyEllipse, SkyRectangle, SkyPolygon
+from .skygeometry import SkyCoordinate, SkyExtent, SkyLine, SkyCircle, SkyEllipse, SkyRectangle, SkyPolygon
 
 # -----------------------------------------------------------------
 
@@ -286,14 +286,14 @@ class SkyRegion(list):
         # Loop over the shapes
         for shape in self:
 
-            if min_ra is None or shape.min_ra < min_ra: min_ra = shape.min_ra
-            if max_ra is None or shape.max_ra > max_ra: max_ra = shape.max_ra
-            if min_dec is None or shape.min_dec < min_dec: min_dec = shape.min_dec
-            if max_dec is None or shape.max_dec > max_dec: max_dec = shape.max_dec
+            if min_ra is None or shape.ra_min < min_ra: min_ra = shape.ra_min
+            if max_ra is None or shape.ra_max > max_ra: max_ra = shape.ra_max
+            if min_dec is None or shape.dec_min < min_dec: min_dec = shape.dec_min
+            if max_dec is None or shape.dec_max > max_dec: max_dec = shape.dec_max
 
         # Get center and radius of the new bounding box
         center = SkyCoordinate(0.5 * (min_ra + max_ra), 0.5 * (min_dec + max_dec))
-        radius = Extent(0.5 * (max_ra - min_ra), 0.5 * (max_dec - min_dec))
+        radius = SkyExtent(0.5 * (max_ra - min_ra), 0.5 * (max_dec - min_dec))
 
         # Return the bounding box
         return SkyRectangle(center, radius)

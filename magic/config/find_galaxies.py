@@ -40,7 +40,7 @@ definition.sections["detection"].add_flag("use_d25", "use D25")
 definition.sections["detection"].add_optional("d25_expansion_factor", "real", 1.2)
 
 definition.sections["detection"].add_optional("initial_radius", "real", 20.0)
-definition.sections["detection"].add_optional("detection_method", "string", "segmentation")
+definition.sections["detection"].add_optional("detection_method", "string", "detection method", "segmentation")
 
 definition.sections["detection"].add_flag("allow_overlap", "Do not normally allow overlap between the center segment and the background mask of the source")
 
@@ -48,7 +48,7 @@ definition.sections["detection"].add_flag("expand", "expand", True)
 
 definition.sections["detection"].add_flag("always_subtract_background", "always subtract background", False)
 
-definition.sections["detection"].add_optional("background_outer_factor", "real", 1.3)
+definition.sections["detection"].add_optional("background_outer_factor", "real", "background outer factor", 1.3)
 
 definition.sections["detection"].add_optional("background_est_method", "string", "polynomial")
 

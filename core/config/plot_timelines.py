@@ -16,4 +16,7 @@ definition = ConfigurationDefinition()
 # Flags
 definition.add_flag("recursive", "look for simulation in directories recursively", True)
 
+# Output
+definition.add_optional("output", "directory_path", "output directory", letter="o")
+
 # -----------------------------------------------------------------

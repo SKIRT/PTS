@@ -99,10 +99,26 @@ class ScalingPlotter(Configurable):
         self.timing_fit_parameters = dict()
         self.memory_fit_parameters = dict()
 
+        # ...
+        self.serial_timing_ncores = dict()
+        self.serial_memory_ncores = dict()
+
     # -----------------------------------------------------------------
 
     @property
     def has_serial_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_reference_timing and self.serial_timing_ncores == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_reference_timing(self):
 
         """
         This function ...
@@ -115,6 +131,18 @@ class ScalingPlotter(Configurable):
 
     @property
     def has_serial_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.has_reference_memory
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_reference_memory(self):
 
         """
         This function ...
@@ -150,6 +178,30 @@ class ScalingPlotter(Configurable):
         for property in self.config.properties:
             if property in memory_properties: return True
         return False
+
+    # -----------------------------------------------------------------
+
+    def has_timing_fit(self, phase):
+
+        """
+        This function ...
+        :param phase:
+        :return:
+        """
+
+        return phase in self.timing_fit_parameters
+
+    # -----------------------------------------------------------------
+
+    def has_memory_fit(self, phase):
+
+        """
+        This function ...
+        :param phase:
+        :return:
+        """
+
+        return phase in self.memory_fit_parameters
 
     # -----------------------------------------------------------------
 
@@ -531,6 +583,7 @@ class ScalingPlotter(Configurable):
 
                 max_time = 0.0
                 max_time_error = None
+                max_time_ncores = None
 
                 # Loop over the modes
                 for mode in self.timing_data[phase]:
@@ -540,10 +593,12 @@ class ScalingPlotter(Configurable):
                     if max_time_mode > max_time:
                         max_time = max_time_mode
                         max_time_error = self.timing_data[phase][mode].errors[index]
+                        max_time_ncores = self.timing_data[phase][mode].processor_counts[index]
 
                 # Set the time and error
                 self.serial_timing[phase].time = max_time
                 self.serial_timing[phase].error = max_time_error
+                self.serial_timing_ncores[phase] = max_time_ncores
 
         # Check if serial data is found
         if len(self.serial_memory) == 0 and self.needs_memory:
@@ -555,6 +610,7 @@ class ScalingPlotter(Configurable):
 
                 max_memory = 0.0
                 max_memory_error = None
+                max_memory_ncores = None
 
                 # Loop over the modes
                 for mode in self.memory_data[phase]:
@@ -564,10 +620,12 @@ class ScalingPlotter(Configurable):
                     if max_memory_mode > max_memory:
                         max_memory = max_memory_mode
                         max_memory_error = self.memory_data[phase][mode].errors[index]
+                        max_memory_ncores = self.memory_data[phase][mode].processor_counts[index]
 
                 # Set the memory usage and error
                 self.serial_memory[phase].memory = max_memory
                 self.serial_memory[phase].error = max_memory_error
+                self.serial_memory_ncores[phase] = max_memory_ncores
 
     # -----------------------------------------------------------------
 
@@ -1257,6 +1315,7 @@ class ScalingPlotter(Configurable):
         serial_time = self.serial_timing[phase].time
         serial_error = self.serial_timing[phase].error
         serial = Quantity(serial_time, serial_error)
+        serial_ncores = self.serial_timing_ncores[phase] if phase in self.serial_timing_ncores else 1
 
         # Loop over the different parallelization modes (the different curves)
         for mode in self.timing_data[phase]:
@@ -1283,8 +1342,8 @@ class ScalingPlotter(Configurable):
 
                 # Calculate the efficiency based on the current runtime and the serial runtime
                 speedup = serial / time
-                efficiency = speedup.value / ncores[i]
-                efficiency_error = speedup.error / ncores[i]
+                efficiency = speedup.value / (ncores[i]/serial_ncores)
+                efficiency_error = speedup.error / (ncores[i]/serial_ncores)
 
                 # Add the value and the propagated error of the efficiency to the appropriate lists
                 efficiencies.append(efficiency)
@@ -1304,7 +1363,7 @@ class ScalingPlotter(Configurable):
         ticks.append(ticks[-1] * 2)
 
         # Plot fit
-        if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit and self.has_timing_fit(phase):
 
             # Plot the fitted speedup curves
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
@@ -1328,7 +1387,7 @@ class ScalingPlotter(Configurable):
         ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
         ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
         plt.xlim(ticks[0], ticks[-1])
-        plt.ylim(0, 1.1)
+        #plt.ylim(0, 1.1)
         plt.grid(True)
 
         # Add axis labels and a legend

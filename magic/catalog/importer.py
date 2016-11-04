@@ -295,7 +295,7 @@ class CatalogImporter(Configurable):
 
         # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
         if isinstance(self.config.stars.fetching.catalogs, basestring): catalog_list = [self.config.stars.fetching.catalogs]
-        elif isinstance(self.config.stars.fetching.catalogs, Sequence): catalog_list = self.config.stars.fetching.catalogs
+        elif isinstance(self.config.stars.fetching.catalogs, list): catalog_list = self.config.stars.fetching.catalogs
         else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
 
         # Create the star catalog

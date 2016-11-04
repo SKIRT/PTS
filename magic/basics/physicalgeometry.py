@@ -509,7 +509,7 @@ class PhysicalEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_ra(self):
+    def ra_min(self):
 
         """
         This function ...
@@ -522,7 +522,7 @@ class PhysicalEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_ra(self):
+    def ra_max(self):
 
         """
         This function ...
@@ -535,7 +535,7 @@ class PhysicalEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def min_dec(self):
+    def dec_min(self):
 
         """
         This function ...
@@ -548,7 +548,7 @@ class PhysicalEllipse(object):
     # -----------------------------------------------------------------
 
     @property
-    def max_dec(self):
+    def dec_max(self):
 
         """
         This function ...

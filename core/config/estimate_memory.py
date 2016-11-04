@@ -26,4 +26,14 @@ definition.add_optional("ncells", "integer", "number of dust cells (useful only 
 # Add flag
 definition.add_flag("probe", "probe the number of cells (or memory usage) by launching a dry-run of the simulation, if necessary (tree dust grid and ncells not specified)", True)
 
+# Add optional
+definition.add_optional("nprocesses", "integer_list", "number of processes", [1, 2, 4, 8, 12, 20])
+
+# Add flag
+#definition.add_flag("data_parallel", "with data parallelization mode")
+
+# Flags
+definition.add_flag("show", "show the results", True)
+definition.add_flag("plot", "plot the expected memory scaling", False)
+
 # -----------------------------------------------------------------

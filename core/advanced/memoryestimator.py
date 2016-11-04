@@ -18,6 +18,7 @@ from ..simulation.skifile import SkiFile
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..advanced.dustgridtool import DustGridTool
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -76,6 +77,12 @@ class MemoryEstimator(Configurable):
 
         # 2. Estimate
         self.estimate()
+
+        # Show
+        if self.config.show: self.show()
+
+        # Plot
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -318,5 +325,62 @@ class MemoryEstimator(Configurable):
         Nbytes = Ndoubles * 8
 
         self.serial_memory = Nbytes / bytes_per_gigabyte
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print(fmt.green + self.ski.prefix + fmt.reset + ":")
+
+        treegrid = self.ski.treegrid()
+        npackages = self.ski.packages()
+
+        print("")
+        print(" npackages:", npackages)
+        print(" nwavelengths:", self.nwavelengths)
+        print(" treegrid:", treegrid)
+        print(" ncells:", self.ncells)
+        print(" library items:", self.nitems)
+        print(" npopulations:", self.npopulations)
+        print(" selfabsorption:", self.self_absorption)
+        print(" transient heating:", self.transient_heating)
+
+        print("")
+
+        print(" - serial part:", self.serial_memory, "GB")
+        print(" - parallel", self.parallel_memory, "GB")
+
+        print("")
+
+        for nproc in self.config.nprocesses:
+
+            if nproc == 1: print(fmt.underlined + str(nproc) + " process" + fmt.reset + ":")
+            else: print(fmt.underlined + str(nproc) + " processes" + fmt.reset + ":")
+            print("")
+
+            print(" - serial part:", self.serial_memory, "GB")
+            print(" - parallel part:", self.parallel_memory / float(nproc), "GB")
+            print(" - memory per process:", self.serial_memory + self.parallel_memory / float(nproc), "GB")
+            print(" - total memory (all processes):", self.serial_memory * float(nproc) + self.parallel_memory, "GB")
+            #print("")
+            print(" - total memory (no data parallelization):", (self.serial_memory + self.parallel_memory)*float(nproc), "GB")
+
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------

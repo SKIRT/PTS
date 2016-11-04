@@ -143,7 +143,7 @@ definition.sections["saturation"].add_optional("iterations", "positive_integer",
 definition.sections["saturation"].add_optional("connectiviy", "positive_integer", "connectivity", 2)
 
 definition.sections["saturation"].add_flag("user_expansion", "user expansion")
-definition.sections["saturation"].add_optional("user_expansion_factor", "user expansion factor")
+definition.sections["saturation"].add_optional("user_expansion_factor", "real", "user expansion factor")
 
 definition.sections["saturation"].add_flag("remove_if_not_fitted", "remove if not fitted", True)
 
@@ -172,7 +172,7 @@ definition.sections["saturation"].sections["aperture_removal"].add_flag("polynom
 definition.sections["saturation"].sections["aperture_removal"].add_optional("interpolation_method", "string", "interpolation method", "local_mean")
 
 definition.sections["saturation"].add_flag("second_segmentation", "second segmentation", False)
-definition.sections["saturation"].add_optional("second_sigma_level", "second sigma level", 1.2)
+definition.sections["saturation"].add_optional("second_sigma_level", "real", "second sigma level", 1.2)
 
 definition.add_section("region", "region")
 definition.sections["region"].add_optional("sigma_level", "real", "sigma level", 5.0)

@@ -108,8 +108,8 @@ class DataSet(object):
             # Get the paths
             name = table["Name"][i]
             path = table["Path"][i]
-            error_path = table["Error path"][i]
-            mask_path = table["Mask path"][i]
+            error_path = table["Error path"][i] if not table["Error path"].mask[i] else None
+            mask_path = table["Mask path"][i] if not table["Mask path"].mask[i] else None
 
             # Add the paths to the dataset
             dataset.add_path(name, path)

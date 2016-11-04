@@ -23,6 +23,7 @@ from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..extract.timeline import TimeLineExtractor
 from ..basics.configurable import Configurable
+from ..simulation.discover import SimulationDiscoverer
 
 # -----------------------------------------------------------------
 
@@ -110,7 +111,23 @@ class BatchTimeLinePlotter(Configurable):
         super(BatchTimeLinePlotter, self).setup(**kwargs)
 
         # Load simulations from working directory if none have been added
-        if len(self.simulations) == 0: self.simulations = load_simulations(self.config.path)
+        if len(self.simulations) == 0:
+
+            # Inform the user
+            log.info("Loading simulations ...")
+
+            # Create the simulation discoverer
+            discoverer = SimulationDiscoverer()
+            discoverer.config.path = self.config.path
+            discoverer.config.list = False
+
+            # Run the simulation discoverer
+            discoverer.run()
+
+            # Set the simulations
+            self.simulations = discoverer.simulations_single_ski
+
+            #self.simulations = load_simulations(self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -221,9 +238,9 @@ class BatchTimeLinePlotter(Configurable):
         for ranks, data in self.single_data:
 
             # Determine the path
-            #plot_path = fs.join(self.output_path, "timeline.pdf")
-
-            plot_path = None
+            if self.config.output is not None:
+                plot_path = fs.join(self.config.output, "timeline.pdf")
+            else: plot_path = fs.join(fs.cwd(), "timeline.pdf")
 
             # Create the plot
             create_timeline_plot(data, ranks, plot_path)
