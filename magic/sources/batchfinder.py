@@ -30,6 +30,7 @@ from ..catalog.importer import CatalogImporter
 from ...core.tools import filesystem as fs
 from ..basics.skyregion import SkyRegion
 from ..core.image import Image
+from ..core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -52,8 +53,12 @@ class BatchSourceFinder(Configurable):
 
         # -- Attributes --
 
-        # The data set
-        self.dataset = None
+        # The frames
+        self.frames = dict()
+
+        # The masks
+        self.special_masks = dict()
+        self.ignore_masks = dict()
 
         # Downsampled images
         self.downsampled = None
@@ -63,10 +68,9 @@ class BatchSourceFinder(Configurable):
         self.galactic_catalog = None
         self.stellar_catalog = None
 
-        # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.special_mask = None
-        self.ignore_mask = None
-        self.bad_mask = None
+        # The regions covering areas that should be ignored throughout the entire extraction procedure
+        self.special_region = None
+        self.ignore_region = None
 
         # The name of the principal galaxy
         self.galaxy_name = None
@@ -84,6 +88,63 @@ class BatchSourceFinder(Configurable):
         self.star_finder = None
         self.galaxy_finder = None
         self.trained_finder = None
+
+    # -----------------------------------------------------------------
+
+    def add_frame(self, name, frame):
+
+        """
+        This function ...
+        :param name:
+        :param frame:
+        :return:
+        """
+
+        # Check if name not already used
+        if name in self.frames: raise ValueError("Already a frame with the name " + name)
+
+        # Set the frame
+        self.frames[name] = frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+
+        # Loop over the images
+        for name in self.frames:
+
+            wcs = self.frames[name].wcs
+            if pixelscale is None or wcs.average_pixelscale < pixelscale: pixelscale = wcs.average_pixelscale
+
+        # Return the minimum pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Region of all the bounding boxes
+        boxes_region = SkyRegion()
+
+        # Add the bounding boxes as sky rectangles
+        for name in self.frames: boxes_region.append(self.frames[name].wcs.bounding_box)
+
+        # Return the bounding box of the region of rectangles
+        return boxes_region.bounding_box
 
     # -----------------------------------------------------------------
 
@@ -127,8 +188,8 @@ class BatchSourceFinder(Configurable):
         # Call the setup function of the base class
         super(BatchSourceFinder, self).setup(**kwargs)
 
-        # Load the dataset
-        self.dataset = DataSet.from_file(self.config.dataset)
+        # Load the frames
+        self.load_frames()
 
         # Load special region
         self.special_region = SkyRegion.from_file(self.config.special_region) if self.config.special_region is not None else None
@@ -136,45 +197,81 @@ class BatchSourceFinder(Configurable):
         # Load ignore region
         self.ignore_region = SkyRegion.from_file(self.config.ignore_region) if self.config.ignore_region is not None else None
 
+        # Create the masks
+        self.create_masks()
+
         # Create the finders
         self.galaxy_finder = GalaxyFinder(self.config.galaxies)
         self.star_finder = StarFinder(self.config.stars)
         self.trained_finder = TrainedFinder(self.config.other_sources)
 
-        #self.galactic_catalog = kwargs.pop("galactic_catalog")
-        #self.stellar_catalog = kwargs.pop("stellar_catalog")
+        # DOWNSAMPLE ??
 
+    # -----------------------------------------------------------------
 
+    def load_frames(self):
 
-
-        #self.add_child("galaxy_finder", GalaxyFinder, self.config.galaxies)
-        #self.add_child("star_finder", StarFinder, self.config.stars)
-        #self.add_child("trained_finder", TrainedFinder, self.config.other_sources)
-        #self.add_child("catalog_builder", CatalogBuilder, self.config.building)
-        #self.add_child("catalog_synchronizer", CatalogSynchronizer, self.config.synchronization)
-
-        # -- Setup of the base class --
-
-        # Call the setup function of the base class
-        #super(BatchSourceFinder, self).setup()
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
-        #log.info("Setting up the batch source finder ...")
+        log.info("Loading the frame(s) ...")
 
-        # Set the galactic and stellar catalog
-        #self.galactic_catalog = galactic_catalog
-        #self.stellar_catalog = stellar_catalog
+        # Create new dataset
+        if self.config.dataset.endswith(".fits"):
 
-        # Set the special and ignore mask
-        #self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
-        #self.ignore_mask = Mask.from_region(ignore_region, self.frame.xsize, self.frame.ysize) if ignore_region is not None else None
+            # Load the frame
+            frame = Frame.from_file(self.config.dataset)
 
+            # Determine the name for this image
+            name = str(frame.filter)
 
-        # Set a reference to the mask of bad pixels
-        #self.bad_mask = bad_mask
+            # Add the frame
+            self.add_frame(name, frame)
 
+        # Load dataset from file
+        elif self.config.dataset.endswith(".dat"):
 
-        # DOWNSAMPLE ??
+            # Get the dataset
+            dataset = DataSet.from_file(self.config.dataset)
+
+            # Get the frames
+            self.frames = dataset.get_frames()
+
+        # Invalid value for 'dataset'
+        else: raise ValueError("Parameter 'dataset' must be filename of a dataset file (.dat) or a FITS file (.fits)")
+
+    # -----------------------------------------------------------------
+
+    def create_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the masks ...")
+
+        if self.special_region is not None:
+
+            for name in self.frames:
+
+                # Create the mask
+                special_mask = Mask.from_region(self.special_region, self.frames[name].xsize, self.frames[name].ysize)
+
+                self.special_masks[name] = special_mask
+
+        if self.ignore_region is not None:
+
+            for name in self.frames:
+
+                # Create the mask
+                ignore_mask = Mask.from_region(self.ignore_region, self.frames[name].xsize, self.frames[name].ysize)
+
+                self.ignore_masks[name] = ignore_mask
 
     # -----------------------------------------------------------------
 
@@ -201,8 +298,8 @@ class BatchSourceFinder(Configurable):
             catalog_importer.config.stars.catalog_path = self.config.stellar_catalog_file
 
         # Get the coordinate box and minimum pixelscale
-        coordinate_box = self.dataset.get_bounding_box()
-        min_pixelscale = self.dataset.min_pixelscale
+        coordinate_box = self.bounding_box
+        min_pixelscale = self.min_pixelscale
 
         # Run the catalog importer
         catalog_importer.run(coordinate_box=coordinate_box, pixelscale=min_pixelscale)  # work with coordinate box instead ? image.coordinate_box ?
@@ -223,14 +320,17 @@ class BatchSourceFinder(Configurable):
         log.info("Finding the galaxies ...")
 
         # Loop over the images
-        for name in self.dataset.names:
+        for name in self.frames:
 
             # Get the frame
-            frame = self.dataset.get_frame(name)
+            frame = self.frames[name]
+
+            special_mask = self.special_masks[name] if name in self.special_masks else None
+            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+            bad_mask = None
 
             # Run the galaxy finder
-            self.galaxy_finder.run(frame=frame, catalog=self.galactic_catalog, special_mask=self.special_mask,
-                                   ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
+            self.galaxy_finder.run(frame=frame, catalog=self.galactic_catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
 
             # Set the name of the principal galaxy
             #self.galaxy_name = self.galaxy_finder.principal.name
@@ -289,10 +389,10 @@ class BatchSourceFinder(Configurable):
         log.info("Finding the stars ...")
 
         # Loop over the images
-        for name in self.dataset.names:
+        for name in self.frames:
 
             # Get the frame
-            frame = self.dataset.get_frame(name)
+            frame = self.frames[name]
 
             # Run the star finder if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
             if frame.wavelength is None or frame.wavelength < wavelengths.ranges.ir.mir.max:
@@ -300,12 +400,13 @@ class BatchSourceFinder(Configurable):
                 # Inform the user
                 log.info("Finding the stars ...")
 
-                # Get the frame
-                frame = self.dataset.get_frame(name)
+                special_mask = self.special_masks[name] if name in self.special_masks else None
+                ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+                bad_mask = None
 
                 # Run the star finder
                 self.star_finder.run(frame=frame, galaxy_finder=self.galaxy_finder, catalog=self.stellar_catalog,
-                                     special_mask=self.special_mask, ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
+                                     special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
 
                 if self.star_finder.star_region is not None:
 
@@ -363,17 +464,21 @@ class BatchSourceFinder(Configurable):
         log.info("Finding sources in the frame not in the catalog ...")
 
         # Loop over the frames
-        for name in self.dataset.names:
+        for name in self.frames:
 
             # Get the frame
-            frame = self.dataset.get_frame(name)
+            frame = self.frames[name]
 
             # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
             if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
             else: self.trained_finder.config.classify = True
 
+            special_mask = self.special_masks[name] if name in self.special_masks else None
+            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+            bad_mask = None
+
             # Run the trained finder just to find sources
-            self.trained_finder.run(frame, self.galaxy_finder, self.star_finder, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+            self.trained_finder.run(frame, self.galaxy_finder, self.star_finder, special=special_mask, ignore=ignore_mask, bad=bad_mask)
 
             if self.trained_finder.region is not None:
 

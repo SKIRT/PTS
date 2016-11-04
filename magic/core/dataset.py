@@ -272,6 +272,32 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_frames(self, masked=True, mask_value=0.0):
+
+        """
+        This function ...
+        :param masked:
+        :param mask_value:
+        :return:
+        """
+
+        # Initialize a dictionary for the frames
+        frames = dict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Load the frame
+            frame = self.get_frame(name, masked, mask_value)
+
+            # Add the frame
+            frames[name] = frame
+
+        # Return the dictionary of frames
+        return frames
+
+    # -----------------------------------------------------------------
+
     def get_frame_for_filter(self, fltr, masked=True):
 
         """

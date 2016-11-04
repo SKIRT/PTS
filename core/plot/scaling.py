@@ -1400,8 +1400,8 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         plt.title("Efficiency of the " + phase_labels[phase].lower())
 
-        if self.config.output is not None:
-            file_path = fs.join(self.config.output, "efficiencies_" + phase + ".pdf")
+        # Determine the path
+        if self.config.output is not None: file_path = fs.join(self.config.output, "efficiencies_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure

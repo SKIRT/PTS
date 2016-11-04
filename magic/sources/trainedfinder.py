@@ -32,13 +32,13 @@ from ..tools import statistics, masks, plotting, general, interpolation
 from ..analysis import sources
 from ..train import Classifier
 from ..object.star import Star
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ..basics.geometry import Coordinate
 
 # -----------------------------------------------------------------
 
-class TrainedFinder(OldConfigurable):
+class TrainedFinder(Configurable):
 
     """
     This class ...
@@ -53,7 +53,7 @@ class TrainedFinder(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(TrainedFinder, self).__init__(config, "magic")
+        super(TrainedFinder, self).__init__(config)
 
         # -- Attributes --
 
@@ -86,21 +86,16 @@ class TrainedFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, galaxy_finder=None, star_finder=None, special=None, ignore=None, bad=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param galaxy_finder:
-        :param star_finder:
-        :param special:
-        :param ignore:
-        :param bad:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxy_finder, star_finder, special, ignore, bad)
+        self.setup(**kwargs)
 
         # 2. Find sources
         self.find_sources()
@@ -119,16 +114,11 @@ class TrainedFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxy_finder=None, star_finder=None, special_mask=None, ignore_mask=None, bad_mask=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param galaxy_finder:
-        :param star_finder:
-        :param special_mask:
-        :param ignore_mask:
-        :param bad_mask:
+        :param kwargs:
         :return:
         """
 
@@ -136,16 +126,16 @@ class TrainedFinder(OldConfigurable):
         super(TrainedFinder, self).setup()
 
         # Make a local reference to the image frame
-        self.frame = frame
+        self.frame = kwargs.pop("frame")
 
         # Masks
-        self.special_mask = special_mask
-        self.ignore_mask = ignore_mask
-        self.bad_mask = bad_mask
+        self.special_mask = kwargs.pop("special_mask", None)
+        self.ignore_mask = kwargs.pop("ignore_mask", None)
+        self.bad_mask = kwargs.pop("bad_mask", None)
 
         # Make local references to the galaxy and star extractors
-        self.galaxy_finder = galaxy_finder
-        self.star_finder = star_finder
+        self.galaxy_finder = kwargs.pop("galaxy_finder", None)
+        self.star_finder = kwargs.pop("star_finder", None)
 
     # -----------------------------------------------------------------
 

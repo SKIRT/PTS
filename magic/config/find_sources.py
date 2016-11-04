@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # The galaxy name
-definition.add_required("dataset", "file_path", "name of the dataset file")
+definition.add_required("dataset", "file_path", "name of the dataset file or image file")
 
 # Flags
 definition.add_flag("find_stars", "find stars in the images")
