@@ -21,7 +21,9 @@ import matplotlib.lines as mlines
 import os
 import sys
 from matplotlib import ticker
-from matplotlib.colors import LogNorm
+from matplotlib import colors
+from shutil import copyfile
+from astropy.io import fits
 import warnings
 
 # Import the relevant PTS classes and modules
@@ -48,7 +50,8 @@ from ..tools import archive as arch
 # - plotCircular: Whether or not to plot a circular polarization map. 'True': Yes; 'False': No; 'None': Automatic
 def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7,7), wavelength='all',
                     polAvY=False, export=False, degreeLength=[None,None], vertRange=[None,None],
-                    noColBar=False, axes=None, crop=[0.,0.,0.,0.], minDeg=0., quiet=False, plotCircular=None, plotLinear=True):
+                    noColBar=False, axes=None, crop=[0.,0.,0.,0.], minDeg=0., quiet=False, plotCircular=None,
+                    plotLinear=True, plotPolDegMap=False):
     
     ####################################### general settings #######################################
     plotCircularOnce = False # Used when automatically decting and plotting circular polarization
@@ -106,7 +109,7 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
             continue
 
         # create new directory to redirect all plots
-        if not axes: #only if we're not called from a script
+        if not axes: #only if we're not given an ax to plot on
             pathparts = fileQ.rsplit('/',1)
             pathparts[0] += '/_polarization'
             try:
@@ -115,6 +118,12 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                 if not os.path.isdir(pathparts[0]):
                     raise
             path = pathparts[0]+'/'+pathparts[1] # the ending is still "Q.fits", will be changed when saving the figure(s)
+            
+            # copy the fileQ fits file for saving the polarization degree in it
+            if plotPolDegMap:
+                PDMfitsPath = path.replace("stokesQ","polDegMap")
+                copyfile(fileI, PDMfitsPath)
+            
 
         # determine the appropriate frame index or indices
         if wavelength == "all":
@@ -132,7 +141,7 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                     indexnr, len(indexes))
             indexnr+= 1
             #now we can create the actual file name
-            if not axes: #only if we're not called from a script
+            if not axes: #only if we're not given an ax to plot on
                 fileEnd = "pol_" + str(simulation.wavelengths()[index]) + "um.pdf"
                 plotfile = path.replace("stokesQ.fits",fileEnd)
 
@@ -147,6 +156,14 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                 U = Us
                 V = Vs
 
+            # normalize, so we do not accidentially over-/underflow when squaring
+            norm = 1./2.**np.int(np.log2(np.nanmean(I[I>0])))
+            I *= norm
+            Q *= norm
+            U *= norm
+            V *= norm
+            
+            
 
             # actual binning
             posX = np.arange(startX-0.5+binX/2.0, orLenX - dropX + startX - 0.5, binX)
@@ -179,18 +196,18 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
             def ConfigurePlot(background = True):
                 # plot contour of intensity (in HD)
                 if background:
-                    Inan = I*1.
+                    Inan = I/norm #to get back the actual intensity
                     Inan[Inan<=0] = np.NaN
                     if np.any(Inan > 10.**6.*np.nanmedian(np.unique(Inan))):
                         print "Automated masking of star in background plot"
                         Inan = np.ma.masked_where(Inan > 10.**6.*np.nanmedian(np.unique(Inan)), Inan)
                     vmin = vertRange[0]
                     vmax = vertRange[1]
-                    backGrndPlt = ax.imshow(Inan, alpha=0.4, norm=LogNorm(), vmin=vmin, vmax=vmax, origin = 'lower')
+                    backGrndPlt = ax.imshow(Inan, alpha=0.4, vmin=vmin, vmax=vmax, origin = 'lower', norm=colors.LogNorm())
                     if not noColBar:
                         cbar = plt.colorbar(backGrndPlt)
                         cbar.set_label(simulation.fluxlabel(), labelpad=5)
-                        if not axes: #only if we're not called from a script
+                        if not axes: #only if we're not given an ax to plot on
                             plt.suptitle(simulation.prefix(), fontsize=14, fontweight='bold')
                         
                 ax.set_title('instrument: "' + name + '", $\lambda=' +
@@ -226,7 +243,7 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
             #if we're doing the y-axis averaged polarization graph:
             if polAvY:
                 #set up figure
-                if not axes: #only if we're not called from a script
+                if not axes: #only if we're not given an ax to plot on
                     figure = plt.figure()
                     ax = figure.add_subplot(111)
                 else:
@@ -241,7 +258,7 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                 ax.set_xlabel('x (pixels)')
                 ax.set_xlim(xmin=crop[0], xmax=len(I[0,:])-crop[1])
                 ax.set_ylabel('Average polarization (%)')
-                if not axes: #only if we're not called from a script
+                if not axes: #only if we're not given an ax to plot on
                     polAvYfile = "IAvY".join(plotfile.rsplit("pol", 1))
                     plt.savefig(polAvYfile, bbox_inches='tight', pad_inches=0.25)
                     if export:
@@ -254,7 +271,7 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
 
             ################################## linear polarization #################################
             if plotLinear:
-                if not axes: #only if we're not called from a script
+                if not axes: #only if we're not given an ax to plot on
                     figure = plt.figure()
                     ax = figure.add_subplot(111)
                     
@@ -296,7 +313,7 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                 ax.quiverkey(quiverplot, 0.85, 0.02, degreeLength[0], key,
                               coordinates='axes', labelpos='E')
                 
-                if not axes: #only if we're not called from a script
+                if not axes: #only if we're not given an ax to plot on
                     saveAndClosePlot(plotfile)
             
             
@@ -317,7 +334,7 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                                     lw = lw, solid_capstyle = 'round', dash_capstyle = 'round', color = color, *args, **kwargs))
                                     
                 # create figure
-                if not axes: #only if we're not called from a script
+                if not axes: #only if we're not given an ax to plot on
                     figure = plt.figure()
                     ax = figure.add_subplot(111)
                     
@@ -338,8 +355,45 @@ def plotpolarization(simulation, instrumentList='all', figsize=(6,6), binsize=(7
                             circArrow(ax, (posX[x], posY[y]), binnedV[y,x]*degreeLength[1]/degreeLength[0], zorder = 10, clip_on=False)
                         
                 # plotting:
-                if not axes: #only if we're not called from a script
-                    plotfile = "cpol".join(plotfile.rsplit("pol", 1))
-                    saveAndClosePlot(plotfile)
+                if not axes: #only if we're not given an ax to plot on
+                    circPlotfile = "cpol".join(plotfile.rsplit("pol", 1))
+                    saveAndClosePlot(circPlotfile)
+            
+            ################################# circular polarization ################################
+            if plotPolDegMap:
+                # create figure
+                if not axes: #only if we're not given an ax to plot on
+                    figure = plt.figure()
+                    ax = figure.add_subplot(111)
+                else:
+                    ax = axes
+                ConfigurePlot(background = False)
+                #First we have to normalize, so we don't underflow!
+                
+                degreeHD = np.sqrt(Q**2 + U**2) / I
+                #print np.nanmax(degreeHD)
+                backGrndPlt = ax.imshow(degreeHD*100., vmax = 100, origin = 'lower')#, alpha = 0.1)#, norm=colors.PowerNorm(gamma=1/3.))
+                if np.nanmax(degreeHD) > 1.0: print "Warning! found pixel with linear polarization degree > 1!"
+                #degreeHD[degreeHD<=1] = np.nan
+                #backGrndPlt2 = ax.imshow(degreeHD*100., vmin = 100, origin = 'lower')
+                if not noColBar:
+                    cbar = plt.colorbar(backGrndPlt)
+                    cbar.set_label("Linear Polarization degree (%)", labelpad=5)
+                    if not axes: #only if we're not given an ax to plot on
+                        plt.suptitle(simulation.prefix(), fontsize=14, fontweight='bold')
+                
+                # plotting:
+                if not axes: #only if we're not given an ax to plot on
+                    PDplotfile = "LPDmap".join(plotfile.rsplit("pol", 1))
+                    saveAndClosePlot(PDplotfile)
+                    
+                    #to rewrite the .fits file
+                    hdulist = fits.open(PDMfitsPath, mode='update')
+                    if len(hdulist[0].shape)==3:
+                        hdulist[0].data[index] = degreeHD
+                    else:
+                        hdulist[0].data = degreeHD
+                    hdulist.close() # to save and close
+
 
 # -----------------------------------------------------------------
