@@ -19,6 +19,7 @@ from abc import ABCMeta
 # Import the relevant PTS classes and modules
 from ..tools import parsing
 from ..tools.logging import log
+from ..tools import formatting as fmt
 from .configuration import stringify_not_list
 
 # -----------------------------------------------------------------
@@ -30,6 +31,26 @@ class SimplePropertyComposite(object):
     """
 
     __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        lines = []
+
+        # Loop over the variables
+        for name in vars(self):
+
+            dtype, value = stringify_not_list(getattr(self, name))
+            line = " - " + fmt.bold +  name + fmt.reset + ": " + value
+            lines.append(line)
+
+        return "\n".join(lines)
 
     # -----------------------------------------------------------------
 

@@ -33,6 +33,8 @@ from ..basics.skygeometry import SkyCoordinate
 from ...dustpedia.core.database import DustPediaDatabase
 from ...core.basics.errorbar import ErrorBar
 from ...modeling.basics.properties import GalaxyProperties
+from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -59,12 +61,16 @@ class S4G(Configurable):
         # Call the constructor of the base class
         super(S4G, self).__init__(config)
 
+        # Names
+        self.ngc_id = None
+        self.ngc_id_nospaces = None
+
         # The Vizier querying object
         self.vizier = Vizier()
         self.vizier.ROW_LIMIT = -1
 
         # The DustPedia database
-        self.database = DustPediaDatabase()
+        #self.database = DustPediaDatabase()
 
         # The path for the S4G decomposition models
         #self.components_2d_s4g_path = None
@@ -74,6 +80,11 @@ class S4G(Configurable):
 
         # The dictionary of components
         self.components = dict()
+
+        #
+        self.disk_pa = None
+        self.disk = None
+        self.bulge = None
 
     # -----------------------------------------------------------------
 
@@ -87,42 +98,17 @@ class S4G(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Get galaxy properties
+        # 2. Get galaxy properties
         self.get_properties()
 
-        # Tracing spiral density waves in M81: (Kendall et. al, 2008)
-        # - Sersic bulge:
-        #    n = 2.62
-        #    Re = 46.2 arcsec
-        #    b/a = 0.71
-        #    PA = −31.9°
-        # - Exponential disk:
-        #    Rs = 155.4 arcsec
-        #    b/a = 0.52
-        #    PA = −28.3°
-
-        #self.get_p4()  # currently (writing on the 31th of march 2016) there is a problem with the effective radius values
-        # (at least for M81) on Vizier as well as in the PDF version of table 7 (S4G models homepage).
-
-        # Parse the S4G table 8 to get the decomposition parameters
+        # 3. Parse the S4G table 8 to get the decomposition parameters
         self.get_parameters_from_table()
 
-        # self.parameters.bulge.n = 2.62
-        # self.parameters.bulge.PA = Angle(-31.9 + 90., "deg")
-        # self.parameters.bulge.q = 0.71
-        # value = 46.2 * Unit("arcsec")
-        # self.parameters.bulge.Re = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
+        # 4. Show
+        if self.config.show: self.show()
 
-        # value = 155.4 * Unit("arcsec")
-        # self.parameters.disk.hr = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
-        # self.parameters.disk.q = 0.52
-        # self.parameters.disk.PA = Angle(-28.3 + 90., "deg")
-
-        # Show
-        self.show()
-
-        # Writing
-        self.write()
+        # 5. Writing
+        if self.config.output is not None: self.write()
 
     # -----------------------------------------------------------------
 
@@ -139,6 +125,7 @@ class S4G(Configurable):
 
         # Create the galaxy properties object
         self.properties = GalaxyProperties()
+        self.properties.name = self.config.galaxy_name
 
         # Set the path
         #self.components_2d_s4g_path = fs.create_directory_in(self.components_2d_path, "S4G")
@@ -154,7 +141,7 @@ class S4G(Configurable):
 
         self.get_ngc_id()
 
-        self.get_dustpedia_info()
+        #self.get_dustpedia_info()
 
         self.get_s4g_properties()
 
@@ -180,11 +167,11 @@ class S4G(Configurable):
 
         # Ellipticity (1-b/a)
 
-        b_to_a = 1 - self.properties.ellipticity
+        b_to_a = 1. - self.properties.ellipticity
 
+        # Calculate the inclination
         inclination_deg = 90. - math.degrees(math.acos(b_to_a))
         inclination = Angle(inclination_deg, "deg")
-        print(inclination)
         self.properties.inclination = inclination
 
     # -----------------------------------------------------------------
@@ -264,26 +251,26 @@ class S4G(Configurable):
         asymptotic_ab_magnitude_i1_error = table["e__3.6_"][0]
         asymptotic_ab_magnitude_i2_error = table["e__4.5_"][0]
 
-        self.properties.i1_mag = asymptotic_ab_magnitude_i1
-        self.properties.i1_mag_error = asymptotic_ab_magnitude_i1_error
-        self.properties.i2_mag = asymptotic_ab_magnitude_i2
-        self.properties.i2_mag_error = asymptotic_ab_magnitude_i2_error
+        #self.properties.i1_mag = asymptotic_ab_magnitude_i1
+        #self.properties.i1_mag_error = asymptotic_ab_magnitude_i1_error
+        #self.properties.i2_mag = asymptotic_ab_magnitude_i2
+        #self.properties.i2_mag_error = asymptotic_ab_magnitude_i2_error
 
-        self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * Unit("Jy")
-        i1_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i1_mag + self.properties.i1_mag_error) * Unit("Jy")
-        i1_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i1_mag - self.properties.i1_mag_error) * Unit("Jy")
-        i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.properties.i1_fluxdensity)
-        self.properties.i1_error = i1_error.average
+        #self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * Unit("Jy")
+        #i1_fluxdensity_lower = unitconversion.ab_to_jansky(
+        #    self.properties.i1_mag + self.properties.i1_mag_error) * Unit("Jy")
+        #i1_fluxdensity_upper = unitconversion.ab_to_jansky(
+        #    self.properties.i1_mag - self.properties.i1_mag_error) * Unit("Jy")
+        #i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.properties.i1_fluxdensity)
+        #self.properties.i1_error = i1_error.average
 
-        self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * Unit("Jy")
-        i2_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i2_mag + self.properties.i2_mag_error) * Unit("Jy")
-        i2_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i2_mag - self.properties.i2_mag_error) * Unit("Jy")
-        i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.properties.i2_fluxdensity)
-        self.properties.i2_error = i2_error.average
+        #self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * Unit("Jy")
+        #i2_fluxdensity_lower = unitconversion.ab_to_jansky(
+        #    self.properties.i2_mag + self.properties.i2_mag_error) * Unit("Jy")
+        #i2_fluxdensity_upper = unitconversion.ab_to_jansky(
+        #    self.properties.i2_mag - self.properties.i2_mag_error) * Unit("Jy")
+        #i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.properties.i2_fluxdensity)
+        #self.properties.i2_error = i2_error.average
 
         # Other ...
         # absolute_magnitude_i1 = table["M3.6"][0]
@@ -619,6 +606,23 @@ class S4G(Configurable):
                 # Add the disk to the components dictionary
                 self.components["disk"] = disk
 
+        # Set the disk position angle
+        self.disk_pa = self.components["disk"].position_angle
+
+    # -----------------------------------------------------------------
+
+    def create_bulge_model(self):
+
+        """
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the bulge model ...")
+
+        # Create a Sersic model for the bulge
+        self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.properties.inclination, self.disk_pa)
+
     # -----------------------------------------------------------------
 
     def create_disk_model(self):
@@ -635,46 +639,6 @@ class S4G(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_projections(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the projection systems ...")
-
-        # Create the 'earth' projection system
-        azimuth = 0.0
-        self.projections["earth"] = GalaxyProjection.from_wcs(self.reference_wcs, self.properties.center, self.properties.distance, self.properties.inclination, azimuth, self.disk_pa)
-
-        # Create the face-on projection system
-        self.projections["faceon"] = FaceOnProjection.from_wcs(self.reference_wcs, self.properties.center, self.properties.distance)
-
-        # Create the edge-on projection system
-        self.projections["edgeon"] = EdgeOnProjection.from_wcs(self.reference_wcs, self.properties.center, self.properties.distance)
-
-    # -----------------------------------------------------------------
-
-    def create_instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the instruments ...")
-
-        # Loop over the projection systems
-        for name in self.projections:
-
-            # Create the instrument from the projection system
-            self.instruments[name] = SimpleInstrument.from_projection(self.projections[name])
-
-    # -----------------------------------------------------------------
-
     def show(self):
 
         """
@@ -682,7 +646,17 @@ class S4G(Configurable):
         :return:
         """
 
+        print(fmt.green + "Galaxy properties" + fmt.reset + ":")
+        print("")
+        print(self.properties)
+        print("")
 
+        for name in self.components:
+
+            print(fmt.green + name + fmt.reset + ":")
+            print("")
+            print(self.components[name])
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -696,8 +670,24 @@ class S4G(Configurable):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the properties
+        self.write_properties()
+
         # Write the components
         self.write_components()
+
+    # -----------------------------------------------------------------
+
+    def write_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path and save
+        path = self.output_path_file("properties.dat")
+        self.properties.save(path)
 
     # -----------------------------------------------------------------
 
@@ -712,7 +702,7 @@ class S4G(Configurable):
         for name in self.components:
 
             # Determine the path
-            path = fs.join(self.components_2d_s4g_path, name + ".mod")
+            path = self.output_path_file(name + ".mod")
 
             # Save the model
             self.components[name].save(path)

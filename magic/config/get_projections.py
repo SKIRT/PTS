@@ -13,11 +13,10 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# The galaxy name
-definition.add_required("galaxy_name", "string", "galaxy name")
-
-# Flag
-definition.add_flag("show", "show the parameters", True)
+# Required settings
+#definition.add_required("galaxy_name", "string", "galaxy name")
+definition.add_required("wcs", "file_path", "FITS file with the desired WCS")
+definition.add_required("parameters", "directory_path", "path parameters directory")
 
 # The output directory
 definition.add_optional("output", "directory_path", "output directory", letter="o")
