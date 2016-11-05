@@ -51,6 +51,8 @@ parser.add_argument("-ncb", "--noColBar", action="store_true", default = False,
             help="Plot the colorbar(s) separately. Helpful for combining multiple plots, together with --vertRange.")
 parser.add_argument("-pay", "--polAvY", action="store_true", default = False,
             help="Plot the polarization degree integrated over y-direction for all x-pixels")
+parser.add_argument("-ppdm", "--plotPolDegMap", action="store_true", default = False,
+            help="Plot the polarization degree map as a separate picture")
 parser.add_argument("-e", "--export", action="store_true", default = False,
             help="Exports data files in addition to the plots.")
 circPol_parser = parser.add_mutually_exclusive_group(required=False)
@@ -69,7 +71,8 @@ for simulation in createsimulations(args.simulation):
     plotpolarization(simulation, instrumentList=args.instrument, binsize=binsize,
                     wavelength=args.wavelength, polAvY=args.polAvY, export=args.export,
                     degreeLength=args.scale, vertRange=args.vertRange,
-                    noColBar=args.noColBar, plotCircular=args.plotCircular)
+                    noColBar=args.noColBar, plotCircular=args.plotCircular,
+                    plotPolDegMap=args.plotPolDegMap, plotLinear=args.no_plotLinear)
 end = time.time()
 print "Finished plotpolarization in {0:0.2f} s".format(end-start)
 
