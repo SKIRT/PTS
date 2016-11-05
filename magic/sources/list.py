@@ -43,7 +43,10 @@ class GalaxyList(object):
         :return:
         """
 
+        print(galaxy)
+
         if galaxy.principal:
+            print("here")
             if self.principal is not None: raise ValueError("Principal galaxy is already set")
             self.principal = galaxy
         elif galaxy.companion: self.companions.append(galaxy)

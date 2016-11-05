@@ -236,7 +236,7 @@ def from_galaxies(galaxies):
     names = ["Name", "Right ascension", "Declination", "Redshift", "Type", "Alternative names", "Distance",
              "Inclination", "D25", "Major axis length", "Minor axis length", "Position angle", "Principal",
              "Companion galaxies", "Parent galaxy"]
-    meta = {'name': 'stars'}
+    meta = {'name': 'galaxies'}
 
     # Create the catalog table
     catalog = tables.new(data, names, meta)
@@ -648,12 +648,17 @@ def get_galaxy_info(name, position):
         gal_type = ned_entry["Type"]
         if isinstance(gal_type, np.ma.core.MaskedConstant): gal_type = None
 
+        # Get the distance
+        ned_distance = ned_entry["Distance (arcmin)"]
+        if isinstance(ned_distance, np.ma.core.MaskedConstant): ned_distance = None
+
     except astroquery.exceptions.RemoteServiceError:
 
         # Set attributes
         gal_name = name
         gal_redshift = None
         gal_type = None
+        ned_distance = None
 
     # Create a new Vizier object and set the row limit to -1 (unlimited)
     viz = Vizier(keywords=["galaxies", "optical"])
@@ -713,7 +718,9 @@ def get_galaxy_info(name, position):
     ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
     diameter = np.power(10.0, entry["logD25"]) * 0.1 * Unit("arcmin") if entry["logD25"] else None
 
+    #print("  ratio = ", ratio)
     #print("  D25_diameter = ", diameter)
+    #print("  position = ", position)
 
     radial_profiles_result = viz.query_object(name, catalog="J/ApJ/658/1006")
 
@@ -727,16 +734,21 @@ def get_galaxy_info(name, position):
 
     else:
 
-        gal_distance = None
+        gal_distance = ned_distance
         gal_inclination = None
-        gal_d25 = None
+        gal_d25 = diameter
 
     # Get the size of major and minor axes
     gal_major = diameter
     gal_minor = diameter / ratio if diameter is not None and ratio is not None else None
 
+    #print(" gal_major", diameter)
+    #print(" gal_minor", gal_minor)
+
     # Get the position angle of the galaxy
     gal_pa = Angle(entry["PA"] - 90.0, "deg") if entry["PA"] else None
+
+    #print(" gal_pa", gal_pa)
 
     # Create and return a new Galaxy instance
     return gal_name, position, gal_redshift, gal_type, gal_names, gal_distance, gal_inclination, gal_d25, gal_major, gal_minor, gal_pa
