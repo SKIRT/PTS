@@ -183,6 +183,58 @@ class TransmissionCurve(object):
     # -----------------------------------------------------------------
 
     @property
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmin(self.table["Wavelength"])
+        return self.table["Wavelength"][index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmax(self.table["Wavelength"])
+        return self.table["Wavelength"][index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_transmission(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmin(self.table["Transmission"])
+        return self.table["Transmission"][index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_transmission(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        index = np.argmax(self.table["Transmission"])
+        return self.table["Transmission"][index]
+
+    # -----------------------------------------------------------------
+
+    @property
     def peak_wavelength(self):
 
         """

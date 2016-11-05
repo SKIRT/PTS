@@ -77,7 +77,7 @@ class AttenuationPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path, min_wavelength=None, max_wavelength=None, min_attenuation=None, max_attenuation=None):
+    def run(self, output_path=None, min_wavelength=None, max_wavelength=None, min_attenuation=None, max_attenuation=None):
 
         """
         This function ...
@@ -121,7 +121,7 @@ class AttenuationPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    def plot(self, path=None):
 
         """
         This function ...
@@ -175,10 +175,11 @@ class AttenuationPlotter(object):
         plt.legend(loc='upper right', numpoints=1, markerscale=1.5, fontsize=24)
 
         # Debugging
-        log.debug("Saving the attenuation plot to " + path + " ...")
+        if path is not None: log.debug("Saving the attenuation plot to " + path + " ...")
 
         # Save the figure
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent)
+        if path is not None: plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent)
+        else: plt.show()
         plt.close()
 
 # -----------------------------------------------------------------

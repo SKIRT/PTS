@@ -502,11 +502,12 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def set_arguments(self, parser):
+    def set_arguments(self, parser, prefix=None):
 
         """
         This function ...
         :param parser:
+        :param prefix:
         :return:
         """
 
@@ -518,7 +519,9 @@ class ConfigurationDefinition(object):
             choices = self.required[name][2]
 
             # Add prefix
-            if self.prefix is not None: name = self.prefix + "/" + name
+            #if self.prefix is not None: name = self.prefix + "/" + name
+
+            if prefix is not None: name = prefix + "/" + name
 
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
@@ -535,7 +538,9 @@ class ConfigurationDefinition(object):
             choices = self.pos_optional[name][3]
 
             # Add prefix
-            if self.prefix is not None: name = self.prefix + "/" + name
+            #if self.prefix is not None: name = self.prefix + "/" + name
+
+            if prefix is not None: name = prefix + "/" + name
 
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
@@ -554,7 +559,9 @@ class ConfigurationDefinition(object):
             letter = self.optional[name][5]
 
             # Add prefix
-            if self.prefix is not None: name = self.prefix + "/" + name
+            #if self.prefix is not None: name = self.prefix + "/" + name
+
+            if prefix is not None: name = prefix + "/" + name
 
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
@@ -572,18 +579,28 @@ class ConfigurationDefinition(object):
             default = self.flags[name][2] # True or False
 
             # Add prefix
-            if self.prefix is not None: name = self.prefix + "/" + name
+            #if self.prefix is not None: name = self.prefix + "/" + name
+
+            if prefix is not None: name = prefix + "/" + name
 
             # Add the argument
             if letter is None:
                 if default is False: parser.add_argument("--" + name, action="store_true", help=description)
-                else: parser.add_argument("--!" + name, action="store_true", help=description)
+                else: parser.add_argument("--!" + name, action="store_true", help="don't" + description)
             else:
                 if default is False: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
-                else: parser.add_argument("-!" + letter, "--!" + name, action="store_true", help=description)
+                else: parser.add_argument("-!" + letter, "--!" + name, action="store_true", help="don't" + description)
 
         # Add arguments of sections
-        for section_name in self.sections: self.sections[section_name].set_arguments(parser)
+        for section_name in self.sections:
+
+            #if self.prefix is None: section_prefix = section_name
+            #else: section_prefix
+
+            if prefix is None: section_prefix = section_name
+            else: section_prefix = prefix + "/" + section_name
+
+            self.sections[section_name].set_arguments(parser, section_prefix)
 
     # -----------------------------------------------------------------
 
@@ -660,8 +677,13 @@ class ConfigurationDefinition(object):
         :return:
         """
 
+        # Determine prefix
+        #if self.prefix is None: prefix = name
+        #else: prefix = self.prefix + "/" + name
+        prefix = name
+
         # Add the section
-        self.sections[name] = ConfigurationDefinition(prefix=name)
+        self.sections[name] = ConfigurationDefinition(prefix=prefix)
         self.section_descriptions[name] = description
 
     # -----------------------------------------------------------------
@@ -676,9 +698,14 @@ class ConfigurationDefinition(object):
         :return:
         """
 
+        # Determine prefix
+        #if self.prefix is None: prefix = name
+        #else: prefix = self.prefix + "/" + name
+        prefix = name
+
         # Add the section
         self.sections[name] = copy.deepcopy(definition)
-        self.sections[name].prefix = name
+        self.sections[name].prefix = prefix
         self.section_descriptions[name] = description
 
     # -----------------------------------------------------------------

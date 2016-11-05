@@ -7,6 +7,9 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from .find_stars import definition as stars_definition
+from .find_galaxies import definition as galaxies_definition
+from .find_other import definition as other_definition
 
 # -----------------------------------------------------------------
 
@@ -33,5 +36,10 @@ definition.add_optional("ignore_region", "file_path", "region indicating areas t
 # Output
 definition.add_optional("output", "directory_path", "output directory", letter="o")
 definition.add_optional("input", "directory_path", "input directory", letter="i")
+
+# Sections
+#definition.import_section("galaxies", "options for galaxy finder", galaxies_definition)
+#definition.import_section("stars", "options for star finder", stars_definition)
+#definition.import_section("other_sources", "options for finding other contaminating sources", other_definition)
 
 # -----------------------------------------------------------------

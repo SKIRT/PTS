@@ -53,10 +53,10 @@ class TransmissionPlotter(object):
         self.wavelengths = []
 
         # The axis limits
-        self.min_wavelength = None
-        self.max_wavelength = None
-        self.min_transmission = None
-        self.max_transmission = None
+        self._min_wavelength = None
+        self._max_wavelength = None
+        self._min_transmission = None
+        self._max_transmission = None
 
         # The figure
         self._figure = None
@@ -108,7 +108,7 @@ class TransmissionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path, min_wavelength=None, max_wavelength=None, min_transmission=None, max_transmission=None):
+    def run(self, output_path=None, min_wavelength=None, max_wavelength=None, min_transmission=None, max_transmission=None):
 
         """
         This function ...
@@ -121,10 +121,10 @@ class TransmissionPlotter(object):
         """
 
         # Set the axis limits
-        self.min_wavelength = min_wavelength
-        self.max_wavelength = max_wavelength
-        self.min_transmission = min_transmission
-        self.max_transmission = max_transmission
+        self._min_wavelength = min_wavelength
+        self._max_wavelength = max_wavelength
+        self._min_transmission = min_transmission
+        self._max_transmission = max_transmission
 
         # Make the plot
         self.plot(output_path)
@@ -145,10 +145,10 @@ class TransmissionPlotter(object):
         self.title = None
         self.curves = OrderedDict()
         self.wavelengths = []
-        self.min_wavelength = None
-        self.max_wavelength = None
-        self.min_transmission = None
-        self.max_transmission = None
+        self._min_wavelength = None
+        self._max_wavelength = None
+        self._min_transmission = None
+        self._max_transmission = None
         self._figure = None
         self.colormap = "rainbow"
         self.format = None
@@ -156,7 +156,79 @@ class TransmissionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    @property
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._min_wavelength is not None: return self._min_wavelength
+
+        min_wavelength = None
+        for label in self.curves:
+            if min_wavelength is None or self.curves[label].min_wavelength < min_wavelength: min_wavelength = self.curves[label].min_wavelength
+
+        return min_wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._max_wavelength is not None: return self._max_wavelength
+
+        max_wavelength = None
+        for label in self.curves:
+            if max_wavelength is None or self.curves[label].max_wavelength > max_wavelength: max_wavelength = self.curves[label].max_wavelength
+
+        return max_wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_transmission(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._min_transmission is not None: return self._min_transmission
+
+        min_transmission = None
+        for label in self.curves:
+            if min_transmission is None or self.curves[label].min_transmission < min_transmission: min_transmission = self.curves[label].min_transmission
+
+        return min_transmission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_transmission(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self._max_transmission is not None: return self._max_transmission
+
+        max_transmission = None
+        for label in self.curves:
+            if max_transmission is None or self.curves[label].max_transmission > max_transmission: max_transmission = self.curves[label].max_transmission
+
+        return max_transmission
+
+    # -----------------------------------------------------------------
+
+    def plot(self, path=None):
 
         """
         This function ...

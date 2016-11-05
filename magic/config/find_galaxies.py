@@ -30,9 +30,8 @@ definition.add_section("aperture_removal", "aperture removal")
 definition.sections["aperture_removal"].add_optional("expansion_factor", "real", 1.0)
 
 definition.add_section("fetching", "fetching")
-
-definition.sections["fetching"].add_flag("use_catalog_file", "use catalog file")
-definition.sections["fetching"].add_optional("catalog_path", "file_path", "catalog path")
+#definition.sections["fetching"].add_flag("use_catalog_file", "use catalog file")
+#definition.sections["fetching"].add_optional("catalog_path", "file_path", "catalog path")
 
 definition.add_section("detection", "detection")
 

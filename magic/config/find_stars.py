@@ -29,8 +29,8 @@ definition.add_flag("remove", "remove stars from the frame", True)
 definition.add_flag("find_saturation", "find saturated stars", True)
 
 definition.add_section("fetching", "fetching")
-definition.sections["fetching"].add_flag("use_catalog_file", "use catalog file")
-definition.sections["fetching"].add_optional("catalog_path", "file_path", "catalog path")
+#definition.sections["fetching"].add_flag("use_catalog_file", "use catalog file")
+#definition.sections["fetching"].add_optional("catalog_path", "file_path", "catalog path")
 
 definition.sections["fetching"].add_flag("use_statistics_file", "use statistics file")
 definition.sections["fetching"].add_optional("statistics_path", "file_path", "statistics file path")

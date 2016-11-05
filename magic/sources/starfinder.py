@@ -34,6 +34,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..tools import plotting
 from .list import StarList
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -977,6 +978,20 @@ class StarFinder(Configurable):
         # Create a Gaussian convolution kernel and return it
         sigma = self.fwhm_pix * statistics.fwhm_to_sigma
         return Gaussian2DKernel(sigma)
+
+    # -----------------------------------------------------------------
+
+    def get_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the statistics
+        statistics = Map()
+        statistics.fwhm = self.fwhm
+        return statistics
 
     # -----------------------------------------------------------------
 
