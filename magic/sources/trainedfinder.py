@@ -77,9 +77,13 @@ class TrainedFinder(Configurable):
         # List of stars
         self.stars = []
 
-        # Local references to the galaxy and star finder
-        self.galaxy_finder = None
-        self.star_finder = None
+        # The galaxy and star lists
+        self.galaxies = None
+        self.stars = None
+
+        # The galaxy and star segments
+        self.galaxy_segments = None
+        self.star_segments = None
 
         # The region
         self.region = None
@@ -134,8 +138,12 @@ class TrainedFinder(Configurable):
         self.bad_mask = kwargs.pop("bad_mask", None)
 
         # Make local references to the galaxy and star extractors
-        self.galaxy_finder = kwargs.pop("galaxy_finder", None)
-        self.star_finder = kwargs.pop("star_finder", None)
+        self.galaxies = kwargs.pop("galaxies", None)
+        self.stars = kwargs.pop("stars", None)
+
+        # The galaxy and star segments
+        self.galaxy_segments = kwargs.pop("galaxy_segments", None)
+        self.star_segments = kwargs.pop("star_segments", None)
 
     # -----------------------------------------------------------------
 
@@ -387,7 +395,7 @@ class TrainedFinder(Configurable):
         :return:
         """
 
-        mask = Mask(self.galaxy_finder.segments._data) + Mask(self.star_finder.segments._data)
+        mask = Mask(self.galaxy_segments._data) + Mask(self.star_segments._data)
         data = self.frame.copy()
         data[mask] = 0.0
 
@@ -447,10 +455,13 @@ class TrainedFinder(Configurable):
         eliminate_mask = Mask.empty_like(self.frame)
 
         # Eliminate the principal galaxy and companion galaxies from the segments
-        if self.galaxy_finder is not None:
+        if self.galaxies is not None:
+
+            principal_mask = self.galaxies.get_principal_mask(self.frame)
+            companion_mask = self.galaxies.get_companion_mask(self.frame)
 
             # Determine the mask that covers the principal and companion galaxies
-            eliminate_mask += self.galaxy_finder.principal_mask + self.galaxy_finder.companion_mask
+            eliminate_mask += principal_mask + companion_mask
 
         # NEW: PLUS: Eliminate the segments covered by the 'ignore mask'
         if self.ignore_mask is not None: eliminate_mask += self.ignore_mask
@@ -594,7 +605,7 @@ class TrainedFinder(Configurable):
 
         from photutils import find_peaks
 
-        mask = Mask(self.galaxy_finder.segments) + Mask(self.star_finder.segments)
+        mask = Mask(self.galaxy_segments) + Mask(self.star_segments)
 
         peaks = find_peaks(result, 0.8, box_size=5, mask=mask)
 

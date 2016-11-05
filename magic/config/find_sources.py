@@ -17,10 +17,10 @@ definition = ConfigurationDefinition()
 definition.add_required("dataset", "file_path", "name of the dataset file or image file")
 
 # Flags
-definition.add_flag("find_stars", "find stars in the images")
+definition.add_flag("find_stars", "find stars in the images", True)
 
 # Flags
-definition.add_flag("find_other_sources", "find other contaminating sources")
+definition.add_flag("find_other_sources", "find other contaminating sources", True)
 
 # Optional settings
 definition.add_optional("galactic_catalog_file", "file_path", "galactic catalog file")
@@ -32,5 +32,6 @@ definition.add_optional("ignore_region", "file_path", "region indicating areas t
 
 # Output
 definition.add_optional("output", "directory_path", "output directory", letter="o")
+definition.add_optional("input", "directory_path", "input directory", letter="i")
 
 # -----------------------------------------------------------------

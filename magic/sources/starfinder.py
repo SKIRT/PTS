@@ -33,6 +33,7 @@ from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..tools import plotting
+from .list import StarList
 
 # -----------------------------------------------------------------
 
@@ -53,8 +54,8 @@ class StarFinder(Configurable):
 
         # -- Attributes --
 
-        # Initialize an empty list for the stars
-        self.stars = []
+        # Initialize the star list
+        self.stars = StarList()
 
         # The image frame
         self.frame = None
@@ -74,8 +75,8 @@ class StarFinder(Configurable):
         # The statistics table
         self.statistics = None
 
-        # Reference to the galaxy finder
-        self.galaxy_finder = None
+        # The galaxy list
+        self.galaxies = None
 
         # The segmentation map of stars
         self.segments = None
@@ -137,8 +138,8 @@ class StarFinder(Configurable):
         self.ignore_mask = kwargs.pop("ignore_mask", None)
         self.bad_mask = kwargs.pop("bad_mask", None)
 
-        # Make a local reference to the galaxy finder
-        self.galaxy_finder = kwargs.pop("galaxy_finder")
+        # Get the galaxy list
+        self.galaxies = kwargs.pop("galaxies")
 
         # Create an empty frame for the segments
         self.segments = Frame.zeros_like(self.frame)
@@ -156,7 +157,7 @@ class StarFinder(Configurable):
         log.info("Clearing the star finder ...")
 
         # Clear the list of stars
-        self.stars = []
+        self.stars = StarList()
 
         # Clear the image frame
         self.frame = None
@@ -196,11 +197,11 @@ class StarFinder(Configurable):
 
         # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
         # an 'encountered' list as well
-        encountered_galaxies = [False] * len(self.galaxy_finder.galaxies)
+        encountered_galaxies = [False] * len(self.galaxies)
 
         galaxy_pixel_position_list = []
         galaxy_type_list = []
-        for galaxy in self.galaxy_finder.galaxies:
+        for galaxy in self.galaxies:
 
             galaxy_pixel_position_list.append(galaxy.pixel_position(self.frame.wcs))
             if galaxy.principal: galaxy_type_list.append("principal")
@@ -265,7 +266,7 @@ class StarFinder(Configurable):
             else:
 
                 # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                if self.galaxy_finder is not None: star_on_galaxy = self.galaxy_finder.principal.contains(pixel_position)
+                if self.galaxies is not None: star_on_galaxy = self.galaxies.principal.contains(pixel_position)
                 else: star_on_galaxy = False
                 on_galaxy_column[i] = star_on_galaxy
 
@@ -396,32 +397,6 @@ class StarFinder(Configurable):
 
         # Inform the user
         log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
-
-    # -----------------------------------------------------------------
-
-    def remove_stars(self):
-
-        """
-        This function ...
-        """
-
-        # Inform the user
-        log.info("Removing the stars from the frame ...")
-
-        # Calculate the default FWHM, for the stars for which a model was not found
-        default_fwhm = self.fwhm_pix
-
-        # Inform the user
-        log.debug("Default FWHM used when star could not be fitted: {0:.2f} pixels".format(default_fwhm))
-
-        # Loop over all stars in the list
-        for star in self.stars:
-
-            # If this star should be ignored, skip it
-            if star.ignore: continue
-
-            # Remove the star in the frame
-            star.remove(self.frame, self.mask, self.config.removal, default_fwhm)
 
     # -----------------------------------------------------------------
 
@@ -763,17 +738,7 @@ class StarFinder(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the object positions
-        positions = []
-
-        # Loop over the galaxies
-        for skyobject in self.stars:
-
-            # Calculate the pixel coordinate in the frame and add it to the list
-            positions.append(skyobject.pixel_position(self.frame.wcs))
-
-        # Return the list
-        return positions
+        self.stars.get_positions(self.frame.wcs)
 
     # -----------------------------------------------------------------
 
@@ -849,6 +814,7 @@ class StarFinder(Configurable):
 
             # If the star contains a model, add the fwhm of that model to the list
             if star.has_model:
+
                 fwhm_pix = star.fwhm * Unit("pix")
                 fwhm_arcsec = fwhm_pix * self.frame.average_pixelscale.to("arcsec/pix")
                 fwhms.append(fwhm_arcsec)

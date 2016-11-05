@@ -17,7 +17,6 @@ from astropy.units import Unit
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from ..basics.mask import Mask
 from ..basics.region import Region
 from ..basics.skyregion import SkyRegion
 from ..basics.vector import Extent
@@ -30,6 +29,7 @@ from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from .list import GalaxyList
 
 # -----------------------------------------------------------------
 
@@ -50,8 +50,8 @@ class GalaxyFinder(Configurable):
 
         # -- Attributes --
 
-        # Initialize an empty list for the galaxies
-        self.galaxies = []
+        # Initialize the galaxy list
+        self.galaxies = GalaxyList()
 
         # The image frame
         self.frame = None
@@ -140,7 +140,7 @@ class GalaxyFinder(Configurable):
         log.info("Clearing the galaxy extractor ...")
 
         # Clear the list of galaxies
-        self.galaxies = []
+        self.galaxies.clear()
 
         # Clear the frame
         self.frame = None
@@ -173,17 +173,7 @@ class GalaxyFinder(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the object positions
-        positions = []
-
-        # Loop over the galaxies
-        for galaxy in self.galaxies:
-
-            # Calculate the pixel coordinate in the frame and add it to the list
-            positions.append(galaxy.pixel_position(self.frame.wcs))
-
-        # Return the list
-        return positions
+        return self.galaxies.get_positions(self.frame.wcs)
 
     # -----------------------------------------------------------------
 
@@ -195,14 +185,7 @@ class GalaxyFinder(Configurable):
         :return:
         """
 
-        # Loop over the list of galaxies
-        for galaxy in self.galaxies:
-
-            # Check if it is the principal galaxy; if so, return it
-            if galaxy.principal: return galaxy
-
-        # If the principal galaxy is not determined, return None
-        return None
+        return self.galaxies.principal
 
     # -----------------------------------------------------------------
 
@@ -214,17 +197,7 @@ class GalaxyFinder(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the companion galaxies
-        companions = []
-
-        # Loop over the list of galaxies
-        for galaxy in self.galaxies:
-
-            # Check if it is a companion galaxy; if so, add it to the list
-            if galaxy.companion: companions.append(galaxy)
-
-        # Return the list of companion galaxies
-        return companions
+        return self.galaxies.companions
 
     # -----------------------------------------------------------------
 
@@ -438,14 +411,7 @@ class GalaxyFinder(Configurable):
         :return:
         """
 
-        # Create a new mask with the dimensions of the frame
-        mask = Mask.empty_like(self.frame)
-
-        # Add the principal galaxy's mask to the total mask
-        mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
-
-        # Return the mask
-        return mask
+        return self.galaxies.get_principal_mask(self.frame)
 
     # -----------------------------------------------------------------
 
@@ -457,17 +423,7 @@ class GalaxyFinder(Configurable):
         :return:
         """
 
-        # Create a new mask with the dimension of the frame
-        mask = Mask.empty_like(self.frame)
-
-        # Loop over all companion galaxies
-        for galaxy in self.companions:
-
-            # Check if the galaxy has a source and add its mask to the total mask
-            if galaxy.has_source: mask[galaxy.source.cutout.y_slice, galaxy.source.cutout.x_slice] = galaxy.source.mask
-
-        # Return the mask
-        return mask
+        return self.galaxies.get_companion_mask(self.frame)
 
     # -----------------------------------------------------------------
 

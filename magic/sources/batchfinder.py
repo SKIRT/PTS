@@ -89,6 +89,10 @@ class BatchSourceFinder(Configurable):
         self.galaxy_finder = None
         self.trained_finder = None
 
+        # Galaxy and star lists
+        self.galaxies = dict()
+        self.stars = dict()
+
     # -----------------------------------------------------------------
 
     def add_frame(self, name, frame):
@@ -308,6 +312,12 @@ class BatchSourceFinder(Configurable):
         self.galactic_catalog = catalog_importer.galactic_catalog
         self.stellar_catalog = catalog_importer.stellar_catalog
 
+        galactic_catalog_path = self.output_path_file("galaxies.cat")
+        stellar_catalog_path = self.output_path_file("stars.cat")
+
+        tables.write(self.galactic_catalog, galactic_catalog_path)
+        tables.write(self.stellar_catalog, stellar_catalog_path)
+
     # -----------------------------------------------------------------
 
     def find_galaxies(self):
@@ -371,6 +381,9 @@ class BatchSourceFinder(Configurable):
                 # Add the segmentation map of the galaxies
                 self.segments[name].add_frame(galaxy_segments, "galaxies")
 
+            # Set galaxies
+            self.galaxies[name] = self.galaxy_finder.galaxies
+
             # Inform the user
             log.success("Finished finding the galaxies for '" + name + "' ...")
 
@@ -405,8 +418,7 @@ class BatchSourceFinder(Configurable):
                 bad_mask = None
 
                 # Run the star finder
-                self.star_finder.run(frame=frame, galaxy_finder=self.galaxy_finder, catalog=self.stellar_catalog,
-                                     special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+                self.star_finder.run(frame=frame, galaxies=self.galaxies[name], catalog=self.stellar_catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
 
                 if self.star_finder.star_region is not None:
 
@@ -478,7 +490,9 @@ class BatchSourceFinder(Configurable):
             bad_mask = None
 
             # Run the trained finder just to find sources
-            self.trained_finder.run(frame, self.galaxy_finder, self.star_finder, special=special_mask, ignore=ignore_mask, bad=bad_mask)
+            self.trained_finder.run(frame=frame, galaxies=self.galaxies[name], stars=self.stars[name], special_mask=special_mask,
+                                    ignore_mask=ignore_mask, bad_mask=bad_mask, galaxy_segments=self.segments[name].frames.galaxies,
+                                    star_segments=self.segments[name].frames.stars)
 
             if self.trained_finder.region is not None:
 
