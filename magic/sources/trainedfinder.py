@@ -74,8 +74,9 @@ class TrainedFinder(Configurable):
         # The classifier
         #self.classifier = Classifier()
 
-        # List of stars
-        self.stars = []
+        # List of galaxies and stars (from classification)
+        #self.galaxies = GalaxyList()
+        #self.stars = StarList()
 
         # The galaxy and star lists
         self.galaxies = None

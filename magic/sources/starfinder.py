@@ -156,7 +156,7 @@ class StarFinder(Configurable):
         # Inform the user
         log.info("Clearing the star finder ...")
 
-        # Clear the list of stars
+        # Create a new list of stars
         self.stars = StarList()
 
         # Clear the image frame

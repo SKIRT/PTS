@@ -139,8 +139,8 @@ class GalaxyFinder(Configurable):
         # Inform the user
         log.info("Clearing the galaxy extractor ...")
 
-        # Clear the list of galaxies
-        self.galaxies.clear()
+        # Create a new galaxy list
+        self.galaxies = GalaxyList()
 
         # Clear the frame
         self.frame = None
