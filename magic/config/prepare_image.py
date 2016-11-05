@@ -43,47 +43,34 @@ definition.add_flag("correct_for_extinction", "correct for galactic extinction",
 definition.add_optional("attenuation", "real", "the galactic attenuation")
 
 # Unit conversion
-convert_unit [boolean]: True
-unit_conversion:
-{
-  to_unit [string]: MJy/sr
-}
+definition.add_flag("convert_unit", "convert unit", True)
+definition.add_section("unit_conversion", "unit conversion")
+definition.sections["unit_conversion"].add_optional("to_unit", "string", "target unit", "MJy/sr")
 
 # Convolution
-convolve [boolean]: True
-convolution:
-{
-  kernel_path [string]: None
-  kernel_fwhm [real]: None
-  remote [string]: None
-}
+definition.add_flag("convolve", "convolve")
+definition.add_section("convolution", "convolution")
+definition.sections["convolution"].add_optional("kernel_path", "file_path", "kernel path")
+definition.sections["convolution"].add_optional("kernel_fwhm", "real", "kernel FWHM")
+definition.sections["convolution"].add_optional("remote", "string", "remote host")
 
 # Rebinning
-rebin [boolean]: True
-rebinning:
-{
-  reference_path [string]: None
-}
+definition.add_flag("rebin", "rebin")
+definition.add_section("rebinning", "rebinning")
+definition.sections["rebinning"].add_optional("reference_path", "file_path", "reference FITS path")
 
 # Sky subtraction
-subtract_sky [boolean]: True
-sky_subtraction:
-{
-}
+definition.add_flag("subtract_sky", "subtract sky")
+definition.add_section("sky_subtraction", "sky subtraction")
 
 # Uncertainties
-set_uncertainties [boolean]: True
-uncertainties:
-{
-  calibration_error [calibration_error]: None
-}
+definition.add_flag("set_uncertainties", "set uncertainties")
+definition.add_section("uncertainties", "uncertainties")
+definition.sections["uncertainties"].add_optional("calibration_error", "calibration_error", "calibration error")
 
 # Cropping
-crop [boolean]: True
-cropping:
-{
-  # e.g. [350, 725, 300, 825]
-  limits [pixel_limits]: None
-}
+definition.add_flag("crop", "crop")
+definition.add_section("cropping", "cropping")
+definition.sections["cropping"].add_optional("limits", "pixel_limits", "pixel limits")
 
 # -----------------------------------------------------------------

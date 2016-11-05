@@ -12,7 +12,8 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
+# Import astronomical modules
+from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
 from .galaxyfinder import GalaxyFinder
@@ -31,6 +32,7 @@ from ...core.tools import filesystem as fs
 from ..basics.skyregion import SkyRegion
 from ..core.image import Image
 from ..core.frame import Frame
+from ..tools import statistics
 
 # -----------------------------------------------------------------
 
@@ -92,6 +94,12 @@ class BatchSourceFinder(Configurable):
         # Galaxy and star lists
         self.galaxies = dict()
         self.stars = dict()
+
+        # The PSFs
+        self.psfs = dict()
+
+        # The statistics
+        self.statistics = dict()
 
     # -----------------------------------------------------------------
 
@@ -457,8 +465,33 @@ class BatchSourceFinder(Configurable):
                     # Add the segmentation map of the saturated stars
                     self.segments[name].add_frame(star_segments, "stars")
 
+                # Set the stars
+                self.stars[name] = self.star_finder.stars
+
+                # kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
+                # Set the kernel (PSF)
+                if self.star_finder.config.use_frame_fwhm and frame.fwhm is not None:
+
+                    fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec/pix").value
+                    sigma = fwhm * statistics.fwhm_to_sigma
+                    kernel = Gaussian2DKernel(sigma)
+
+                else: kernel = self.star_finder.kernel
+
+                # Set the PSF
+                self.psfs[name] = kernel
+
+                # Get the statistics
+                self.statistics[name] = self.star_finder.get_statistics()
+
+                # Show the FWHM
+                log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
+
                 # Inform the user
                 log.success("Finished finding the stars for '" + name + "' ...")
+
+                # Clear the star finder
+                self.star_finder.clear()
 
             # No star subtraction for this image
             else: log.info("Finding stars will not be performed on this frame")
@@ -492,7 +525,7 @@ class BatchSourceFinder(Configurable):
             # Run the trained finder just to find sources
             self.trained_finder.run(frame=frame, galaxies=self.galaxies[name], stars=self.stars[name], special_mask=special_mask,
                                     ignore_mask=ignore_mask, bad_mask=bad_mask, galaxy_segments=self.segments[name].frames.galaxies,
-                                    star_segments=self.segments[name].frames.stars)
+                                    star_segments=self.segments[name].frames.stars, kernel=self.psfs[name])
 
             if self.trained_finder.region is not None:
 
@@ -603,7 +636,7 @@ class BatchSourceFinder(Configurable):
         #self.write_stellar_catalogs()
 
         # 3. Write ...
-        #self.write_statistics()
+        self.write_statistics()
 
     # -----------------------------------------------------------------
 
@@ -732,18 +765,17 @@ class BatchSourceFinder(Configurable):
         :return:
         """
 
-        # Show the FWHM
-        log.info("The FWHM that could be fitted to the point sources is " + str(finder.fwhm))
-
         # Inform the user
-        log.info("Writing statistics to '" + path + "' ...")
+        log.info("Writing statistics ...")
 
-        # Write statistics file
-        #statistics_path = fs.join(output_path, "statistics.dat")
-        #finder.write_statistics(statistics_path)
+        # Loop over the image names
+        for name in self.statistics:
 
-        # Open the file, write the info
-        with open(path, 'w') as statistics_file:
-            statistics_file.write("FWHM: " + str(self.fwhm) + "\n")
+            # Determine the path to the statistics file
+            path = self.output_path_file("statistics" + name + ".dat")
+
+            # Open the file, write the info
+            with open(path, 'w') as statistics_file:
+                statistics_file.write("FWHM: " + str(self.statistics[name].fwhm) + "\n")
 
 # -----------------------------------------------------------------

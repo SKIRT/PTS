@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.developer.get_configuration_types List the different labels that can be used to specify a type in the context of PTS configuration definitions. 
+## \package pts.do.developer.configuration_types List the different labels that can be used to specify a type in the context of PTS configuration definitions.
 
 # -----------------------------------------------------------------
 

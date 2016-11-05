@@ -26,6 +26,7 @@ from ..tools import wavelengths
 from ...core.tools import tables
 from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -678,6 +679,20 @@ class SourceFinder(OldConfigurable):
 
         # Write the catalog to file
         tables.write(self.catalog_builder.stellar_catalog, path)
+
+    # -----------------------------------------------------------------
+
+    def get_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the statistics
+        statistics = Map()
+        statistics.fwhm = self.fwhm
+        return statistics
 
     # -----------------------------------------------------------------
 

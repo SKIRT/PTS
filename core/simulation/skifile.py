@@ -63,7 +63,7 @@ class SkiFile:
     ## This function saves the (possibly updated) contents of the SkiFile instance into the specified file.
     # The filename \em must end with ".ski". Saving to and thus replacing the ski file from which this
     # SkiFile instance was originally constructed is allowed, but often not the intention.
-    def saveto(self, filepath):
+    def saveto(self, filepath, update_path=True):
         if not filepath.lower().endswith(".ski"):
             raise ValueError("Invalid filename extension for ski file")
         # update the producer and time attributes on the root element
@@ -76,7 +76,7 @@ class SkiFile:
         outfile.close()
 
         # Update the ski file path
-        self.path = filepath
+        if update_path: self.path = filepath
 
     ## This function saves the ski file to the original path
     def save(self): self.saveto(self.path)
@@ -86,6 +86,14 @@ class SkiFile:
         ski = copy.deepcopy(self)
         ski.path = None # set the path to None so this copy won't be involuntarily saved over the original file
         return ski
+
+    ## This function returns the ski contents as a string
+    def to_string(self):
+        return etree.tostring(self.tree)
+
+    ## This function returns the ski contents as a list of strings (lines)
+    def to_lines(self):
+        return etree.tostringlist(self.tree)
 
     # ---------- Retrieving information -------------------------------
 

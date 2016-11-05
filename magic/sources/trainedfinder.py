@@ -20,7 +20,6 @@ from skimage.feature import match_template
 # Import astronomical modules
 from photutils import detect_sources
 from astropy.coordinates import SkyCoord
-from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
@@ -82,6 +81,9 @@ class TrainedFinder(Configurable):
         self.galaxies = None
         self.stars = None
 
+        # The PSF
+        self.kernel = None
+
         # The galaxy and star segments
         self.galaxy_segments = None
         self.star_segments = None
@@ -141,6 +143,9 @@ class TrainedFinder(Configurable):
         # Make local references to the galaxy and star extractors
         self.galaxies = kwargs.pop("galaxies", None)
         self.stars = kwargs.pop("stars", None)
+
+        # The PSF kernel
+        self.kernel = kwargs.pop("kernel", None)
 
         # The galaxy and star segments
         self.galaxy_segments = kwargs.pop("galaxy_segments", None)
@@ -418,18 +423,9 @@ class TrainedFinder(Configurable):
         # Calculate the detection threshold
         threshold = median + (self.config.detection.segmentation.sigma_level * stddev)
 
-        #kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
-        if self.star_finder.config.use_frame_fwhm and self.frame.fwhm is not None:
-
-            fwhm = self.frame.fwhm.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
-            sigma = fwhm * statistics.fwhm_to_sigma
-            kernel = Gaussian2DKernel(sigma)
-
-        else: kernel = self.star_finder.kernel
-
         try:
             # Create a segmentation map from the frame
-            self.segments = Frame(detect_sources(data, threshold, npixels=5, filter_kernel=kernel).data)
+            self.segments = Frame(detect_sources(data, threshold, npixels=5, filter_kernel=self.kernel).data)
         except RuntimeError:
 
             log.debug("Runtime error during detect_sources ...")
@@ -590,7 +586,7 @@ class TrainedFinder(Configurable):
         :return:
         """
 
-        kernel = self.star_finder.kernel._array
+        kernel = self.kernel._array
 
         result = match_template(self.frame, kernel, pad_input=True)
 

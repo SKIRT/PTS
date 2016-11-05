@@ -297,9 +297,9 @@ class StarFinder(Configurable):
                 continue
 
             # Don't add stars which are indicated as 'not stars'
-            if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars:
-                if special: plotting.plot_box(cutout, "Indicated as 'not a star'")
-                continue
+            #if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars:
+            #    if special: plotting.plot_box(cutout, "Indicated as 'not a star'")
+            #    continue
 
             # Add the star to the list
             self.stars.append(star)
