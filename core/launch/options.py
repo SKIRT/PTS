@@ -245,22 +245,35 @@ class AnalysisOptions(Options):
 
     # -----------------------------------------------------------------
 
-    def check(self, logging_options):
+    def check(self, logging_options=None, output_path=None):
 
         """
         This function ...
         :param logging_options:
+        :param output_path:
         :return:
         """
 
         # Inform the user
         log.info("Checking the analysis options ...")
 
+        # MISC
+
+        # If any misc setting has been enabled, check whether the misc path has been set
+        if self.any_misc and self.misc.path is None:
+            if output_path is None: raise ValueError("The misc output path has not been set")
+            else:
+                log.warning("Misc output will be written to " + output_path)
+                self.misc.path = output_path
+
         # PLOTTING
 
         # If any plotting setting has been enabled, check whether the plotting path has been set
-        if self.plotting.progress or self.plotting.memory or self.plotting.timeline or self.plotting.seds or self.plotting.grids:
-            if self.plotting.path is None: raise ValueError("The plotting path has not been set")
+        if self.any_plotting and self.plotting.path is None:
+            if output_path is None: raise ValueError("The plotting path has not been set")
+            else:
+                log.warning("Plots will be saved to " + output_path)
+                self.plotting.path = output_path
 
         # If progress plotting has been enabled, enabled progress extraction
         if self.plotting.progress and not self.extraction.progress:
@@ -280,12 +293,21 @@ class AnalysisOptions(Options):
         # EXTRACTION
 
         # If any extraction setting has been enabled, check whether the extraction path has been set
-        if self.extraction.progress or self.extraction.memory or self.extraction.timeline:
-            if self.extraction.path is None: raise ValueError("The extraction path has not been set")
+        if self.any_extraction and self.extraction.path is None:
+            if output_path is None: raise ValueError("The extraction path has not been set")
+            else:
+                log.warning("Extraction data will be placed in " + output_path)
+                self.extraction.path = output_path
 
-        # If memory extraction has been enabled, enable memory logging
-        if self.extraction.memory and not logging_options.memory:
-            log.warning("Memory extraction is enabled so memory logging will also be enabled")
-            logging_options.memory = True
+        # Check the logging options, and adapt if necessary
+        if logging_options is not None:
+
+            # If memory extraction has been enabled, enable memory logging
+            if self.extraction.memory and not logging_options.memory:
+                log.warning("Memory extraction is enabled so memory logging will also be enabled")
+                logging_options.memory = True
+
+        # Logging options are not passed
+        elif self.extraction.memory: log.warning("Memory extraction is enabled but the logging options could not be verified")
 
 # -----------------------------------------------------------------

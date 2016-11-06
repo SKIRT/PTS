@@ -18,7 +18,7 @@ import subprocess
 
 # Import the relevant PTS classes and modules
 from .arguments import SkirtArguments
-from .definition import SingleSimulationDefinition, MultiSimulationDefinition
+from .definition import SimulationDefinition
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -138,7 +138,7 @@ class SkirtExec:
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
     def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False):
 
-        if isinstance(definition_or_arguments, SingleSimulationDefinition):
+        if isinstance(definition_or_arguments, SimulationDefinition):
 
             # The logging options cannot be None
             if logging_options is None: raise ValueError("Logging options must be specified")

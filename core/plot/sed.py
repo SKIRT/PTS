@@ -808,13 +808,13 @@ class SEDPlotter(Configurable):
 
                 if not plot_residuals: continue
 
-                log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
-                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), log_model, kind='cubic')
+                model_fluxes = sed.fluxes(unit="Jy", add_unit=False)
+                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
+                residuals = -(fluxes - f2(wavelengths)) / fluxes * 100.
 
-                if ghost:
-                    ax2.plot(wavelengths, -(fluxes - f2(wavelengths))/fluxes * 100., "-", color='lightgrey')
+                if ghost: ax2.plot(wavelengths, residuals, "-", color='lightgrey')
                 else:
-                    ax2.plot(wavelengths, -(fluxes - f2(wavelengths)) / fluxes * 100., line_styles[counter], color='black', label=model_label)
+                    ax2.plot(wavelengths, residuals, line_styles[counter], color='black', label=model_label)
                     counter += 1
 
         # Add model SEDs
@@ -830,18 +830,18 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, "-", linecolor="lightgrey")
+                self.draw_model(self._main_axis, wavelengths, fluxes, "-", linecolor="lightgrey", adjust_extrema=False)
 
             elif plot_residuals:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label)
+                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[counter], linecolor="black", label=model_label, adjust_extrema=False)
                 counter += 1
 
             else:
 
                 # Plot the model SED as a line (with errors if present)
-                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+                self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residuals], linecolor=line_colors_models_no_residuals[counter_no_residuals], label=model_label, adjust_extrema=False)
                 counter_no_residuals += 1
 
         # Finish the plot

@@ -29,7 +29,7 @@ definition.sections["plotting"].add_flag("progress", "make plots of the progress
 definition.sections["plotting"].add_flag("timeline", "plot the timeline for the different processes")
 definition.sections["plotting"].add_flag("memory", "plot the memory consumption as a function of time")
 definition.sections["plotting"].add_optional("reference_seds", "filepath_list", "the path to a reference SED file against which the simulated SKIRT SEDs should be plotted")
-definition.sections["plotting"].add_optional("format", "string", "pdf", choices=["pdf", "png"])
+definition.sections["plotting"].add_optional("format", "string", "image format for the plots", "pdf", choices=["pdf", "png"])
 
 # Miscellaneous settings
 definition.add_section("misc", "settings for creating data of various types from the simulation output")

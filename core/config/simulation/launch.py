@@ -6,6 +6,7 @@
 # *****************************************************************
 
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -14,7 +15,7 @@ definition = ConfigurationDefinition()
 
 # Input and output
 definition.add_optional("input", "directory_path", "input directory for the simulation(s)", letter="i")
-definition.add_optional("output", "directory_path", "output directory for the simulation(s)", letter="o")
+definition.add_optional("output", "directory_path", "output directory for the simulation(s)", fs.cwd(), letter="o")
 
 # Various flags
 definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")

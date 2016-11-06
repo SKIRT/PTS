@@ -81,7 +81,23 @@ def create_definitions(path, output_path, input_path, recursive=False):
 
 # -----------------------------------------------------------------
 
-class SingleSimulationDefinition(object):
+class SimulationDefinition(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This constructor does not implement anything ...
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+class SingleSimulationDefinition(SimulationDefinition):
 
     """
     This class ...
@@ -97,6 +113,9 @@ class SingleSimulationDefinition(object):
         :param name:
         :return:
         """
+
+        # Call the constructor of the base class
+        super(SingleSimulationDefinition, self).__init__()
         
         # Options for the ski file pattern
         self.ski_path = ski_path
@@ -161,7 +180,7 @@ class SingleSimulationDefinition(object):
 
 # -----------------------------------------------------------------
 
-class MultiSimulationDefinition(object):
+class MultiSimulationDefinition(SimulationDefinition):
 
     """
     This class ...
@@ -178,6 +197,10 @@ class MultiSimulationDefinition(object):
         :param recursive:
         """
 
+        # Call the constructor of the base class
+        super(MultiSimulationDefinition, self).__init__()
+
+        # Set properties
         self.base_path = base_path
         self.pattern = pattern
         self.input = input_name

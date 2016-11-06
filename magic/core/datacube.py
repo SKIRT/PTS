@@ -376,11 +376,14 @@ class DataCube(Image):
         array = self.asarray()
 
         # Calculate the observed image frame
-        data = fltr.convolve(self.wavelengths, array)
+        data = fltr.convolve(self.wavelengths(asarray=True), array)
         frame = Frame(data)
 
         # Set the unit of the frame
         frame.unit = self.unit
+
+        # Set the wcs of the frame
+        frame.wcs = self.wcs
 
         # Return the resulting frame
         return frame

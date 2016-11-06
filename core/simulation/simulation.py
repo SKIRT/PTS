@@ -137,6 +137,9 @@ class SkirtSimulation(object):
         self._processes = None
         self._threads = None
 
+        # A name given to the simulation
+        self.name = None
+
         # The options for analysing the simulation output
         self.analysis = AnalysisOptions()
 
@@ -534,6 +537,10 @@ class SkirtSimulation(object):
         # Load the options into the AnalysisOptions object
         else: self.analysis.set_options(options)
 
+    ## This function checks the analysis options, adapts them if necessary and also adapts the logging options if possible
+    def check_analysis_options(self, logging_options=None):
+        self.analysis.check(logging_options)
+
     @property
     def from_batch(self):
         return self.analysis.timing_table_path is not None or self.analysis.memory_table_path is not None
@@ -578,7 +585,6 @@ class RemoteSimulation(SkirtSimulation):
 
         # Basic properties
         self.id = None
-        self.name = None
         self.remote_ski_path = None
         self.remote_simulation_path = None
         self.remote_input_path = None

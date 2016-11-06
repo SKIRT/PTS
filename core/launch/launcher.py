@@ -30,6 +30,7 @@ from .options import SchedulingOptions
 from ..advanced.parallelizationtool import ParallelizationTool
 from ..advanced.memoryestimator import MemoryEstimator
 from ..simulation.parallelization import Parallelization
+from .options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
@@ -66,6 +67,9 @@ class SKIRTLauncher(Configurable):
 
         # The logging options
         self.logging_options = None
+
+        # The analysis options
+        self.analysis_options = None
 
         # The parallelization scheme
         self.parallelization = None
@@ -137,6 +141,25 @@ class SKIRTLauncher(Configurable):
         # Create the logging options
         self.logging_options = LoggingOptions()
         self.logging_options.set_options(self.config.logging)
+
+        # Create the analysis options
+        self.create_analysis_options()
+
+    # -----------------------------------------------------------------
+
+    def create_analysis_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the analysis options object
+        self.analysis_options = AnalysisOptions()
+        self.analysis_options.set_options(self.config.analysis)
+
+        # Check the options
+        self.analysis_options.check(self.logging_options, self.config.output)
 
     # -----------------------------------------------------------------
 
@@ -383,8 +406,11 @@ class SKIRTLauncher(Configurable):
         # Run the simulation
         self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True)
 
-        # Set the analysis options from the configuration settings
-        self.simulation.set_analysis_options(self.config.analysis)
+        # Set the simulation name
+        self.simulation.name = self.definition.prefix
+
+        # Set the analysis options for the simulation
+        self.simulation.analysis = self.analysis_options
 
     # -----------------------------------------------------------------
 
@@ -405,10 +431,12 @@ class SKIRTLauncher(Configurable):
         else: scheduling_options = None
 
         # Run the simulation
-        self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization, scheduling_options=scheduling_options, attached=self.config.attached)
+        self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
+                                          scheduling_options=scheduling_options, attached=self.config.attached,
+                                          analysis_options=self.analysis_options)
 
         # Set the analysis options for the simulation
-        self.set_analysis_options_remote()
+        self.set_remote_simulation_options()
 
         # Save the simulation object
         self.simulation.save()
@@ -451,15 +479,12 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_analysis_options_remote(self):
+    def set_remote_simulation_options(self):
 
         """
         This function ...
         :return:
         """
-
-        # Set the analysis options from the configuration settings
-        self.simulation.set_analysis_options(self.config.analysis)
 
         # Remove remote files
         self.simulation.remove_remote_input = not self.config.keep
