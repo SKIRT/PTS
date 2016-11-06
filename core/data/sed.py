@@ -726,7 +726,7 @@ class SED(object):
         # column 6: dust emission scattered flux; lambda*F_lambda (W/m2)
         # column 7: transparent flux; lambda*F_lambda (W/m2)
 
-        from ..preparation import unitconversion
+        from ...modeling.preparation import unitconversion
 
         # Open the SED table
         #sed.table = tables.from_file(path, format="ascii.no_header") # sometimes doesn't work ?? why ??

@@ -18,6 +18,5 @@ definition.add_flag("verbose", "verbose logging mode", False, letter="v")
 definition.add_flag("memory", "memory logging", False, letter="m")
 definition.add_flag("allocation", "memory (de)allocation logging", False, letter="a")
 definition.add_optional("allocation_limit", "real", "memory (de)allocation logging lower limit (GB)", 1e-5, letter="l")
-definition.add_flag("emulate", "emulate the simulation while limiting computation", letter="e")
 
 # -----------------------------------------------------------------

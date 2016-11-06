@@ -90,9 +90,9 @@ class LoggingOptions(Options):
         super(LoggingOptions, self).__init__()
 
         # Set options
-        self.brief = brief     # Brief console logging
-        self.verbose = verbose # Verbose logging
-        self.memory = memory   # State the amount of used memory with each log message
+        self.brief = brief              # Brief console logging
+        self.verbose = verbose          # Verbose logging
+        self.memory = memory            # State the amount of used memory with each log message
         self.allocation = allocation    # Write log messages with the amount of (de)allocated memory
         self.allocation_limit = allocation_limit  # The lower limit for the amount of (de)allocated memory to be logged
 
@@ -179,7 +179,7 @@ class AnalysisOptions(Options):
         self.plotting.memory = False
         self.plotting.seds = False
         self.plotting.grids = False
-        self.plotting.reference_sed = None # The path to a file containing an SED for which the points have to be
+        self.plotting.reference_seds = None # The path to a file containing an SED for which the points have to be
                                            # plotted against the simulated curve (when plotting seds is enabled)
 
         # Options for creating data of various formats

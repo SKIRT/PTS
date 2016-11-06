@@ -137,6 +137,9 @@ class SkirtSimulation(object):
         self._processes = None
         self._threads = None
 
+        # The options for analysing the simulation output
+        self.analysis = AnalysisOptions()
+
     ## This function returns whether the simulation requires input
     @property
     def has_input(self):
@@ -522,6 +525,27 @@ class SkirtSimulation(object):
         wavelengths = self.units().convert(wavelengths, to_unit='micron', quantity='wavelength')
         return self.units().convert(fluxes, to_unit=unit, quantity='fluxdensity', wavelength=wavelengths)
 
+    ## This function allows setting the analysis options from a dictionary (or an actual AnalysisOptions object)
+    def set_analysis_options(self, options):
+
+        # If the options is an actual AnalysisOptions object, set the analysis attribute directly
+        if isinstance(options, AnalysisOptions): self.analysis = options
+
+        # Load the options into the AnalysisOptions object
+        else: self.analysis.set_options(options)
+
+    @property
+    def from_batch(self):
+        return self.analysis.timing_table_path is not None or self.analysis.memory_table_path is not None
+
+    @property
+    def from_scaling_test(self):
+        return self.analysis.scaling_run_name is not None
+
+    @property
+    def from_modeling(self):
+        return self.analysis.modeling_path is not None
+
 # -----------------------------------------------------------------
 
 class RemoteSimulation(SkirtSimulation):
@@ -563,9 +587,6 @@ class RemoteSimulation(SkirtSimulation):
 
         # Options for retrieval
         self.retrieve_types = None
-
-        # The options for analysing the simulation output
-        self.analysis = AnalysisOptions()
 
         # The parallelization properties
         self.parallelization = None
@@ -610,30 +631,6 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
-    @property
-    def from_batch(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.analysis.timing_table_path is not None or self.analysis.memory_table_path is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def from_scaling_test(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        return self.analysis.scaling_run_name is not None
-
-    # -----------------------------------------------------------------
-
     def add_analyser(self, clspath):
 
         """
@@ -673,18 +670,6 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
-    @property
-    def from_modeling(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        return self.analysis.modeling_path is not None
-
-    # -----------------------------------------------------------------
-
     def to_file(self, path):
 
         """
@@ -698,22 +683,6 @@ class RemoteSimulation(SkirtSimulation):
 
         # Set the simulation file path
         self.path = path
-
-    # -----------------------------------------------------------------
-
-    def set_analysis_options(self, options):
-
-        """
-        This function allows setting the analysis options from a dictionary (or an actual AnalysisOptions object)
-        :param options:
-        :return:
-        """
-
-        # If the options is an actual AnalysisOptions object, set the analysis attribute directly
-        if isinstance(options, AnalysisOptions): self.analysis = options
-
-        # Load the options into the AnalysisOptions object
-        else: self.analysis.set_options(options)
 
     # -----------------------------------------------------------------
 

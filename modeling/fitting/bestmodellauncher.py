@@ -217,7 +217,7 @@ class BestModelLauncher(FittingComponent):
         self.launcher.config.analysis.plotting.timeline = True    # plot timeline
         self.launcher.config.analysis.plotting.memory = True      # plot memory usage
         self.launcher.config.analysis.plotting.seds = True        # plot the simulated SEDs
-        self.launcher.config.analysis.plotting.reference_sed = self.observed_sed_path  # the path to the reference SED (for plotting the simulated SED against the reference points)
+        self.launcher.config.analysis.plotting.reference_seds = [self.observed_sed_path]  # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.plotting.format = "png"     # plot in PNG format so that an animation can be made from the fit SEDs
 
         ## Miscellaneous

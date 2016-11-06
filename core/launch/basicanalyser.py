@@ -277,7 +277,7 @@ class BasicAnalyser(Configurable):
         log.info("Plotting SEDs ...")
 
         # If the simulated SED must be plotted against a set of reference flux points
-        if self.plotting_options.reference_sed is not None:
+        if self.plotting_options.reference_seds is not None:
 
             # Inform the user
             log.info("Plotting the SED with reference fluxes ...")
@@ -300,9 +300,15 @@ class BasicAnalyser(Configurable):
                 # Add the simulated SED to the plotter
                 plotter.add_modeled_sed(sed, instr_name)
 
-            # Add the reference SED
-            reference_sed = ObservedSED.from_file(self.plotting_options.reference_sed)
-            plotter.add_observed_sed(reference_sed, "observation")
+            # Add the reference SEDs
+            for reference_sed_path in self.plotting_options.reference_seds:
+
+                # Determine name
+                reference_sed_name = fs.strip_extension(fs.name(reference_sed_path))
+
+                # Add the reference SED
+                reference_sed = ObservedSED.from_file(reference_sed_path)
+                plotter.add_observed_sed(reference_sed, reference_sed_name)
 
             # Determine the path to the plot file
             path = fs.join(self.plotting_options.path, "sed." + self.plotting_options.format)
@@ -337,14 +343,21 @@ class BasicAnalyser(Configurable):
                     # Add the SED to the plotter
                     plotter.add_modeled_sed(sed, contribution, residuals=(contribution == "total"))
 
-                # Add the reference SED
-                plotter.add_observed_sed(reference_sed, "observation")
+                # Add the reference SEDs
+                for reference_sed_path in self.plotting_options.reference_seds:
+
+                    # Determine name
+                    reference_sed_name = fs.strip_extension(fs.name(reference_sed_path))
+
+                    # Add the reference SED
+                    reference_sed = ObservedSED.from_file(reference_sed_path)
+                    plotter.add_observed_sed(reference_sed, reference_sed_name)
 
                 # Determine the path to the plot file
                 path = fs.join(self.plotting_options.path, "sed_" + instr_name + "." + self.plotting_options.format)
 
                 # Plot
-                plotter.run(path, min_wavelength, max_wavelength, min_flux, max_flux)
+                plotter.run(output=path, min_wavelength=min_wavelength, max_wavelength=max_wavelength, min_flux=min_flux, max_flux=max_flux)
 
                 # Clear the SED plotter
                 plotter.clear()

@@ -19,8 +19,7 @@ import math
 # Import the relevant PTS classes and modules
 from ..simulation.execute import SkirtExec
 from ..basics.configurable import Configurable
-from ..advanced.resources import ResourceEstimator
-from ..tools import monitoring
+from ..tools import monitoring, introspection
 from ..simulation.definition import SingleSimulationDefinition
 from .options import LoggingOptions
 from .analyser import SimulationAnalyser
@@ -179,45 +178,44 @@ class SKIRTLauncher(Configurable):
         :return:
         """
 
-        # Set the parallelization scheme
-        #self.parallelization = Parallelization.for_local(nprocesses=self.config.nprocesses,
-        #                                                 data_parallel=self.config.data_parallel)
-
         # Inform the user
         log.info("Determining the optimal parallelization scheme ...")
 
-        # Create and run a ResourceEstimator instance
-        #estimator = ResourceEstimator()
-        #estimator.run(self.config.arguments.ski_pattern)
+        # Check whether MPI is available on this system
+        if introspection.has_mpi():
 
-        # The memory estimator
-        estimator = MemoryEstimator()
+            # The memory estimator
+            estimator = MemoryEstimator()
 
-        # Configure the memory estimator
-        estimator.config.ski = self.definition.ski_path
-        estimator.config.input = self.config.input_path
-        #estimator.config.ncells =
+            # Configure the memory estimator
+            estimator.config.ski = self.definition.ski_path
+            estimator.config.input = self.config.input_path
+            #estimator.config.ncells =
 
-        estimator.config.show = False
+            estimator.config.show = False
 
-        # Estimate the memory
-        estimator.run()
+            # Estimate the memory
+            estimator.run()
 
-        # Get the serial and parallel parts of the simulation's memory
-        serial_memory = estimator.serial_memory
-        parallel_memory = estimator.parallel_memory
+            # Get the serial and parallel parts of the simulation's memory
+            serial_memory = estimator.serial_memory
+            parallel_memory = estimator.parallel_memory
 
-        # Calculate the total memory of one process without data parallelization
-        total_memory = serial_memory + parallel_memory
+            # Calculate the total memory of one process without data parallelization
+            total_memory = serial_memory + parallel_memory
 
-        # Calculate the maximum number of processes based on the memory requirements
-        processes = int(monitoring.free_memory() / total_memory)
+            # Calculate the maximum number of processes based on the memory requirements
+            processes = int(monitoring.free_memory() / total_memory)
 
-        # If there is too little free memory for the simulation, the number of processes will be smaller than one
-        if processes < 1:
-            # Exit with an error
-            log.error("Not enough memory available to run this simulation")
-            exit()
+            # If there is too little free memory for the simulation, the number of processes will be smaller than one
+            if processes < 1:
+
+                # Exit with an error
+                log.error("Not enough memory available to run this simulation")
+                exit()
+
+        # No MPI available
+        else: processes = 1
 
         # Calculate the maximum number of threads per process based on the current cpu load of the system
         threads = int(monitoring.free_cpus() / processes)
@@ -385,6 +383,9 @@ class SKIRTLauncher(Configurable):
         # Run the simulation
         self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True)
 
+        # Set the analysis options from the configuration settings
+        self.simulation.set_analysis_options(self.config.analysis)
+
     # -----------------------------------------------------------------
 
     def launch_remote(self):
@@ -401,17 +402,16 @@ class SKIRTLauncher(Configurable):
         if self.config.walltime is not None:
             scheduling_options = SchedulingOptions()
             scheduling_options.walltime = self.config.walltime
-        else:
-            scheduling_options = None
+        else: scheduling_options = None
 
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization, scheduling_options=scheduling_options, attached=self.config.attached)
 
         # Set the analysis options for the simulation
-        self.set_analysis_options()
+        self.set_analysis_options_remote()
 
         # Save the simulation object
-        #simulation.save()
+        self.simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -451,30 +451,7 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def analyse_local(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Analysing the simulation output...")
-
-        # Set simulation analysis flags
-        self.simulation.set_analysis_options(self.config.analysis)
-
-        # Set simulation analysis paths
-        self.simulation.analysis.extraction.path = self.extr_path  # or self.config.analysis.extraction.path ?
-        self.simulation.analysis.plotting.path = self.plot_path    # or self.config.analysis.plotting.path ?
-        self.simulation.analysis.misc.path = self.misc_path        # or self.config.analysis.misc.path ?
-
-        # Run the analyser on the simulation
-        self.analyser.run(simulation=self.simulation)
-
-    # -----------------------------------------------------------------
-
-    def set_analysis_options(self):
+    def set_analysis_options_remote(self):
 
         """
         This function ...

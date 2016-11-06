@@ -561,7 +561,9 @@ class ConfigurationDefinition(object):
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
 
-            if prefix is not None: name = prefix + "/" + name
+            if prefix is not None:
+                name = prefix + "/" + name
+                letter = None
 
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
@@ -581,7 +583,9 @@ class ConfigurationDefinition(object):
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
 
-            if prefix is not None: name = prefix + "/" + name
+            if prefix is not None:
+                name = prefix + "/" + name
+                letter = None
 
             # Add the argument
             if letter is None:
@@ -604,12 +608,13 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def get_settings(self, settings, arguments):
+    def get_settings(self, settings, arguments, prefix=None):
 
         """
         This function ...
         :param settings:
         :param arguments:
+        :param prefix:
         :return:
         """
 
@@ -619,7 +624,7 @@ class ConfigurationDefinition(object):
         # Add required
         for name in self.required:
 
-            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
             settings[name] = getattr(arguments, argument_name)
@@ -627,7 +632,7 @@ class ConfigurationDefinition(object):
         # Add positional optional
         for name in self.pos_optional:
 
-            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
             settings[name] = getattr(arguments, argument_name)
@@ -635,7 +640,7 @@ class ConfigurationDefinition(object):
         # Add optional
         for name in self.optional:
 
-            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
             settings[name] = getattr(arguments, argument_name)
@@ -643,10 +648,12 @@ class ConfigurationDefinition(object):
         # Add flags
         for name in self.flags:
 
-            if self.prefix is not None: argument_name = self.prefix + "/" + name
+            default = self.flags[name][2]
+
+            if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
-            default = self.flags[name][2]
+            #print(self.flags)
 
             if default: # if default == True
 
@@ -661,10 +668,13 @@ class ConfigurationDefinition(object):
             # Create a map for the settings
             settings[name] = Map()
 
+            if prefix is None: section_prefix = name
+            else: section_prefix = prefix + "/" + name
+
             # Recursively add the settings
             definition = self.sections[name]
             description = self.section_descriptions[name]
-            definition.get_settings(settings[name], arguments)
+            definition.get_settings(settings[name], arguments, section_prefix)
 
     # -----------------------------------------------------------------
 

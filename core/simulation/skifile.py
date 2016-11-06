@@ -794,7 +794,7 @@ class SkiFile:
         elems = self.tree.xpath("//OligoMonteCarloSimulation | //PanMonteCarloSimulation")
         if len(elems) != 1: raise ValueError("No MonteCarloSimulation in ski file")
         # set the attribute value
-        elems[0].set("packages", str(number))
+        elems[0].set("packages", str(int(number)))
 
     ## This function sets the number of wavelengths
     def setnwavelengths(self, number):

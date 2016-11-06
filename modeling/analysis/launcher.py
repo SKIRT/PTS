@@ -539,7 +539,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.plotting.timeline = True
         self.analysis_options.plotting.seds = True
         self.analysis_options.plotting.grids = True
-        self.analysis_options.plotting.reference_sed = self.observed_sed_path
+        self.analysis_options.plotting.reference_seds = [self.observed_sed_path]
 
         # Set miscellaneous options
         self.analysis_options.misc.path = self.run_misc_path
