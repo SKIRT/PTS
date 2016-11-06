@@ -24,12 +24,14 @@ from ..basics.mask import Mask
 from ..basics.geometry import Ellipse, Coordinate
 from ..core.source import Source
 from ...core.tools.logging import log
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ..tools import masks
+from ...core.basics.animation import Animation
+from ..basics.region import Region
 
 # -----------------------------------------------------------------
 
-class SourceExtractor(OldConfigurable):
+class SourceExtractor(Configurable):
 
     """
     This class ...
@@ -43,15 +45,12 @@ class SourceExtractor(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SourceExtractor, self).__init__(config, "magic")
+        super(SourceExtractor, self).__init__(config)
 
         # -- Attributes --
 
         # The image frame
         self.frame = None
-
-        # The output path
-        self.output_path = None
 
         # The original minimum and maximum value
         self.minimum_value = None
@@ -85,44 +84,15 @@ class SourceExtractor(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new SourceExtractor instance
-        extractor = cls()
-
-        # Return the extractor
-        return extractor
-
-    # -----------------------------------------------------------------
-
-    def run(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments,
-            other_segments, animation=None, special_region=None):
-
-        """
-        This function ...
-        :param frame:
-        :param galaxy_region:
-        :param star_region:
-        :param saturation_region:
-        :param other_region:
-        :param galaxy_segments:
-        :param star_segments:
-        :param other_segments:
-        :param animation:
-        :param special_region:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments,
-                   other_segments, animation, special_region)
+        self.setup(**kwargs)
 
         # 2. Load the sources
         self.load_sources()
@@ -142,56 +112,119 @@ class SourceExtractor(OldConfigurable):
         # 6. Set nans back into the frame
         self.set_nans()
 
+        # Writing
+        if self.config.output is not None: self.write()
+
     # -----------------------------------------------------------------
 
-    def setup(self, frame, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments,
-              other_segments, animation=None, special_region=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param galaxy_region:
-        :param star_region:
-        :param saturation_region:
-        :param other_region:
-        :param galaxy_segments:
-        :param star_segments:
-        :param other_segments:
-        :param animation:
-        :param special_region:
+        :param kwargs:
         :return:
         """
 
+        # Call the setup function of the base class
+        super(SourceExtractor, self).setup(**kwargs)
+
         # Set the image frame
-        self.frame = frame
+        if "frame" in kwargs:
+            self.frame = kwargs.pop("frame")
+        else: self.load_frame()
 
         # Regions
-        self.galaxy_region = galaxy_region
-        self.star_region = star_region
-        self.saturation_region = saturation_region
-        self.other_region = other_region
+        #self.galaxy_region = kwargs.pop("galaxy_region")
+        #self.star_region = kwargs.pop("star_region")
+        #self.saturation_region = kwargs.pop("saturation_region")
+        #self.other_region = kwargs.pop("other_region")
 
         # Segmentation maps
-        self.galaxy_segments = galaxy_segments
-        self.star_segments = star_segments
-        self.other_segments = other_segments
+        #self.galaxy_segments = kwargs.pop("galaxy_segments")
+        #self.star_segments = kwargs.pop("star_segments")
+        #self.other_segments = kwargs.pop("other_segments")
+
+        self.load_regions()
+
+        self.load_segments()
 
         # Initialize the mask
         self.mask = Mask.empty_like(self.frame)
 
         # Remember the minimum and maximum value
-        self.minimum_value = np.nanmin(frame)
-        self.maximum_value = np.nanmax(frame)
+        self.minimum_value = np.nanmin(self.frame)
+        self.maximum_value = np.nanmax(self.frame)
 
         # Create a mask of the pixels that are NaNs
         self.nan_mask = Mask.is_nan(self.frame)
         self.frame[self.nan_mask] = 0.0
 
         # Make a reference to the animation
-        self.animation = animation
+        self.animation = kwargs.pop("animation", None)
 
         # Create mask from special region
-        self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
+        if "special_region" in kwargs:
+            special_region = kwargs.pop("special_region")
+            self.special_mask = Mask.from_region(special_region, self.frame.xsize, self.frame.ysize) if special_region is not None else None
+
+        # If making animation is enabled
+        if self.config.animation:
+            self.animation = Animation()
+            self.animation.fps = 1
+
+    # -----------------------------------------------------------------
+
+    def load_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    def load_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the galaxy region
+        galaxy_region_path = fs.join(input_path, "galaxies.reg")
+        galaxy_region = Region.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
+
+        # Load the star region
+        star_region_path = fs.join(input_path, "stars.reg")
+        star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
+
+        # Load the saturation region
+        saturation_region_path = fs.join(input_path, "saturation.reg")
+        saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
+
+        # Load the region of other sources
+        other_region_path = fs.join(input_path, "other_sources.reg")
+        other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
+
+    # -----------------------------------------------------------------
+
+    def load_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the image with segmentation maps
+        segments_path = fs.join(input_path, "segments.fits")
+        segments = Image.from_file(segments_path, no_filter=True)
+
+        # Get the segmentation maps
+        galaxy_segments = segments.frames.galaxies if "galaxies" in segments.frames else None
+        star_segments = segments.frames.stars if "stars" in segments.frames else None
+        other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
 
     # -----------------------------------------------------------------
 
@@ -579,6 +612,79 @@ class SourceExtractor(OldConfigurable):
 
         # Set the NaN pixels to zero in the frame
         self.frame[self.nan_mask] = float("nan")
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the suer
+        log.info("Writing ...")
+
+        # Write the animation
+        if self.animation is not None: self.write_animation()
+
+        # Write the resulting frame
+        self.write_frame()
+
+        # Write the mask
+        self.write_mask()
+
+    # -----------------------------------------------------------------
+
+    def write_animation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the animation ...")
+
+        # Save the animation
+        path = fs.join(output_path, "animation.gif")
+        self.animation.save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_frame(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the result ...")
+
+        # Determine the path to the result
+        result_path = fs.join(output_path, image.name + ".fits")
+
+        # Save the resulting image as a FITS file
+        image.frames.primary.save(result_path, header=image.original_header)
+
+    # -----------------------------------------------------------------
+
+    def write_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the mask ...")
+
+        # Determine the path to the mask
+        mask_path = fs.join(output_path, "mask.fits")
+
+        # Save the total mask as a FITS file
+        Frame(extractor.mask.astype(float)).save(mask_path)
 
     # -----------------------------------------------------------------
 

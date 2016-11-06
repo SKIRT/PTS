@@ -12,3 +12,4 @@ import_catalogs | -- | catalog.importer.CatalogImporter | arguments | Import gal
 find_galaxies | -- | sources.galaxyfinder.GalaxyFinder | arguments | Find galaxies
 find_stars | -- | sources.starfinder.StarFinder | arguments | Find stars
 find_other | -- | sources.trainedfinder.TrainedFinder | arguments | Find other contaminating sources (not in catalogs)
+extract | -- | sources.extractor.SourceExtractor | arguments | Extract the sources from an image (based on the results of find_sources)
