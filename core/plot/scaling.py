@@ -105,15 +105,14 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_serial_timing(self):
+    def has_serial_timing(self, phase):
 
         """
         This function ...
         :return:
         """
 
-        return self.has_reference_timing and self.serial_timing_ncores == 1
+        return self.has_reference_timing and self.serial_timing_ncores[phase] == 1
 
     # -----------------------------------------------------------------
 
@@ -417,6 +416,8 @@ class ScalingPlotter(Configurable):
         dust_memory =  defaultdict(lambda: defaultdict(list))
         writing_memory =  defaultdict(lambda: defaultdict(list))
 
+        serial_memory_ncores = None
+
         # Loop over the different entries in the timing table
         for i in range(len(self.timing)):
 
@@ -465,6 +466,8 @@ class ScalingPlotter(Configurable):
                 serial_memory["dust"].append(self.memory["Dust emission peak memory"][i])
                 serial_memory["writing"].append(self.memory["Writing peak memory"][i])
 
+                serial_memory_ncores = processors
+
             processes_or_processors = processes if self.config.hybridisation else processors
 
             # Add the processor count for this parallelization mode
@@ -494,12 +497,14 @@ class ScalingPlotter(Configurable):
 
             self.serial_timing[phase].time = np.mean(serial_times[phase])
             self.serial_timing[phase].error = self.config.sigma_level * np.std(serial_times[phase])
+            self.serial_timing_ncores[phase] = 1
 
         # Average the serial memory usages, loop over each phase
         for phase in serial_memory:
 
             self.serial_memory[phase].memory = np.mean(serial_memory[phase])
             self.serial_memory[phase].error = self.config.sigma_level * np.std(serial_memory[phase])
+            self.serial_memory_ncores[phase] = serial_memory_ncores
 
         # Loop over all encountered parallelization modes
         for mode in modes:
@@ -640,7 +645,7 @@ class ScalingPlotter(Configurable):
         log.info("Fitting ...")
 
         # Fit timing
-        if self.needs_timing and self.has_serial_timing: self.fit_timing()
+        if self.needs_timing: self.fit_timing()
 
         # Fit memory
         if self.needs_memory: self.fit_memory()
@@ -662,6 +667,9 @@ class ScalingPlotter(Configurable):
 
             # Skip certain phases
             if phase not in parallel_phases: continue
+
+            # Skip phases for which a serial timing is not present
+            if not self.has_serial_timing(phase): continue
 
             # Get the serial runtime (and error) for this phase (create a Quantity object)
             serial_time = self.serial_timing[phase].time
@@ -1559,8 +1567,6 @@ class ScalingPlotter(Configurable):
 
         # Plot fit
         if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
-
-            print(ticks)
 
             # Plot the fitted curves
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)

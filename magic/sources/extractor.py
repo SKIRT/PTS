@@ -224,9 +224,9 @@ class SourceExtractor(Configurable):
         segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
 
         # Get the segmentation maps
-        galaxy_segments = segments.frames.galaxies if "galaxies" in segments.frames else None
-        star_segments = segments.frames.stars if "stars" in segments.frames else None
-        other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
+        self.galaxy_segments = segments.frames.galaxies if "galaxies" in segments.frames else None
+        self.star_segments = segments.frames.stars if "stars" in segments.frames else None
+        self.other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
 
     # -----------------------------------------------------------------
 
@@ -664,11 +664,11 @@ class SourceExtractor(Configurable):
         # Inform the user
         log.info("Writing the result ...")
 
-        # Determine the path to the result
-        result_path = fs.join(output_path, image.name + ".fits")
+        # Determine the path to the resulting FITS file
+        path = self.output_path_file(self.frame.name + ".fits")
 
         # Save the resulting image as a FITS file
-        image.frames.primary.save(result_path, header=image.original_header)
+        self.frame.save(path)
 
     # -----------------------------------------------------------------
 
@@ -683,10 +683,10 @@ class SourceExtractor(Configurable):
         log.info("Writing the mask ...")
 
         # Determine the path to the mask
-        mask_path = fs.join(output_path, "mask.fits")
+        path = self.output_path_file("mask.fits")
 
         # Save the total mask as a FITS file
-        Frame(extractor.mask.astype(float)).save(mask_path)
+        Frame(self.mask.astype(float)).save(path)
 
     # -----------------------------------------------------------------
 

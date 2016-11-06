@@ -656,10 +656,10 @@ class BatchSourceFinder(Configurable):
             #galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = self.output_path_file("galaxies_" + name + ".reg")
+            path = self.output_path_file("galaxies_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("galaxies.reg")
 
             # Save
-            self.galaxy_regions[name].save(path)
+            self.galaxy_regions[name].to_pixel(self.frames[name].wcs).save(path)
 
         # Loop over the star regions
         for name in self.star_regions:
@@ -667,10 +667,10 @@ class BatchSourceFinder(Configurable):
             #star_region = star_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = self.output_path_file("stars_" + name + ".reg")
+            path = self.output_path_file("stars_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("stars.reg")
 
             # Save
-            self.star_regions[name].save(path)
+            self.star_regions[name].to_pixel(self.frames[name].wcs).save(path)
 
         # Loop over the saturation regions
         for name in self.saturation_regions:
@@ -678,10 +678,10 @@ class BatchSourceFinder(Configurable):
             #saturation_region = saturation_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = self.output_path_file("saturation_" + name + ".reg")
+            path = self.output_path_file("saturation_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("saturation.reg")
 
             # Save
-            self.saturation_regions[name].save(path)
+            self.saturation_regions[name].to_pixel(self.frames[name].wcs).save(path)
 
         # Loop over the other regions
         for name in self.other_regions:
@@ -689,10 +689,10 @@ class BatchSourceFinder(Configurable):
             #other_region = other_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = self.output_path_file("other_sources_" + name + ".reg")
+            path = self.output_path_file("other_sources_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("other_sources.reg")
 
             # Save
-            self.other_regions[name].save(path)
+            self.other_regions[name].to_pixel(self.frames[name].wcs).save(path)
 
     # -----------------------------------------------------------------
 
@@ -709,7 +709,7 @@ class BatchSourceFinder(Configurable):
         for name in self.segments:
 
             # Save the FITS file with the segmentation maps
-            path = self.output_path_file("segments_" + name + ".fit")
+            path = self.output_path_file("segments_" + name + ".fits") if len(self.frames) > 1 else self.output_path_file("segments.fits")
 
             # Save
             self.segments[name].save(path)
@@ -772,7 +772,7 @@ class BatchSourceFinder(Configurable):
         for name in self.statistics:
 
             # Determine the path to the statistics file
-            path = self.output_path_file("statistics" + name + ".dat")
+            path = self.output_path_file("statistics" + name + ".dat") if len(self.frames) > 1 else self.output_path_file("statistics.dat")
 
             # Open the file, write the info
             with open(path, 'w') as statistics_file:
