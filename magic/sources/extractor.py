@@ -28,6 +28,9 @@ from ...core.basics.configurable import Configurable
 from ..tools import masks
 from ...core.basics.animation import Animation
 from ..basics.region import Region
+from ..core.image import Image
+from ..core.frame import Frame
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -181,7 +184,7 @@ class SourceExtractor(Configurable):
         :return:
         """
 
-
+        self.frame = Frame.from_file(self.config.image)
 
     # -----------------------------------------------------------------
 
@@ -193,20 +196,20 @@ class SourceExtractor(Configurable):
         """
 
         # Load the galaxy region
-        galaxy_region_path = fs.join(input_path, "galaxies.reg")
-        galaxy_region = Region.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
+        galaxy_region_path = self.input_path_file("galaxies.reg")
+        self.galaxy_region = Region.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
 
         # Load the star region
-        star_region_path = fs.join(input_path, "stars.reg")
-        star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
+        star_region_path = self.input_path_file("stars.reg")
+        self.star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
 
         # Load the saturation region
-        saturation_region_path = fs.join(input_path, "saturation.reg")
-        saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
+        saturation_region_path = self.input_path_file("saturation.reg")
+        self.saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
 
         # Load the region of other sources
-        other_region_path = fs.join(input_path, "other_sources.reg")
-        other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
+        other_region_path = self.input_path_file("other_sources.reg")
+        self.other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
 
     # -----------------------------------------------------------------
 
@@ -218,8 +221,7 @@ class SourceExtractor(Configurable):
         """
 
         # Load the image with segmentation maps
-        segments_path = fs.join(input_path, "segments.fits")
-        segments = Image.from_file(segments_path, no_filter=True)
+        segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
 
         # Get the segmentation maps
         galaxy_segments = segments.frames.galaxies if "galaxies" in segments.frames else None

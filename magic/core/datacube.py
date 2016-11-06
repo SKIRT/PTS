@@ -67,7 +67,7 @@ class DataCube(Image):
         """
 
         # Call the corresponding base class function
-        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False)
+        datacube = super(DataCube, cls).from_file(image_path, always_call_first_primary=False, no_filter=True)
 
         # Check wavelength grid size
         assert len(wavelength_grid) == datacube.nframes

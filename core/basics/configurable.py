@@ -180,6 +180,38 @@ class Configurable(object):
     # -----------------------------------------------------------------
 
     @property
+    def input_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If 'input' defined in the config
+        if "input" in self.config:
+
+            full_input_path = fs.absolute_or_in(self.config.input, self.config.path)
+            if not fs.is_directory(full_input_path): raise ValueError("The input directory does not exist")
+            return full_input_path
+
+        # Else, use the working directory as input directory
+        else: return self.config.path
+
+    # -----------------------------------------------------------------
+
+    def input_path_file(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.input_path, name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def output_path(self):
 
         """
