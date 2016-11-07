@@ -27,10 +27,10 @@
 from math import sqrt as math_sqrt
 
 # Import other evolve modules
-import constants
-import utils
-from functionslot import FunctionSlot
-from statistics import Statistics
+import pts.evolve.constants as constants
+import pts.evolve.utils as utils
+from pts.evolve.functionslot import FunctionSlot
+from pts.evolve.statistics import Statistics
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log

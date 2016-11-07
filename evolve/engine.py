@@ -46,12 +46,12 @@ from types import BooleanType
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
-from population import GPopulation
-from functionslot import FunctionSlot
-from genome import GenomeBase
-from dbadapters import DBBaseAdapter
-import constants
-import utils
+from pts.evolve.population import GPopulation
+from pts.evolve.functionslot import FunctionSlot
+from pts.evolve.genome import GenomeBase
+from pts.evolve.dbadapters import DBBaseAdapter
+import pts.evolve.constants as constants
+import pts.evolve.utils as utils
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
