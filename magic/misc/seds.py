@@ -548,148 +548,154 @@ class SEDFetcher(Configurable):
 
         # Find the row index that corresponds with the specified galaxy
 
-        galaxy_index = tables.find_index(result[5], self.ngc_id)
+        #print(result[5])
 
-        if galaxy_index is None: return
-
-        # FUV
-        fuv_mag = result[5][galaxy_index]["FUV"]
-        fuv_mag_error = result[5][galaxy_index]["e_FUV"]
-        fuv_mag_lower = fuv_mag - fuv_mag_error
-        fuv_mag_upper = fuv_mag + fuv_mag_error
-
-        # NUV
-        nuv_mag = result[5][galaxy_index]["NUV"]
-        nuv_mag_error = result[5][galaxy_index]["e_NUV"]
-        nuv_mag_lower = nuv_mag - nuv_mag_error
-        nuv_mag_upper = nuv_mag + nuv_mag_error
-
-        # u
-        u_mag = result[5][galaxy_index]["umag"]
-        u_mag_error = result[5][galaxy_index]["e_umag"]
-        u_mag_lower = u_mag - u_mag_error
-        u_mag_upper = u_mag + u_mag_error
-
-        # g
-        g_mag = result[5][galaxy_index]["gmag"]
-        g_mag_error = result[5][galaxy_index]["e_gmag"]
-        g_mag_lower = g_mag - abs(g_mag_error)
-        g_mag_upper = g_mag + abs(g_mag_error)
-
-        #print("gmag", g_mag)
-        #print("gmagerror", g_mag_error)
-        #print("gmaglower", g_mag_lower)
-        #print("gmagupper", g_mag_upper)
-
-        # r
-        r_mag = result[5][galaxy_index]["rmag"]
-        r_mag_error = result[5][galaxy_index]["e_rmag"]
-        r_mag_lower = r_mag - r_mag_error
-        r_mag_upper = r_mag + r_mag_error
-
-        # i
-        i_mag = result[5][galaxy_index]["imag"]
-        i_mag_error = result[5][galaxy_index]["e_imag"]
-        i_mag_lower = i_mag - i_mag_error
-        i_mag_upper = i_mag + i_mag_error
-
-        # z
-        z_mag = result[5][galaxy_index]["zmag"]
-        z_mag_error = result[5][galaxy_index]["e_zmag"]
-        z_mag_lower = z_mag - z_mag_error
-        z_mag_upper = z_mag + z_mag_error
-
-        # J
-        j_mag = result[5][galaxy_index]["Jmag"]
-        j_mag_error = result[5][galaxy_index]["e_Jmag"]
-        j_mag_lower = j_mag - j_mag_error
-        j_mag_upper = j_mag + j_mag_error
-
-        # H
-        h_mag = result[5][galaxy_index]["Hmag"]
-        h_mag_error = result[5][galaxy_index]["e_Hmag"]
-        h_mag_lower = h_mag - h_mag_error
-        h_mag_upper = h_mag + h_mag_error
-
-        # Ks
-        k_mag = result[5][galaxy_index]["Ksmag"]
-        k_mag_error = result[5][galaxy_index]["e_Ksmag"]
-        k_mag_lower = k_mag - k_mag_error
-        k_mag_upper = k_mag + k_mag_error
-
+        #print(self.ngc_id)
 
         # Create an SED
         sed = ObservedSED()
 
-        # FUV
-        fuv = unitconversion.ab_to_jansky(fuv_mag)
-        fuv_lower = unitconversion.ab_to_jansky(fuv_mag_upper)
-        fuv_upper = unitconversion.ab_to_jansky(fuv_mag_lower)
-        fuv_error = ErrorBar(fuv_lower, fuv_upper, at=fuv)
-        sed.add_entry(self.filters["FUV"], fuv, fuv_error)
+        galaxy_index = tables.find_index(result[5], self.ngc_id)
 
-        # NUV
-        nuv = unitconversion.ab_to_jansky(nuv_mag)
-        nuv_lower = unitconversion.ab_to_jansky(nuv_mag_upper)
-        nuv_upper = unitconversion.ab_to_jansky(nuv_mag_lower)
-        nuv_error = ErrorBar(nuv_lower, nuv_upper, at=nuv)
-        sed.add_entry(self.filters["NUV"], nuv, nuv_error)
+        if galaxy_index is not None:
 
-        # u
-        u = unitconversion.ab_to_jansky(u_mag)
-        u_lower = unitconversion.ab_to_jansky(u_mag_upper)
-        u_upper = unitconversion.ab_to_jansky(u_mag_lower)
-        u_error = ErrorBar(u_lower, u_upper, at=u)
-        sed.add_entry(self.filters["SDSS u"], u, u_error)
+            # FUV
+            fuv_mag = result[5][galaxy_index]["FUV"]
+            fuv_mag_error = result[5][galaxy_index]["e_FUV"]
+            fuv_mag_lower = fuv_mag - fuv_mag_error
+            fuv_mag_upper = fuv_mag + fuv_mag_error
 
-        # g
-        g = unitconversion.ab_to_jansky(g_mag)
-        g_lower = unitconversion.ab_to_jansky(g_mag_upper)
-        g_upper = unitconversion.ab_to_jansky(g_mag_lower)
-        g_error = ErrorBar(g_lower, g_upper, at=g)
-        sed.add_entry(self.filters["SDSS g"], g, g_error)
+            # NUV
+            nuv_mag = result[5][galaxy_index]["NUV"]
+            nuv_mag_error = result[5][galaxy_index]["e_NUV"]
+            nuv_mag_lower = nuv_mag - nuv_mag_error
+            nuv_mag_upper = nuv_mag + nuv_mag_error
 
-        # r
-        r = unitconversion.ab_to_jansky(r_mag)
-        r_lower = unitconversion.ab_to_jansky(r_mag_upper)
-        r_upper = unitconversion.ab_to_jansky(r_mag_lower)
-        r_error = ErrorBar(r_lower, r_upper, at=r)
-        sed.add_entry(self.filters["SDSS r"], r, r_error)
+            # u
+            u_mag = result[5][galaxy_index]["umag"]
+            u_mag_error = result[5][galaxy_index]["e_umag"]
+            u_mag_lower = u_mag - u_mag_error
+            u_mag_upper = u_mag + u_mag_error
 
-        # i
-        i = unitconversion.ab_to_jansky(i_mag)
-        i_lower = unitconversion.ab_to_jansky(i_mag_upper)
-        i_upper = unitconversion.ab_to_jansky(i_mag_lower)
-        i_error = ErrorBar(i_lower, i_upper, at=i)
-        sed.add_entry(self.filters["SDSS i"], i, i_error)
+            # g
+            g_mag = result[5][galaxy_index]["gmag"]
+            g_mag_error = result[5][galaxy_index]["e_gmag"]
+            g_mag_lower = g_mag - abs(g_mag_error)
+            g_mag_upper = g_mag + abs(g_mag_error)
 
-        # z
-        z = unitconversion.ab_to_jansky(z_mag)
-        z_lower = unitconversion.ab_to_jansky(z_mag_upper)
-        z_upper = unitconversion.ab_to_jansky(z_mag_lower)
-        z_error = ErrorBar(z_lower, z_upper, at=z)
-        sed.add_entry(self.filters["SDSS z"], z, z_error)
+            #print("gmag", g_mag)
+            #print("gmagerror", g_mag_error)
+            #print("gmaglower", g_mag_lower)
+            #print("gmagupper", g_mag_upper)
 
-        # J
-        j = unitconversion.ab_to_jansky(j_mag)
-        j_lower = unitconversion.ab_to_jansky(j_mag_upper)
-        j_upper = unitconversion.ab_to_jansky(j_mag_lower)
-        j_error = ErrorBar(j_lower, j_upper, at=j)
-        sed.add_entry(self.filters["J"], j, j_error)
+            # r
+            r_mag = result[5][galaxy_index]["rmag"]
+            r_mag_error = result[5][galaxy_index]["e_rmag"]
+            r_mag_lower = r_mag - r_mag_error
+            r_mag_upper = r_mag + r_mag_error
 
-        # H
-        h = unitconversion.ab_to_jansky(h_mag)
-        h_lower = unitconversion.ab_to_jansky(h_mag_upper)
-        h_upper = unitconversion.ab_to_jansky(h_mag_lower)
-        h_error = ErrorBar(h_lower, h_upper, at=h)
-        sed.add_entry(self.filters["H"], h, h_error)
+            # i
+            i_mag = result[5][galaxy_index]["imag"]
+            i_mag_error = result[5][galaxy_index]["e_imag"]
+            i_mag_lower = i_mag - i_mag_error
+            i_mag_upper = i_mag + i_mag_error
 
-        # Ks
-        k = unitconversion.ab_to_jansky(k_mag)
-        k_lower = unitconversion.ab_to_jansky(k_mag_upper)
-        k_upper = unitconversion.ab_to_jansky(k_mag_lower)
-        k_error = ErrorBar(k_lower, k_upper, at=k)
-        sed.add_entry(self.filters["K"], k, k_error)
+            # z
+            z_mag = result[5][galaxy_index]["zmag"]
+            z_mag_error = result[5][galaxy_index]["e_zmag"]
+            z_mag_lower = z_mag - z_mag_error
+            z_mag_upper = z_mag + z_mag_error
+
+            # J
+            j_mag = result[5][galaxy_index]["Jmag"]
+            j_mag_error = result[5][galaxy_index]["e_Jmag"]
+            j_mag_lower = j_mag - j_mag_error
+            j_mag_upper = j_mag + j_mag_error
+
+            # H
+            h_mag = result[5][galaxy_index]["Hmag"]
+            h_mag_error = result[5][galaxy_index]["e_Hmag"]
+            h_mag_lower = h_mag - h_mag_error
+            h_mag_upper = h_mag + h_mag_error
+
+            # Ks
+            k_mag = result[5][galaxy_index]["Ksmag"]
+            k_mag_error = result[5][galaxy_index]["e_Ksmag"]
+            k_mag_lower = k_mag - k_mag_error
+            k_mag_upper = k_mag + k_mag_error
+
+
+
+
+            # FUV
+            fuv = unitconversion.ab_to_jansky(fuv_mag)
+            fuv_lower = unitconversion.ab_to_jansky(fuv_mag_upper)
+            fuv_upper = unitconversion.ab_to_jansky(fuv_mag_lower)
+            fuv_error = ErrorBar(fuv_lower, fuv_upper, at=fuv)
+            sed.add_entry(self.filters["FUV"], fuv, fuv_error)
+
+            # NUV
+            nuv = unitconversion.ab_to_jansky(nuv_mag)
+            nuv_lower = unitconversion.ab_to_jansky(nuv_mag_upper)
+            nuv_upper = unitconversion.ab_to_jansky(nuv_mag_lower)
+            nuv_error = ErrorBar(nuv_lower, nuv_upper, at=nuv)
+            sed.add_entry(self.filters["NUV"], nuv, nuv_error)
+
+            # u
+            u = unitconversion.ab_to_jansky(u_mag)
+            u_lower = unitconversion.ab_to_jansky(u_mag_upper)
+            u_upper = unitconversion.ab_to_jansky(u_mag_lower)
+            u_error = ErrorBar(u_lower, u_upper, at=u)
+            sed.add_entry(self.filters["SDSS u"], u, u_error)
+
+            # g
+            g = unitconversion.ab_to_jansky(g_mag)
+            g_lower = unitconversion.ab_to_jansky(g_mag_upper)
+            g_upper = unitconversion.ab_to_jansky(g_mag_lower)
+            g_error = ErrorBar(g_lower, g_upper, at=g)
+            sed.add_entry(self.filters["SDSS g"], g, g_error)
+
+            # r
+            r = unitconversion.ab_to_jansky(r_mag)
+            r_lower = unitconversion.ab_to_jansky(r_mag_upper)
+            r_upper = unitconversion.ab_to_jansky(r_mag_lower)
+            r_error = ErrorBar(r_lower, r_upper, at=r)
+            sed.add_entry(self.filters["SDSS r"], r, r_error)
+
+            # i
+            i = unitconversion.ab_to_jansky(i_mag)
+            i_lower = unitconversion.ab_to_jansky(i_mag_upper)
+            i_upper = unitconversion.ab_to_jansky(i_mag_lower)
+            i_error = ErrorBar(i_lower, i_upper, at=i)
+            sed.add_entry(self.filters["SDSS i"], i, i_error)
+
+            # z
+            z = unitconversion.ab_to_jansky(z_mag)
+            z_lower = unitconversion.ab_to_jansky(z_mag_upper)
+            z_upper = unitconversion.ab_to_jansky(z_mag_lower)
+            z_error = ErrorBar(z_lower, z_upper, at=z)
+            sed.add_entry(self.filters["SDSS z"], z, z_error)
+
+            # J
+            j = unitconversion.ab_to_jansky(j_mag)
+            j_lower = unitconversion.ab_to_jansky(j_mag_upper)
+            j_upper = unitconversion.ab_to_jansky(j_mag_lower)
+            j_error = ErrorBar(j_lower, j_upper, at=j)
+            sed.add_entry(self.filters["J"], j, j_error)
+
+            # H
+            h = unitconversion.ab_to_jansky(h_mag)
+            h_lower = unitconversion.ab_to_jansky(h_mag_upper)
+            h_upper = unitconversion.ab_to_jansky(h_mag_lower)
+            h_error = ErrorBar(h_lower, h_upper, at=h)
+            sed.add_entry(self.filters["H"], h, h_error)
+
+            # Ks
+            k = unitconversion.ab_to_jansky(k_mag)
+            k_lower = unitconversion.ab_to_jansky(k_mag_upper)
+            k_upper = unitconversion.ab_to_jansky(k_mag_lower)
+            k_error = ErrorBar(k_lower, k_upper, at=k)
+            sed.add_entry(self.filters["K"], k, k_error)
 
         # Table7: IRAC and MIPS asymptotic magnitudes
         # - "logF3.6": Spitzer/IRAC 3.6um flux density [logJy]
@@ -711,103 +717,107 @@ class SEDFetcher(Configurable):
 
         galaxy_index = tables.find_index(result[6], self.ngc_id)
 
-        # 3.6 micron
-        i1_log = result[6][galaxy_index]["logF3.6"]
-        i1_log_error = result[6][galaxy_index]["e_logF3.6"]
-        i1_log_lower = i1_log - i1_log_error
-        i1_log_upper = i1_log + i1_log_error
+        if galaxy_index is not None:
 
-        # 4.5 micron
-        i2_log = result[6][galaxy_index]["logF4.5"]
-        i2_log_error = result[6][galaxy_index]["e_logF4.5"]
-        i2_log_lower = i2_log - i2_log_error
-        i2_log_upper = i2_log + i2_log_error
+            # 3.6 micron
+            i1_log = result[6][galaxy_index]["logF3.6"]
+            i1_log_error = result[6][galaxy_index]["e_logF3.6"]
+            i1_log_lower = i1_log - i1_log_error
+            i1_log_upper = i1_log + i1_log_error
 
-        # 5.8 micron
-        i3_log = result[6][galaxy_index]["logF5.8"]
-        i3_log_error = result[6][galaxy_index]["e_logF5.8"]
-        i3_log_lower = i3_log - i3_log_error
-        i3_log_upper = i3_log + i3_log_error
+            # 4.5 micron
+            i2_log = result[6][galaxy_index]["logF4.5"]
+            i2_log_error = result[6][galaxy_index]["e_logF4.5"]
+            i2_log_lower = i2_log - i2_log_error
+            i2_log_upper = i2_log + i2_log_error
 
-        # 8.0 micron
-        i4_log = result[6][galaxy_index]["logF8.0"]
-        i4_log_error = result[6][galaxy_index]["e_logF8.0"]
-        i4_log_lower = i4_log - i4_log_error
-        i4_log_upper = i4_log + i4_log_error
+            # 5.8 micron
+            i3_log = result[6][galaxy_index]["logF5.8"]
+            i3_log_error = result[6][galaxy_index]["e_logF5.8"]
+            i3_log_lower = i3_log - i3_log_error
+            i3_log_upper = i3_log + i3_log_error
 
-        #print("i4log", i4_log)
-        #print("i4_log_error", i4_log_error)
-        #print("i4_log_lower", i4_log_lower)
-        #print("i4_log_upper", i4_log_upper)
+            # 8.0 micron
+            i4_log = result[6][galaxy_index]["logF8.0"]
+            i4_log_error = result[6][galaxy_index]["e_logF8.0"]
+            i4_log_lower = i4_log - i4_log_error
+            i4_log_upper = i4_log + i4_log_error
 
-        # 24 micron
-        mips24_log = result[6][galaxy_index]["logF24"]
-        mips24_log_error = result[6][galaxy_index]["e_logF24"]
-        mips24_log_lower = mips24_log - mips24_log_error
-        mips24_log_upper = mips24_log + mips24_log_error
+            #print("i4log", i4_log)
+            #print("i4_log_error", i4_log_error)
+            #print("i4_log_lower", i4_log_lower)
+            #print("i4_log_upper", i4_log_upper)
 
-        # 70 micron
-        mips70_log = result[6][galaxy_index]["logF70"]
-        mips70_log_error = result[6][galaxy_index]["e_logF70"]
-        mips70_log_lower = mips70_log - mips70_log_error
-        mips70_log_upper = mips70_log + mips70_log_error
+            # 24 micron
+            mips24_log = result[6][galaxy_index]["logF24"]
+            mips24_log_error = result[6][galaxy_index]["e_logF24"]
+            mips24_log_lower = mips24_log - mips24_log_error
+            mips24_log_upper = mips24_log + mips24_log_error
 
-        # 160 micron
-        mips160_log = result[6][galaxy_index]["logF160"]
-        mips160_log_error = result[6][galaxy_index]["e_logF160"]
-        mips160_log_lower = mips160_log - mips160_log_error
-        mips160_log_upper = mips160_log + mips160_log_error
+            # 70 micron
+            mips70_log = result[6][galaxy_index]["logF70"]
+            mips70_log_error = result[6][galaxy_index]["e_logF70"]
+            mips70_log_lower = mips70_log - mips70_log_error
+            mips70_log_upper = mips70_log + mips70_log_error
 
-        # Calculate data points and errobars in Janskys, add to the SED
+            # 160 micron
+            mips160_log = result[6][galaxy_index]["logF160"]
+            mips160_log_error = result[6][galaxy_index]["e_logF160"]
+            mips160_log_lower = mips160_log - mips160_log_error
+            mips160_log_upper = mips160_log + mips160_log_error
 
-        # 3.6 micron
-        i1 = 10.**i1_log
-        i1_lower = 10.**i1_log_lower
-        i1_upper = 10.**i1_log_upper
-        i1_error = ErrorBar(i1_lower, i1_upper, at=i1)
-        sed.add_entry(self.filters["I1"], i1, i1_error)
+            # Calculate data points and errobars in Janskys, add to the SED
 
-        # 4.5 micron
-        i2 = 10.**i2_log
-        i2_lower = 10.**i2_log_lower
-        i2_upper = 10.**i2_log_upper
-        i2_error = ErrorBar(i2_lower, i2_upper, at=i2)
-        sed.add_entry(self.filters["I2"], i2, i2_error)
+            # 3.6 micron
+            i1 = 10.**i1_log
+            i1_lower = 10.**i1_log_lower
+            i1_upper = 10.**i1_log_upper
+            i1_error = ErrorBar(i1_lower, i1_upper, at=i1)
+            sed.add_entry(self.filters["I1"], i1, i1_error)
 
-        # 5.8 micron
-        i3 = 10.**i3_log
-        i3_lower = 10.**i3_log_lower
-        i3_upper = 10.**i3_log_upper
-        i3_error = ErrorBar(i3_lower, i3_upper, at=i3)
-        sed.add_entry(self.filters["I3"], i3, i3_error)
+            # 4.5 micron
+            i2 = 10.**i2_log
+            i2_lower = 10.**i2_log_lower
+            i2_upper = 10.**i2_log_upper
+            i2_error = ErrorBar(i2_lower, i2_upper, at=i2)
+            sed.add_entry(self.filters["I2"], i2, i2_error)
 
-        # 8.0 micron
-        i4 = 10.**i4_log
-        i4_lower = 10.**i4_log_lower
-        i4_upper = 10.**i4_log_upper
-        i4_error = ErrorBar(i4_lower, i4_upper, at=i4)
-        sed.add_entry(self.filters["I4"], i4, i4_error)
+            # 5.8 micron
+            i3 = 10.**i3_log
+            i3_lower = 10.**i3_log_lower
+            i3_upper = 10.**i3_log_upper
+            i3_error = ErrorBar(i3_lower, i3_upper, at=i3)
+            sed.add_entry(self.filters["I3"], i3, i3_error)
 
-        # 24 micron
-        mips24 = 10.**mips24_log
-        mips24_lower = 10.**mips24_log_lower
-        mips24_upper = 10.**mips24_log_upper
-        mips24_error = ErrorBar(mips24_lower, mips24_upper, at=mips24)
-        sed.add_entry(self.filters["MIPS 24"], mips24, mips24_error)
+            # 8.0 micron
+            i4 = 10.**i4_log
+            i4_lower = 10.**i4_log_lower
+            i4_upper = 10.**i4_log_upper
+            i4_error = ErrorBar(i4_lower, i4_upper, at=i4)
+            sed.add_entry(self.filters["I4"], i4, i4_error)
 
-        # 70 micron
-        mips70 = 10.**mips70_log
-        mips70_lower = 10.**mips70_log_lower
-        mips70_upper = 10.**mips70_log_upper
-        mips70_error = ErrorBar(mips70_lower, mips70_upper, at=mips70)
-        sed.add_entry(self.filters["MIPS 70"], mips70, mips70_error)
+            # 24 micron
+            mips24 = 10.**mips24_log
+            mips24_lower = 10.**mips24_log_lower
+            mips24_upper = 10.**mips24_log_upper
+            mips24_error = ErrorBar(mips24_lower, mips24_upper, at=mips24)
+            sed.add_entry(self.filters["MIPS 24"], mips24, mips24_error)
 
-        # 160 micron
-        mips160 = 10.**mips160_log
-        mips160_lower = 10.**mips160_log_lower
-        mips160_upper = 10.**mips160_log_upper
-        mips160_error = ErrorBar(mips160_lower, mips160_upper, at=mips160)
-        sed.add_entry(self.filters["MIPS 160"], mips160, mips160_error)
+            # 70 micron
+            mips70 = 10.**mips70_log
+            mips70_lower = 10.**mips70_log_lower
+            mips70_upper = 10.**mips70_log_upper
+            mips70_error = ErrorBar(mips70_lower, mips70_upper, at=mips70)
+            sed.add_entry(self.filters["MIPS 70"], mips70, mips70_error)
+
+            # 160 micron
+            mips160 = 10.**mips160_log
+            mips160_lower = 10.**mips160_log_lower
+            mips160_upper = 10.**mips160_log_upper
+            mips160_error = ErrorBar(mips160_lower, mips160_upper, at=mips160)
+            sed.add_entry(self.filters["MIPS 160"], mips160, mips160_error)
+
+        if len(sed) == 0: return
 
         # Add the SED to the dictionary
         self.seds["SINGS"] = sed
@@ -1015,22 +1025,67 @@ class SEDFetcher(Configurable):
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/178/280/table1")
 
-        if len(result) == 0: return
+        if len(result) != 0:
 
-        relevant_bands = [("12", "IRAS 12"), ("25", "IRAS 25"), ("60", "IRAS 60"), ("100", "IRAS 100")]
-        for band_prefix_catalog, filter_name in relevant_bands:
+            relevant_bands = [("12", "IRAS 12"), ("25", "IRAS 25"), ("60", "IRAS 60"), ("100", "IRAS 100")]
+            for band_prefix_catalog, filter_name in relevant_bands:
 
-            column_name = "F" + band_prefix_catalog
+                column_name = "F" + band_prefix_catalog
 
-            # Skip masked values
-            if result[0][column_name].mask[0]: continue
+                # Skip masked values
+                if result[0][column_name].mask[0]: continue
 
-            # Flux and error already in Jy
-            fluxdensity = result[0][0][column_name]
-            fluxdensity_error = ErrorBar(0.0)
+                # Flux and error already in Jy
+                fluxdensity = result[0][0][column_name]
+                fluxdensity_error = ErrorBar(0.0)
 
-            # Add data point to SED
-            sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+                # Add data point to SED
+                sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+
+        result = self.vizier.get_catalogs("J/ApJS/178/280/table2")
+        table = result[0]
+
+        index = tables.find_index(table, self.ngc_id, "Name")
+        #print(index)
+        #index = tables.find_index(table, self.config.galaxy_name, "Name")
+        #print(index)
+
+        # F170
+        #Jy	(n) 170 micron band flux density
+ 	 	#e_F170
+        #Jy	(n) Uncertainty in F170
+ 	 	#F158
+        #Jy	(n) 158 micron band flux density
+ 	 	#e_F158
+        #Jy	(n) Uncertainty in F158
+ 	 	#F145
+        #Jy	(n) 145 micron band flux density
+ 	 	#e_F145
+        #Jy	(n) Uncertainty in F145
+ 	 	#F122
+        #Jy	(n) 122 micron band flux density
+ 	 	#e_F122
+        #Jy	(n) Uncertainty in F122
+ 	 	#F88
+        #Jy	(n) 88 micron band flux density
+ 	 	#e_F88
+        #Jy	(n) Uncertainty in F88
+ 	 	#F63
+        #Jy	(n) 63 micron band flux density
+ 	 	#e_F63
+        #Jy	(n) Uncertainty in F63
+ 	 	#F57
+        #Jy	(n) 57 micron band flux density
+ 	 	#e_F57
+        #Jy	(n) Uncertainty in F57
+ 	 	#F52
+        #Jy	(n) 52 micron band flux density
+ 	 	#e_F52
+        #Jy	(n) Uncertainty in F52
+
+        if index is not None: pass
+
+        if len(sed) == 0: return
 
         # Add the SED to the dictionary
         self.seds["IRAS"] = sed
