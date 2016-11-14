@@ -79,7 +79,6 @@ some of the required packages are not yet available in this newer and slightly i
 - Some packages used by PTS are not available through Canopy (although we try to limit their use). This is the complete list of such packages (but be aware that you probably don't need them all!):
 
     <TABLE>
-    <TR><TD>aplpy</TD></TR>
     <TR><TD>astroquery</TD></TR>
     <TR><TD>imageio</TD></TR>
     <TR><TD>montage_wrapper/TD></TR>

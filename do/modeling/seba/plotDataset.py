@@ -1,4 +1,4 @@
-import aplpy
+#import aplpy
 import pyparsing
 import pyregion
 import pyfits

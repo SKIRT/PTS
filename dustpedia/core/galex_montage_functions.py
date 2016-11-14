@@ -21,7 +21,6 @@ import scipy.spatial
 import scipy.ndimage
 import lmfit
 import shutil
-import gc
 
 # Import astronomical modules
 from astropy.io import fits
@@ -32,15 +31,13 @@ from astropy.wcs import WCS
 from astropy.io.fits import Header
 from astropy.units import Unit
 
-# Import Chris' package
-import ChrisFuncs
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...magic.core.image import Image
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.misc import chrisfuncs
 
 # -----------------------------------------------------------------
 
@@ -113,7 +110,7 @@ def level_galex_maps(fitsfile_dir, convfile_dir, target_suffix):
         level_params.add('level', value=np.median(image_conv_nonans), vary=True) # BELOW NUMPY VERSION 1.9.0
         #
 
-        image_conv_clipped = ChrisFuncs.SigmaClip(image_conv, tolerance=0.005, median=False, sigma_thresh=3.0)[2]
+        image_conv_clipped = chrisfuncs.SigmaClip(image_conv, tolerance=0.005, median=False, sigma_thresh=3.0)[2]
         level_result = lmfit.minimize(level_chi_squared, level_params, args=(image_conv_clipped.flatten(),))
         level = level_result.params['level'].value
         if i==0:
@@ -125,7 +122,7 @@ def level_galex_maps(fitsfile_dir, convfile_dir, target_suffix):
         """
         # Save floor and peak values
         floor_value = np.nanmin(image_conv)
-        peak_value = ChrisFuncs.SigmaClip( image_conv, tolerance=0.00025, median=False, sigma_thresh=3.0)[1]
+        peak_value = chrisfuncs.SigmaClip( image_conv, tolerance=0.00025, median=False, sigma_thresh=3.0)[1]
         floor_value_list.append(floor_value)
         peak_value_list.append(peak_value)
         if i==0:
@@ -223,12 +220,12 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     # Find centre of coverage area
     cov_i = ((np.where( np.isnan(out_image)==False ))[0])
     cov_j = ((np.where( np.isnan(out_image)==False ))[1])
-    cov_ellipse = ChrisFuncs.EllipseFit(cov_i, cov_j)
+    cov_ellipse = chrisfuncs.EllipseFit(cov_i, cov_j)
     cov_centre = cov_ellipse[0]
     cov_centre_i, cov_centre_j = cov_centre[0], cov_centre[1]
 
     # Set all pixels more than 35 arcmin (1400 pizels) from centre to be NaN, as these are typically low-quality
-    cov_trim_mask = ChrisFuncs.EllipseMask(out_image, 1400, 1.0, 0.0, cov_centre_i, cov_centre_j)
+    cov_trim_mask = chrisfuncs.EllipseMask(out_image, 1400, 1.0, 0.0, cov_centre_i, cov_centre_j)
     out_image[ np.where(cov_trim_mask==0) ] = np.NaN
 
     # Save cleaned image

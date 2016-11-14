@@ -14,11 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
-import numpy as np
-import matplotlib.pyplot as plt
 
 # Import astronomical modules
-import aplpy
 from astropy.io import fits
 from astropy.units import Unit
 
@@ -929,90 +926,6 @@ class Image(object):
 
         # Return the mask
         return mask
-
-    # -----------------------------------------------------------------
-
-    def plot(self, path=None, color=True, grid=False, blacknan=False, publication=False):
-
-        """
-        This function shows a plot of the currently selected frame, combined with the active regions and masks
-        :param path:
-        :param color:
-        :param grid:
-        :param blacknan:
-        :param publication:
-        :return:
-        """
-
-        # Get the currently active frame
-        frame = self.frames.get_selected()[0]
-
-        # Create a total mask of the currently active masks
-        total_mask = self.combine_masks(return_mask=True)
-
-        # Mask the frame with nans
-        maskedimage = np.ma.array(self.frames[frame], mask = total_mask)
-        image_with_nans =  maskedimage.filled(np.NaN)
-
-        # Create a HDU from this frame with the image header
-        hdu = fits.PrimaryHDU(image_with_nans, self.original_header)
-
-        if path is None:
-
-            # Create a figure canvas
-            figure = plt.figure(figsize=(12, 12))
-
-            # Create a figure from this frame
-            plot = aplpy.FITSFigure(hdu, figure=figure)
-
-        else:
-
-            # Create a figure from this frame
-            plot = aplpy.FITSFigure(hdu)
-
-        if color:
-
-            # Plot in color scale
-            plot.show_colorscale()
-
-        else:
-
-            # Plot in gray scale
-            plot.show_grayscale()
-
-        # Add a color bar
-        plot.add_colorbar()
-
-        if blacknan:
-
-            # Set the nan color to black
-            plot.set_nan_color('black')
-
-        if grid:
-
-            # Add a grid
-            plot.add_grid()
-
-        # If requested, use the 'publication' theme
-        if publication: plot.set_theme('publication')
-
-        # Add the regions
-        for region in self.regions.get_selected():
-
-            # Get the shape list
-            shapes = self.regions[region].region.as_imagecoord(self.original_header)
-
-            # Add these shapes to the plot
-            plot.show_regions(shapes)
-
-        if path is None:
-
-            #plt.draw()
-            #plt.close('all') # redundant
-            #plt.show(block=False)
-            plt.show()
-
-        else: plot.save(path)
 
     # -----------------------------------------------------------------
 

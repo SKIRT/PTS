@@ -33,7 +33,7 @@ from pyfits import PrimaryHDU, Header
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
-import aplpy
+#import aplpy
 import wcsaxes
 import matplotlib.colors as mpl_colors
 import matplotlib.colorbar as mpl_colorbar

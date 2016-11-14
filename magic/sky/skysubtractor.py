@@ -44,6 +44,7 @@ from ..tools import plotting, statistics, fitting, plotting
 from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
+from ..misc import chrisfuncs
 
 # -----------------------------------------------------------------
 
@@ -348,6 +349,9 @@ class SkySubtractor(OldConfigurable):
 
         # Use our own method to estimate the sky and sky noise
         elif self.config.estimation.method == "pts": self.estimate_sky_pts()
+
+        # Use the CAAPR method
+        elif self.config.estimation.method == "caapr": self.estimate_caapr()
 
         # Unkown sky estimation method
         else: raise ValueError("Unknown sky estimation method")
@@ -947,6 +951,112 @@ class SkySubtractor(OldConfigurable):
         y = 3 - 2 * x + x ** 2 - x ** 3
 
         model = model.fit(x[:, np.newaxis], y)
+
+    # -----------------------------------------------------------------
+
+    def estimate_caapr(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Run pod through function that removes large-scale sky using a 2-dimensional polynomial filter
+        #pod = CAAPR.CAAPR_Pipeline.PolySub(pod, 2.0 * pod['semimaj_initial_pix'], pod['opt_axial_ratio'],
+        #                                   pod['opt_angle'],
+        #                                   instant_quit=max([not kwargs_dict['polysub'], pod['band_exclude']]))
+
+        if pod['verbose']: print('[' + pod['id'] + '] Determining if (and how) background is significantly variable.')
+
+        # Define Keflavich function to downsample an array
+        def Downsample(myarr, factor, estimator=np.nanmean):
+
+            ys, xs = myarr.shape
+            crarr = myarr[:ys - (ys % int(factor)), :xs - (xs % int(factor))]
+            dsarr = estimator(np.concatenate([[crarr[i::factor, j::factor]
+                                               for i in range(factor)]
+                                              for j in range(factor)]), axis=0)
+            return dsarr
+
+        # If polynomial background subraction not wanted, immediately return everything unchanged
+        if instant_quit:
+            pod['sky_poly'] = False
+            return pod
+
+        # If image has pixels smaller than some limit, downsample image to improve processing time
+        pix_size = pod['pix_arcsec']
+        pix_size_limit = 2.0
+        if pix_size < pix_size_limit:
+            downsample_factor = int(np.ceil(pix_size_limit / pix_size))
+        else:
+            downsample_factor = 1
+        image_ds = Downsample(pod['cutout'], downsample_factor)
+
+        # Downsample related values accordingly
+        mask_semimaj_pix = mask_semimaj_pix / downsample_factor
+        centre_i = int(round(float((0.5 * pod['centre_i']) - 1.0)))
+        centre_j = int(round(float((0.5 * pod['centre_j']) - 1.0)))
+
+        # Find cutoff for excluding bright pixels by sigma-clipping map
+        clip_value = chrisfuncs.SigmaClip(image_ds, tolerance=0.01, sigma_thresh=3.0, median=True)
+        noise_value = clip_value[0]
+        field_value = clip_value[1]
+        cutoff = field_value + (cutoff_sigma * noise_value)
+
+        # Mask all image pixels in masking region around source
+        image_masked = image_ds.copy()
+        ellipse_mask = chrisfuncs.EllipseMask(image_ds, mask_semimaj_pix, mask_axial_ratio, mask_angle, centre_i, centre_j)
+        image_masked[np.where(ellipse_mask == 1)] = np.nan
+
+        # Mask all image pixels identified as being high SNR
+        image_masked[np.where(image_masked > cutoff)] = np.nan
+
+        # Use astropy to fit 2-dimensional polynomial to the image
+        image_masked[np.where(np.isnan(image_masked) == True)] = field_value
+        poly_model = astropy.modeling.models.Polynomial2D(degree=poly_order)
+        i_coords, j_coords = np.mgrid[:image_masked.shape[0], :image_masked.shape[1]]
+        fitter = astropy.modeling.fitting.LevMarLSQFitter()
+        i_coords = i_coords.flatten()
+        j_coords = j_coords.flatten()
+        image_flattened = image_masked.flatten()
+        good = np.where(np.isnan(image_flattened) == False)
+        i_coords = i_coords[good]
+        j_coords = j_coords[good]
+        image_flattened = image_flattened[good]
+        fit = fitter(poly_model, i_coords, j_coords, image_flattened)
+
+        # Create final polynomial filter (undoing downsampling using lorenzoriano GitHub script)
+        i_coords, j_coords = np.mgrid[:image_ds.shape[0], :image_ds.shape[1]]
+        poly_fit = fit(i_coords, j_coords)
+        poly_full = scipy.ndimage.interpolation.zoom(poly_fit,
+                                                     [float(pod['cutout'].shape[0]) / float(poly_fit.shape[0]),
+                                                      float(pod['cutout'].shape[1]) / float(poly_fit.shape[1])],
+                                                     mode='nearest')  # poly_full = congrid.congrid(poly_fit, (pod['cutout'].shape[0], pod['cutout'].shape[1]), minusone=True)
+
+        # Establish background variation before application of filter
+        sigma_thresh = 3.0
+        clip_in = chrisfuncs.SigmaClip(pod['cutout'], tolerance=0.005, median=True, sigma_thresh=sigma_thresh)
+        bg_in = pod['cutout'][np.where(pod['cutout'] < clip_in[1])]
+        spread_in = np.mean(np.abs(bg_in - clip_in[1]))
+
+        # How much reduction in background variation there was due to application of the filter
+        image_sub = pod['cutout'] - poly_full
+        clip_sub = chrisfuncs.SigmaClip(image_sub, tolerance=0.005, median=True, sigma_thresh=sigma_thresh)
+        bg_sub = image_sub[np.where(image_sub < clip_sub[1])]
+        spread_sub = np.mean(np.abs(bg_sub - clip_sub[1]))
+        spread_diff = spread_in / spread_sub
+
+        # If the filter made significant difference, apply to image and return it; otherwise, just return the unaltered map
+        if spread_diff > 1.1:
+            if pod['verbose']: print('[' + pod['id'] + '] Background is significantly variable; removing polynomial background fit.')
+            pod['cutout_nopoly'] = pod['cutout'].copy()
+            pod['cutout'] = image_sub
+            pod['sky_poly'] = poly_model
+        else:
+            if pod['verbose']: print('[' + pod['id'] + '] Background is not significantly variable; leaving image unaltered.')
+            pod['sky_poly'] = False
+
+        #return pod
 
     # -----------------------------------------------------------------
 

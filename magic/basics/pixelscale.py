@@ -62,4 +62,7 @@ class Pixelscale(Extent):
         # Return a single value for the pixelscale in arcseconds
         return 0.5 * (x_pixelscale + y_pixelscale)
 
+        # Other way from wcs:
+        #np.mean(np.abs(np.diagonal(img_wcs.pixel_scale_matrix)))
+
 # -----------------------------------------------------------------

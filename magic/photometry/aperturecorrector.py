@@ -16,7 +16,6 @@ import lmfit
 import time
 
 # Import astronomical modules
-import ChrisFuncs
 import astropy.convolution
 import astropy.io.fits
 import astropy.wcs
@@ -24,6 +23,7 @@ import astropy.modeling
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from ..misc import chrisfuncs
 
 # -----------------------------------------------------------------
 
@@ -123,7 +123,7 @@ class ApertureCorrector(Configurable):
         #####
 
         # Produce mask for pixels we care about for fitting (ie, are inside photometric aperture and background annulus)
-        mask = ChrisFuncs.Photom.EllipseMask(cutout, self.config.semimaj_pix, self.config.axial_ratio,
+        mask = chrisfuncs.EllipseMask(cutout, self.config.semimaj_pix, self.config.axial_ratio,
                                              self.config.angle, self.config.centre_i,
                                              self.config.centre_j)  # *band_dict['annulus_outer']
 
@@ -210,29 +210,29 @@ class ApertureCorrector(Configurable):
 
         # Evaluate pixels in source aperture and background annulus in UNCONVOLVED sersic map
         if self.config.subpixel_factor == 1.0:
-            sersic_ap_calc = ChrisFuncs.Photom.EllipseSum(sersic_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j)
-            sersic_bg_calc = ChrisFuncs.Photom.AnnulusSum(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
+            sersic_ap_calc = chrisfuncs.EllipseSum(sersic_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j)
+            sersic_bg_calc = chrisfuncs.AnnulusSum(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
         elif self.config.subpixel_factor > 1.0:
-            sersic_ap_calc = ChrisFuncs.Photom.EllipseSumUpscale(sersic_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j, upscale=self.config.subpixel_factor)
-            sersic_bg_calc = ChrisFuncs.Photom.AnnulusSumUpscale(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus, upscale=self.config.subpixel_factor)
+            sersic_ap_calc = chrisfuncs.EllipseSumUpscale(sersic_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j, upscale=self.config.subpixel_factor)
+            sersic_bg_calc = chrisfuncs.AnnulusSumUpscale(sersic_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus, upscale=self.config.subpixel_factor)
         else: raise ValueError("Invalid subpixel factor: " + str(self.config.subpixel_factor))
 
         # Background-subtract and measure UNCONVOLVED sersic source flux
-        sersic_bg_clip = ChrisFuncs.SigmaClip(sersic_bg_calc[2], median=False, sigma_thresh=3.0)
+        sersic_bg_clip = chrisfuncs.SigmaClip(sersic_bg_calc[2], median=False, sigma_thresh=3.0)
         sersic_bg_avg = sersic_bg_clip[1] * self.config.subpixel_factor**2.0
         sersic_ap_sum = sersic_ap_calc[0] - (sersic_ap_calc[1] * sersic_bg_avg)  # sersic_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
 
         # Evaluate pixels in source aperture and background annulus in CONVOLVED sersic map
         if self.config.subpixel_factor == 1.0:
-            conv_ap_calc = ChrisFuncs.Photom.EllipseSum(conv_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j)
-            conv_bg_calc = ChrisFuncs.Photom.AnnulusSum(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
+            conv_ap_calc = chrisfuncs.EllipseSum(conv_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j)
+            conv_bg_calc = chrisfuncs.AnnulusSum(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus)
         elif self.config.subpixel_factor > 1.0:
-            conv_ap_calc = ChrisFuncs.Photom.EllipseSumUpscale(conv_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j, upscale=self.config.subpixel_factor)
-            conv_bg_calc = ChrisFuncs.Photom.AnnulusSumUpscale(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus, upscale=self.config.subpixel_factor)
+            conv_ap_calc = chrisfuncs.EllipseSumUpscale(conv_map, self.config.semimaj_pix, self.config.axial_ratio, self.config.angle, self.config.centre_i, self.config.centre_j, upscale=self.config.subpixel_factor)
+            conv_bg_calc = chrisfuncs.AnnulusSumUpscale(conv_map, bg_inner_semimaj_pix, bg_width, axial_ratio_annulus, angle_annulus, centre_i_annulus, centre_j_annulus, upscale=self.config.subpixel_factor)
         else: raise ValueError("Invalid subpixel factor: " + str(self.config.subpixel_factor))
 
         # Background-subtract and measure CONVOLVED sersic source flux
-        conv_bg_clip = ChrisFuncs.SigmaClip(conv_bg_calc[2], median=False, sigma_thresh=3.0)
+        conv_bg_clip = chrisfuncs.SigmaClip(conv_bg_calc[2], median=False, sigma_thresh=3.0)
         conv_bg_avg = conv_bg_clip[1] * self.config.subpixel_factor**2.0
         conv_ap_sum = conv_ap_calc[0] - (conv_ap_calc[1] * conv_bg_avg)  # conv_ap_calc[1] = number of pixels counted for calculating sum (total flux in ellipse)
 

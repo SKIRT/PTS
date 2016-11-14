@@ -26,7 +26,6 @@ from matplotlib import font_manager
 from skimage.measure import block_reduce
 
 # Import astronomical modules
-import ChrisFuncs
 from astropy.units import Unit
 from astropy.table import Table
 
@@ -46,12 +45,13 @@ from ..basics.vector import Position
 from ..basics.region import Region
 from ..basics.geometry import Coordinate, Circle, Composite
 from ..core.source import Source
+from ..misc import chrisfuncs
 
 # -----------------------------------------------------------------
 
 # Define how many random aperture are desired/required/permitted
 sky_success_min = 20  # the minimum number of apertures for the specified size
-sky_gen_max = 100  # max number of attempts at generations of a coordinate for each aperture
+sky_gen_max = 200  # max number of attempts at generations of a coordinate for each aperture
 sky_success_target = 50  # the desired number of apertures of the specified size
 
 # -----------------------------------------------------------------
@@ -122,7 +122,7 @@ class ApertureNoiseCalculator(Configurable):
             success = self.try_extrapolation()
 
         # If nothing was successful
-        if success: log.info("Final aperture noise is " + str(ChrisFuncs.FromGitHub.randlet.ToPrecision(self.noise, 4)) + " (in map units).")
+        if success: log.info("Final aperture noise is " + str(chrisfuncs.ToPrecision(self.noise, 4)) + " (in map units).")
         else: raise RuntimeError("Could not determine the aperture noise")
 
     # -----------------------------------------------------------------
@@ -419,7 +419,7 @@ class ExactApertureNoiseCalculator(Configurable):
         cont_binary[np.where(np.isnan(cutout_inviolate) == False)] = 1
         cont_structure = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
         cont_label = scipy.ndimage.measurements.label(cont_binary, structure=cont_structure)[0]
-        cont_search_mask = ChrisFuncs.EllipseMask(cont_label, 3.0, 1.0, 0.0, self.centre_i, self.centre_j)
+        cont_search_mask = chrisfuncs.EllipseMask(cont_label, 3.0, 1.0, 0.0, self.centre_i, self.centre_j)
         cont_search_values = cont_label[np.where(cont_search_mask == 1)]
 
         #plotting.plot_mask(cont_binary, title="cont binary")
@@ -572,7 +572,7 @@ class ExactApertureNoiseCalculator(Configurable):
         # Creating mask maps to describe no-go regions
         log.debug('Setup: Creating mask maps')
 
-        exclude_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j)
+        exclude_mask = chrisfuncs.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j)
 
         # Plot exclude mask
         if self.config.plot_path is not None:
@@ -598,8 +598,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Set pixels in source aperture to all have NaN pixels, so they don't get sampled by sky annuli
         cutout_inviolate = self.cutout.copy()
-        self.cutout[np.where(ChrisFuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j) == 1)] = np.NaN
-
+        self.cutout[np.where(chrisfuncs.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio, self.adj_angle, self.centre_i, self.centre_j) == 1)] = np.NaN
 
 
         # Segmentation map for the number of apertures covering each pixel
@@ -722,7 +721,7 @@ class ExactApertureNoiseCalculator(Configurable):
         #print("MIN RANDOM R:", min_random_r)
         #print("MAX RANDOM R:", max_random_r)
 
-        #exclude_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio,
+        #exclude_mask = chrisfuncs.Photom.EllipseMask(self.cutout, self.adj_semimaj_pix_full, self.adj_axial_ratio,
         #                                             self.adj_angle, self.centre_i, self.centre_j)
         #attempt_mask = np.zeros(self.cutout.shape)
 
@@ -811,7 +810,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             # CHRIS' WAY OF CREATING MASK FROM SHAPE
             # Create mask
-            #ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_y, random_x)
+            #ap_mask = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_y, random_x)
             ap_mask = circle.to_mask(self.cutout.shape[1], self.cutout.shape[0])
 
             #intersection = Mask.intersection(ap_mask, circle.to_mask(self.cutout.shape[1], self.cutout.shape[0]).inverse())
@@ -822,7 +821,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             # Evaluate pixels in sky aperture
             log.debug('Checking: Evaluating pixels in sky aperture')
-            ap_calc = ChrisFuncs.Photom.EllipseSum(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_y, random_x)
+            ap_calc = chrisfuncs.EllipseSum(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_y, random_x)
 
             # Evaluate pixels in sky annulus
             log.debug('Checking: Evaluating pixels in sky annulus')
@@ -842,7 +841,7 @@ class ExactApertureNoiseCalculator(Configurable):
             #print("BG_INNER_SEMIMAJ_PIX", bg_inner_semimaj_pix)
             #print("BG_WIDTH", bg_width)
 
-            bg_calc = ChrisFuncs.Photom.AnnulusSum(self.cutout, bg_inner_semimaj_pix, bg_width, 1.0, 0.0, random_y, random_x)
+            bg_calc = chrisfuncs.AnnulusSum(self.cutout, bg_inner_semimaj_pix, bg_width, 1.0, 0.0, random_y, random_x)
 
             # CONTINUED ...
 
@@ -906,7 +905,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             # Calculate actual flux in sky aperture, and record
             log.debug('Checking: Performing photometry with random sky aperture and annulus')
-            bg_clip = ChrisFuncs.SigmaClip(bg_calc[2], median=False, sigma_thresh=3.0)
+            bg_clip = chrisfuncs.SigmaClip(bg_calc[2], median=False, sigma_thresh=3.0)
             bg_avg = bg_clip[1]
             ap_sum = ap_calc[0] - (ap_calc[1] * bg_avg)
             #sky_sum_list.append(ap_sum)
@@ -933,7 +932,7 @@ class ExactApertureNoiseCalculator(Configurable):
             if np.isnan(ap_sum): pdb.set_trace()
 
             # Add this aperture to the prior mask and flag mask
-            #ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_y, random_x)
+            #ap_mask = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_y, random_x)
             self.prior_mask += ap_mask
             #flag_mask[np.where(ap_mask == 1)] += 2.0 ** (current_napertures + 1.0)
 
@@ -950,7 +949,7 @@ class ExactApertureNoiseCalculator(Configurable):
         # CALCULATE NOISE BASED ON THE APERTURE SUMS (THE SKY PHOTOMETRY APERTURES)
 
         sky_sum_list = np.array(aperture_sums)
-        ap_noise = ChrisFuncs.SigmaClip(sky_sum_list, tolerance=0.001, median=True, sigma_thresh=3.0)[0]
+        ap_noise = chrisfuncs.SigmaClip(sky_sum_list, tolerance=0.001, median=True, sigma_thresh=3.0)[0]
 
         ap_noise = abs(ap_noise)
 
@@ -961,7 +960,7 @@ class ExactApertureNoiseCalculator(Configurable):
             plotting.plot_mask(self.prior_mask, path=path)
 
         # Debugging
-        log.debug('Aperture noise from current random apertures is ' + str(ChrisFuncs.FromGitHub.randlet.ToPrecision(ap_noise, 4)) + ' (in map units).')
+        log.debug('Aperture noise from current random apertures is ' + str(chrisfuncs.ToPrecision(ap_noise, 4)) + ' (in map units).')
 
         self.success = True
         self.noise = ap_noise
@@ -1054,17 +1053,17 @@ class ExactApertureNoiseCalculator(Configurable):
                 random_j = random_j_list[random_index]
 
                 # Create mask
-                ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                ap_mask = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
 
                 if log.is_debug():
-                    #ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                    #ap_mask = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
                     #plotting.plot_mask(ap_mask, title="Aperture " + str(sky_success_counter + 1) + ", generation " + str(sky_gen_counter))
                     attempt_mask[np.where(ap_mask == 1)] = sky_success_counter
                     log.debug('Aperture: ' + str(sky_success_counter + 1) + ';   Generation: ' + str(sky_gen_counter) + ';   Pix Coords: [' + str(random_i) + ',' + str(random_j)+']')
 
                 # Do sophisticated check that generated sky aperture does not intersect source; if it does, reject
                 log.debug('Checking: Determining whether aperture intersects source (sophisticated check)')
-                exclude_sum = ChrisFuncs.Photom.EllipseSum(exclude_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)[0]
+                exclude_sum = chrisfuncs.EllipseSum(exclude_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)[0]
                 if exclude_sum > 0:
 
                     log.debug('Rejection: Aperture intersects source (according to sophisticated check)')
@@ -1078,7 +1077,7 @@ class ExactApertureNoiseCalculator(Configurable):
                 # Do basic check that the majority of the pixels in the generated sky aperture have not already been
                 # sampled by previous sky apertures; they have, reject
                 log.debug('Checking: Determining if aperture over-sampled (basic check)')
-                prior_calc = ChrisFuncs.Photom.EllipseSum(self.prior_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                prior_calc = chrisfuncs.EllipseSum(self.prior_mask, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
                 prior_calc[2][np.where(prior_calc[2] >= 1.0)] = 1.0
                 prior_frac = np.sum(prior_calc[2]) / float(prior_calc[1])
                 if prior_frac > 0.5:
@@ -1092,8 +1091,8 @@ class ExactApertureNoiseCalculator(Configurable):
                     continue
 
                 # Do sophisticated check that the majority of the pixels in the generated sky aperture have not already been sampled by previous sky apertures; they have, reject
-                log.debug('Checking: Determinging if aperture oversampled (sophisticated check)')
-                ap_mask_check = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                log.debug('Checking: Determining if aperture oversampled (sophisticated check)')
+                ap_mask_check = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
                 flag_mask_check = self.flag_mask.copy()
                 flag_mask_check[np.where(ap_mask_check==1)] = int(2.0**(sky_success_counter+1.0))
                 flag_tallies = np.array([ np.where(flag_mask_check == flag)[0].shape[0] for flag in (2.0**np.arange(0.0, sky_success_counter+2.0)).tolist() ])
@@ -1107,7 +1106,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
                 # Evaluate pixels in sky aperture
                 log.debug('Checking: Evaluating pixels in sky aperture')
-                ap_calc = ChrisFuncs.Photom.EllipseSum(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+                ap_calc = chrisfuncs.EllipseSum(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
 
                 # Evaluate pixels in sky annulus
                 log.debug('Checking: Evaluating pixels in sky annulus')
@@ -1120,7 +1119,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
                 bg_width = min(2.0, bg_width)
 
-                bg_calc = ChrisFuncs.Photom.AnnulusSum(self.cutout, bg_inner_semimaj_pix, bg_width, 1.0, 0.0, random_i, random_j)
+                bg_calc = chrisfuncs.AnnulusSum(self.cutout, bg_inner_semimaj_pix, bg_width, 1.0, 0.0, random_i, random_j)
 
                 # Check if more than a given fraction of the pixels inside the source aperture are NaN; if so, reject
                 if ap_calc[3][0].shape[0] == 0 or ap_calc[1] == 0: ap_nan_frac = 0.0
@@ -1171,7 +1170,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             # Calculate actual flux in sky aperture, and record
             log.debug('Checking: Performing photometry with random sky aperture and annulus')
-            bg_clip = ChrisFuncs.SigmaClip(bg_calc[2], median=False, sigma_thresh=3.0)
+            bg_clip = chrisfuncs.SigmaClip(bg_calc[2], median=False, sigma_thresh=3.0)
             bg_avg = bg_clip[1]
             ap_sum = ap_calc[0] - (ap_calc[1] * bg_avg)
             sky_sum_list.append(ap_sum)
@@ -1179,7 +1178,7 @@ class ExactApertureNoiseCalculator(Configurable):
                 pdb.set_trace()
 
             # Add this aperture to the prior mask and flag mask
-            ap_mask = ChrisFuncs.Photom.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
+            ap_mask = chrisfuncs.EllipseMask(self.cutout, sky_ap_rad_pix, 1.0, 0.0, random_i, random_j)
             self.prior_mask += ap_mask
             self.flag_mask[np.where(ap_mask==1)] += 2.0**sky_success_counter
 
@@ -1203,16 +1202,16 @@ class ExactApertureNoiseCalculator(Configurable):
         else:
 
             sky_sum_list = np.array(sky_sum_list)
-            ap_noise = ChrisFuncs.SigmaClip(sky_sum_list, tolerance=0.001, median=True, sigma_thresh=3.0)[0]
+            ap_noise = chrisfuncs.SigmaClip(sky_sum_list, tolerance=0.001, median=True, sigma_thresh=3.0)[0]
 
-            #ChrisFuncs.Cutout(prior_mask, '/home/saruman/spx7cjc/DustPedia/Prior.fits')
+            #chrisfuncs.Cutout(prior_mask, '/home/saruman/spx7cjc/DustPedia/Prior.fits')
 
             if self.config.plot_path is not None:
                 path = fs.join(self.config.plot_path, "prior.png")
                 plotting.plot_mask(self.prior_mask, path=path)
 
             # Debugging
-            log.debug('Aperture noise from current random apertures is ' + str(ChrisFuncs.FromGitHub.randlet.ToPrecision(ap_noise,4)) + ' (in map units).')
+            log.debug('Aperture noise from current random apertures is ' + str(chrisfuncs.ToPrecision(ap_noise,4)) + ' (in map units).')
 
             self.success = True
             self.noise = ap_noise
@@ -1594,14 +1593,32 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
 
         else:
 
-            mini_ap_areas = np.pi*min_ap_rad_pix_output**2.0
+            mini_ap_areas = np.pi * min_ap_rad_pix_output**2.0
 
             # Calculate values to plot
-            log_mini_ap_area = np.log10(mini_ap_areas)
+            #log_mini_ap_area = np.log10(mini_ap_areas)
+            #log_mini_ap_noise = np.log10(mini_ap_noise_output)
+            #mini_ap_noise_err_rel = mini_ap_num_output**0.5 / mini_ap_num_output
+            ##mini_ap_noise_err = np.abs( mini_ap_noise_output * mini_ap_noise_err_rel )
+            #log_mini_ap_noise_err = mini_ap_noise_err_rel #chrisfuncs.LogError(mini_ap_noise_output, mini_ap_noise_err)
+
+            ## NEW: CAAPR COMMIT 4515d19eed03a4e45469531c4fb671e1d5c90206
+
+            # Calculate log of mini aperture area and noise
+            log_mini_ap_area = np.log10(np.pi * min_ap_rad_pix_output**2.0)
             log_mini_ap_noise = np.log10(mini_ap_noise_output)
-            mini_ap_noise_err_rel = mini_ap_num_output**0.5 / mini_ap_num_output
-            #mini_ap_noise_err = np.abs( mini_ap_noise_output * mini_ap_noise_err_rel )
-            log_mini_ap_noise_err = mini_ap_noise_err_rel #ChrisFuncs.LogError(mini_ap_noise_output, mini_ap_noise_err)
+
+            # Calculate poisson uncertaity on calculated noise
+            mini_ap_noise_err_rel = mini_ap_num_output ** 0.5 / mini_ap_num_output
+            mini_ap_noise_err = np.abs(mini_ap_noise_output * mini_ap_noise_err_rel)
+
+            # Weight points according to distance in log space from true aperture area
+            mini_ap_noise_err *= (1.0 + (np.log10(ap_area) - log_mini_ap_area))
+
+            # Translate uncertainties into log space
+            log_mini_ap_noise_err = chrisfuncs.LogError(mini_ap_noise_output, mini_ap_noise_err)
+
+            ##
 
             # Set the table columns
             names = ["Aperture radius", "Aperture area", "Noise"]
