@@ -62,7 +62,6 @@ After you save the file, you must log out an log back in for the changes to have
     <TR><TD>pip</TD></TR>
     <TR><TD>psutil</TD></TR>
     <TR><TD>pyfits</TD></TR>
-    <TR><TD>pyregion</TD></TR>
     <TR><TD>pyparsing</TD></TR>
     <TR><TD>reportlab</TD></TR>
     <TR><TD>requests</TD></TR>
@@ -85,7 +84,6 @@ some of the required packages are not yet available in this newer and slightly i
     <TR><TD>imageio</TD></TR>
     <TR><TD>montage_wrapper/TD></TR>
     <TR><TD>photutils/TD></TR>
-    <TR><TD>pyregion/TD></TR>
     <TR><TD>reproject/TD></TR>
     <TR><TD>rpy2/TD></TR>
     <TR><TD>telarchive/TD></TR>

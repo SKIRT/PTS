@@ -17,7 +17,7 @@ import copy
 import numpy as np
 
 # Import astronomical modules
-import pyregion
+#import pyregion
 import astropy.units as u
 from astropy.coordinates import Angle
 

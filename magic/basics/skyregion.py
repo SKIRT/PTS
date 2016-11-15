@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-import pyregion
+#import pyregion
 from astropy.units import Unit
 from astropy.coordinates import Angle
 
