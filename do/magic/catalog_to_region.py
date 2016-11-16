@@ -18,7 +18,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import tables
-from pts.magic.basics.skygeometry import SkyCoordinate
+from pts.magic.basics.coordinate import SkyCoordinate
 from pts.magic.core.frame import Frame
 from pts.magic.tools import statistics
 

@@ -29,7 +29,7 @@ from ...modeling.preparation import unitconversion
 from ...modeling.basics.models import SersicModel2D, ExponentialDiskModel2D
 from ...core.basics.configurable import Configurable
 from ..tools import catalogs
-from ..basics.skygeometry import SkyCoordinate
+from ..basics.coordinate import SkyCoordinate
 from ...dustpedia.core.database import DustPediaDatabase
 from ...core.basics.errorbar import ErrorBar
 from ...modeling.basics.properties import GalaxyProperties

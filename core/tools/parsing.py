@@ -572,7 +572,7 @@ def filter(argument):
 
 # -----------------------------------------------------------------
 
-def coordinate(argument):
+def pixelcoordinate(argument):
 
     """
     This function ...
@@ -580,9 +580,9 @@ def coordinate(argument):
     :return:
     """
 
-    from ...magic.basics.geometry import Coordinate
+    from ...magic.basics.coordinate import PixelCoordinate
     x, y = real_tuple(argument)
-    return Coordinate(x, y)
+    return PixelCoordinate(x, y)
 
 # -----------------------------------------------------------------
 
@@ -594,7 +594,7 @@ def skycoordinate(argument):
     :return:
     """
 
-    from ...magic.basics.skygeometry import SkyCoordinate
+    from ...magic.basics.coordinate import SkyCoordinate
     ra, dec = quantity_tuple(argument)
     return SkyCoordinate(ra=ra, dec=dec)
 

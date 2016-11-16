@@ -25,8 +25,8 @@ from ...core.simulation.skifile import SkiFile
 from ...core.simulation.arguments import SkirtArguments
 from ...core.simulation.execute import SkirtExec
 from ...magic.basics.vector import Extent, Position
-from ...magic.basics.skygeometry import SkyEllipse
-from ...magic.basics.skyregion import SkyRegion
+from ...magic.region.ellipse import SkyEllipseRegion
+from ...magic.region.list import SkyRegionList
 from ...magic.core.frame import Frame
 from ..basics.models import SersicModel3D, ExponentialDiskModel3D
 from ..basics.instruments import SimpleInstrument
@@ -630,10 +630,10 @@ class GalaxyDecomposer(DecompositionComponent):
         radius = Extent(self.galaxy_properties.major_arcsec, minor)
 
         # Create sky ellipse
-        sky_ellipse = SkyEllipse(self.galaxy_properties.center, radius, self.disk_pa)
+        sky_ellipse = SkyEllipseRegion(self.galaxy_properties.center, radius, self.disk_pa)
 
         # Create region
-        region = SkyRegion()
+        region = SkyRegionList()
         region.append(sky_ellipse)
         region.save(self.disk_region_path)
 

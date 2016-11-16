@@ -22,9 +22,9 @@ from astropy.coordinates import Angle, frame_transform_graph, UnitSphericalRepre
 from astropy.units import Unit, Quantity, dimensionless_unscaled
 
 # Import the relevant PTS classes and modules
-from .vector import Position, Extent
-from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon, Composite
-from .mask import Mask
+from ..basics.vector import Position, Extent
+#from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon, Composite
+from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -342,7 +342,7 @@ def ds9_region_list_to_objects(region_list):
 
     viz_keywords = ['color', 'dashed', 'width', 'point', 'font', 'text']
 
-    regions = Region()
+    regions = RegionList()
 
     for region_type, coord_list, meta in region_list:
 
@@ -403,19 +403,55 @@ def ds9_region_list_to_objects(region_list):
         #output_list.append(reg)
         regions.append(reg)
 
-    # Return the regions
-    #return output_list
+    # Return the region list
     return regions
 
 # -----------------------------------------------------------------
 
-class Region(list):
+class RegionList(list):
 
     """
     This class ...
     """
 
     default_extension = "reg"
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_string(cls, region_string):
+
+        """
+        This function ...
+        :param region_string:
+        :return:
+        """
+
+        # Get list
+        region_list = ds9_string_to_region_list(region_string)
+
+        # Get region objects
+        regions = ds9_region_list_to_objects(region_list)
+
+        # Return
+        return regions
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get the region string
+        with open(path) as fh: region_string = fh.read()
+
+        # Open from string
+        return cls.from_string(region_string)
 
     # -----------------------------------------------------------------
 
@@ -426,10 +462,76 @@ class Region(list):
         :return:
         """
 
-        # Call the constructor of the base class
-        super(Region, self).__init__()
+        # Call the constructor of the base class (list)
+        super(RegionList, self).__init__()
 
     # -----------------------------------------------------------------
+
+    def append(self, region):
+
+        """
+        This function ...
+        :param region:
+        :return:
+        """
+
+        # Check if the region is indeed a derived 'Region' object
+        if not isinstance(region, Region): raise ValueError("Not a region object")
+
+        # Otherwise, add the region
+        super(RegionList, self).append(region)
+
+    # -----------------------------------------------------------------
+
+    def points(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, PointRegion)]
+
+    # -----------------------------------------------------------------
+
+    def circles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, CircleRegion)]
+
+    # -----------------------------------------------------------------
+
+    def ellipses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, EllipseRegion)]
+
+    # -----------------------------------------------------------------
+
+    def rectangles(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, RectangleRegion)]
+
+# -----------------------------------------------------------------
+
+class PixelRegionList(RegionList):
+
+    """
+    This class ...
+    """
 
     @classmethod
     def from_file(cls, path, only=None, ignore=None, color=None, ignore_color=None):
@@ -645,39 +747,6 @@ class Region(list):
 
     # -----------------------------------------------------------------
 
-    def rectangles(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return [shape for shape in self if isinstance(shape, Rectangle)]
-
-    # -----------------------------------------------------------------
-
-    def circles(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return [shape for shape in self if isinstance(shape, Circle)]
-
-    # -----------------------------------------------------------------
-
-    def ellipses(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return [shape for shape in self if isinstance(shape, Ellipse)]
-
-    # -----------------------------------------------------------------
-
     def cropped(self, x_min, x_max, y_min, y_max):
 
         """
@@ -865,5 +934,15 @@ class Region(list):
 
         # Return the new region
         return new
+
+# -----------------------------------------------------------------
+
+class SkyRegionList(RegionList):
+
+    """
+    This class ...
+    """
+
+
 
 # -----------------------------------------------------------------

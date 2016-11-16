@@ -28,9 +28,10 @@ from astropy.nddata import NDDataArray
 
 # Import the relevant PTS classes and modules
 from .box import Box
-from ..basics.vector import Position, Extent
-from ..basics.geometry import Rectangle
-from ..basics.skygeometry import SkyCoordinate, SkyRectangle
+from ..basics.vector import Position
+from ..region.rectangle import PixelRectangleRegion, SkyRectangleRegion
+from ..basics.coordinate import SkyCoordinate
+from ..basics.stretch import SkyStretch
 from ..tools import cropping
 from ...core.tools.logging import log
 from ..basics.mask import Mask, MaskBase
@@ -1239,7 +1240,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def rotate(self, angle):
+    def rotated(self, angle):
 
         """
         This function ...
@@ -1279,7 +1280,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def shift(self, extent):
+    def shifted(self, extent):
 
         """
         This function ...
@@ -1306,7 +1307,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def center_around(self, position):
+    def centered_around(self, position):
 
         """
         This function ...
@@ -1318,7 +1319,7 @@ class Frame(NDDataArray):
         shift = position - center
 
         # Return the shifted frame
-        return self.shift(shift)
+        return self.shifted(shift)
 
     # -----------------------------------------------------------------
 
@@ -1384,16 +1385,16 @@ class Frame(NDDataArray):
         # Get coordinate range
         center, ra_span, dec_span = self.coordinate_range
 
-        ra = center.ra.to(unit).value
-        dec = center.dec.to(unit).value
+        #ra = center.ra.to(unit).value
+        #dec = center.dec.to(unit).value
 
-        ra_span = ra_span.to(unit).value
-        dec_span = dec_span.to(unit).value
+        #ra_span = ra_span.to(unit).value
+        #dec_span = dec_span.to(unit).value
 
         # Create rectangle
-        center = Position(ra, dec)
-        radius = Extent(0.5 * ra_span, 0.5 * dec_span)
-        box = Rectangle(center, radius)
+        center = SkyCoordinate(center.ra, center.dec)
+        radius = SkyStretch(0.5 * ra_span, 0.5 * dec_span)
+        box = SkyRectangleRegion(center, radius)
 
         # Return the box
         return box

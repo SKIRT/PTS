@@ -23,7 +23,7 @@ from ...core.tools.logging import log
 from .component import DataComponent
 from ..preparation import unitconversion
 from ...core.basics.errorbar import ErrorBar
-from ...magic.basics.skygeometry import SkyCoordinate
+from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.tools import catalogs
 from ..basics.properties import GalaxyProperties
 from ...core.tools import tables

@@ -402,7 +402,8 @@ def stringify_not_list(value):
 
     from astropy.units import Quantity
     from astropy.coordinates import Angle
-    from pts.magic.basics.skygeometry import SkyCoordinate
+    from pts.magic.basics.coordinate import SkyCoordinate
+    from pts.magic.basics.stretch import SkyStretch
 
     from .range import RealRange, IntegerRange, QuantityRange
 
@@ -419,6 +420,7 @@ def stringify_not_list(value):
     elif isinstance(value, IntegerRange): return "integer_range", repr(value)
     elif isinstance(value, QuantityRange): return "quantity_range", repr(value)
     elif isinstance(value, SkyCoordinate): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
+    elif isinstance(value, SkyStretch): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif isinstance(value, Filter): return "filter", str(value)
     else: raise ValueError("Unrecognized type: " + str(type(value)))
 

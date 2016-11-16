@@ -21,9 +21,11 @@ from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import Extent
-from ..basics.region import Region
-from ..basics.geometry import Coordinate, Circle, Ellipse
-from ..basics.skygeometry import SkyCoordinate
+from ..region.list import PixelRegionList
+from ..basics.coordinate import PixelCoordinate, SkyCoordinate
+from ..region.point import PixelPointRegion
+from ..region.circle import PixelCircleRegion
+from ..region.ellipse import PixelEllipseRegion
 from ..core.frame import Frame
 from ..core.source import Source
 from ..object.star import Star
@@ -530,7 +532,7 @@ class StarFinder(Configurable):
         log.info("Creating star region ...")
 
         # Initialize the region
-        self.star_region = Region()
+        self.star_region = PixelRegionList()
 
         # Calculate the default FWHM (calculated based on fitted stars)
         default_fwhm = self.fwhm_pix
@@ -559,7 +561,7 @@ class StarFinder(Configurable):
             meta = {"color": color, "text": text}
 
             # Create the shape and add it to the region
-            shape = Circle(center, radius, meta=meta)
+            shape = PixelCircleRegion(center, radius, meta=meta)
             self.star_region.append(shape)
 
             # Add a position for the peak position
@@ -569,7 +571,7 @@ class StarFinder(Configurable):
                 meta = {"point": "x"}
 
                 # Create the position and add it to the region
-                position = Coordinate(star.source.peak.x, star.source.peak.y, meta=meta)
+                position = PixelPointRegion(star.source.peak.x, star.source.peak.y, meta=meta)
                 self.star_region.append(position)
 
     # -----------------------------------------------------------------
@@ -585,7 +587,7 @@ class StarFinder(Configurable):
         log.info("Creating saturation region ...")
 
         # Initialize the region
-        self.saturation_region = Region()
+        self.saturation_region = PixelRegionList()
 
         # Loop over all stars
         for star in self.stars:
@@ -608,7 +610,7 @@ class StarFinder(Configurable):
             meta = {"color": "white", "text": text}
 
             # Create the ellipse and add it to the region
-            ellipse = Ellipse(center, radius, angle, meta=meta)
+            ellipse = PixelEllipseRegion(center, radius, angle, meta=meta)
             self.saturation_region.append(ellipse)
 
     # -----------------------------------------------------------------
@@ -739,7 +741,7 @@ class StarFinder(Configurable):
         :return:
         """
 
-        self.stars.get_positions(self.frame.wcs)
+        return self.stars.get_positions(self.frame.wcs)
 
     # -----------------------------------------------------------------
 

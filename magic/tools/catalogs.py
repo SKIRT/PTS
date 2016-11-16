@@ -28,9 +28,8 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
 from ...core.tools.logging import log
-from ..basics.skygeometry import SkyCoordinate
-from . import regions
-from ..basics.vector import Position, Extent
+from ..basics.coordinate import SkyCoordinate
+from ..basics.vector import Extent
 
 # -----------------------------------------------------------------
 
@@ -810,93 +809,5 @@ def galaxies_in_box(center, ra_span, dec_span):
 
     # Return the list of galaxies
     return names
-
-# -----------------------------------------------------------------
-
-def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filters=None):
-
-    """
-    This function ...
-    :param box:
-    :param catalog:
-    :param keywords:
-    :param radius:
-    :param limit:
-    :param column_filters:
-    :return:
-    """
-
-    # Define the center coordinate for the box
-    coordinate = SkyCoordinate(ra=box[0], dec=box[1], unit="deg", frame="fk5") # frame: icrs, fk5... ?
-
-    # Make a Vizier object
-    if column_filters is None:
-        viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], keywords=keywords)
-    else:
-        viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], column_filters=column_filters, keywords=keywords)
-
-    # No limit on the number of entries
-    viz.ROW_LIMIT = limit if limit is not None else -1
-
-    # Query the box of our image frame
-    result = viz.query_region(coordinate.to_astropy(), width=box[3] * Unit("deg"), height=box[2] * Unit("deg"), catalog=catalog)
-
-    region_string = "# Region file format: DS9 version 3.0\n"
-    region_string += "global color=green\n"
-
-    # Result may contain multiple tables (for different catalogs)
-    for table in result:
-
-        # For every entry in the table
-        for entry in table:
-
-            # Get the right ascension and the declination
-            ra = entry[0]
-            dec = entry[1]
-
-            # Create a string with the coordinates of the star
-            regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
-
-            # Add the parameters of this star to the region string
-            region_string += regline
-
-    # Return the region
-    return regions.parse(region_string)
-
-# -----------------------------------------------------------------
-
-def fetch_object_by_name(name, radius):
-
-    """
-    This function ...
-    :param name:
-    :param color:
-    :param radius:
-    :return:
-    """
-
-    # Query the NED database for the object
-    table = Ned.query_object(name)
-
-    region_string = "# Region file format: DS9 version 3.0\n"
-    region_string += "global color=green\n"
-
-    # For every entry in the table
-    for entry in table:
-
-        # Get the right ascension and the declination
-        ra = entry[2]
-        dec = entry[3]
-
-        #print coordinates.degrees_to_hms(ra=ra, dec=dec)
-
-        # Create a string with the coordinates of the star
-        regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
-
-        # Add the parameters of this star to the region string
-        region_string += regline
-
-    # Return the region
-    return regions.parse(region_string)
 
 # -----------------------------------------------------------------

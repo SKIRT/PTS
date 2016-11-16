@@ -20,7 +20,7 @@ from pts.magic.basics.coordinatesystem import CoordinateSystem
 
 definition = ConfigurationDefinition()
 
-definition.add_required("coordinate", "coordinate", "the pixel coordinate")
+definition.add_required("coordinate", "pixelcoordinate", "the pixel coordinate")
 definition.add_required("wcs_path", "file_path", "the path to the file holding the WCS info")
 
 # Get the configuration

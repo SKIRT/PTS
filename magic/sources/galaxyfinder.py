@@ -17,14 +17,13 @@ from astropy.units import Unit
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from ..basics.region import Region
-from ..basics.skyregion import SkyRegion
+from ..region.list import PixelRegionList, SkyRegionList
 from ..basics.vector import Extent
-from ..basics.geometry import Coordinate, Ellipse
-from ..basics.skygeometry import SkyCoordinate
+from ..basics.coordinate import SkyCoordinate
+from ..region.point import PixelPointRegion
+from ..region.ellipse import PixelEllipseRegion, SkyEllipseRegion
 from ..core.frame import Frame
 from ..object.galaxy import Galaxy
-from ..basics.skygeometry import SkyEllipse
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
@@ -221,7 +220,7 @@ class GalaxyFinder(Configurable):
             if galaxy.principal and self.config.principal_region is not None:
 
                 # Load the principal galaxy region file
-                region = SkyRegion.from_file(self.config.principal_region)
+                region = SkyRegionList.from_file(self.config.principal_region)
                 shape = region[0].to_pixel(self.frame.wcs)
 
                 # Create a source for the galaxy from the shape in the region file
@@ -380,7 +379,7 @@ class GalaxyFinder(Configurable):
         radius = Extent(x_radius, y_radius)
 
         # Create and return an ellipse
-        return Ellipse(center, radius, angle)
+        return PixelEllipseRegion(center, radius, angle)
 
     # -----------------------------------------------------------------
 
@@ -396,7 +395,7 @@ class GalaxyFinder(Configurable):
         ellipse = self.principal_ellipse
 
         # Create a SkyEllipse
-        sky_ellipse = SkyEllipse.from_pixel(ellipse, self.frame.wcs)
+        sky_ellipse = SkyEllipseRegion.from_pixel(ellipse, self.frame.wcs)
 
         # Return the sky ellipse
         return sky_ellipse
@@ -499,7 +498,7 @@ class GalaxyFinder(Configurable):
 
             # Create a coordinate for the center and add it to the region
             meta = {"point": "x"}
-            self.region.append(Coordinate(center.x, center.y, meta=meta))
+            self.region.append(PixelPointRegion(center.x, center.y, meta=meta))
 
             text = galaxy.name
             if galaxy.principal: text += " (principal)"
@@ -508,7 +507,7 @@ class GalaxyFinder(Configurable):
             if galaxy.principal and self.config.principal_region is not None: shape = galaxy.shape
 
             # Create an ellipse for the galaxy
-            else: shape = Ellipse(center, radius, angle, meta=meta)
+            else: shape = PixelEllipseRegion(center, radius, angle, meta=meta)
 
             # Set meta information
             meta = {"text": text, "color": color}
