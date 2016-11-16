@@ -17,7 +17,7 @@ import os
 import argparse
 
 # Import the relevant PTS classes and modules
-from pts.core.test.resources import ResourceEstimator
+from pts.core.advanced.resources import ResourceEstimator
 from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------

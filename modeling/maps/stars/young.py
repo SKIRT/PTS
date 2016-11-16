@@ -18,8 +18,8 @@ from ..component import MapsComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.distribution import Distribution
 from ....core.plot.distribution import DistributionPlotter
-from ....magic.basics.geometry import Composite
-from ....magic.basics.region import Region
+from ....magic.region.composite import PixelCompositeRegion
+from ....magic.region.list import PixelRegionList
 from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
@@ -264,8 +264,8 @@ class YoungStellarMapMaker(MapsComponent):
         disk_ellipse = self.disk_ellipse.to_pixel(self.fuv.wcs)
         inner_ellipse = disk_ellipse * self.config.histograms_annulus_range.min
         outer_ellipse = disk_ellipse * self.config.histograms_annulus_range.max
-        composite = Composite(outer_ellipse, inner_ellipse)
-        region = Region()
+        composite = PixelCompositeRegion(outer_ellipse, inner_ellipse)
+        region = PixelRegionList()
         region.append(composite)
         self.distribution_region = region
 

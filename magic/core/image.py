@@ -21,7 +21,7 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..basics.layers import Layers
-from ..basics.region import Region
+from ..region.list import PixelRegionList
 from ..basics.mask import Mask
 from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
@@ -628,7 +628,7 @@ class Image(object):
         if not fs.is_file(path): raise IOError("The region file does not exist")
 
         # Create an Region object from the regions file
-        region = Region.from_file(path)
+        region = PixelRegionList.from_file(path)
 
         # Add the region to the set of regions
         self.add_region(region, name, overwrite)

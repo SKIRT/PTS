@@ -19,7 +19,7 @@ from scipy import ndimage
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
-from ..basics.geometry import Rectangle
+from ..region.rectangle import PixelRectangleRegion
 from ..tools import cropping, fitting, interpolation, plotting
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
@@ -272,7 +272,7 @@ class Box(np.ndarray):
         rectangle = ellipse.bounding_box
 
         # ...
-        if shape is not None: rectangle = Rectangle(rectangle.center, Extent(0.5 * shape.x, 0.5 * shape.y))
+        if shape is not None: rectangle = PixelRectangleRegion(rectangle.center, Extent(0.5 * shape.x, 0.5 * shape.y))
 
         return cls.from_rectangle(frame, rectangle, absolute=(shape is not None))
 

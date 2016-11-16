@@ -26,9 +26,9 @@
 from __future__ import division, print_function
 
 # Import other evolve modules
-from genome import GenomeBase, GTreeBase, GTreeNodeBase
-import constants
-import utils
+from .genome import GenomeBase, GTreeBase, GTreeNodeBase
+from . import constants
+from . import utils
 
 # Import the relevant PTS classes and modules
 from ..core.tools.random import prng

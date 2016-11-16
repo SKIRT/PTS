@@ -52,7 +52,6 @@ After you save the file, you must log out an log back in for the changes to have
     <TR><TD>lmfit</TD></TR>
     <TR><TD>lxml</TD></TR>
     <TR><TD>matplotlib</TD></TR>
-    <TR><TD>mpmath</TD></TR>
     <TR><TD>numpy</TD></TR>
     <TR><TD>pexpect</TD></TR>
     <TR><TD>PIL</TD></TR>

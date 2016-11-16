@@ -20,7 +20,7 @@ from pts.magic.misc.imageimporter import ImageImporter
 from pts.magic.tools import interpolation
 from pts.magic.core.frame import Frame
 from pts.magic.basics.mask import Mask
-from pts.magic.basics.region import Region
+from pts.magic.region.list import PixelRegionList
 from pts.core.tools import logging, time, parsing
 from pts.core.tools import filesystem as fs
 
@@ -120,7 +120,7 @@ log.info("Loading the region ...")
 
 # Load in the region
 region_path = fs.join(input_path, arguments.region)
-region = Region.from_file(region_path, only=arguments.shapes, color=arguments.color, ignore_color=arguments.ignore_color)
+region = PixelRegionList.from_file(region_path, only=arguments.shapes, color=arguments.color, ignore_color=arguments.ignore_color)
 
 # Inform the user
 log.info("Creating a mask from the region ...")

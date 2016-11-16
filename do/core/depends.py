@@ -80,9 +80,56 @@ def print_dependency(dependency, data):
 
 # -----------------------------------------------------------------
 
+dependencies_for_subproject = None
+
 # If no script name is given, execute the "list_dependencies.py" script to list all dependencies of PTS and the
 # PTS modules that use them
-if arguments.script is None: dependencies = introspection.get_all_dependencies()
+if arguments.script is None:
+
+    if arguments.subprojects:
+
+        dependencies = defaultdict(set)
+
+        dependencies_for_subproject = dict()
+
+        directories_for_subproject = defaultdict(list)
+
+        # Loop over the subdirectories of the 'do' directory
+        for path, name in fs.directories_in_path(introspection.pts_do_dir, returns=["path", "name"]):
+
+            subproject = name
+            directories_for_subproject[subproject].append(path)
+
+        # Loop over the other directories in 'pts' (other than 'do' and 'doc')
+        for path, name in fs.directories_in_path(introspection.pts_package_dir, returns=["path", "name"], exact_not_name=["do", "doc"]):
+
+            subproject = name
+            directories_for_subproject[subproject].append(path)
+
+        encountered_internal_modules = set()
+
+        for subproject in directories_for_subproject:
+
+            #print(subproject, directories_for_subproject[subproject])
+
+            # List the dependencies of the matching script
+            dependencies_for_this = defaultdict(set)
+
+            for dir_path in directories_for_subproject[subproject]:
+
+                for file_path in fs.files_in_path(dir_path, extension="py", recursive=True):
+
+                    #if subproject == "dustpedia": print(file_path)
+
+                    introspection.add_dependencies(dependencies_for_this, file_path, encountered_internal_modules)
+
+            dependencies_for_subproject[subproject] = dependencies_for_this.keys()
+
+            for dependency in dependencies_for_this:
+                for name in dependencies_for_this[dependency]:
+                    dependencies[dependency].add(name)
+
+    else: dependencies = introspection.get_all_dependencies()
 
 # If a script name is given
 else:
@@ -180,8 +227,6 @@ if arguments.canopy:
 
 else: canopy_packages = None
 
-print("")
-
 data = dict()
 
 present_dependencies = []
@@ -239,20 +284,14 @@ for dependency in sorted(dependencies, key=str.lower):
 
 if arguments.subprojects:
 
-    dependencies_for_subproject = defaultdict(set)
-
-    for dependency in data:
-
-        script_list = data[dependency][0]
-
-        for script_path in script_list:
-
-            subproject = script_path.split("/pts/")[1].split("/")[0]
-
-            if subproject == "do":
-                subproject = script_path.split("do/")[1].split("/")[0]
-
-            dependencies_for_subproject[subproject].add(dependency)
+    #dependencies_for_subproject = defaultdict(set)
+    #for dependency in data:
+    #    script_list = data[dependency][0]
+    #    for script_path in script_list:
+    #        subproject = script_path.split("/pts/")[1].split("/")[0]
+    #        if subproject == "do":
+    #            subproject = script_path.split("do/")[1].split("/")[0]
+    #        dependencies_for_subproject[subproject].add(dependency)
 
     print("")
 
@@ -262,6 +301,8 @@ if arguments.subprojects:
         print("")
 
         for dependency in dependencies_for_subproject[subproject]:
+
+            if dependency not in data: continue # dependencies that were not added to the data because they belong to the standard library
 
             script_list = data[dependency][0]
             present = data[dependency][1]
@@ -277,6 +318,8 @@ if arguments.subprojects:
         print("")
 
 else:
+
+    print("")
 
     if len(present_dependencies) > 0:
 

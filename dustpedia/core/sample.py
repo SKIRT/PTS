@@ -25,7 +25,7 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ...magic.basics.skygeometry import SkyCoordinate
+from ...magic.basics.coordinate import SkyCoordinate
 
 # -----------------------------------------------------------------
 

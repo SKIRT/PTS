@@ -29,12 +29,13 @@ from astropy.coordinates import Angle
 from photutils import source_properties, properties_table
 
 # Import the relevant PTS classes and modules
-from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
+from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks
 from ..core.source import Source
 from ..basics.vector import Position, Extent
-from ..basics.geometry import Ellipse
+from ..region.ellipse import PixelEllipseRegion
 from ..basics.mask import Mask
 from ...core.tools.logging import log
+from ..region import tools as regions
 
 # -----------------------------------------------------------------
 
@@ -70,7 +71,7 @@ def find_contours(data, segments, sigma_level):
         meta = {"text": str(properties.label)}
 
         # Create the contour
-        contours.append(Ellipse(position, radius, angle, meta=meta))
+        contours.append(PixelEllipseRegion(position, radius, angle, meta=meta))
 
     # Return the contours
     return contours
@@ -108,7 +109,7 @@ def find_contour(box, mask, sigma_level):
     radius = Extent(a, b)
 
     # Create and return the elliptical contour
-    return Ellipse(position, radius, angle)
+    return PixelEllipseRegion(position, radius, angle)
 
 # -----------------------------------------------------------------
 
@@ -278,7 +279,6 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
     :param data:
     :param annuli_mask:
     :param fit_mask:
-    :param background_inner_sigmas:
     :param background_outer_sigmas:
     :param fit_sigmas:
     :param model_name:

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.basics.region Contains the Region class.
+## \package pts.magic.region.list Contains the RegionList class and subclasses.
 
 # -----------------------------------------------------------------
 
@@ -22,9 +22,14 @@ from astropy.coordinates import Angle, frame_transform_graph, UnitSphericalRepre
 from astropy.units import Unit, Quantity, dimensionless_unscaled
 
 # Import the relevant PTS classes and modules
-from ..basics.vector import Position, Extent
-#from .geometry import Coordinate, Line, Circle, Ellipse, Rectangle, Polygon, Composite
+from ..basics.vector import Extent
 from ..basics.mask import Mask
+
+from ..basics.coordinate import Coordinate, PixelCoordinate, SkyCoordinate, PhysicalCoordinate
+from .point import PixelPointRegion, SkyPointRegion, PhysicalPointRegion
+from .circle import PixelCircleRegion, SkyCircleRegion, PhysicalCircleRegion
+from .ellipse import PixelEllipseRegion, SkyEllipseRegion, PhysicalEllipseRegion
+from .rectangle import PixelRectangleRegion, SkyRectangleRegion, PhysicalRectangleRegion
 
 # -----------------------------------------------------------------
 
@@ -255,17 +260,19 @@ def line_parser(line, coordsys=None):
             coords = frame(sphcoords)
 
             return region_type, [coords] + parsed[len(coords) * 2:], parsed_meta, composite, include
+
         else:
+
             parsed = type_parser(coords_etc, language_spec[region_type], coordsys)
             if region_type == 'polygon':
                 # have to special-case polygon in the phys coord case b/c can't typecheck when iterating as in sky coord case
                 #coord = PixCoord(parsed[0::2], parsed[1::2])
-                coord = Coordinate(parsed[0::2], parsed[1::2])
+                coord = PixelCoordinate(parsed[0::2], parsed[1::2])
                 parsed_return = [coord]
             else:
                 parsed = [_.value for _ in parsed]
                 #coord = PixCoord(parsed[0], parsed[1])
-                coord = Coordinate(parsed[0], parsed[1])
+                coord = PixelCoordinate(parsed[0], parsed[1])
                 parsed_return = [coord] + parsed[2:]
 
             # Reset iterator for ellipse annulus
@@ -353,7 +360,7 @@ def ds9_region_list_to_objects(region_list):
             if isinstance(coord_list[0], BaseCoordinateFrame):
                 #reg = circle.CircleSkyRegion(coord_list[0], coord_list[1])
             #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], Coordinate):
+            elif isinstance(coord_list[0], PixelCoordinate):
                 #reg = circle.CirclePixelRegion(coord_list[0], coord_list[1])
             else: raise ValueError("No central coordinate")
 
@@ -365,7 +372,7 @@ def ds9_region_list_to_objects(region_list):
             if isinstance(coord_list[0], BaseCoordinateFrame):
                 reg = ellipse.EllipseSkyRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
             #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], Coordinate):
+            elif isinstance(coord_list[0], PixelCoordinate):
                 reg = ellipse.EllipsePixelRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
             else: raise ValueError("No central coordinate")
 
@@ -374,7 +381,7 @@ def ds9_region_list_to_objects(region_list):
             if isinstance(coord_list[0], BaseCoordinateFrame):
                 reg = polygon.PolygonSkyRegion(coord_list[0])
             #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], Coordinate):
+            elif isinstance(coord_list[0], PixelCoordinate):
                 reg = polygon.PolygonPixelRegion(coord_list[0])
             else: raise ValueError("No central coordinate")
 
@@ -383,7 +390,7 @@ def ds9_region_list_to_objects(region_list):
             if isinstance(coord_list[0], BaseCoordinateFrame):
                 reg = rectangle.RectangleSkyRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
             #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], Coordinate):
+            elif isinstance(coord_list[0], PixelCoordinate):
                 reg = rectangle.RectanglePixelRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
             else: raise ValueError("No central coordinate")
 
@@ -392,7 +399,7 @@ def ds9_region_list_to_objects(region_list):
             if isinstance(coord_list[0], BaseCoordinateFrame):
                 #reg = point.PointSkyRegion(coord_list[0])
             #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], Coordinate):
+            elif isinstance(coord_list[0], PixelCoordinate):
                 #reg = point.PointPixelRegion(coord_list[0])
                 reg = coord_list[0]
             else: raise ValueError("No central coordinate")
@@ -830,11 +837,8 @@ class PixelRegionList(RegionList):
         :return:
         """
 
-        # Avoid circular import at module scope
-        from .skyregion import SkyRegion
-
         # Create a new SkyRegion
-        region = SkyRegion()
+        region = SkyRegionList()
 
         # Add the shapes to the sky region
         for shape in self: region.append(shape.to_sky(wcs))

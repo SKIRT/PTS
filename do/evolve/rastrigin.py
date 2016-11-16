@@ -1,5 +1,5 @@
 
-from pts.evolve.simplega import GAEngine, RawScoreCriteria
+from pts.evolve.engine import GAEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import Mutators, Initializators
 from pts.evolve import Selectors

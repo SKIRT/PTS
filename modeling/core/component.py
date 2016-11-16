@@ -28,8 +28,7 @@ from ...core.data.sed import ObservedSED
 from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
 from ...magic.core.frame import Frame
-from ...magic.basics.skyregion import SkyRegion
-from ...magic.basics.region import Region
+from ...magic.region.list import PixelRegionList, SkyRegionList
 from ..basics.models import load_3d_model, load_2d_model
 from ..basics.projection import GalaxyProjection
 from ..basics.properties import GalaxyProperties
@@ -753,7 +752,7 @@ class ModelingComponent(Configurable):
         """
 
         # Open the region
-        region = SkyRegion.from_file(self.disk_region_path)
+        region = SkyRegionList.from_file(self.disk_region_path)
 
         # Return the first and only shape
         return region[0]
@@ -770,7 +769,7 @@ class ModelingComponent(Configurable):
 
         # Load the ellipse
         path = fs.join(self.truncation_path, "ellipse.reg")
-        region = SkyRegion.from_file(path)
+        region = SkyRegionList.from_file(path)
         ellipse = region[0]
 
         # Return the (sky) ellipse
@@ -858,7 +857,7 @@ class ModelingComponent(Configurable):
         """
 
         path = fs.join(self.prep_path, image_name, "sky", "annulus.reg")
-        return Region.from_file(path)
+        return SkyRegionList.from_file(path)
 
     # -----------------------------------------------------------------
 

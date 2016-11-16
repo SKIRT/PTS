@@ -23,8 +23,7 @@ from pts.magic.misc.imageimporter import ImageImporter
 from pts.magic.sources.finder import SourceFinder
 from pts.magic.catalog.importer import CatalogImporter
 from pts.magic.core.image import Image
-from pts.magic.basics.region import Region
-from pts.magic.basics.skyregion import SkyRegion
+from pts.magic.region.list import PixelRegionList, SkyRegionList
 from pts.core.tools import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
@@ -184,7 +183,7 @@ if arguments.special is not None:
     log.info("Loading region indicating areas that require special attention from " + path + " ...")
 
     # Load the region and create a mask from it
-    special_region = SkyRegion.from_file(path)
+    special_region = SkyRegionList.from_file(path)
 
 # No special region
 else: special_region = None
@@ -201,7 +200,7 @@ if arguments.ignore is not None:
     log.info("Loading region indicating areas that should be ignored from " + path + " ...")
 
     # Load the region and create a mask from it
-    ignore_region = SkyRegion.from_file(path)
+    ignore_region = SkyRegionList.from_file(path)
 
 # No ignore region
 else: ignore_region = None

@@ -21,13 +21,14 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
-from ..basics.geometry import Ellipse, Coordinate
+from ..region.ellipse import PixelEllipseRegion
+from ..basics.coordinate import PixelCoordinate
 from ..core.source import Source
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
 from ..tools import masks
 from ...core.basics.animation import Animation
-from ..basics.region import Region
+from ..region.list import PixelRegionList
 from ..core.image import Image
 from ..core.frame import Frame
 from ...core.tools import filesystem as fs
@@ -197,19 +198,19 @@ class SourceExtractor(Configurable):
 
         # Load the galaxy region
         galaxy_region_path = self.input_path_file("galaxies.reg")
-        self.galaxy_region = Region.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
+        self.galaxy_region = PixelRegionList.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
 
         # Load the star region
         star_region_path = self.input_path_file("stars.reg")
-        self.star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
+        self.star_region = PixelRegionList.from_file(star_region_path) if fs.is_file(star_region_path) else None
 
         # Load the saturation region
         saturation_region_path = self.input_path_file("saturation.reg")
-        self.saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
+        self.saturation_region = PixelRegionList.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
 
         # Load the region of other sources
         other_region_path = self.input_path_file("other_sources.reg")
-        self.other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
+        self.other_region = PixelRegionList.from_file(other_region_path) if fs.is_file(other_region_path) else None
 
     # -----------------------------------------------------------------
 
@@ -706,11 +707,11 @@ class SourceExtractor(Configurable):
         for shape in self.galaxy_region:
 
             # Skip single coordinates
-            if isinstance(shape, Coordinate): continue
+            if isinstance(shape, PixelCoordinate): continue
 
             if "principal" in shape.meta["text"]: return shape
 
-            if not isinstance(shape, Ellipse): return shape
+            if not isinstance(shape, PixelEllipseRegion): return shape
 
             major_axis_length = shape.major
             if largest_shape is None or major_axis_length > largest_shape.major: largest_shape = shape

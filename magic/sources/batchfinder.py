@@ -29,7 +29,7 @@ from ...core.tools.logging import log
 from ..core.dataset import DataSet
 from ..catalog.importer import CatalogImporter
 from ...core.tools import filesystem as fs
-from ..basics.skyregion import SkyRegion
+from ..region.list import SkyRegionList
 from ..core.image import Image
 from ..core.frame import Frame
 from ..tools import statistics
@@ -150,7 +150,7 @@ class BatchSourceFinder(Configurable):
         """
 
         # Region of all the bounding boxes
-        boxes_region = SkyRegion()
+        boxes_region = SkyRegionList()
 
         # Add the bounding boxes as sky rectangles
         for name in self.frames: boxes_region.append(self.frames[name].wcs.bounding_box)
@@ -204,10 +204,10 @@ class BatchSourceFinder(Configurable):
         self.load_frames()
 
         # Load special region
-        self.special_region = SkyRegion.from_file(self.config.special_region) if self.config.special_region is not None else None
+        self.special_region = SkyRegionList.from_file(self.config.special_region) if self.config.special_region is not None else None
 
         # Load ignore region
-        self.ignore_region = SkyRegion.from_file(self.config.ignore_region) if self.config.ignore_region is not None else None
+        self.ignore_region = SkyRegionList.from_file(self.config.ignore_region) if self.config.ignore_region is not None else None
 
         # Create the masks
         self.create_masks()

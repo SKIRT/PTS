@@ -18,7 +18,7 @@
 from types import BooleanType
 
 # Import other evolve modules
-import utils
+from . import utils
 
 # Import the relevant PTS classes and modules
 from ..core.tools.random import prng

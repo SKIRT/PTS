@@ -22,7 +22,7 @@ import astropy.units as u
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from ..basics.geometry import Ellipse
+from .ellipse import PixelEllipseRegion
 from ..basics.vector import Position, Extent
 
 # -----------------------------------------------------------------
@@ -41,7 +41,7 @@ def largest_ellipse(region):
     for shape in region:
 
         # Skip shapes that are not ellipses
-        if not isinstance(shape, Ellipse): continue
+        if not isinstance(shape, PixelEllipseRegion): continue
 
         major_axis_length = shape.major
 
@@ -61,7 +61,7 @@ def ellipse(shape):
     """
 
     x_center, y_center, x_radius, y_radius, angle = ellipse_parameters(shape)
-    return Ellipse(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.Unit("deg")))
+    return PixelEllipseRegion(Position(x_center, y_center), Extent(x_radius, y_radius), Angle(angle, u.Unit("deg")))
 
 # -----------------------------------------------------------------
 

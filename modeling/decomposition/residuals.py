@@ -25,7 +25,7 @@ from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
 from pts.magic.core.source import Source
 from pts.magic.tools import statistics, plotting, fitting
-from pts.magic.basics.geometry import Ellipse
+from pts.magic.region.ellipse import PixelEllipseRegion
 from pts.magic.basics.vector import Extent
 
 from .component import DecompositionComponent
@@ -292,7 +292,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
         center = parameters.center.to_pixel(frame.wcs)
 
         # Create a source around the galaxy center
-        ellipse = Ellipse(center, 20.0*sigma)
+        ellipse = PixelEllipseRegion(center, 20.0*sigma)
         source = Source.from_ellipse(model_residual, ellipse, 1.5)
 
         source.estimate_background("polynomial")

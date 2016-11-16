@@ -7,8 +7,8 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.magic.config.extract_sources import definition as extraction_definition
-from pts.magic.config.subtract_sky import definition as subtraction_definition
+from pts.magic.config.extract import definition as extraction_definition
+#from pts.magic.config.subtract_sky import definition as subtraction_definition
 
 # -----------------------------------------------------------------
 

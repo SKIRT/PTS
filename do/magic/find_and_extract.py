@@ -24,7 +24,7 @@ from pts.magic.sources.extractor import SourceExtractor
 from pts.core.tools import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.magic.basics.region import Region
+from pts.magic.region.list import PixelRegionList
 from pts.magic.view import MagicViewer
 
 # -----------------------------------------------------------------
@@ -142,7 +142,7 @@ if arguments.special is not None:
     log.info("Creating mask covering objects that require special attention from " + path + " ...")
 
     # Load the region and create a mask from it
-    special_region = Region.from_file(path)
+    special_region = PixelRegionList.from_file(path)
 
 # No special region
 else: special_region = None
@@ -159,7 +159,7 @@ if arguments.ignore is not None:
     log.info("Creating mask covering objects that should be ignored from " + path + " ...")
 
     # Load the region and create a mask from it
-    ignore_region = Region.from_file(path)
+    ignore_region = PixelRegionList.from_file(path)
 
 # No ignore region
 else: ignore_region = None
@@ -229,9 +229,9 @@ if arguments.interactive:
     name = raw_input("Press enter to continue with the extraction step ...")
 
     # Import the star and saturation regions which have been adjusted by the user
-    star_region = Region.from_file(star_region_path)
-    saturation_region = Region.from_file(saturation_region_path)
-    other_region = Region.from_file(other_region_path)
+    star_region = PixelRegionList.from_file(star_region_path)
+    saturation_region = PixelRegionList.from_file(saturation_region_path)
+    other_region = PixelRegionList.from_file(other_region_path)
 
 # -----------------------------------------------------------------
 

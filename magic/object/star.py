@@ -22,7 +22,7 @@ from ..core.box import CutoutMask, Box
 from ..core.source import Source
 from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
-from ..basics.geometry import Ellipse
+from ..region.ellipse import PixelEllipseRegion
 from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
@@ -135,7 +135,7 @@ class Star(SkyObject):
         """
 
         center, radius, angle = self.ellipse_parameters(wcs, default_radius)
-        return Ellipse(center, radius, angle)
+        return PixelEllipseRegion(center, radius, angle)
 
     # -----------------------------------------------------------------
 
@@ -240,7 +240,7 @@ class Star(SkyObject):
             center = self.pixel_position(frame.wcs)
 
         # Create the new source
-        ellipse = Ellipse(center, radius)
+        ellipse = PixelEllipseRegion(center, radius)
         source = Source.from_ellipse(frame, ellipse, outer_factor, shape=shape)
 
         # Set peak to that of the previous source
@@ -397,7 +397,7 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        ellipse = Ellipse(self.pixel_position(frame.wcs), radius, Angle(0.0, "deg"))
+        ellipse = PixelEllipseRegion(self.pixel_position(frame.wcs), radius, Angle(0.0, "deg"))
 
         #frame_star_erased = frame.copy()
         #frame_star_erased[self.source.y_slice, self.source.x_slice][self.source.mask] = 0.0

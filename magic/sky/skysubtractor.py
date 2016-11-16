@@ -37,11 +37,12 @@ from astropy import stats
 from ..core.frame import Frame
 from ..basics.mask import Mask
 from ..core.source import Source
-from ..basics.geometry import Coordinate, Circle, Composite
-from ..basics.region import Region
-from ..basics.skyregion import SkyRegion
+from ..basics.coordinate import PixelCoordinate
+from ..region.circle import PixelCircleRegion
+from ..region.composite import PixelCompositeRegion
+from ..region.list import PixelRegionList, SkyRegionList
 from ..tools import plotting, statistics, fitting, plotting
-from ...core.basics.configurable import OldConfigurable
+#from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 from ..misc import chrisfuncs
@@ -105,25 +106,6 @@ class SkySubtractor(OldConfigurable):
         self.apertures_frame = None
         self.apertures_mean_frame = None
         self.apertures_noise_frame = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new SkySubtractor instance
-        if arguments.config is not None: subtractor = cls(arguments.config)
-        elif arguments.settings is not None: subtractor = cls(arguments.settings)
-        else: subtractor = cls()
-
-        # Return the new instance
-        return subtractor
 
     # -----------------------------------------------------------------
 

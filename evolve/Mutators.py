@@ -12,9 +12,9 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-import utils
-import constants
-import tree
+from . import utils
+from . import constants
+from . import tree
 
 # Import the relevant PTS classes and modules
 from ..core.tools.random import prng

@@ -14,7 +14,7 @@
 from math import sqrt as math_sqrt
 
 # Import other evolve modules
-import constants
+from . import constants
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log

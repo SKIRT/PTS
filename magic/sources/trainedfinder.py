@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-from scipy import ndimage
+#from scipy import ndimage
 from skimage.feature import match_template
 
 # Import astronomical modules
@@ -25,15 +25,14 @@ from astropy.coordinates import SkyCoord
 from ..core.frame import Frame
 from ..core.source import Source
 from ..basics.mask import Mask
-from ..basics.region import Region
-from ..basics.geometry import Ellipse
-from ..tools import statistics, masks, plotting, general, interpolation
+from ..region.list import PixelRegionList
+from ..region.ellipse import PixelEllipseRegion
+from ..tools import statistics, masks, plotting, general
 from ..analysis import sources
-from ..train import Classifier
 from ..object.star import Star
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
-from ..basics.geometry import Coordinate
+from ..basics.coordinate import PixelCoordinate
 
 # -----------------------------------------------------------------
 

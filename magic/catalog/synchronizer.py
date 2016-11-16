@@ -21,10 +21,10 @@ import astropy.units as u
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
-from ..basics.geometry import Rectangle
+from ..region.rectangle import PixelRectangleRegion
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
-from ...core.basics.configurable import OldConfigurable
+#from ...core.basics.configurable import OldConfigurable
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 
@@ -477,7 +477,7 @@ class CatalogSynchronizer(OldConfigurable):
         # Create rectangle
         center = Position(ra, dec)
         radius = Extent(0.5 * ra_span, 0.5 * dec_span)
-        box = Rectangle(center, radius)
+        box = PixelRectangleRegion(center, radius)
 
         # List of boxes from ranges in the table
         boxes = []
@@ -505,7 +505,7 @@ class CatalogSynchronizer(OldConfigurable):
             entry_center = Position(entry_ra, entry_dec)
             entry_radius = Extent(0.5 * entry_ra_span, 0.5 * entry_dec_span)
 
-            entry_box = Rectangle(entry_center, entry_radius)
+            entry_box = PixelRectangleRegion(entry_center, entry_radius)
 
             boxes.append(entry_box)
 

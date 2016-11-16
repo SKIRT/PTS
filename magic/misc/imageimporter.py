@@ -20,8 +20,8 @@ from ..core.image import Image
 from ..core.frame import Frame
 from ..core.box import Box
 from ..basics.mask import Mask
-from ..basics.region import Region
-from ...core.basics.configurable import OldConfigurable
+from ..region.list import PixelRegionList
+#from ...core.basics.configurable import OldConfigurable
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 

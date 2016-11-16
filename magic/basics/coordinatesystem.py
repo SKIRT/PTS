@@ -26,8 +26,9 @@ from astropy.io import fits
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from .geometry import Coordinate
-from .skygeometry import SkyCoordinate, SkyRectangle, SkyExtent
+from .coordinate import PixelCoordinate, SkyCoordinate
+from ..region.rectangle import SkyRectangleRegion
+from .stretch import SkyStretch
 from ..tools import coordinates
 from .pixelscale import Pixelscale
 
@@ -196,7 +197,7 @@ class CoordinateSystem(wcs.WCS):
         """
 
         x, y = self.wcs.crpix
-        return Coordinate(x, y)
+        return PixelCoordinate(x, y)
 
     # -----------------------------------------------------------------
 
@@ -400,9 +401,9 @@ class CoordinateSystem(wcs.WCS):
         #radius = Extent(0.5 * ra_span, 0.5 * dec_span)
         #box = Rectangle(center, radius)
 
-        radius = SkyExtent(0.5 * ra_span, 0.5 * dec_span)
+        radius = SkyStretch(0.5 * ra_span, 0.5 * dec_span)
 
-        box = SkyRectangle(center, radius)
+        box = SkyRectangleRegion(center, radius)
 
         # Return the box
         return box
@@ -428,8 +429,8 @@ class CoordinateSystem(wcs.WCS):
         center_coordinate = self.center_sky
 
         # Calculate the new pixel position
-        new_x_pixel = Coordinate(center.x + pix_x, center.y)
-        new_y_pixel = Coordinate(center.x, center.y + pix_y)
+        new_x_pixel = PixelCoordinate(center.x + pix_x, center.y)
+        new_y_pixel = PixelCoordinate(center.x, center.y + pix_y)
 
         # Convert to sky coordinate
         new_x_sky = self.to_sky(new_x_pixel)

@@ -18,7 +18,7 @@ import argparse
 
 # Import the relevant PTS classes and modules
 from pts.magic.core.frame import Frame
-from pts.magic.basics.region import Region
+from pts.magic.region.list import PixelRegionList
 from pts.magic.basics.mask import Mask
 
 # -----------------------------------------------------------------
@@ -41,7 +41,7 @@ frame = Frame.from_file(arguments.image)
 
 # Load the region
 region_name = os.path.splitext(os.path.basename(arguments.region))[0]
-region = Region.from_file(arguments.region)
+region = PixelRegionList.from_file(arguments.region)
 
 # Create the mask
 mask = Mask(region.get_mask(shape=frame.shape))

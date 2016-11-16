@@ -27,12 +27,24 @@ class CompositeRegion(Region):
 
 class PixelCompositeRegion(CompositeRegion):
 
+    """
+    This class ...
+    """
+
 # -----------------------------------------------------------------
 
 class SkyCompositeRegion(CompositeRegion):
 
+    """
+    This class ...
+    """
+
 # -----------------------------------------------------------------
 
 class PhysicalCompositeRegion(CompositeRegion):
+
+    """
+    This class ...
+    """
 
 # -----------------------------------------------------------------

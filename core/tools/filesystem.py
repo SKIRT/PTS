@@ -614,7 +614,13 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         if exact_name is not None and exact_name != item: continue
 
         # If the directory name matches the 'exact not name', skip it
-        if exact_not_name is not None and exact_not_name == item: continue
+        if exact_not_name is not None:
+
+            if isinstance(exact_not_name, basestring):
+                if exact_not_name == item: continue
+            elif isinstance(exact_not_name, list):
+                if item in exact_not_name: continue
+            else: raise ValueError("Invalid option for 'exact_not_name': must be string or list")
 
         # Ignore directory names that do not start or end with the specified strings
         if startswith is not None and not item.startswith(startswith): continue

@@ -30,7 +30,7 @@ from .mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
-from ..basics.skyregion import SkyRegion
+from ..region.list import SkyRegionList
 from ..tools import headers
 
 # -----------------------------------------------------------------
@@ -346,7 +346,7 @@ class DataSet(object):
         """
 
         # Region of all the bounding boxes
-        boxes_region = SkyRegion()
+        boxes_region = SkyRegionList()
 
         # Add the bounding boxes as sky rectangles
         for name in self.paths: boxes_region.append(self.get_wcs(name).bounding_box)

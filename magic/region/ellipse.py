@@ -75,6 +75,54 @@ class PixelEllipseRegion(EllipseRegion):
         # Call the constructor of the base class
         super(PixelEllipseRegion, self).__init__(center, radius, angle, **kwargs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def major(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.x
+
+    # -----------------------------------------------------------------
+
+    @major.setter
+    def major(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.radius.x = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def minor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.y
+
+    # -----------------------------------------------------------------
+
+    @minor.setter
+    def minor(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.radius.y = value
+
 # -----------------------------------------------------------------
 
 class SkyEllipseRegion(EllipseRegion):
@@ -98,6 +146,54 @@ class SkyEllipseRegion(EllipseRegion):
 
         # Call the constructor of the base class
         super(SkyEllipseRegion, self).__init__(center, radius, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def major(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.ra
+
+    # -----------------------------------------------------------------
+
+    @major.setter
+    def major(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.radius.ra = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def minor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.dec
+
+    # -----------------------------------------------------------------
+
+    @minor.setter
+    def minor(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.radius.dec = value
 
 # -----------------------------------------------------------------
 
@@ -123,5 +219,53 @@ class PhysicalEllipseRegion(EllipseRegion):
 
         # Call the constructor of the base class
         super(PhysicalEllipseRegion, self).__init__(center, radius, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def major(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.length1
+
+    # -----------------------------------------------------------------
+
+    @major.setter
+    def major(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.radius.length1 = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def minor(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.length2
+
+    # -----------------------------------------------------------------
+
+    @minor.setter
+    def minor(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.radius.length2 = value
 
 # -----------------------------------------------------------------

@@ -32,7 +32,9 @@ from .frame import Frame
 from .box import Box
 from ..basics.vector import Position, Extent
 from ..basics.mask import Mask
-from ..basics.geometry import Ellipse, Rectangle, Circle
+from ..region.ellipse import PixelEllipseRegion
+from ..region.rectangle import PixelRectangleRegion
+from ..region.circle import PixelCircleRegion
 from ..tools import plotting, statistics
 
 # -----------------------------------------------------------------
@@ -65,7 +67,7 @@ class Source(object):
         self.contamination = None
 
         # The elliptical contour
-        self.contour = Ellipse(self.center, self.radius, self.angle)
+        self.contour = PixelEllipseRegion(self.center, self.radius, self.angle)
 
     # -----------------------------------------------------------------
 
@@ -74,13 +76,14 @@ class Source(object):
 
         """
         This function ...
+        :param frame:
         :param coordinate:
         :param radius:
         :param factor:
         :return:
         """
 
-        circle = Circle(coordinate, radius)
+        circle = PixelCircleRegion(coordinate, radius)
         return cls.from_shape(frame, circle, factor)
 
     # -----------------------------------------------------------------
@@ -133,14 +136,14 @@ class Source(object):
         angle = rectangle.angle
 
         # Create cutout box
-        rectangle = Rectangle(center, radius * factor, angle) # new expanded rectangle
+        rectangle = PixelRectangleRegion(center, radius * factor, angle) # new expanded rectangle
         cutout = Box.from_rectangle(frame, rectangle)
 
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(center)
 
         # Create source mask
-        rectangle = Rectangle(rel_center, radius, angle)
+        rectangle = PixelRectangleRegion(rel_center, radius, angle)
         mask = Mask.from_shape(rectangle, cutout.xsize, cutout.ysize)
 
         # Set (estimated) background and removed to None
@@ -173,14 +176,14 @@ class Source(object):
         angle = ellipse.angle
 
         # Create cutout box
-        ellipse = Ellipse(center, radius * factor, angle) # new, expanded ellipse
+        ellipse = PixelEllipseRegion(center, radius * factor, angle) # new, expanded ellipse
         cutout = Box.from_ellipse(frame, ellipse, shape)
 
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(center)
 
         # Create source mask
-        ellipse = Ellipse(rel_center, radius, angle)
+        ellipse = PixelEllipseRegion(rel_center, radius, angle)
         mask = Mask.from_shape(ellipse, cutout.xsize, cutout.ysize)
 
         # Set (estimated) background and removed to None
@@ -612,7 +615,7 @@ class Source(object):
             source.radius = self.radius * (1.0 / factor)
 
         # Create smaller mask
-        ellipse = Ellipse(rel_center, source.radius, source.angle)
+        ellipse = PixelEllipseRegion(rel_center, source.radius, source.angle)
         source.mask = Mask.from_shape(ellipse, source.cutout.xsize, source.cutout.ysize)
 
         # Set other properties to None
@@ -637,14 +640,14 @@ class Source(object):
         new_radius = self.radius * factor
 
         # Create cutout box
-        ellipse = Ellipse(self.center, new_radius * self.factor, self.angle) # new, expanded ellipse
+        ellipse = PixelEllipseRegion(self.center, new_radius * self.factor, self.angle) # new, expanded ellipse
         cutout = Box.from_ellipse(frame, ellipse)
 
         # Calculate the relative coordinate of the center for the cutout box
         rel_center = cutout.rel_position(self.center)
 
         # Create source mask
-        ellipse = Ellipse(rel_center, new_radius, self.angle)
+        ellipse = PixelEllipseRegion(rel_center, new_radius, self.angle)
         mask = Mask.from_shape(ellipse, cutout.xsize, cutout.ysize)
 
         # Create the new source
@@ -720,6 +723,7 @@ class Source(object):
         This function ...
         :param path:
         :param frame: replacement frame
+        :param origin:
         :return:
         """
 

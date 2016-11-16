@@ -20,7 +20,7 @@ from astropy.coordinates import Angle
 from ..core.source import Source
 from .skyobject import SkyObject
 from ..basics.vector import Extent
-from ..basics.geometry import Ellipse
+from ..region.ellipse import PixelEllipseRegion
 from ..tools import catalogs
 
 # -----------------------------------------------------------------
@@ -151,7 +151,7 @@ class Galaxy(SkyObject):
         """
 
         center, radius, angle = self.ellipse_parameters(wcs, default_radius)
-        return Ellipse(center, radius, angle)
+        return PixelEllipseRegion(center, radius, angle)
 
     # -----------------------------------------------------------------
 

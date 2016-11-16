@@ -535,22 +535,54 @@ def get_modules(import_statement, script_path, debug=False):
     :return:
     """
 
-    splitted = import_statement.split()
+    if "," in import_statement:
 
-    if len(splitted) <= 2: imported = []
+        if import_statement.startswith("from"):
 
-    elif "," in splitted[3]:
+            splitted = import_statement.split()
 
-        imported = [splitted[3][:-1]]
+            imported = [splitted[3][:-1]]
 
-        for more in splitted[4:]:
+            for more in splitted[4:]:
 
-            if "," in more: more = more[:-1]
-            imported.append(more)
+                if "," in more: more = more[:-1]
+                imported.append(more)
 
-    else: imported = [splitted[3]]
+        else:
+
+            splitted = import_statement.split(",")
+            firstsplitted = splitted[0].split()
+
+            if "." in firstsplitted[1]: fr, wh = firstsplitted[1].split(".")
+            else: fr, wh = firstsplitted[1].strip(), None
+
+            if wh is not None: imported = [wh.strip()]
+
+            #imported = [firstsplitted]
+
+            for more in splitted[1:]:
+
+                if "." in more: fr2, wh2 = more.split(".")
+                else: fr2, wh2 = more.strip(), None
+                fr2 = fr2.strip()
+                if fr2 != fr: raise RuntimeError("Cannot proceed: " + fr2 + " is not equal to " + fr)
+                if wh2 is not None: imported.append(wh2.strip())
+
+            #print(fr)
+            #print(imported)
+
+            splitted = ["from", fr]
+
+    else:
+
+        splitted = import_statement.split()
+
+        if len(splitted) <= 2: imported = []
+        else: imported = [splitted[3]]
 
     which = []
+
+    #print(imported)
 
     # Check if this line denotes a relative import statement
     if splitted[1].startswith("."):

@@ -15,8 +15,8 @@
 import inspect
 
 # Import other evolve modules
-from functionslot import FunctionSlot
-import utils
+from .functionslot import FunctionSlot
+from . import utils
 
 # Import the relevant PTS classes and modules
 from ..core.tools.random import prng

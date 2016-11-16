@@ -15,12 +15,12 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
-from ...magic.basics.region import Region
+from ...magic.region.list import PixelRegionList
 from .component import PreparationComponent
 from ...magic.prepare.preparer import ImagePreparer
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from ...magic.tools import regions
+from ...magic.region import tools as regions
 from ...magic.misc.kernels import AnianoKernels, aniano_names
 from ...magic.misc.calibration import CalibrationError
 from ...magic.misc.extinction import GalacticExtinction
@@ -523,19 +523,19 @@ def load_sources(path):
 
     # Load the galaxy region
     galaxy_region_path = fs.join(path, "galaxies.reg")
-    galaxy_region = Region.from_file(galaxy_region_path)
+    galaxy_region = PixelRegionList.from_file(galaxy_region_path)
 
     # Load the star region (if present)
     star_region_path = fs.join(path, "stars.reg")
-    star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
+    star_region = PixelRegionList.from_file(star_region_path) if fs.is_file(star_region_path) else None
 
     # load the saturation region (if present)
     saturation_region_path = fs.join(path, "saturation.reg")
-    saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
+    saturation_region = PixelRegionList.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
 
     # Load the region of other sources
     other_region_path = fs.join(path, "other_sources.reg")
-    other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
+    other_region = PixelRegionList.from_file(other_region_path) if fs.is_file(other_region_path) else None
 
     # Load the image with segmentation maps
     segments_path = fs.join(path, "segments.fits")

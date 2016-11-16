@@ -24,9 +24,9 @@ import types
 import datetime
 
 # Import other evolve modules
-import statistics
-import constants
-import utils
+from . import statistics
+from . import constants
+from . import utils
 
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log

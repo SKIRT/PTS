@@ -20,7 +20,7 @@ from pts.magic.prepare.preparer import ImagePreparer
 from pts.core.tools import logging, time, tables, parsing
 from pts.core.tools import filesystem as fs
 from pts.magic.core.image import Image
-from pts.magic.basics.region import Region
+from pts.magic.region.list import PixelRegionList
 from pts.magic.misc.calibration import CalibrationError
 from pts.magic.misc.extinction import GalacticExtinction
 from pts.core.basics.filter import Filter
@@ -102,25 +102,25 @@ log.info("Loading regions ...")
 galaxy_region_path = fs.join(arguments.input, "galaxies.reg")
 
 # Load the galaxy region
-galaxy_region = Region.from_file(galaxy_region_path)
+galaxy_region = PixelRegionList.from_file(galaxy_region_path)
 
 # Determine the path to the star region
 star_region_path = fs.join(arguments.input, "stars.reg")
 
 # Load the star region
-star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
+star_region = PixelRegionList.from_file(star_region_path) if fs.is_file(star_region_path) else None
 
 # Determine the path to the saturation region
 saturation_region_path = fs.join(arguments.input, "saturation.reg")
 
 # Load the saturation region
-saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
+saturation_region = PixelRegionList.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
 
 # Determine the path to the region of other sources
 other_region_path = fs.join(arguments.input, "other_sources.reg")
 
 # Load the region of other sources
-other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
+other_region = PixelRegionList.from_file(other_region_path) if fs.is_file(other_region_path) else None
 
 # Inform the user
 log.debug("Loading segmentation frames ...")

@@ -36,7 +36,7 @@ from ...core.data.sed import SED, ObservedSED
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
-from ...magic.basics.skyregion import SkyRegion
+from ...magic.region.list import SkyRegionList
 from ..misc.geometryplotter import GeometryPlotter
 from ..basics.models import load_3d_model
 from ...core.plot.distribution import DistributionPlotter

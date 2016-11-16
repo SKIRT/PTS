@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...magic.basics.skyregion import SkyRegion
+from ...magic.region.list import SkyRegionList
 from ...magic.basics.mask import Mask as oldMask
 from ...magic.core.mask import Mask as newMask
 from .component import TruncationComponent
@@ -350,7 +350,7 @@ class Truncator(TruncationComponent):
         path = fs.join(self.truncation_path, "ellipse.reg")
 
         # Write the ellipse region
-        region = SkyRegion()
+        region = SkyRegionList()
         region.append(self.ellipse)
         region.save(path)
 

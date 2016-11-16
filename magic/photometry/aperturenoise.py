@@ -42,8 +42,10 @@ from ..dist_ellipse import distance_ellipse
 from ..core.frame import Frame
 from ..core.segmentationmap import SegmentationMap
 from ..basics.vector import Position
-from ..basics.region import Region
-from ..basics.geometry import Coordinate, Circle, Composite
+from ..basics.coordinate import PixelCoordinate
+from ..region.list import PixelRegionList
+from ..region.circle import PixelCircleRegion
+from ..region.composite import PixelCompositeRegion
 from ..core.source import Source
 from ..misc import chrisfuncs
 
@@ -299,7 +301,7 @@ class ExactApertureNoiseCalculator(Configurable):
         self.apertures_noise_frame = None
 
         # Region for the sky aperture circles
-        self.aperture_region = Region()
+        self.aperture_region = PixelRegionList()
 
         self.covering_apertures = None
         self.apertures_mask = None
@@ -652,7 +654,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             center = aperture_centers[i]
 
-            circle = Circle(center, aperture_radius)
+            circle = PixelCircleRegion(center, aperture_radius)
 
             mask = Mask.from_shape(circle, self.cutout.shape[1], self.cutout.shape[0])
 
@@ -759,7 +761,7 @@ class ExactApertureNoiseCalculator(Configurable):
             y = random_y
 
             # Create a coordinate for the center of the aperture
-            center = Coordinate(x, y)
+            center = PixelCoordinate(x, y)
 
             # CHECK WHETHER THE COORDINATE LIES IN THE FRAME
             xsize = self.cutout.shape[1]
@@ -787,7 +789,7 @@ class ExactApertureNoiseCalculator(Configurable):
             # CREATE APERTURE
 
             # Create a circular aperture
-            circle = Circle(center, sky_ap_rad_pix)
+            circle = PixelCircleRegion(center, sky_ap_rad_pix)
 
             # IS THIS APERTURE OK?
 
@@ -888,9 +890,9 @@ class ExactApertureNoiseCalculator(Configurable):
             self.covering_apertures.add_shape(circle)
 
             # Create annulus
-            base = Circle(center, bg_inner_semimaj_pix)
-            exclude = Circle(center, bg_inner_semimaj_pix + bg_width)
-            annulus = Composite(base, exclude)
+            base = PixelCircleRegion(center, bg_inner_semimaj_pix)
+            exclude = PixelCircleRegion(center, bg_inner_semimaj_pix + bg_width)
+            annulus = PixelCompositeRegion(base, exclude)
 
             # Add aperture circle to region
             self.aperture_region.append(circle)
