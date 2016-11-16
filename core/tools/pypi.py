@@ -35,19 +35,18 @@
 from __future__ import division, print_function
 import re
 import time
-import textwrap
 import math
 from collections import OrderedDict
 #PY2 = int(sys.version[0]) == 2
 #if PY2:
 from xmlrpclib import ServerProxy
-from urllib import quote as urlquote
+#from urllib import quote as urlquote # eliminated
 #else:
 #    from xmlrpc.client import ServerProxy
 #    from urllib.parse import quote as urlquote
 
 import requests
-from dateutil.parser import parse as dateparse
+#from dateutil.parser import parse as dateparse # eliminated
 #import click
 #from click import echo, style, echo_via_pager
 #from click.termui import get_terminal_size
@@ -93,68 +92,6 @@ def get_package(name_or_url, client=None):
 
 # -----------------------------------------------------------------
 
-#@cli.command()
-#@click.option('--graph/--no-graph', '-g/-q', default=True,
-#    help="Output a graph of download counts.")
-#@click.argument('package', nargs=-1, required=True)
-def stat(package, graph):
-    """Print download statistics for a package.
-    \b
-    Example:
-        pypi stat requests
-    """
-    client = requests.Session()
-    for name_or_url in package:
-        package = get_package(name_or_url, client)
-        if not package:
-            #echo(style(
-            #    u'Invalid name or URL: "{name}"'.format(name=name_or_url), fg='red'),
-            #    file=sys.stderr)
-            print('Invalid name or URL: "{name}"'.format(name=name_or_url))
-            continue
-        try:
-            version_downloads = package.version_downloads
-        except NotFoundError:
-            #echo(style(u'No versions found for "{0}". Skipping. . .'.format(package.name),
-            #    fg='red'), file=sys.stderr)
-            continue
-        #echo(u"Fetching statistics for '{url}'. . .".format(url=package.package_url))
-        print("Fetching statistics for '{url}'. . .".format(url=package.package_url))
-        min_ver, min_downloads = package.min_version
-        max_ver, max_downloads = package.max_version
-        if min_ver is None or max_ver is None:
-            #raise click.ClickException('Package has no releases')
-            raise Exception("Package has no releases")
-        avg_downloads = package.average_downloads
-        total = package.downloads
-        #echo()
-        print()
-        header = u'Download statistics for {name}'.format(name=package.name)
-        #echo_header(header)
-        if graph:
-            #echo()
-            print()
-            #echo('Downloads by version')
-            print("Downloads by version")
-            #echo(package.chart())
-            print(package.chart())
-        #echo()
-        print()
-        #echo("Min downloads:   {min_downloads:12,} ({min_ver})".format(**locals()))
-        print("Min downloads:   {min_downloads:12,} ({min_ver})".format(**locals()))
-        #echo("Max downloads:   {max_downloads:12,} ({max_ver})".format(**locals()))
-        #echo("Avg downloads:   {avg_downloads:12,}".format(**locals()))
-        print("Max downloads:   {max_downloads:12,} ({max_ver})".format(**locals()))
-        #echo("Total downloads: {total:12,}".format(**locals()))
-        print("Total downloads: {total:12,}".format(**locals()))
-        #echo()
-        print()
-        #echo_download_summary(package)
-        #echo()
-        print()
-
-# -----------------------------------------------------------------
-
 #def echo_download_summary(package):
 #    echo('Last day:    {daily:12,}'.format(daily=package.downloads_last_day))
 #    echo('Last week:   {weekly:12,}'.format(weekly=package.downloads_last_week))
@@ -187,22 +124,6 @@ def browse(package, homepage):
     #click.launch(url)
 
     print(url)
-
-# -----------------------------------------------------------------
-
-def format_result(result, name_column_width=25):
-
-    name = result['name']
-    summary_wrapped = textwrap.wrap(
-        result['summary'] or name,
-        width=click.get_terminal_size()[0] - name_column_width - MARGIN
-    )
-    padding = ' ' * (name_column_width + 3)
-    summary = ('\n' + padding).join(summary_wrapped)
-    return u'{0} - {1}'.format(
-        style(name.ljust(name_column_width), fg='cyan', bold=True),
-        summary
-    )
 
 # -----------------------------------------------------------------
 
@@ -457,35 +378,6 @@ class Package(object):
                     if len(releases) > 0]
         # sort by first upload date of each release
         return sorted(filtered, key=lambda x: x[1][0]['upload_time'])
-
-    @lazy_property
-    def version_dates(self):
-
-        ret = OrderedDict()
-        for release, info in self.release_info:
-            if info:
-                upload_time = dateparse(info[0]['upload_time'])
-                ret[release] = upload_time
-        return ret
-
-    def chart(self):
-
-        def style_version(version):
-            return style(version, fg='cyan', bold=True)
-
-        data = OrderedDict()
-        for version, dl_count in self.version_downloads.items():
-            date = self.version_dates.get(version)
-            date_formatted = ''
-            if date:
-                date_formatted = time.strftime(DATE_FORMAT,
-                    self.version_dates[version].timetuple())
-            key = "{0:20} {1}".format(
-                style_version(version),
-                date_formatted
-            )
-            data[key] = dl_count
-        return bargraph(data, max_key_width=20 + _COLOR_LEN + _BOLD_LEN)
 
     @lazy_property
     def downloads(self):
