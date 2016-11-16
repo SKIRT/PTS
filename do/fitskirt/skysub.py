@@ -30,7 +30,7 @@
 # -----------------------------------------------------------------
 
 # Import the necessary modules
-import pyfits
+import astropy.io.fits as pyfits
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt

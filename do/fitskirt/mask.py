@@ -23,7 +23,7 @@
 # -----------------------------------------------------------------
 
 # Import the necessary modules
-import pyfits
+import astropy.io.fits as pyfits
 import numpy as np
 import sys
 from matplotlib.path import Path
