@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 import requests
-from lxml import html
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -23,7 +22,7 @@ from pts.do.commandline import show_all_available, show_possible_matches
 from pts.core.tools import introspection
 from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
-from pts.do.pypi import search
+from pts.core.tools.pypi import search
 from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
@@ -44,7 +43,7 @@ arguments = parser.parse_args()
 
 # -----------------------------------------------------------------
 
-def print_dependencies(dependencies):
+def print_dependency(dependency, data):
 
     script_list = data[dependency][0]
     version = data[dependency][2]
@@ -85,6 +84,7 @@ def print_dependencies(dependencies):
 # PTS modules that use them
 if arguments.script is None: dependencies = introspection.get_all_dependencies()
 
+# If a script name is given
 else:
 
     scripts = introspection.get_scripts()
@@ -151,6 +151,10 @@ packages = introspection.installed_python_packages()
 if arguments.canopy:
 
     url = "https://www.enthought.com/products/canopy/package-index/"
+
+    try:
+        from lxml import html
+    except Exception: raise RuntimeError("You need the 'lxml' package to be able to specify the '--canopy' option")
 
     page_as_string = requests.get(url).content
     tree = html.fromstring(page_as_string)
@@ -280,7 +284,7 @@ else:
         print("")
 
         for dependency in present_dependencies:
-            print_dependencies(present_dependencies)
+            print_dependency(dependency, data)
 
         print("")
 
@@ -290,7 +294,7 @@ else:
         print("")
 
         for dependency in not_present_dependencies:
-            print_dependencies(dependency)
+            print_dependency(dependency, data)
 
         print("")
 
