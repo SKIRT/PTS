@@ -12,9 +12,6 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from config import Sequence
-
 # Import the relevant PTS classes and modules
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
