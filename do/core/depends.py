@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import argparse
 import requests
 from lxml import html
@@ -25,6 +24,7 @@ from pts.core.tools import introspection
 from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
 from pts.do.pypi import search
+from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -37,9 +37,47 @@ parser.add_argument("-v", "--version", action="store_true", help="show the versi
 parser.add_argument("-c", "--canopy", action="store_true", help="show whether the package is available through Canopy")
 parser.add_argument("-p", "--pip", action="store_true", help="show whether the package is available through pip")
 parser.add_argument("-d", "--description", action="store_true", help="show a description")
+parser.add_argument("-j", "--subprojects", action="store_true", help="show the dependencies per subproject")
 
 # Parse the command line arguments
 arguments = parser.parse_args()
+
+# -----------------------------------------------------------------
+
+def print_dependencies(dependencies):
+
+    script_list = data[dependency][0]
+    version = data[dependency][2]
+    in_canopy = data[dependency][3]
+    in_pip = data[dependency][4]
+    description = data[dependency][5]
+
+    info = []
+    if arguments.version: info.append(("version", version))
+    if arguments.canopy: info.append(("in canopy", in_canopy))
+    if arguments.pip: info.append(("in pip", in_pip))
+    if arguments.description: info.append(("description", description))
+
+    had_indent = False
+
+    if len(info) == 0:
+        print("   " + fmt.underlined + dependency + fmt.reset)
+    elif len(info) == 1:
+        if info[0][1] is not None: print("   " + fmt.underlined + dependency + fmt.reset + " (", info[0][1], ")")
+    else:
+        print("   " + fmt.underlined + dependency + fmt.reset)
+        print("")
+        had_indent = True
+        for info_entry in info:
+            if info_entry[1] is not None: print("    - " + info_entry[0] + ": ", info_entry[1])
+
+    # List the PTS modules that have this dependency
+    if arguments.modules:
+        print("")
+        had_indent = True
+        for script in script_list: print("    * " + script.split("PTS/pts/")[1])
+
+    if had_indent: print("")
 
 # -----------------------------------------------------------------
 
@@ -73,7 +111,7 @@ else:
     elif len(matches) == 1 and len(table_matches) == 0:
 
         # Determine the full path to the matching script
-        script_path = os.path.join(introspection.pts_do_dir, matches[0][0], matches[0][1])
+        script_path = fs.join(introspection.pts_do_dir, matches[0][0], matches[0][1])
 
         introspection.add_dependencies(dependencies, script_path, set())
 
@@ -138,11 +176,20 @@ if arguments.canopy:
 
 else: canopy_packages = None
 
-# Loop over the packages and report their presence
+print("")
+
+data = dict()
+
+present_dependencies = []
+not_present_dependencies = []
+
+# Loop over the packages and check their presence
 for dependency in sorted(dependencies, key=str.lower):
 
     # Get the list of PTS scripts for this dependency
     script_list = dependencies[dependency]
+
+    #print(script_list)
 
     # Skip packages from the standard library, unless the appropriate flag is enabled
     if introspection.is_std_lib(dependency) and not arguments.standard: continue
@@ -155,9 +202,11 @@ for dependency in sorted(dependencies, key=str.lower):
         present = introspection.is_present_package(dependency)
         version = None
 
+    if present: present_dependencies.append(dependency)
+    else: not_present_dependencies.append(dependency)
+
     # Check whether the package is available through Canopy
     in_canopy = dependency.lower() in canopy_packages if canopy_packages is not None else None
-    in_canopy_string = " <<CANOPY>>" if in_canopy else ""
 
     # Check whether the package is available through pip
     if arguments.pip:
@@ -168,10 +217,7 @@ for dependency in sorted(dependencies, key=str.lower):
             if result["name"] == dependency:
                 in_pip = True
                 break
-        #else: in_pip = False
-
     else: in_pip = None
-    in_pip_string = " <<PIP>>" if in_pip else ""
 
     # Get description
     if arguments.description:
@@ -181,22 +227,71 @@ for dependency in sorted(dependencies, key=str.lower):
         for result in results:
             if result["name"] == dependency:
                 description = result["summary"]
+                if description.lower().startswith(dependency.lower() + ": "): description = description.split(": ")[1]
                 break
     else: description = None
-    description = " [" + description + "]" if description is not None else ""
 
-    # Check whether the current package is present
-    if present:
+    data[dependency] = [script_list, present, version, in_canopy, in_pip, description]
 
-        # Show package name, whether it's present and version number (if requested)
-        if version is not None: log.success(dependency + ": present (version " + version + ")" + in_canopy_string + in_pip_string + description)
-        else: log.success(dependency + ": present" + in_canopy_string + in_pip_string + description)
+if arguments.subprojects:
 
-    # The package is not present
-    else: log.error(dependency + ": not found" + in_canopy_string + in_pip_string + description)
+    dependencies_for_subproject = defaultdict(set)
 
-    # List the PTS modules that have this dependency
-    if arguments.modules:
-        for script in script_list: log.info("    " + script.split("PTS/pts/")[1])
+    for dependency in data:
+
+        script_list = data[dependency][0]
+
+        for script_path in script_list:
+
+            subproject = script_path.split("/pts/")[1].split("/")[0]
+
+            if subproject == "do":
+                subproject = script_path.split("do/")[1].split("/")[0]
+
+            dependencies_for_subproject[subproject].add(dependency)
+
+    print("")
+
+    for subproject in dependencies_for_subproject:
+
+        print(fmt.underlined + subproject + fmt.reset + ":")
+        print("")
+
+        for dependency in dependencies_for_subproject[subproject]:
+
+            script_list = data[dependency][0]
+            present = data[dependency][1]
+            version = data[dependency][2]
+            in_canopy = data[dependency][3]
+            in_pip = data[dependency][4]
+            description = data[dependency][5]
+
+            if present:
+                print("   " + fmt.bold + fmt.green + dependency + fmt.reset)
+            else: print("   " + fmt.bold + fmt.red + dependency + fmt.reset)
+
+        print("")
+
+else:
+
+    if len(present_dependencies) > 0:
+
+        print(fmt.bold + fmt.green + "present:" + fmt.reset)
+        print("")
+
+        for dependency in present_dependencies:
+            print_dependencies(present_dependencies)
+
+        print("")
+
+    if len(not_present_dependencies) > 0:
+
+        print(fmt.bold + fmt.red + "not present:" + fmt.reset)
+        print("")
+
+        for dependency in not_present_dependencies:
+            print_dependencies(dependency)
+
+        print("")
 
 # -----------------------------------------------------------------

@@ -50,7 +50,6 @@ After you save the file, you must log out an log back in for the changes to have
 
     <TABLE>
     <TR><TD>AstroPy</TD></TR>
-    <TR><TD>config</TD></TR>
     <TR><TD>h5py</TD></TR>
     <TR><TD>lmfit</TD></TR>
     <TR><TD>lxml</TD></TR>
