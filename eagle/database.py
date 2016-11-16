@@ -16,9 +16,9 @@
 #
 # The SKIRT-runs database keeps track of SKIRT simulations performed on EAGLE simulation data.
 # Each record in the database represents a single SKIRT simulation and holds information on:
-#  - the current status of the SKIRT simulation (e.g. to be scheduled, running or finished)
+#  - the current processing stage (e.g. extract, simulate) and status (e.g. running, succeeded)
 #  - the EAGLE data fed to this SKIRT simulation (e.g. snapshot, galaxy ID)
-#  - the SKIRT parameters used for the simulation
+#  - the SKIRT parameters used for the simulation (e.g. ski template)
 #
 # <B>Fields</B>
 #
@@ -32,37 +32,50 @@
 #                               as the name of a directory containing the SKIRT in/out data for this run. These
 #                               directories are located in the directory indicated by the variable \em results_path
 #                               provided by the eagle.config package.</TD></TR>
-#<TR><TD>username</TD>      <TD>Text</TD>
-#                           <TD>The name of the user responsible for inserting this SKIRT run into the database,
-#                               for example "pcamps".</TD></TR>
 #<TR><TD>label</TD>         <TD>Text</TD>
 #                           <TD>A short user-specified identifier used to indicate records that belong together,
-#                               facilitating querying or updating those records as a group.</TD></TR>
-#<TR><TD>runstatus</TD>     <TD>Text</TD>
-#                           <TD>An identifier for the current status of this SKIRT run. In the current implementation,
-#                               the value should be one of "inserted", "scheduled", "running", "failed",
-#                               "completed", "archived", or "removed".</TD></TR>
+#                               facilitating querying or updating those records as a set.</TD></TR>
+#<TR><TD>stage</TD>         <TD>Text</TD>
+#                           <TD>An identifier for the current stage of this SKIRT run. The value should be one of
+#                               "insert", "extract", "simulate", "build", "store", "completed", or "removed".</TD></TR>
+#<TR><TD>status</TD>        <TD>Text</TD>
+#                           <TD>An identifier for the execution status of the current stage of this SKIRT run.
+#                               The value should be one of "scheduled", "running", "failed", or "succeeded".</TD></TR>
 #<TR><TD>statusdate</TD>    <TD>Date</TD>
-#                           <TD>The time and date on which this record's run status was most recently changed.</TD></TR>
-#<TR><TD>queue</TD>         <TD>Text</TD>
-#                           <TD>A short identifier for the queue or computing system on which the SKIRT run is being
-#                               performed or has been performed. The value of this field is relevant only when the
-#                               runstatus is 'scheduled' or later.</TD></TR>
+#                           <TD>The time and date on which this record's stage and/or status were most recently
+#                               changed.</TD></TR>
 #<TR><TD>eaglesim</TD>      <TD>Text</TD>
-#                           <TD>A short name for the EAGLE simulation from which data is obtained for this SKIRT run,
-#                               for example 'Ref100Mpc'. This value is used as a key into the \em eagledata_path
+#                           <TD>The name of the EAGLE simulation from which data is obtained for this SKIRT run,
+#                               for example 'RefL0100N1504'. This value is used as a key into the \em eagledata_path
 #                               dictionary provided by the eagle.config package.</TD></TR>
-#<TR><TD>redshift</TD>      <TD>Real</TD>
-#                           <TD>The redshift of the EAGLE snapshot from which data is obtained for this SKIRT run.
+#<TR><TD>snaptag</TD>       <TD>Integer</TD>
+#                           <TD>The tag (0-28) of the EAGLE snapshot (indicating redshift 20 through 0) from which
+#                               data is obtained for this SKIRT run.
 #                               This value is used to determine the appropriate filenames in the EAGLE data.</TD></TR>
 #<TR><TD>galaxyid</TD>      <TD>Integer</TD>
 #                           <TD>The identifier (GalaxyID) in the public EAGLE database for the galaxy
 #                               used for this SKIRT run.</TD></TR>
+#<TR><TD>groupnr</TD>       <TD>Integer</TD>
+#                           <TD>The group number identifying the particles of this galaxy in the snapshot.</TD></TR>
+#<TR><TD>subgroupnr</TD>    <TD>Integer</TD>
+#                           <TD>The subgroup number identifying the particles of this galaxy in the snapshot.</TD></TR>
+#<TR><TD>starmass</TD>      <TD>Real</TD>
+#                           <TD>The intrinsic stellar mass of this galaxy, in solar masses.</TD></TR>
+#<TR><TD>copx</TD>          <TD>Real</TD>
+#                           <TD>The x-coordinate of the center of potential of this galaxy, in cMpc.</TD></TR>
+#<TR><TD>copy</TD>          <TD>Real</TD>
+#                           <TD>The y-coordinate of the center of potential of this galaxy, in cMpc.</TD></TR>
+#<TR><TD>copz</TD>          <TD>Real</TD>
+#                           <TD>The z-coordinate of the center of potential of this galaxy, in cMpc.</TD></TR>
 #<TR><TD>skitemplate</TD>   <TD>Text</TD>
 #                           <TD>The name (without extension) of the ski file used as a template for this SKIRT run.
 #                               The actual ski file is automatically derived from the template. The templates are
 #                               located in the directory indicated by the variable \em templates_path
 #                               provided by the eagle.config package.</TD></TR>
+#<TR><TD>numpp</TD>         <TD>Real</TD>
+#                           <TD>The number of photon packages to be launched for this SKIRT run.</TD></TR>
+#<TR><TD>deltamax</TD>      <TD>Real</TD>
+#                           <TD>The maximum mass fraction of the dust grid used for this SKIRT run.</TD></TR>
 #</TABLE>
 #
 # <B>Implementation</B>
@@ -84,8 +97,9 @@ from . import config as config
 ## This variable holds an enumeration for the supported database field types
 fieldtype_enum = ('text', 'numeric')
 
-## This variable holds an enumeration for the values of the runstatus field
-runstatus_enum = ('inserted', 'scheduled', 'running', 'failed', 'completed', 'archived', 'removed')
+## These variables hold enumerations for the values of the stage and status fields
+stage_enum = ('insert', 'extract', 'simulate', 'build', 'store', 'completed', 'removed')
+status_enum = ('scheduled', 'running', 'failed', 'succeeded')
 
 # -----------------------------------------------------------------
 
@@ -164,7 +178,7 @@ class Database:
     #
     #\verbatim
     #for row in db.select("label=?", (label, )):
-    #    print row["galaxyid"], row["runstatus"]
+    #    print row["galaxyid"], row["stage"], row["status"]
     #\endverbatim
     #
     def select(self, where, params=None):
@@ -176,7 +190,7 @@ class Database:
     # For example:
     #
     #\verbatim
-    #db.show(db.select("runstatus='inserted'"))
+    #db.show(db.select("stage='insert'"))
     #\endverbatim
     #
     # If the \em refetch argument is True, the function retrieves the data from the data base based on the run-id's
@@ -221,44 +235,56 @@ class Database:
         return self._con.commit();
 
     ## This function inserts a new record into the database with the specified field values. The function
-    # automatically determines values for runid (unique serial nr), username (from config), runstatus ('inserted')
+    # automatically determines values for runid (unique serial nr), stage('insert'), status ('succeeded'),
     # and statusdate (now). The change is \em not committed.
-    def insert(self, label, eaglesim, redshift, galaxyid, skitemplate,
-                     align=1, seed=1, numpp=5e5, deltamax=3e-6, fdust=0.3, fpdr=0.15, keep=1):
-        username = config.username
-        runstatus = runstatus_enum[0]
+    def insert(self, label, eaglesim, snaptag, galaxyid, groupnr, subgroupnr, starmass, copx, copy, copz,
+                     skitemplate, numpp=5e5, deltamax=3e-6):
+        stage = 'insert'
+        status = 'succeeded'
         statusdate = config.timestamp()
-        self._con.execute('''insert into skirtruns (username, runstatus, statusdate,
-                                                    label, eaglesim, redshift, galaxyid, skitemplate,
-                                                    align, seed, numpp, deltamax, fdust, fpdr, keep)
-                             values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
-                           (username, runstatus, statusdate,
-                            label, eaglesim, redshift, galaxyid, skitemplate,
-                            align, seed, numpp, deltamax, fdust, fpdr, keep)
+        self._con.execute('''insert into skirtruns (label, stage, status, statusdate, eaglesim, snaptag,
+                                                    galaxyid, groupnr, subgroupnr, starmass, copx, copy, copz,
+                                                    skitemplate, numpp, deltamax)
+                             values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+                           (label, stage, status, statusdate, eaglesim, snaptag,
+                            galaxyid, groupnr, subgroupnr, starmass, copx, copy, copz,
+                            skitemplate, numpp, deltamax)
                           )
 
     ## This function updates the value of a field in the records specified through a list of run-id's.
     # The change is \em not committed.
     # The \em runids argument provides a sequence of run-id's; each item in the sequence must be either a number
-    # or an object that returns a number when indexed with the 'runid' string. It is not possible to update the
-    # runid field. To update the runstatus and statusdate fields, use the updatestatus() function.
+    # or an object that returns a number when indexed with the 'runid' string. It is not possible to update the runid
+    # field. To update the stage, status and statusdate fields, use the updatestatus() or updatestatus() functions.
     def updatefield(self, runids, fieldname, value):
-        if 'status' in fieldname: raise ValueError("Use the updatestatus() function to update status fields")
+        if ('stage','status') in fieldname:
+            raise ValueError("Use the updatestage() or updatestatus() functions to update these fields")
         for runid in runids:
             self._con.execute("update skirtruns set " + fieldname + " = ? where runid = ?", (value,cleanrunid(runid)))
 
-    ## This function updates the value of the runstatus field, and stores a new timestamp in
-    # in the statusdate field, in the records specified through a list of run-id's.
-    # The change is \em not committed.
+    ## This function updates the value of the stage and status fields, and stores a new timestamp in the statusdate
+    # field, for the specified records. The default new value for the status field is 'scheduled', but another value
+    # can be specified. The change is \em not committed.
     # The \em runids argument provides a sequence of runid's; each item in the sequence must be either a number
     # or an object that returns a number when indexed with the 'runid' string.
-    def updatestatus(self, runids, runstatus):
-        if not runstatus in runstatus_enum:
-            raise ValueError("Unsupported runstatus value: " + runstatus)
+    def updatestage(self, runids, stage, status='scheduled'):
+        if not stage in stage_enum: raise ValueError("Unsupported stage value: " + stage)
+        if not status in status_enum: raise ValueError("Unsupported status value: " + status)
         statusdate = config.timestamp()
         for runid in runids:
-            self._con.execute("update skirtruns set runstatus = ?, statusdate = ? where runid = ?",
-                               (runstatus,statusdate,cleanrunid(runid)))
+            self._con.execute("update skirtruns set stage = ?, status = ?, statusdate = ? where runid = ?",
+                               (stage,status,statusdate,cleanrunid(runid)))
+
+    ## This function updates the value of the status field (without touching the stage field), and stores a new
+    # timestamp in the statusdate field, for the specified records. The change is \em not committed.
+    # The \em runids argument provides a sequence of runid's; each item in the sequence must be either a number
+    # or an object that returns a number when indexed with the 'runid' string.
+    def updatestatus(self, runids, status):
+        if not status in status_enum: raise ValueError("Unsupported status value: " + status)
+        statusdate = config.timestamp()
+        for runid in runids:
+            self._con.execute("update skirtruns set status = ?, statusdate = ? where runid = ?",
+                               (status,statusdate,cleanrunid(runid)))
 
     ## This function updates all fields of the database record for the specified run-id to the values contained
     # in the specified row object. The row object should be obtained through the select() function from a database
@@ -291,15 +317,22 @@ class Database:
         # use "numeric" affinity for integers and reals (except the unique record id)
         self._con.execute('''create table skirtruns (
                              runid integer primary key autoincrement,
-                             username text,
                              label text,
-                             runstatus text,
+                             stage text,
+                             status text,
                              statusdate text,
-                             queue text,
                              eaglesim text,
-                             redshift numeric,
+                             snaptag numeric,
                              galaxyid numeric,
-                             skitemplate text
+                             groupnr numeric,
+                             subgroupnr numeric,
+                             starmass numeric,
+                             copx numeric,
+                             copy numeric,
+                             copz numeric,
+                             skitemplate text,
+                             numpp numeric,
+                             deltamax numeric
                           )''')
 
     ## This function adds a field to the main table in the SKIRT-runs database. It is \em not intended for use in
