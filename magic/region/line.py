@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .region import Region
+from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 
 # -----------------------------------------------------------------
@@ -42,7 +42,7 @@ class LineRegion(Region):
 
 # -----------------------------------------------------------------
 
-class PixelLineRegion(LineRegion):
+class PixelLineRegion(LineRegion, PixelRegion):
 
     """
     This class ...
@@ -66,7 +66,7 @@ class PixelLineRegion(LineRegion):
 
 # -----------------------------------------------------------------
 
-class SkyLineRegion(LineRegion):
+class SkyLineRegion(LineRegion, SkyRegion):
 
     """
     This class ...
@@ -90,7 +90,7 @@ class SkyLineRegion(LineRegion):
 
 # -----------------------------------------------------------------
 
-class PhysicalLineRegion(LineRegion):
+class PhysicalLineRegion(LineRegion, PhysicalRegion):
 
     """
     This class ...

@@ -26,10 +26,20 @@ from ..basics.vector import Extent
 from ..basics.mask import Mask
 
 from ..basics.coordinate import Coordinate, PixelCoordinate, SkyCoordinate, PhysicalCoordinate
-from .point import PixelPointRegion, SkyPointRegion, PhysicalPointRegion
-from .circle import PixelCircleRegion, SkyCircleRegion, PhysicalCircleRegion
-from .ellipse import PixelEllipseRegion, SkyEllipseRegion, PhysicalEllipseRegion
-from .rectangle import PixelRectangleRegion, SkyRectangleRegion, PhysicalRectangleRegion
+from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
+from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
+from .point import PointRegion, PixelPointRegion, SkyPointRegion, PhysicalPointRegion
+from .line import LineRegion, PixelLineRegion, SkyLineRegion, PhysicalLineRegion
+from .circle import CircleRegion, PixelCircleRegion, SkyCircleRegion, PhysicalCircleRegion
+from .ellipse import EllipseRegion, PixelEllipseRegion, SkyEllipseRegion, PhysicalEllipseRegion
+from .rectangle import RectangleRegion, PixelRectangleRegion, SkyRectangleRegion, PhysicalRectangleRegion
+from .polygon import PolygonRegion, PixelPolygonRegion, SkyPolygonRegion, PhysicalPolygonRegion
+from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion, PhysicalCompositeRegion
+
+# Define pixel region classes, sky region classes and physical region classes
+#pixel_region_classes = [PixelPointRegion, PixelLineRegion, PixelCircleRegion, PixelEllipseRegion, PixelRectangleRegion, PixelPolygonRegion, PixelCompositeRegion]
+#sky_region_classes = [SkyPointRegion, SkyLineRegion, SkyCircleRegion, SkyEllipseRegion, SkyRectangleRegion, SkyPolygonRegion, SkyCompositeRegion]
+#physical_region_classes = [PhysicalPointRegion, PhysicalLineRegion, PhysicalCircleRegion, PhysicalEllipseRegion, PhysicalRectangleRegion, PhysicalPolygonRegion, PhysicalCompositeRegion]
 
 # -----------------------------------------------------------------
 
@@ -159,6 +169,7 @@ def type_parser(string_rep, specification, coordsys):
         The list of astropy coordinates and/or quantities representing radius,
         width, etc. for the region
     """
+
     coord_list = []
     splitter = re.compile("[, ]")
     for ii, (element, element_parser) in enumerate(zip(splitter.split(string_rep), specification)):
@@ -178,11 +189,13 @@ meta_token = re.compile("([a-zA-Z]+)(=)([^= ]+) ?")
 
 def meta_parser(meta_str):
 
-    """Parse the metadata for a single ds9 region string.
+    """
+    Parse the metadata for a single ds9 region string.
     The metadata is everything after the close-paren of the region coordinate specification.
     All metadata is specified as key=value pairs separated by whitespace, but
     sometimes the values can also be whitespace separated.
     """
+
     meta_token_split = [x for x in meta_token.split(meta_str.strip()) if x]
     equals_inds = [i for i, x in enumerate(meta_token_split) if x is '=']
     result = {meta_token_split[ii - 1]:
@@ -214,18 +227,17 @@ def line_parser(line, coordsys=None):
     include : bool
         Whether the region is included (False -> excluded)
     """
+
     region_type_search = region_type_or_coordsys_re.search(line)
     if region_type_search:
         include = region_type_search.groups()[0]
         region_type = region_type_search.groups()[1]
-    else:
-        return
+    else: return
 
-    if region_type in coordinate_systems:
-        return region_type  # outer loop has to do something with the coordinate system information
+    if region_type in coordinate_systems: return region_type  # outer loop has to do something with the coordinate system information
     elif region_type in language_spec:
-        if coordsys is None:
-            raise ValueError("No coordinate system specified and a region has been found.")
+
+        if coordsys is None: raise ValueError("No coordinate system specified and a region has been found.")
 
         if "||" in line: composite = True
         else: composite = False
@@ -241,17 +253,14 @@ def line_parser(line, coordsys=None):
         parsed_meta = meta_parser(meta_str)
 
         if coordsys in coordsys_name_mapping:
-            parsed = type_parser(coords_etc, language_spec[region_type],
-                                 coordsys_name_mapping[coordsys])
+
+            parsed = type_parser(coords_etc, language_spec[region_type], coordsys_name_mapping[coordsys])
 
             # Reset iterator for ellipse annulus
             if region_type == 'ellipse':
                 language_spec[region_type] = itertools.chain((coordinate, coordinate), itertools.cycle((radius,)))
 
-            parsed_angles = [
-                (x, y) for x, y in zip(parsed[:-1:2], parsed[1::2])
-                if isinstance(x, Angle) and isinstance(x, Angle)
-                ]
+            parsed_angles = [(x, y) for x, y in zip(parsed[:-1:2], parsed[1::2]) if isinstance(x, Angle) and isinstance(x, Angle)]
             frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
 
             lon, lat = zip(*parsed_angles)
@@ -265,31 +274,35 @@ def line_parser(line, coordsys=None):
 
             parsed = type_parser(coords_etc, language_spec[region_type], coordsys)
             if region_type == 'polygon':
+
                 # have to special-case polygon in the phys coord case b/c can't typecheck when iterating as in sky coord case
                 #coord = PixCoord(parsed[0::2], parsed[1::2])
                 coord = PixelCoordinate(parsed[0::2], parsed[1::2])
                 parsed_return = [coord]
+
             else:
+
                 parsed = [_.value for _ in parsed]
                 #coord = PixCoord(parsed[0], parsed[1])
                 coord = PixelCoordinate(parsed[0], parsed[1])
                 parsed_return = [coord] + parsed[2:]
 
             # Reset iterator for ellipse annulus
-            if region_type == 'ellipse':
-                language_spec[region_type] = itertools.chain((coordinate, coordinate), itertools.cycle((radius,)))
+            if region_type == 'ellipse': language_spec[region_type] = itertools.chain((coordinate, coordinate), itertools.cycle((radius,)))
 
             return region_type, parsed_return, parsed_meta, composite, include
 
 # -----------------------------------------------------------------
 
-def ds9_string_to_region_list(region_string):
+def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, color=None, ignore_color=None):
 
-    """Parse a DS9 region string.
+    """
+    Parse a DS9 region string.
     Parameters
     ----------
     region_string : str
         DS9 region string
+    regions:
     Returns
     -------
     list of (region type, coord_list, meta, composite, include) tuples
@@ -301,8 +314,8 @@ def ds9_string_to_region_list(region_string):
     include : bool
         Whether the region is included (False -> excluded)
     """
+
     coordsys = None
-    regions = []
     composite_region = None
 
     # ds9 regions can be split on \n or ;
@@ -310,108 +323,457 @@ def ds9_string_to_region_list(region_string):
     for line_ in region_string.split('\n'):
         for line in line_.split(";"):
             lines.append(line)
+
             parsed = line_parser(line, coordsys)
-            if parsed in coordinate_systems:
-                coordsys = parsed
+
+            # If the line specifies the coordinate system for the region
+            if parsed in coordinate_systems: coordsys = parsed
+
+            # Else: a line with one or more regions
             elif parsed:
+
                 region_type, coordlist, meta, composite, include = parsed
                 meta['include'] = include
                 #log.debug("Region type = {0}".format(region_type))
-                if composite and composite_region is None:
-                    composite_region = [(region_type, coordlist)]
-                elif composite:
-                    composite_region.append((region_type, coordlist))
-                elif composite_region is not None:
-                    composite_region.append((region_type, coordlist))
-                    regions.append(composite_region)
-                    composite_region = None
-                else:
-                    regions.append((region_type, coordlist, meta))
 
-    return regions
+                # If the parsed region is part of a composite and it is the first
+                if composite and composite_region is None: composite_region = [(region_type, coordlist)]
+
+                # If the parsed region is part of a composite and it is not the first
+                elif composite: composite_region.append((region_type, coordlist))
+
+                # ? also part of composite
+                elif composite_region is not None:
+
+                    composite_region.append((region_type, coordlist))
+
+                    # MAKE COMPOSITE REGION
+                    specs = composite_region
+                    region = make_composite_region(specs)
+
+                    composite_region = None
+
+                    regions.append(region)
+
+                else:
+
+                    # MAKE ORDINARY REGION
+
+                    specs = (region_type, coordlist, meta)
+                    region = make_regular_region(specs)
+
+                    #regions.append((region_type, coordlist, meta))
+
+                    regions.append(region)
 
 # -----------------------------------------------------------------
 
-def ds9_region_list_to_objects(region_list):
+def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
 
     """
-    Given a list of parsed region tuples, product a list of astropy objects.
-    TODO: show example what a "region list" is.
-    Parameters
-    ----------
-    region_list : list
-        List of TODO???
-    Returns
-    -------
-    regions : list
-        List of `regions.Region` objects
+    This function ...
+    :param composite:
+    :param ds9_strings:
+    :param frame:
+    :param radunit:
+    :param fmt:
+    :return:
     """
 
-    viz_keywords = ['color', 'dashed', 'width', 'point', 'font', 'text']
+    output = ""
 
-    regions = RegionList()
+    for element in composite.elements:
 
-    for region_type, coord_list, meta in region_list:
+        output += regular_to_string(element, ds9_strings, frame, radunit, fmt) + ""
 
-        # TODO: refactor, possible on the basis of # of parameters + sometimes handle corner cases
+    return output
 
-        # CIRCLES
-        if region_type == 'circle':
-            if isinstance(coord_list[0], BaseCoordinateFrame):
-                #reg = circle.CircleSkyRegion(coord_list[0], coord_list[1])
-            #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], PixelCoordinate):
-                #reg = circle.CirclePixelRegion(coord_list[0], coord_list[1])
-            else: raise ValueError("No central coordinate")
+# -----------------------------------------------------------------
 
-        # ELLIPSES
-        elif region_type == 'ellipse':
-            # Do not read elliptical annuli for now
-            if len(coord_list) > 4:
-                continue
-            if isinstance(coord_list[0], BaseCoordinateFrame):
-                reg = ellipse.EllipseSkyRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
-            #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], PixelCoordinate):
-                reg = ellipse.EllipsePixelRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
-            else: raise ValueError("No central coordinate")
+def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
 
-        # POLYGONS
-        elif region_type == 'polygon':
-            if isinstance(coord_list[0], BaseCoordinateFrame):
-                reg = polygon.PolygonSkyRegion(coord_list[0])
-            #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], PixelCoordinate):
-                reg = polygon.PolygonPixelRegion(coord_list[0])
-            else: raise ValueError("No central coordinate")
+    """
+    This function ...
+    :param reg:
+    :param ds9_strings:
+    :param frame:
+    :param radunit:
+    :param fmt:
+    :return:
+    """
 
-        # RECTANGLES
-        elif region_type == 'rectangle':
-            if isinstance(coord_list[0], BaseCoordinateFrame):
-                reg = rectangle.RectangleSkyRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
-            #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], PixelCoordinate):
-                reg = rectangle.RectanglePixelRegion(coord_list[0], coord_list[1], coord_list[2], coord_list[3])
-            else: raise ValueError("No central coordinate")
+    if isinstance(reg, SkyPointRegion):
 
-        # POINTS
-        elif region_type == 'point':
-            if isinstance(coord_list[0], BaseCoordinateFrame):
-                #reg = point.PointSkyRegion(coord_list[0])
-            #elif isinstance(coord_list[0], PixCoord):
-            elif isinstance(coord_list[0], PixelCoordinate):
-                #reg = point.PointPixelRegion(coord_list[0])
-                reg = coord_list[0]
-            else: raise ValueError("No central coordinate")
-        else: continue
+        x = float(reg.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(reg.transform_to(frame).spherical.lat.to('deg').value)
 
-        reg.vizmeta = {key: meta[key] for key in meta.keys() if key in viz_keywords}
-        reg.meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
-        #output_list.append(reg)
+        return ds9_strings['point'].format(**locals())
+
+    elif isinstance(reg, PixelPointRegion):
+
+        x = reg.x
+        y = reg.y
+
+        return ds9_strings['point'].format(**locals())
+
+    elif isinstance(reg, SkyLineRegion):
+
+        x1 = float(reg.start.transform_to(frame).spherical.lon.to('deg').value)
+        y1 = float(reg.end.transform_to(frame).spherical.lat.to('deg').value)
+
+        x2 = float(reg.start.transform_to(frame).spherical.lon.to('deg').value)
+        y2 = float(reg.end.transform_to(frame).spherical.lat.to('deg').value)
+
+        return ds9_strings['line'].format(**locals())
+
+    elif isinstance(reg, PixelLineRegion):
+
+        x1 = reg.start.x
+        y1 = reg.end.y
+
+        x2 = reg.end.x
+        y2 = reg.end.y
+
+        return ds9_strings['line'].format(**locals())
+
+    elif isinstance(reg, SkyCircleRegion):
+
+        x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
+        r = float(reg.radius.to(radunit).value)
+
+        return ds9_strings['circle'].format(**locals())
+
+    elif isinstance(reg, PixelCircleRegion):
+
+        x = reg.center.x
+        y = reg.center.y
+        r = reg.radius
+
+        return ds9_strings['circle'].format(**locals())
+
+    elif isinstance(reg, SkyEllipseRegion):
+
+        x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
+        r2 = float(reg.major.to(radunit).value)
+        r1 = float(reg.minor.to(radunit).value)
+        ang = float(reg.angle.to('deg').value)
+
+        return ds9_strings['ellipse'].format(**locals())
+
+    elif isinstance(reg, PixelEllipseRegion):
+
+        x = reg.center.x
+        y = reg.center.y
+        r2 = reg.major
+        r1 = reg.minor
+        ang = reg.angle
+
+        return ds9_strings['ellipse'].format(**locals())
+
+    elif isinstance(reg, SkyRectangleRegion):
+
+        x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
+        d2 = 2.0 * float(reg.radius.ra.to(radunit).value)
+        d1 = 2.0 * float(reg.radius.dec.to(radunit).value)
+        ang = float(reg.angle.to('deg').value)
+
+        return ds9_strings['rectangle'].format(**locals())
+
+    elif isinstance(reg, PixelRectangleRegion):
+
+        x = reg.center.x
+        y = reg.center.y
+        d1 = 2.0 * reg.radius.x
+        d2 = 2.0 * reg.radius.y
+        ang = reg.angle
+
+        return ds9_strings['rectangle'].format(**locals())
+
+    elif isinstance(reg, SkyPolygonRegion):
+
+        v = reg.points.transform_to(frame)
+        coords = [(x.to('deg').value, y.to('deg').value) for x, y in
+                  zip(v.spherical.lon, v.spherical.lat)]
+        val = "{:" + fmt + "}"
+        temp = [val.format(x) for _ in coords for x in _]
+        c = ",".join(temp)
+
+        return ds9_strings['polygon'].format(**locals())
+
+    elif isinstance(reg, PixelPolygonRegion):
+
+        v = reg.points
+        coords = [(x, y) for x, y in zip(v.x, v.y)]
+        val = "{:" + fmt + "}"
+        temp = [val.format(x) for _ in coords for x in _]
+        c = ",".join(temp)
+
+        return ds9_strings['polygon'].format(**locals())
+
+# -----------------------------------------------------------------
+
+def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
+
+    """
+    Convert list of regions ato ds9 region strings.
+    :param regions:
+    :param coordsys:
+    :param fmt:
+    :param radunit:
+    """
+
+    if radunit == 'arcsec':
+        if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+        else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+    else: radunitstr = ''
+
+    ds9_strings = {
+        'point': 'point({x:' + fmt + '},{y:' + fmt + '})\n',
+        'line': 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '})\n',
+        'circle': 'circle({x:' + fmt + '},{y:' + fmt + '},{r:' + fmt + '}' + radunitstr + ')\n',
+        'ellipse': 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})\n',
+        'rectangle': 'box({x:' + fmt + '},{y:' + fmt + '},{d1:' + fmt + '}' + radunitstr + ',{d2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})\n',
+        'polygon': 'polygon({c})\n',
+    }
+
+    output = '# Region file format: DS9 PTS/magic/region\n'
+    output += '{}\n'.format(coordsys)
+
+    # convert coordsys string to coordsys object
+    if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+    else: frame = None # for pixel/image/physical frames
+
+    # Loop over the regions
+    for reg in regions:
+
+        if isinstance(reg, CompositeRegion): output += composite_to_string(reg, ds9_strings, frame, radunit, fmt)
+        else: output += regular_to_string(reg, ds9_strings, frame, radunit, fmt)
+
+    # Return the output string
+    return output
+
+# -----------------------------------------------------------------
+
+def make_composite_region(specs):
+
+    """
+    This function ...
+    :param specs:
+    :return:
+    """
+
+    regions = []
+
+    # Create regions from the specs
+    for spec in specs:
+        spec = (spec[0], spec[1], {})
+        reg = make_regular_region(spec)
         regions.append(reg)
 
-    # Return the region list
-    return regions
+    # Pixel region
+    if isinstance(regions[0], PixelRegion):
+
+        # Check if other are also pixel regions: is done by PixelCompositeRegion class
+
+        # Add all pixel regions as a composite
+        region = PixelCompositeRegion(*regions)
+
+    elif isinstance(regions[0], SkyRegion):
+
+        # Add all sky regions as a composite
+        region = SkyCompositeRegion(*regions)
+
+    # Hmm
+    else: raise ValueError("Something went wrong: encountered" + repr(regions[0]) + " of type " + str(type(regions[0])))
+
+    # Return the region
+    return region
+
+# -----------------------------------------------------------------
+
+viz_keywords = ['color', 'dashed', 'width', 'point', 'font', 'text']
+
+# -----------------------------------------------------------------
+
+def make_regular_region(specs):
+
+    """
+    This function ...
+    :param specs:
+    :return:
+    """
+
+    region_type, coord_list, meta = specs
+
+    appearance = {key: meta[key] for key in meta.keys() if key in viz_keywords}
+    meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
+
+    # POINTS
+    if region_type == 'point':
+
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            ra = coord_list[0].ra
+            dec = coord_list[0].dec
+
+            # Create the region
+            reg = SkyPointRegion(ra, dec, meta=meta)
+
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            # Create the region
+            reg = PixelPointRegion(coord_list[0].x, coord_list[0].y, meta=meta)
+
+        else: raise ValueError("No central coordinate")
+
+    # LINES
+    elif region_type == "line":
+
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            coord_1 = SkyCoordinate(coord_list[0].ra, coord_list[0].dec)
+            coord_2 = SkyCoordinate(coord_list[1].ra, coord_list[1].dec)
+
+            # Create the line
+            reg = PixelLineRegion(coord_1, coord_2, meta=meta)
+
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            coord_1 = coord_list[0]
+            coord_2 = coord_list[1]
+
+            # Create the line
+            reg = PixelLineRegion(coord_1, coord_2, meta=meta)
+
+    # CIRCLES
+    elif region_type == 'circle':
+
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            ra = coord_list[0].ra
+            dec = coord_list[0].dec
+
+            # Get the center coordinate
+            center = SkyCoordinate(ra, dec)
+
+            # Get the radius
+            radius = coord_list[1]
+
+            # Create a circle
+            reg = SkyCircleRegion(center, radius, meta=meta)
+
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            center = coord_list[0]
+            radius = coord_list[1]
+
+            # Create the circle
+            reg = PixelCircleRegion(center, radius, meta=meta)
+
+        # No central coordinate for this circle
+        else: raise ValueError("No central coordinate")
+
+    # ELLIPSES
+    elif region_type == 'ellipse':
+
+        # Do not read elliptical annuli for now
+        #if len(coord_list) > 4: continue
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            ra = coord_list[0].ra
+            dec = coord_list[0].dec
+
+            # Get the center coordinate
+            center = SkyCoordinate(ra, dec)
+
+            # Get the radius
+            radius = SkyStretch(coord_list[1], coord_list[2])
+
+            # Get the angle
+            angle = coord_list[3]
+            angle = Angle(angle.to("deg"), "deg")
+
+            # Create an ellipse
+            reg = SkyEllipseRegion(center, radius, angle, meta=meta)
+
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            center = coord_list[0]
+
+            radius = PixelStretch(coord_list[1], coord_list[2])
+
+            # Get the angle
+            angle = coord_list[3]
+            angle = Angle(angle.to("deg"), "deg")
+
+            # Create the region
+            reg = PixelEllipseRegion(center, radius, angle, meta=meta)
+
+        # No central coordinate found for this ellipse
+        else: raise ValueError("No central coordinate")
+
+    # RECTANGLES
+    elif region_type == 'rectangle':
+
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            ra = coord_list[0].ra
+            dec = coord_list[0].dec
+
+            # Get the center coordinate
+            center = SkyCoordinate(ra, dec)
+
+            # Get the radius
+            radius = SkyStretch(0.5 * coord_list[1], 0.5 * coord_list[2])
+
+            # Get the angle
+            angle = coord_list[3]
+            angle = Angle(angle.to("deg"), "deg")
+
+            # Create the region
+            reg = SkyRectangleRegion(center, radius, angle, meta=meta)
+
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            center = coord_list[0]
+
+            radius = PixelStretch(0.5 * coord_list[1], 0.5 * coord_list[2])
+
+            # Get the angle
+            angle = coord_list[3]
+            angle = Angle(angle.to("deg"), "deg")
+
+            # Create the region
+            reg = PixelRectangleRegion(center, radius, angle, meta=meta)
+
+        # No central coordinate given
+        else: raise ValueError("No central coordinate")
+
+    # POLYGONS
+    elif region_type == 'polygon':
+
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            print("polygon", coord_list)
+            reg = SkyPolygonRegion(coord_list[0])
+
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            reg = PixelPolygonRegion(coord_list[0])
+
+        else: raise ValueError("No central coordinate")
+
+    # UNKNOWN
+    else: raise ValueError("Region specification not recognized")
+
+    #reg.vizmeta = {key: meta[key] for key in meta.keys() if key in viz_keywords}
+    #reg.meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
+
+    # Return the region
+    return reg
 
 # -----------------------------------------------------------------
 
@@ -426,7 +788,7 @@ class RegionList(list):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_string(cls, region_string):
+    def from_string(cls, region_string, only=None, ignore=None, color=None, ignore_color=None):
 
         """
         This function ...
@@ -434,19 +796,19 @@ class RegionList(list):
         :return:
         """
 
+        # Create the region list
+        regions = cls()
+
         # Get list
-        region_list = ds9_string_to_region_list(region_string)
+        add_ds9_regions_from_string(region_string, regions, only, ignore, color, ignore_color)
 
-        # Get region objects
-        regions = ds9_region_list_to_objects(region_list)
-
-        # Return
+        # Return the regions
         return regions
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, only=None, ignore=None, color=None, ignore_color=None):
 
         """
         This function ...
@@ -458,7 +820,7 @@ class RegionList(list):
         with open(path) as fh: region_string = fh.read()
 
         # Open from string
-        return cls.from_string(region_string)
+        return cls.from_string(region_string, only, ignore, color, ignore_color)
 
     # -----------------------------------------------------------------
 
@@ -471,6 +833,25 @@ class RegionList(list):
 
         # Call the constructor of the base class (list)
         super(RegionList, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    def save(self, path, coordsys='fk5'):
+
+        """
+        This function ...
+        :param path:
+        :param coordsys:
+        :return:
+        """
+
+        # Convert to string
+        output = ds9_objects_to_string(self, coordsys)
+
+        print(output)
+
+        # Write
+        with open(path, 'w') as fh: fh.write(output)
 
     # -----------------------------------------------------------------
 
@@ -490,6 +871,75 @@ class RegionList(list):
 
     # -----------------------------------------------------------------
 
+    def pixel_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, PixelRegion)]
+
+    # -----------------------------------------------------------------
+
+    def sky_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, SkyRegion)]
+
+    # -----------------------------------------------------------------
+
+    def physical_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, PhysicalRegion)]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.sky_regions()) == 0 and len(self.physical_regions()) == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.pixel_regions()) == 0 and len(self.physical_regions()) == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_physical(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.pixel_regions()) == 0 and len(self.sky_regions()) == 0
+
+    # -----------------------------------------------------------------
+
     def points(self):
 
         """
@@ -498,6 +948,17 @@ class RegionList(list):
         """
 
         return [region for region in self if isinstance(region, PointRegion)]
+
+    # -----------------------------------------------------------------
+
+    def lines(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, LineRegion)]
 
     # -----------------------------------------------------------------
 
@@ -532,6 +993,28 @@ class RegionList(list):
 
         return [region for region in self if isinstance(region, RectangleRegion)]
 
+    # -----------------------------------------------------------------
+
+    def polygons(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, PolygonRegion)]
+
+    # -----------------------------------------------------------------
+
+    def composites(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, CompositeRegion)]
+
 # -----------------------------------------------------------------
 
 class PixelRegionList(RegionList):
@@ -541,216 +1024,58 @@ class PixelRegionList(RegionList):
     """
 
     @classmethod
+    def from_string(cls, path, only=None, ignore=None, color=None, ignore_color=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Call the function of the base class
+        regions = super(PixelRegionList, cls).from_string(path, only, ignore, color, ignore_color)
+
+        # Check
+        if not regions.only_pixel: raise ValueError("String does not only contain pixel regions")
+
+        # Return
+        return regions
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path, only=None, ignore=None, color=None, ignore_color=None):
 
         """
         This function ...
         :param path:
-        :param only:
-        :param ignore:
-        :param color:
-        :param ignore_color:
         :return:
         """
 
-        # Create a new region
-        #region = cls()
+        # Call the function of the base class
+        regions = super(PixelRegionList, cls).from_file(path, only, ignore, color, ignore_color)
 
-        # Open the region file with pyregion and check if its in image coordinates
-        #try:
-        #    _region = pyregion.open(path)
-        #    if not _region.check_imagecoord(): raise IOError("Region is not in image coordinates")
-        #except ValueError: # If a ValueError comes out, assume the region file is empty (no shapes)
-        #    _region = []
+        # Check
+        if not regions.only_pixel: raise ValueError("String does not only contain pixel regions")
 
-        #region_list = ds9_string_to_region_list(region_string)
-        #regions = ds9_region_list_to_objects(region_list)
-        #return regions
-
-        with open(path) as fh:
-            region_string = fh.read()
-
-        #return ds9_string_to_objects(region_string)
-        # Implementation of ds9_string_to_objects
-        region_list = ds9_string_to_region_list(region_string)
-        regions = ds9_region_list_to_objects(region_list)
+        # Return
         return regions
-
-        # Loop over all shapes in the region
-        for shape in _region:
-
-            # Meta information
-            meta = {}
-            if "text" in shape.attr[1]: meta["text"] = shape.attr[1]["text"]
-            if "color" in shape.attr[1]: meta["color"] = shape.attr[1]["color"]
-            if "point" in shape.attr[1]: meta["point"] = shape.attr[1]["point"]
-
-            # Check the color of the shape
-            if color is not None and shape.attr[1]["color"] != color: continue
-            if ignore_color is not None and shape.attr[1]["color"] == ignore_color: continue
-
-            # If the shape is a point -> Position
-            if shape.name == "point":
-
-                if only is not None and "point" not in only: continue
-                if ignore is not None and "point" in ignore: continue
-
-                # Get the position
-                x = shape.coord_list[0]
-                y = shape.coord_list[1]
-                coordinate = Coordinate(x, y, meta=meta)
-
-                # Add the position to the region
-                new_shape = coordinate
-
-            # If the shape is a line -> Line
-            elif shape.name == "line" or shape.name == "vector":
-
-                if only is not None and "line" not in only: continue
-                if ignore is not None and "line" in ignore: continue
-
-                # Get the position of the two points
-                x_1 = shape.coord_list[0]
-                y_1 = shape.coord_list[1]
-                x_2 = shape.coord_list[2]
-                y_2 = shape.coord_list[3]
-
-                # Create the positions
-                position_1 = Coordinate(x_1, y_1)
-                position_2 = Coordinate(x_2, y_2)
-
-                # Create the line
-                line = Line(position_1, position_2, meta=meta)
-                new_shape = line
-
-            # If the shape is a circle -> Circle
-            elif shape.name == "circle":
-
-                if only is not None and "circle" not in only: continue
-                if ignore is not None and "circle" in ignore: continue
-
-                # Get the position of the center
-                x_center = shape.coord_list[0]
-                y_center = shape.coord_list[1]
-                center = Coordinate(x_center, y_center)
-
-                # Get the radius
-                radius = shape.coord_list[2]
-
-                # Create a circle
-                circle = Circle(center, radius, meta=meta)
-                new_shape = circle
-
-            # If the shape is an ellipse -> Ellipse
-            elif shape.name == "ellipse":
-
-                if only is not None and "ellipse" not in only: continue
-                if ignore is not None and "ellipse" in ignore: continue
-
-                # Get the position of the center
-                x_center = shape.coord_list[0]
-                y_center = shape.coord_list[1]
-                center = Coordinate(x_center, y_center)
-
-                # Get the radius
-                x_radius = shape.coord_list[2]
-                y_radius = shape.coord_list[3]
-                radius = Extent(x_radius, y_radius)
-
-                # Get the angle
-                angle = Angle(shape.coord_list[4], "deg")
-
-                # Create an ellipse
-                ellipse = Ellipse(center, radius, angle, meta=meta)
-                new_shape = ellipse
-
-            # If the shape is a rectangle -> Rectangle
-            elif shape.name == "box":
-
-                if only is not None and "box" not in only: continue
-                if ignore is not None and "box" in ignore: continue
-
-                # Get the position of the center
-                x_center = shape.coord_list[0]
-                y_center = shape.coord_list[1]
-                center = Coordinate(x_center, y_center)
-
-                # Get the width and height
-                width = shape.coord_list[2]
-                height = shape.coord_list[3]
-
-                # Create radius
-                radius = Extent(0.5 * width, 0.5 * height)
-
-                # Get the angle
-                angle = Angle(shape.coord_list[4], "deg")
-
-                # Create a Rectangle
-                rectangle = Rectangle(center, radius, angle, meta=meta)
-                new_shape = rectangle
-
-            # If the shape is a polygon -> Polygon
-            elif shape.name == "polygon":
-
-                if only is not None and "polygon" not in only: continue
-                if ignore is not None and "polygon" in ignore: continue
-
-                # Get the number of points in the polygon
-                number_of_points = 0.5 * len(shape.coord_list)
-                assert int(number_of_points) == number_of_points
-                number_of_points = int(number_of_points)
-
-                # Create a new Polygon
-                polygon = Polygon(meta=meta)
-
-                # Get the position of the different points
-                for i in range(number_of_points):
-
-                    # Create a new Position
-                    x = shape.coord_list[2*i]
-                    y = shape.coord_list[2*i + 1]
-                    position = Coordinate(x, y)
-
-                    # Add the point to the polygon
-                    polygon.add_point(position)
-
-                # Add the polygon to the region
-                new_shape = polygon
-
-            # Unrecognized shape
-            else: raise ValueError("Unrecognized shape: " + shape.name)
-
-            # If this shape should be excluded
-            if shape.exclude:
-
-                previous_shape = region[len(region)-1]
-                region[len(region)-1] = Composite(previous_shape, new_shape, meta=previous_shape.meta)
-
-            # Add the shape to the region
-            else: region.append(new_shape)
-
-        # Return the new region
-        return region
 
     # -----------------------------------------------------------------
 
-    def append(self, shape):
+    def append(self, region):
 
         """
         This function ...
-        :param shape:
+        :param region:
         :return:
         """
 
         # Check whether the argument is a valid shape
-        if not (shape.__class__.__name__ == "Coordinate" or shape.__class__.__name__ == "Line"
-                or shape.__class__.__name__ == "Circle" or shape.__class__.__name__ == "Ellipse"
-                or shape.__class__.__name__ == "Rectangle" or shape.__class__.__name__ == "Polygon"
-                or shape.__class__.__name__ == "Composite"):
-            raise ValueError("Shape must of of type Coordinate, Line, Circle, Ellipse, Rectangle, Polygon or Composite")
+        if not isinstance(region, PixelRegion): raise ValueError("Region is not a pixel region")
 
         # Otherwise, add the shape
-        super(Region, self).append(shape)
+        super(PixelRegionList, self).append(region)
 
     # -----------------------------------------------------------------
 
@@ -947,6 +1272,88 @@ class SkyRegionList(RegionList):
     This class ...
     """
 
+    @classmethod
+    def from_string(cls, path, only=None, ignore=None, color=None, ignore_color=None):
 
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Call the function of the base class
+        regions = super(SkyRegionList, cls).from_string(path, only, ignore, color, ignore_color)
+
+        # Check
+        if not regions.only_sky: raise ValueError("String does not only contain sky regions")
+
+        # Return the region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, only=None, ignore=None, color=None, ignore_color=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Call the function of the base class
+        regions = super(SkyRegionList, cls).from_file(path, only, ignore, color, ignore_color)
+
+        # Check
+        if not regions.only_sky: raise ValueError("String does not only contain sky regions")
+
+        # Return the region list
+        return regions
+
+# -----------------------------------------------------------------
+
+class PhysicalRegionList(RegionList):
+
+    """
+    This class ...
+    """
+
+    @classmethod
+    def from_string(cls, path, only=None, ignore=None, color=None, ignore_color=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Call the function of the base class
+        regions = super(PhysicalRegionList, cls).from_file(path, only, ignore, color, ignore_color)
+
+        # Check
+        if not regions.only_physical: raise ValueError("String does not only contain physical regions")
+
+        # Return the region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, only=None, ignore=None, color=None, ignore_color=None):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Call the function of the base class
+        regions = super(PhysicalRegionList, cls).from_file(path, only, ignore, color, ignore_color)
+
+        # Check
+        if not regions.only_physical: raise ValueError("String does not only contain physical regions")
+
+        # Return the region list
+        return regions
 
 # -----------------------------------------------------------------

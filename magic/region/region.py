@@ -31,7 +31,43 @@ class Region(object):
         :param kwargs:
         """
 
+        # Set the 'exclude' flag
+        self.include = kwargs.pop("include", True)
+
+        # Set the appearance info
+        self.appearance = kwargs.pop("appearance", dict())
+
         # Set the meta information
         self.meta = kwargs.pop("meta", dict())
+
+# -----------------------------------------------------------------
+
+class PixelRegion(Region):
+
+    """
+    This class ...
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
+class SkyRegion(Region):
+
+    """
+    This class ...
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
+class PhysicalRegion(Region):
+
+    """
+    This class ...
+    """
+
+    pass
 
 # -----------------------------------------------------------------

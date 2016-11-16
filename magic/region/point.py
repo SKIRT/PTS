@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .region import Region
+from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from .rectangle import PixelRectangleRegion, SkyRectangleRegion
@@ -45,7 +45,7 @@ class PointRegion(Region):
 
 # -----------------------------------------------------------------
 
-class PixelPointRegion(PointRegion, PixelCoordinate):
+class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
 
     """
     This class ...
@@ -267,6 +267,7 @@ class PixelPointRegion(PointRegion, PixelCoordinate):
     # -----------------------------------------------------------------
 
     def __idiv__(self, value):
+
         """
         This function ...
         :param value:
@@ -301,11 +302,75 @@ class PixelPointRegion(PointRegion, PixelCoordinate):
 
 # -----------------------------------------------------------------
 
-class SkyPointRegion(PointRegion, SkyCoordinate):
+class SkyPointRegion(PointRegion, SkyCoordinate, SkyRegion):
 
     """
     This class ...
     """
+
+    def __init__(self, ra, dec, **kwargs):
+
+        """
+        This function ...
+        :param ra:
+        :param dec:
+        :param kwargs:
+        """
+
+        # Call the constructor of PointRegion class
+        PointRegion.__init__(self, **kwargs)
+
+        # Call the constructor of the PixelCoordinate class
+        SkyCoordinate.__init__(ra, dec, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ra
+
+    # -----------------------------------------------------------------
+
+    @axis1.setter
+    def axis1(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ra = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dec
+
+    # -----------------------------------------------------------------
+
+    @axis2.setter
+    def axis2(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.dec = value
 
 # -----------------------------------------------------------------
 
@@ -314,5 +379,20 @@ class PhysicalPointRegion(PointRegion, PhysicalCoordinate):
     """
     This class ...
     """
+
+    def __init__(self, axis1, axis2, **kwargs):
+
+        """
+        This function ...
+        :param axis1:
+        :param axis2:
+        :param kwargs:
+        """
+
+        # Call the constructor of PointRegion class
+        PointRegion.__init__(self, **kwargs)
+
+        # Call the constructor of the PixelCoordinate class
+        PhysicalCoordinate.__init__(axis1, axis2, **kwargs)
 
 # -----------------------------------------------------------------

@@ -13,11 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import Quantity
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from .region import Region
+from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 
@@ -53,7 +52,7 @@ class RectangleRegion(Region):
 
 # -----------------------------------------------------------------
 
-class PixelRectangleRegion(RectangleRegion):
+class PixelRectangleRegion(RectangleRegion, PixelRegion):
 
     """
     This class ...
@@ -78,7 +77,7 @@ class PixelRectangleRegion(RectangleRegion):
 
 # -----------------------------------------------------------------
 
-class SkyRectangleRegion(RectangleRegion):
+class SkyRectangleRegion(RectangleRegion, SkyRegion):
 
     """
     This class ...
@@ -103,7 +102,7 @@ class SkyRectangleRegion(RectangleRegion):
 
 # -----------------------------------------------------------------
 
-class PhysicalRectangleRegion(RectangleRegion):
+class PhysicalRectangleRegion(RectangleRegion, PhysicalRegion):
 
     """
     This class ...

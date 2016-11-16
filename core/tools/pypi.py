@@ -1,13 +1,18 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
 """
-    pypi_cli
-    ~~~~~~~~
+pypi_cli
+~~~~~~~~
 
-    A command line interface to the Python Package Index.
+A command line interface to the Python Package Index.
 
-    :copyright: (c) 2014 by Steven Loria.
-    :license: MIT, see LICENSE for more details.
+:copyright: (c) 2014 by Steven Loria.
+:license: MIT, see LICENSE for more details.
 """
 
 #Copyright 2014 Steven Loria
@@ -32,11 +37,14 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 compatibility
 from __future__ import division, print_function
+
+# Import standard modules
 import re
-import time
-import math
 from collections import OrderedDict
+
+# Import other modules
 #PY2 = int(sys.version[0]) == 2
 #if PY2:
 from xmlrpclib import ServerProxy
@@ -73,16 +81,8 @@ _COLOR_LEN = 9
 
 # -----------------------------------------------------------------
 
-#def abort_not_found(name):
-#    raise click.ClickException(u'No versions of "{0}" were found. Please try '
-#        'your search again. NOTE: Case matters.'.format(name))
-
-#def echo_header(text):
-#    echo(style(text, bold=True))
-#    echo(style('=' * len(text), bold=True))
-
-
 def get_package(name_or_url, client=None):
+
     m = PYPI_RE.match(name_or_url)
     if not m:
         return None
@@ -286,39 +286,6 @@ def lazy_property(fn):
             setattr(self, attr_name, fn(self))
         return getattr(self, attr_name)
     return _lazy_property
-
-# -----------------------------------------------------------------
-
-import os
-rows, term_width = os.popen('stty size', 'r').read().split()
-
-def bargraph(data, max_key_width=30):
-
-    """Return a bar graph as a string, given a dictionary of data."""
-
-    lines = []
-    max_length = min(max(len(key) for key in data.keys()), max_key_width)
-    max_val = max(data.values())
-    max_val_length = max(
-        len(_style_value(val))
-        for val in data.values())
-    #term_width = get_terminal_size()[0]
-    max_bar_width = term_width - MARGIN - (max_length + 3 + max_val_length + 3)
-    template = u"{key:{key_width}} [ {value:{val_width}} ] {bar}"
-    for key, value in data.items():
-        try:
-            bar = int(math.ceil(max_bar_width * value / max_val)) * TICK
-        except ZeroDivisionError:
-            bar = ''
-        line = template.format(
-            key=key[:max_length],
-            value=_style_value(value),
-            bar=bar,
-            key_width=max_length,
-            val_width=max_val_length
-        )
-        lines.append(line)
-    return '\n'.join(lines)
 
 # -----------------------------------------------------------------
 

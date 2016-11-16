@@ -13,11 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from .region import Region
+from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 
@@ -53,7 +52,7 @@ class EllipseRegion(Region):
 
 # -----------------------------------------------------------------
 
-class PixelEllipseRegion(EllipseRegion):
+class PixelEllipseRegion(EllipseRegion, PixelRegion):
 
     """
     This class ...
@@ -125,7 +124,7 @@ class PixelEllipseRegion(EllipseRegion):
 
 # -----------------------------------------------------------------
 
-class SkyEllipseRegion(EllipseRegion):
+class SkyEllipseRegion(EllipseRegion, SkyRegion):
 
     """
     This class ...
@@ -197,12 +196,11 @@ class SkyEllipseRegion(EllipseRegion):
 
 # -----------------------------------------------------------------
 
-class PhysicalEllipseRegion(EllipseRegion):
+class PhysicalEllipseRegion(EllipseRegion, PhysicalRegion):
 
     """
     This class ...
     """
-
 
     def __init__(self, center, radius, angle=None, **kwargs):
 

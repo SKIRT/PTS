@@ -73,7 +73,7 @@ class PixelCoordinate(Position, Coordinate):
 
 # -----------------------------------------------------------------
 
-class SkyCoordinate(SkyCoord):
+class SkyCoordinate(SkyCoord, Coordinate):
 
     """
     This class ...
@@ -88,14 +88,11 @@ class SkyCoordinate(SkyCoord):
         :return:
         """
 
-        meta = kwargs.pop("meta", None)
+        # Call the constructor of the Coordinate base class
+        Coordinate.__init__(self, **kwargs)
 
         # Call the constructor of the base class
-        super(SkyCoordinate, self).__init__(*args, **kwargs)
-
-        # Set meta information
-        if meta is not None: self.meta = meta
-        else: self.meta = dict()
+        SkyCoord.__init__(self, *args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -109,7 +106,7 @@ class SkyCoordinate(SkyCoord):
         """
 
         x, y = super(SkyCoordinate, self).to_pixel(wcs, origin=0, mode=mode)
-        return Coordinate(float(x), float(y), meta=self.meta)
+        return PixelCoordinate(float(x), float(y), meta=self.meta)
 
     # -----------------------------------------------------------------
 
@@ -220,5 +217,21 @@ class PhysicalCoordinate(Coordinate):
     """
     This class ...
     """
+
+    def __init__(self, axis1, axis2, **kwargs):
+
+        """
+        The constructor ...
+        :param axis1:
+        :param axis2:
+        :param kwargs:
+        :return:
+        """
+
+        self.axis1 = axis1
+        self.axis2 = axis2
+
+        # Call the Coordinate constructor
+        Coordinate.__init__(self, **kwargs)
 
 # -----------------------------------------------------------------

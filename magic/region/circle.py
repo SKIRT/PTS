@@ -19,7 +19,7 @@ import math
 from astropy.units import Quantity
 
 # Import the relevant PTS classes and modules
-from .region import Region
+from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 
 # -----------------------------------------------------------------
@@ -141,7 +141,7 @@ class CircleRegion(Region):
 
 # -----------------------------------------------------------------
 
-class PixelCircleRegion(CircleRegion):
+class PixelCircleRegion(CircleRegion, PixelRegion):
 
     """
     This class ...
@@ -165,7 +165,7 @@ class PixelCircleRegion(CircleRegion):
 
 # -----------------------------------------------------------------
 
-class SkyCircleRegion(CircleRegion):
+class SkyCircleRegion(CircleRegion, SkyRegion):
 
     """
     This class ...
@@ -181,7 +181,7 @@ class SkyCircleRegion(CircleRegion):
         """
 
         # Check the arguments
-        if not isinstance(center, SkyCoordinate): raise ValueError("Center must be a pixel coordinate")
+        if not isinstance(center, SkyCoordinate): raise ValueError("Center must be a sky coordinate")
         if not isinstance(radius, Quantity): raise ValueError("Radius must be an angular quantity")
 
         # Call the constructor of the base class
@@ -189,7 +189,7 @@ class SkyCircleRegion(CircleRegion):
 
 # -----------------------------------------------------------------
 
-class PhysicalCircleRegion(CircleRegion):
+class PhysicalCircleRegion(CircleRegion, PhysicalRegion):
 
     """
     This class ...
