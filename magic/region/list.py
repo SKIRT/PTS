@@ -517,11 +517,11 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         # TO HAVE IT IN hh:mm:ss NOTATION:
 
         #print(vars(reg.start.transform_to(frame)))
-        skycoordinate = SkyCoordinate(reg.start.transform_to(frame).spherical.lon, reg.start.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
-        str1 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
+        #skycoordinate = SkyCoordinate(reg.start.transform_to(frame).spherical.lon, reg.start.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
+        #str1 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
 
-        skycoordinate = SkyCoordinate(reg.end.transform_to(frame).spherical.lon, reg.end.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
-        str2 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
+        #skycoordinate = SkyCoordinate(reg.end.transform_to(frame).spherical.lon, reg.end.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
+        #str2 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
 
         return prefix + ds9_strings['line'].format(**locals())
 
@@ -665,8 +665,8 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
 
     ds9_strings = {
         'point': 'point({x:' + fmt + '},{y:' + fmt + '})',
-        #'line': 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '}) # line=0 0',
-        'line': 'line({str1:},{str2:}) # line=0 0',
+        'line': 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '}) # line=0 0',
+        #'line': 'line({str1:},{str2:}) # line=0 0',
         'vector': '# vector({x:' + fmt + '},{y:' + fmt + '},{l:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '}) vector=1',
         'circle': 'circle({x:' + fmt + '},{y:' + fmt + '},{r:' + fmt + '}' + radunitstr + ')',
         'ellipse': 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})',
