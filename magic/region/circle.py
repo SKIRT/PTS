@@ -17,10 +17,12 @@ import math
 
 # Import astronomical modules
 from astropy.units import Quantity
+from photutils.geometry import circular_overlap_grid
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
+from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -45,6 +47,18 @@ class CircleRegion(Region):
 
         # Call the constructor of the base class
         super(CircleRegion, self).__init__(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unrotated_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius
 
     # -----------------------------------------------------------------
 
@@ -162,6 +176,32 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
 
         # Call the constructor of the base class
         super(PixelCircleRegion, self).__init__(center, radius, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        rel_center = self.center
+
+        x_min = - rel_center.x
+        x_max = x_size - rel_center.x
+        y_min = - rel_center.y
+        y_max = y_size - rel_center.y
+
+        fraction = circular_overlap_grid(x_min, x_max, y_min, y_max, x_size, y_size, self.radius, use_exact=0, subpixels=1)
+
+        #from ..tools import plotting
+        #plotting.plot_mask(fraction)
+
+        # Return a new mask
+        return Mask(fraction)
 
 # -----------------------------------------------------------------
 

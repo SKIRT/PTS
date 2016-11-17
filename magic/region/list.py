@@ -592,7 +592,7 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
                 #meta['include'] = include
                 #log.debug("Region type = {0}".format(region_type))
 
-                print(meta)
+                #print(meta)
 
                 # If the parsed region is part of a composite and it is the first
                 if composite and composite_region_elements is None: composite_region_elements = [(region_type, coordlist, include)]
@@ -629,6 +629,25 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
 
 # -----------------------------------------------------------------
 
+def add_info(string, reg):
+
+    """
+    This function ...
+    :param string:
+    :param reg:
+    :return:
+    """
+
+    start_chars = " #" if not string.startswith("#") else " "
+
+    if reg.has_info: string += start_chars
+    if reg.has_label: string += " text={" + reg.label + "}"
+    if reg.has_meta: string += " " + " ".join(key + "=" + value for key, value in reg.meta.items())
+    if reg.has_appearance: string += " " + " ".join(key + "=" + value for key, value in reg.appearance.items())
+    return string
+
+# -----------------------------------------------------------------
+
 def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
 
     """
@@ -652,6 +671,7 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
 
         # Create string
         composite_string = prefix + ds9_strings['composite'].format(**locals())
+        composite_string = add_info(composite_string, composite)
 
     elif isinstance(composite, PixelCompositeRegion):
 
@@ -662,6 +682,7 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
 
         # Create string
         composite_string = prefix + ds9_strings['composite'].format(**locals())
+        composite_string = add_info(composite_string, composite)
 
     # Invalid value for the composite region
     else: raise ValueError("Invalid value for 'composite'")
@@ -695,7 +716,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         x = float(reg.transform_to(frame).spherical.lon.to('deg').value)
         y = float(reg.transform_to(frame).spherical.lat.to('deg').value)
 
-        return prefix + ds9_strings['point'].format(**locals())
+        string = prefix + ds9_strings['point'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     # Point region in pixel coordinates
     elif isinstance(reg, PixelPointRegion):
@@ -703,7 +726,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         x = reg.x
         y = reg.y
 
-        return prefix + ds9_strings['point'].format(**locals())
+        string = prefix + ds9_strings['point'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, SkyLineRegion):
 
@@ -722,7 +747,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         #skycoordinate = SkyCoordinate(reg.end.transform_to(frame).spherical.lon, reg.end.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
         #str2 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
 
-        return prefix + ds9_strings['line'].format(**locals())
+        string = prefix + ds9_strings['line'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, PixelLineRegion):
 
@@ -732,7 +759,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         x2 = reg.end.x
         y2 = reg.end.y
 
-        return prefix + ds9_strings['line'].format(**locals())
+        string = prefix + ds9_strings['line'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, SkyVectorRegion):
 
@@ -741,7 +770,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         l = float(reg.length.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        return prefix + ds9_strings['vector'].format(**locals())
+        string = prefix + ds9_strings['vector'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, PixelVectorRegion):
 
@@ -750,7 +781,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         l = reg.length
         ang = reg.angle
 
-        return prefix + ds9_strings['vector'].format(**locals())
+        string = prefix + ds9_strings['vector'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, SkyCircleRegion):
 
@@ -758,7 +791,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
         r = float(reg.radius.to(radunit).value)
 
-        return prefix + ds9_strings['circle'].format(**locals())
+        string = prefix + ds9_strings['circle'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, PixelCircleRegion):
 
@@ -766,7 +801,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = reg.center.y
         r = reg.radius
 
-        return prefix + ds9_strings['circle'].format(**locals())
+        string = prefix + ds9_strings['circle'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, SkyEllipseRegion):
 
@@ -776,7 +813,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         r2 = float(reg.minor.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        return prefix + ds9_strings['ellipse'].format(**locals())
+        string = prefix + ds9_strings['ellipse'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, PixelEllipseRegion):
 
@@ -786,7 +825,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         r2 = reg.minor
         ang = reg.angle
 
-        return prefix + ds9_strings['ellipse'].format(**locals())
+        string = prefix + ds9_strings['ellipse'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, SkyRectangleRegion):
 
@@ -796,7 +837,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         d2 = 2.0 * float(reg.radius.dec.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        return prefix + ds9_strings['rectangle'].format(**locals())
+        string = prefix + ds9_strings['rectangle'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, PixelRectangleRegion):
 
@@ -806,7 +849,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         d2 = 2.0 * reg.radius.y
         ang = reg.angle
 
-        return prefix + ds9_strings['rectangle'].format(**locals())
+        string = prefix + ds9_strings['rectangle'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, SkyPolygonRegion):
 
@@ -817,7 +862,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         temp = [val.format(x) for _ in coords for x in _]
         c = ",".join(temp)
 
-        return prefix + ds9_strings['polygon'].format(**locals())
+        string = prefix + ds9_strings['polygon'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, PixelPolygonRegion):
 
@@ -827,7 +874,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         temp = [val.format(x) for _ in coords for x in _]
         c = ",".join(temp)
 
-        return prefix + ds9_strings['polygon'].format(**locals())
+        string = prefix + ds9_strings['polygon'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, SkyTextRegion):
 
@@ -835,7 +884,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
         text = reg.text
 
-        return prefix + ds9_strings['text'].format(**locals())
+        string = prefix + ds9_strings['text'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
     elif isinstance(reg, PixelTextRegion):
 
@@ -843,7 +894,9 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = reg.center.y
         text = reg.text
 
-        return prefix + ds9_strings['text'].format(**locals())
+        string = prefix + ds9_strings['text'].format(**locals())
+        string = add_info(string, reg)
+        return string
 
 # -----------------------------------------------------------------
 
@@ -871,7 +924,7 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
         'ellipse': 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})',
         'rectangle': 'box({x:' + fmt + '},{y:' + fmt + '},{d1:' + fmt + '}' + radunitstr + ',{d2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})',
         'polygon': 'polygon({c})',
-        'text': '# text({x:' + fmt + '},{y:' + fmt + '}) text={text:}',
+        'text': '# text({x:' + fmt + '},{y:' + fmt + '}) text="{text:}"',
         'composite': '# composite({x:' + fmt + '},{y:' + fmt + '},{ang:' + fmt + '}) || composite=1'
     }
 
@@ -914,6 +967,8 @@ def make_composite_region(specs):
     appearance = {key: meta[key] for key in meta.keys() if key in appearance_keywords}
     meta = {key: meta[key] for key in meta.keys() if key not in appearance_keywords}
 
+    if "composite" in meta: del meta["composite"]
+
     # Create regions from the specs
     for spec in composite_specs:
 
@@ -927,12 +982,12 @@ def make_composite_region(specs):
         # Check if other are also pixel regions: is done by PixelCompositeRegion class
 
         # Add all pixel regions as a composite
-        region = PixelCompositeRegion(*regions, meta=meta, appearance=appearance, include=include, angle=angle)
+        region = PixelCompositeRegion(*regions, meta=meta, appearance=appearance, include=include, angle=angle, label=label)
 
     elif isinstance(regions[0], SkyRegion):
 
         # Add all sky regions as a composite
-        region = SkyCompositeRegion(*regions, meta=meta, appearance=appearance, include=include, angle=angle)
+        region = SkyCompositeRegion(*regions, meta=meta, appearance=appearance, include=include, angle=angle, label=label)
 
     # Hmm
     else: raise ValueError("Something went wrong: encountered" + repr(regions[0]) + " of type " + str(type(regions[0])))
@@ -1001,6 +1056,8 @@ def make_regular_region(specs):
 
     # VECTORS
     elif region_type == "vector":
+
+        if "vector" in meta: del meta["vector"]
 
         # Sky coordinates
         if isinstance(coord_list[0], BaseCoordinateFrame):
@@ -1161,7 +1218,7 @@ def make_regular_region(specs):
     # TEXT
     elif region_type == "text":
 
-        text = appearance.pop("text")
+        text = label
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
@@ -1636,31 +1693,6 @@ class PixelRegionList(RegionList):
 
         # Return the list of patches
         return patches
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Create a file
-        f = open(path, 'w')
-
-        # Initialize the region string
-        print("# Region file format: DS9 version 4.1", file=f)
-
-        # Print the coordinate system
-        print("image", file=f)
-
-        # Loop over all shapes, get string and print it to the region file
-        for shape in self: print(shape.to_region_string(coordinate_system=False), file=f)
-
-        # Close the file
-        f.close()
 
     # -----------------------------------------------------------------
 

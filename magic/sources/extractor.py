@@ -271,6 +271,8 @@ class SourceExtractor(Configurable):
             # Get the coordinate of the center for this galaxy
             center = shape.center
 
+            print("here")
+
             # Check the label of the corresponding segment
             label = self.galaxy_segments[int(center.y), int(center.x)]
 
@@ -303,9 +305,6 @@ class SourceExtractor(Configurable):
             # Ignore shapes without text, these should be just the positions of the peaks
             #if "text" not in shape.meta: continue
             if shape.label is None: continue
-
-            print(shape.label)
-            print(shape.meta)
 
             # Ignore shapes with color red (stars without source)
             if shape.appearance["color"] == "red": continue

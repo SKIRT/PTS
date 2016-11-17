@@ -24,7 +24,6 @@ from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, r
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
-from .rectangle import PixelRectangleRegion, SkyRectangleRegion, PhysicalRectangleRegion
 from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
@@ -128,6 +127,32 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         """
 
         self.radius.y = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unrotated_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_radius = self.radius.x
+        y_radius = self.radius.y
+
+        a_projected_x = x_radius * math.cos(self.angle.radian)
+        b_projected_x = y_radius * math.sin(self.angle.radian)
+        a_projected_y = x_radius * math.sin(self.angle.radian)
+        b_projected_y = y_radius * math.cos(self.angle.radian)
+
+        box_x_radius = max(abs(a_projected_x), abs(b_projected_x))
+        box_y_radius = max(abs(a_projected_y), abs(b_projected_y))
+
+        radius = PixelStretch(box_x_radius, box_y_radius)
+
+        # Return the radius
+        return radius
 
     # -----------------------------------------------------------------
 
@@ -251,7 +276,7 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
     # -----------------------------------------------------------------
 
     @property
-    def bounding_box(self):
+    def unrotated_radius(self):
 
         """
         This function ...
@@ -271,8 +296,7 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
 
         radius = SkyStretch(box_x_radius, box_y_radius)
 
-        # Return the bounding box
-        return SkyRectangleRegion(self.center, radius)
+        return radius
 
 # -----------------------------------------------------------------
 

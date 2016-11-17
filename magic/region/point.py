@@ -12,11 +12,13 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
-from .rectangle import PixelRectangleRegion, SkyRectangleRegion
 from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
@@ -161,14 +163,26 @@ class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
     # -----------------------------------------------------------------
 
     @property
-    def bounding_box(self):
+    def center(self):
 
         """
         This function ...
         :return:
         """
 
-        return PixelRectangleRegion(PixelCoordinate(self.x, self.y), PixelStretch(0., 0.))
+        return PixelCoordinate(self.x, self.y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unrotated_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelStretch(0.0, 0.0)
 
     # -----------------------------------------------------------------
 
@@ -368,6 +382,30 @@ class SkyPointRegion(PointRegion, SkyCoordinate, SkyRegion):
         """
 
         self.dec = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkyCoordinate(self.ra, self.dec)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unrotated_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkyStretch(0.0 * Unit("deg"), 0.0 * Unit("deg"))
 
 # -----------------------------------------------------------------
 

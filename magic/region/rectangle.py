@@ -241,6 +241,18 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
 
     # -----------------------------------------------------------------
 
+    @property
+    def unrotated_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelStretch(0.5 * (self.axis1_max - self.axis1_min), 0.5 * (self.axis2_max - self.axis2_min))
+
+    # -----------------------------------------------------------------
+
     def to_mask(self, x_size, y_size):
 
         """
@@ -368,6 +380,18 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         else:
             angle_to_corner = np.pi + self._diagonal_angle + self.angle.to("radian").value
             return SkyCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unrotated_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkyStretch(0.5 * (self.axis1_max - self.axis1_min), 0.5 * (self.axis2_max - self.axis2_min))
 
 # -----------------------------------------------------------------
 

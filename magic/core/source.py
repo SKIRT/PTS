@@ -36,6 +36,7 @@ from ..region.ellipse import PixelEllipseRegion
 from ..region.rectangle import PixelRectangleRegion
 from ..region.circle import PixelCircleRegion
 from ..tools import plotting, statistics
+from ..basics.stretch import PixelStretch
 
 # -----------------------------------------------------------------
 
@@ -103,10 +104,18 @@ class Source(object):
         source = cls.from_rectangle(frame, shape.bounding_box, factor)
 
         # Calculate the shift for the shape to be in the source cutout
-        shift = Extent(source.x_min, source.y_min)
+        shift = PixelStretch(source.x_min, source.y_min)
+
+        #print(shape.center)
+        #print(shift)
+        #print((shape-shift).center)
+        #print(source.cutout.shape)
 
         # Create a mask based on the shape, shifted into the source cutout
         mask = (shape - shift).to_mask(source.cutout.xsize, source.cutout.ysize)
+
+        #from ..tools import plotting
+        #plotting.plot_mask(mask)
 
         # Set the source mask
         source.mask = mask

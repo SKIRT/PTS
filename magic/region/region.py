@@ -48,6 +48,54 @@ class Region(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_label(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.label is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_appearance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.appearance) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_meta(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.meta) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_info(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.has_label or self.has_appearance or self.has_meta
+
+    # -----------------------------------------------------------------
+
     def copy(self):
 
         """
@@ -139,7 +187,7 @@ class PixelRegion(Region):
         :return:
         """
 
-        return self.axis1_min
+        return self.axis1_max
 
     # -----------------------------------------------------------------
 
@@ -179,7 +227,7 @@ class PixelRegion(Region):
         from .rectangle import PixelRectangleRegion
 
         # Create the rectangle region and return it
-        return PixelRectangleRegion(self.center, self.radius)
+        return PixelRectangleRegion(self.center, self.unrotated_radius)
 
 # -----------------------------------------------------------------
 
