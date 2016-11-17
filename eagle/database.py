@@ -37,7 +37,8 @@
 #                               facilitating querying or updating those records as a set.</TD></TR>
 #<TR><TD>stage</TD>         <TD>Text</TD>
 #                           <TD>An identifier for the current stage of this SKIRT run. The value should be one of
-#                               "insert", "extract", "simulate", "build", "store", "completed", or "removed".</TD></TR>
+#                               "insert", "extract", "simulate", "observe", "store", "completed", or "removed".
+#                               </TD></TR>
 #<TR><TD>status</TD>        <TD>Text</TD>
 #                           <TD>An identifier for the execution status of the current stage of this SKIRT run.
 #                               The value should be one of "scheduled", "running", "failed", or "succeeded".</TD></TR>
@@ -98,7 +99,7 @@ from . import config as config
 fieldtype_enum = ('text', 'numeric')
 
 ## These variables hold enumerations for the values of the stage and status fields
-stage_enum = ('insert', 'extract', 'simulate', 'build', 'store', 'completed', 'removed')
+stage_enum = ('insert', 'extract', 'simulate', 'observe', 'store', 'completed', 'removed')
 status_enum = ('scheduled', 'running', 'failed', 'succeeded')
 
 # -----------------------------------------------------------------
@@ -167,7 +168,8 @@ class Database:
     # recently inserted row).
     def maxrunid(self):
         cursor = self._con.execute("select max(runid) from skirtruns")
-        return cursor.fetchone()[0]
+        id = cursor.fetchone()[0]
+        return id if id is not None else 0
 
     ## This function returns a sequence of row objects representing the set of database records selected by
     # the specified SQL \em where expression. The optional \em params argument provides a sequence of values
@@ -238,7 +240,7 @@ class Database:
     # automatically determines values for runid (unique serial nr), stage('insert'), status ('succeeded'),
     # and statusdate (now). The change is \em not committed.
     def insert(self, label, eaglesim, snaptag, galaxyid, groupnr, subgroupnr, starmass, copx, copy, copz,
-                     skitemplate, numpp=5e5, deltamax=3e-6):
+                     skitemplate, numpp, deltamax):
         stage = 'insert'
         status = 'succeeded'
         statusdate = config.timestamp()
@@ -257,7 +259,7 @@ class Database:
     # or an object that returns a number when indexed with the 'runid' string. It is not possible to update the runid
     # field. To update the stage, status and statusdate fields, use the updatestatus() or updatestatus() functions.
     def updatefield(self, runids, fieldname, value):
-        if ('stage','status') in fieldname:
+        if fieldname in ('stage','status'):
             raise ValueError("Use the updatestage() or updatestatus() functions to update these fields")
         for runid in runids:
             self._con.execute("update skirtruns set " + fieldname + " = ? where runid = ?", (value,cleanrunid(runid)))

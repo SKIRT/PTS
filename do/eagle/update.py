@@ -17,8 +17,8 @@
 # For example:
 #
 #\verbatim
-#pts eagle_update "runid=403" runstatus scheduled
-#pts eagle_update "username='pcamps' and runid>555" skitemplate pan
+#pts eagle_update "runid=403" status scheduled
+#pts eagle_update "label='batch3' and runid>555" skitemplate pan
 #\endverbatim
 
 # -----------------------------------------------------------------
@@ -40,7 +40,9 @@ db = database.Database()
 
 # update the records (but don't yet commit)
 records = db.select(selection)
-if fieldname == 'runstatus':
+if fieldname == 'stage':
+    db.updatestage(records, newvalue)
+elif fieldname == 'status':
     db.updatestatus(records, newvalue)
 else:
     db.updatefield(records, fieldname, newvalue)
