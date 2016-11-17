@@ -38,8 +38,8 @@ definition.add_optional("output", "directory_path", "output directory", letter="
 definition.add_optional("input", "directory_path", "input directory", letter="i")
 
 # Sections
-#definition.import_section("galaxies", "options for galaxy finder", galaxies_definition)
-#definition.import_section("stars", "options for star finder", stars_definition)
-#definition.import_section("other_sources", "options for finding other contaminating sources", other_definition)
+definition.import_section("galaxies", "options for galaxy finder", galaxies_definition)
+definition.import_section("stars", "options for star finder", stars_definition)
+definition.import_section("other_sources", "options for finding other contaminating sources", other_definition)
 
 # -----------------------------------------------------------------

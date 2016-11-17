@@ -42,14 +42,14 @@ from ..region.circle import PixelCircleRegion
 from ..region.composite import PixelCompositeRegion
 from ..region.list import PixelRegionList, SkyRegionList
 from ..tools import plotting, statistics, fitting, plotting
-#from ...core.basics.configurable import OldConfigurable
+#from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 from ..misc import chrisfuncs
 
 # -----------------------------------------------------------------
 
-class SkySubtractor(OldConfigurable):
+class SkySubtractor(Configurable):
 
     """
     This class ...
@@ -64,7 +64,7 @@ class SkySubtractor(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SkySubtractor, self).__init__(config, "magic")
+        super(SkySubtractor, self).__init__(config)
 
         # -- Attributes --
 

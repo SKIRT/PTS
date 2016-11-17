@@ -21,13 +21,13 @@ from ..core.frame import Frame
 from ..core.box import Box
 from ..basics.mask import Mask
 from ..region.list import PixelRegionList
-#from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class ImageImporter(OldConfigurable):
+class ImageImporter(Configurable):
 
     """
     This class ...
@@ -42,7 +42,7 @@ class ImageImporter(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(ImageImporter, self).__init__(config, "magic")
+        super(ImageImporter, self).__init__(config)
 
         # The image
         self.image = None

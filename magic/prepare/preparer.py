@@ -24,7 +24,7 @@ from ..basics.coordinatesystem import CoordinateSystem
 from ..basics.mask import Mask
 from ..sources.extractor import SourceExtractor
 from ..sky.skysubtractor import SkySubtractor
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...modeling.preparation import unitconversion
 from ...core.basics.animation import Animation
@@ -38,7 +38,7 @@ from ..core.frame import Frame
 
 # -----------------------------------------------------------------
 
-class ImagePreparer(OldConfigurable):
+class ImagePreparer(Configurable):
 
     """
     This class...
@@ -53,7 +53,7 @@ class ImagePreparer(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(ImagePreparer, self).__init__(config, "magic")
+        super(ImagePreparer, self).__init__(config)
 
         # -- Attributes --
 

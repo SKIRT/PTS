@@ -13,11 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class WCSFinder(OldConfigurable):
+class WCSFinder(Configurable):
 
     """
     This class ...
@@ -32,7 +32,7 @@ class WCSFinder(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(WCSFinder, self).__init__(config, "magic")
+        super(WCSFinder, self).__init__(config)
 
     # -----------------------------------------------------------------
 

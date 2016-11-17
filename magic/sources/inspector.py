@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ..view import MagicViewer
 
 # -----------------------------------------------------------------
 
-class SourceInspector(OldConfigurable):
+class SourceInspector(Configurable):
 
     """
     This class ...
@@ -34,7 +34,7 @@ class SourceInspector(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SourceInspector, self).__init__(config, "magic")
+        super(SourceInspector, self).__init__(config)
 
         # -- Attributes --
 

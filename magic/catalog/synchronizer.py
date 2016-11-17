@@ -24,13 +24,13 @@ from ..basics.vector import Position, Extent
 from ..region.rectangle import PixelRectangleRegion
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
-#from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class CatalogSynchronizer(OldConfigurable):
+class CatalogSynchronizer(Configurable):
 
     """
     This class ...
@@ -45,7 +45,7 @@ class CatalogSynchronizer(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(CatalogSynchronizer, self).__init__(config, "magic")
+        super(CatalogSynchronizer, self).__init__(config)
 
         # The image frame
         self.frame = None

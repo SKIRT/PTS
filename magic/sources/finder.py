@@ -5,15 +5,15 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.sources.finder Contains the SourceFinder class.
+## \package pts.magic.sources.batchfinder Contains the BatchSourceFinder class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import math
+# Import astronomical modules
+from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
 from .galaxyfinder import GalaxyFinder
@@ -24,13 +24,19 @@ from ..catalog.builder import CatalogBuilder
 from ..catalog.synchronizer import CatalogSynchronizer
 from ..tools import wavelengths
 from ...core.tools import tables
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
-from ...core.basics.map import Map
+from ..core.dataset import DataSet
+from ..catalog.importer import CatalogImporter
+from ...core.tools import filesystem as fs
+from ..region.list import SkyRegionList
+from ..core.image import Image
+from ..core.frame import Frame
+from ..tools import statistics
 
 # -----------------------------------------------------------------
 
-class SourceFinder(OldConfigurable):
+class SourceFinder(Configurable):
 
     """
     This class ...
@@ -45,292 +51,131 @@ class SourceFinder(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(SourceFinder, self).__init__(config, "magic")
+        super(SourceFinder, self).__init__(config)
 
         # -- Attributes --
 
-        # The image frame
-        self.frame = None
+        # The frames
+        self.frames = dict()
 
-        # The original WCS
+        # The masks
+        self.special_masks = dict()
+        self.ignore_masks = dict()
+
+        # Downsampled images
+        self.downsampled = None
         self.original_wcs = None
 
         # The galactic and stellar catalog
         self.galactic_catalog = None
         self.stellar_catalog = None
 
-        # The mask covering pixels that should be ignored throughout the entire extraction procedure
-        self.special_mask = None
-        self.ignore_mask = None
-        self.bad_mask = None
-
-        # The animation
-        self.animation = None
+        # The regions covering areas that should be ignored throughout the entire extraction procedure
+        self.special_region = None
+        self.ignore_region = None
 
         # The name of the principal galaxy
         self.galaxy_name = None
 
-        # For downsampling
-        self.pad_x = 0
-        self.pad_y = 0
+        # The regions
+        self.galaxy_regions = dict()
+        self.star_regions = dict()
+        self.saturation_regions = dict()
+        self.other_regions = dict()
+
+        # The segmentation maps
+        self.segments = dict()
+
+        # The finders
+        self.star_finder = None
+        self.galaxy_finder = None
+        self.trained_finder = None
+
+        # Galaxy and star lists
+        self.galaxies = dict()
+        self.stars = dict()
+
+        # The PSFs
+        self.psfs = dict()
+
+        # The statistics
+        self.statistics = dict()
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
+    def add_frame(self, name, frame):
 
         """
         This function ...
-        :param arguments:
-        """
-
-        # Create a new SourceFinder instance
-        if arguments.config is not None: finder = cls(arguments.config)
-        elif arguments.settings is not None: finder = cls(arguments.settings)
-        else: finder = cls()
-
-        # Set the downsample factor
-        if arguments.downsample is not None: finder.config.downsample_factor = arguments.downsample
-
-        # Don't look for saturated stars if requested
-        if arguments.no_saturation: finder.config.stars.find_saturation = False
-
-        # Don't look for other sources if requested
-        if arguments.no_other: finder.config.find_other_sources = False
-
-        # Set the region describing the principal galaxy
-        if arguments.principal_region is not None: finder.config.galaxies.principal_region = arguments.principal_region
-
-        # Set the dilation factor for saturation segments
-        if arguments.saturation_dilation_factor is not None:
-            finder.config.stars.saturation.dilate = True
-            finder.config.stars.saturation.dilation_factor = arguments.saturation_dilation_factor
-
-        # Set the dilation factor for other sources
-        if arguments.other_dilation_factor is not None:
-            finder.config.other_sources.dilate = True
-            finder.config.other_sources.dilation_factor = arguments.other_dilation_factor
-
-        # Set the saturation sigma level
-        if arguments.saturation_sigma_level is not None: finder.config.stars.saturation.sigma_level = arguments.saturation_sigma_level
-
-        # Set the other sources sigma level
-        if arguments.other_sigma_level is not None: finder.config.other_sources.detection.segmentation.sigma_level = arguments.other_sigma_level
-
-        # Set the saturation_box_sigmas
-        if arguments.saturation_box_sigmas is not None: finder.config.stars.saturation.sigmas = arguments.saturation_box_sigmas
-
-        # Set the sigma level for the peak detection step of the star finder
-        if arguments.stars_peak_sigma_level is not None: finder.config.stars.detection.sigma_level = arguments.stars_peak_sigma_level
-
-        # Return the new instance
-        return finder
-
-    # -----------------------------------------------------------------
-
-    @property
-    def galaxy_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.downsampled:
-            sky_region = self.galaxy_sky_region
-            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-        else: return self.galaxy_finder.region
-
-    # -----------------------------------------------------------------
-
-    @property
-    def galaxy_sky_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.galaxy_finder.region.to_sky(self.frame.wcs) if self.galaxy_finder.region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def star_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.downsampled:
-            sky_region = self.star_sky_region
-            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-        else: return self.star_finder.star_region
-
-    # -----------------------------------------------------------------
-
-    @property
-    def star_sky_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.star_finder.star_region.to_sky(self.frame.wcs) if self.star_finder.star_region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def saturation_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.downsampled:
-            sky_region = self.saturation_sky_region
-            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-        else: return self.star_finder.saturation_region
-
-    # -----------------------------------------------------------------
-
-    @property
-    def saturation_sky_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.star_finder.saturation_region.to_sky(self.frame.wcs) if self.star_finder.saturation_region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def other_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.downsampled:
-            sky_region = self.other_sky_region
-            return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-        else: return self.trained_finder.region
-
-    # -----------------------------------------------------------------
-
-    @property
-    def other_sky_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.trained_finder.region.to_sky(self.frame.wcs) if self.trained_finder.region is not None else None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def galaxy_segments(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        if self.galaxy_finder.segments is None: return None
-        #if self.downsampled: return self.galaxy_finder.segments.rebinned(self.original_wcs)
-        if self.downsampled:
-
-            segments = self.galaxy_finder.segments
-            upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
-            upsampled.unpad(self.pad_x, self.pad_y)
-            return upsampled
-
-        else: return self.galaxy_finder.segments
-
-    # -----------------------------------------------------------------
-
-    @property
-    def star_segments(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        if self.star_finder.segments is None: return None
-        #return self.star_finder.segments.rebinned(self.original_wcs)
-        if self.downsampled:
-
-            segments = self.star_finder.segments
-            upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
-            upsampled.unpad(self.pad_x, self.pad_y)
-            return upsampled
-
-        else: return self.star_finder.segments
-
-    # -----------------------------------------------------------------
-
-    @property
-    def other_segments(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        if self.trained_finder.segments is None: return None
-        # return self.trained_finder.segments.rebinned(self.original_wcs)
-        if self.downsampled:
-
-            segments = self.trained_finder.segments
-            upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
-            upsampled.unpad(self.pad_x, self.pad_y)
-            return upsampled
-
-        else: return self.trained_finder.segments
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fwhm(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.star_finder.fwhm
-
-    # -----------------------------------------------------------------
-
-    def run(self, frame, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None, animation=None):
-
-        """
-        This function ...
+        :param name:
         :param frame:
-        :param galactic_catalog:
-        :param stellar_catalog:
-        :param special_region:
-        :param ignore_region:
-        :param bad_mask:
-        :param animation:
+        :return:
+        """
+
+        # Check if name not already used
+        if name in self.frames: raise ValueError("Already a frame with the name " + name)
+
+        # Set the frame
+        self.frames[name] = frame
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+
+        # Loop over the images
+        for name in self.frames:
+
+            wcs = self.frames[name].wcs
+            if pixelscale is None or wcs.average_pixelscale < pixelscale: pixelscale = wcs.average_pixelscale
+
+        # Return the minimum pixelscale
+        return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Region of all the bounding boxes
+        boxes_region = SkyRegionList()
+
+        # Add the bounding boxes as sky rectangles
+        for name in self.frames: boxes_region.append(self.frames[name].wcs.bounding_box)
+
+        # Return the bounding box of the region of rectangles
+        return boxes_region.bounding_box
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask, animation)
+        self.setup(**kwargs)
 
-        # 2. Find the galaxies
+        # 2. Get catalogs
+        self.get_catalogs()
+
+        # 3. Find the galaxies
         self.find_galaxies()
-
+        
         # 3. Find the stars
         if self.config.find_stars: self.find_stars()
 
@@ -338,183 +183,148 @@ class SourceFinder(OldConfigurable):
         if self.config.find_other_sources: self.find_other_sources()
 
         # 5. Build and update catalog
-        self.build_and_synchronize_catalog()
+        #self.build_and_synchronize_catalog()
+
+        # Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
-    def clear(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
         :return:
         """
-
-        # Base class implementation removes the children
-        super(SourceFinder, self).clear()
-
-        # Set default values for all attributes
-        self.frame = None
-        self.original_wcs = None
-        self.galactic_catalog = None
-        self.stellar_catalog = None
-        self.special_mask = None
-        self.ignore_mask = None
-        self.bad_mask = None
-        self.animation = None
-        self.galaxy_name = None
-
-    # -----------------------------------------------------------------
-
-    def setup(self, frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask=None, animation=None):
-
-        """
-        This function ...
-        :param frame:
-        :param galactic_catalog:
-        :param stellar_catalog:
-        :param special_region:
-        :param ignore_region:
-        :param bad_mask:
-        :param animation:
-        :return:
-        """
-
-        # -- Create children --
-
-        self.add_child("galaxy_finder", GalaxyFinder, self.config.galaxies)
-        self.add_child("star_finder", StarFinder, self.config.stars)
-        self.add_child("trained_finder", TrainedFinder, self.config.other_sources)
-        self.add_child("catalog_builder", CatalogBuilder, self.config.building)
-        self.add_child("catalog_synchronizer", CatalogSynchronizer, self.config.synchronization)
-
-        # -- Setup of the base class --
 
         # Call the setup function of the base class
-        super(SourceFinder, self).setup()
+        super(SourceFinder, self).setup(**kwargs)
+
+        # Load the frames
+        self.load_frames()
+
+        # Load special region
+        self.special_region = SkyRegionList.from_file(self.config.special_region) if self.config.special_region is not None else None
+
+        # Load ignore region
+        self.ignore_region = SkyRegionList.from_file(self.config.ignore_region) if self.config.ignore_region is not None else None
+
+        # Create the masks
+        self.create_masks()
+
+        # Create the finders
+        self.galaxy_finder = GalaxyFinder(self.config.galaxies)
+        self.star_finder = StarFinder(self.config.stars)
+        self.trained_finder = TrainedFinder(self.config.other_sources)
+
+        # DOWNSAMPLE ??
+
+    # -----------------------------------------------------------------
+
+    def load_frames(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
-        log.info("Setting up the source finder ...")
+        log.info("Loading the frame(s) ...")
 
-        # Make sure the downsample factor is a float (I don't know if this is necesary)
-        #self.config.downsample_factor = float(self.config.downsample_factor) if self.downsampled else None
+        # Create new dataset
+        if self.config.dataset.endswith(".fits"):
 
-        # CHECK WHETHER THE DOWNSAMPLE FACTOR IS AN INTEGER
+            # Load the frame
+            frame = Frame.from_file(self.config.dataset)
 
-        # Downsample or just make a local reference to the image frame
-        if self.downsampled:
+            # Determine the name for this image
+            name = str(frame.filter)
 
-            int_factor = int(self.config.downsample_factor)
-            if not int_factor == self.config.downsample_factor: raise ValueError("The downsample factor must be an integer")
-            self.config.downsample_factor = int_factor
+            # Add the frame
+            self.add_frame(name, frame)
 
-            # Debugging
-            log.debug("Downsampling the original image with a factor of " + str(self.config.downsample_factor) + " ...")
+        # Load dataset from file
+        elif self.config.dataset.endswith(".dat"):
 
-            # Padding
-            div_x = frame.xsize / self.config.downsample_factor
-            div_y = frame.ysize / self.config.downsample_factor
+            # Get the dataset
+            dataset = DataSet.from_file(self.config.dataset)
 
-            # new xsize and ysize
-            new_xsize = int(math.ceil(div_x)) * self.config.downsample_factor
-            new_ysize = int(math.ceil(div_y)) * self.config.downsample_factor
+            # Get the frames
+            self.frames = dataset.get_frames()
 
-            # Number of pixels to be padded
-            self.pad_x = new_xsize - frame.xsize
-            self.pad_y = new_ysize - frame.ysize
-
-            # Debugging
-            log.debug("Number of pixels padded before downsampling: (" + str(self.pad_x) + ", " + str(self.pad_y) + ")")
-
-            # Pad pixels to make it a multiple of the downsampling factor
-            self.frame = frame.padded(nx=self.pad_x, ny=self.pad_y)
-            #self.frame = frame.downsampled(self.config.downsample_factor)
-            self.frame.downsample(self.config.downsample_factor)
-            self.original_wcs = frame.wcs
-
-            # Debugging
-            log.debug("Shape of the downsampled image: " + str(self.frame.shape) + " (original shape: " + str(frame.shape) + ")")
-
-            # Adjust configs for downsampling
-            self.adjust_configs_for_downsampling()
-
-        else: self.frame = frame
-
-        # Set the galactic and stellar catalog
-        self.galactic_catalog = galactic_catalog
-        self.stellar_catalog = stellar_catalog
-
-        # Set the special and ignore mask
-        if special_region is not None:
-            special_region_pix = special_region.to_pixel(self.frame.wcs)
-            self.special_mask = Mask.from_region(special_region_pix, self.frame.xsize, self.frame.ysize)
-        if ignore_region is not None:
-            ignore_region_pix = ignore_region.to_pixel(self.frame.wcs)
-            self.ignore_mask = Mask.from_region(ignore_region_pix, self.frame.xsize, self.frame.ysize)
-
-        # Set a reference to the mask of bad pixels
-        self.bad_mask = bad_mask
-
-        # Make a reference to the animation
-        self.animation = animation
+        # Invalid value for 'dataset'
+        else: raise ValueError("Parameter 'dataset' must be filename of a dataset file (.dat) or a FITS file (.fits)")
 
     # -----------------------------------------------------------------
 
-    @property
-    def downsampled(self):
+    def create_masks(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.config.downsample_factor is not None and self.config.downsample != 1
+        # Inform the user
+        log.info("Creating the masks ...")
+
+        if self.special_region is not None:
+
+            for name in self.frames:
+
+                # Create the mask
+                special_mask = Mask.from_region(self.special_region, self.frames[name].xsize, self.frames[name].ysize)
+
+                self.special_masks[name] = special_mask
+
+        if self.ignore_region is not None:
+
+            for name in self.frames:
+
+                # Create the mask
+                ignore_mask = Mask.from_region(self.ignore_region, self.frames[name].xsize, self.frames[name].ysize)
+
+                self.ignore_masks[name] = ignore_mask
 
     # -----------------------------------------------------------------
 
-    def adjust_configs_for_downsampling(self):
+    def get_catalogs(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Getting galactic and stellar catalogs ...")
 
-        # GALAXY FINDER
+        # Create a CatalogImporter instance
+        catalog_importer = CatalogImporter()
 
-        self.galaxy_finder.config.detection.initial_radius /= self.config.downsample_factor
+        # Set configuration
+        if self.config.galactic_catalog_file is not None:
+            catalog_importer.config.galaxies.use_catalog_file = True
+            catalog_importer.config.galaxies.catalog_path = self.config.galactic_catalog_file
 
-        self.galaxy_finder.config.detection.min_pixels = int(math.ceil(self.galaxy_finder.config.detection.min_pixels / self.config.downsample_factor))
+        if self.config.stellar_catalog_file is not None:
+            catalog_importer.config.stars.use_catalog_file = True
+            catalog_importer.config.stars.catalog_path = self.config.stellar_catalog_file
 
-        self.galaxy_finder.config.detection.kernel.fwhm /= self.config.downsample_factor
+        # Get the coordinate box and minimum pixelscale
+        coordinate_box = self.bounding_box
+        min_pixelscale = self.min_pixelscale
 
-        self.galaxy_finder.config.region.default_radius /= self.config.downsample_factor
+        # Run the catalog importer
+        catalog_importer.run(coordinate_box=coordinate_box, pixelscale=min_pixelscale)  # work with coordinate box instead ? image.coordinate_box ?
 
-        # STAR FINDER
+        # Set the catalogs
+        self.galactic_catalog = catalog_importer.galactic_catalog
+        self.stellar_catalog = catalog_importer.stellar_catalog
 
-        self.star_finder.config.fetching.min_distance_from_galaxy.principal /= self.config.downsample_factor
-        self.star_finder.config.fetching.min_distance_from_galaxy.companion /= self.config.downsample_factor
-        self.star_finder.config.fetching.min_distance_from_galaxy.other /= self.config.downsample_factor
+        galactic_catalog_path = self.output_path_file("galaxies.cat")
+        stellar_catalog_path = self.output_path_file("stars.cat")
 
-        self.star_finder.config.detection.initial_radius /= self.config.downsample_factor
-
-        self.star_finder.config.detection.minimum_pixels = int(math.ceil(self.star_finder.config.detection.minimum_pixels / self.config.downsample_factor))
-
-        self.star_finder.config.detection.peak_offset_tolerance /= self.config.downsample_factor
-
-        self.star_finder.config.detection.convolution_fwhm /= self.config.downsample_factor
-
-        self.star_finder.config.fitting.minimum_pixels = int(math.ceil(self.star_finder.config.fitting.minimum_pixels / self.config.downsample_factor))
-
-        self.star_finder.config.fitting.max_model_offset /= self.config.downsample_factor
-
-        self.star_finder.config.saturation.min_pixels = int(math.ceil(self.star_finder.config.saturation.min_pixels / self.config.downsample_factor))
-
-        self.star_finder.config.saturation.kernel.fwhm /= self.config.downsample_factor
-
-        self.star_finder.config.saturation.apertures.max_offset /= self.config.downsample_factor
-
-        # TRAINED FINDER
-
+        tables.write(self.galactic_catalog, galactic_catalog_path)
+        tables.write(self.stellar_catalog, stellar_catalog_path)
 
     # -----------------------------------------------------------------
 
@@ -527,14 +337,66 @@ class SourceFinder(OldConfigurable):
         # Inform the user
         log.info("Finding the galaxies ...")
 
-        # Run the galaxy finder
-        self.galaxy_finder.run(frame=self.frame, catalog=self.galactic_catalog, special_mask=self.special_mask, ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
+        # Loop over the images
+        for name in self.frames:
 
-        # Set the name of the principal galaxy
-        self.galaxy_name = self.galaxy_finder.principal.name
+            # Get the frame
+            frame = self.frames[name]
 
-        # Inform the user
-        log.success("Finished finding the galaxies")
+            special_mask = self.special_masks[name] if name in self.special_masks else None
+            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+            bad_mask = None
+
+            # Run the galaxy finder
+            self.galaxy_finder.run(frame=frame, catalog=self.galactic_catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+
+            # Set the name of the principal galaxy
+            #self.galaxy_name = self.galaxy_finder.principal.name
+
+            # Get the galaxy region
+            #galaxy_sky_region = self.galaxy_finder.finder.galaxy_sky_region
+            #if galaxy_sky_region is not None:
+            #    galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+
+            if self.galaxy_finder.region is not None:
+
+                galaxy_sky_region = self.galaxy_finder.region.to_sky(frame.wcs)
+
+                #if self.downsampled:
+                #    sky_region = self.galaxy_sky_region
+                #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                #ele: return self.galaxy_finder.region
+
+                self.galaxy_regions[name] = galaxy_sky_region
+
+            if self.galaxy_finder.segments is not None:
+
+                # Create an image with the segmentation maps
+                self.segments[name] = Image("segments")
+
+                #if self.galaxy_finder.segments is None: return None
+                #if self.downsampled:
+
+                #    segments = self.galaxy_finder.segments
+                #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+                #    upsampled.unpad(self.pad_x, self.pad_y)
+                #    return upsampled
+
+                #else: return self.galaxy_finder.segments
+
+                galaxy_segments = self.galaxy_finder.segments
+
+                # Add the segmentation map of the galaxies
+                self.segments[name].add_frame(galaxy_segments, "galaxies")
+
+            # Set galaxies
+            self.galaxies[name] = self.galaxy_finder.galaxies
+
+            # Inform the user
+            log.success("Finished finding the galaxies for '" + name + "' ...")
+
+            # Clear the galaxy finder
+            self.galaxy_finder.clear()
 
     # -----------------------------------------------------------------
     
@@ -544,20 +406,95 @@ class SourceFinder(OldConfigurable):
         This function ...
         """
 
-        # Run the star finder if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
-        if self.frame.wavelength is None or self.frame.wavelength < wavelengths.ranges.ir.mir.max:
+        # Inform the user
+        log.info("Finding the stars ...")
 
-            # Inform the user
-            log.info("Finding the stars ...")
+        # Loop over the images
+        for name in self.frames:
 
-            # Run the star finder
-            self.star_finder.run(frame=self.frame, galaxy_finder=self.galaxy_finder, catalog=self.stellar_catalog, special_mask=self.special_mask, ignore_mask=self.ignore_mask, bad_mask=self.bad_mask)
+            # Get the frame
+            frame = self.frames[name]
 
-            # Inform the user
-            log.success("Finished finding the stars")
+            # Run the star finder if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
+            if frame.wavelength is None or frame.wavelength < wavelengths.ranges.ir.mir.max:
 
-        # No star subtraction for this image
-        else: log.info("Finding stars will not be performed on this frame")
+                # Inform the user
+                log.info("Finding the stars ...")
+
+                special_mask = self.special_masks[name] if name in self.special_masks else None
+                ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+                bad_mask = None
+
+                # Run the star finder
+                self.star_finder.run(frame=frame, galaxies=self.galaxies[name], catalog=self.stellar_catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+
+                if self.star_finder.star_region is not None:
+
+                    star_sky_region = self.star_finder.star_region.to_sky(frame.wcs)
+
+                    #if self.downsampled:
+                    #    sky_region = self.star_sky_region
+                    #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                    #else: return self.star_finder.star_region
+
+                    self.star_regions[name] = star_sky_region
+
+                if self.star_finder.saturation_region is not None:
+
+                    saturation_sky_region = self.star_finder.saturation_region.to_sky(frame.wcs)
+
+                    #if self.downsampled:
+                    #    sky_region = self.saturation_sky_region
+                    #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                    #else: return self.star_finder.saturation_region
+
+                    self.saturation_regions[name] = saturation_sky_region
+
+                if self.star_finder.segments is not None:
+
+                    #if self.star_finder.segments is None: return None
+                    #if self.downsampled:
+                    #    segments = self.star_finder.segments
+                    #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+                    #    upsampled.unpad(self.pad_x, self.pad_y)
+                    #    return upsampled
+                    #else: return self.star_finder.segments
+
+                    star_segments = self.star_finder.segments
+
+                    # Add the segmentation map of the saturated stars
+                    self.segments[name].add_frame(star_segments, "stars")
+
+                # Set the stars
+                self.stars[name] = self.star_finder.stars
+
+                # kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
+                # Set the kernel (PSF)
+                if self.star_finder.config.use_frame_fwhm and frame.fwhm is not None:
+
+                    fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec/pix").value
+                    sigma = fwhm * statistics.fwhm_to_sigma
+                    kernel = Gaussian2DKernel(sigma)
+
+                else: kernel = self.star_finder.kernel
+
+                # Set the PSF
+                self.psfs[name] = kernel
+
+                # Get the statistics
+                self.statistics[name] = self.star_finder.get_statistics()
+
+                # Show the FWHM
+                log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
+
+                # Inform the user
+                log.success("Finished finding the stars for '" + name + "' ...")
+
+                # Clear the star finder
+                self.star_finder.clear()
+
+            # No star subtraction for this image
+            else: log.info("Finding stars will not be performed on this frame")
 
     # -----------------------------------------------------------------
 
@@ -571,15 +508,54 @@ class SourceFinder(OldConfigurable):
         # Inform the user
         log.info("Finding sources in the frame not in the catalog ...")
 
-        # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
-        if self.frame.wavelength is not None and self.frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
-        else: self.trained_finder.config.classify = True
+        # Loop over the frames
+        for name in self.frames:
 
-        # Run the trained finder just to find sources
-        self.trained_finder.run(self.frame, self.galaxy_finder, self.star_finder, special=self.special_mask, ignore=self.ignore_mask, bad=self.bad_mask)
+            # Get the frame
+            frame = self.frames[name]
 
-        # Inform the user
-        log.success("Finished finding other sources")
+            # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
+            if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
+            else: self.trained_finder.config.classify = True
+
+            special_mask = self.special_masks[name] if name in self.special_masks else None
+            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+            bad_mask = None
+
+            # Run the trained finder just to find sources
+            self.trained_finder.run(frame=frame, galaxies=self.galaxies[name], stars=self.stars[name], special_mask=special_mask,
+                                    ignore_mask=ignore_mask, bad_mask=bad_mask, galaxy_segments=self.segments[name].frames.galaxies,
+                                    star_segments=self.segments[name].frames.stars, kernel=self.psfs[name])
+
+            if self.trained_finder.region is not None:
+
+                other_sky_region = self.trained_finder.region.to_sky(frame.wcs)
+
+                #if self.downsampled:
+                #    sky_region = self.other_sky_region
+                #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+                #else: return self.trained_finder.region
+
+                # Add the region
+                self.other_regions[name] = other_sky_region
+
+            if self.trained_finder.segments is not None:
+
+                #if self.trained_finder.segments is None: return None
+                #if self.downsampled:
+                #    segments = self.trained_finder.segments
+                #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+                #    upsampled.unpad(self.pad_x, self.pad_y)
+                #    return upsampled
+                #else: return self.trained_finder.segments
+
+                other_segments = self.trained_finder.segments
+
+                # Add the segmentation map of the other sources
+                self.segments[name].add_frame(other_segments, "other_sources")
+
+            # Inform the user
+            log.success("Finished finding other sources for '" + name + "' ...")
 
     # -----------------------------------------------------------------
 
@@ -640,7 +616,107 @@ class SourceFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def write_galactic_catalog(self):
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write regions
+        self.write_regions()
+
+        # Write segmentation maps
+        self.write_segments()
+
+        # 1. Write
+        #self.write_galactic_catalogs()
+
+        # 2. Write
+        #self.write_stellar_catalogs()
+
+        # 3. Write ...
+        self.write_statistics()
+
+    # -----------------------------------------------------------------
+
+    def write_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the regions ...")
+
+        # Loop over the regions
+        for name in self.galaxy_regions:
+
+            #galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = self.output_path_file("galaxies_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("galaxies.reg")
+
+            # Save
+            self.galaxy_regions[name].to_pixel(self.frames[name].wcs).save(path)
+
+        # Loop over the star regions
+        for name in self.star_regions:
+
+            #star_region = star_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = self.output_path_file("stars_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("stars.reg")
+
+            # Save
+            self.star_regions[name].to_pixel(self.frames[name].wcs).save(path)
+
+        # Loop over the saturation regions
+        for name in self.saturation_regions:
+
+            #saturation_region = saturation_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = self.output_path_file("saturation_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("saturation.reg")
+
+            # Save
+            self.saturation_regions[name].to_pixel(self.frames[name].wcs).save(path)
+
+        # Loop over the other regions
+        for name in self.other_regions:
+
+            #other_region = other_sky_region.to_pixel(image.wcs)
+
+            # Determine the path
+            path = self.output_path_file("other_sources_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("other_sources.reg")
+
+            # Save
+            self.other_regions[name].to_pixel(self.frames[name].wcs).save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the segmentation maps ...")
+
+        for name in self.segments:
+
+            # Save the FITS file with the segmentation maps
+            path = self.output_path_file("segments_" + name + ".fits") if len(self.frames) > 1 else self.output_path_file("segments.fits")
+
+            # Save
+            self.segments[name].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_galactic_catalogs(self):
 
         """
         This function ...
@@ -661,7 +737,7 @@ class SourceFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def write_stellar_catalog(self):
+    def write_stellar_catalogs(self):
 
         """
         This function ...
@@ -682,33 +758,24 @@ class SourceFinder(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def get_statistics(self):
+    def write_statistics(self):
 
         """
         This function ...
-        :return:
-        """
-
-        # Create the statistics
-        statistics = Map()
-        statistics.fwhm = self.fwhm
-        return statistics
-
-    # -----------------------------------------------------------------
-
-    def write_statistics(self, path):
-
-        """
-        This function ...
-        :param path:
         :return:
         """
 
         # Inform the user
-        log.info("Writing statistics to '" + path + "' ...")
+        log.info("Writing statistics ...")
 
-        # Open the file, write the info
-        with open(path, 'w') as statistics_file:
-            statistics_file.write("FWHM: " + str(self.fwhm) + "\n")
+        # Loop over the image names
+        for name in self.statistics:
+
+            # Determine the path to the statistics file
+            path = self.output_path_file("statistics" + name + ".dat") if len(self.frames) > 1 else self.output_path_file("statistics.dat")
+
+            # Open the file, write the info
+            with open(path, 'w') as statistics_file:
+                statistics_file.write("FWHM: " + str(self.statistics[name].fwhm) + "\n")
 
 # -----------------------------------------------------------------

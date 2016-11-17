@@ -152,6 +152,22 @@ class RectangleRegion(Region):
 
         return max([corner.axis2 for corner in self.corners])
 
+    # -----------------------------------------------------------------
+
+    def contains(self, coordinate):
+
+        """
+        This function ...
+        :param coordinate:
+        :return:
+        """
+
+        # TODO: IS THIS CORRECT???
+
+        if coordinate.axis1 > self.axis1_max or coordinate.axis1 < self.axis1_min: return False
+        if coordinate.axis2 > self.axis2_max or coordinate.axis2 < self.axis2_min: return False
+        return True
+
 # -----------------------------------------------------------------
 
 class PixelRectangleRegion(RectangleRegion, PixelRegion):
@@ -294,6 +310,31 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
         # Return the mask
         return Mask(fraction)
 
+    # -----------------------------------------------------------------
+
+    def contains(self, coordinate):
+
+        """
+        This function ...
+        :param coordinate:
+        :return:
+        """
+
+        if not self.rotated: return self.x_min <= coordinate.x <= self.x_max and self.y_min <= coordinate.y <= self.y_max
+        else:
+
+            # NOTE: does not work properly yet!
+
+            # Source: http://math.stackexchange.com/questions/190111/how-to-check-if-a-point-is-inside-a-rectangle
+            # AM = position - self.upper_left
+            # AB = self.upper_right - self.upper_left
+            # AD = self.lower_left - self.upper_left
+            am = coordinate - self.upper_left
+            ab = self.upper_right - self.upper_left
+            ad = self.lower_left - self.upper_left
+
+            return (0 < am.dot(ab) < ab.dot(ab)) and (0 < am.dot(ad) < ad.dot(ad))
+
 # -----------------------------------------------------------------
 
 class SkyRectangleRegion(RectangleRegion, SkyRegion):
@@ -376,7 +417,7 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         :return:
         """
 
-        if not self.rotated: return SkyCoordinate(self.center.x - self.radius.x, self.center.y - self.radius.y)
+        if not self.rotated: return SkyCoordinate(self.center.ra - self.radius.ra, self.center.dec - self.radius.dec)
         else:
             angle_to_corner = np.pi + self._diagonal_angle + self.angle.to("radian").value
             return SkyCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))

@@ -1724,6 +1724,36 @@ class PixelRegionList(RegionList):
         # Return the new region
         return new
 
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        min_x = None
+        max_x = None
+        min_y = None
+        max_y = None
+
+        # Loop over the shapes
+        for shape in self:
+
+            if min_x is None or shape.x_min < min_x: min_x = shape.x_min
+            if max_x is None or shape.x_max > max_x: max_x = shape.x_max
+            if min_y is None or shape.y_min < min_y: min_y = shape.y_min
+            if max_y is None or shape.y_max > max_y: max_y = shape.y_max
+
+        # Get center and radius of the new bounding box
+        center = PixelCoordinate(0.5 * (min_x + max_x), 0.5 * (min_y + max_y))
+        radius = PixelStretch(0.5 * (max_x - min_x), 0.5 * (max_y - min_y))
+
+        # Return the bounding box
+        return SkyRectangleRegion(center, radius)
+
 # -----------------------------------------------------------------
 
 class SkyRegionList(RegionList):
@@ -1769,6 +1799,36 @@ class SkyRegionList(RegionList):
 
         # Return the region list
         return regions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bounding_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        min_ra = None
+        max_ra = None
+        min_dec = None
+        max_dec = None
+
+        # Loop over the shapes
+        for shape in self:
+
+            if min_ra is None or shape.ra_min < min_ra: min_ra = shape.ra_min
+            if max_ra is None or shape.ra_max > max_ra: max_ra = shape.ra_max
+            if min_dec is None or shape.dec_min < min_dec: min_dec = shape.dec_min
+            if max_dec is None or shape.dec_max > max_dec: max_dec = shape.dec_max
+
+        # Get center and radius of the new bounding box
+        center = SkyCoordinate(0.5 * (min_ra + max_ra), 0.5 * (min_dec + max_dec))
+        radius = SkyStretch(0.5 * (max_ra - min_ra), 0.5 * (max_dec - min_dec))
+
+        # Return the bounding box
+        return SkyRectangleRegion(center, radius)
 
 # -----------------------------------------------------------------
 

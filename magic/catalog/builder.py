@@ -13,12 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
-class CatalogBuilder(OldConfigurable):
+class CatalogBuilder(Configurable):
 
     """
     This class ...
@@ -33,7 +33,7 @@ class CatalogBuilder(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(CatalogBuilder, self).__init__(config, "magic")
+        super(CatalogBuilder, self).__init__(config)
 
         # The image frame
         self.frame = None
