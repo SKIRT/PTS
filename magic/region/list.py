@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 import re
 import string
 import itertools
+import operator
+from functools import partial
 
 # Import astronomical modules
 from astropy.coordinates import Angle, frame_transform_graph, UnitSphericalRepresentation, BaseCoordinateFrame
@@ -37,6 +39,93 @@ from .rectangle import RectangleRegion, PixelRectangleRegion, SkyRectangleRegion
 from .polygon import PolygonRegion, PixelPolygonRegion, SkyPolygonRegion, PhysicalPolygonRegion
 from .text import TextRegion, PixelTextRegion, SkyTextRegion, PhysicalTextRegion
 from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion, PhysicalCompositeRegion
+
+# -----------------------------------------------------------------
+
+def interleave(seqs):
+
+    """ Interleave a sequence of sequences
+    >>> list(interleave([[1, 2], [3, 4]]))
+    [1, 3, 2, 4]
+    >>> ''.join(interleave(('ABC', 'XY')))
+    'AXBYC'
+    Both the individual sequences and the sequence of sequences may be infinite
+    Returns a lazy iterator
+    """
+
+    iters = itertools.cycle(map(iter, seqs))
+    while True:
+        try:
+            for itr in iters:
+                yield next(itr)
+            return
+        except StopIteration:
+            predicate = partial(operator.is_not, itr)
+            iters = itertools.cycle(itertools.takewhile(predicate, iters))
+
+# -----------------------------------------------------------------
+
+def stripwhite_around(text, around):
+
+    """
+    This function ...
+    :param text:
+    :param around:
+    :return:
+    """
+
+    return text.replace(" " + around, around).replace(around + " ", around)
+
+# -----------------------------------------------------------------
+
+def stripwhite_except_quotes(text):
+
+    """
+    This function strips the whitespace from a string, except when it is within quotes
+    :param text:
+    :return:
+    """
+
+    lst = text.split('"')
+    for i, item in enumerate(lst):
+        if not i % 2:
+            lst[i] = re.sub("\s+", "", item)
+    return '"'.join(lst)
+
+# -----------------------------------------------------------------
+
+def stripwhite_except_curlybrackets(text):
+
+    """
+    This function strips the whitespace from a string, except when it is within curly brackets
+    :param text:
+    :return:
+    """
+
+    if "{" in text and "}" in text:
+        lst = []
+        for part in text.split("{"): lst += part.split("}")
+        for i, item in enumerate(lst):
+            if not i % 2:
+                lst[i] = re.sub("\s+", "", item)
+        return "".join(list(interleave([lst, ["{", "}"]])))
+    else: return text.replace(" ", "")
+
+# -----------------------------------------------------------------
+
+def stripwhite_except_singlequotes(text):
+
+    """
+    This function strips the whitespace from a string, except when it is within single quotes
+    :param text:
+    :return:
+    """
+
+    lst = text.split("'")
+    for i, item in enumerate(lst):
+        if not i % 2:
+            lst[i] = re.sub("\s+", "", item)
+    return "'".join(lst)
 
 # -----------------------------------------------------------------
 
@@ -243,6 +332,21 @@ meta_token = re.compile("([a-zA-Z]+)(=)([^= ]+) ?")
 
 # -----------------------------------------------------------------
 
+def is_wrapped_by_quotes_or_curlybrackets(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+
+    if text.startswith("'") and text.endswith("'"): return True
+    if text.startswith("{") and text.endswith("}"): return True
+    if text.startswith('"') and text.endswith('"'): return True
+    return False
+
+# -----------------------------------------------------------------
+
 def meta_parser(meta_str):
 
     """
@@ -252,11 +356,15 @@ def meta_parser(meta_str):
     sometimes the values can also be whitespace separated.
     """
 
+    #meta_str = stripwhite_except_curlybrackets(meta_str)
+    meta_str = stripwhite_around(meta_str, "=")
+
     meta_token_split = [x for x in meta_token.split(meta_str.strip()) if x]
     equals_inds = [i for i, x in enumerate(meta_token_split) if x is '=']
-    result = {meta_token_split[ii - 1]:
-                  " ".join(meta_token_split[ii + 1:jj - 1 if jj is not None else None])
-              for ii, jj in zip(equals_inds, equals_inds[1:] + [None])}
+    result = {meta_token_split[ii - 1]:" ".join(meta_token_split[ii + 1:jj - 1 if jj is not None else None]) for ii, jj in zip(equals_inds, equals_inds[1:] + [None])}
+
+    for label in result:
+        if is_wrapped_by_quotes_or_curlybrackets(result[label]): result[label] = result[label][1:-1]
 
     return result
 
@@ -321,7 +429,14 @@ def line_parser(line, coordsys=None):
         else:
             hash_or_end = line.find("#")
             coords_etc = strip_paren(line[end_of_region_name:hash_or_end].strip(" |"))
-        meta_str = line[hash_or_end:]
+
+        #print(hash_or_end)
+
+        if hash_or_end == -1: parsed_meta = dict()
+        else:
+            meta_str = line[hash_or_end:]
+            #print(meta_str)
+            parsed_meta = meta_parser(meta_str)
 
         if coordsys in coordsys_name_mapping:
             parsed = type_parser(coords_etc, language_spec[region_type], coordsys_name_mapping[coordsys])
@@ -332,7 +447,10 @@ def line_parser(line, coordsys=None):
 
         angle = Angle(parsed[2].to("deg"), "deg")
 
-        parsed_meta = meta_parser(meta_str)
+        #print(region_type)
+        #print(meta_str)
+        #print(parsed_meta)
+        #print("")
 
         return region_type, angle, parsed_meta, include
 
@@ -354,9 +472,18 @@ def line_parser(line, coordsys=None):
         else:
             hash_or_end = line.find("#")
             coords_etc = strip_paren(line[end_of_region_name:hash_or_end].strip(" |"))
-        meta_str = line[hash_or_end:]
+        #print(hash_or_end, len(line))
 
-        parsed_meta = meta_parser(meta_str)
+        if hash_or_end == -1: parsed_meta = dict()
+        else:
+            meta_str = line[hash_or_end:]
+            #print(meta_str)
+            parsed_meta = meta_parser(meta_str)
+
+        #print(region_type)
+        #print(meta_str)
+        #print(parsed_meta)
+        #print("")
 
         if coordsys in coordsys_name_mapping:
 
@@ -398,7 +525,7 @@ def line_parser(line, coordsys=None):
                 #print("PARSED:", parsed)
 
                 parsed = [_.value if _.unit == "" else _ for _ in parsed]
-                print(parsed)
+                #print(parsed)
                 coord = PixelCoordinate(parsed[0], parsed[1])
                 parsed_return = [coord] + parsed[2:]
 
@@ -464,6 +591,8 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
                 region_type, coordlist, meta, composite, include = parsed
                 #meta['include'] = include
                 #log.debug("Region type = {0}".format(region_type))
+
+                print(meta)
 
                 # If the parsed region is part of a composite and it is the first
                 if composite and composite_region_elements is None: composite_region_elements = [(region_type, coordlist, include)]
@@ -764,6 +893,11 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
 
 # -----------------------------------------------------------------
 
+#viz_keywords = ['color', 'dashed', 'width', 'point', 'font', 'text']
+appearance_keywords = ['color', 'dashed', 'width', 'point', 'font']
+
+# -----------------------------------------------------------------
+
 def make_composite_region(specs):
 
     """
@@ -776,8 +910,9 @@ def make_composite_region(specs):
 
     composite_specs, angle, meta, include = specs
 
-    appearance = {key: meta[key] for key in meta.keys() if key in viz_keywords}
-    meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
+    label = meta.pop("text", None)
+    appearance = {key: meta[key] for key in meta.keys() if key in appearance_keywords}
+    meta = {key: meta[key] for key in meta.keys() if key not in appearance_keywords}
 
     # Create regions from the specs
     for spec in composite_specs:
@@ -807,10 +942,6 @@ def make_composite_region(specs):
 
 # -----------------------------------------------------------------
 
-viz_keywords = ['color', 'dashed', 'width', 'point', 'font', 'text']
-
-# -----------------------------------------------------------------
-
 def make_regular_region(specs):
 
     """
@@ -821,8 +952,9 @@ def make_regular_region(specs):
 
     region_type, coord_list, meta, include = specs
 
-    appearance = {key: meta[key] for key in meta.keys() if key in viz_keywords}
-    meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
+    label = meta.pop("text", None)
+    appearance = {key: meta[key] for key in meta.keys() if key in appearance_keywords}
+    meta = {key: meta[key] for key in meta.keys() if key not in appearance_keywords}
 
     # POINTS
     if region_type == 'point':
@@ -833,12 +965,12 @@ def make_regular_region(specs):
             dec = coord_list[0].dec
 
             # Create the region
-            reg = SkyPointRegion(ra, dec, meta=meta, appearance=appearance, include=include)
+            reg = SkyPointRegion(ra, dec, meta=meta, appearance=appearance, include=include, label=label)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
             # Create the region
-            reg = PixelPointRegion(coord_list[0].x, coord_list[0].y, meta=meta, appearance=appearance, include=include)
+            reg = PixelPointRegion(coord_list[0].x, coord_list[0].y, meta=meta, appearance=appearance, include=include, label=label)
 
         else: raise ValueError("No central coordinate")
 
@@ -853,7 +985,7 @@ def make_regular_region(specs):
             coord_2 = SkyCoordinate(coord[1].ra, coord[1].dec)
 
             # Create the line
-            reg = SkyLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include)
+            reg = SkyLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include, label=label)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
@@ -865,7 +997,7 @@ def make_regular_region(specs):
             coord_2 = coord_list[1]
 
             # Create the line
-            reg = PixelLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include)
+            reg = PixelLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include, label=label)
 
     # VECTORS
     elif region_type == "vector":
@@ -885,7 +1017,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create the vector
-            reg = SkyVectorRegion(start, length, angle, meta=meta, appearance=appearance, include=include)
+            reg = SkyVectorRegion(start, length, angle, meta=meta, appearance=appearance, include=include, label=label)
 
         # Pixel coordinates
         elif isinstance(coord_list[0], PixelCoordinate):
@@ -901,7 +1033,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create the vector
-            reg = PixelVectorRegion(start, length, angle, meta=meta, appearance=appearance, include=include)
+            reg = PixelVectorRegion(start, length, angle, meta=meta, appearance=appearance, include=include, label=label)
 
     # CIRCLES
     elif region_type == 'circle':
@@ -918,7 +1050,7 @@ def make_regular_region(specs):
             radius = coord_list[1]
 
             # Create a circle
-            reg = SkyCircleRegion(center, radius, meta=meta, appearance=appearance, include=include)
+            reg = SkyCircleRegion(center, radius, meta=meta, appearance=appearance, include=include, label=label)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
@@ -928,7 +1060,7 @@ def make_regular_region(specs):
             #print(coord_list)
 
             # Create the circle
-            reg = PixelCircleRegion(center, radius, meta=meta, appearance=appearance, include=include)
+            reg = PixelCircleRegion(center, radius, meta=meta, appearance=appearance, include=include, label=label)
 
         # No central coordinate for this circle
         else: raise ValueError("No central coordinate")
@@ -954,7 +1086,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create an ellipse
-            reg = SkyEllipseRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
+            reg = SkyEllipseRegion(center, radius, angle, meta=meta, appearance=appearance, include=include, label=label)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
@@ -970,7 +1102,7 @@ def make_regular_region(specs):
             angle = Angle(angle, "deg")
 
             # Create the region
-            reg = PixelEllipseRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
+            reg = PixelEllipseRegion(center, radius, angle, meta=meta, appearance=appearance, include=include, label=label)
 
         # No central coordinate found for this ellipse
         else: raise ValueError("No central coordinate")
@@ -994,7 +1126,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create the region
-            reg = SkyRectangleRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
+            reg = SkyRectangleRegion(center, radius, angle, meta=meta, appearance=appearance, include=include, label=label)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
@@ -1007,7 +1139,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create the region
-            reg = PixelRectangleRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
+            reg = PixelRectangleRegion(center, radius, angle, meta=meta, appearance=appearance, include=include, label=label)
 
         # No central coordinate given
         else: raise ValueError("No central coordinate")
@@ -1017,11 +1149,11 @@ def make_regular_region(specs):
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            reg = SkyPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include)
+            reg = SkyPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include, label=label)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
-            reg = PixelPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include)
+            reg = PixelPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include, label=label)
 
         # No central coordinate given
         else: raise ValueError("No central coordinate")

@@ -424,7 +424,7 @@ class Box(np.ndarray):
         """
 
         # Return the relative position
-        return Position(position.x - self.x_min, position.y - self.y_min)
+        return position.__class__(position.x - self.x_min, position.y - self.y_min)
 
     # -----------------------------------------------------------------
 
@@ -437,7 +437,7 @@ class Box(np.ndarray):
         """
 
         # Return the absolute position
-        return Position(position.x + self.x_min, position.y + self.y_min)
+        return position.__class__(position.x + self.x_min, position.y + self.y_min)
 
     # -----------------------------------------------------------------
 

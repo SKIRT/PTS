@@ -55,14 +55,25 @@ class VectorRegion(Region):
     # -----------------------------------------------------------------
 
     @property
-    def center(self):
+    def axis1_center(self):
 
         """
-        This function ...
+        This property ...
         :return:
         """
 
-        raise NotImplemented("Not yet implemented")
+        raise NotImplementedError("Not implemented yet")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_center(self):
+        """
+        This property ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
 
 # -----------------------------------------------------------------
 
@@ -90,6 +101,33 @@ class PixelVectorRegion(VectorRegion, PixelRegion):
 
         # Call the constructor of VectorRegion class
         VectorRegion.__init__(self, start, length, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelCoordinate(self.axis1_center, self.axis2_center)
+
+    # -----------------------------------------------------------------
+
+    @center.setter
+    def center(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        offset = value - self.center
+
+        self.start += offset
+        self.end += offset
 
 # -----------------------------------------------------------------
 

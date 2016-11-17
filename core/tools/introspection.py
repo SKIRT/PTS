@@ -384,6 +384,9 @@ def get_all_dependencies():
             # Read the lines of the script file
             for line in open(filepath, 'r'):
 
+                # If the "HIDE_DEPENDS" keyword is encountered, skip this file
+                if "HIDE_DEPENDS" in line: break
+
                 # Look for an 'import yyy' or 'from yyy import zzz' statement
                 if line.startswith("import ") or (line.startswith("from ") and "import" in line):
 

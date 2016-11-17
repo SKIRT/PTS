@@ -168,7 +168,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x + extent.x, self.y + extent.y)
+        return self.__class__(self.x + extent.x, self.y + extent.y)
 
     # -----------------------------------------------------------------
 
@@ -180,7 +180,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x - extent.x, self.y - extent.y)
+        return self.__class__(self.x - extent.x, self.y - extent.y)
 
     # -----------------------------------------------------------------
 
@@ -192,7 +192,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x * value, self.y * value)
+        return self.__class__(self.x * value, self.y * value)
 
     # -----------------------------------------------------------------
 
@@ -204,7 +204,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x / value, self.y / value)
+        return self.__class__(self.x / value, self.y / value)
 
     # -----------------------------------------------------------------
 
@@ -216,6 +216,6 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x / value, self.y / value)
+        return self.__class__(self.x / value, self.y / value)
 
 # -----------------------------------------------------------------

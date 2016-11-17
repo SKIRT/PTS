@@ -12,9 +12,15 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
+from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
+from .rectangle import PixelRectangleRegion, SkyRectangleRegion, PhysicalRectangleRegion
+from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
@@ -64,6 +70,54 @@ class LineRegion(Region):
 
         return 0.5*(self.start.axis2 + self.end.axis2)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.start.axis1, self.end.axis1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.start.axis1, self.end.axis1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return min(self.start.axis2, self.end.axis2)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return max(self.start.axis2, self.end.axis2)
+
 # -----------------------------------------------------------------
 
 class PixelLineRegion(LineRegion, PixelRegion):
@@ -100,6 +154,39 @@ class PixelLineRegion(LineRegion, PixelRegion):
 
         return PixelCoordinate(self.axis1_center, self.axis2_center)
 
+    # -----------------------------------------------------------------
+
+    @center.setter
+    def center(self, value):
+
+        """
+        This setter ...
+        :param value:
+        :return:
+        """
+
+        offset = value - self.center
+
+        self.start += offset
+        self.end += offset
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        x_min = self.axis1_min
+        x_max = self.axis1_max
+        y_min = self.axis2_min
+        y_max = self.axis2_max
+
+        return PixelStretch(0.5 * (x_max - x_min), 0.5 * (y_max - y_min))
+
 # -----------------------------------------------------------------
 
 class SkyLineRegion(LineRegion, SkyRegion):
@@ -135,6 +222,33 @@ class SkyLineRegion(LineRegion, SkyRegion):
         """
 
         return SkyCoordinate(self.axis1_center, self.axis2_center)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        dec_start = self.start.dec.to("deg").value
+        dec_end = self.end.dec.to("deg").value
+
+        dec_center = 0.5 * (dec_start + dec_end)
+
+        ra_start = self.start.ra.to("deg").value
+        ra_end = self.end.ra.to("deg").value
+
+        # Calculate the actual RA and DEC distance in degrees
+        ra_distance = abs(coordinates.ra_distance(dec_center, ra_start, ra_end))
+        dec_distance = abs(dec_end - dec_start)
+
+        ra_span = ra_distance * Unit("deg")
+        dec_span = dec_distance * Unit("deg")
+
+        return SkyStretch(0.5 * ra_span, 0.5 * dec_span)
 
 # -----------------------------------------------------------------
 

@@ -245,7 +245,7 @@ class TrainedFinder(Configurable):
         for shape in self.region:
 
             # Get the integer label for this shape
-            label = int(shape.meta["text"])
+            label = int(shape.label)
 
             # Create a source for this label
             source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)

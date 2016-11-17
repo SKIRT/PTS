@@ -301,13 +301,17 @@ class SourceExtractor(Configurable):
         for shape in self.star_region:
 
             # Ignore shapes without text, these should be just the positions of the peaks
-            if "text" not in shape.meta: continue
+            #if "text" not in shape.meta: continue
+            if shape.label is None: continue
+
+            print(shape.label)
+            print(shape.meta)
 
             # Ignore shapes with color red (stars without source)
-            if shape.meta["color"] == "red": continue
+            if shape.appearance["color"] == "red": continue
 
             # Get the star index
-            index = int(shape.meta["text"])
+            index = int(shape.label)
 
             # Look whether a saturation source is present
             saturation_source = None
@@ -323,9 +327,10 @@ class SourceExtractor(Configurable):
 
                     saturation_shape = self.saturation_region[j]
 
-                    if "text" not in saturation_shape.meta: continue
+                    #if "text" not in saturation_shape.meta: continue
+                    if saturation_shape.label is None: continue
 
-                    saturation_index = int(saturation_shape.meta["text"])
+                    saturation_index = int(saturation_shape.label)
 
                     if index != saturation_index: continue
                     else:
@@ -409,9 +414,9 @@ class SourceExtractor(Configurable):
         for shape in self.other_region:
 
             # This is a source found by SourceFinder
-            if "text" in shape.meta:
+            if shape.label is not None:
 
-                label = int(shape.meta["text"])
+                label = int(shape.label)
 
                 # Create a source
                 source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
@@ -709,7 +714,7 @@ class SourceExtractor(Configurable):
             # Skip single coordinates
             if isinstance(shape, PixelCoordinate): continue
 
-            if "principal" in shape.meta["text"]: return shape
+            if "principal" in shape.label: return shape
 
             if not isinstance(shape, PixelEllipseRegion): return shape
 

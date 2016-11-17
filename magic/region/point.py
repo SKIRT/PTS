@@ -168,7 +168,7 @@ class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
         :return:
         """
 
-        return PixelRectangleRegion(PixelCoordinate(self.x, self.y), PixelStretch(1.0, 1.0))
+        return PixelRectangleRegion(PixelCoordinate(self.x, self.y), PixelStretch(0., 0.))
 
     # -----------------------------------------------------------------
 
