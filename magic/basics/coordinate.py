@@ -60,6 +60,30 @@ class PixelCoordinate(Position, Coordinate):
 
     # -----------------------------------------------------------------
 
+    @property
+    def axis1(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y
+
+    # -----------------------------------------------------------------
+
     def to_sky(self, wcs):
 
         """
@@ -93,6 +117,30 @@ class SkyCoordinate(SkyCoord, Coordinate):
 
         # Call the constructor of the base class
         SkyCoord.__init__(self, *args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.ra
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dec
 
     # -----------------------------------------------------------------
 

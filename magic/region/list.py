@@ -30,16 +30,13 @@ from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from .point import PointRegion, PixelPointRegion, SkyPointRegion, PhysicalPointRegion
 from .line import LineRegion, PixelLineRegion, SkyLineRegion, PhysicalLineRegion
+from .vector import VectorRegion, PixelVectorRegion, SkyVectorRegion, PhysicalVectorRegion
 from .circle import CircleRegion, PixelCircleRegion, SkyCircleRegion, PhysicalCircleRegion
 from .ellipse import EllipseRegion, PixelEllipseRegion, SkyEllipseRegion, PhysicalEllipseRegion
 from .rectangle import RectangleRegion, PixelRectangleRegion, SkyRectangleRegion, PhysicalRectangleRegion
 from .polygon import PolygonRegion, PixelPolygonRegion, SkyPolygonRegion, PhysicalPolygonRegion
+from .text import TextRegion, PixelTextRegion, SkyTextRegion, PhysicalTextRegion
 from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion, PhysicalCompositeRegion
-
-# Define pixel region classes, sky region classes and physical region classes
-#pixel_region_classes = [PixelPointRegion, PixelLineRegion, PixelCircleRegion, PixelEllipseRegion, PixelRectangleRegion, PixelPolygonRegion, PixelCompositeRegion]
-#sky_region_classes = [SkyPointRegion, SkyLineRegion, SkyCircleRegion, SkyEllipseRegion, SkyRectangleRegion, SkyPolygonRegion, SkyCompositeRegion]
-#physical_region_classes = [PhysicalPointRegion, PhysicalLineRegion, PhysicalCircleRegion, PhysicalEllipseRegion, PhysicalRectangleRegion, PhysicalPolygonRegion, PhysicalCompositeRegion]
 
 # -----------------------------------------------------------------
 
@@ -129,6 +126,7 @@ def parse_angular_length_quantity(string_rep):
 
 # these are the same function, just different names
 radius = parse_angular_length_quantity
+length = parse_angular_length_quantity
 width = parse_angular_length_quantity
 height = parse_angular_length_quantity
 angle = parse_angular_length_quantity
@@ -136,11 +134,13 @@ angle = parse_angular_length_quantity
 # For the sake of readability in describing the spec, parse_coordinate etc. are renamed here
 coordinate = parse_coordinate
 language_spec = {'point': (coordinate, coordinate),
+                 'line': (coordinate, coordinate, coordinate, coordinate),
+                 'vector': (coordinate, coordinate, length, angle),
                  'circle': (coordinate, coordinate, radius),
-                 # This is a special case to deal with n elliptical annuli
-                 'ellipse': itertools.chain((coordinate, coordinate), itertools.cycle((radius,))),
+                 'ellipse': itertools.chain((coordinate, coordinate), itertools.cycle((radius,))), # This is a special case to deal with n elliptical annuli
                  'box': (coordinate, coordinate, width, height, angle),
                  'polygon': itertools.cycle((coordinate,)),
+                 'text': (coordinate, coordinate),
                  }
 
 # -----------------------------------------------------------------
@@ -171,13 +171,14 @@ def type_parser(string_rep, specification, coordsys):
     """
 
     coord_list = []
+
     splitter = re.compile("[, ]")
+
     for ii, (element, element_parser) in enumerate(zip(splitter.split(string_rep), specification)):
         if element_parser is coordinate:
             unit = coordinate_units[coordsys][ii % 2]
             coord_list.append(element_parser(element, unit))
-        else:
-            coord_list.append(element_parser(element))
+        else: coord_list.append(element_parser(element))
 
     return coord_list
 
@@ -186,6 +187,8 @@ def type_parser(string_rep, specification, coordsys):
 # match an x=y pair (where y can be any set of characters) that may or may not
 # be followed by another one
 meta_token = re.compile("([a-zA-Z]+)(=)([^= ]+) ?")
+
+# -----------------------------------------------------------------
 
 def meta_parser(meta_str):
 
@@ -228,13 +231,45 @@ def line_parser(line, coordsys=None):
         Whether the region is included (False -> excluded)
     """
 
+    startswithhash = False
+    if line.startswith("#"):
+        startswithhash = True
+        line = line[1:].strip()
+
     region_type_search = region_type_or_coordsys_re.search(line)
+
+    #print(region_type_search)
+
     if region_type_search:
         include = region_type_search.groups()[0]
         region_type = region_type_search.groups()[1]
+        #print("INCLUDE", include)
+        #print("REGION TYPE", region_type)
     else: return
 
     if region_type in coordinate_systems: return region_type  # outer loop has to do something with the coordinate system information
+    elif region_type == "composite":
+
+        #print(line)
+
+        # end_of_region_name is the coordinate of the end of the region's name, e.g.:
+        # circle would be 6 because circle is 6 characters
+        end_of_region_name = region_type_search.span()[1]
+
+        # coordinate of the # symbol or end of the line (-1) if not found
+        if startswithhash: hash_or_end = line.find("||")
+        else: hash_or_end = line.find("#")
+        meta_str = line[hash_or_end:]
+
+        #print(hash_or_end)
+        #print(meta_str)
+
+        parsed_meta = meta_parser(meta_str)
+
+        #print(parsed_meta)
+
+        return region_type, parsed_meta, include
+
     elif region_type in language_spec:
 
         if coordsys is None: raise ValueError("No coordinate system specified and a region has been found.")
@@ -245,14 +280,25 @@ def line_parser(line, coordsys=None):
         # end_of_region_name is the coordinate of the end of the region's name, e.g.:
         # circle would be 6 because circle is 6 characters
         end_of_region_name = region_type_search.span()[1]
+
         # coordinate of the # symbol or end of the line (-1) if not found
-        hash_or_end = line.find("#")
-        coords_etc = strip_paren(line[end_of_region_name:hash_or_end].strip(" |"))
-        meta_str = line[hash_or_end:]
+        if startswithhash:
+            hash_or_end = line.find(") ")
+            coords_etc = line.split("(")[1].split(")")[0]
+            meta_str = line[hash_or_end:]
+        else:
+            hash_or_end = line.find("#")
+            coords_etc = strip_paren(line[end_of_region_name:hash_or_end].strip(" |"))
+            meta_str = line[hash_or_end:]
 
         parsed_meta = meta_parser(meta_str)
 
         if coordsys in coordsys_name_mapping:
+
+            #print(line)
+            #print(coords_etc)
+            #print(language_spec[region_type])
+            #print(coordsys_name_mapping[coordsys])
 
             parsed = type_parser(coords_etc, language_spec[region_type], coordsys_name_mapping[coordsys])
 
@@ -317,41 +363,53 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
 
     coordsys = None
     composite_region = None
+    composite_meta = None
+    composite_include = None
 
     # ds9 regions can be split on \n or ;
     lines = []
     for line_ in region_string.split('\n'):
         for line in line_.split(";"):
+
             lines.append(line)
 
             parsed = line_parser(line, coordsys)
 
+            if parsed is None: continue
+
             # If the line specifies the coordinate system for the region
-            if parsed in coordinate_systems: coordsys = parsed
+            elif parsed in coordinate_systems: coordsys = parsed
+
+            elif parsed[0] == "composite":
+
+                composite_meta = parsed[1]
+                composite_include = parsed[2]
 
             # Else: a line with one or more regions
             elif parsed:
 
                 region_type, coordlist, meta, composite, include = parsed
-                meta['include'] = include
+                #meta['include'] = include
                 #log.debug("Region type = {0}".format(region_type))
 
                 # If the parsed region is part of a composite and it is the first
-                if composite and composite_region is None: composite_region = [(region_type, coordlist)]
+                if composite and composite_region is None: composite_region = [(region_type, coordlist, include)]
 
                 # If the parsed region is part of a composite and it is not the first
-                elif composite: composite_region.append((region_type, coordlist))
+                elif composite: composite_region.append((region_type, coordlist, include))
 
-                # ? also part of composite
+                # Finish composite
                 elif composite_region is not None:
 
-                    composite_region.append((region_type, coordlist))
+                    composite_region.append((region_type, coordlist, include))
 
                     # MAKE COMPOSITE REGION
-                    specs = composite_region
+                    specs = (composite_region, composite_meta, composite_include)
                     region = make_composite_region(specs)
 
                     composite_region = None
+                    composite_meta = None
+                    composite_include = None
 
                     regions.append(region)
 
@@ -359,7 +417,7 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
 
                     # MAKE ORDINARY REGION
 
-                    specs = (region_type, coordlist, meta)
+                    specs = (region_type, coordlist, meta, include)
                     region = make_regular_region(specs)
 
                     #regions.append((region_type, coordlist, meta))
@@ -380,12 +438,32 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
     :return:
     """
 
-    output = ""
+    if isinstance(composite, SkyCompositeRegion):
 
-    for element in composite.elements:
+        # Get properties
+        x = float(composite.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(composite.center.transform_to(frame).spherical.lat.to('deg').value)
+        ang = composite.angle
 
-        output += regular_to_string(element, ds9_strings, frame, radunit, fmt) + ""
+        # Create string
+        composite_string = ds9_strings['composite'].format(**locals())
 
+    elif isinstance(composite, PixelCompositeRegion):
+
+        # Get properties
+        x = composite.center.x
+        y = composite.center.y
+        ang = composite.angle
+
+        # Create string
+        composite_string = ds9_strings['composite'].format(**locals())
+
+    else: raise ValueError("Invalid value for 'composite'")
+
+    # Add the strings for the composite elements
+    output = composite_string + "||\n".join([regular_to_string(element, ds9_strings, frame, radunit, fmt) for element in composite.elements])
+
+    # Return the string
     return output
 
 # -----------------------------------------------------------------
@@ -435,6 +513,24 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y2 = reg.end.y
 
         return ds9_strings['line'].format(**locals())
+
+    elif isinstance(reg, SkyVectorRegion):
+
+        x = float(reg.start.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(reg.start.transform_to(frame).spherical.lat.to('deg').value)
+        l = float(reg.length.to(radunit).value)
+        ang = float(reg.angle.to('deg').value)
+
+        return ds9_strings['vector'].format(**locals())
+
+    elif isinstance(reg, PixelVectorRegion):
+
+        x = reg.start.x
+        y = reg.start.y
+        l = reg.length
+        ang = reg.angle
+
+        return ds9_strings['vector'].format(**locals())
 
     elif isinstance(reg, SkyCircleRegion):
 
@@ -513,6 +609,22 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
 
         return ds9_strings['polygon'].format(**locals())
 
+    elif isinstance(reg, SkyTextRegion):
+
+        x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
+        text = reg.text
+
+        return ds9_strings['text'].format(**locals())
+
+    elif isinstance(reg, PixelTextRegion):
+
+        x = reg.center.x
+        y = reg.center.y
+        text = reg.text
+
+        return ds9_strings['text'].format(**locals())
+
 # -----------------------------------------------------------------
 
 def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
@@ -533,10 +645,13 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
     ds9_strings = {
         'point': 'point({x:' + fmt + '},{y:' + fmt + '})\n',
         'line': 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '})\n',
+        'vector': '# vector({x:' + fmt + '},{y:' + fmt + '},{l:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '}) vector=1\n',
         'circle': 'circle({x:' + fmt + '},{y:' + fmt + '},{r:' + fmt + '}' + radunitstr + ')\n',
         'ellipse': 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})\n',
         'rectangle': 'box({x:' + fmt + '},{y:' + fmt + '},{d1:' + fmt + '}' + radunitstr + ',{d2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})\n',
         'polygon': 'polygon({c})\n',
+        'text': '# text({x:' + fmt + '},{y:' + fmt + '}) text={text:}\n',
+        'composite': '# composite({x:' + fmt + '},{y:' + fmt + '},{ang:' + fmt + '}) || composite=1\n'
     }
 
     output = '# Region file format: DS9 PTS/magic/region\n'
@@ -567,9 +682,15 @@ def make_composite_region(specs):
 
     regions = []
 
+    composite_specs, meta, include = specs
+
+    appearance = {key: meta[key] for key in meta.keys() if key in viz_keywords}
+    meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
+
     # Create regions from the specs
-    for spec in specs:
-        spec = (spec[0], spec[1], {})
+    for spec in composite_specs:
+
+        spec = (spec[0], spec[1], {}, spec[2])
         reg = make_regular_region(spec)
         regions.append(reg)
 
@@ -579,12 +700,12 @@ def make_composite_region(specs):
         # Check if other are also pixel regions: is done by PixelCompositeRegion class
 
         # Add all pixel regions as a composite
-        region = PixelCompositeRegion(*regions)
+        region = PixelCompositeRegion(*regions, meta=meta, appearance=appearance, include=include)
 
     elif isinstance(regions[0], SkyRegion):
 
         # Add all sky regions as a composite
-        region = SkyCompositeRegion(*regions)
+        region = SkyCompositeRegion(*regions, meta=meta, appearance=appearance, include=include)
 
     # Hmm
     else: raise ValueError("Something went wrong: encountered" + repr(regions[0]) + " of type " + str(type(regions[0])))
@@ -606,7 +727,7 @@ def make_regular_region(specs):
     :return:
     """
 
-    region_type, coord_list, meta = specs
+    region_type, coord_list, meta, include = specs
 
     appearance = {key: meta[key] for key in meta.keys() if key in viz_keywords}
     meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
@@ -620,12 +741,12 @@ def make_regular_region(specs):
             dec = coord_list[0].dec
 
             # Create the region
-            reg = SkyPointRegion(ra, dec, meta=meta)
+            reg = SkyPointRegion(ra, dec, meta=meta, appearance=appearance, include=include)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
             # Create the region
-            reg = PixelPointRegion(coord_list[0].x, coord_list[0].y, meta=meta)
+            reg = PixelPointRegion(coord_list[0].x, coord_list[0].y, meta=meta, appearance=appearance, include=include)
 
         else: raise ValueError("No central coordinate")
 
@@ -634,19 +755,61 @@ def make_regular_region(specs):
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            coord_1 = SkyCoordinate(coord_list[0].ra, coord_list[0].dec)
-            coord_2 = SkyCoordinate(coord_list[1].ra, coord_list[1].dec)
+            coord = coord_list[0]
+
+            coord_1 = SkyCoordinate(coord[0].ra, coord[0].dec)
+            coord_2 = SkyCoordinate(coord[1].ra, coord[1].dec)
 
             # Create the line
-            reg = PixelLineRegion(coord_1, coord_2, meta=meta)
+            reg = SkyLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include)
 
         elif isinstance(coord_list[0], PixelCoordinate):
+
+            #coord = coord_list[]
+
+            print(coord_list)
 
             coord_1 = coord_list[0]
             coord_2 = coord_list[1]
 
             # Create the line
-            reg = PixelLineRegion(coord_1, coord_2, meta=meta)
+            reg = PixelLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include)
+
+    # VECTORS
+    elif region_type == "vector":
+
+        # Sky coordinates
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            # Get the start coordinate
+            coord = coord_list[0]
+            start = SkyCoordinate(coord.ra, coord.dec)
+
+            # Get the length
+            length = coord_list[1]
+
+            # Get the angle
+            angle = coord_list[2]
+            angle = Angle(angle.to("deg"), "deg")
+
+            # Create the vector
+            reg = SkyVectorRegion(start, length, angle, meta=meta, appearance=appearance, include=include)
+
+        # Pixel coordinates
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            # Get the start coordinate
+            start = coord_list[0]
+
+            # Get the length
+            length = coord_list[1]
+
+            # Get the angle
+            angle = coord_list[2]
+            angle = Angle(angle.to("deg"), "deg")
+
+            # Create the vector
+            reg = PixelVectorRegion(start, length, angle, meta=meta, appearance=appearance, include=include)
 
     # CIRCLES
     elif region_type == 'circle':
@@ -663,7 +826,7 @@ def make_regular_region(specs):
             radius = coord_list[1]
 
             # Create a circle
-            reg = SkyCircleRegion(center, radius, meta=meta)
+            reg = SkyCircleRegion(center, radius, meta=meta, appearance=appearance, include=include)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
@@ -671,7 +834,7 @@ def make_regular_region(specs):
             radius = coord_list[1]
 
             # Create the circle
-            reg = PixelCircleRegion(center, radius, meta=meta)
+            reg = PixelCircleRegion(center, radius, meta=meta, appearance=appearance, include=include)
 
         # No central coordinate for this circle
         else: raise ValueError("No central coordinate")
@@ -697,7 +860,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create an ellipse
-            reg = SkyEllipseRegion(center, radius, angle, meta=meta)
+            reg = SkyEllipseRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
@@ -710,7 +873,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create the region
-            reg = PixelEllipseRegion(center, radius, angle, meta=meta)
+            reg = PixelEllipseRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
 
         # No central coordinate found for this ellipse
         else: raise ValueError("No central coordinate")
@@ -734,7 +897,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create the region
-            reg = SkyRectangleRegion(center, radius, angle, meta=meta)
+            reg = SkyRectangleRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
@@ -747,7 +910,7 @@ def make_regular_region(specs):
             angle = Angle(angle.to("deg"), "deg")
 
             # Create the region
-            reg = PixelRectangleRegion(center, radius, angle, meta=meta)
+            reg = PixelRectangleRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
 
         # No central coordinate given
         else: raise ValueError("No central coordinate")
@@ -757,20 +920,36 @@ def make_regular_region(specs):
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            print("polygon", coord_list)
-            reg = SkyPolygonRegion(coord_list[0])
+            reg = SkyPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
-            reg = PixelPolygonRegion(coord_list[0])
+            reg = PixelPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include)
 
+        # No central coordinate given
+        else: raise ValueError("No central coordinate")
+
+    # TEXT
+    elif region_type == "text":
+
+        text = appearance.pop("text")
+
+        if isinstance(coord_list[0], BaseCoordinateFrame):
+
+            ra = coord_list[0].ra
+            dec = coord_list[0].dec
+
+            reg = SkyTextRegion(SkyCoordinate(ra, dec), text, meta=meta, appearance=appearance, include=include)
+
+        elif isinstance(coord_list[0], PixelCoordinate):
+
+            reg = PixelTextRegion(coord_list[0], text, meta=meta, appearance=appearance, include=include)
+
+        # No central coordinate given
         else: raise ValueError("No central coordinate")
 
     # UNKNOWN
     else: raise ValueError("Region specification not recognized")
-
-    #reg.vizmeta = {key: meta[key] for key in meta.keys() if key in viz_keywords}
-    #reg.meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
 
     # Return the region
     return reg
@@ -847,8 +1026,6 @@ class RegionList(list):
 
         # Convert to string
         output = ds9_objects_to_string(self, coordsys)
-
-        print(output)
 
         # Write
         with open(path, 'w') as fh: fh.write(output)
@@ -962,6 +1139,17 @@ class RegionList(list):
 
     # -----------------------------------------------------------------
 
+    def vectors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, VectorRegion)]
+
+    # -----------------------------------------------------------------
+
     def circles(self):
 
         """
@@ -1003,6 +1191,17 @@ class RegionList(list):
         """
 
         return [region for region in self if isinstance(region, PolygonRegion)]
+
+    # -----------------------------------------------------------------
+
+    def texts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [region for region in self if isinstance(region, TextRegion)]
 
     # -----------------------------------------------------------------
 

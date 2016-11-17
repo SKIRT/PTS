@@ -12,7 +12,11 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Import the relevant PTS classes and modules
+from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 
 # -----------------------------------------------------------------
@@ -34,8 +38,49 @@ class CompositeRegion(Region):
         # Set the region elements
         self.elements = args
 
+        # Get the angle
+        self.angle = kwargs.pop("angle", Angle(0.0, "deg"))
+
+        # Check the angle
+        if not isinstance(self.angle, Angle): raise ValueError("Angle must be an Astropy Angle object")
+
         # Call the constructor of the base class
         super(CompositeRegion, self).__init__(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.elements)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_center(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return sum([element.center.axis1 for element in self.elements]) / float(len(self))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_center(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return sum([element.center.axis2 for element in self.elements]) / float(len(self))
 
 # -----------------------------------------------------------------
 
@@ -60,6 +105,18 @@ class PixelCompositeRegion(CompositeRegion, PixelRegion):
         # Call the constructor of the CompositeRegion base class
         CompositeRegion.__init__(self, *args, **kwargs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelCoordinate(self.axis1_center, self.axis2_center)
+
 # -----------------------------------------------------------------
 
 class SkyCompositeRegion(CompositeRegion, SkyRegion):
@@ -83,6 +140,18 @@ class SkyCompositeRegion(CompositeRegion, SkyRegion):
         # Call the constructor of the CompositeRegion base class
         CompositeRegion.__init__(self, *args, **kwargs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkyCoordinate(self.axis1_center, self.axis2_center)
+
 # -----------------------------------------------------------------
 
 class PhysicalCompositeRegion(CompositeRegion, PhysicalRegion):
@@ -105,5 +174,17 @@ class PhysicalCompositeRegion(CompositeRegion, PhysicalRegion):
 
         # Call the constructor of the CompositeRegion base class
         CompositeRegion.__init__(self, *args, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PhysicalCoordinate(self.axis1_center, self.axis2_center)
 
 # -----------------------------------------------------------------

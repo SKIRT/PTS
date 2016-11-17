@@ -40,6 +40,30 @@ class LineRegion(Region):
         # Call the constructor of the base class
         super(LineRegion, self).__init__(**kwargs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_center(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return 0.5*(self.start.axis1 + self.end.axis1)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_center(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return 0.5*(self.start.axis2 + self.end.axis2)
+
 # -----------------------------------------------------------------
 
 class PixelLineRegion(LineRegion, PixelRegion):
@@ -63,6 +87,18 @@ class PixelLineRegion(LineRegion, PixelRegion):
 
         # Call the constructor of the base class
         super(PixelLineRegion, self).__init__(start, end, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelCoordinate(self.axis1_center, self.axis2_center)
 
 # -----------------------------------------------------------------
 
@@ -88,6 +124,18 @@ class SkyLineRegion(LineRegion, SkyRegion):
         # Call the constructor of the base class
         super(SkyLineRegion, self).__init__(start, end, **kwargs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkyCoordinate(self.axis1_center, self.axis2_center)
+
 # -----------------------------------------------------------------
 
 class PhysicalLineRegion(LineRegion, PhysicalRegion):
@@ -111,5 +159,17 @@ class PhysicalLineRegion(LineRegion, PhysicalRegion):
 
         # Call the constructor of the base class
         super(PhysicalLineRegion, self).__init__(start, end, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PhysicalCoordinate(self.axis1_center, self.axis2_center)
 
 # -----------------------------------------------------------------
