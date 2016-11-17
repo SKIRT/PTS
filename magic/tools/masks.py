@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from . import regions
+from ..region import tools as regions
 
 # -----------------------------------------------------------------
 

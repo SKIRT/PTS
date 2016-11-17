@@ -36,12 +36,9 @@ class PointRegion(Region):
         :param kwargs:
         """
 
-        # Set the attributes (NO, these are defined by the other base class of PixelPointRegion, SkyPointRegion and PhysicalPointRegion)
-        #self.axis1 = axis1
-        #self.axis2 = axis2
-
         # Call the constructor of the base class
-        super(PointRegion, self).__init__(**kwargs)
+        #super(PointRegion, self).__init__(**kwargs) # DOESN'T WORK: TypeError: __init__() takes exactly 3 arguments (1 given) ??
+        Region.__init__(self, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -64,7 +61,7 @@ class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
         PointRegion.__init__(self, **kwargs)
 
         # Call the constructor of the PixelCoordinate class
-        PixelCoordinate.__init__(x, y, **kwargs)
+        PixelCoordinate.__init__(self, x, y, **kwargs)
 
     # -----------------------------------------------------------------
 

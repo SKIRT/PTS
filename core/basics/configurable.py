@@ -14,11 +14,9 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration
 from ..tools import filesystem as fs
 from ..tools.logging import log
 

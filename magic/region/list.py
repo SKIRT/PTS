@@ -108,7 +108,7 @@ def parse_coordinate(string_rep, unit):
 
 # -----------------------------------------------------------------
 
-def parse_angular_length_quantity(string_rep):
+def parse_angular_length_quantity(string_rep, default_unit="deg"):
 
     """
     Given a string that is either a number or a number and a unit, return a
@@ -116,32 +116,85 @@ def parse_angular_length_quantity(string_rep):
         23.9 -> 23.9*u.deg
         50" -> 50*u.arcsec
     """
+
     has_unit = string_rep[-1] not in string.digits
     if has_unit:
         unit = unit_mapping[string_rep[-1]]
         return Quantity(float(string_rep[:-1]), unit=unit)
-    else: return Quantity(float(string_rep), unit="deg")
+    else: return Quantity(float(string_rep), unit=default_unit)
 
 # -----------------------------------------------------------------
 
-# these are the same function, just different names
-radius = parse_angular_length_quantity
-length = parse_angular_length_quantity
-width = parse_angular_length_quantity
-height = parse_angular_length_quantity
-angle = parse_angular_length_quantity
+def parse_angle(string_rep, default_unit="deg"):
 
-# For the sake of readability in describing the spec, parse_coordinate etc. are renamed here
-coordinate = parse_coordinate
-language_spec = {'point': (coordinate, coordinate),
-                 'line': (coordinate, coordinate, coordinate, coordinate),
-                 'vector': (coordinate, coordinate, length, angle),
-                 'circle': (coordinate, coordinate, radius),
-                 'ellipse': itertools.chain((coordinate, coordinate), itertools.cycle((radius,))), # This is a special case to deal with n elliptical annuli
-                 'box': (coordinate, coordinate, width, height, angle),
-                 'polygon': itertools.cycle((coordinate,)),
-                 'text': (coordinate, coordinate),
-                 }
+    """
+    This function ...
+    :param string_rep:
+    :param default_unit:
+    :return:
+    """
+
+    has_unit = string_rep[-1] not in string.digits
+    if has_unit:
+        unit = unit_mapping[string_rep[-1]]
+        return Angle(float(string_rep[:-1]), unit)
+    else: return Angle(float(string_rep), default_unit)
+
+# -----------------------------------------------------------------
+
+def parse_pixel_length_quantity(string_rep):
+
+    """
+    This function ...
+    :param string_rep:
+    :return:
+    """
+
+    return Quantity(float(string_rep))
+
+# -----------------------------------------------------------------
+
+def generate_language_spec(coordsys):
+
+    """
+    This function ...
+    :param coordsys:
+    :return:
+    """
+
+    if coordsys in coordsys_name_mapping:
+
+        coordinate = parse_coordinate # works for both pixel and sky coordinates
+
+        radius = parse_angular_length_quantity
+        length = parse_angular_length_quantity
+        width = parse_angular_length_quantity
+        height = parse_angular_length_quantity
+        angle = parse_angle
+
+    else:
+
+        coordinate = parse_coordinate # works for both pixel and sky coordinates
+
+        radius = parse_pixel_length_quantity
+        length = parse_pixel_length_quantity
+        width = parse_pixel_length_quantity
+        height = parse_pixel_length_quantity
+        angle = parse_angle
+
+    # For the sake of readability in describing the spec, parse_coordinate etc. are renamed here
+    language_spec = {'point': (coordinate, coordinate),
+                     'line': (coordinate, coordinate, coordinate, coordinate),
+                     'vector': (coordinate, coordinate, length, angle),
+                     'circle': (coordinate, coordinate, radius),
+                     'ellipse': itertools.chain((coordinate, coordinate), itertools.cycle((radius,))), # This is a special case to deal with n elliptical annuli
+                     'box': (coordinate, coordinate, width, height, angle),
+                     'polygon': itertools.cycle((coordinate,)),
+                     'text': (coordinate, coordinate),
+                     'composite': (coordinate, coordinate, angle),
+                     }
+
+    return language_spec
 
 # -----------------------------------------------------------------
 
@@ -175,7 +228,7 @@ def type_parser(string_rep, specification, coordsys):
     splitter = re.compile("[, ]")
 
     for ii, (element, element_parser) in enumerate(zip(splitter.split(string_rep), specification)):
-        if element_parser is coordinate:
+        if element_parser is parse_coordinate:
             unit = coordinate_units[coordsys][ii % 2]
             coord_list.append(element_parser(element, unit))
         else: coord_list.append(element_parser(element))
@@ -251,28 +304,37 @@ def line_parser(line, coordsys=None):
     elif include == "-": include = False
     else: raise RuntimeError("Encountered a problem (include = '" + include + "')")
 
+    # GENERATE THE LANGUAGE SPEC
+    language_spec = generate_language_spec(coordsys)
+
     if region_type in coordinate_systems: return region_type  # outer loop has to do something with the coordinate system information
     elif region_type == "composite":
-
-        #print(line)
 
         # end_of_region_name is the coordinate of the end of the region's name, e.g.:
         # circle would be 6 because circle is 6 characters
         end_of_region_name = region_type_search.span()[1]
 
         # coordinate of the # symbol or end of the line (-1) if not found
-        if startswithhash: hash_or_end = line.find("||")
-        else: hash_or_end = line.find("#")
+        if startswithhash:
+            hash_or_end = line.find("||")
+            coords_etc = line.split("(")[1].split(")")[0]
+        else:
+            hash_or_end = line.find("#")
+            coords_etc = strip_paren(line[end_of_region_name:hash_or_end].strip(" |"))
         meta_str = line[hash_or_end:]
 
-        #print(hash_or_end)
-        #print(meta_str)
+        if coordsys in coordsys_name_mapping:
+            parsed = type_parser(coords_etc, language_spec[region_type], coordsys_name_mapping[coordsys])
+            #print(parsed)
+        else:
+            parsed = type_parser(coords_etc, language_spec[region_type], coordsys)
+            #print(parsed)
+
+        angle = Angle(parsed[2].to("deg"), "deg")
 
         parsed_meta = meta_parser(meta_str)
 
-        #print(parsed_meta)
-
-        return region_type, parsed_meta, include
+        return region_type, angle, parsed_meta, include
 
     elif region_type in language_spec:
 
@@ -289,11 +351,10 @@ def line_parser(line, coordsys=None):
         if startswithhash:
             hash_or_end = line.find(") ")
             coords_etc = line.split("(")[1].split(")")[0]
-            meta_str = line[hash_or_end:]
         else:
             hash_or_end = line.find("#")
             coords_etc = strip_paren(line[end_of_region_name:hash_or_end].strip(" |"))
-            meta_str = line[hash_or_end:]
+        meta_str = line[hash_or_end:]
 
         parsed_meta = meta_parser(meta_str)
 
@@ -308,7 +369,7 @@ def line_parser(line, coordsys=None):
 
             # Reset iterator for ellipse annulus
             if region_type == 'ellipse':
-                language_spec[region_type] = itertools.chain((coordinate, coordinate), itertools.cycle((radius,)))
+                language_spec[region_type] = itertools.chain((parse_coordinate, parse_coordinate), itertools.cycle((parse_angular_length_quantity,)))
 
             parsed_angles = [(x, y) for x, y in zip(parsed[:-1:2], parsed[1::2]) if isinstance(x, Angle) and isinstance(x, Angle)]
             frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
@@ -323,22 +384,28 @@ def line_parser(line, coordsys=None):
         else:
 
             parsed = type_parser(coords_etc, language_spec[region_type], coordsys)
+
+            #print(parsed)
+
             if region_type == 'polygon':
 
                 # have to special-case polygon in the phys coord case b/c can't typecheck when iterating as in sky coord case
-                #coord = PixCoord(parsed[0::2], parsed[1::2])
                 coord = PixelCoordinate(parsed[0::2], parsed[1::2])
                 parsed_return = [coord]
 
             else:
 
-                parsed = [_.value for _ in parsed]
-                #coord = PixCoord(parsed[0], parsed[1])
+                #print("PARSED:", parsed)
+
+                parsed = [_.value if _.unit == "" else _ for _ in parsed]
+                print(parsed)
                 coord = PixelCoordinate(parsed[0], parsed[1])
                 parsed_return = [coord] + parsed[2:]
 
+            #print(parsed_return)
+
             # Reset iterator for ellipse annulus
-            if region_type == 'ellipse': language_spec[region_type] = itertools.chain((coordinate, coordinate), itertools.cycle((radius,)))
+            if region_type == 'ellipse': language_spec[region_type] = itertools.chain((parse_coordinate, parse_coordinate), itertools.cycle((parse_pixel_length_quantity,)))
 
             return region_type, parsed_return, parsed_meta, composite, include
 
@@ -366,7 +433,8 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
     """
 
     coordsys = None
-    composite_region = None
+    composite_region_elements = None
+    composite_angle = None
     composite_meta = None
     composite_include = None
 
@@ -386,8 +454,9 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
 
             elif parsed[0] == "composite":
 
-                composite_meta = parsed[1]
-                composite_include = parsed[2]
+                composite_angle = parsed[1]
+                composite_meta = parsed[2]
+                composite_include = parsed[3]
 
             # Else: a line with one or more regions
             elif parsed:
@@ -397,21 +466,22 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
                 #log.debug("Region type = {0}".format(region_type))
 
                 # If the parsed region is part of a composite and it is the first
-                if composite and composite_region is None: composite_region = [(region_type, coordlist, include)]
+                if composite and composite_region_elements is None: composite_region_elements = [(region_type, coordlist, include)]
 
                 # If the parsed region is part of a composite and it is not the first
-                elif composite: composite_region.append((region_type, coordlist, include))
+                elif composite: composite_region_elements.append((region_type, coordlist, include))
 
                 # Finish composite
-                elif composite_region is not None:
+                elif composite_region_elements is not None:
 
-                    composite_region.append((region_type, coordlist, include))
+                    composite_region_elements.append((region_type, coordlist, include))
 
                     # MAKE COMPOSITE REGION
-                    specs = (composite_region, composite_meta, composite_include)
+                    specs = (composite_region_elements, composite_angle, composite_meta, composite_include)
                     region = make_composite_region(specs)
 
-                    composite_region = None
+                    composite_region_elements = None
+                    composite_angle = None
                     composite_meta = None
                     composite_include = None
 
@@ -704,7 +774,7 @@ def make_composite_region(specs):
 
     regions = []
 
-    composite_specs, meta, include = specs
+    composite_specs, angle, meta, include = specs
 
     appearance = {key: meta[key] for key in meta.keys() if key in viz_keywords}
     meta = {key: meta[key] for key in meta.keys() if key not in viz_keywords}
@@ -722,12 +792,12 @@ def make_composite_region(specs):
         # Check if other are also pixel regions: is done by PixelCompositeRegion class
 
         # Add all pixel regions as a composite
-        region = PixelCompositeRegion(*regions, meta=meta, appearance=appearance, include=include)
+        region = PixelCompositeRegion(*regions, meta=meta, appearance=appearance, include=include, angle=angle)
 
     elif isinstance(regions[0], SkyRegion):
 
         # Add all sky regions as a composite
-        region = SkyCompositeRegion(*regions, meta=meta, appearance=appearance, include=include)
+        region = SkyCompositeRegion(*regions, meta=meta, appearance=appearance, include=include, angle=angle)
 
     # Hmm
     else: raise ValueError("Something went wrong: encountered" + repr(regions[0]) + " of type " + str(type(regions[0])))
@@ -855,6 +925,8 @@ def make_regular_region(specs):
             center = coord_list[0]
             radius = coord_list[1]
 
+            #print(coord_list)
+
             # Create the circle
             reg = PixelCircleRegion(center, radius, meta=meta, appearance=appearance, include=include)
 
@@ -890,9 +962,12 @@ def make_regular_region(specs):
 
             radius = PixelStretch(coord_list[1], coord_list[2])
 
+            #print(coord_list)
+
             # Get the angle
             angle = coord_list[3]
-            angle = Angle(angle.to("deg"), "deg")
+            #angle = Angle(angle.to("deg"), "deg")
+            angle = Angle(angle, "deg")
 
             # Create the region
             reg = PixelEllipseRegion(center, radius, angle, meta=meta, appearance=appearance, include=include)
