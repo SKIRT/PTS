@@ -247,6 +247,10 @@ def line_parser(line, coordsys=None):
         #print("REGION TYPE", region_type)
     else: return
 
+    if include == "": include = True
+    elif include == "-": include = False
+    else: raise RuntimeError("Encountered a problem (include = '" + include + "')")
+
     if region_type in coordinate_systems: return region_type  # outer loop has to do something with the coordinate system information
     elif region_type == "composite":
 
@@ -438,6 +442,8 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
     :return:
     """
 
+    prefix = "" if composite.include else "-"
+
     if isinstance(composite, SkyCompositeRegion):
 
         # Get properties
@@ -446,7 +452,7 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
         ang = composite.angle
 
         # Create string
-        composite_string = ds9_strings['composite'].format(**locals())
+        composite_string = prefix + ds9_strings['composite'].format(**locals())
 
     elif isinstance(composite, PixelCompositeRegion):
 
@@ -456,12 +462,13 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
         ang = composite.angle
 
         # Create string
-        composite_string = ds9_strings['composite'].format(**locals())
+        composite_string = prefix + ds9_strings['composite'].format(**locals())
 
+    # Invalid value for the composite region
     else: raise ValueError("Invalid value for 'composite'")
 
     # Add the strings for the composite elements
-    output = composite_string + "||\n".join([regular_to_string(element, ds9_strings, frame, radunit, fmt) for element in composite.elements])
+    output = composite_string + "\n" + " ||\n".join([regular_to_string(element, ds9_strings, frame, radunit, fmt) for element in composite.elements])
 
     # Return the string
     return output
@@ -480,29 +487,43 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
     :return:
     """
 
+    if reg.include: prefix = ""
+    else: prefix = "-"
+
+    # Point region in sky coordinates
     if isinstance(reg, SkyPointRegion):
 
         x = float(reg.transform_to(frame).spherical.lon.to('deg').value)
         y = float(reg.transform_to(frame).spherical.lat.to('deg').value)
 
-        return ds9_strings['point'].format(**locals())
+        return prefix + ds9_strings['point'].format(**locals())
 
+    # Point region in pixel coordinates
     elif isinstance(reg, PixelPointRegion):
 
         x = reg.x
         y = reg.y
 
-        return ds9_strings['point'].format(**locals())
+        return prefix + ds9_strings['point'].format(**locals())
 
     elif isinstance(reg, SkyLineRegion):
 
         x1 = float(reg.start.transform_to(frame).spherical.lon.to('deg').value)
-        y1 = float(reg.end.transform_to(frame).spherical.lat.to('deg').value)
+        y1 = float(reg.start.transform_to(frame).spherical.lat.to('deg').value)
 
-        x2 = float(reg.start.transform_to(frame).spherical.lon.to('deg').value)
+        x2 = float(reg.end.transform_to(frame).spherical.lon.to('deg').value)
         y2 = float(reg.end.transform_to(frame).spherical.lat.to('deg').value)
 
-        return ds9_strings['line'].format(**locals())
+        # TO HAVE IT IN hh:mm:ss NOTATION:
+
+        #print(vars(reg.start.transform_to(frame)))
+        skycoordinate = SkyCoordinate(reg.start.transform_to(frame).spherical.lon, reg.start.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
+        str1 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
+
+        skycoordinate = SkyCoordinate(reg.end.transform_to(frame).spherical.lon, reg.end.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
+        str2 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
+
+        return prefix + ds9_strings['line'].format(**locals())
 
     elif isinstance(reg, PixelLineRegion):
 
@@ -512,7 +533,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         x2 = reg.end.x
         y2 = reg.end.y
 
-        return ds9_strings['line'].format(**locals())
+        return prefix + ds9_strings['line'].format(**locals())
 
     elif isinstance(reg, SkyVectorRegion):
 
@@ -521,7 +542,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         l = float(reg.length.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        return ds9_strings['vector'].format(**locals())
+        return prefix + ds9_strings['vector'].format(**locals())
 
     elif isinstance(reg, PixelVectorRegion):
 
@@ -530,7 +551,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         l = reg.length
         ang = reg.angle
 
-        return ds9_strings['vector'].format(**locals())
+        return prefix + ds9_strings['vector'].format(**locals())
 
     elif isinstance(reg, SkyCircleRegion):
 
@@ -538,7 +559,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
         r = float(reg.radius.to(radunit).value)
 
-        return ds9_strings['circle'].format(**locals())
+        return prefix + ds9_strings['circle'].format(**locals())
 
     elif isinstance(reg, PixelCircleRegion):
 
@@ -546,37 +567,37 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = reg.center.y
         r = reg.radius
 
-        return ds9_strings['circle'].format(**locals())
+        return prefix + ds9_strings['circle'].format(**locals())
 
     elif isinstance(reg, SkyEllipseRegion):
 
         x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
-        r2 = float(reg.major.to(radunit).value)
-        r1 = float(reg.minor.to(radunit).value)
+        r1 = float(reg.major.to(radunit).value)
+        r2 = float(reg.minor.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        return ds9_strings['ellipse'].format(**locals())
+        return prefix + ds9_strings['ellipse'].format(**locals())
 
     elif isinstance(reg, PixelEllipseRegion):
 
         x = reg.center.x
         y = reg.center.y
-        r2 = reg.major
-        r1 = reg.minor
+        r1 = reg.major
+        r2 = reg.minor
         ang = reg.angle
 
-        return ds9_strings['ellipse'].format(**locals())
+        return prefix + ds9_strings['ellipse'].format(**locals())
 
     elif isinstance(reg, SkyRectangleRegion):
 
         x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
-        d2 = 2.0 * float(reg.radius.ra.to(radunit).value)
-        d1 = 2.0 * float(reg.radius.dec.to(radunit).value)
+        d1 = 2.0 * float(reg.radius.ra.to(radunit).value)
+        d2 = 2.0 * float(reg.radius.dec.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        return ds9_strings['rectangle'].format(**locals())
+        return prefix + ds9_strings['rectangle'].format(**locals())
 
     elif isinstance(reg, PixelRectangleRegion):
 
@@ -586,7 +607,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         d2 = 2.0 * reg.radius.y
         ang = reg.angle
 
-        return ds9_strings['rectangle'].format(**locals())
+        return prefix + ds9_strings['rectangle'].format(**locals())
 
     elif isinstance(reg, SkyPolygonRegion):
 
@@ -597,7 +618,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         temp = [val.format(x) for _ in coords for x in _]
         c = ",".join(temp)
 
-        return ds9_strings['polygon'].format(**locals())
+        return prefix + ds9_strings['polygon'].format(**locals())
 
     elif isinstance(reg, PixelPolygonRegion):
 
@@ -607,7 +628,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         temp = [val.format(x) for _ in coords for x in _]
         c = ",".join(temp)
 
-        return ds9_strings['polygon'].format(**locals())
+        return prefix + ds9_strings['polygon'].format(**locals())
 
     elif isinstance(reg, SkyTextRegion):
 
@@ -615,7 +636,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
         text = reg.text
 
-        return ds9_strings['text'].format(**locals())
+        return prefix + ds9_strings['text'].format(**locals())
 
     elif isinstance(reg, PixelTextRegion):
 
@@ -623,7 +644,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = reg.center.y
         text = reg.text
 
-        return ds9_strings['text'].format(**locals())
+        return prefix + ds9_strings['text'].format(**locals())
 
 # -----------------------------------------------------------------
 
@@ -643,15 +664,16 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
     else: radunitstr = ''
 
     ds9_strings = {
-        'point': 'point({x:' + fmt + '},{y:' + fmt + '})\n',
-        'line': 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '})\n',
-        'vector': '# vector({x:' + fmt + '},{y:' + fmt + '},{l:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '}) vector=1\n',
-        'circle': 'circle({x:' + fmt + '},{y:' + fmt + '},{r:' + fmt + '}' + radunitstr + ')\n',
-        'ellipse': 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})\n',
-        'rectangle': 'box({x:' + fmt + '},{y:' + fmt + '},{d1:' + fmt + '}' + radunitstr + ',{d2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})\n',
-        'polygon': 'polygon({c})\n',
-        'text': '# text({x:' + fmt + '},{y:' + fmt + '}) text={text:}\n',
-        'composite': '# composite({x:' + fmt + '},{y:' + fmt + '},{ang:' + fmt + '}) || composite=1\n'
+        'point': 'point({x:' + fmt + '},{y:' + fmt + '})',
+        #'line': 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '}) # line=0 0',
+        'line': 'line({str1:},{str2:}) # line=0 0',
+        'vector': '# vector({x:' + fmt + '},{y:' + fmt + '},{l:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '}) vector=1',
+        'circle': 'circle({x:' + fmt + '},{y:' + fmt + '},{r:' + fmt + '}' + radunitstr + ')',
+        'ellipse': 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})',
+        'rectangle': 'box({x:' + fmt + '},{y:' + fmt + '},{d1:' + fmt + '}' + radunitstr + ',{d2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})',
+        'polygon': 'polygon({c})',
+        'text': '# text({x:' + fmt + '},{y:' + fmt + '}) text={text:}',
+        'composite': '# composite({x:' + fmt + '},{y:' + fmt + '},{ang:' + fmt + '}) || composite=1'
     }
 
     output = '# Region file format: DS9 PTS/magic/region\n'
@@ -664,8 +686,8 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
     # Loop over the regions
     for reg in regions:
 
-        if isinstance(reg, CompositeRegion): output += composite_to_string(reg, ds9_strings, frame, radunit, fmt)
-        else: output += regular_to_string(reg, ds9_strings, frame, radunit, fmt)
+        if isinstance(reg, CompositeRegion): output += composite_to_string(reg, ds9_strings, frame, radunit, fmt) + "\n"
+        else: output += regular_to_string(reg, ds9_strings, frame, radunit, fmt) + "\n"
 
     # Return the output string
     return output
@@ -767,7 +789,7 @@ def make_regular_region(specs):
 
             #coord = coord_list[]
 
-            print(coord_list)
+            #print(coord_list)
 
             coord_1 = coord_list[0]
             coord_2 = coord_list[1]
