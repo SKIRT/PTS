@@ -73,7 +73,7 @@ class Stretch(object):
             
         # Set the meta information
         self.meta = kwargs.pop("meta", dict())
-        
+
 # -----------------------------------------------------------------
 
 class PixelStretch(Extent, Stretch):
@@ -95,6 +95,58 @@ class PixelStretch(Extent, Stretch):
         # Call the constructor of the base classes
         Extent.__init__(self, x, y)
         Stretch.__init__(self, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.x
+
+    # -----------------------------------------------------------------
+
+    @axis1.setter
+    def axis1(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # TODO: check
+        self.x = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y
+
+    # -----------------------------------------------------------------
+
+    @axis2.setter
+    def axis2(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # TODO: check
+        self.y = value
 
     # -----------------------------------------------------------------
 
@@ -150,6 +202,56 @@ class SkyStretch(SkyExtent, Stretch):
 
     # -----------------------------------------------------------------
 
+    @property
+    def axis1(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.ra
+
+    # -----------------------------------------------------------------
+
+    @axis1.setter
+    def axis1(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: check
+        self.ra = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dec
+
+    # -----------------------------------------------------------------
+
+    @axis2.setter
+    def axis2(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: check
+        self.dec = value
+
+    # -----------------------------------------------------------------
+
     def to_pixel(self, wcs, mode='wcs'):
 
         """
@@ -199,5 +301,57 @@ class PhysicalStretch(PhysicalExtent, Stretch):
         # Call the constructors of the base classes
         PhysicalExtent.__init__(self, length1, length2)
         Stretch.__init__(self, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.length1
+
+    # -----------------------------------------------------------------
+
+    @axis1.setter
+    def axis1(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # TODO: check
+        self.length1 = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.length2
+
+    # -----------------------------------------------------------------
+
+    @axis2.setter
+    def axis2(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # TODO: check
+        self.length2 = value
 
 # -----------------------------------------------------------------

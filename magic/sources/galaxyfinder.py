@@ -462,7 +462,7 @@ class GalaxyFinder(Configurable):
         log.info("Creating galaxy region ...")
 
         # Initialize the region
-        self.region = Region()
+        self.region = PixelRegionList()
 
         # Loop over all galaxies
         for galaxy in self.galaxies:

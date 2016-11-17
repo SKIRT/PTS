@@ -786,12 +786,12 @@ class ModelingComponent(Configurable):
         """
 
         # Convert the semi minor and semi major axis lengths from angular to physical sizes
-        major = (self.truncation_ellipse.major * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
-        minor = (self.truncation_ellipse.minor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
+        semimajor = (self.truncation_ellipse.semimajor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
+        semiminor = (self.truncation_ellipse.semiminor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
 
         # Calculate the area in kpc^2
         # A = pi * a * b
-        area = math.pi * major * minor
+        area = math.pi * semimajor * semiminor
 
         # Return the area
         return area

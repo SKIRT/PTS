@@ -809,8 +809,8 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
 
         x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
-        r1 = float(reg.major.to(radunit).value)
-        r2 = float(reg.minor.to(radunit).value)
+        r1 = float(reg.semimajor.to(radunit).value)
+        r2 = float(reg.semiminor.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
         string = prefix + ds9_strings['ellipse'].format(**locals())
@@ -821,8 +821,8 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
 
         x = reg.center.x
         y = reg.center.y
-        r1 = reg.major
-        r2 = reg.minor
+        r1 = reg.semimajor
+        r2 = reg.semiminor
         ang = reg.angle
 
         string = prefix + ds9_strings['ellipse'].format(**locals())

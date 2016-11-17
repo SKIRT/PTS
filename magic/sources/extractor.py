@@ -717,8 +717,8 @@ class SourceExtractor(Configurable):
 
             if not isinstance(shape, PixelEllipseRegion): return shape
 
-            major_axis_length = shape.major
-            if largest_shape is None or major_axis_length > largest_shape.major: largest_shape = shape
+            semimajor_axis_length = shape.semimajor
+            if largest_shape is None or semimajor_axis_length > largest_shape.semimajor: largest_shape = shape
 
         # Return the largest shape
         return largest_shape

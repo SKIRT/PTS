@@ -237,8 +237,8 @@ class FittingInitializer(FittingComponent):
         log.info("Creating the grids ...")
 
         # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.truncation_ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
+        semimajor_angular = self.truncation_ellipse.semimajor  # semimajor axis length of the sky ellipse
+        radius_physical = (semimajor_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the pixelscale in physical units
         distance = self.galaxy_properties.distance

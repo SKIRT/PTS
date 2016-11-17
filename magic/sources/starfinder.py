@@ -600,11 +600,11 @@ class StarFinder(Configurable):
 
             # Get aperture properties
             center = star.contour.center
-            major = star.contour.major
-            minor = star.contour.minor
+            semimajor = star.contour.semimajor
+            semiminor = star.contour.semiminor
             angle = star.contour.angle.degree
 
-            radius = Extent(major, minor)
+            radius = Extent(semimajor, semiminor)
 
             # Create meta information
             meta = {"color": "white", "text": text}
@@ -1056,8 +1056,8 @@ class StarFinder(Configurable):
                 contour_position = star.contour.center
                 x_centroid_column.append(contour_position.x)
                 y_centroid_column.append(contour_position.y)
-                a_column.append(star.contour.major)
-                b_column.append(star.contour.minor)
+                a_column.append(star.contour.semimajor)
+                b_column.append(star.contour.semiminor)
                 angle_column.append(star.contour.angle.degree)
 
             else:

@@ -43,9 +43,9 @@ def largest_ellipse(region):
         # Skip shapes that are not ellipses
         if not isinstance(shape, PixelEllipseRegion): continue
 
-        major_axis_length = shape.major
+        semimajor_axis_length = shape.semimajor
 
-        if largest_shape is None or major_axis_length > largest_shape.major: largest_shape = shape
+        if largest_shape is None or semimajor_axis_length > largest_shape.semimajor: largest_shape = shape
 
     # Return the largest shape in the galaxy region
     return largest_shape
