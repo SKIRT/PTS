@@ -40,6 +40,7 @@ import numpy as np
 import h5py
 import read_eagle       # EAGLE-specific package by must be seperately installed
 
+from ..core.tools.geometry import Transform
 from . import config as config
 from .skirtrun import SkirtRun
 
@@ -135,9 +136,20 @@ def extract(record):
     # find unit rotation axis vector, using only stellar information and an aperture of 30 kpc
     n_rot = rotAxis(sdat['r'], sdat['v'], sdat['m'], com, v_bar, apt=30e3, aptfrac=0.08)
 
-    # translate coordinates to center of mass
-    sdat['r'] -= com
-    gdat['r'] -= com
+    # translate to center of mass and line up with angular momentum vector
+    transf = Transform()
+    transf.translate(-com[0], -com[1], -com[2])
+    a, b, c = n_rot
+    v = np.sqrt(b*b+c*c)
+    if v > 0.3:
+        transf.rotateX(c/v, -b/v)
+        transf.rotateY(v, -a)
+    else:
+        v = np.sqrt(a*a+c*c)
+        transf.rotateY(c/v, -a/v)
+        transf.rotateX(v, -b)
+    sdat['r'],w = transf.transform_vec(sdat['r'][:,0],sdat['r'][:,1],sdat['r'][:,2], np.ones(sdat['r'].shape[0]))
+    gdat['r'],w = transf.transform_vec(gdat['r'][:,0],gdat['r'][:,1],gdat['r'][:,2], np.ones(gdat['r'].shape[0]))
 
     # apply 30kpc aperture (i.e. remove all particles outside the aperture)
     applyAperture(sdat, 30e3)
@@ -147,7 +159,7 @@ def extract(record):
 
     # information identifying the SKIRT-run record and the galaxy
     info = { }
-    info["run_id"] = record["runid"]
+    info["skirt_run_id"] = record["runid"]
     info["galaxy_id"] = record["galaxyid"]
 
     # information about the particles
