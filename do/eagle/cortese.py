@@ -342,7 +342,7 @@ db = database.Database()
 firstid = db.maxrunid()+1
 with db.transaction():
     for gal in galaxies:
-        db.insert(label, eaglesims[gal[0]], 0, gal[1], gal[2], gal[3], gal[4], gal[5], gal[6], gal[7],
+        db.insert(label, eaglesims[gal[0]], 28, gal[1], gal[2], gal[3], gal[4], gal[5], gal[6], gal[7],
                   skitemplate, numpp, deltamax)
 lastid = db.maxrunid()
 db.close()
