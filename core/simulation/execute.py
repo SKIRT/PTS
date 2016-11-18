@@ -39,8 +39,8 @@ class SkirtExec:
     #   The default value is the empty path, which means <tt>SKIRT</tt> is looked for in the standard system path \c $PATH.
     # - mpistyle: the method or style to invoke the mpirun command; currently supported values are 'generic' (the
     #   default), which uses the standard -np switch useful for launching a number of MPI processes on a single
-    #   computing node, and 'lsf', which uses the -lsf switch supported by platform MPI under the LSF cluster queueing
-    #   system.
+    #   computing node; 'lsf', which uses the -lsf switch supported by platform MPI under the LSF queueing system;
+    #   and 'srun', which uses the -srun switch supported by platform MPI under the SLURM queueing system.
     def __init__(self, path="", mpi_style="generic"):
 
         # Set the SKIRT path
@@ -158,6 +158,9 @@ class SkirtExec:
         if self.mpi_style == "lsf":
             scheduler = True
             mpi_command = "mpirun -lsf"
+        elif self.mpi_style == "srun":
+            scheduler = True
+            mpi_command = "mpirun -srun"
         elif self.mpi_style == "generic":
             scheduler = False
             mpi_command = "mpirun"

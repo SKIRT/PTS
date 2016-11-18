@@ -65,7 +65,8 @@ def simulate(record):
     shutil.copyfile(os.path.join(config.templates_path, grid), os.path.join(skirtrun.inpath(), grid))
 
     # run the SKIRT simulation
-    simulation = skirtrun.execute(mpistyle='generic', processes=2, threads=8)
+    # (specify more than one process to enable MPI; actual nr of processes is defined by SLURM batch script)
+    simulation = skirtrun.execute(mpistyle='srun', processes=2, threads=8)
     if simulation.status() != 'Finished':
         raise ValueError("SKIRT simulation " + simulation.status())
 
