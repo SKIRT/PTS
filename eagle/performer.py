@@ -44,7 +44,7 @@ def loop(callback, stage, runtime):
     while (time.time()-starttime)<runtime:
         # get a record to be processed; return if none are available
         db = Database()
-        with FileLock(os.path.join(config.database_path, "database_lock_file.txt"), timeout=10, delay=1):
+        with FileLock(os.path.join(config.database_path, "database_lock_file.txt"), timeout=100, delay=3):
             with db.transaction():
                 records = db.select("stage = ? and status='scheduled'", (stage,))
                 if len(records) < 1: return

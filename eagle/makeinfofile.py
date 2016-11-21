@@ -14,11 +14,13 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import os.path
 import numpy as np
 import pyfits
 from scipy.ndimage.filters import gaussian_filter
 
+# Import the relevant PTS classes and modules
 from ..core.tools import archive as arch
 from ..core.basics.filter import Filter
 
@@ -66,7 +68,7 @@ def _loadfilters():
 # (i.e. the input data for the SKIRT simulation), on the SKIRT setup (such as the dust grid), and on the results
 # of the SKIRT simulation (such as fluxes in various bands).
 #
-# The information file is placed in the simulation's output directory, and is named "prefix_info.txt".
+# The information file is placed in the SKIRT-run visualization directory, and is named "prefix_info.txt".
 #
 def makeinfofile(skirtrun):
     simulation = skirtrun.simulation()
@@ -175,7 +177,7 @@ def makeinfofile(skirtrun):
     info["probe_skew_temperature_dust"], info["probe_kurtosis_temperature_dust"] = dusttemperature(simulation)
 
     # save the info file
-    infofilepath = simulation.outfilepath("info.txt")
+    infofilepath = os.path.join(skirtrun.vispath(), simulation.prefix() + "_info.txt")
     infofile = open(infofilepath, 'w')
     infofile.write('# Information file for SKIRT-run {}\n'.format(skirtrun.runid()))
     infofile.write('# cells : 1\n')
