@@ -964,6 +964,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def galaxy_redshift(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.redshift
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def earth_projection(self):
 
         """

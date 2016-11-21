@@ -151,7 +151,7 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Get FUV frame and error map
         self.fuv = self.dataset.get_frame("GALEX FUV") # in original MJy/sr units
-        self.fuv_errors = self.dataset.get_errors("GALEX FUV") # in original MJy/sr units
+        self.fuv_errors = self.dataset.get_errormap("GALEX FUV") # in original MJy/sr units
 
     # -----------------------------------------------------------------
 

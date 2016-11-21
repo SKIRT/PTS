@@ -131,6 +131,60 @@ class EllipseRegion(Region):
 
         self.radius.axis2 = value
 
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new *= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.radius *= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new /= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.radius /= value
+        return self
+
 # -----------------------------------------------------------------
 
 class PixelEllipseRegion(EllipseRegion, PixelRegion):

@@ -18,7 +18,7 @@ from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ..region.list import PixelRegionList, SkyRegionList
-from ..basics.vector import Extent
+from ..basics.stretch import PixelStretch
 from ..basics.coordinate import SkyCoordinate
 from ..region.point import PixelPointRegion
 from ..region.ellipse import PixelEllipseRegion, SkyEllipseRegion
@@ -376,7 +376,7 @@ class GalaxyFinder(Configurable):
 
         x_radius = 0.5 * self.principal.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
         y_radius = 0.5 * self.principal.minor.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
-        radius = Extent(x_radius, y_radius)
+        radius = PixelStretch(x_radius, y_radius)
 
         # Create and return an ellipse
         return PixelEllipseRegion(center, radius, angle)
@@ -494,7 +494,7 @@ class GalaxyFinder(Configurable):
                 x_radius = 0.5 * galaxy.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
                 y_radius = 0.5 * galaxy.minor.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
 
-            radius = Extent(x_radius, y_radius)
+            radius = PixelStretch(x_radius, y_radius)
 
             # Create a coordinate for the center and add it to the region
             meta = {"point": "x"}

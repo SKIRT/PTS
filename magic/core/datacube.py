@@ -242,18 +242,19 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def local_sed(self, region, min_wavelength=None, max_wavelength=None):
+    def local_sed(self, region, min_wavelength=None, max_wavelength=None, errorcube=None):
 
         """
         This function ...
         :param region:
         :param min_wavelength:
         :param max_wavelength:
+        :param errorcube:
         :return:
         """
 
         # Initialize the SED
-        sed = SED()
+        sed = ObservedSED()
 
         # Create a mask from the region (or shape)
         mask = region.to_mask(self.xsize, self.ysize)
@@ -261,17 +262,24 @@ class DataCube(Image):
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
 
-            # Get the wavelength
-            wavelength = self.wavelength_grid[index]
-
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
 
             # Get the flux in the pixels that belong to the region
             flux = np.sum(self.frames[frame_name][mask]) * self.unit
 
+            # Get error
+            if errorcube is not None:
+
+                # Get the error in the pixel
+                error = errorcube.frames[frame_name][mask] * self.unit
+                errorbar = ErrorBar(error)
+
+                # Add an entry to the SED
+                sed.add_entry(self.frames[frame_name].filter, flux, errorbar)
+
             # Add an entry to the SED
-            sed.add_entry(wavelength, flux)
+            else: sed.add_entry(self.frames[frame_name].filter, flux)
 
             # Increment the index
             index += 1
@@ -281,7 +289,7 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def pixel_sed(self, x, y, min_wavelength=None, max_wavelength=None):
+    def pixel_sed(self, x, y, min_wavelength=None, max_wavelength=None, errorcube=None):
 
         """
         This function ...
@@ -289,11 +297,11 @@ class DataCube(Image):
         :param y:
         :param min_wavelength:
         :param max_wavelength:
+        :param errorcube:
         :return:
         """
 
         # Initialize the SED
-        #sed = SED()
         sed = ObservedSED()
 
         # Loop over the wavelengths
@@ -305,10 +313,18 @@ class DataCube(Image):
             # Get the flux in the pixel
             flux = self.frames[frame_name][y, x] * self.unit
 
+            # Get error
+            if errorcube is not None:
+
+                # Get the error in the pixel
+                error = errorcube.frames[frame_name][y, x] * self.unit
+                errorbar = ErrorBar(error)
+
+                # Add an entry to the SED
+                sed.add_entry(self.frames[frame_name].filter, flux, errorbar)
+
             # Add an entry to the SED
-            #sed.add_entry(wavelength, flux)
-            errorbar = ErrorBar(0.0, 0.0)
-            sed.add_entry(self.frames[frame_name].filter, flux, errorbar)
+            else: sed.add_entry(self.frames[frame_name].filter, flux)
 
             # Increment the index
             index += 1

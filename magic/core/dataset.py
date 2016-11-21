@@ -272,14 +272,21 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frames(self, masked=True, mask_value=0.0):
+    def get_frames(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
 
         """
         This function ...
         :param masked:
         :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
         :return:
         """
+
+        # Make sure exclude is a list
+        if isinstance(exclude, basestring): exclude = [exclude]
+        elif exclude is None: exclude = []
 
         # Initialize a dictionary for the frames
         frames = dict()
@@ -287,14 +294,61 @@ class DataSet(object):
         # Loop over the frame paths
         for name in self.paths:
 
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
             # Load the frame
             frame = self.get_frame(name, masked, mask_value)
+
+            # Skip images of wavelength smaller than the minimum or greater than the maximum
+            if min_wavelength is not None and frame.wavelength < min_wavelength: continue
+            if max_wavelength is not None and frame.wavelength > max_wavelength: continue
 
             # Add the frame
             frames[name] = frame
 
         # Return the dictionary of frames
         return frames
+
+    # -----------------------------------------------------------------
+
+    def get_errormaps(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
+
+        """
+        This function ...
+        :param masked:
+        :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :return:
+        """
+
+        # Make sure exclude is a list
+        if isinstance(exclude, basestring): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary for the error maps
+        errormaps = dict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Load the error map
+            errormap = self.get_errormap(name, masked, mask_value)
+
+            # Skip images of wavelength smaller than the minimum or greater than the maximum
+            if min_wavelength is not None and errormap.wavelength < min_wavelength: continue
+            if max_wavelength is not None and errormap.wavelength > max_wavelength: continue
+
+            # Add the error map
+            errormaps[name] = errormap
+
+        # Return the dictionary of error maps
+        return errormaps
 
     # -----------------------------------------------------------------
 
@@ -399,6 +453,26 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @property
+    def min_pixelscale_name(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_pixelscale_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
     def min_fwhm(self):
 
         """
@@ -490,7 +564,7 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_errors(self, name, masked=True, mask_value=0.0):
+    def get_errormap(self, name, masked=True, mask_value=0.0):
 
         """
         This function ...
@@ -542,7 +616,7 @@ class DataSet(object):
         frame = self.get_frame(name)
 
         # Get the errors
-        errors = self.get_errors(name)
+        errors = self.get_errormap(name)
         if errors is None: return None
 
         # Calculate the relative error map
@@ -579,7 +653,7 @@ class DataSet(object):
         frame = self.get_frame(name)
 
         # Get the errors
-        errors = self.get_errors(name)
+        errors = self.get_errormap(name)
         if errors is None: return None
 
         # If level bins are specified
@@ -719,39 +793,14 @@ class DataSet(object):
         :return:
         """
 
+        # Get the frames
+        frames = self.get_frames(min_wavelength=min_wavelength, max_wavelength=max_wavelength, exclude=exclude)
+
         # Inform the user
         log.info("Determining which image will be used as the reference for rebinning all other images ...")
 
-        # Make sure exclude is a list
-        if isinstance(exclude, basestring): exclude = [exclude]
-
-        # The image frames
-        frames = dict()
-
-        # Open the image frames
-        for name in self.paths:
-
-            # Skip if name is in the exclude list
-            if exclude is not None and name in exclude: continue
-
-            # Open the frame
-            frame = self.get_frame(name)
-
-            # Skip images of wavelength smaller than the minimum or greater than the maximum
-            if min_wavelength is not None and frame.wavelength < min_wavelength: continue
-            if max_wavelength is not None and frame.wavelength > max_wavelength: continue
-
-            # Add the frame
-            frames[name] = frame
-
-        # Get the name of the image with the lowest resolution
-        lowest_resolution = None
-        reference_name = None
-        for name in frames:
-            pixelscale = frames[name].pixelscale.average
-            if lowest_resolution is None or pixelscale > lowest_resolution:
-                lowest_resolution = pixelscale
-                reference_name = name
+        # Get the name of the frame with the lowest spatial resolution
+        reference_name = get_lowest_resolution_name(frames)
 
         # Inform the user
         log.info("The reference image used for the rebinning is the " + reference_name + " image")
@@ -767,6 +816,42 @@ class DataSet(object):
 
         # Create the datacube and return it
         return DataCube.from_frames(frames.values())
+
+    # -----------------------------------------------------------------
+
+    def create_errorcube(self, min_wavelength=None, max_wavelength=None, exclude=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :return:
+        """
+
+        # Get the error maps
+        maps = self.get_errormaps(min_wavelength=min_wavelength, max_wavelength=max_wavelength, exclude=exclude)
+
+        # Inform the user
+        log.info("Determining which error map will be used as the reference for rebinning all other error maps ...")
+
+        # Get the name of the error map with the lowest spatial resolution
+        reference_name = get_lowest_resolution_name(maps)
+
+        # Inform the user
+        log.info("The reference error map used for the rebinning is the " + reference_name + " error map")
+
+        # Loop over all images
+        for name in maps:
+
+            # Don't rebin the reference map
+            if name == reference_name: continue
+
+            # Rebin this error map to the lower resolution pixel grid
+            maps[name].rebin(maps[reference_name].wcs)
+
+        # Create the datacube and return it
+        return DataCube.from_frames(maps.values())
 
     # -----------------------------------------------------------------
 
@@ -842,7 +927,7 @@ class DataSet(object):
 
             # Open the frame and error map
             frame = self.get_frame(name)
-            errors = self.get_errors(name)
+            errors = self.get_errormap(name)
 
             # Create the header
             header = frame.header
@@ -1061,5 +1146,26 @@ class DataSetCreator(Configurable):
 
         path = fs.join(self.config.path, "dataset.dat")
         self.dataset.saveto(path)
+
+# -----------------------------------------------------------------
+
+def get_lowest_resolution_name(frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
+
+    # Get the name of the image with the lowest resolution
+    lowest_resolution = None
+    reference_name = None
+    for name in frames:
+        pixelscale = frames[name].pixelscale.average
+        if lowest_resolution is None or pixelscale > lowest_resolution:
+            lowest_resolution = pixelscale
+            reference_name = name
+
+    return reference_name
 
 # -----------------------------------------------------------------

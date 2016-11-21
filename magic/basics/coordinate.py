@@ -84,7 +84,7 @@ class PixelCoordinate(Position, Coordinate):
 
     # -----------------------------------------------------------------
 
-    def to_sky(self, wcs):
+    def to_sky(self, wcs, mode='wcs'):
 
         """
         This function ...
@@ -93,7 +93,7 @@ class PixelCoordinate(Position, Coordinate):
         """
 
         # Return a new SkyCoordinate
-        return SkyCoordinate.from_pixel(self, wcs)
+        return SkyCoordinate.from_pixel(self, wcs, mode)
 
 # -----------------------------------------------------------------
 
@@ -114,6 +114,13 @@ class SkyCoordinate(SkyCoord, Coordinate):
 
         # Call the constructor of the Coordinate base class
         Coordinate.__init__(self, **kwargs)
+
+        # Remove keyword arguments that are not recognized by the SkyCoord class
+        allowed_keys = ["frame", "unit", "obstime", "equinox", "representation", "copy", "ra", "dec", "l", "b", "x", "y", "z", "w", "u", "v"]
+        to_be_removed_keys = []
+        for key in kwargs:
+            if key not in allowed_keys: to_be_removed_keys.append(key)
+        for key in to_be_removed_keys: del kwargs[key]
 
         # Call the constructor of the base class
         SkyCoord.__init__(self, *args, **kwargs)
@@ -218,7 +225,7 @@ class SkyCoordinate(SkyCoord, Coordinate):
         """
 
         skycoordinate = super(SkyCoordinate, cls).from_pixel(coordinate.x, coordinate.y, wcs, origin=0, mode=mode)
-        return cls(ra=skycoordinate.ra.deg, dec=skycoordinate.dec.deg, unit="deg", meta=coordinate.meta)
+        return cls(ra=skycoordinate.ra.deg, dec=skycoordinate.dec.deg, unit="deg")
 
     # -----------------------------------------------------------------
 

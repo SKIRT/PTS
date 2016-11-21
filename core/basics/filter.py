@@ -273,6 +273,18 @@ class Filter:
             self._EffWidth = self._WavelengthMax - self._WavelengthMin
             self.true_filter = False
 
+    # ---------- Special functions --------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function compares two filter instances
+        :param other:
+        :return:
+        """
+
+        return str(other) == str(self)
+
     # ---------- Alternative construction -------------------------------
 
     @classmethod

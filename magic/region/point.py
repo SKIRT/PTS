@@ -116,6 +116,18 @@ class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
 
     # -----------------------------------------------------------------
 
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        return SkyPointRegion.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
     def to_mask(self, x_size, y_size):
 
         """
@@ -332,7 +344,29 @@ class SkyPointRegion(PointRegion, SkyCoordinate, SkyRegion):
         PointRegion.__init__(self, **kwargs)
 
         # Call the constructor of the PixelCoordinate class
-        SkyCoordinate.__init__(ra, dec, **kwargs)
+        SkyCoordinate.__init__(self, ra, dec, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_pixel(cls, region, wcs, mode='wcs'):
+
+        """
+        This function ...
+        :param region:
+        :param wcs:
+        :param mode:
+        :return:
+        """
+
+        # Make simple coordinate
+        coordinate = PixelCoordinate(region.x, region.y)
+
+        # Calculate sky coordinate
+        skycoordinate = coordinate.to_sky(wcs)
+
+        # Create the SkyPointRegion
+        return SkyPointRegion(ra=skycoordinate.ra, dec=skycoordinate.dec, meta=region.meta)
 
     # -----------------------------------------------------------------
 

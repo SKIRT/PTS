@@ -39,5 +39,8 @@ class GalaxyProperties(SimplePropertyComposite):
         self.distance = kwargs.pop("distance", None)
         self.distance_error = kwargs.pop("distance_error", None)
         self.inclination = kwargs.pop("inclination", None)
+        self.redshift = kwargs.pop("redshift", None)
+        self.common_name = kwargs.pop("common_name", None)
+        self.galaxy_type = kwargs.pop("galaxy_type", None)
 
 # -----------------------------------------------------------------

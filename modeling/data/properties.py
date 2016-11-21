@@ -12,13 +12,16 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
 from astropy.units import Unit, dimensionless_angles
+from astroquery.ned import Ned
 
 # Import the relevant PTS classes and modules
-from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .component import DataComponent
 from ..preparation import unitconversion
@@ -79,6 +82,9 @@ class PropertyFetcher(DataComponent):
         # 3. Get the basic galaxy information listed on the database
         self.get_dustpedia_info()
 
+        # 4. Get properties from NED
+        self.get_ned_properties()
+
         # 4. Get the basic properties from S4G
         self.get_s4g_properties()
 
@@ -113,7 +119,7 @@ class PropertyFetcher(DataComponent):
         self.database.login(username, password)
 
         # Create the galaxy properties object
-        self.properties = GalaxyProperties()
+        self.properties = GalaxyProperties(name=self.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -141,6 +147,43 @@ class PropertyFetcher(DataComponent):
 
         # Get the info
         self.info = self.database.get_galaxy_info(self.ngc_id_nospaces)
+
+    # -----------------------------------------------------------------
+
+    def get_ned_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Querying the NASA/IPAC Extragalactic Database ...")
+
+        # Search on NED
+        ned_result = Ned.query_object(self.galaxy_name)
+        ned_entry = ned_result[0]
+
+        # Get a more common name for this galaxy (sometimes, the name obtained from NED is one starting with 2MASX .., use the PGC name in this case)
+        if ned_entry["Object Name"].startswith("2MASX "): gal_name = self.ngc_id
+        else: gal_name = ned_entry["Object Name"]
+
+        # Get the redshift
+        gal_redshift = ned_entry["Redshift"]
+        if isinstance(gal_redshift, np.ma.core.MaskedConstant): gal_redshift = None
+
+        # Get the type (G=galaxy, HII ...)
+        gal_type = ned_entry["Type"]
+        if isinstance(gal_type, np.ma.core.MaskedConstant): gal_type = None
+
+        # Get the distance
+        #ned_distance = ned_entry["Distance (arcmin)"]
+        #if isinstance(ned_distance, np.ma.core.MaskedConstant): ned_distance = None
+
+        # Set properties
+        self.properties.common_name = gal_name
+        self.properties.redshift = gal_redshift
+        self.properties.galaxy_type = gal_type
 
     # -----------------------------------------------------------------
 

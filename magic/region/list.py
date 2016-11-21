@@ -1500,6 +1500,96 @@ class RegionList(list):
 
         return [region for region in self if isinstance(region, CompositeRegion)]
 
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, float): raise ValueError("Must be multiplied with float value")
+
+        regions = self.__class__()
+        for shape in self: regions.append(shape * value)
+
+        # Return the new region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, float): raise ValueError("Must be multiplied with float value")
+
+        for shape in self: shape *= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, float): raise ValueError("Must be multiplied with float value")
+
+        regions = self.__class__()
+        for shape in self: regions.append(shape / value)
+
+        # Return the new region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, float): raise ValueError("Must be divided by float value")
+
+        for shape in self: shape /= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__div__(value)
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__idiv__(value)
+
 # -----------------------------------------------------------------
 
 class PixelRegionList(RegionList):
@@ -1595,7 +1685,7 @@ class PixelRegionList(RegionList):
 
     # -----------------------------------------------------------------
 
-    def __mul__(self, value):
+    def __add__(self, value):
 
         """
         This function ...
@@ -1603,15 +1693,17 @@ class PixelRegionList(RegionList):
         :return:
         """
 
-        new_region = Region()
-        for shape in self: new_region.append(shape * value)
+        if not isinstance(value, PixelCoordinate): raise ValueError("Value must be a pixel coordinate")
 
-        # Return the new region
-        return new_region
+        regions = PixelRegionList()
+        for shape in self: regions.append(shape + value)
+
+        # Return the new region list
+        return regions
 
     # -----------------------------------------------------------------
 
-    def __truediv__(self, value):
+    def __iadd__(self, value):
 
         """
         This function ...
@@ -1619,11 +1711,14 @@ class PixelRegionList(RegionList):
         :return:
         """
 
-        return self.__div__(value)
+        if not isinstance(value, PixelCoordinate): raise ValueError("Value must be a pixel coordinate")
+
+        for shape in self: shape += value
+        return self
 
     # -----------------------------------------------------------------
 
-    def __div__(self, value):
+    def __sub__(self, value):
 
         """
         This function ...
@@ -1631,11 +1726,28 @@ class PixelRegionList(RegionList):
         :return:
         """
 
-        new_region = Region()
-        for shape in self: new_region.append(shape / value)
+        if not isinstance(value, PixelCoordinate): raise ValueError("Value must be a pixel coordinate")
 
-        # Return the new region
-        return new_region
+        regions = PixelRegionList()
+        for shape in self: regions.append(shape - value)
+
+        # Return the new region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def __isub__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, PixelCoordinate): raise ValueError("Value must be a pixel coordinate")
+
+        for shape in self: shape -= value
+        return self
 
     # -----------------------------------------------------------------
 
@@ -1829,6 +1941,72 @@ class SkyRegionList(RegionList):
 
         # Return the bounding box
         return SkyRectangleRegion(center, radius)
+
+    # -----------------------------------------------------------------
+
+    def __add__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, SkyCoordinate): raise ValueError("Value must be a sky coordinate")
+
+        regions = SkyRegionList()
+        for shape in self: regions.append(shape + value)
+
+        # Return the new region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def __iadd__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, SkyCoordinate): raise ValueError("Value must be a sky coordinate")
+
+        for shape in self: shape += value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, SkyCoordinate): raise ValueError("Value must be a sky coordinate")
+
+        regions = SkyRegionList()
+        for shape in self: regions.append(shape - value)
+
+        # Return the new region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def __isub__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, SkyCoordinate): raise ValueError("Value must be a sky coordinate")
+
+        for shape in self: shape -= value
+        return self
 
 # -----------------------------------------------------------------
 

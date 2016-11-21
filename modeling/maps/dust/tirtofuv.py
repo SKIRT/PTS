@@ -145,7 +145,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         for name in data_names:
 
             frame = self.dataset.get_frame(name)
-            errors = self.dataset.get_errors(name)
+            errors = self.dataset.get_errormap(name)
 
             ## CONVERT TO LSUN
 

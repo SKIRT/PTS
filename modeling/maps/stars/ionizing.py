@@ -194,7 +194,7 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Get MIPS 24 micron frame and error map
         self.mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
-        self.mips24_errors = self.dataset.get_errors("MIPS 24mu")  # in original MJy/sr units
+        self.mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
 
         ## CONVERT TO LSUN
 

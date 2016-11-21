@@ -154,6 +154,82 @@ class RectangleRegion(Region):
 
     # -----------------------------------------------------------------
 
+    @property
+    def upper_left(self):
+
+        """
+        Upper left means lowest axis1 coordinate, highest axis2 coordinate
+        :return:
+        """
+
+        most_upper_left = None
+
+        for corner in self.corners:
+
+            if most_upper_left is None or (corner.axis1 <= most_upper_left.axis1 and corner.axis2 >= most_upper_left.axis2):
+                most_upper_left = corner
+
+        return most_upper_left
+
+    # -----------------------------------------------------------------
+
+    @property
+    def upper_right(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        most_upper_right = None
+
+        for corner in self.corners:
+
+            if most_upper_right is None or (corner.axis1 >= most_upper_right.axis1 and corner.axis2 >= most_upper_right.axis2):
+                most_upper_right = corner
+
+        return most_upper_right
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lower_left(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        most_lower_left = None
+
+        for corner in self.corners:
+
+            if most_lower_left is None or (corner.axis1 <= most_lower_left.axis1 and corner.axis2 <= most_lower_left.axis2):
+                most_lower_left = corner
+
+        return most_lower_left
+
+    # -----------------------------------------------------------------
+
+    @property
+    def lower_right(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        most_lower_right = None
+
+        for corner in self.corners:
+
+            if most_lower_right is None or (corner.axis1 >= most_lower_right.axis1 and corner.axis2 <= most_lower_right.axis2):
+                most_lower_right = corner
+
+        return most_lower_right
+
+    # -----------------------------------------------------------------
+
     def contains(self, coordinate):
 
         """
@@ -460,5 +536,53 @@ class PhysicalRectangleRegion(RectangleRegion, PhysicalRegion):
 
         # Call the constructor of the base class
         super(PhysicalRectangleRegion, self).__init__(center, radius, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corner11(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corner12(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corner21(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corner22(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
 
 # -----------------------------------------------------------------

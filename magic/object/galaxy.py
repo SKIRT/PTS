@@ -19,7 +19,7 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ..core.source import Source
 from .skyobject import SkyObject
-from ..basics.vector import Extent
+from ..basics.stretch import PixelStretch
 from ..region.ellipse import PixelEllipseRegion
 from ..tools import catalogs
 
@@ -197,7 +197,7 @@ class Galaxy(SkyObject):
         pixel_position = self.pixel_position(wcs)
 
         # Return the parameters
-        return pixel_position, Extent(x=x_radius, y=y_radius), angle
+        return pixel_position, PixelStretch(x=x_radius, y=y_radius), angle
 
     # -----------------------------------------------------------------
 
