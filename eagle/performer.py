@@ -18,6 +18,7 @@ import os.path
 import time
 
 # Import the relevant PTS classes and modules
+from ..core.tools.logging import log
 from . import config as config
 from .filelock import FileLock
 from .database import Database
@@ -54,7 +55,7 @@ def loop(callback, stage, runtime):
 
         try:
             # invoke the callback function
-            print "Processing {} for SKIRT-run {}...".format(stage, runid)
+            log.info("Processing {} for SKIRT-run {}...".format(stage, runid))
             callback(record)
 
             # set the runstatus of the database record to 'succeeded'
@@ -97,7 +98,7 @@ def force(callback, stage, runidspec):
 
         try:
             # invoke the callback function
-            print "Processing {} for SKIRT-run {}...".format(stage, runid)
+            log.info("Processing {} for SKIRT-run {}...".format(stage, runid))
             callback(record)
 
             # set the runstatus of the database record to 'succeeded'

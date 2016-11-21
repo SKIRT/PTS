@@ -20,6 +20,7 @@
 #<TR><TD>database_path</TD>         <TD>The absolute path to the directory containing the SKIRT-runs database</TD></TR>
 #<TR><TD>backup_path</TD>           <TD>The absolute path to the directory containing backups of the database</TD></TR>
 #<TR><TD>templates_path</TD>        <TD>The absolute path to the directory containing ski file templates</TD></TR>
+#<TR><TD>jobs_path</TD>             <TD>The absolute path to the directory containing batch job scripts and logs</TD></TR>
 #<TR><TD>results_path</TD>          <TD>The absolute path to the directory containing the SKIRT results</TD></TR>
 #<TR><TD>collections_path</TD>      <TD>The absolute path to the directory containing the collections with
 #                                       statistics on sets of SKIRT simulation results</TD></TR>
@@ -66,6 +67,7 @@ configuration = {
     'database_path':    "/cosma6/data/dp004/pcamps/Eagle/Database",
     'backup_path':      "/cosma6/data/dp004/pcamps/Eagle/Backup",
     'templates_path':   "/cosma6/data/dp004/pcamps/Eagle/Templates",
+    'jobs_path':        "/cosma6/data/dp004/pcamps/Eagle/Jobs",
     'results_path':     "/cosma6/data/dp004/pcamps/Eagle/Results",
     'collections_path': "/cosma6/data/dp004/pcamps/Eagle/Collections",
     'plots_path':       "/cosma6/data/dp004/pcamps/Eagle/Plots",

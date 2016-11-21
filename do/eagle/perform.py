@@ -10,8 +10,8 @@
 # This script performs the process for a given stage on a set of SKIRT-runs records, in one of two modes
 # depending on the command line arguments:
 #
-#    pts eagle/perform loop <stage> <runtime>
-#    pts eagle/perform force <stage> <runidspec>
+#    pts eagle/perform <stage> loop <runtime>
+#    pts eagle/perform <stage> force <runidspec>
 #
 # where:
 #  - <stage> is one of "extract", "simulate", "observe", or "store";
@@ -32,21 +32,21 @@
 import sys
 
 # Import the relevant PTS classes and modules
+# (the appropriate module for performing the requested stage is imported conditionally below)
+from pts.core.tools.logging import log
 from pts.eagle import performer
-
-# The appropriate module for performing the requested stage is imported conditionally below
 
 # -----------------------------------------------------------------
 
 # get the command-line arguments
 if len(sys.argv) != 4: raise ValueError("This script expects three command-line arguments: " \
-                                        "(loop stage runtime) or (force stage runidspec)")
-mode = sys.argv[1]
-if not mode in ("loop", "force"):
-    raise ValueError("First argument must be 'loop' or 'force'")
-stage = sys.argv[2]
+                                        "(stage loop runtime) or (stage force runidspec)")
+stage = sys.argv[1]
 if not stage in ("extract", "simulate", "observe", "store"):
-    raise ValueError("Second argument must be 'extract', 'simulate', 'observe', or 'store'")
+    raise ValueError("First argument must be 'extract', 'simulate', 'observe', or 'store'")
+mode = sys.argv[2]
+if not mode in ("loop", "force"):
+    raise ValueError("Second argument must be 'loop' or 'force'")
 argum = sys.argv[3]
 
 # get appropriate callback for given stage
@@ -55,17 +55,18 @@ if stage == "extract":
 if stage == "simulate":
     from pts.eagle.simulator import simulate as callback
 if stage == "observe":
-    print "Sorry - the observe stage is not yet implemented"
+    log.error("Sorry - the observe stage is not yet implemented")
+    exit()
 if stage == "store":
-    print "Sorry - the store stage is not yet implemented"
+    log.error("Sorry - the store stage is not yet implemented")
+    exit()
 
 # perform according to requested mode
-print "Performing {} in {} mode ...".format(stage, mode)
+log.info("Performing {} in {} mode ...".format(stage, mode))
 if mode == "loop":
     performer.loop(callback, stage, float(eval(argum)))
 if mode == "force":
     performer.force(callback, stage, argum)
-
-print "Finished performing."
+log.info("Finished performing.")
 
 # -----------------------------------------------------------------
