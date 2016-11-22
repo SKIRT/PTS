@@ -38,3 +38,5 @@ plot_photometry | plot_photometry | plotting.photometry.PhotometryPlotter | argu
 plot_maps | plot_maps | plotting.maps.MapsPlotter | arguments | Make plots of the map making step
 plot_fitting | plot_fitting | plotting.fitting.FittingPlotter | interactive | Make plots of the fitting step
 plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | arguments | Make plots of the analysis step
+fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
+fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy

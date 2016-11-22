@@ -69,9 +69,45 @@ class SPIRE(object):
         """
 
         # KEcorr factor dependant on model SED temperature and on SPIRE filter
-        if fltr == self.psw: return self.f250(temperature.to("K").value)
-        elif fltr == self.pmw: return self.f350(temperature.to("K").value)
-        elif fltr == self.plw: return self.f500(temperature.to("K").value)
+        if fltr == self.psw: return self.get_ebeam_temperature_psw(temperature)
+        elif fltr == self.pmw: return self.get_ebeam_temperature_pmw(temperature)
+        elif fltr == self.plw: return self.get_ebeam_temperature_plw(temperature)
         else: raise ValueError("Not a SPIRE filter")
+
+    # -----------------------------------------------------------------
+
+    def get_ebeam_temperature_psw(self, temperature):
+
+        """
+        This function ...
+        :param temperature:
+        :return:
+        """
+
+        return self.f250(temperature.to("K").value)
+
+    # -----------------------------------------------------------------
+
+    def get_ebeam_temperature_pmw(self, temperature):
+
+        """
+        This function ...
+        :param temperature:
+        :return:
+        """
+
+        return self.f350(temperature.to("K").value)
+
+    # -----------------------------------------------------------------
+
+    def get_ebeam_temperature_plw(self, temperature):
+
+        """
+        This function ...
+        :param temperature:
+        :return:
+        """
+
+        return self.f500(temperature.to("K").value)
 
 # -----------------------------------------------------------------

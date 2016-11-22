@@ -49,15 +49,16 @@ class PreparationComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(PreparationComponent, self).setup()
+        super(PreparationComponent, self).setup(**kwargs)
 
         # Check for presence of dataset
         if not fs.is_file(self.initial_dataset_path): raise RuntimeError("Dataset has not been created yet. Run create_dataset first.")

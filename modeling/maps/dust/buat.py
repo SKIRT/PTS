@@ -25,7 +25,7 @@ class BuatDustMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -33,7 +33,7 @@ class BuatDustMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(BuatDustMapMaker, self).__init__()
+        super(BuatDustMapMaker, self).__init__(config)
 
         # -- Attributes --
 

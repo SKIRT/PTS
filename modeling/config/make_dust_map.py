@@ -7,6 +7,9 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.config.cortese import definition as cortese_definition
+from pts.modeling.config.buat import definition as buat_definition
+from pts.modeling.config.black_body import definition as bb_definition
 
 # -----------------------------------------------------------------
 
@@ -23,11 +26,18 @@ definition.add_optional("h_significance", "real", "significance level of the 2MA
 # Remove holes from the cutoff mask
 definition.add_flag("remove_holes", "remove holes from the total cutoff mask", True)
 
+# Flags for enabling/disabling different methods
 definition.add_flag("make_black_body", "make dust map based on black-body fitting", True)
 definition.add_flag("make_emission", "make dust map based on emission", True)
 definition.add_flag("make_buat", "make dust map based on Buat", True)
 definition.add_flag("make_cortese", "make dust map based on Cortese", True)
 
+# Best method
 definition.add_optional("best_method", "string", "the method of which to use the resul as the final dust map", "cortese")
+
+# Sections
+definition.import_section("cortese", "options for Cortese dust map maker", cortese_definition)
+definition.import_section("buat", "options for Buat dust map maker", buat_definition)
+definition.import_section("black_body", "options for black body dust map maker", bb_definition)
 
 # -----------------------------------------------------------------

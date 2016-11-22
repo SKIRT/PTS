@@ -57,7 +57,7 @@ class CorteseDustMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -65,7 +65,7 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(CorteseDustMapMaker, self).__init__()
+        super(CorteseDustMapMaker, self).__init__(config)
 
         # -- Attributes --
 

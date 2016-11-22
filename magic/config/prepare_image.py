@@ -24,6 +24,9 @@ definition.sections["input"].add_optional("saturation_region", "file_path", "fil
 definition.sections["input"].add_optional("other_region", "file_path", "file with regions for other contaminating sources", "other_sources.reg")
 definition.sections["input"].add_optional("segments", "file_path", "image with segmentation maps (as planes 'galaxies', 'stars' and 'other_sources')", "segments.fits")
 
+# Number of parallel processes
+definition.add_optional("nprocesses", "integer", "number of parallel processes for the preparation", 8)
+
 definition.add_optional("error_frame_names", "string_list", "the names of error planes to be included in the final error map")
 
 definition.add_flag("write_steps", "write the results of intermediate steps")

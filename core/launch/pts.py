@@ -106,6 +106,9 @@ class PTSRemoteLauncher(object):
         :return:
         """
 
+        # Don't write when running in attached mode
+        config_dict["write"] = False
+
         # Initialize
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
 

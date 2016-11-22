@@ -7,22 +7,10 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.basics.host import find_host_ids
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
-
-# Add required arguments
-definition.add_required("image", "string", "the name of the image for which to run the preparation")
-
-# Add optional arguments
-definition.add_optional("reference_image", "string", "the name of the reference image")
-definition.add_flag("steps", "write the results of intermediate steps")
-definition.add_flag("visualise", "make visualisations")
-
-# Remote preparation
-definition.add_optional("remote", "string", "remote host on which to run the preparation", choices=find_host_ids())
 
 # -----------------------------------------------------------------

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.preparation.datapreparation Contains the DataPreparer class
+## \package pts.modeling.preparation.datapreparation Contains the DataPreparer class.
 
 # -----------------------------------------------------------------
 
@@ -14,17 +14,15 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
-from ...magic.core.frame import Frame
 from ...magic.region.list import PixelRegionList
 from .component import PreparationComponent
-from ...magic.prepare.preparer import ImagePreparer
+from ...magic.prepare.batch import BatchImagePreparer
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.region import tools as regions
-from ...magic.misc.kernels import AnianoKernels, aniano_names
+from ...magic.misc.kernels import aniano_names
 from ...magic.misc.calibration import CalibrationError
-from ...magic.misc.extinction import GalacticExtinction
-from ...core.basics.filter import Filter
+from ...core.launch.pts import PTSRemoteLauncher
 
 # -----------------------------------------------------------------
 
@@ -52,9 +50,6 @@ class DataPreparer(PreparationComponent):
         # The paths to the initialized images
         self.paths = []
 
-        # Information about the images
-        self.attenuations = dict()
-
         # The FWHM of the reference image
         self.reference_fwhm = None
 
@@ -64,41 +59,18 @@ class DataPreparer(PreparationComponent):
         # The Aniano kernels service
         self.aniano = None
 
-    # -----------------------------------------------------------------
+        # Create the PTS remote launcher
+        self.launcher = PTSRemoteLauncher()
 
-    @classmethod
-    def from_arguments(cls, arguments):
+        # The image preparer
+        self.preparer = None
 
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new DataPreparer instance
-        preparer = cls(arguments.config)
-
-        # Whether to write the results of intermediate steps
-        preparer.config.preparation.write_steps = arguments.steps
-
-        # Set the reference image
-        if arguments.reference is not None: preparer.reference_image = arguments.reference
-
-        # Set the modeling path
-        preparer.config.path = arguments.path
-
-        # A single image can be specified so the preparation is only run with that image
-        preparer.config.single_image = arguments.image
-
-        # Make visualisations
-        preparer.config.visualise = arguments.visualise
-
-        # Return the new instance
-        return preparer
+        # The image preparer configuration
+        self.preparer_config = dict()
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function runs the data preparation ...
@@ -106,7 +78,7 @@ class DataPreparer(PreparationComponent):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Check which images can be prepared
         self.check_images()
@@ -116,48 +88,61 @@ class DataPreparer(PreparationComponent):
             log.success("All images are already prepared")
             return
 
-        # 3. Get attenuations
-        self.get_attenuations()
-
         # 4. Prepare the images
         self.prepare_images()
 
+        # Create dataset
+        self.create_dataset()
+
+        self.write()
+
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
         :return:
         """
 
-        # -- Children --
-
-        # Create the preparation object
-        self.add_child("image_preparer", ImagePreparer, self.config.preparation)
-
-        # -- Setup of the base class --
-
         # Call the setup function of the base class
-        super(DataPreparer, self).setup()
+        super(DataPreparer, self).setup(**kwargs)
+
+        # Set options for the image preparer
+        self.set_preparer_options()
+
+        # Setup the remote PTS launcher
+        if self.config.remote is not None: self.launcher.setup(self.config.remote)
+        else: self.preparer = BatchImagePreparer(self.preparer_config)
+
+    # -----------------------------------------------------------------
+
+    def set_preparer_options(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # -- Fixed properties for the image preparer (valid for all target images)
 
         # Set the path to the reference image for the rebinning
-        reference_path = fs.join(self.prep_paths[self.config.reference_image], "initialized.fits")
+        #reference_path = fs.join(self.prep_paths[self.config.reference_image], "initialized.fits")
 
         # Set the path of the rebinning reference path and the kernel image
-        self.image_preparer.config.rebinning.rebin_to = reference_path
+        #self.preparer.config.rebinning.rebin_to = reference_path
 
         # Get the FWHM of the reference image
-        reference_frame = Frame.from_file(reference_path)
-        self.reference_fwhm = reference_frame.fwhm
+        #reference_frame = Frame.from_file(reference_path)
+        #self.reference_fwhm = reference_frame.fwhm
 
         # Get the center coordinate of the galaxy
-        self.center_coordinate = reference_frame.coordinate_range[0]
+        #self.center_coordinate = reference_frame.coordinate_range[0]
 
         # Create the Aniano kernels service
-        self.aniano = AnianoKernels()
+        #self.aniano = AnianoKernels()
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -200,7 +185,7 @@ class DataPreparer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def get_attenuations(self):
+    def prepare_images(self):
 
         """
         This function ...
@@ -208,26 +193,81 @@ class DataPreparer(PreparationComponent):
         """
 
         # Inform the user
-        log.info("Getting the galactic extinction values for the different images ...")
+        log.info("Preparing the images ...")
 
-        # Create the galactic extinction calculator
-        extinction = GalacticExtinction(self.center_coordinate)
-
-        # Loop over all image paths
-        for image_path in self.paths:
-
-            # Get the filter name
-            filter_name = fs.name(fs.directory_of(image_path))
-
-            # Create a filter instance
-            fltr = Filter.from_string(filter_name)
-
-            # Get the exintinction
-            self.attenuations[filter_name] = extinction.extinction_for_filter(fltr)
+        # Prepare locally or remotely
+        if self.config.remote is not None: self.prepare_images_remote()
+        else: self.prepare_images_local()
 
     # -----------------------------------------------------------------
 
-    def prepare_images(self):
+    def prepare_images_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Preparing the images remotely on host '" + self.config.remote + "'...")
+
+        # Initialize the input dictionary
+        input_dict = dict()
+
+        # Run the PTS prepare_images command remotely and get the output
+        frames, errormaps = self.launcher.run_attached("prepare_images", self.preparer_config, input_dict, return_output_names=["frames", "errormaps"], unpack=True)
+
+    # -----------------------------------------------------------------
+
+    def prepare_images_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Preparing the images remotely on host '" + self.config.remote + "'...")
+
+        # Run the image preparer
+        self.preparer.run()
+
+        # Get the frames
+        frames = self.preparer.frames
+        errormaps = self.preparer.errormaps
+
+    # -----------------------------------------------------------------
+
+    def create_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.write_dataset()
+
+    # -----------------------------------------------------------------
+
+    def write_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def prepare_images_old(self):
 
         """
         This function ...

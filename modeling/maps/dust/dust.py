@@ -78,7 +78,7 @@ class DustMapMaker(MapsComponent):
         if self.config.make_buat or self.config.make_cortese: self.make_tir_to_fuv()
 
         # 3.. Make a dust map based on black body pixel fitting
-        #if self.config.make_black_body: self.make_black_body()
+        if self.config.make_black_body: self.make_black_body()
 
         # 4. Make a dust map simply based on FIR / submm emission in a certain band
         if self.config.make_emission: self.make_emission()
@@ -166,7 +166,7 @@ class DustMapMaker(MapsComponent):
         log.info("Making a dust map based on black-body fitting to the FIR/submm SED ...")
 
         # Create the black body dust map maker
-        maker = BlackBodyDustMapMaker()
+        maker = BlackBodyDustMapMaker(self.config.black_body)
 
         # Run the maker
         maker.run()
@@ -208,7 +208,7 @@ class DustMapMaker(MapsComponent):
         log.info("Making a dust map based on Buat et al. ...")
 
         # Create the Buat dust map maker
-        maker = BuatDustMapMaker()
+        maker = BuatDustMapMaker(self.config.buat)
 
         # Run the maker
         maker.run(self.log_tir_to_fuv)
@@ -229,7 +229,7 @@ class DustMapMaker(MapsComponent):
         log.info("Making a dust map based on Cortese et al. ...")
 
         # Create the Cortese dust map maker
-        maker = CorteseDustMapMaker()
+        maker = CorteseDustMapMaker(self.config.cortese)
 
         # Run the maker
         maker.run(self.log_tir_to_fuv)
@@ -245,6 +245,9 @@ class DustMapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Selecting the best dust map ...")
 
         # Set the best dust map
         self.map = self.maps[self.config.best_method].copy()

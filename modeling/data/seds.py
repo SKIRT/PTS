@@ -78,6 +78,7 @@ class SEDFetcher(DataComponent):
 
         # Configure the SED fetcher
         self.fetcher.catalogs = self.config.catalogs
+        self.fetcher.list = False
         self.fetcher.write = False
 
     # -----------------------------------------------------------------

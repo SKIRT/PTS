@@ -80,6 +80,43 @@ class SEDFetcher(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Get the SEDs
+        self.get()
+
+        # List the SEDs
+        if self.config.list: self.list()
+
+        # Writing
+        if self.config.write: self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(SEDFetcher, self).setup(**kwargs)
+
+        # Create a dictionary of filters
+        keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
+        for key in keys: self.filters[key] = Filter.from_string(key)
+
+        # Get the NGC ID
+        self.ngc_id = catalogs.get_ngc_name(self.config.galaxy_name)
+
+    # -----------------------------------------------------------------
+
+    def get(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # 2. Get the dustpedia SED
         if "DustPedia" in self.config.catalogs: self.get_dustpedia()
 
@@ -127,37 +164,12 @@ class SEDFetcher(Configurable):
         if "Planck" in self.config.catalogs: self.get_planck()
 
         # SPECIFIC for M81: not enabled, no time to figure out the unit conversion now
-        #if self.ngc_id == "NGC 3031": self.get_m81()
+        # if self.ngc_id == "NGC 3031": self.get_m81()
 
         # Other interesting catalogs:
         # http://vizier.cfa.harvard.edu/viz-bin/VizieR-3?-source=J/ApJS/199/22
         # http://vizier.cfa.harvard.edu/viz-bin/VizieR-3?-source=J/ApJS/212/18/sample&-c=NGC%203031&-c.u=arcmin&-c.r=2&-c.eq=J2000&-c.geom=r&-out.max=50&-out.form=HTML%20Table&-oc.form=sexa
         # http://vizier.cfa.harvard.edu/viz-bin/VizieR-3?-source=J/ApJS/220/6
-
-        # List the SEDs
-        self.list()
-
-        # Writing
-        self.write()
-
-    # -----------------------------------------------------------------
-
-    def setup(self, **kwargs):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Call the setup function of the base class
-        super(SEDFetcher, self).setup(**kwargs)
-
-        # Create a dictionary of filters
-        keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
-        for key in keys: self.filters[key] = Filter.from_string(key)
-
-        # Get the NGC ID
-        self.ngc_id = catalogs.get_ngc_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
