@@ -18,6 +18,7 @@ import math
 # Import astronomical modules
 from astropy.coordinates import Angle
 from astropy.units import Unit
+from astropy.wcs import utils
 from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
 
 # Import the relevant PTS classes and modules
@@ -211,6 +212,38 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_sky(cls, region, wcs):
+
+        """
+        This function ...
+        :param region:
+        :param wcs:
+        :return:
+        """
+
+        # Get center pixel coordinate
+        center = region.center.to_pixel(wcs)
+
+        ## GET THE PIXELSCALE
+        result = utils.proj_plane_pixel_scales(wcs)
+        # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
+        # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
+        # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
+        x_pixelscale = result[0] * Unit("deg/pix")
+        y_pixelscale = result[1] * Unit("deg/pix")
+        # pixelscale = Extent(x_pixelscale, y_pixelscale)
+
+        semimajor = (region.semimajor / x_pixelscale).to("pix").value
+        semiminor = (region.semiminor / y_pixelscale).to("pix").value
+
+        radius = PixelStretch(semimajor, semiminor)
+
+        # Create a new PixelEllipse
+        return cls(center, radius, region.angle, meta=region.meta)
+
+    # -----------------------------------------------------------------
+
     @property
     def unrotated_radius(self):
 
@@ -282,6 +315,18 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
 
         return Mask(fraction)
 
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        return SkyEllipseRegion.from_pixel(self, wcs)
+
 # -----------------------------------------------------------------
 
 class SkyEllipseRegion(EllipseRegion, SkyRegion):
@@ -305,6 +350,51 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
 
         # Call the constructor of the base class
         super(SkyEllipseRegion, self).__init__(center, radius, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_pixel(cls, region, wcs):
+
+        """
+        This function ...
+        :param region:
+        :param wcs:
+        :return:
+        """
+
+        # Get center sky coordinate
+        center = region.center.to_sky(wcs)
+
+        ## GET THE PIXELSCALE
+        result = utils.proj_plane_pixel_scales(wcs)
+        # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
+        # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
+        # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
+        x_pixelscale = result[0] * Unit("deg/pix")
+        y_pixelscale = result[1] * Unit("deg/pix")
+        # pixelscale = Extent(x_pixelscale, y_pixelscale)
+
+        semimajor = region.semimajor * Unit("pix") * x_pixelscale
+        semiminor = region.semiminor * Unit("pix") * y_pixelscale
+
+        radius = SkyStretch(semimajor, semiminor)
+
+        # Create a new SkyEllipse
+        return cls(center, radius, region.angle, meta=region.meta)
+
+    # -----------------------------------------------------------------
+
+    def to_pixel(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Create a pixel ellipse region
+        return PixelEllipseRegion.from_sky(self, wcs)
 
     # -----------------------------------------------------------------
 

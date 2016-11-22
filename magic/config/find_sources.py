@@ -16,7 +16,7 @@ from .find_other import definition as other_definition
 # Create the configuration definition
 definition = ConfigurationDefinition()
 
-# The galaxy name
+# The dataset or image
 definition.add_required("dataset", "file_path", "name of the dataset file or image file")
 
 # Flags

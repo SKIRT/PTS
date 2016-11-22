@@ -17,7 +17,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Import the relevant PTS classes and modules
-from ..basics.vector import Position
+from ..basics.stretch import PixelStretch
 from ..basics.trackrecord import TrackRecord
 from ..analysis import sources
 
@@ -161,7 +161,8 @@ class SkyObject(object):
         if self.has_track_record: self.track_record.set_stage("detection")
 
         # Get the parameters of the circle
-        ellipse = self.ellipse(frame.wcs, config.initial_radius)
+        radius = PixelStretch(config.initial_radius, config.initial_radius)
+        ellipse = self.ellipse(frame.wcs, radius)
 
         # Find a source
         self.source = sources.find_source(frame, ellipse, config, self.track_record, special=self.special)

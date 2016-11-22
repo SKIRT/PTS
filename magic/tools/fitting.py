@@ -24,6 +24,7 @@ from astropy.modeling import models, fitting
 # Import the relevant PTS classes and modules
 from . import general, statistics
 from ..basics.vector import Position, Extent
+from ..basics.coordinate import PixelCoordinate
 
 # -----------------------------------------------------------------
 
@@ -583,8 +584,8 @@ def center(model):
     :return:
     """
 
-    if isinstance(model, models.Gaussian2D): return Position(x=model.x_mean.value, y=model.y_mean.value)
-    elif isinstance(model, models.AiryDisk2D): return Position(x=model.x_0.value, y=model.y_0.value)
+    if isinstance(model, models.Gaussian2D): return PixelCoordinate(x=model.x_mean.value, y=model.y_mean.value)
+    elif isinstance(model, models.AiryDisk2D): return PixelCoordinate(x=model.x_0.value, y=model.y_0.value)
     else: raise ValueError("Unsupported model type: " + str(type(model)))
 
 # -----------------------------------------------------------------

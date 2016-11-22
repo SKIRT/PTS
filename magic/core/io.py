@@ -403,6 +403,12 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Check whether the image is sky-subtracted
     sky_subtracted = headers.is_sky_subtracted(header)
 
+    # Check whether the image is source-extracted
+    source_extracted = headers.is_source_extracted(header)
+
+    # Check whether the image is extinction-corrected
+    extinction_corrected = headers.is_extinction_corrected(header)
+
     if nframes > 1:
 
         if plane is not None:
@@ -480,6 +486,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    unit=unit,
                    zero_point=zero_point,
                    filter=fltr,
+                   source_extracted=source_extracted,
+                   extinction_corrected=extinction_corrected,
                    sky_subtracted=sky_subtracted,
                    fwhm=fwhm,
                    pixelscale=pixelscale,
@@ -501,6 +509,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    unit=unit,
                    zero_point=zero_point,
                    filter=fltr,
+                   source_extracted=source_extracted,
+                   extinction_corrected=extinction_corrected,
                    sky_subtracted=sky_subtracted,
                    fwhm=fwhm,
                    pixelscale=pixelscale,

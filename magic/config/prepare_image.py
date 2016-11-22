@@ -15,14 +15,23 @@ from pts.magic.config.extract import definition as extraction_definition
 # Create the configuration
 definition = ConfigurationDefinition()
 
+# The dataset or image
+definition.add_positional_optional("dataset", "file_path", "name of the dataset file or image file")
+
+# The maximum FWHM (minimum resolution that has to be retained in the convolved frames)
+definition.add_optional("max_fwhm", "quantity", "maximum FWHM for convolution")
+
+# The minimum pixel size (minimum resolution that has to be retained in the rebinned frames)
+definition.add_optional("max_pixelscale", "quantity", "maximum pixelscale for rebinning")
+
 # Add input section
-definition.add_section("input", "the names of the input files")
-definition.sections["input"].add_required("image", "image_path", "name of the input image")
-definition.sections["input"].add_optional("galaxy_region", "file_path", "file with galaxy regions", "galaxies.reg")
-definition.sections["input"].add_optional("star_region", "file_path", "file with star regions", "stars.reg")
-definition.sections["input"].add_optional("saturation_region", "file_path", "file with regions for saturated stars", "saturation.reg")
-definition.sections["input"].add_optional("other_region", "file_path", "file with regions for other contaminating sources", "other_sources.reg")
-definition.sections["input"].add_optional("segments", "file_path", "image with segmentation maps (as planes 'galaxies', 'stars' and 'other_sources')", "segments.fits")
+#definition.add_section("input", "the names of the input files")
+#definition.sections["input"].add_required("image", "image_path", "name of the input image")
+#definition.sections["input"].add_optional("galaxy_region", "file_path", "file with galaxy regions", "galaxies.reg")
+#definition.sections["input"].add_optional("star_region", "file_path", "file with star regions", "stars.reg")
+#definition.sections["input"].add_optional("saturation_region", "file_path", "file with regions for saturated stars", "saturation.reg")
+#definition.sections["input"].add_optional("other_region", "file_path", "file with regions for other contaminating sources", "other_sources.reg")
+#definition.sections["input"].add_optional("segments", "file_path", "image with segmentation maps (as planes 'galaxies', 'stars' and 'other_sources')", "segments.fits")
 
 # Number of parallel processes
 definition.add_optional("nprocesses", "integer", "number of parallel processes for the preparation", 8)
@@ -48,7 +57,7 @@ definition.add_optional("attenuation", "real", "the galactic attenuation")
 # Unit conversion
 definition.add_flag("convert_unit", "convert unit", True)
 definition.add_section("unit_conversion", "unit conversion")
-definition.sections["unit_conversion"].add_optional("to_unit", "string", "target unit", "MJy/sr")
+definition.sections["unit_conversion"].add_optional("to_unit", "unit", "target unit", "MJy/sr")
 
 # Convolution
 definition.add_flag("convolve", "convolve")

@@ -65,6 +65,8 @@ class Frame(NDDataArray):
         self.description = kwargs.pop("description", None)
         self.zero_point = kwargs.pop("zero_point", None)
         self.filter = kwargs.pop("filter", None)
+        self.source_extracted = kwargs.pop("source_extracted", False)
+        self.extinction_corrected = kwargs.pop("extinction_corrected", False)
         self.sky_subtracted = kwargs.pop("sky_subtracted", False)
         self.fwhm = kwargs.pop("fwhm", None)
         self._pixelscale = kwargs.pop("pixelscale", None)

@@ -1332,6 +1332,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def spire_psw_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Filter.from_string("SPIRE PSW")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def v_band_wavelength(self):
 
         """

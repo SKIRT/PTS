@@ -23,6 +23,8 @@ from ...magic.region import tools as regions
 from ...magic.misc.kernels import aniano_names
 from ...magic.misc.calibration import CalibrationError
 from ...core.launch.pts import PTSRemoteLauncher
+from ...magic.core.dataset import DataSet
+from ...magic.misc.kernels import AnianoKernels
 
 # -----------------------------------------------------------------
 
@@ -50,11 +52,11 @@ class DataPreparer(PreparationComponent):
         # The paths to the initialized images
         self.paths = []
 
+        # The preparation dataset
+        self.dataset = DataSet()
+
         # The FWHM of the reference image
         self.reference_fwhm = None
-
-        # The coordinate of the center of the galaxy
-        self.center_coordinate = None
 
         # The Aniano kernels service
         self.aniano = None
@@ -80,20 +82,13 @@ class DataPreparer(PreparationComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Check which images can be prepared
-        self.check_images()
-
-        # If all images have already been prepared, break
-        if len(self.paths) == 0:
-            log.success("All images are already prepared")
-            return
-
-        # 4. Prepare the images
-        self.prepare_images()
-
-        # Create dataset
+        # 2. Create the preparation dataset
         self.create_dataset()
 
+        # 3. Prepare the images
+        self.prepare_images()
+
+        # 4. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -124,29 +119,24 @@ class DataPreparer(PreparationComponent):
         :return:
         """
 
-        # -- Fixed properties for the image preparer (valid for all target images)
+        # Create Aniano kernels instance
+        aniano = AnianoKernels()
 
-        # Set the path to the reference image for the rebinning
-        #reference_path = fs.join(self.prep_paths[self.config.reference_image], "initialized.fits")
+        # Write results of intermediate steps
+        self.preparer_config["steps"] = True
 
-        # Set the path of the rebinning reference path and the kernel image
-        #self.preparer.config.rebinning.rebin_to = reference_path
+        # We want to exclude the SPIRE images from the procedures that bring all images to the same resolution
+        # Get the resolution and the FWHM of the SPIRE PSW image
+        spire_fwhm = aniano.get_fwhm(self.spire_psw_filter)
+        spire_pixelscale = self.initial_dataset.get_wcs("SPIRE PSW").average_pixelscale
 
-        # Get the FWHM of the reference image
-        #reference_frame = Frame.from_file(reference_path)
-        #self.reference_fwhm = reference_frame.fwhm
-
-        # Get the center coordinate of the galaxy
-        #self.center_coordinate = reference_frame.coordinate_range[0]
-
-        # Create the Aniano kernels service
-        #self.aniano = AnianoKernels()
-
-        pass
+        # Set the maximum FWHM and pixelscale for the image preparer
+        self.preparer_config["max_fwhm"] = 0.99 * spire_fwhm
+        self.preparer_config["max_pixelscale"] = 0.99 * spire_pixelscale
 
     # -----------------------------------------------------------------
 
-    def check_images(self):
+    def create_dataset(self):
 
         """
         This function ...
@@ -156,14 +146,22 @@ class DataPreparer(PreparationComponent):
         # Inform the user
         log.info("Checking the initialized images ...")
 
-        # Loop over all subdirectories of the preparation directory
-        for path in fs.directories_in_path(self.prep_path):
+        # Loop over all images of the initial dataset
+        for prep_name in self.initial_dataset.paths:
+
+            # Get path of intial image
+            image_path = self.initial_dataset.paths[prep_name]
+
+            # Determine preparation directory for this image
+            path = fs.directory_of(image_path)
 
             # Debugging
-            log.debug("Opening " + path + " ...")
+            log.debug("Checking " + path + " ...")
+
+            # -----------------------------------------------------------------
 
             # Look if an initialized image file is present
-            image_path = fs.join(path, "initialized.fits")
+            #image_path = fs.join(path, "initialized.fits")
             if not fs.is_file(image_path):
 
                 log.warning("Initialized image could not be found for " + path)
@@ -176,12 +174,275 @@ class DataPreparer(PreparationComponent):
                 log.warning("Sources directory could not be found for " + path)
                 continue
 
-            # Check if a prepared image is already present
+            # -----------------------------------------------------------------
+
+            # PATHS
+
+            # Result path
             result_path = fs.join(path, "result.fits")
+
+            # Check if the intermediate results have already been produced for this image and saved to the
+            # corresponding preparation subdirectory
+            extracted_path = fs.join(path, "extracted.fits")
+            corrected_path = fs.join(path, "corrected_for_extinction.fits")
+            converted_path = fs.join(path, "converted_unit.fits")
+            convolved_path = fs.join(path, "convolved.fits")
+            rebinned_path = fs.join(path, "rebinned.fits")
+            subtracted_path = fs.join(path, "sky_subtracted.fits")
+
+            sky_path = fs.join(path, "sky")
+
+            # -----------------------------------------------------------------
+
+            ## CURRENT ORDER OF STEPS IN IMAGEPREPARER:
+            # 1. Setup
+            # 2. Extract stars and galaxies from the image
+            # 3. If requested, correct for galactic extinction
+            # 4. If requested, convert the unit
+            # 5. If requested, convolve
+            # 6. If requested, rebin
+            # 7. If requested, subtract the sky
+            # 8. Calculate the calibration uncertainties
+            # 9. If requested, set the uncertainties
+            ##
+
+            # -----------------------------------------------------------------
+
+            # ALREADY COMPLETELY PREPARED
+
+            # Check if a prepared image is already present
             if fs.is_file(result_path): continue
 
-            # Add the path to the initialized image to the list
-            self.paths.append(image_path)
+            # -----------------------------------------------------------------
+
+            # ALREADY SKY-SUBTRACTED
+
+            if fs.is_file(subtracted_path):
+
+                # Check whether the sky directory is present
+                if not fs.is_directory(sky_path): raise IOError("The sky subtraction output directory is not present for the '" + prep_name + "' image")
+
+                # Add the path of the sky-subtracted image
+                self.dataset.add_path(prep_name, subtracted_path)
+
+                # Check whether keywords are set to True in image header ?
+
+            # -----------------------------------------------------------------
+
+            # ALREADY REBINNED
+
+            # Check if the rebinned image is present
+            elif fs.is_file(rebinned_path):
+
+                # Add the path of the rebinned image
+                self.dataset.add_path(prep_name, rebinned_path)
+
+                # Check whether keywords are set to True in image header ?
+
+            # -----------------------------------------------------------------
+
+            # ALREADY CONVOLVED
+
+            # Check if the convolved image is present
+            elif fs.is_file(convolved_path):
+
+                # Add the path of the convolved image
+                self.dataset.add_path(prep_name, convolved_path)
+
+            # -----------------------------------------------------------------
+
+            # ALREADY UNIT-CONVERTED
+
+            # Check if the converted image is present
+            elif fs.is_file(converted_path):
+
+                # Add the path of the unit-converted image
+                self.dataset.add_path(prep_name, converted_path)
+
+            # -----------------------------------------------------------------
+
+            # ALREADY EXTINCTION CORRECTED
+
+            # Check if the extinction-corrected image is present
+            elif fs.is_file(corrected_path):
+
+                # Add the path of the extinction-corrected image
+                self.dataset.add_path(prep_name, corrected_path)
+
+            # ALREADY SOURCE-EXTRACTED
+
+            # Check if the source-extracted image is present
+            elif fs.is_file(extracted_path):
+
+                # Add the path of the source-extracted image
+                self.dataset.add_path(prep_name, extracted_path)
+
+            # -----------------------------------------------------------------
+
+            # NO STEPS PERFORMED YET, START FROM INITIALIZED IMAGE
+
+            else:
+
+                # Add the path to the initialized image to the dataset
+                self.dataset.add_path(prep_name, image_path)
+
+            # -----------------------------------------------------------------
+
+        # If all images have already been prepared
+        if len(self.dataset) == 0: log.success("All images are already prepared")
+
+    # -----------------------------------------------------------------
+
+    def create_dataset_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the preparation dataset ...")
+
+        # Loop over the image paths
+        for image_path in self.paths:
+
+            # Determine the path of the directory
+            directory_path = fs.directory_of(image_path)
+
+            # Check if the intermediate results have already been produced for this image and saved to the
+            # corresponding preparation subdirectory
+            extracted_path = fs.join(directory_path, "extracted.fits")
+            corrected_path = fs.join(directory_path, "corrected_for_extinction.fits")
+            converted_path = fs.join(directory_path, "converted_unit.fits")
+            convolved_path = fs.join(directory_path, "convolved.fits")
+            rebinned_path = fs.join(directory_path, "rebinned.fits")
+            subtracted_path = fs.join(directory_path, "sky_subtracted.fits")
+
+            ## CURRENT ORDER OF STEPS IN IMAGEPREPARER:
+            # 1. Setup
+            # 2. Extract stars and galaxies from the image
+            # 3. If requested, correct for galactic extinction
+            # 4. If requested, convert the unit
+            # 5. If requested, convolve
+            # 6. If requested, rebin
+            # 7. If requested, subtract the sky
+            # 8. Calculate the calibration uncertainties
+            # 9. If requested, set the uncertainties
+            ##
+
+            # Check if the sky-subtracted image is present
+            if fs.is_file(subtracted_path): pass
+
+                # Disable all steps preceeding and including the sky subtraction
+                #self.image_preparer.config.extract_sources = False
+                #self.image_preparer.config.correct_for_extinction = False
+                #self.image_preparer.config.convert_unit = False
+                #self.image_preparer.config.convolve = False
+                #self.image_preparer.config.rebin = False
+                #self.image_preparer.config.subtract_sky = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                #self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
+                #self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
+
+                # Load the sky-subtracted image
+                #image = Image.from_file(subtracted_path)
+                #image.name = name
+
+                # Add the path of the sky-subtracted image
+                #self.dataset.add_path()
+
+            # Check if the rebinned image is present
+            elif fs.is_file(rebinned_path): pass
+
+                # Disable all steps preceeding and including the rebinning
+                #self.image_preparer.config.extract_sources = False
+                #self.image_preparer.config.correct_for_extinction = False
+                #self.image_preparer.config.convert_unit = False
+                #self.image_preparer.config.convolve = False
+                #self.image_preparer.config.rebin = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                #self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                #self.image_preparer.saturation_region_sky = saturation_region.to_sky(
+                #    image.wcs) if saturation_region is not None else None
+
+                # Load the rebinned image
+                #image = Image.from_file(rebinned_path)
+                #image.name = name
+
+            # Check if the convolved image is present
+            elif fs.is_file(convolved_path): pass
+
+                # Disable all steps preceeding and including the convolution
+                #self.image_preparer.config.extract_sources = False
+                #self.image_preparer.config.correct_for_extinction = False
+                #self.image_preparer.config.convert_unit = False
+                #self.image_preparer.config.convolve = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                #self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                #self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
+
+                # Load the convolved image
+                #image = Image.from_file(convolved_path)
+                #image.name = name
+
+            # Check if the converted image is present
+            elif fs.is_file(converted_path): pass
+
+                # Disable all steps preceeding and including the unit conversion
+                #self.image_preparer.config.extract_sources = False
+                #self.image_preparer.config.correct_for_extinction = False
+                #self.image_preparer.config.convert_unit = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                #self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                #self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
+
+                # Load the converted image
+                #image = Image.from_file(converted_path)
+                #image.name = name
+
+            # Check if the extinction-corrected image is present
+            elif fs.is_file(corrected_path): pass
+
+                # Disable all steps preceeding and including the correction for extinction
+                #self.image_preparer.config.extract_sources = False
+                #self.image_preparer.config.correct_for_extinction = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                #self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                #self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
+
+                # Load the extinction-corrected image
+                #image = Image.from_file(corrected_path)
+                #image.name = name
+
+            # Check if the source-extracted image is present
+            elif fs.is_file(extracted_path): pass
+
+                # Disable all steps preceeding and including the source extraction
+                #self.image_preparer.config.extract_sources = False
+
+                # Set the principal ellipse and saturation region in sky coordinates
+                #self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
+                #self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
+
+                # Load the extracted image
+                #image = Image.from_file(extracted_path)
+                #image.name = name
+
+            # -----------------------------------------------------------------
+
+            # Write out sky annuli frames
+            sky_path = fs.join(output_path, "sky")
+            if not fs.is_directory(sky_path): fs.create_directory(sky_path)
+            self.image_preparer.config.write_sky_apertures = True
+            self.image_preparer.config.sky_apertures_path = sky_path
+
+            # Set the visualisation path for the image preparer
+            visualisation_path = self.visualisation_path if self.config.visualise else None
 
     # -----------------------------------------------------------------
 
@@ -214,6 +475,9 @@ class DataPreparer(PreparationComponent):
         # Initialize the input dictionary
         input_dict = dict()
 
+        # Set the input dataset
+        input_dict["dataset"] = self.dataset
+
         # Run the PTS prepare_images command remotely and get the output
         frames, errormaps = self.launcher.run_attached("prepare_images", self.preparer_config, input_dict, return_output_names=["frames", "errormaps"], unpack=True)
 
@@ -229,21 +493,12 @@ class DataPreparer(PreparationComponent):
         # Inform the user
         log.info("Preparing the images remotely on host '" + self.config.remote + "'...")
 
-        # Run the image preparer
-        self.preparer.run()
+        # Run the image preparer, pass the dataset
+        self.preparer.run(dataset=self.dataset)
 
         # Get the frames
         frames = self.preparer.frames
         errormaps = self.preparer.errormaps
-
-    # -----------------------------------------------------------------
-
-    def create_dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
 
     # -----------------------------------------------------------------
 
@@ -265,229 +520,7 @@ class DataPreparer(PreparationComponent):
         :return:
         """
 
-    # -----------------------------------------------------------------
-
-    def prepare_images_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Preparing the images ...")
-
-        # Loop over the image paths
-        for image_path in self.paths:
-
-            # Get the directory containing this image = the output path for that image
-            output_path = fs.directory_of(image_path)
-
-            # Get the directory containing the output from the SourceFinder
-            sources_path = fs.join(output_path, "sources")
-
-            # Get the name
-            name = fs.name(output_path)
-
-            # Inform the user
-            log.info("Starting preparation of " + name + " image ...")
-
-            # -----------------------------------------------------------------
-
-            # Load the initialized image
-            image = Image.from_file(image_path)
-            image.name = name
-
-            # Load the output of the source finder
-            galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments = load_sources(sources_path)
-
-            # -----------------------------------------------------------------
-
-            # Reset all flags to True
-            self.enable_all_preparation_steps()
-
-            # Set options for the ImagePreparation class
-            self.set_preparation_options(image, output_path)
-
-            # Check if the intermediate results have already been produced for this image and saved to the
-            # corresponding preparation subdirectory
-            extracted_path = fs.join(output_path, "extracted.fits")
-            corrected_path = fs.join(output_path, "corrected_for_extinction.fits")
-            converted_path = fs.join(output_path, "converted_unit.fits")
-            convolved_path = fs.join(output_path, "convolved.fits")
-            rebinned_path = fs.join(output_path, "rebinned.fits")
-            subtracted_path = fs.join(output_path, "sky_subtracted.fits")
-
-            ## CURRENT ORDER OF STEPS IN IMAGEPREPARER:
-
-            # 1. Setup
-
-            # 2. Extract stars and galaxies from the image
-            # extract_sources
-
-            # 3. If requested, correct for galactic extinction
-            # correct_for_extinction
-
-            # 4. If requested, convert the unit
-            # convert_unit
-
-            # 5. If requested, convolve
-            # convolve
-
-            # 6. If requested, rebin
-            # rebin
-
-            # 7. If requested, subtract the sky
-            # subtract_sky
-
-            # 8. Calculate the calibration uncertainties
-            # calculate_calibration_uncertainties
-
-            # 9. If requested, set the uncertainties
-            # set_uncertainties
-
-            ##
-
-            # Check if the sky-subtracted image is present
-            if fs.is_file(subtracted_path):
-
-                # Disable all steps preceeding and including the sky subtraction
-                self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.correct_for_extinction = False
-                self.image_preparer.config.convert_unit = False
-                self.image_preparer.config.convolve = False
-                self.image_preparer.config.rebin = False
-                self.image_preparer.config.subtract_sky = False
-
-                # Set the principal ellipse and saturation region in sky coordinates
-                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
-                self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
-
-                # Load the sky-subtracted image
-                image = Image.from_file(subtracted_path)
-                image.name = name
-
-            # Check if the rebinned image is present
-            elif fs.is_file(rebinned_path):
-
-                # Disable all steps preceeding and including the rebinning
-                self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.correct_for_extinction = False
-                self.image_preparer.config.convert_unit = False
-                self.image_preparer.config.convolve = False
-                self.image_preparer.config.rebin = False
-
-                # Set the principal ellipse and saturation region in sky coordinates
-                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
-                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
-
-                # Load the rebinned image
-                image = Image.from_file(rebinned_path)
-                image.name = name
-
-            # Check if the convolved image is present
-            elif fs.is_file(convolved_path):
-
-                # Disable all steps preceeding and including the convolution
-                self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.correct_for_extinction = False
-                self.image_preparer.config.convert_unit = False
-                self.image_preparer.config.convolve = False
-
-                # Set the principal ellipse and saturation region in sky coordinates
-                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
-                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
-
-                # Load the convolved image
-                image = Image.from_file(convolved_path)
-                image.name = name
-
-            # Check if the converted image is present
-            elif fs.is_file(converted_path):
-
-                # Disable all steps preceeding and including the unit conversion
-                self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.correct_for_extinction = False
-                self.image_preparer.config.convert_unit = False
-
-                # Set the principal ellipse and saturation region in sky coordinates
-                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
-                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
-
-                # Load the converted image
-                image = Image.from_file(converted_path)
-                image.name = name
-
-            # Check if the extinction-corrected image is present
-            elif fs.is_file(corrected_path):
-
-                # Disable all steps preceeding and including the correction for extinction
-                self.image_preparer.config.extract_sources = False
-                self.image_preparer.config.correct_for_extinction = False
-
-                # Set the principal ellipse and saturation region in sky coordinates
-                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
-                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
-
-                # Load the extinction-corrected image
-                image = Image.from_file(corrected_path)
-                image.name = name
-
-            # Check if the source-extracted image is present
-            elif fs.is_file(extracted_path):
-
-                # Disable all steps preceeding and including the source extraction
-                self.image_preparer.config.extract_sources = False
-
-                # Set the principal ellipse and saturation region in sky coordinates
-                self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(image.wcs)
-                self.image_preparer.saturation_region_sky = saturation_region.to_sky(image.wcs) if saturation_region is not None else None
-
-                # Load the extracted image
-                image = Image.from_file(extracted_path)
-                image.name = name
-
-            # -----------------------------------------------------------------
-
-            # Write out sky annuli frames
-            sky_path = fs.join(output_path, "sky")
-            if not fs.is_directory(sky_path): fs.create_directory(sky_path)
-            self.image_preparer.config.write_sky_apertures = True
-            self.image_preparer.config.sky_apertures_path = sky_path
-
-            # Set the visualisation path for the image preparer
-            visualisation_path = self.visualisation_path if self.config.visualise else None
-
-            # -----------------------------------------------------------------
-
-            # Run the image preparation
-            self.image_preparer.run(image, galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments, visualisation_path)
-
-            # -----------------------------------------------------------------
-
-            # Inform the user
-            log.success("Preparation of " + name + " image finished")
-
-            # Clear the image preparer
-            self.image_preparer.clear()
-
-    # -----------------------------------------------------------------
-
-    def enable_all_preparation_steps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.image_preparer.config.calculate_calibration_uncertainties = True
-        self.image_preparer.config.extract_sources = True
-        self.image_preparer.config.correct_for_extinction = True
-        self.image_preparer.config.convert_unit = True
-        self.image_preparer.config.convolve = True
-        self.image_preparer.config.rebin = True
-        self.image_preparer.config.subtract_sky = True
-        self.image_preparer.config.set_uncertainties = True
+        pass
 
     # -----------------------------------------------------------------
 

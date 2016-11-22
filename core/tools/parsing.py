@@ -409,6 +409,18 @@ def simulation_ids(string):
 
 # -----------------------------------------------------------------
 
+def unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return Unit(argument)
+
+# -----------------------------------------------------------------
+
 def quantity(argument):
 
     """

@@ -481,10 +481,56 @@ def is_sky_subtracted(header):
     # Initially, set the boolean to False
     subtracted = False
 
+    # Find the keyword
     if 'BACK_SUB' in header: subtracted = header['BACK_SUB']
+
+    # Check type
+    if not isinstance(subtracted, bool): raise ValueError("Invalid value for 'BACK_SUB'")
 
     # Return the boolean value
     return subtracted
+
+# -----------------------------------------------------------------
+
+def is_source_extracted(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    extracted = False
+
+    # Find the keyword
+    if "SRC_EXTR" in header: extracted = header["SRC_EXTR"]
+
+    # Check type
+    if not isinstance(extracted, bool): raise ValueError("Invalid value for 'SRC_EXTR'")
+
+    # Return the boolean value
+    return extracted
+
+# -----------------------------------------------------------------
+
+def is_extinction_corrected(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    corrected = False
+
+    # Find the keyword
+    if "EXT_CORR" in header: corrected = header["EXT_CORR"]
+
+    # Check type
+    if not isinstance(corrected, bool): raise ValueError("Invalid value for 'EXT_CORR'")
+
+    # Return the boolean value
+    return corrected
 
 # -----------------------------------------------------------------
 

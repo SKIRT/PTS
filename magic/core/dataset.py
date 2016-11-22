@@ -121,6 +121,17 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths)
+
+    # -----------------------------------------------------------------
+
     @property
     def names(self):
 

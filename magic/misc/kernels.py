@@ -154,33 +154,53 @@ class AnianoKernels(object):
 
     # -----------------------------------------------------------------
 
-    def get_kernel_path(self, from_filter, to_filter, high_res=True, fwhm=None, return_name=False):
+    def get_kernel_path(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None, return_name=False, from_model="BiGauss", to_model="BiGauss"):
 
         """
         This function ...
         :param from_filter:
         :param to_filter:
         :param high_res:
-        :param fwhm:
+        :param from_fwhm:
+        :param to_fwhm:
         :param return_name:
+        :param from_model: BiGauss is for SDSS
+        :param to_model: BiGauss is for SDSS
         :return:
         """
 
         if isinstance(from_filter, basestring): from_filter = Filter.from_string(from_filter)
         if isinstance(to_filter, basestring): to_filter = Filter.from_string(to_filter)
 
+        # For variable FWHM of input image
         if str(from_filter) in variable_fwhms: # Is SDSS
 
+            # Check whether FWHM is specified
+            if from_fwhm is None: raise ValueError("When convolving an SDSS image, the FWHM of that image must be specified")
+
             # Determine aniano name for the FWHM
-            fwhm_arcsec = fwhm.to("arcsec").value
-            aniano_name = "BiGauss_0" + closest_half_integer_string(fwhm_arcsec) # BiGauss is for SDSS
-            log.warning("The convolution kernel will be based on the FWHM of the original image, which is specified as " + str(fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
+            fwhm_arcsec = from_fwhm.to("arcsec").value
+            aniano_name = from_model + "_0" + closest_half_integer_string(fwhm_arcsec) # BiGauss is for SDSS
+            log.warning("The convolution kernel will be based on the FWHM of the original image, which is specified as " + str(from_fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
             from_psf_name = aniano_name
 
+        # Determine from_psf_name
         else: from_psf_name = aniano_names[str(from_filter)]
 
+        # For variable FWHM of image with target resolution
+        if str(to_filter) in variable_fwhms: # Is SDSS
+
+            # Check whether FWHM is specified
+            if to_fwhm is None: raise ValueError("When convolving to the resolution of a SDSS image, the FWHM of that image must be specified")
+
+            # Determine aniano name for the FWHM
+            fwhm_arcsec = to_fwhm.to("arcsec").value
+            aniano_name = to_model + "_0" + closest_half_integer_string(fwhm_arcsec)  # BiGauss is for SDSS
+            log.warning("The convolution kernel will be based on the FWHM of the target image, which is specified as " + str(to_fwhm) + ". Please check that this value is sensible. The aniano PSF that is taken for this FWHM is " + aniano_name)
+            to_psf_name = aniano_name
+
         # Determine to_psf_name
-        to_psf_name = aniano_names[str(to_filter)]
+        else: to_psf_name = aniano_names[str(to_filter)]
 
         # Determine the path to the kernel file
         if high_res: kernel_file_basename = "Kernel_HiRes_" + from_psf_name + "_to_" + to_psf_name
@@ -269,6 +289,27 @@ class AnianoKernels(object):
 
         if return_name: return psf_file_path, psf_name
         else: return psf_file_path # Return the local PSF path
+
+    # -----------------------------------------------------------------
+
+    def get_fwhm(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Determine the aniano name for the PSF
+        psf_name = aniano_names[str(fltr)]
+
+        # Get the FWHM of the PSF
+        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * Unit("arcsec")
+        elif psf_name in fwhms: fwhm = fwhms[psf_name]
+        else: fwhm = None
+
+        # Return the FWHM
+        return fwhm
 
     # -----------------------------------------------------------------
 
