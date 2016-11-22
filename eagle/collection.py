@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.eagle.collections Utilities to load and use data from EAGLE SKIRT-run result collections.
+## \package pts.eagle.collection Utilities to load and use data from EAGLE SKIRT-run result collections.
 #
 # The facilities in this module allow loading one or more EAGLE SKIRT-run result collections,
 # extracting the desired galaxy properties, and calculating observables from these properties.
@@ -18,7 +18,6 @@ import os.path
 import numpy as np
 
 from . import config
-from .database import Database
 from ..core.basics.filter import Filter
 from ..core.basics.greybody import Bnu, GreyBody, kappa350_Cortese, kappa350_Zubko
 
@@ -28,8 +27,8 @@ from ..core.basics.greybody import Bnu, GreyBody, kappa350_Cortese, kappa350_Zub
 # It offers various facilities for querying galaxy properties.
 class Collection:
 
-    ## The constructor loads the contents of the specified collection, retrieves the public EAGLE database GalaxyID
-    # for the galaxies in the collection, and optionally reads extra data fields from column text files.
+    ## The constructor loads the contents of the specified collection and optionally reads extra data fields
+    # from column text files.
     # The collection name should \em not include the directory (which is taken from eagle.config) nor the
     # postfix "_info_collection.dat". The optional collection label can be provided as a short identifier,
     # for example for use in the legend of a plot. If a list of file names is provided, the constructor adds
@@ -46,17 +45,12 @@ class Collection:
         self._info = pickle.load(infile)
         infile.close()
 
-        # construct the index on galayid, and add a galaxy-id property
+        # construct an index on galayid
         self._ids = { }       # key = galaxy id, value = index in collection
-        self._info["galaxy_id"] = self._info["skirt_run_id"].copy()
-        db = Database()
         index = 0
-        for runid in self._info["skirt_run_id"]:
-            galaxy_id = db.select("runid=?", (runid,))[0]["galaxyid"]
-            self._ids[galaxy_id] = index
-            self._info["galaxy_id"][index] = galaxy_id
+        for galaxyid in self._info["galaxy_id"]:
+            self._ids[galaxyid] = index
             index+=1
-        db.close()
 
         if (file_names is not None) and (field_names is not None):
             # read the extra fields from the input files, and store them keyed on galaxy id

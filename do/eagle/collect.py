@@ -61,7 +61,8 @@ namelist = "_".join(sys.argv[1:])
 
 # get a list of SkirtRun objects for which to collect statistics, in order of run-id
 db = Database()
-query = "runstatus in ('completed','archived') and label in {0} and eaglesim in {0}".format(querylist)
+query = "((stage='observe' and status='succeeded') or (stage in ('store', 'completed')))" \
+        " and label in {0} and eaglesim in {0}".format(querylist)
 runids = sorted([ row['runid'] for row in db.select(query) ])
 skirtruns = [ SkirtRun(runid) for runid in runids ]
 db.close()
