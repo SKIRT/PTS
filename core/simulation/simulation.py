@@ -24,7 +24,7 @@ from collections import defaultdict
 from ..tools import serialization
 from ..tools import filesystem as fs
 from .skifile import SkiFile
-from .logfile import LogFile
+### from .logfile import LogFile    # temporarily removed to avoid dependency on matplotlib
 from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
 
