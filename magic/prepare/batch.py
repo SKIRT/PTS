@@ -21,14 +21,21 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import Filter
 from ...core.basics.configurable import Configurable
 from ..misc.calibration import CalibrationError
 from ..misc.extinction import GalacticExtinction
 from ..core.frame import Frame
 from ..core.dataset import DataSet
 from ..region.list import SkyRegionList
-from ...magic.misc.kernels import aniano_names, AnianoKernels
+from ...magic.misc.kernels import AnianoKernels
+from ...magic.sources.extractor import SourceExtractor
+from ...magic.sky.skysubtractor import SkySubtractor
+from ...core.basics.animation import Animation
+from ...magic.animation.sourceextraction import SourceExtractionAnimation
+from ...magic.animation.imageblink import ImageBlinkAnimation
+from ...core.tools import time
+from ...magic.core.remote import RemoteImage
+from ...magic.core.kernel import ConvolutionKernel
 
 # -----------------------------------------------------------------
 
@@ -56,6 +63,9 @@ class BatchImagePreparer(Configurable):
         # The attenuations
         self.attenuations = dict()
 
+        # The output paths
+        self.output_paths = dict()
+
         # Initialize the process pool
         self.pool = Pool(processes=self.config.nprocesses)
 
@@ -79,14 +89,18 @@ class BatchImagePreparer(Configurable):
         self.principal_ellipses_sky = dict()
         self.saturation_regions_sky = dict()
 
+        # The output dataset
+        self.dataset = DataSet()
+
     # -----------------------------------------------------------------
 
-    def add_frame(self, name, frame):
+    def add_frame(self, name, frame, output_path=None):
 
         """
         This function ...
         :param name:
         :param frame:
+        :param output_path:
         :return:
         """
 
@@ -95,6 +109,12 @@ class BatchImagePreparer(Configurable):
 
         # Set the frame
         self.frames[name] = frame
+
+        # Check the output path
+        if self.config.write and output_path is None: raise ValueError("Output path must be specified if 'write' option is enabled in configuration")
+
+        # Set the output path
+        if output_path is not None: self.output_paths[name] = output_path
 
     # -----------------------------------------------------------------
 
@@ -244,7 +264,10 @@ class BatchImagePreparer(Configurable):
 
         # Load the frames (from config or input kwargs)
         if "frames" in kwargs: self.frames = kwargs.pop("frames")
-        elif "dataset" in kwargs: self.frames = kwargs.pop("dataset").get_frames()
+        elif "dataset" in kwargs:
+            dataset = kwargs.pop("dataset").get_frames()
+            self.frames = dataset.get_frames()
+            self.output_paths = dataset.get_directory_paths()
         else: self.load_frames()
 
         # Set rebinning wcs
@@ -331,8 +354,11 @@ class BatchImagePreparer(Configurable):
             # Determine the name for this image
             name = str(frame.filter)
 
+            # Determine the directory path
+            directory_path = fs.directory_of(self.config.dataset)
+
             # Add the frame
-            self.add_frame(name, frame)
+            self.add_frame(name, frame, output_path=directory_path)
 
         # Load dataset from file
         elif self.config.dataset.endswith(".dat"):
@@ -342,6 +368,9 @@ class BatchImagePreparer(Configurable):
 
             # Get the frames
             self.frames = dataset.get_frames()
+
+            # Get the directory paths
+            self.output_paths = dataset.get_directory_paths()
 
         # Invalid value for 'dataset'
         else: raise ValueError("Parameter 'dataset' must be filename of a dataset file (.dat) or a FITS file (.fits)")
@@ -401,10 +430,10 @@ class BatchImagePreparer(Configurable):
         if self.config.subtract_sky: self.subtract_sky()
 
         # 7. Calculate the calibration uncertainties
-        if self.config.cself.calculate_calibration_uncertainties()
+        if self.config.calculate_calibration_uncertainties: self.calculate_calibration_uncertainties()
 
         # 8. Calculate the error maps
-        self.calculate_errormaps()
+        if self.config.create_errormaps: self.create_errormaps()
 
     # -----------------------------------------------------------------
 
@@ -425,12 +454,17 @@ class BatchImagePreparer(Configurable):
             if not self._needs_extinction_correction(label): continue
 
             # Execute
-            result = self.pool.apply_async(_extract_sources, args=(,))  # All simple types (strings) ?
+            #result = self.pool.apply_async(_extract_sources, args=(,))  # All simple types (strings) ?
+
+            image = self.frames[label]
+
+            # Extract the sources
+            _extract_sources(image, visualisation_path=self.config.visualisation_path)
 
             # Add the result
-            results.append(result)
+            #results.append(result)
 
-            # Get and set the dust masses
+            #
 
         #self.dust_masses = [result.get() for result in results]
 
@@ -440,7 +474,7 @@ class BatchImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __needs_source_extraction(self, label):
+    def _needs_source_extraction(self, label):
 
         """
         This function ...
@@ -501,7 +535,7 @@ class BatchImagePreparer(Configurable):
             # Check whether unit conversion if necessary
             if not self._needs_unit_conversion(label): continue
 
-            converted_path = fs.join(output_path, "converted_unit.fits")
+            #converted_path = fs.join(output_path, "converted_unit.fits")
 
             assert self.image.unit == Unit("Jy/pix")
 
@@ -523,10 +557,10 @@ class BatchImagePreparer(Configurable):
             self.image.unit = self.config.unit_conversion.to_unit
 
             # Write intermediate result
-            if self.config.write_steps: self.write_intermediate_result("converted_unit.fits")
+            #if self.config.write_steps: self.write_intermediate_result("converted_unit.fits")
 
             # Inform the user
-            log.success("Units converted")
+            #log.success("Units converted")
 
     # -----------------------------------------------------------------
 
@@ -575,6 +609,9 @@ class BatchImagePreparer(Configurable):
             #self.image_preparer.config.convolution.kernel_path = kernel_file_path  # set kernel path
             #self.image_preparer.config.convolution.kernel_fwhm = self.reference_fwhm  # set kernel FWHM (is a quantity here)
 
+            # Do convolution
+            _convolve(image, kernel_file_path, self.convolution_fwhm, visualisation_path=self.config.visualisation_path)
+
     # -----------------------------------------------------------------
 
     def _needs_convolution(self, label):
@@ -618,7 +655,8 @@ class BatchImagePreparer(Configurable):
 
             #if label == self.config.rebinning_reference: continue
 
-
+            # Do rebinning for this image
+            _rebin(image, reference_wcs=self.rebinning_wcs)
 
             #if fs.is_file(rebinned_path): continue
 
@@ -659,7 +697,8 @@ class BatchImagePreparer(Configurable):
             # Check whether the image has to be sky subtracted
             if not self._needs_sky_subtraction(label): continue
 
-
+            # Do the sky subtraction
+            _subtract_sky(image, visualisation_path=self.config.visualisation_path)
 
             #subtracted_path = fs.join(output_path, "sky_subtracted.fits")
 
@@ -689,7 +728,7 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
-
+        # Loop over the frames
         for label in self.frames:
 
             calibration_error = CalibrationError.from_filter(self.frames[label].filter)
@@ -699,7 +738,7 @@ class BatchImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def calculate_errormaps(self):
+    def create_errormaps(self):
 
         """
         This function ...
@@ -736,7 +775,23 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the frames ...")
+
+        # Loop over the frames
+        for name in self.frames:
+
+            # Get the output path
+            if name not in self.output_paths: raise ValueError("Output directory not specified for '" + name + "' image")
+
+            # Determine result path
+            path = fs.join(self.output_paths[name], "result.fits")
+
+            # Add an entry to the output dataset
+            self.dataset.add_path(name, path)
+
+            # Save the frame
+            self.frames[name].save(path)
 
     # -----------------------------------------------------------------
 
@@ -747,11 +802,15 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the dataset file ...")
+
+        # Write the dataset
+        self.dataset.saveto(self.config.writing.dataset_path)
 
 # -----------------------------------------------------------------
 
-def _extract_sources():
+def _extract_sources(image, visualisation_path=None):
 
     """
     This function ...
@@ -762,51 +821,54 @@ def _extract_sources():
     log.info("Extracting the sources ...")
 
     # Create an animation to show the result of this step
-    if self.visualisation_path is not None:
+    if visualisation_path is not None:
 
         # Create an animation
         animation = ImageBlinkAnimation()
-        animation.add_image(self.image.frames.primary)
+        animation.add_image(image.frames.primary)
 
         # Create an animation to show the progress of the SourceExtractor
-        source_extractor_animation = SourceExtractionAnimation(self.image.frames.primary)
+        source_extractor_animation = SourceExtractionAnimation(image.frames.primary)
+
     else:
+
         animation = None
         source_extractor_animation = None
 
+    # Create a source extractor
+    extractor = SourceExtractor()
+
     # Run the extractor
-    self.extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
-                       self.other_region, self.galaxy_segments, self.star_segments, self.other_segments,
-                       source_extractor_animation)
+    #extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
+    #               self.other_region, self.galaxy_segments, self.star_segments, self.other_segments,
+    #               source_extractor_animation)
 
     # Write the animation
-    if self.visualisation_path is not None:
+    if visualisation_path is not None:
 
         # Determine the path to the animation
-        path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".gif")
+        path = fs.join(visualisation_path, time.unique_name(image.name + "_sourceextraction") + ".gif")
 
         # Save the animation
         source_extractor_animation.save(path)
 
         # ...
-        animation.add_image(self.image.frames.primary)
+        animation.add_image(image.frames.primary)
 
         # Determine the path to the animation
-        path = fs.join(self.visualisation_path,
-                       time.unique_name(self.image.name + "_imagepreparation_extractsources") + ".gif")
+        path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_extractsources") + ".gif")
 
         # Save the animation
         animation.save(path)
 
     # Add the sources mask to the image
-    self.image.add_mask(self.extractor.mask, "sources")
+    image.add_mask(extractor.mask, "sources")
 
     # Get the principal shape in sky coordinates
-    self.principal_shape_sky = self.extractor.principal_shape.to_sky(self.image.wcs)
+    self.principal_shape_sky = extractor.principal_shape.to_sky(image.wcs)
 
     # Get the saturation region in sky coordinates
-    self.saturation_region_sky = self.saturation_region.to_sky(
-        self.image.wcs) if self.saturation_region is not None else None
+    self.saturation_region_sky = self.saturation_region.to_sky(image.wcs) if self.saturation_region is not None else None
 
     # Write intermediate result
     if self.config.write_steps: self.write_intermediate_result("extracted.fits")
@@ -816,7 +878,7 @@ def _extract_sources():
 
 # -----------------------------------------------------------------
 
-def _convolve(self):
+def _convolve(image, kernel_path, kernel_fwhm, visualisation_path=None):
 
     """
     This function ...
@@ -827,23 +889,23 @@ def _convolve(self):
     log.info("Convolving the image with kernel " + self.config.convolution.kernel_path + " ...")
 
     # Create an animation to show the result of this step
-    if self.visualisation_path is not None:
+    if visualisation_path is not None:
 
         # Create an animation
         animation = ImageBlinkAnimation()
-        animation.add_image(self.image.frames.primary)
+        animation.add_image(image.frames.primary)
 
-    else:
-        animation = None
+    else: animation = None
 
     # Open the convolution kernel
-    kernel = ConvolutionKernel.from_file(self.config.convolution.kernel_path, fwhm=self.config.convolution.kernel_fwhm)
+    kernel = ConvolutionKernel.from_file(kernel_path, fwhm=kernel_fwhm)
 
     # Prepare the kernel
-    kernel.prepare_for(self.image)
+    kernel.prepare_for(image)
 
     # Save the kernel frame for manual inspection
     if self.config.write_steps:
+
         kernel_path = self.full_output_path("kernel.fits")
         kernel.save(kernel_path)
 
@@ -854,25 +916,23 @@ def _convolve(self):
         log.info("Convolution will be performed remotely on host '" + self.config.convolution.remote + "' ...")
 
         # Create remote image, convolve and make local again
-        remote_image = RemoteImage.from_local(self.image, self.config.convolution.remote)
+        remote_image = RemoteImage.from_local(image, self.config.convolution.remote)
         remote_image.convolve(kernel, allow_huge=True)
-        self.image = remote_image.to_local()
+        image = remote_image.to_local()
 
     # The convolution is performed locally. # Convolve the image (the primary and errors frame)
-    else:
-        self.image.convolve(kernel, allow_huge=True)
+    else: image.convolve(kernel, allow_huge=True)
 
     # Save convolved frame
     if self.config.write_steps: self.write_intermediate_result("convolved.fits")
 
     # Write the animation
-    if self.visualisation_path is not None:
+    if visualisation_path is not None:
 
-        animation.add_image(self.image.frames.primary)
+        animation.add_image(image.frames.primary)
 
         # Determine the path to the animation
-        path = fs.join(self.visualisation_path,
-                       time.unique_name(self.image.name + "_imagepreparation_convolve") + ".gif")
+        path = fs.join(self.visualisation_path, time.unique_name(image.name + "_imagepreparation_convolve") + ".gif")
 
         # Save the animation
         animation.save(path)
@@ -882,7 +942,44 @@ def _convolve(self):
 
 # -----------------------------------------------------------------
 
-def _subtract_sky():
+def _rebin(image, reference_wcs):
+
+    """
+    This function ...
+    :param image:
+    :param reference_wcs:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Rebinning the image to the pixel grid of " + self.config.rebinning.rebin_to + " ...")
+
+    # Get the coordinate system of the reference frame
+    #reference_system = CoordinateSystem.from_file(self.config.rebinning.rebin_to)
+
+    # Check whether the rebinning has to be performed remotely
+    if self.config.rebinning.remote is not None:
+
+        # Inform the user
+        log.info("Rebinning will be performed remotely on host '" + self.config.rebinning.remote + "' ...")
+
+        # Create remote image, rebin and make local again
+        remote_image = RemoteImage.from_local(image, self.config.rebinning.remote)
+        remote_image.rebin(reference_wcs, exact=self.config.rebinning.exact)
+        image = remote_image.to_local()
+
+    # Rebin the image locally (the primary and errors frame)
+    else: image.rebin(reference_wcs)
+
+    # Save rebinned frame
+    #if self.config.write_steps: self.write_intermediate_result("rebinned.fits")
+
+    # Inform the user
+    #log.success("Rebinning finished")
+
+# -----------------------------------------------------------------
+
+def _subtract_sky(image, visualisation_path=None):
 
     """
     This function ...
@@ -893,47 +990,52 @@ def _subtract_sky():
     log.info("Subtracting the sky ...")
 
     # Create an animation to show the result of this step
-    if self.visualisation_path is not None:
+    if visualisation_path is not None:
 
         # Create an animation to show the result of the sky subtraction step
         animation = ImageBlinkAnimation()
-        animation.add_image(self.image.frames.primary)
+        animation.add_image(image.frames.primary)
 
         # Create an animation to show the progress of the SkySubtractor
         skysubtractor_animation = Animation()
+
     else:
+
         animation = None
         skysubtractor_animation = None
 
     # Convert the principal ellipse in sky coordinates into pixel coordinates
-    principal_shape = self.principal_shape_sky.to_pixel(self.image.wcs)
+    principal_shape = self.principal_shape_sky.to_pixel(image.wcs)
 
     # Convert the saturation region in sky coordinates into pixel coordinates
     if self.saturation_region_sky is not None:
-        saturation_region = self.saturation_region_sky.to_pixel(self.image.wcs)
+        saturation_region = self.saturation_region_sky.to_pixel(image.wcs)
     else: saturation_region = None
 
     # Create the 'extra' mask (bad and padded pixels)
     extra_mask = None
-    if "bad" in self.image.masks:
+    if "bad" in image.masks:
         # Combine with padded mask or just use bad mask
-        if "padded" in self.image.masks:
-            extra_mask = self.image.masks.bad + self.image.masks.padded
+        if "padded" in image.masks:
+            extra_mask = image.masks.bad + image.masks.padded
         else:
-            extra_mask = self.image.masks.bad
-    elif "padded" in self.image.masks: extra_mask = self.image.masks.padded  # just use padded mask
+            extra_mask = image.masks.bad
+    elif "padded" in image.masks: extra_mask = image.masks.padded  # just use padded mask
+
+    # Create the sky subtractor
+    sky_subtractor = SkySubtractor()
 
     # Run the sky subtractor
-    self.sky_subtractor.run(self.image.frames.primary, principal_shape, self.image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
+    sky_subtractor.run(image.frames.primary, principal_shape, image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
 
     # Add the sky frame to the image
-    self.image.add_frame(self.sky_subtractor.sky_frame, "sky")
+    image.add_frame(self.sky_subtractor.sky_frame, "sky")
 
     # Add the mask that is used for the sky estimation
-    self.image.add_mask(self.sky_subtractor.mask, "sky")
+    image.add_mask(self.sky_subtractor.mask, "sky")
 
     # Add the sky noise frame
-    self.image.add_frame(self.sky_subtractor.noise_frame, "sky_errors")
+    image.add_frame(self.sky_subtractor.noise_frame, "sky_errors")
 
     # Write intermediate result if requested
     if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
@@ -943,35 +1045,34 @@ def _subtract_sky():
 
         # Write the sky region
         region_path = fs.join(self.config.sky_apertures_path, "annulus.reg")
-        self.sky_subtractor.region.save(region_path)
+        sky_subtractor.region.save(region_path)
 
         # Write the apertures frame
         apertures_frame_path = fs.join(self.config.sky_apertures_path, "apertures.fits")
-        self.sky_subtractor.apertures_frame.save(apertures_frame_path)
+        sky_subtractor.apertures_frame.save(apertures_frame_path)
 
         # Write the apertures mean frame
         apertures_mean_path = fs.join(self.config.sky_apertures_path, "apertures_mean.fits")
-        self.sky_subtractor.apertures_mean_frame.save(apertures_mean_path)
+        sky_subtractor.apertures_mean_frame.save(apertures_mean_path)
 
         # Write the apertures noise frame
         apertures_noise_path = fs.join(self.config.sky_apertures_path, "apertures_noise.fits")
-        self.sky_subtractor.apertures_noise_frame.save(apertures_noise_path)
+        sky_subtractor.apertures_noise_frame.save(apertures_noise_path)
 
     # Write the animation
-    if self.visualisation_path is not None:
+    if visualisation_path is not None:
 
         # Determine the path to the animation
-        path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_skysubtraction") + ".gif")
+        path = fs.join(visualisation_path, time.unique_name(image.name + "_skysubtraction") + ".gif")
 
         # Save the animation
         skysubtractor_animation.save(path)
 
         # ...
-        animation.add_image(self.image.frames.primary)
+        animation.add_image(image.frames.primary)
 
         # Determine the path to the animation
-        path = fs.join(self.visualisation_path,
-                       time.unique_name(self.image.name + "_imagepreparation_subtractsky") + ".gif")
+        path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_subtractsky") + ".gif")
 
         # Save the animation
         animation.save(path)

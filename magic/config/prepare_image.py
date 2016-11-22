@@ -75,14 +75,24 @@ definition.sections["rebinning"].add_optional("reference_path", "file_path", "re
 definition.add_flag("subtract_sky", "subtract sky")
 definition.add_section("sky_subtraction", "sky subtraction")
 
-# Uncertainties
-definition.add_flag("set_uncertainties", "set uncertainties")
-definition.add_section("uncertainties", "uncertainties")
-definition.sections["uncertainties"].add_optional("calibration_error", "calibration_error", "calibration error")
+# Error maps
+definition.add_flag("create_errormaps", "create error maps")
+#definition.add_section("errormaps", "error maps")
+#definition.sections["errormaps"].add_optional("calibration_error", "calibration_error", "calibration error")
 
 # Cropping
 definition.add_flag("crop", "crop")
 definition.add_section("cropping", "cropping")
 definition.sections["cropping"].add_optional("limits", "pixel_limits", "pixel limits")
+
+# Writing
+definition.add_flag("write", "write")
+definition.add_section("writing", "writing options")
+definition.add_optional("dataset_path", "string", "path for the output dataset")
+
+# Visualization
+#definition.add_flag("visualise", "make visualisations")
+#definition.add_section("visualisation")
+definition.add_optional("visualisation_path", "directory_path", "directory for saving visualisations")
 
 # -----------------------------------------------------------------

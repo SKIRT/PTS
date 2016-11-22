@@ -24,6 +24,7 @@ from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
 from ..region.ellipse import PixelEllipseRegion
 from ...core.tools.logging import log
+from ..basics.stretch import PixelStretch
 
 # -----------------------------------------------------------------
 
@@ -240,6 +241,7 @@ class Star(SkyObject):
             center = self.pixel_position(frame.wcs)
 
         # Create the new source
+        radius = PixelStretch(radius, radius)
         ellipse = PixelEllipseRegion(center, radius)
         source = Source.from_ellipse(frame, ellipse, outer_factor, shape=shape)
 

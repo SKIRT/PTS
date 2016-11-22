@@ -167,6 +167,9 @@ class ModelingComponent(Configurable):
         # The path to the initial data set file
         self.initial_dataset_path = None
 
+        # The path to the prepared data set file
+        self.prepared_dataset_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -291,6 +294,9 @@ class ModelingComponent(Configurable):
 
         # Set the path to the initial dataset file
         self.initial_dataset_path = fs.join(self.data_path, "dataset.dat")
+
+        # Set the path to the prepared dataset file
+        self.prepared_dataset_path = fs.join(self.prep_path, "dataset.dat")
 
     # -----------------------------------------------------------------
 

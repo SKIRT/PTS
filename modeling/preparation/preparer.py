@@ -49,11 +49,11 @@ class DataPreparer(PreparationComponent):
 
         # -- Attributes --
 
-        # The paths to the initialized images
-        self.paths = []
+        # The directory paths
+        self.output_paths = dict()
 
         # The preparation dataset
-        self.dataset = DataSet()
+        self.preparation_dataset = DataSet()
 
         # The FWHM of the reference image
         self.reference_fwhm = None
@@ -69,6 +69,12 @@ class DataPreparer(PreparationComponent):
 
         # The image preparer configuration
         self.preparer_config = dict()
+
+        # The prepared frames
+        self.frames = None
+
+        # The prepared dataset
+        self.prepared_dataset = DataSet()
 
     # -----------------------------------------------------------------
 
@@ -134,6 +140,12 @@ class DataPreparer(PreparationComponent):
         self.preparer_config["max_fwhm"] = 0.99 * spire_fwhm
         self.preparer_config["max_pixelscale"] = 0.99 * spire_pixelscale
 
+        # Don't write
+        self.preparer_config["write"] = False
+
+        # Make visualisations (but won't work yet when preparing remotely)
+        #self.preparer_config["visualisation_path"] = self.visualisation_path
+
     # -----------------------------------------------------------------
 
     def create_dataset(self):
@@ -154,6 +166,9 @@ class DataPreparer(PreparationComponent):
 
             # Determine preparation directory for this image
             path = fs.directory_of(image_path)
+
+            # Set the directory for the result
+            self.output_paths[prep_name] = path
 
             # Debugging
             log.debug("Checking " + path + " ...")
@@ -223,7 +238,7 @@ class DataPreparer(PreparationComponent):
                 if not fs.is_directory(sky_path): raise IOError("The sky subtraction output directory is not present for the '" + prep_name + "' image")
 
                 # Add the path of the sky-subtracted image
-                self.dataset.add_path(prep_name, subtracted_path)
+                self.preparation_dataset.add_path(prep_name, subtracted_path)
 
                 # Check whether keywords are set to True in image header ?
 
@@ -235,7 +250,7 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(rebinned_path):
 
                 # Add the path of the rebinned image
-                self.dataset.add_path(prep_name, rebinned_path)
+                self.preparation_dataset.add_path(prep_name, rebinned_path)
 
                 # Check whether keywords are set to True in image header ?
 
@@ -247,7 +262,7 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(convolved_path):
 
                 # Add the path of the convolved image
-                self.dataset.add_path(prep_name, convolved_path)
+                self.preparation_dataset.add_path(prep_name, convolved_path)
 
             # -----------------------------------------------------------------
 
@@ -257,7 +272,7 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(converted_path):
 
                 # Add the path of the unit-converted image
-                self.dataset.add_path(prep_name, converted_path)
+                self.preparation_dataset.add_path(prep_name, converted_path)
 
             # -----------------------------------------------------------------
 
@@ -267,7 +282,7 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(corrected_path):
 
                 # Add the path of the extinction-corrected image
-                self.dataset.add_path(prep_name, corrected_path)
+                self.preparation_dataset.add_path(prep_name, corrected_path)
 
             # ALREADY SOURCE-EXTRACTED
 
@@ -275,7 +290,7 @@ class DataPreparer(PreparationComponent):
             elif fs.is_file(extracted_path):
 
                 # Add the path of the source-extracted image
-                self.dataset.add_path(prep_name, extracted_path)
+                self.preparation_dataset.add_path(prep_name, extracted_path)
 
             # -----------------------------------------------------------------
 
@@ -284,12 +299,12 @@ class DataPreparer(PreparationComponent):
             else:
 
                 # Add the path to the initialized image to the dataset
-                self.dataset.add_path(prep_name, image_path)
+                self.preparation_dataset.add_path(prep_name, image_path)
 
             # -----------------------------------------------------------------
 
         # If all images have already been prepared
-        if len(self.dataset) == 0: log.success("All images are already prepared")
+        if len(self.preparation_dataset) == 0: log.success("All images are already prepared")
 
     # -----------------------------------------------------------------
 
@@ -476,10 +491,13 @@ class DataPreparer(PreparationComponent):
         input_dict = dict()
 
         # Set the input dataset
-        input_dict["dataset"] = self.dataset
+        input_dict["dataset"] = self.preparation_dataset
 
         # Run the PTS prepare_images command remotely and get the output
         frames, errormaps = self.launcher.run_attached("prepare_images", self.preparer_config, input_dict, return_output_names=["frames", "errormaps"], unpack=True)
+
+        self.frames = frames
+        #self.errormaps = errormaps
 
     # -----------------------------------------------------------------
 
@@ -494,11 +512,14 @@ class DataPreparer(PreparationComponent):
         log.info("Preparing the images remotely on host '" + self.config.remote + "'...")
 
         # Run the image preparer, pass the dataset
-        self.preparer.run(dataset=self.dataset)
+        self.preparer.run(dataset=self.preparation_dataset)
 
         # Get the frames
         frames = self.preparer.frames
-        errormaps = self.preparer.errormaps
+        #errormaps = self.preparer.errormaps
+
+        self.frames = frames
+        #self.errormaps = errormaps
 
     # -----------------------------------------------------------------
 
@@ -509,7 +530,38 @@ class DataPreparer(PreparationComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the images
+        self.write_images()
+
+        # Write the result dataset
         self.write_dataset()
+
+    # -----------------------------------------------------------------
+
+    def write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the prepared images ...")
+
+        # Loop over the resulting images
+        for name in self.frames:
+
+            # Determine result path
+            path = fs.join(self.output_paths[name], "result.fits")
+
+            # Add an entry to the output dataset
+            self.prepared_dataset.add_path(name, path)
+
+            # Save the frame
+            self.frames[name].save(path)
 
     # -----------------------------------------------------------------
 
@@ -520,7 +572,11 @@ class DataPreparer(PreparationComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the output dataset ...")
+
+        # Write the dataset
+        self.prepared_dataset.saveto(self.prepared_dataset_path)
 
     # -----------------------------------------------------------------
 

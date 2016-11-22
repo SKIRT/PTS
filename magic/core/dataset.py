@@ -283,6 +283,51 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_directory_paths(self, min_wavelength=None, max_wavelength=None, exclude=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :return:
+        """
+
+        # Make sure exclude is a list
+        if isinstance(exclude, basestring): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary
+        paths = dict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Check wavelength of the frame if necessary
+            if min_wavelength is not None or max_wavelength is not None:
+
+                # Load the frame
+                frame = self.get_frame(name)
+                #header = self.get_header(name)
+
+                # Skip images of wavelength smaller than the minimum or greater than the maximum
+                if min_wavelength is not None and frame.wavelength < min_wavelength: continue
+                if max_wavelength is not None and frame.wavelength > max_wavelength: continue
+
+            # Determine the path of the directory where the frame is in
+            directory_path = fs.directory_of(self.paths[name])
+
+            # Set the directory path
+            paths[name] = directory_path
+
+        # Return the dictionary of directory paths
+        return paths
+
+    # -----------------------------------------------------------------
+
     def get_frames(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
 
         """
@@ -471,6 +516,20 @@ class DataSet(object):
         :return:
         """
 
+        pixelscale = None
+        frame_name = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            wcs = self.get_wcs(name)
+            if pixelscale is None or wcs.average_pixelscale < pixelscale:
+                pixelscale = wcs.average_pixelscale
+                frame_name = name
+
+        # Return the name for the frame with the minimum pixelscale
+        return frame_name
+
     # -----------------------------------------------------------------
 
     @property
@@ -480,6 +539,20 @@ class DataSet(object):
         This function ...
         :return:
         """
+
+        pixelscale = None
+        frame_name = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            wcs = self.get_wcs(name)
+            if pixelscale is None or wcs.average_pixelscale > pixelscale:
+                pixelscale = wcs.average_pixelscale
+                frame_name = name
+
+        # Return the name for the frame with the maximum pixelscale
+        return frame_name
 
     # -----------------------------------------------------------------
 
