@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from multiprocessing import Pool
+import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit
@@ -36,6 +37,8 @@ from ...magic.animation.imageblink import ImageBlinkAnimation
 from ...core.tools import time
 from ...magic.core.remote import RemoteImage
 from ...magic.core.kernel import ConvolutionKernel
+from ...modeling.preparation import unitconversion
+from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -83,11 +86,9 @@ class BatchImagePreparer(Configurable):
 
         # Set the principal ellipse and saturation region in sky coordinates
         #self.image_preparer.principal_ellipse_sky = regions.largest_ellipse(galaxy_region).to_sky(self.image.wcs)
-        #self.image_preparer.saturation_region_sky = saturation_region.to_sky(
-        #    self.image.wcs) if saturation_region is not None else None
-
-        self.principal_ellipses_sky = dict()
-        self.saturation_regions_sky = dict()
+        #self.image_preparer.saturation_region_sky = saturation_region.to_sky(self.image.wcs) if saturation_region is not None else None
+        self.principal_sky_regions = dict()
+        self.saturation_sky_regions = dict()
 
         # The output dataset
         self.dataset = DataSet()
@@ -456,21 +457,35 @@ class BatchImagePreparer(Configurable):
             # Execute
             #result = self.pool.apply_async(_extract_sources, args=(,))  # All simple types (strings) ?
 
+            # Get the image
             image = self.frames[label]
 
+            # Check if sources directory exists
+            sources_path = fs.join(self.output_paths[label], "sources")
+            if not fs.is_directory(sources_path): raise IOError("Sources directory not present for '" + label + "' image")
+
             # Extract the sources
-            _extract_sources(image, visualisation_path=self.config.visualisation_path)
+            principal_sky_region, saturation_sky_region = _extract_sources(image, sources_path, visualisation_path=self.config.visualisation_path)
+
+            # Add to dict
+            self.principal_sky_regions[label] = principal_sky_region
+            self.saturation_sky_regions[label] = saturation_sky_region
+
+            # Save intermediate result if requested
+            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "extracted.fits"))
+
+    # -----------------------------------------------------------------
+
+        # Multiprocessing:
 
             # Add the result
-            #results.append(result)
-
-            #
+            # results.append(result)
 
         #self.dust_masses = [result.get() for result in results]
 
         # Close and join the process pool
-        self.pool.close()
-        self.pool.join()
+        #self.pool.close()
+        #self.pool.join()
 
     # -----------------------------------------------------------------
 
@@ -502,9 +517,18 @@ class BatchImagePreparer(Configurable):
             # Check whether extinction correction is required
             if not self._needs_extinction_correction(label): continue
 
-            # Do the correction
+            # The image ...
+            image = None
 
-            corrected_path = fs.join(output_path, "corrected_for_extinction.fits")
+            # Do the correction
+            # Correct all data frames for galactic extinction (primary, poisson error frame, ...)
+            image *= 10 ** (0.4 * self.attenuations[label])
+
+            # IMPORTANT: SET FLAG
+            image.corrected_for_extinction = True
+
+            # Save intermediate result if requested
+            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "corrected_for_extinction.fits"))
 
     # -----------------------------------------------------------------
 
@@ -556,8 +580,8 @@ class BatchImagePreparer(Configurable):
             # Set the new unit
             self.image.unit = self.config.unit_conversion.to_unit
 
-            # Write intermediate result
-            #if self.config.write_steps: self.write_intermediate_result("converted_unit.fits")
+            # Save intermediate result if requested
+            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "converted_unit.fits"))
 
             # Inform the user
             #log.success("Units converted")
@@ -589,8 +613,6 @@ class BatchImagePreparer(Configurable):
         # Loop over the frames
         for label in self.frames:
 
-            #convolved_path = fs.join(output_path, "convolved.fits")
-
             # Check if convolution is necessary
             if not self._needs_convolution(label): continue
 
@@ -611,6 +633,9 @@ class BatchImagePreparer(Configurable):
 
             # Do convolution
             _convolve(image, kernel_file_path, self.convolution_fwhm, visualisation_path=self.config.visualisation_path)
+
+            # Save intermediate result if requested
+            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "convolved.fits"))
 
     # -----------------------------------------------------------------
 
@@ -643,9 +668,7 @@ class BatchImagePreparer(Configurable):
         # Inform the user
         log.info("Rebinning to a common pixel grid ...")
 
-        # 5. If requested, rebin
-        # rebin
-
+        # Loop over the frames
         for label in self.frames:
 
             #rebinned_path = fs.join(output_path, "rebinned.fits")
@@ -659,6 +682,9 @@ class BatchImagePreparer(Configurable):
             _rebin(image, reference_wcs=self.rebinning_wcs)
 
             #if fs.is_file(rebinned_path): continue
+
+            # Save intermediate result if requested
+            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "rebinned.fits"))
 
     # -----------------------------------------------------------------
 
@@ -688,8 +714,8 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
-        # 6. If requested, subtract the sky
-        # subtract_sky
+        # Inform the user
+        log.info("Performing the sky subtraction ...")
 
         # Loop over the frames
         for label in self.frames:
@@ -697,10 +723,15 @@ class BatchImagePreparer(Configurable):
             # Check whether the image has to be sky subtracted
             if not self._needs_sky_subtraction(label): continue
 
-            # Do the sky subtraction
-            _subtract_sky(image, visualisation_path=self.config.visualisation_path)
+            # Get regions
+            principal_sky_region = self.principal_sky_regions[label]
+            saturation_sky_region = self.saturation_sky_regions[label]
 
-            #subtracted_path = fs.join(output_path, "sky_subtracted.fits")
+            # Do the sky subtraction
+            _subtract_sky(image, principal_sky_region, saturation_sky_region, visualisation_path=self.config.visualisation_path)
+
+            # Save intermediate result if requested
+            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "sky_subtracted.fits"))
 
     # -----------------------------------------------------------------
 
@@ -728,13 +759,98 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Calculating calibration uncertainty maps ...")
+
         # Loop over the frames
         for label in self.frames:
 
+            # Get the calibration error
             calibration_error = CalibrationError.from_filter(self.frames[label].filter)
 
-        # 7. Calculate the calibration uncertainties
-        # calculate_calibration_uncertainties
+            # the image ...
+            image = None
+
+            # Add the calibration uncertainty defined in (AB) magnitude
+            if calibration_error.magnitude:
+
+                # -----------------------------------------------------------------
+
+                # Convert the frame into AB magnitudes
+                invalid = Mask.is_zero_or_less(image.frames.primary)
+                ab_frame = unitconversion.jansky_to_ab(image.frames.primary)
+                # Set infinites to zero
+                ab_frame[invalid] = 0.0
+
+                # -----------------------------------------------------------------
+
+                # The calibration uncertainty in AB magnitude
+                mag_error = calibration_error.value
+
+                # a = image[mag] - mag_error
+                a = ab_frame - mag_error
+
+                # b = image[mag] + mag_error
+                b = ab_frame + mag_error
+
+                # Convert a and b to Jy
+                a = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * a)
+                b = unitconversion.ab_mag_zero_point.to("Jy").value * np.power(10.0, -2. / 5. * b)
+
+                # c = a[Jy] - image[Jy]
+                # c = a - jansky_frame
+                c = a - image.frames.primary
+
+                # d = image[Jy] - b[Jy]
+                # d = jansky_frame - b
+                d = image.frames.primary - b
+
+                # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
+
+                # Calibration errors = max(c, d)
+                # calibration_errors = np.maximum(c, d)  # element-wise maxima
+                # calibration_errors[invalid] = 0.0 # set zero where AB magnitude could not be calculated
+
+                # relative_calibration_errors = calibration_errors / jansky_frame
+                # relative_calibration_errors[invalid] = 0.0
+
+                # Check that there are no infinities or nans in the result
+                # assert not np.any(np.isinf(relative_calibration_errors)) and not np.any(np.isnan(relative_calibration_errors))
+
+                # The actual calibration errors in the same unit as the data
+                # calibration_frame = self.image.frames.primary * relative_calibration_errors
+
+                # -----------------------------------------------------------------
+
+                calibration_frame = np.maximum(c, d)  # element-wise maxima
+                calibration_frame[invalid] = 0.0  # set zero where AB magnitude could not be calculated
+
+                new_invalid = Mask.is_nan(calibration_frame) + Mask.is_inf(calibration_frame)
+                calibration_frame[new_invalid] = 0.0
+
+                # Check that there are no infinities or nans in the result
+                assert not np.any(np.isinf(calibration_frame)) and not np.any(np.isnan(calibration_frame))
+
+                # Make frame from numpy array
+                calibration_frame = Frame(calibration_frame)
+
+                # -----------------------------------------------------------------
+
+            # The calibration uncertainty is expressed in a percentage (from the flux values)
+            elif calibration_error.percentage:
+
+                # Calculate calibration errors with percentage
+                fraction = calibration_error.value * 0.01
+                calibration_frame = image.frames.primary * fraction
+
+            # Unrecognized calibration error (not a magnitude, not a percentage)
+            else: raise ValueError("Unrecognized calibration error")
+
+            # Add the calibration frame
+            image.add_frame(calibration_frame, "calibration_errors")
+
+            # Inform the user
+            #log.success("Calibration uncertainties calculated")
 
     # -----------------------------------------------------------------
 
@@ -745,8 +861,40 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
-        # 8. If requested, set the uncertainties
-        # set_uncertainties
+        # Inform the user
+        log.info("Creating the error maps ...")
+
+        # Loop over the frames
+        for label in self.frames:
+
+            # Inform the user
+            log.info("Calculating the uncertainties ...")
+
+            # Create a list to contain (the squares of) all the individual error contributions so that we can sum these arrays element-wise later
+            error_maps = []
+
+            # Add the Poisson errors
+            if "poisson_errors" in image.frames: error_maps.append(image.frames.poisson_errors)
+
+            # Add the sky errors
+            error_maps.append(self.sky_subtractor.noise_frame)
+
+            # Add the calibration errors
+            error_maps.append(image.frames.calibration_errors)
+
+            # Add additional error frames indicated by the user
+            if self.config.error_frame_names is not None:
+                for error_frame_name in self.config.error_frame_names: error_maps.append(
+                    self.image.frames[error_frame_name])
+
+            # Calculate the final error map
+            errors = sum_frames_quadratically(*error_maps)
+
+            # Add the combined errors frame
+            image.add_frame(errors, "errors")
+
+            # Inform the user
+            log.success("Uncertainties calculated")
 
     # -----------------------------------------------------------------
 
@@ -810,7 +958,7 @@ class BatchImagePreparer(Configurable):
 
 # -----------------------------------------------------------------
 
-def _extract_sources(image, visualisation_path=None):
+def _extract_sources(image, sources_path, visualisation_path=None):
 
     """
     This function ...
@@ -838,10 +986,17 @@ def _extract_sources(image, visualisation_path=None):
     # Create a source extractor
     extractor = SourceExtractor()
 
-    # Run the extractor
+    # Run the extractor OLD WAY
     #extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
     #               self.other_region, self.galaxy_segments, self.star_segments, self.other_segments,
     #               source_extractor_animation)
+
+    # Set configuration settings
+    extractor.config.input = sources_path
+
+    # Run the extraction
+    special_region = None
+    extractor.run(frame=self.image.frames.primary, animation=source_extractor_animation, special_region=special_region)
 
     # Write the animation
     if visualisation_path is not None:
@@ -865,16 +1020,22 @@ def _extract_sources(image, visualisation_path=None):
     image.add_mask(extractor.mask, "sources")
 
     # Get the principal shape in sky coordinates
-    self.principal_shape_sky = extractor.principal_shape.to_sky(image.wcs)
+    principal_shape_sky = extractor.principal_shape.to_sky(image.wcs)
 
     # Get the saturation region in sky coordinates
-    self.saturation_region_sky = self.saturation_region.to_sky(image.wcs) if self.saturation_region is not None else None
+    saturation_region_sky = self.saturation_region.to_sky(image.wcs) if self.saturation_region is not None else None
 
     # Write intermediate result
-    if self.config.write_steps: self.write_intermediate_result("extracted.fits")
+    #if self.config.write_steps: self.write_intermediate_result("extracted.fits")
 
     # Inform the user
-    log.success("Sources extracted")
+    #log.success("Sources extracted")
+
+    # IMPORTANT: SET FLAG
+    image.source_extracted = True
+
+    # Return
+    return principal_shape_sky, saturation_region_sky
 
 # -----------------------------------------------------------------
 
@@ -979,10 +1140,13 @@ def _rebin(image, reference_wcs):
 
 # -----------------------------------------------------------------
 
-def _subtract_sky(image, visualisation_path=None):
+def _subtract_sky(image, principal_sky_region, saturation_sky_region=None, visualisation_path=None, sky_apertures_path=None):
 
     """
     This function ...
+    :param image:
+    :param principal_sky_region:
+    :param saturation_sky_region:
     :return:
     """
 
@@ -1005,11 +1169,11 @@ def _subtract_sky(image, visualisation_path=None):
         skysubtractor_animation = None
 
     # Convert the principal ellipse in sky coordinates into pixel coordinates
-    principal_shape = self.principal_shape_sky.to_pixel(image.wcs)
+    principal_shape = principal_sky_region.to_pixel(image.wcs)
 
     # Convert the saturation region in sky coordinates into pixel coordinates
-    if self.saturation_region_sky is not None:
-        saturation_region = self.saturation_region_sky.to_pixel(image.wcs)
+    if saturation_sky_region is not None:
+        saturation_region = saturation_sky_region.to_pixel(image.wcs)
     else: saturation_region = None
 
     # Create the 'extra' mask (bad and padded pixels)
@@ -1018,8 +1182,7 @@ def _subtract_sky(image, visualisation_path=None):
         # Combine with padded mask or just use bad mask
         if "padded" in image.masks:
             extra_mask = image.masks.bad + image.masks.padded
-        else:
-            extra_mask = image.masks.bad
+        else: extra_mask = image.masks.bad
     elif "padded" in image.masks: extra_mask = image.masks.padded  # just use padded mask
 
     # Create the sky subtractor
@@ -1029,34 +1192,34 @@ def _subtract_sky(image, visualisation_path=None):
     sky_subtractor.run(image.frames.primary, principal_shape, image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
 
     # Add the sky frame to the image
-    image.add_frame(self.sky_subtractor.sky_frame, "sky")
+    image.add_frame(sky_subtractor.sky_frame, "sky")
 
     # Add the mask that is used for the sky estimation
-    image.add_mask(self.sky_subtractor.mask, "sky")
+    image.add_mask(sky_subtractor.mask, "sky")
 
     # Add the sky noise frame
-    image.add_frame(self.sky_subtractor.noise_frame, "sky_errors")
+    image.add_frame(sky_subtractor.noise_frame, "sky_errors")
 
     # Write intermediate result if requested
-    if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
+    #if self.config.write_steps: self.write_intermediate_result("sky_subtracted.fits")
 
     # Write sky annuli maps if requested
-    if self.config.write_sky_apertures:
+    if sky_apertures_path is not None:
 
         # Write the sky region
-        region_path = fs.join(self.config.sky_apertures_path, "annulus.reg")
+        region_path = fs.join(sky_apertures_path, "annulus.reg")
         sky_subtractor.region.save(region_path)
 
         # Write the apertures frame
-        apertures_frame_path = fs.join(self.config.sky_apertures_path, "apertures.fits")
+        apertures_frame_path = fs.join(sky_apertures_path, "apertures.fits")
         sky_subtractor.apertures_frame.save(apertures_frame_path)
 
         # Write the apertures mean frame
-        apertures_mean_path = fs.join(self.config.sky_apertures_path, "apertures_mean.fits")
+        apertures_mean_path = fs.join(sky_apertures_path, "apertures_mean.fits")
         sky_subtractor.apertures_mean_frame.save(apertures_mean_path)
 
         # Write the apertures noise frame
-        apertures_noise_path = fs.join(self.config.sky_apertures_path, "apertures_noise.fits")
+        apertures_noise_path = fs.join(sky_apertures_path, "apertures_noise.fits")
         sky_subtractor.apertures_noise_frame.save(apertures_noise_path)
 
     # Write the animation
@@ -1076,8 +1239,5 @@ def _subtract_sky(image, visualisation_path=None):
 
         # Save the animation
         animation.save(path)
-
-    # Inform the user
-    log.success("Sky subtracted")
 
 # -----------------------------------------------------------------

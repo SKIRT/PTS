@@ -36,6 +36,7 @@ from ..region.ellipse import PixelEllipseRegion
 from ..basics.mask import Mask
 from ...core.tools.logging import log
 from ..region import tools as regions
+from ..basics.coordinate import PixelCoordinate
 
 # -----------------------------------------------------------------
 
@@ -60,7 +61,7 @@ def find_contours(data, segments, sigma_level):
     for properties in properties_list:
 
         # Obtain the position, orientation and extent
-        position = Position(properties.xcentroid.value, properties.ycentroid.value)
+        position = PixelCoordinate(properties.xcentroid.value, properties.ycentroid.value)
         a = properties.semimajor_axis_sigma.value * sigma_level
         b = properties.semiminor_axis_sigma.value * sigma_level
         angle = properties.orientation.value # in radians
@@ -100,7 +101,7 @@ def find_contour(box, mask, sigma_level):
     properties = props[0]
 
     # Obtain the position, orientation and extent
-    position = Position(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
+    position = PixelCoordinate(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
     a = properties.semimajor_axis_sigma.value * sigma_level
     b = properties.semiminor_axis_sigma.value * sigma_level
     angle = properties.orientation.value # in radians

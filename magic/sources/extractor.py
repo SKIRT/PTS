@@ -148,8 +148,10 @@ class SourceExtractor(Configurable):
         #self.star_segments = kwargs.pop("star_segments")
         #self.other_segments = kwargs.pop("other_segments")
 
+        # Load the region lists
         self.load_regions()
 
+        # Load the segmentation maps
         self.load_segments()
 
         # Initialize the mask

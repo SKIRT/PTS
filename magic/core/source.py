@@ -30,13 +30,13 @@ from astropy.convolution import convolve, convolve_fft
 from .image import Image
 from .frame import Frame
 from .box import Box
-from ..basics.vector import Position, Extent
 from ..basics.mask import Mask
 from ..region.ellipse import PixelEllipseRegion
 from ..region.rectangle import PixelRectangleRegion
 from ..region.circle import PixelCircleRegion
 from ..tools import plotting, statistics
 from ..basics.stretch import PixelStretch
+from ..basics.coordinate import PixelCoordinate
 
 # -----------------------------------------------------------------
 
@@ -221,13 +221,13 @@ class Source(object):
         x_max = int(image.metadata["x_max"])
         y_min = int(image.metadata["y_min"])
         y_max = int(image.metadata["y_max"])
-        center = Position(float(image.metadata["center_x"]), float(image.metadata["center_y"]))
+        center = PixelCoordinate(float(image.metadata["center_x"]), float(image.metadata["center_y"]))
         if "radius" in image.metadata: radius = float(image.metadata["radius"])
-        elif "radius_x" in image.metadata: radius = Extent(float(image.metadata["radius_x"]), float(image.metadata["radius_y"]))
+        elif "radius_x" in image.metadata: radius = PixelStretch(float(image.metadata["radius_x"]), float(image.metadata["radius_y"]))
         else: RuntimeError("Radius information is missing in metadata")
         angle = Angle(float(image.metadata["angle"]), u.Unit("deg"))
         factor = float(image.metadata["factor"])
-        if "peak_x" in image.metadata: peak = Position(float(image.metadata["peak_x"]), float(image.metadata["peak_y"]))
+        if "peak_x" in image.metadata: peak = PixelCoordinate(float(image.metadata["peak_x"]), float(image.metadata["peak_y"]))
         else: peak = None
 
         # Get the cutout and mask
@@ -585,7 +585,7 @@ class Source(object):
             y = y_rel + self.cutout.y_min
 
             # Check whether the peak position falls in the box and then add it to the list
-            peak_position = Position(x, y)
+            peak_position = PixelCoordinate(x, y)
             if self.cutout.contains(peak_position):
                 # Add the coordinates to the positions list
                 positions.append(peak_position)

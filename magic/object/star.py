@@ -399,7 +399,8 @@ class Star(SkyObject):
         if self.has_track_record: self.track_record.set_stage("saturation")
 
         # Look for a center segment corresponding to a 'saturation' source
-        ellipse = PixelEllipseRegion(self.pixel_position(frame.wcs), radius, Angle(0.0, "deg"))
+        radius_ellipse = PixelStretch(radius, radius)
+        ellipse = PixelEllipseRegion(self.pixel_position(frame.wcs), radius_ellipse)
 
         #frame_star_erased = frame.copy()
         #frame_star_erased[self.source.y_slice, self.source.x_slice][self.source.mask] = 0.0

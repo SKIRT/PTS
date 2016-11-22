@@ -23,6 +23,7 @@ from ..region.rectangle import PixelRectangleRegion
 from ..tools import cropping, fitting, interpolation, plotting
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
+from ..basics.coordinate import PixelCoordinate
 
 # -----------------------------------------------------------------
 
@@ -286,7 +287,7 @@ class Box(np.ndarray):
         :return:
         """
 
-        return Position(self.x_min, self.y_min)
+        return PixelCoordinate(self.x_min, self.y_min)
 
     # -----------------------------------------------------------------
 
