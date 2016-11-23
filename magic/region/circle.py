@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import math
 
 # Import astronomical modules
-from astropy.units import Quantity
+from astropy.units import Quantity, Unit
 from photutils.geometry import circular_overlap_grid
 
 # Import the relevant PTS classes and modules
@@ -179,6 +179,39 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_sky(cls, region, wcs):
+
+        """
+        This function ...
+        :param region:
+        :param wcs:
+        :return:
+        """
+
+        # Convert the center coordinate
+        center = PixelCoordinate.from_sky(region.center, wcs)
+
+        # Convert the radius
+        radius = (region.radius / wcs.average_pixelscale).to("pix").value
+
+        # Create the pixel circle region
+        return cls(center, radius, meta=region.meta)
+
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        return SkyCircleRegion.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
     def to_mask(self, x_size, y_size):
 
         """
@@ -226,6 +259,39 @@ class SkyCircleRegion(CircleRegion, SkyRegion):
 
         # Call the constructor of the base class
         super(SkyCircleRegion, self).__init__(center, radius, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_pixel(cls, region, wcs):
+
+        """
+        This function ...
+        :param region:
+        :param wcs:
+        :return:
+        """
+
+        # Convert the center coordinate to sky coordinate
+        center = SkyCoordinate.from_pixel(region.center, wcs)
+
+        # Convert the radius
+        radius = region.radius * Unit("pix") * wcs.average_pixelscale
+
+        # Create a new SkyCircleRegion
+        return cls(center, radius, meta=region.meta)
+
+    # -----------------------------------------------------------------
+
+    def to_pixel(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        return PixelCircleRegion.from_sky(self, wcs)
 
 # -----------------------------------------------------------------
 

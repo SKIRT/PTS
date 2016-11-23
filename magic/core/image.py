@@ -101,6 +101,35 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def load_image(self, image, replace=True):
+
+        """
+        This function loads the frames, masks, regions and segmentation maps from another image into this image
+        :param image:
+        :param replace:
+        :return:
+        """
+
+        # Remove the frames, masks, regions and segmentation maps from this image
+        #image.remove_all_frames()
+        #image.remove_all_masks()
+        #image.remove_all_regions()
+        #image.remove_all_segments()
+
+        # Add the frames
+        for label in image.frames: self.add_frame(image.frames[label], label, overwrite=replace)
+
+        # Add the masks
+        for label in image.masks: self.add_mask(image.masks[label], label, overwrite=replace)
+
+        # Add the regions
+        for label in image.regions: self.add_region(image.regions[label], label, overwrite=replace)
+
+        # Add the segmentation maps
+        for label in image.segments: self.add_segments(image.segments[label], label, overwrite=replace)
+
+    # -----------------------------------------------------------------
+
     def copy(self):
 
         """
@@ -406,6 +435,116 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def description(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.description
+
+    # -----------------------------------------------------------------
+
+    @description.setter
+    def description(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.primary.description = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zero_point(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.zero_point
+
+    # -----------------------------------------------------------------
+
+    @property
+    def source_extracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.source_extracted
+
+    # -----------------------------------------------------------------
+
+    @source_extracted.setter
+    def source_extracted(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.primary.source_extracted = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extinction_corrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.extinction_corrected
+
+    # -----------------------------------------------------------------
+
+    @extinction_corrected.setter
+    def extinction_corrected(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.primary.extinction_corrected = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sky_subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.sky_subtracted
+
+    # -----------------------------------------------------------------
+
+    @sky_subtracted.setter
+    def sky_subtracted(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.primary.sky_subtracted = value
+
+    # -----------------------------------------------------------------
+
     def __repr__(self):
 
         """
@@ -507,11 +646,10 @@ class Image(object):
 
                 last_addition = "SegmentationMap"
 
-        if add_regions:
+        #if add_regions:
 
             # http://docs.astropy.org/en/stable/io/fits/
-
-            tbhdu = fits.BinTableHDU.from_columns([fits.Column(name='target', format='20A', array=a1), fits.Column(name='V_mag', format='E', array=a2)])
+            #tbhdu = fits.BinTableHDU.from_columns([fits.Column(name='target', format='20A', array=a1), fits.Column(name='V_mag', format='E', array=a2)])
 
         # Add the meta information to the header
         if add_metadata:

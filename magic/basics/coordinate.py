@@ -60,6 +60,22 @@ class PixelCoordinate(Position, Coordinate):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_sky(cls, coordinate, wcs, mode='wcs'):
+
+        """
+        This function ...
+        :param coordinate:
+        :param wcs:
+        :param mode:
+        :return:
+        """
+
+        x, y = super(SkyCoordinate, coordinate).to_pixel(wcs, origin=0, mode=mode)
+        return cls(float(x), float(y), meta=coordinate.meta)
+
+    # -----------------------------------------------------------------
+
     @property
     def axis1(self):
 
@@ -89,6 +105,7 @@ class PixelCoordinate(Position, Coordinate):
         """
         This function ...
         :param wcs:
+        :param mode:
         :return:
         """
 
@@ -160,8 +177,8 @@ class SkyCoordinate(SkyCoord, Coordinate):
         :return:
         """
 
-        x, y = super(SkyCoordinate, self).to_pixel(wcs, origin=0, mode=mode)
-        return PixelCoordinate(float(x), float(y), meta=self.meta)
+        # Make pixel coordinate
+        return PixelCoordinate.from_sky(self, wcs, mode)
 
     # -----------------------------------------------------------------
 

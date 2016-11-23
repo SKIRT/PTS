@@ -603,7 +603,7 @@ class StarFinder(Configurable):
             center = star.contour.center
             semimajor = star.contour.semimajor
             semiminor = star.contour.semiminor
-            angle = star.contour.angle.degree
+            angle = star.contour.angle
 
             radius = PixelStretch(semimajor, semiminor)
 

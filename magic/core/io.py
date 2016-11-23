@@ -205,6 +205,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     # Check whether the image is sky-subtracted
     sky_subtracted = headers.is_sky_subtracted(original_header)
 
+    # Check whether the image is source-extracted
+    source_extracted = headers.is_source_extracted(original_header)
+
+    # Check whether the image is extinction-corrected
+    extinction_corrected = headers.is_extinction_corrected(original_header)
+
     # Check whether multiple planes are present in the FITS image
     nframes = headers.get_number_of_frames(original_header)
     if nframes > 1:
@@ -219,7 +225,14 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
             name, description, plane_type = headers.get_frame_name_and_description(original_header, i, always_call_first_primary)
 
             # The sky-subtracted flag should only be set for the primary frame
-            subtracted = sky_subtracted if i == 0 else False
+            if i == 0:
+
+                subtracted = sky_subtracted
+                extracted = source_extracted
+                corrected = extinction_corrected
+
+            # Not a primary frame
+            else: subtracted = extracted = corrected = False
 
             # Add this frame to the frames dictionary
             if plane_type == "frame":
@@ -233,6 +246,8 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                               zero_point=zero_point,
                               filter=fltr,
                               sky_subtracted=subtracted,
+                              source_extracted=extracted,
+                              extinction_corrected=corrected,
                               fwhm=fwhm,
                               pixelscale=pixelscale)
                 frames[name] = frame
@@ -277,7 +292,10 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                           zero_point=zero_point,
                           filter=fltr,
                           sky_subtracted=sky_subtracted,
+                          source_extracted=source_extracted,
+                          extinction_corrected=extinction_corrected,
                           fwhm=fwhm)
+
             # Add the primary image frame
             frames[name] = frame
 

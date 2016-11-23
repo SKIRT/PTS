@@ -1,4 +1,5 @@
 # Command | Configuration | Class | Configuration method | Description
+model | -- | modeler.GalaxyModeler | interactive | Perform radiative transfer modeling for a certain galaxy
 setup | -- | setup.SetupTool | interactive | Setup a modeling directory for a certain galaxy
 fetch_properties | fetch | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
 fetch_seds | fetch_seds | data.seds.SEDFetcher | interactive | Fetch the galaxy SEDs

@@ -8,7 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.magic.config.extract import definition as extraction_definition
-#from pts.magic.config.subtract_sky import definition as subtraction_definition
+from pts.magic.config.subtract_sky import definition as subtraction_definition
 
 # -----------------------------------------------------------------
 
@@ -70,10 +70,12 @@ definition.sections["convolution"].add_optional("remote", "string", "remote host
 definition.add_flag("rebin", "rebin")
 definition.add_section("rebinning", "rebinning")
 definition.sections["rebinning"].add_optional("reference_path", "file_path", "reference FITS path")
+definition.sections["rebinning"].add_flag("exact", "exact rebinning method", True)
 
 # Sky subtraction
 definition.add_flag("subtract_sky", "subtract sky")
-definition.add_section("sky_subtraction", "sky subtraction")
+#definition.add_section("sky_subtraction", "sky subtraction")
+definition.import_section("sky_subtraction", "sky subtraction options", subtraction_definition)
 
 # Error maps
 definition.add_flag("create_errormaps", "create error maps")
