@@ -31,12 +31,11 @@ from photutils import source_properties, properties_table
 # Import the relevant PTS classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks
 from ..core.source import Source
-from ..basics.vector import Position, Extent
 from ..region.ellipse import PixelEllipseRegion
-from ..basics.mask import Mask
 from ...core.tools.logging import log
 from ..region import tools as regions
 from ..basics.coordinate import PixelCoordinate
+from ..basics.stretch import PixelStretch
 
 # -----------------------------------------------------------------
 
@@ -67,7 +66,7 @@ def find_contours(data, segments, sigma_level):
         angle = properties.orientation.value # in radians
         angle = Angle(angle, u.rad)
 
-        radius = Extent(a, b)
+        radius = PixelStretch(a, b)
 
         meta = {"text": str(properties.label)}
 
@@ -107,7 +106,7 @@ def find_contour(box, mask, sigma_level):
     angle = properties.orientation.value # in radians
     angle = Angle(angle, u.rad)
 
-    radius = Extent(a, b)
+    radius = PixelStretch(a, b)
 
     # Create and return the elliptical contour
     return PixelEllipseRegion(position, radius, angle)

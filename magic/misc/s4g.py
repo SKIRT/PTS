@@ -101,6 +101,21 @@ class S4G(Configurable):
         # 2. Get galaxy properties
         self.get_properties()
 
+        # Tracing spiral density waves in M81: (Kendall et. al, 2008)
+        # - Sersic bulge:
+        #    n = 2.62
+        #    Re = 46.2 arcsec
+        #    b/a = 0.71
+        #    PA = −31.9°
+        # - Exponential disk:
+        #    Rs = 155.4 arcsec
+        #    b/a = 0.52
+        #    PA = −28.3°
+
+        # self.get_p4()  # currently (writing on the 31th of march 2016) there is a problem with the effective radius values
+
+        # (at least for M81) on Vizier as well as in the PDF version of table 7 (S4G models homepage).
+
         # 3. Parse the S4G table 8 to get the decomposition parameters
         self.get_parameters_from_table()
 

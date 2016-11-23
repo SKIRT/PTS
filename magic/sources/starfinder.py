@@ -37,6 +37,7 @@ from ...core.tools.logging import log
 from ..tools import plotting
 from .list import StarList
 from ...core.basics.map import Map
+from ..basics.stretch import PixelStretch
 
 # -----------------------------------------------------------------
 
@@ -604,7 +605,7 @@ class StarFinder(Configurable):
             semiminor = star.contour.semiminor
             angle = star.contour.angle.degree
 
-            radius = Extent(semimajor, semiminor)
+            radius = PixelStretch(semimajor, semiminor)
 
             # Create meta information
             meta = {"color": "white", "text": text}
