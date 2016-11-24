@@ -70,7 +70,7 @@ if stage=="simulate":
     tasks = 2
     cpuspertask = 8
     cpuspernode = 16
-    memorypernode = 120
+    memorypernode = 30  # set to 120 for simulations with IFU
 else:
     tasks = 1
     cpuspertask = 1
@@ -102,6 +102,9 @@ jobscript.write("#SBATCH --hint=memory_bound\n")
 jobscript.write("#SBATCH --mem_bind=local\n")
 jobscript.write("echo Job started\n")
 if mode=="loop":
+    if numjobs>1:
+        jobscript.write("echo sleep $SLURM_ARRAY_TASK_ID\n")  # spread out start times for job array members
+        jobscript.write("sleep $SLURM_ARRAY_TASK_ID\n")  # spread out start times for job array members
     jobscript.write("python -u -m pts.do eagle/perform {} loop {}*3600\n".format(stage, wallhours-2))
 if mode=="force":
     jobscript.write("python -u -m pts.do eagle/perform {} force {}\n".format(stage, runidspec))

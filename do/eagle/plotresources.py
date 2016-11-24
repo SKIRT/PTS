@@ -72,7 +72,8 @@ for index in range(size):
         if " Finished simulation " in line:
             segments = line.split()
             processes = float(segments[segments.index("processes")-1])
-            walltime = float(segments[segments.index("s")-1])
+            timeindex = segments.index("s") if "s" in segments else segments.index("s.")
+            walltime = float(segments[timeindex-1])
             time[index] = processes * walltime
         if " Available memory: " in line:
             segments = line.split()

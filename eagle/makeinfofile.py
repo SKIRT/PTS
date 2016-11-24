@@ -159,9 +159,10 @@ def makeinfofile(skirtrun):
 
         # for the Herschel filters used in determining dust temperature, calculate the "limited" flux and magnitude
         # (i.e. ignoring pixels with a flux under a specific limit, and still excluding the carbon line emission peaks)
-        for filterspec,fwhm,fluxlimit in zip(h_filterspecs, h_beam_fwhms, h_flux_limits):
-            fluxdensity = limitedfluxdensity(simulation, name, wavelengths, cmask, _filters[filterspec], fwhm, fluxlimit)
-            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "limited")
+        if (simulation.nsimpleinstruments() + simulation.nfullinstruments()) > 0:
+            for filterspec,fwhm,fluxlimit in zip(h_filterspecs, h_beam_fwhms, h_flux_limits):
+                fluxdensity = limitedfluxdensity(simulation, name, wavelengths, cmask, _filters[filterspec], fwhm, fluxlimit)
+                addfluxinfo(info, simulation, name, filterspec, fluxdensity, "limited")
 
         # calculate the H-alpha flux density
         fluxdensities = simulation.fluxdensities(name, unit='W/m2/micron')
