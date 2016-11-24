@@ -67,7 +67,7 @@ if mode == "force":
 # set some parameters according to requested stage
 wallhours = 72
 if stage=="simulate":
-    tasks = 8
+    tasks = 2
     cpuspertask = 8
     cpuspernode = 16
     memorypernode = 120

@@ -139,7 +139,7 @@ class Database:
     def __init__(self, filepath=None):
         if filepath==None:
             filepath = os.path.join(config.database_path, "SKIRT-runs.db")
-        self._con = sqlite3.connect(filepath)
+        self._con = sqlite3.connect(filepath, timeout=60)
         self._con.row_factory = sqlite3.Row
         self._con.text_factory = sqlite3.OptimizedUnicode
 
