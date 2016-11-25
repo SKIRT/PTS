@@ -216,6 +216,7 @@ class Database:
         else:
             print rows[0].keys()
             for row in rows: print row
+            print "{} records were shown".format(len(rows))
 
     # -------- updating --------
 

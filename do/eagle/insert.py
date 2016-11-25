@@ -39,8 +39,8 @@ eaglesim = sys.argv[2]
 snaptag = int(sys.argv[3])
 minstarmass = float(sys.argv[4])
 skitemplate = sys.argv[5]
-numpp = float(sys.argv[6]) if len(sys.argv) > 6 else 5e5
-deltamax = float(sys.argv[7]) if len(sys.argv) > 7 else 3e-6
+numpp = float(sys.argv[6]) if len(sys.argv) > 6 else 3e4
+deltamax = float(sys.argv[7]) if len(sys.argv) > 7 else 10e-6
 
 # get a list of the requested galaxies from the public EAGLE database
 print "Querying public EAGLE database..."

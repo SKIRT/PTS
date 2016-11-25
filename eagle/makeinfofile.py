@@ -32,6 +32,7 @@ _filterspecs = ( \
                 "MCPS.U","MCPS.B","MCPS.V","MCPS.I",
                 "SDSS.u","SDSS.g","SDSS.r","SDSS.i","SDSS.z",
                 "UKIDSS.Z","UKIDSS.Y","UKIDSS.J","UKIDSS.H","UKIDSS.K",
+                "Johnson.U","Johnson.B","Johnson.V","Johnson.R","Johnson.I","Johnson.J","Johnson.M",
                 "2MASS.J", "2MASS.H", "2MASS.K",
                 "IRAS.12","IRAS.25","IRAS.60","IRAS.100",
                 "IRAC.I1","IRAC.I2","IRAC.I3","IRAC.I4",
