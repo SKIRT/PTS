@@ -58,7 +58,7 @@ configuration = {
         # Lowres simulations
         'RefL0100N1504':    "/cosma5/data/Eagle/ScienceRuns/Planck1/L0100N1504/PE/REFERENCE/data/",
         'RefL0050N0752':    "/cosma5/data/Eagle/ScienceRuns/Planck1/L0050N0752/PE/REFERENCE/data",
-        'AGNdT9L0050N0752': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0050N0752/PE/AGNdT9/data",
+        'AGNdT9L0050N0752': "/cosma5/data/Eagle/ScienceRuns/Planck1/L0050N0752/PE/S15_AGNdT9/data",
         'RefL0025N0376':    "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0376/PE/REFERENCE/data",
         # Hires simulations:
         'RefL0025N0752':    "/cosma5/data/Eagle/ScienceRuns/Planck1/L0025N0752/PE/REFERENCE/data",
