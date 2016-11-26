@@ -38,37 +38,37 @@ from .skirtrun import runids_in_range
 # The callback function is passed a single argument containing the SKIRT-run database record
 # to be handled. This record offers dictionary-style access to the database fields.
 #
-def loop(callback, stage, runtime):
+def loop(callback, stage, runtime, chunksize=1):
     # loop until runtime has been surpassed
     starttime = time.time()
     while (time.time()-starttime)<runtime:
-        # get a record to be processed; return if none are available
+        # get a chunk of records to be processed; return if none are available
         db = Database()
         with FileLock(os.path.join(config.database_path, "database_lock_file.txt"), timeout=500, delay=5):
             with db.transaction():
-                records = db.select("stage = ? and status='scheduled'", (stage,))
-                if len(records) < 1: return
-                record = records[0]
-                runid = record["runid"]
-                db.updatestatus((runid,), 'running')
+                allrecords = db.select("stage = ? and status='scheduled'", (stage,))
+                if len(allrecords) < 1: return
+                chunkrecords = allrecords[:chunksize]
+                db.updatestatus(chunkrecords, 'running')
         db.close()
 
         try:
             # invoke the callback function
-            log.info("Processing {} for SKIRT-run {}...".format(stage, runid))
-            callback(record)
+            for record in chunkrecords:
+                log.info("Processing {} for SKIRT-run {}...".format(stage, record['runid']))
+                callback(record)
 
-            # set the runstatus of the database record to 'succeeded'
+            # set the runstatus of the database records to 'succeeded'
             db = Database()
             with db.transaction():
-                db.updatestatus((runid,), 'succeeded')
+                db.updatestatus(chunkrecords, 'succeeded')
             db.close()
 
         except:
-            # set the runstatus of the database record to 'failed'
+            # set the runstatus of the database records to 'failed'
             db = Database()
             with db.transaction():
-                db.updatestatus((runid,), 'failed')
+                db.updatestatus(chunkrecords, 'failed')
             db.close()
             raise
 

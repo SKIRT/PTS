@@ -59,10 +59,13 @@ from pts.eagle import performer
 # Get appropriate callback for given stage
 if stage == "extract":
     from pts.eagle.extractor import extract as callback
+    chunksize = 20
 if stage == "simulate":
     from pts.eagle.simulator import simulate as callback
+    chunksize = 1
 if stage == "observe":
     from pts.eagle.observer import observe as callback
+    chunksize = 20
 if stage == "store":
     log.error("Sorry - the store stage is not yet implemented")
     exit()
@@ -70,7 +73,7 @@ if stage == "store":
 # Perform according to requested mode
 log.info("Performing {} in {} mode ...".format(stage, mode))
 if mode == "loop":
-    performer.loop(callback, stage, float(eval(argum)))
+    performer.loop(callback, stage, float(eval(argum)), chunksize)
 if mode == "force":
     performer.force(callback, stage, argum)
 log.info("Finished performing.")
