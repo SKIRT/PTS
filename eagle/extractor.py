@@ -81,8 +81,8 @@ def extract(record):
     copy = record["copy"] * hubbleparam
     copz = record["copz"] * hubbleparam
 
-    # specify 1 Mpc^3 physical volume about galaxy centre
-    delta = 0.5 * hubbleparam * expansionfactor
+    # specify (2*250kpc)^3 physical volume about galaxy centre
+    delta = 0.25 * hubbleparam / expansionfactor
     snapshot.select_region(copx-delta, copx+delta, copy-delta, copy+delta, copz-delta, copz+delta)
 
     # read star particle informaton
@@ -110,15 +110,15 @@ def extract(record):
     gdat['sfr']      = snapshot.read_dataset(0, "StarFormationRate") [insubhalo]
 
     # convert units
+    sdat['r']        = periodicCorrec(sdat['r'], params["BoxSize"])
     sdat['r']        = toparsec(sdat['r'], hubbleparam, expansionfactor)
-    sdat['r']        = periodicCorrec(sdat['r'], toparsec(params["BoxSize"], hubbleparam, 1))
     sdat['h']        = toparsec(sdat['h'], hubbleparam, expansionfactor)
     sdat['im']       = tosolar(sdat['im'], hubbleparam)
     sdat['m']        = tosolar(sdat['m'], hubbleparam)
     sdat['t']        = age(sdat['born']) - age(expansionfactor)
     sdat['rho_born'] *= 6.7699e-31
+    gdat['r']        = periodicCorrec(gdat['r'], params["BoxSize"])
     gdat['r']        = toparsec(gdat['r'], hubbleparam, expansionfactor)
-    gdat['r']        = periodicCorrec(gdat['r'], toparsec(params["BoxSize"], hubbleparam, 1))
     gdat['h']        = toparsec(gdat['h'], hubbleparam, expansionfactor)
     gdat['m']        = tosolar(gdat['m'], hubbleparam)
     gdat['rho']      = togcm3(gdat['rho'], hubbleparam, expansionfactor)
