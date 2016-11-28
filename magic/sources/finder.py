@@ -70,6 +70,9 @@ class SourceFinder(Configurable):
         self.galactic_catalog = None
         self.stellar_catalog = None
 
+        # Ignore images
+        self.ignore_images = []
+
         # The regions covering areas that should be ignored throughout the entire extraction procedure
         self.special_region = None
         self.ignore_region = None
@@ -200,8 +203,15 @@ class SourceFinder(Configurable):
         # Call the setup function of the base class
         super(SourceFinder, self).setup(**kwargs)
 
-        # Load the frames
-        self.load_frames()
+        # Load the images (from config or input kwargs)
+        if "frames" in kwargs: self.frames = kwargs.pop("frames")
+        elif "dataset" in kwargs:
+            dataset = kwargs.pop("dataset")
+            self.frames = dataset.get_frames()
+        else: self.load_frames()
+
+        # Ignore certain images
+        self.ignore_images = kwargs.pop("ignore_images", [])
 
         # Load special region
         self.special_region = SkyRegionList.from_file(self.config.special_region) if self.config.special_region is not None else None
@@ -340,6 +350,9 @@ class SourceFinder(Configurable):
         # Loop over the images
         for name in self.frames:
 
+            # Ignore if requested
+            if name in self.ignore_images: continue
+
             # Get the frame
             frame = self.frames[name]
 
@@ -411,6 +424,9 @@ class SourceFinder(Configurable):
 
         # Loop over the images
         for name in self.frames:
+
+            # Ignore if requested
+            if name in self.ignore_images: continue
 
             # Get the frame
             frame = self.frames[name]
@@ -510,6 +526,9 @@ class SourceFinder(Configurable):
 
         # Loop over the frames
         for name in self.frames:
+
+            # Ignore if requested
+            if name in self.ignore_images: continue
 
             # Get the frame
             frame = self.frames[name]

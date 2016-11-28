@@ -110,11 +110,14 @@ class PreparationInitializer(PreparationComponent):
         # 2. Get the image paths
         self.get_paths()
 
-        # 3. Process the images (identify sources, create error frames)
-        self.process_images()
+        # 3. Create the initialized images
+        self.initialize_images()
 
         # 4. Create the dataset
         self.create_dataset()
+
+        # Find sources
+        self.find_sources()
 
         # 5. Writing
         self.write()
@@ -173,7 +176,7 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def process_images(self):
+    def initialize_images(self):
 
         """
         This function ...
@@ -197,7 +200,7 @@ class PreparationInitializer(PreparationComponent):
             if fs.is_file(initialized_path): continue
 
             # Debugging
-            log.debug("Processing image '" + image_path + "' ...")
+            log.debug("Initializing image '" + image_path + "' ...")
 
             # Set the path to the region of bad pixels
             bad_region_path = fs.join(self.data_path, "bad", prep_name + ".reg")
@@ -227,31 +230,11 @@ class PreparationInitializer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
-            # Determine the path to the "sources" directory within the output path for this image
-            sources_output_path = fs.join(output_path, "sources")
+            # If a poisson error map was found, add it to the image
+            if prep_name in self.error_paths:
 
-            # If the source finding step has already been performed on this image, don't do it again
-            if fs.is_directory(sources_output_path):
-
-                # Debugging
-                log.debug("Source finder output has been found for this image, skipping source finding step")
-
-                # Set the FWHM of the image from the output of the SourceFinder if it is undefined
-                if image.fwhm is None: self.set_fwhm_from_source_finder(image, sources_output_path)
-
-            # The source finding step has yet to be performed
-            else:
-
-                # Debugging
-                log.debug("Source finder will be run for this image")
-
-                # Create the directory if necessary
-                fs.create_directory(sources_output_path)
-
-                # Find sources for the current image
-                self.find_sources_for_image(image, sources_output_path)
-
-            # -----------------------------------------------------------------
+                error_map = Frame.from_file(self.error_paths[prep_name])
+                image.add_frame(error_map, "errors")
 
             # Save the image
             image.save(initialized_path)
@@ -274,8 +257,63 @@ class PreparationInitializer(PreparationComponent):
             # Add entry to the dataset
             self.set.add_path(prep_name, self.paths[prep_name])
 
-            # Set the path to the poisson error map
-            if prep_name in self.error_paths: self.set.add_error_path(prep_name, self.error_paths[prep_name])
+            # Set the path to the poisson error map (included in the image now!)
+            #if prep_name in self.error_paths: self.set.add_error_path(prep_name, self.error_paths[prep_name])
+
+    # -----------------------------------------------------------------
+
+    def find_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding sources in the images ...")
+
+        # Don't look for stars in the Halpha image
+        #if "Halpha" in image.name: self.finder.config.find_stars = False
+        #else: self.finder.config.find_stars = True  # still up to the SourceFinder to decide whether stars should be found (based on the filter)
+
+        # Fix: don't look for other sources in the IRAC images
+        #if "IRAC" in image.name: self.finder.config.find_other_sources = False
+        #else: self.finder.config.find_other_sources = True
+
+        # Create an animation for the source finder
+        #if self.config.visualise: animation = Animation()
+        #else: animation = None
+
+        ignore_images = []
+
+        # Check for which images the source finding step has already been performed
+        for prep_name in self.paths:
+
+            # Get output path
+            output_path = self.get_prep_path(prep_name)
+
+            # Determine the path to the "sources" directory within the output path for this image
+            sources_output_path = fs.join(output_path, "sources")
+
+            # If the source finding step has already been performed on this image, don't do it again
+            if fs.is_directory(sources_output_path):
+
+                # Debugging
+                log.debug("Source finder output has been found for this image, skipping source finding step")
+
+                # Ignore this image for the source finder
+                ignore_images.append(prep_name)
+
+        # Run the source finder
+        self.finder.run(dataset=self.set, ignore_images=ignore_images)
+
+        # Set the FWHM of the images
+        for name in self.set:
+
+            # Set FWHM and save again
+            image = self.set.get_image(name)
+            image.fwhm = fwhms[name]
+            image.save(self.set.paths[name])
 
     # -----------------------------------------------------------------
 
@@ -335,7 +373,7 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def find_sources_for_image(self, image, sources_output_path):
+    def find_sources_for_image_individually(self, image, sources_output_path):
 
         """
         This function ...
@@ -360,7 +398,9 @@ class PreparationInitializer(PreparationComponent):
         else: animation = None
 
         # Run the source finder on this image
-        self.finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask, animation=animation)
+        #self.finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask, animation=animation)
+
+        self.finder.run()
 
         # Write the animation
         if self.config.visualise:

@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import numpy as np
 from collections import OrderedDict
 
@@ -121,6 +122,17 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def __iter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.paths: yield name
+
+    # -----------------------------------------------------------------
+
     def __len__(self):
 
         """
@@ -129,6 +141,17 @@ class DataSet(object):
         """
 
         return len(self.paths)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
 
     # -----------------------------------------------------------------
 

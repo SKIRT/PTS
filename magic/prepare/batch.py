@@ -267,7 +267,7 @@ class BatchImagePreparer(Configurable):
         # Load the images (from config or input kwargs)
         if "images" in kwargs: self.images = kwargs.pop("images")
         elif "dataset" in kwargs:
-            dataset = kwargs.pop("dataset").get_images()
+            dataset = kwargs.pop("dataset")
             self.images = dataset.get_images()
             self.output_paths = dataset.get_directory_paths()
         else: self.load_images()
