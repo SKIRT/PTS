@@ -11,7 +11,7 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-from . import constants
+#from . import constants
 
 # Import the relevant PTS classes and modules
 from ..core.tools.random import prng
@@ -24,6 +24,8 @@ def GRankSelector(population, **args):
     The Rank Selector - This selector will pick the best individual of
     the population every time.
     """
+
+    from . import constants
 
     count = 0
 
@@ -76,6 +78,8 @@ def GTournamentSelector(population, **args):
       gets the pool size from the population.
    """
 
+   from . import constants
+
    choosen = None
    should_minimize = population.minimax == constants.minimaxType["minimize"]
    minimax_operator = min if should_minimize else max
@@ -100,6 +104,8 @@ def GTournamentSelectorAlternative(population, **args):
    .. versionadded: 0.6
       Added the GTournamentAlternative function.
    """
+
+   from . import constants
 
    pool_size = population.getParam("tournamentPool", constants.CDefTournamentPoolSize)
    len_pop = len(population)
@@ -153,6 +159,8 @@ GRouletteWheel.cacheWheel = None
 def GRouletteWheel_PrepareWheel(population):
 
    """ A preparation for Roulette Wheel selection """
+
+   from . import constants
 
    len_pop = len(population)
 

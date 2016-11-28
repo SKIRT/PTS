@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
-from ...core.tools import time
+from ...core.tools import time, tables
 
 # -----------------------------------------------------------------
 
@@ -43,6 +43,33 @@ class ModelingHistory(SmartTable):
 
         # Add a row to the table
         self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def __contains__(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        return command_name in list(self["Command"])
+
+    # -----------------------------------------------------------------
+
+    def finished(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        if command_name not in self: return False
+        else:
+            index = tables.find_index(command_name, self)
+            return not self["End time"][index] # not masked
 
     # -----------------------------------------------------------------
 

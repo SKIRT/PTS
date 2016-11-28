@@ -42,5 +42,6 @@ class GalaxyProperties(SimplePropertyComposite):
         self.redshift = kwargs.pop("redshift", None)
         self.common_name = kwargs.pop("common_name", None)
         self.galaxy_type = kwargs.pop("galaxy_type", None)
+        self.hyperleda_name = kwargs.pop("hyperleda_name", None)
 
 # -----------------------------------------------------------------

@@ -357,6 +357,87 @@ def is_std_lib(module):
 
 # -----------------------------------------------------------------
 
+def get_internal_dependencies(debug=False):
+
+    """
+    This function ...
+    :param debug:
+    :return:
+    """
+
+    # Create an empty dictionary
+    modules = defaultdict(set)
+
+    # Loop over all python files in the PTS repository
+    for filepath, filename in fs.files_in_path(pts_package_dir, extension="py", returns=["path", "name"], recursive=True):
+
+        #has_absolute_import = False
+        modules_file = set()
+
+        internal_import_lines = []
+
+        # Read the lines of the script file
+        for line in open(filepath, 'r'):
+
+            # If the "HIDE_DEPENDS" keyword is encountered, skip this file
+            #if "HIDE_DEPENDS" in line: break
+
+            # Look for an 'import yyy' or 'from yyy import zzz' statement
+            if line.startswith("import ") or (line.startswith("from ") and "import" in line):
+
+                #print(line)
+
+                # Set absolute import
+                if "absolute_import" in line:
+                    has_absolute_import = True
+                    continue
+
+                # Get the name of the module
+                #module = line.split()[1].split(".")[0]
+
+                splitted = line.split()
+
+                if splitted[1].startswith("pts") or splitted[1].startswith("."):
+                    internal_import_lines.append(line)
+
+                # Skip "pts"
+                #if module = "pts": continue
+
+                # Skip "mpl_toolkits"
+                #if module == "mpl_toolkits": continue
+
+                # Add the module name to the list
+                #if module: modules_file.add(module)
+
+        # Loop over the lines where something internally is imported
+        for line in internal_import_lines:
+
+            # Get the path to the modules that are being imported in the current line
+            internal_module_paths = get_modules(line, filepath, debug=debug)
+
+            for module_path in internal_module_paths:
+
+                #print(module_path)
+
+                # Check if the imported module refers to a PTS module or an external package
+                #if module.startswith("/"):  # a PTS module
+
+                #    if module in encountered_internal_modules: continue
+                #    else:
+                #        encountered_internal_modules.add(module)
+                #        add_dependencies(dependencies, module, encountered_internal_modules,
+                #                         prefix=prefix + "  ", debug=debug)
+
+                modules_file.add(module_path)
+
+        # Set the modules
+        modules[filepath] = modules_file
+
+    # Return the dictionary of modules
+    return modules
+
+# -----------------------------------------------------------------
+
 def get_all_dependencies():
 
     """
@@ -436,6 +517,7 @@ def add_dependencies(dependencies, script_path, encountered_internal_modules, pr
     :param script_path:
     :param encountered_internal_modules:
     :param prefix:
+    :param debug:
     :return:
     """
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.sources.batchfinder Contains the BatchSourceFinder class.
+## \package pts.magic.sources.batchfinder Contains the SourceFinder class.
 
 # -----------------------------------------------------------------
 

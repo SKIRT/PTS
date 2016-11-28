@@ -13,9 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import requests
 import numpy as np
-from lxml import html
 
 # Import astronomical modules
 from astropy.table import Table
@@ -26,6 +24,7 @@ from astropy.units import Unit
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...magic.basics.coordinate import SkyCoordinate
+from ...magic.tools import catalogs
 
 # -----------------------------------------------------------------
 
@@ -38,10 +37,6 @@ dustpedia_data_path = fs.join(dustpedia_dat_path, "data")
 # -----------------------------------------------------------------
 
 ledawise_table_path = fs.join(dustpedia_data_path, "DustPedia_LEDAWISE_Herschel.csv")
-
-# -----------------------------------------------------------------
-
-leda_search_object_url = "http://leda.univ-lyon1.fr/ledacat.cgi?"
 
 # -----------------------------------------------------------------
 
@@ -185,22 +180,8 @@ class DustPediaSample(object):
         :return:
         """
 
-        url = leda_search_object_url + galaxy_name
-
-        page_as_string = requests.get(url).content
-
-        tree = html.fromstring(page_as_string)
-
-        tables = [e for e in tree.iter() if e.tag == 'table']
-
-        table = tables[1]
-
-        table_rows = [e for e in table.iter() if e.tag == 'tr']
-        column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
-
-        #return table_rows, column_headings
-
-        objname = str(table_rows[1].text_content().split("\n")[1]).strip()
+        # Get the HYPERLEDA name
+        objname = catalogs.get_hyperleda_name(galaxy_name)
 
         # CHECK WHETHER IN DUSTPEDIA SAMPLE
         if objname not in self.primary_sample: raise ValueError("This galaxy is not in the DustPedia primary sample")

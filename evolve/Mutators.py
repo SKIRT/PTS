@@ -13,7 +13,6 @@
 
 # Import other evolve modules
 from . import utils
-from . import constants
 from . import tree
 
 # Import the relevant PTS classes and modules
@@ -138,9 +137,12 @@ def G1DListMutatorSIM(genome, **args):
 
 def G1DListMutatorIntegerRange(genome, **args):
 
-   """ Simple integer range mutator for G1DList
+   """
+   Simple integer range mutator for G1DList
    Accepts the *rangemin* and *rangemax* genome parameters, both optional.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -170,6 +172,8 @@ def G1DListMutatorRealRange(genome, **args):
    """ Simple real range mutator for G1DList
    Accepts the *rangemin* and *rangemax* genome parameters, both optional.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -243,6 +247,8 @@ def G1DListMutatorIntegerGaussianGradient(genome, **args):
    1 the random value falls on) and cast to integer
    """
 
+   from . import constants
+
    if args["pmut"] <= 0.0:
       return 0
    listSize = len(genome)
@@ -283,6 +289,8 @@ def G1DListMutatorIntegerGaussian(genome, **args):
    accepts the parameter *gauss_mu* and the *gauss_sigma* which respectively
    represents the mean and the std. dev. of the random distribution.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -331,6 +339,8 @@ def G1DListMutatorRealGaussian(genome, **args):
    accepts the parameter *gauss_mu* and the *gauss_sigma* which respectively
    represents the mean and the std. dev. of the random distribution.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -448,6 +458,8 @@ def G1DListMutatorRealGaussianGradient(genome, **args):
    no matter how large it is.
    """
 
+   from . import constants
+
    if args["pmut"] <= 0.0:
       return 0
    listSize = len(genome)
@@ -487,6 +499,7 @@ def G1DListMutatorIntegerBinary(genome, **args):
    This mutator will random change the 0 and 1 elements of the 1D List.
 
    """
+
    if args["pmut"] <= 0.0:
       return 0
    listSize = len(genome)
@@ -554,6 +567,8 @@ def G1DListMutatorAlleleGaussian(genome, **arguments):
     respectively represents the mean and the std. dev. of the random
     distribution.
     """
+
+    from . import constants
 
     if arguments["pmut"] <= 0.0:
         return 0
@@ -632,6 +647,8 @@ def G2DListMutatorIntegerRange(genome, **args):
    Accepts the *rangemin* and *rangemax* genome parameters, both optional.
    """
 
+   from . import constants
+
    if args["pmut"] <= 0.0:
       return 0
    height, width = genome.getSize()
@@ -671,6 +688,8 @@ def G2DListMutatorIntegerGaussianGradient(genome, **args):
    the gene is multiplied by this value. This will cause the gene to drift
    no matter how large it is.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -720,6 +739,8 @@ def G2DListMutatorIntegerGaussian(genome, **args):
    accepts the parameter *gauss_mu* and the *gauss_sigma* which respectively
    represents the mean and the std. dev. of the random distribution.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -816,6 +837,8 @@ def G2DListMutatorRealGaussian(genome, **args):
    represents the mean and the std. dev. of the random distribution.
    """
 
+   from . import constants
+
    if args["pmut"] <= 0.0:
       return 0
    height, width = genome.getSize()
@@ -869,6 +892,8 @@ def G2DListMutatorRealGaussianGradient(genome, **args):
    The difference is that this multiplies the gene by gauss(1.0, 0.0333), allowing
    for a smooth gradient drift about the value.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -973,7 +998,7 @@ def G2DBinaryStringMutatorFlip(genome, **args):
          which_x = prng.randint(0, genome.getWidth())
          which_y = prng.randint(0, genome.getHeight())
 
-         if genome[i][j] == 0:
+         if genome[which_y][which_x] == 0:
             genome.setItem(which_y, which_x, 1)
          else:
             genome.setItem(which_y, which_x, 0)
@@ -1020,6 +1045,8 @@ def GTreeMutatorIntegerRange(genome, **args):
       The *GTreeMutatorIntegerRange* function
    """
 
+   from . import constants
+
    if args["pmut"] <= 0.0:
       return 0
    elements = len(genome)
@@ -1055,6 +1082,8 @@ def GTreeMutatorRealRange(genome, **args):
       The *GTreeMutatorRealRange* function
    """
 
+   from . import constants
+
    if args["pmut"] <= 0.0:
       return 0
    elements = len(genome)
@@ -1089,6 +1118,8 @@ def GTreeMutatorIntegerGaussian(genome, **args):
    accepts the parameter *gauss_mu* and the *gauss_sigma* which respectively
    represents the mean and the std. dev. of the random distribution.
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0
@@ -1128,6 +1159,8 @@ def GTreeMutatorRealGaussian(genome, **args):
    represents the mean and the std. dev. of the random distribution.
    """
 
+   from . import constants
+
    if args["pmut"] <= 0.0:
       return 0
    elements = len(genome)
@@ -1164,6 +1197,8 @@ def GTreeGPMutatorOperation(genome, **args):
    .. versionadded:: 0.6
       The *GTreeGPMutatorOperation* function
    """
+
+   from . import constants
 
    if args["pmut"] <= 0.0:
       return 0

@@ -8,21 +8,19 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.basics.host import find_host_ids
+from pts.modeling.modeler import modeling_methods, modeling_methods_descriptions
 
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = ConfigurationDefinition()
 
 # Add required arguments
-definition.add_required("image", "string", "name of the image for which to run the preparation")
+definition.add_required("galaxy_name", "string", "name of the galaxy for which to perform the radiative transfer modeling")
+definition.add_required("method", "string", "method to use for the modeling", choices=modeling_methods, choice_descriptions=modeling_methods_descriptions)
+definition.add_required("host_id", "string", "remote host to use for heavy computations", choices=find_host_ids())
 
 # Add optional arguments
-definition.add_optional("exclude_filters", "string_list", "exclude the data for these filters from the procedure that brings all data to the same resolution and pixelscale")
-definition.add_flag("steps", "write the results of intermediate steps")
-definition.add_flag("visualise", "make visualisations")
-
-# Remote preparation
-definition.add_optional("remote", "string", "remote host on which to run the preparation", choices=find_host_ids())
+definition.add_optional("fitting_host_ids", "string_list", "remote hosts to use for performing simulations as part of the fitting", choices=find_host_ids(), default=find_host_ids())
 
 # -----------------------------------------------------------------

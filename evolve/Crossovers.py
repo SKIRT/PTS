@@ -15,7 +15,6 @@ import math
 
 # Import other evolve modules
 from . import utils
-from . import constants
 
 # Import the relevant PTS classes and modules
 from ..core.tools.random import prng
@@ -92,6 +91,8 @@ def G1DBinaryStringXUniform(genome, **args):
     """
     The G1DList Uniform Crossover
     """
+
+    from . import constants
 
     sister = None
     brother = None
@@ -184,6 +185,8 @@ def G1DListCrossoverUniform(genome, **args):
     The G1DList Uniform Crossover
     Each gene has a 50% chance of being swapped between mom and dad
     """
+
+    from . import constants
 
     sister = None
     brother = None
@@ -339,6 +342,8 @@ def G1DListCrossoverRealSBX(genome, **args):
                 must be used for 1D genome of real values.
     """
 
+    from . import constants
+
     EPS = constants.CDefG1DListSBXEPS
     # Crossover distribution index
     eta_c = constants.CDefG1DListSBXEtac
@@ -418,6 +423,8 @@ def G2DListCrossoverUniform(genome, **args):
     """
     The G2DList Uniform Crossover
     """
+
+    from . import constants
 
     sister = None
     brother = None
@@ -503,6 +510,8 @@ def G2DBinaryStringXUniform(genome, **args):
     .. versionadded:: 0.6
       The *G2DBinaryStringXUniform* function
     """
+
+    from . import constants
 
     sister = None
     brother = None
@@ -767,6 +776,8 @@ def GTreeGPCrossoverSinglePoint(genome, **args):
             *max_depth* parameter.
     Accepts the *max_attempt* parameter, *max_depth* (required).
     """
+
+    from . import constants
 
     sister = None
     brother = None

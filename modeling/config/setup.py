@@ -13,6 +13,6 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add required settings
-definition.add_required("galaxy_name", "string", "the name of the galaxy for which to initiate the radiative transfer modeling")
+definition.add_required("galaxy_name", "string", "name of the galaxy for which to initiate the radiative transfer modeling")
 
 # -----------------------------------------------------------------

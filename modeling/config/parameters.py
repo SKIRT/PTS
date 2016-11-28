@@ -75,6 +75,6 @@ units["inclination"] = "deg"
 definition = ConfigurationDefinition(write_config=False)
 
 # Add the required setting of the list of free parameters
-definition.add_required("free_parameters", "string_list", "the parameters to be used as free parameters during the fitting", choices=choices, choice_descriptions=descriptions)
+definition.add_required("free_parameters", "string_list", "parameters to be used as free parameters during the fitting", choices=choices, choice_descriptions=descriptions)
 
 # -----------------------------------------------------------------

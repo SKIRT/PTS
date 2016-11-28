@@ -482,8 +482,8 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        from ..config.parameters import units as parameter_units
-        return parameter_units
+        from ..config.parameters import units
+        return units
 
     # -----------------------------------------------------------------
 
@@ -1374,6 +1374,22 @@ def load_fitting_configuration(modeling_path):
 
     # Open the configuration and return it
     return Configuration.from_file(fitting_configuration_path)
+
+# -----------------------------------------------------------------
+
+def get_meta_file_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the path to the meta file
+    meta_path = fs.join(modeling_path, "modeling.meta")
+
+    # Return the path
+    return meta_path
 
 # -----------------------------------------------------------------
 

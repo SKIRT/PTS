@@ -27,7 +27,6 @@ from __future__ import division, print_function
 
 # Import other evolve modules
 from .genome import GenomeBase, GTreeBase, GTreeNodeBase
-from . import constants
 from . import utils
 
 # Import the relevant PTS classes and modules
@@ -56,6 +55,8 @@ class GTree(GTreeBase):
         The constructor ...
         :param root_node:
         """
+
+        from . import constants
 
         super(GTree, self).__init__(root_node)
         self.initializator.set(constants.CDefGTreeInit)
@@ -408,6 +409,8 @@ class GTreeGP(GTreeBase):
         :param cloning:
         """
 
+        from . import constants
+
         super(GTreeGP, self).__init__(root_node)
         if not cloning:
             self.initializator.set(constants.CDefGTreeGPInit)
@@ -460,11 +463,14 @@ class GTreeGP(GTreeBase):
     # -----------------------------------------------------------------
 
     def writeDotGraph(self, graph, startNode=0):
-        """ Write a graph to the pydot Graph instance
 
+        """ Write a graph to the pydot Graph instance
         :param graph: the pydot Graph instance
         :param startNode: used to plot more than one individual
         """
+
+        from . import constants
+
         if not HAVE_PYDOT:
             print("You must install Pydot to use this feature !")
             return

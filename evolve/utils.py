@@ -13,9 +13,6 @@
 # Import standard modules
 from math import sqrt as math_sqrt
 
-# Import other evolve modules
-from . import constants
-
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
 from ..core.tools.random import prng
@@ -161,6 +158,8 @@ def importSpecial(name):
     .. versionadded:: 0.6
        The *import_special* function
     """
+
+    from . import constants
 
     try:
         imp_mod = __import__(name)

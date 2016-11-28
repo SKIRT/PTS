@@ -54,6 +54,7 @@ fwhms = {"GALEX FUV": 4.48 * Unit("arcsec"),
 
 # -----------------------------------------------------------------
 
+# For M81:
 #fwhms_from_finding = {"2MASS H": 4.640929858306589 * Unit("arcsec"),
 #                      "2MASS J": 4.580828087551186 * Unit("arcsec"),
 #                      "2MASS Ks": 4.662813601376219 * Unit("arcsec"),
@@ -84,6 +85,9 @@ class PreparationInitializer(PreparationComponent):
 
         # -- Attributes --
 
+        # The source finder
+        self.finder = None
+
         # The paths of the images to be processed
         self.paths = []
 
@@ -106,14 +110,8 @@ class PreparationInitializer(PreparationComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Create the preparation info table
-        #self.create_info_table() # NOW MOVED TO DATASETCREATOR!
-
         # 2. Load the images
         self.load_reference_image()
-
-        # 3. Get the galactic and stellar catalogs
-        self.get_catalogs()
 
         # 4. Check which images should be processed
         self.check_images()
@@ -130,16 +128,11 @@ class PreparationInitializer(PreparationComponent):
         :return:
         """
 
-        # -- Children --
-
-        self.add_child("importer", ImageImporter, self.config.importation)
-        self.add_child("catalog_importer", CatalogImporter, self.config.catalogs)
-        self.add_child("source_finder", SourceFinder, self.config.sources)
-
-        # -- Setup of the base class --
-
         # Call the setup function of the base class
         super(PreparationInitializer, self).setup()
+
+        # Create the source finder
+        self.finder = SourceFinder(self.config.sources)
 
     # -----------------------------------------------------------------
 
@@ -159,25 +152,6 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def get_catalogs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Importing the galactic and stellar catalogs ...")
-
-        # Run the catalog importer
-        self.catalog_importer.run(self.reference)
-
-        # Get the galactic and stellar catalogs
-        self.galactic_catalog = self.catalog_importer.galactic_catalog
-        self.stellar_catalog = self.catalog_importer.stellar_catalog
-
-    # -----------------------------------------------------------------
-
     def check_images(self):
 
         """
@@ -187,9 +161,6 @@ class PreparationInitializer(PreparationComponent):
 
         # Inform the user
         log.info("Checking the input images ...")
-
-        # Loop over all subdirectories of the data directory
-        #for path in fs.directories_in_path(self.data_path, not_contains="bad", returns="path"):
 
         # Loop over all images in the initial dataset
         for prep_name in self.initial_dataset.paths:
@@ -307,7 +278,7 @@ class PreparationInitializer(PreparationComponent):
             # -----------------------------------------------------------------
 
             # Clear the image importer
-            self.importer.clear()
+            #self.importer.clear()
 
     # -----------------------------------------------------------------
 

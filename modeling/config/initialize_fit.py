@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.magic.config.find_sources import definition as sources_definition
 
 # -----------------------------------------------------------------
 
@@ -28,5 +29,8 @@ definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "the
 # Add optional arguments
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)
 definition.add_flag("selfabsorption", "enable dust self-absorption")
+
+# Add section for the source finder
+definition.import_section("sources", "options for the source finder", sources_definition)
 
 # -----------------------------------------------------------------

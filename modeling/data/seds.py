@@ -77,9 +77,10 @@ class SEDFetcher(DataComponent):
         super(SEDFetcher, self).setup()
 
         # Configure the SED fetcher
-        self.fetcher.catalogs = self.config.catalogs
-        self.fetcher.list = False
-        self.fetcher.write = False
+        self.fetcher.config.galaxy_name = self.galaxy_name
+        self.fetcher.config.catalogs = self.config.catalogs
+        self.fetcher.config.list = False
+        self.fetcher.config.write = False
 
     # -----------------------------------------------------------------
 

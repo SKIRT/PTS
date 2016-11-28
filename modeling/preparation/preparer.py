@@ -131,14 +131,25 @@ class DataPreparer(PreparationComponent):
         # Write results of intermediate steps
         self.preparer_config["steps"] = True
 
-        # We want to exclude the SPIRE images from the procedures that bring all images to the same resolution
-        # Get the resolution and the FWHM of the SPIRE PSW image
-        spire_fwhm = aniano.get_fwhm(self.spire_psw_filter)
-        spire_pixelscale = self.initial_dataset.get_wcs("SPIRE PSW").average_pixelscale
+        # Check filters to be excluded from rebinning and convolution
+        if self.config.exclude_filters is not None:
 
-        # Set the maximum FWHM and pixelscale for the image preparer
-        self.preparer_config["max_fwhm"] = 0.99 * spire_fwhm
-        self.preparer_config["max_pixelscale"] = 0.99 * spire_pixelscale
+            min_fwhm = None
+            min_pixelscale = None
+
+            for filter_name in self.config.exclude_filters:
+
+                # Get the resolution and the FWHM
+                fwhm = aniano.get_fwhm(self.spire_psw_filter)
+                image_name = self.initial_dataset.get_name_for_filter(filter_name)
+                pixelscale = self.initial_dataset.get_wcs(image_name).average_pixelscale
+
+                if min_fwhm is None or fwhm < min_fwhm: min_fwhm = fwhm
+                if min_pixelscale is None or pixelscale < min_pixelscale: min_pixelscale = pixelscale
+
+            # Set the maximum FWHM and pixelscale for the image preparer
+            self.preparer_config["max_fwhm"] = 0.99 * min_fwhm
+            self.preparer_config["max_pixelscale"] = 0.99 * min_pixelscale
 
         # Don't write
         self.preparer_config["write"] = False

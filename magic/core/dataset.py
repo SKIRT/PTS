@@ -408,12 +408,11 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frame_for_filter(self, fltr, masked=True):
+    def get_name_for_filter(self, fltr):
 
         """
         This function ...
         :param fltr:
-        :param masked:
         :return:
         """
 
@@ -425,14 +424,34 @@ class DataSet(object):
         # Loop over the filters dictionary
         for name in fltrs:
 
-            # Get the frame
-            frame = self.get_frame(name, masked=masked)
+            # Get the filter
+            frame_filter = self.get_filter(name)
 
             # Check the filter
-            if str(frame.filter) == filter_string: return frame
+            if str(frame_filter) == filter_string: return name
 
-        # No frame found
+        # No frame found for this filter
         return None
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, fltr, masked=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param masked:
+        :return:
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # No frame found for this filter
+        if name is None: return None
+
+        # Return the frame
+        return self.get_frame(name, masked=masked)
 
     # -----------------------------------------------------------------
 

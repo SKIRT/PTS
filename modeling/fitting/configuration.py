@@ -74,14 +74,14 @@ class FittingConfigurer(FittingComponent):
         # 2. Load the necessary input
         self.load_input()
 
-        # 3. Prompt for the fitting parameters
-        self.prompt_parameters()
+        # 3. Get the fitting parameters
+        self.get_parameters()
 
-        # 4. Prompt for the physical parameter ranges
-        self.prompt_ranges()
+        # 4. Get the physical parameter ranges
+        self.get_ranges()
 
-        # 5. Prompt for the fitting filters
-        self.prompt_filters()
+        # 5. Get the fitting filters
+        self.get_filters()
 
         # 6. Adjust the labels of the template ski file
         self.adjust_labels()
@@ -130,62 +130,76 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def prompt_parameters(self):
+    def get_parameters(self):
 
         """
         This function ...
         :return:
         """
 
-        # Create configuration setter
-        setter = InteractiveConfigurationSetter("free parameters", add_logging=False, add_cwd=False)
+        if self.config.parameters is not None: self.parameters_config = {"free_parameters": self.config.parameters}
+        else:
 
-        # Create config
-        self.parameters_config = setter.run(parameters_definition, prompt_optional=False)
+            # Create configuration setter
+            setter = InteractiveConfigurationSetter("free parameters", add_logging=False, add_cwd=False)
+
+            # Create config
+            self.parameters_config = setter.run(parameters_definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
-    def prompt_ranges(self):
+    def get_ranges(self):
 
         """
         This function ...
         :return:
         """
 
-        # Create the configuration
-        definition = ConfigurationDefinition(write_config=False)
+        if self.config.ranges is not None: #self.ranges_config = self.config.ranges
 
-        # Add the options
-        for label in self.parameters_config.free_parameters:
-            in_units_string = " (in " + parameter_units[label] + ")" if label in parameter_units else ""
-            definition.add_optional(label + "_range", types_and_ranges[label][0] + "_range", "range of the " + descriptions[label] + in_units_string, default=types_and_ranges[label][1], convert_default=True)
+            self.ranges_config = dict()
+            for label in self.config.ranges:
+                self.ranges_config[label + "_range"] = self.config.ranges[label]
 
-        # Create configuration setter
-        setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)
+        else:
 
-        # Create config, get the range for each chosen free parameter
-        self.ranges_config = setter.run(definition, prompt_optional=False)
+            # Create the configuration
+            definition = ConfigurationDefinition(write_config=False)
+
+            # Add the options
+            for label in self.parameters_config.free_parameters:
+                in_units_string = " (in " + parameter_units[label] + ")" if label in parameter_units else ""
+                definition.add_optional(label + "_range", types_and_ranges[label][0] + "_range", "range of the " + descriptions[label] + in_units_string, default=types_and_ranges[label][1], convert_default=True)
+
+            # Create configuration setter
+            setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)
+
+            # Create config, get the range for each chosen free parameter
+            self.ranges_config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
-    def prompt_filters(self):
+    def get_filters(self):
 
         """
         This function ...
         :return:
         """
 
-        # Create the configuration
-        definition = ConfigurationDefinition(write_config=False)
+        if self.config.filters is not None: self.filters_config = {"filters": self.config.filters}
+        else:
 
-        # Choose from all the possible filter names
-        definition.add_required("filters", "string_list", "the filters for which to use the observed flux as reference for the fitting procedure", choices=self.observed_filter_names)
+            # Create the configuration
+            definition = ConfigurationDefinition(write_config=False)
 
-        # Create configuration setter
-        setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
+            # Choose from all the possible filter names
+            definition.add_required("filters", "string_list", "the filters for which to use the observed flux as reference for the fitting procedure", choices=self.observed_filter_names)
 
-        # Create config, get the filter choices
-        self.filters_config = setter.run(definition, prompt_optional=False)
+            # Create configuration setter
+            setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
+
+            # Create config, get the filter choices
+            self.filters_config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 

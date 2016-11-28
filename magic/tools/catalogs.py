@@ -15,7 +15,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import requests
 import numpy as np
+from lxml import html
 
 # Import astronomical modules
 from astropy.units import Unit, Magnitude
@@ -30,6 +32,40 @@ from ...core.tools import tables
 from ...core.tools.logging import log
 from ..basics.coordinate import SkyCoordinate
 from ..basics.vector import Extent
+
+# -----------------------------------------------------------------
+
+leda_search_object_url = "http://leda.univ-lyon1.fr/ledacat.cgi?"
+
+# -----------------------------------------------------------------
+
+def get_hyperleda_name(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    url = leda_search_object_url + galaxy_name
+
+    page_as_string = requests.get(url).content
+
+    tree = html.fromstring(page_as_string)
+
+    tables = [e for e in tree.iter() if e.tag == 'table']
+
+    table = tables[1]
+
+    table_rows = [e for e in table.iter() if e.tag == 'tr']
+    column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
+
+    # return table_rows, column_headings
+
+    objname = str(table_rows[1].text_content().split("\n")[1]).strip()
+
+    # Return the HYPERLEDA name
+    return objname
 
 # -----------------------------------------------------------------
 

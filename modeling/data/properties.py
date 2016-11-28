@@ -148,6 +148,9 @@ class PropertyFetcher(DataComponent):
         # Get the info
         self.info = self.database.get_galaxy_info(self.ngc_id_nospaces)
 
+        # Get the HYPERLEDA (or DustPedia) name
+        self.properties.hyperleda_name = catalogs.get_hyperleda_name(self.galaxy_name)
+
     # -----------------------------------------------------------------
 
     def get_ned_properties(self):
