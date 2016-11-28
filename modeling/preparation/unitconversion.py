@@ -20,7 +20,7 @@ from astropy import units as u
 from astropy import constants
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools.logging import log
 
@@ -270,7 +270,7 @@ names = ["Band", "b", "Zero-flux magnitude", "m"]
 
 # -----------------------------------------------------------------
 
-class UnitConverter(OldConfigurable):
+class UnitConverter(Configurable):
     
     """
     This class...
@@ -285,7 +285,7 @@ class UnitConverter(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(UnitConverter, self).__init__(config, "modeling")
+        super(UnitConverter, self).__init__(config)
 
         # The image
         self.image = None

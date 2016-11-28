@@ -46,8 +46,8 @@ definition.sections["histogram"].add_flag("log_scale", "log scale", True)
 
 # Estimation
 definition.add_section("estimation", "sky estimation")
-definition.sections["saturation"].add_optional("method", "string", "method used for sky estimation", "pts")
-definition.sections["saturation"].add_optional("finishing_step", "string", "finishing step", choices=["polynomial", "interpolation"])
+definition.sections["estimation"].add_optional("method", "string", "method used for sky estimation", "pts")
+definition.sections["estimation"].add_optional("finishing_step", "string", "finishing step", choices=["polynomial", "interpolation"])
 
 # Setting zero outside
 definition.add_section("zero_outside", "setting zero outside")

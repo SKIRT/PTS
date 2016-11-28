@@ -5,27 +5,31 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.preparation.unitconversion Contains the UnitConverter class.
+## \package pts.modeling.show.movie Contains the MovieMaker class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
-# Import astronomical modules
-from astropy import units as u
-from astropy import constants
-
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
-from ...core.tools import tables
-from ...core.tools.logging import log
+from .component import ShowComponent
 
 # -----------------------------------------------------------------
 
 class MovieMaker(ShowComponent):
+
+    """
+    This class makes a movie of a radiative transfer model for a galaxy
+    """
+
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        super(MovieMaker, self).__init__(config)
 
 # -----------------------------------------------------------------
