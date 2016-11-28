@@ -21,12 +21,12 @@ from ...magic.sources.finder import SourceFinder
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.misc.imageimporter import ImageImporter
-from ...magic.catalog.importer import CatalogImporter
 from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...core.basics.animation import Animation
 from ...core.tools import time
 from ...core.tools import parsing
+from ...magic.core.dataset import DataSet
 
 # -----------------------------------------------------------------
 
@@ -91,12 +91,8 @@ class PreparationInitializer(PreparationComponent):
         # The paths of the images to be processed
         self.paths = []
 
-        # The reference image frame
-        self.reference = None
-
-        # The galactic and stellar catalogs
-        self.galactic_catalog = None
-        self.stellar_catalog = None
+        # The initial dataset
+        self.set = DataSet()
 
     # -----------------------------------------------------------------
 
@@ -110,14 +106,17 @@ class PreparationInitializer(PreparationComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the images
-        self.load_reference_image()
-
-        # 4. Check which images should be processed
+        # 2. Check which images should be processed
         self.check_images()
 
-        # 4. Process the images (identify sources, create error frames)
+        # 3. Process the images (identify sources, create error frames)
         self.process_images()
+
+        # 4. Create the dataset
+        self.create_dataset()
+
+        # 5. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -133,22 +132,6 @@ class PreparationInitializer(PreparationComponent):
 
         # Create the source finder
         self.finder = SourceFinder(self.config.sources)
-
-    # -----------------------------------------------------------------
-
-    def load_reference_image(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the reference image ...")
-
-        # Get the path to the reference image
-        reference_path = self.original_paths[self.reference_image]
-        self.reference = Frame.from_file(reference_path)
 
     # -----------------------------------------------------------------
 
@@ -279,6 +262,70 @@ class PreparationInitializer(PreparationComponent):
 
             # Clear the image importer
             #self.importer.clear()
+
+    # -----------------------------------------------------------------
+
+    def create_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the initial dataset ...")
+
+        # Loop over the different image origins
+        for path, origin in fs.directories_in_path(self.data_images_path, returns=["path", "name"]):
+
+            # Ignore the Planck data (for now)
+            if origin == "Planck": continue
+
+            # Loop over the FITS files in the current directory
+            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="poisson", returns=["path", "name"]):
+
+                # Open the image frame
+                frame = Frame.from_file(image_path)
+
+                # Determine the preparation name
+                if frame.filter is not None: prep_name = str(frame.filter)
+                else: prep_name = image_name
+
+                # Add the image path
+                self.set.add_path(prep_name, image_path)
+
+                # Determine path to poisson error map
+                poisson_path = fs.join(path, image_name + "_poisson.fits")
+
+                # Set the path to the poisson error map
+                if fs.is_file(poisson_path): self.set.add_error_path(prep_name, poisson_path)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the dataset
+        self.write_dataset()
+
+    # -----------------------------------------------------------------
+
+    def write_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Save the dataset
+        self.set.saveto(self.initial_dataset_path)
 
     # -----------------------------------------------------------------
 

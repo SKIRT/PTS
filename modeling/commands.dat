@@ -4,7 +4,6 @@ setup | -- | setup.SetupTool | interactive | Setup a modeling directory for a ce
 fetch_properties | fetch | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
 fetch_seds | fetch_seds | data.seds.SEDFetcher | interactive | Fetch the galaxy SEDs
 fetch_images | fetch_images | data.images.ImageFetcher | interactive | Fetch the images from the DustPedia database
-create_dataset | -- | data.datasetcreator.DataSetCreator | interactive | Create dataset from the images
 initialize_preparation | -- | preparation.initialization.PreparationInitializer | interactive | Initialize the data for the radiative transfer modeling pipeline
 prepare_data | -- | preparation.preparer.DataPreparer | arguments | Do the preparation step of the SKIRT radiative transfer modeling procedure
 inspect_preparation | -- | preparation.inspector.PreparationInspector | arguments | Inspect the prepared images

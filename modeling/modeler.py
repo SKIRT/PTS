@@ -22,7 +22,6 @@ from ..core.tools import filesystem as fs
 from .setup import ModelingSetupTool
 from .data.properties import PropertyFetcher
 from .data.images import ImageFetcher
-from .data.datasetcreator import DataSetCreator
 from .data.seds import SEDFetcher
 from .preparation.initialization import PreparationInitializer
 from .preparation.preparer import DataPreparer
@@ -199,9 +198,6 @@ class GalaxyModeler(Configurable):
         # Get the galaxy images
         if "fetch_images" not in self.history: self.get_images()
 
-        # Create the dataset
-        if "create_dataset" not in self.history: self.create_dataset()
-
     # -----------------------------------------------------------------
 
     def get_properties(self):
@@ -294,34 +290,6 @@ class GalaxyModeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_dataset(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the dataset ...")
-
-        # Create the dataset creator
-        creator = DataSetCreator()
-
-        # Add an entry to the history
-        self.history.add_entry(DataSetCreator.command_name())
-
-        # Set the working directory
-        creator.config.path = self.modeling_path
-
-        # Run the dataset creator
-        creator.run()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
-
-    # -----------------------------------------------------------------
-
     def prepare_data(self):
 
         """
@@ -333,10 +301,10 @@ class GalaxyModeler(Configurable):
         log.info("Preparing the galaxy data ...")
 
         # Initialize the preparation
-        self.initialize_preparation()
+        if "initialize_preparation" not in self.history: self.initialize_preparation()
 
         # Run the preparation
-        self.prepare()
+        if "prepare_data" not in self.history: self.prepare()
 
     # -----------------------------------------------------------------
 

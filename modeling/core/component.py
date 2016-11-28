@@ -92,9 +92,6 @@ class ModelingComponent(Configurable):
         # PTS directories
         self.kernels_path = None
 
-        # Reference image
-        self.reference_image = "Pacs red"
-
         # The path to the observed SEDs
         self.observed_sed_path = None
         self.observed_sed_dustpedia_path = None
@@ -496,6 +493,28 @@ class ModelingComponent(Configurable):
         """
 
         return DataSet.from_file(self.initial_dataset_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wcs_reference_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fwhm_reference_image(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
