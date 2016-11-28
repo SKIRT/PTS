@@ -290,7 +290,7 @@ class ModelingComponent(Configurable):
         self.disk_region_path = fs.join(self.components_path, "disk.reg")
 
         # Set the path to the initial dataset file
-        self.initial_dataset_path = fs.join(self.data_path, "dataset.dat")
+        self.initial_dataset_path = fs.join(self.prep_path, "initial_dataset.dat")
 
         # Set the path to the prepared dataset file
         self.prepared_dataset_path = fs.join(self.prep_path, "dataset.dat")

@@ -85,11 +85,12 @@ class PreparationInitializer(PreparationComponent):
 
         # -- Attributes --
 
+        # The frame paths
+        self.paths = dict()
+        self.error_paths = dict()
+
         # The source finder
         self.finder = None
-
-        # The paths of the images to be processed
-        self.paths = []
 
         # The initial dataset
         self.set = DataSet()
@@ -106,8 +107,8 @@ class PreparationInitializer(PreparationComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Check which images should be processed
-        self.check_images()
+        # 2. Get the image paths
+        self.get_paths()
 
         # 3. Process the images (identify sources, create error frames)
         self.process_images()
@@ -135,7 +136,7 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def check_images(self):
+    def get_paths(self):
 
         """
         This function ...
@@ -143,33 +144,32 @@ class PreparationInitializer(PreparationComponent):
         """
 
         # Inform the user
-        log.info("Checking the input images ...")
+        log.info("Looking for images and error frames ...")
 
-        # Loop over all images in the initial dataset
-        for prep_name in self.initial_dataset.paths:
+        # Loop over the different image origins
+        for path, origin in fs.directories_in_path(self.data_images_path, returns=["path", "name"]):
 
-            # Debugging
-            log.debug("Opening " + prep_name + " ...")
+            # Ignore the Planck data (for now)
+            if origin == "Planck": continue
 
-            # Image path
-            image_path = self.initial_dataset.paths[prep_name]
+            # Loop over the FITS files in the current directory
+            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="poisson", returns=["path", "name"]):
 
-            # Name
-            image_name = fs.strip_extension(fs.name(image_path))
+                # Open the image frame
+                frame = Frame.from_file(image_path)
 
-            # Debugging
-            log.debug("Checking " + image_path + " ...")
+                # Determine the preparation name
+                if frame.filter is not None: prep_name = str(frame.filter)
+                else: prep_name = image_name
 
-            # Determine the output path for this image
-            prep_name = self.prep_names[image_name]
-            output_path = self.prep_paths[prep_name]
+                # Add the image path
+                self.paths[prep_name] = image_path
 
-            # Check whether this image already has an initialized image
-            final_path = fs.join(output_path, "initialized.fits")
-            if fs.is_file(final_path): continue
+                # Determine path to poisson error map
+                poisson_path = fs.join(path, image_name + "_poisson.fits")
 
-            # Add the image path to the list
-            self.paths.append(image_path)
+                # Set the path to the poisson error map
+                if fs.is_file(poisson_path): self.error_paths[prep_name] = poisson_path
 
     # -----------------------------------------------------------------
 
@@ -184,19 +184,20 @@ class PreparationInitializer(PreparationComponent):
         log.info("Processing the images ...")
 
         # Loop over all image paths
-        for image_path in self.paths:
+        for prep_name in self.paths:
+
+            # Get the image path
+            image_path = self.paths[prep_name]
+
+            # Determine the output path for this image
+            output_path = self.get_prep_path(prep_name)
+
+            # Check whether this image already has an initialized image
+            initialized_path = fs.join(output_path, "initialized.fits")
+            if fs.is_file(initialized_path): continue
 
             # Debugging
             log.debug("Processing image '" + image_path + "' ...")
-
-            # Get the name of the image
-            image_name = fs.strip_extension(fs.name(image_path))
-
-            # Determine the name used to identify this image for the preparation routines
-            prep_name = self.prep_names[image_name]
-
-            # Determine the output path for this image
-            output_path = self.prep_paths[prep_name]
 
             # Set the path to the region of bad pixels
             bad_region_path = fs.join(self.data_path, "bad", prep_name + ".reg")
@@ -252,16 +253,8 @@ class PreparationInitializer(PreparationComponent):
 
             # -----------------------------------------------------------------
 
-            # Determine the path to the initialized image
-            path = fs.join(output_path, "initialized.fits")
-
             # Save the image
-            image.save(path)
-
-            # -----------------------------------------------------------------
-
-            # Clear the image importer
-            #self.importer.clear()
+            image.save(initialized_path)
 
     # -----------------------------------------------------------------
 
@@ -275,30 +268,14 @@ class PreparationInitializer(PreparationComponent):
         # Inform the user
         log.info("Creating the initial dataset ...")
 
-        # Loop over the different image origins
-        for path, origin in fs.directories_in_path(self.data_images_path, returns=["path", "name"]):
+        # Loop over the image paths
+        for prep_name in self.paths:
 
-            # Ignore the Planck data (for now)
-            if origin == "Planck": continue
+            # Add entry to the dataset
+            self.set.add_path(prep_name, self.paths[prep_name])
 
-            # Loop over the FITS files in the current directory
-            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="poisson", returns=["path", "name"]):
-
-                # Open the image frame
-                frame = Frame.from_file(image_path)
-
-                # Determine the preparation name
-                if frame.filter is not None: prep_name = str(frame.filter)
-                else: prep_name = image_name
-
-                # Add the image path
-                self.set.add_path(prep_name, image_path)
-
-                # Determine path to poisson error map
-                poisson_path = fs.join(path, image_name + "_poisson.fits")
-
-                # Set the path to the poisson error map
-                if fs.is_file(poisson_path): self.set.add_error_path(prep_name, poisson_path)
+            # Set the path to the poisson error map
+            if prep_name in self.error_paths: self.set.add_error_path(prep_name, self.error_paths[prep_name])
 
     # -----------------------------------------------------------------
 
@@ -371,19 +348,19 @@ class PreparationInitializer(PreparationComponent):
         bad_mask = image.masks.bad if "bad" in image.masks else None
 
         # Don't look for stars in the Halpha image
-        if "Halpha" in image.name: self.source_finder.config.find_stars = False
-        else: self.source_finder.config.find_stars = True  # still up to the SourceFinder to decide whether stars should be found (based on the filter)
+        if "Halpha" in image.name: self.finder.config.find_stars = False
+        else: self.finder.config.find_stars = True  # still up to the SourceFinder to decide whether stars should be found (based on the filter)
 
         # Fix: don't look for other sources in the IRAC images
-        if "IRAC" in image.name: self.source_finder.config.find_other_sources = False
-        else: self.source_finder.config.find_other_sources = True
+        if "IRAC" in image.name: self.finder.config.find_other_sources = False
+        else: self.finder.config.find_other_sources = True
 
         # Create an animation for the source finder
         if self.config.visualise: animation = Animation()
         else: animation = None
 
         # Run the source finder on this image
-        self.source_finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask, animation=animation)
+        self.finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask, animation=animation)
 
         # Write the animation
         if self.config.visualise:
@@ -398,22 +375,22 @@ class PreparationInitializer(PreparationComponent):
             animation.save(path)
 
         # Save the galaxy region
-        galaxy_region = self.source_finder.galaxy_region
+        galaxy_region = self.finder.galaxy_region
         galaxy_region_path = fs.join(sources_output_path, "galaxies.reg")
         galaxy_region.save(galaxy_region_path)
 
         # Save the star region
-        star_region = self.source_finder.star_region
+        star_region = self.finder.star_region
         star_region_path = fs.join(sources_output_path, "stars.reg")
         if star_region is not None: star_region.save(star_region_path)
 
         # Save the saturation region
-        saturation_region = self.source_finder.saturation_region
+        saturation_region = self.finder.saturation_region
         saturation_region_path = fs.join(sources_output_path, "saturation.reg")
         if saturation_region is not None: saturation_region.save(saturation_region_path)
 
         # Save the region of other sources
-        other_region = self.source_finder.other_region
+        other_region = self.finder.other_region
         path = fs.join(sources_output_path, "other_sources.reg")
         if other_region is not None: other_region.save(path)
 
@@ -423,13 +400,13 @@ class PreparationInitializer(PreparationComponent):
         segments = Image("segments")
 
         # Add the segmentation map of the galaxies
-        segments.add_frame(self.source_finder.galaxy_segments, "galaxies")
+        segments.add_frame(self.finder.galaxy_segments, "galaxies")
 
         # Add the segmentation map of the saturated stars
-        if self.source_finder.star_segments is not None: segments.add_frame(self.source_finder.star_segments, "stars")
+        if self.finder.star_segments is not None: segments.add_frame(self.finder.star_segments, "stars")
 
         # Add the segmentation map of the other sources
-        if self.source_finder.other_segments is not None: segments.add_frame(self.source_finder.other_segments, "other_sources")
+        if self.finder.other_segments is not None: segments.add_frame(self.finder.other_segments, "other_sources")
 
         # Save the FITS file with the segmentation maps
         path = fs.join(sources_output_path, "segments.fits")
@@ -438,7 +415,7 @@ class PreparationInitializer(PreparationComponent):
         # -----------------------------------------------------------------
 
         # Get the FWHM
-        fwhm = self.source_finder.fwhm
+        fwhm = self.finder.fwhm
 
         # Debugging
         log.debug("The FWHM as determined by the source finder is " + str(fwhm) + " ...")
@@ -450,11 +427,11 @@ class PreparationInitializer(PreparationComponent):
 
         # Write statistics file
         statistics_path = fs.join(sources_output_path, "statistics.dat")
-        self.source_finder.write_statistics(statistics_path)
+        self.finder.write_statistics(statistics_path)
 
         # -----------------------------------------------------------------
 
         # Clear the source finder
-        self.source_finder.clear()
+        self.finder.clear()
 
 # -----------------------------------------------------------------
