@@ -65,6 +65,15 @@ records = con.execute_query('''
         ape.Mass_Star > {2}
     '''.format(eaglesim, snaptag, 10**minstarmass))
 
+# if there are no records, just say so and quit
+if len(records.shape)!=0 and len(records)==0:
+    print "No galaxies selected from {}:{} with stellar mass above 10^{}".format(eaglesim, snaptag, minstarmass)
+    exit()
+
+# if there is single record, put it into a list
+if len(records.shape)==0:
+    records = [ records ]
+
 # display some information for verification
 print "Selected {} galaxies from {}:{} with stellar mass above 10^{}" \
             .format(len(records), eaglesim, snaptag, minstarmass)
