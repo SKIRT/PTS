@@ -209,7 +209,11 @@ class GalaxyModeler(Configurable):
         if "fetch_seds" not in self.history: self.get_seds()
 
         # Get the galaxy images
-        if "fetch_images" not in self.history: self.get_images()
+        if "fetch_images" not in self.history:
+
+            self.get_images()
+            log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. Wait for it to finished and resume the modeling afterwards")
+            exit()
 
     # -----------------------------------------------------------------
 
@@ -314,7 +318,11 @@ class GalaxyModeler(Configurable):
         log.info("Preparing the galaxy data ...")
 
         # Initialize the preparation
-        if "initialize_preparation" not in self.history: self.initialize_preparation()
+        if "initialize_preparation" not in self.history:
+
+            self.initialize_preparation()
+            log.warning("Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards")
+            exit()
 
         # Run the preparation
         if "prepare_data" not in self.history: self.prepare()

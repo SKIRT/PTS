@@ -19,6 +19,9 @@ definition = ConfigurationDefinition()
 # The dataset or image
 definition.add_required("dataset", "file_path", "name of the dataset file or image file")
 
+# Number of parallel processes
+definition.add_optional("nprocesses", "integer", "number of parallel processes for the preparation", 8)
+
 # Flags
 definition.add_flag("find_stars", "find stars in the images", True)
 

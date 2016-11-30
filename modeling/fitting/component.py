@@ -124,7 +124,7 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -132,7 +132,7 @@ class FittingComponent(ModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(FittingComponent, self).setup()
+        super(FittingComponent, self).setup(**kwargs)
 
         # Set the path to the template ski file
         self.template_ski_path = fs.join(self.fit_path, "template.ski")

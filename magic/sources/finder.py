@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from multiprocessing import Pool
+
 # Import astronomical modules
 from astropy.convolution import Gaussian2DKernel
 
@@ -20,8 +23,6 @@ from .galaxyfinder import GalaxyFinder
 from .starfinder import StarFinder
 from .trainedfinder import TrainedFinder
 from ..basics.mask import Mask
-from ..catalog.builder import CatalogBuilder
-from ..catalog.synchronizer import CatalogSynchronizer
 from ..tools import wavelengths
 from ...core.tools import tables
 from ...core.basics.configurable import Configurable
@@ -54,6 +55,9 @@ class SourceFinder(Configurable):
         super(SourceFinder, self).__init__(config)
 
         # -- Attributes --
+
+        # The process pool
+        self.pool = None
 
         # The frames
         self.frames = dict()
@@ -211,6 +215,9 @@ class SourceFinder(Configurable):
 
         # Call the setup function of the base class
         super(SourceFinder, self).setup(**kwargs)
+
+        # Initialize the process pool
+        self.pool = Pool(processes=self.config.nprocesses)
 
         # Load the images (from config or input kwargs)
         if "frames" in kwargs: self.frames = kwargs.pop("frames")

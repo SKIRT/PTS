@@ -67,8 +67,8 @@ class BatchImagePreparer(Configurable):
         # The output paths
         self.output_paths = dict()
 
-        # Initialize the process pool
-        self.pool = Pool(processes=self.config.nprocesses)
+        # The process pool
+        self.pool = None
 
         # Rebinning wcs and convolution filter
         self.rebinning_wcs = None
@@ -263,6 +263,9 @@ class BatchImagePreparer(Configurable):
 
         # Call the setup function of the base class
         super(BatchImagePreparer, self).setup()
+
+        # Initialize the process pool
+        self.pool = Pool(processes=self.config.nprocesses)
 
         # Load the images (from config or input kwargs)
         if "images" in kwargs: self.images = kwargs.pop("images")

@@ -14,9 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from scipy.interpolate import interp1d
 
 # Import astronomical modules
-from astropy.units import Unit, spectral_density
+from astropy.units import Unit, spectral_density, spectral
 from astropy import constants
 
 # Import the relevant PTS classes and modules
@@ -25,6 +26,7 @@ from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.filter import Filter
 from ..data.sed import SED
+from ...magic.misc.spire import SPIRE
 
 # -----------------------------------------------------------------
 
@@ -64,6 +66,9 @@ class ObservedFluxCalculator(object):
 
         # The flux tables for the different output SEDs
         self.tables = dict()
+
+        # The SPIRE instance
+        self.spire = SPIRE()
 
     # -----------------------------------------------------------------
 
@@ -164,6 +169,10 @@ class ObservedFluxCalculator(object):
             # Load the simulated SED
             sed = SED.from_skirt(sed_path)
 
+            # Initialize lists
+            bb_frequencies = []
+            bb_fluxdensities = []
+
             # Get the wavelengths and flux densities
             wavelengths = sed.wavelengths("micron", asarray=True)
             fluxdensities = []
@@ -175,7 +184,18 @@ class ObservedFluxCalculator(object):
                 #print(fluxdensity_, fluxdensity) # IS OK!
                 fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
 
-            fluxdensities = np.array(fluxdensities) # in W / (m2 * micron)
+                if wavelength > 50. * Unit("micron"):
+                    bb_frequencies.append(wavelength.to("Hz", equivalencies=spectral()).value)
+                    bb_fluxdensities.append(fluxdensity_jy.to("W / (m2 * Hz)").value) # must be frequency-fluxdensity
+
+            # Convert to array
+            fluxdensities = np.array(fluxdensities)  # in W / (m2 * micron)
+
+            # Calculate the derivative of the log(Flux) to the frequency, make a 'spectral index' function
+            bb_frequencies = np.array(bb_frequencies)
+            bb_fluxdensities = np.array(bb_fluxdensities)
+            gradients = np.gradient(np.log10(bb_frequencies), np.log10(bb_fluxdensities))
+            spectral_index = interp1d(bb_frequencies, gradients)
 
             # Loop over the different filters
             for fltr in self.filters:
@@ -186,6 +206,20 @@ class ObservedFluxCalculator(object):
                 # Calculate the flux: flux densities must be per wavelength instead of per frequency!
                 fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * Unit("W / (m2 * micron)")
                 fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value # convert back to Jy
+
+                # For SPIRE, also multiply with Kbeam correction factor
+                if fltr.instrument == "SPIRE":
+
+                    # Calculate the spectral index for the simulated SED at this filter
+                    # Use the central wavelength (frequency)
+                    central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
+                    spectral_index_filter = spectral_index(central_frequency)
+
+                    # Get the Kbeam factor
+                    kbeam = self.spire.get_kbeam_spectral(fltr, spectral_index_filter, extended=True)
+
+                    # Multiply the flux density
+                    fluxdensity_value *= kbeam
 
                 # Add an entry to the flux table
                 table.add_row([fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), fluxdensity_value])

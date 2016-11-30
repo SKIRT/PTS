@@ -90,7 +90,7 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulationanalyser):
+    def run(self, simulationanalyser, **kwargs):
 
         """
         This function ...
@@ -102,7 +102,7 @@ class FitModelAnalyser(FittingComponent):
         flux_calculator = simulationanalyser.basic_analyser.flux_calculator
 
         # 1. Call the setup function
-        self.setup(flux_calculator)
+        self.setup(flux_calculator, **kwargs)
 
         # 4. Calculate the differences
         self.calculate_differences()
@@ -141,7 +141,7 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self, flux_calculator):
+    def setup(self, flux_calculator, **kwargs):
 
         """
         This function ...
@@ -150,7 +150,7 @@ class FitModelAnalyser(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(FitModelAnalyser, self).setup()
+        super(FitModelAnalyser, self).setup(**kwargs)
 
         # Make a local reference to the flux calculator
         if flux_calculator is None:
