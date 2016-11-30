@@ -95,11 +95,6 @@ class SourceFinder(Configurable):
         # The segmentation maps
         self.segments = dict()
 
-        # The finders
-        self.star_finder = None
-        self.galaxy_finder = None
-        self.trained_finder = None
-
         # Settings for the star finder for different bands
         self.star_finder_settings = dict()
 
@@ -247,10 +242,8 @@ class SourceFinder(Configurable):
         # Create the masks
         self.create_masks()
 
-        # Create the finders
-        self.galaxy_finder = GalaxyFinder(self.config.galaxies)
-        self.star_finder = StarFinder(self.config.stars)
-        self.trained_finder = TrainedFinder(self.config.other_sources)
+        # Initialize images for the segmentation maps
+        for name in self.frames: self.segments[name] = Image("segments")
 
         # DOWNSAMPLE ??
 
@@ -372,6 +365,9 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Finding the galaxies ...")
 
+        # Dictionary to keep result handles
+        results = dict()
+
         # Loop over the images
         for name in self.frames:
 
@@ -381,60 +377,37 @@ class SourceFinder(Configurable):
             # Get the frame
             frame = self.frames[name]
 
+            # Get masks
             special_mask = self.special_masks[name] if name in self.special_masks else None
             ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
             bad_mask = None
 
-            # Run the galaxy finder
-            self.galaxy_finder.run(frame=frame, catalog=self.galactic_catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+            # Get configuration
+            config = self.config.galaxies.copy()
 
-            # Set the name of the principal galaxy
-            #self.galaxy_name = self.galaxy_finder.principal.name
+            # Do the detection
+            result = self.pool.apply_async(detect_galaxies, args=(frame, self.galactic_catalog, config, special_mask, ignore_mask, bad_mask,))
+            results[name] = result
 
-            # Get the galaxy region
-            #galaxy_sky_region = self.galaxy_finder.finder.galaxy_sky_region
-            #if galaxy_sky_region is not None:
-            #    galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+        # Process results
+        for name in results:
 
-            if self.galaxy_finder.region is not None:
-
-                galaxy_sky_region = self.galaxy_finder.region.to_sky(frame.wcs)
-
-                #if self.downsampled:
-                #    sky_region = self.galaxy_sky_region
-                #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-                #ele: return self.galaxy_finder.region
-
-                self.galaxy_regions[name] = galaxy_sky_region
-
-            if self.galaxy_finder.segments is not None:
-
-                # Create an image with the segmentation maps
-                self.segments[name] = Image("segments")
-
-                #if self.galaxy_finder.segments is None: return None
-                #if self.downsampled:
-
-                #    segments = self.galaxy_finder.segments
-                #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
-                #    upsampled.unpad(self.pad_x, self.pad_y)
-                #    return upsampled
-
-                #else: return self.galaxy_finder.segments
-
-                galaxy_segments = self.galaxy_finder.segments
-
-                # Add the segmentation map of the galaxies
-                self.segments[name].add_frame(galaxy_segments, "galaxies")
+            # Get result
+            galaxies, region_list, segments = results[name].get()
 
             # Set galaxies
-            self.galaxies[name] = self.galaxy_finder.galaxies
+            self.galaxies[name] = galaxies
 
-            # Inform the user
-            log.success("Finished finding the galaxies for '" + name + "' ...")
+            # Set region list
+            self.galaxy_regions[name] = region_list
 
-            # Clear the galaxy finder
-            self.galaxy_finder.clear()
+            # Set segmentation map
+            # Add the segmentation map of the galaxies
+            self.segments[name].add_frame(segments, "galaxies")
+
+        # Close and join the process pool
+        self.pool.close()
+        self.pool.join()
 
     # -----------------------------------------------------------------
     
@@ -447,6 +420,9 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Finding the stars ...")
 
+        # Dictionary to keep result handles
+        results = dict()
+
         # Loop over the images
         for name in self.frames:
 
@@ -457,95 +433,61 @@ class SourceFinder(Configurable):
             # Get the frame
             frame = self.frames[name]
 
-            # Run the star finder if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
-            if frame.wavelength is None or frame.wavelength < wavelengths.ranges.ir.mir.max:
+            # Don't run the star finder if the wavelength of this image is greater than 25 micron
+            if frame.wavelength is not None or frame.wavelength > wavelengths.ranges.ir.mir.max:
 
-                # Inform the user
-                log.info("Finding the stars ...")
+                # No star subtraction for this image
+                log.info("Finding stars will not be performed on this frame")
+                continue
 
-                special_mask = self.special_masks[name] if name in self.special_masks else None
-                ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
-                bad_mask = None
+            # Inform the user
+            log.info("Finding the stars ...")
 
-                # Set settings
-                if name in self.star_finder_settings:
-                    original_config = self.star_finder.config.copy()
-                    self.star_finder.config.set_items(self.star_finder_settings[name])
-                else: original_config = None
+            # Get masks
+            special_mask = self.special_masks[name] if name in self.special_masks else None
+            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+            bad_mask = None
 
-                # Run the star finder
-                self.star_finder.run(frame=frame, galaxies=self.galaxies[name], catalog=self.stellar_catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+            # Create configuration
+            config = self.config.stars.copy()
+            if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
 
-                if self.star_finder.star_region is not None:
+            # Do the detection
+            result = self.pool.apply_async(detect_stars, args=(frame, self.galaxies[name], self.stellar_catalog, config, special_mask, ignore_mask, bad_mask,))
+            results[name] = result
 
-                    star_sky_region = self.star_finder.star_region.to_sky(frame.wcs)
+        # Process results
+        for name in results:
 
-                    #if self.downsampled:
-                    #    sky_region = self.star_sky_region
-                    #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-                    #else: return self.star_finder.star_region
+            # Get result
+            # stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
+            stars, star_region_list, saturation_region_list, star_segments, kernel, statistics = results[name].get()
 
-                    self.star_regions[name] = star_sky_region
+            # Set stars
+            self.stars[name] = stars
 
-                if self.star_finder.saturation_region is not None:
+            # Set star region list
+            self.star_regions[name] = star_region_list
 
-                    saturation_sky_region = self.star_finder.saturation_region.to_sky(frame.wcs)
+            # Set saturation region list
+            self.saturation_regions[name] = saturation_region_list
 
-                    #if self.downsampled:
-                    #    sky_region = self.saturation_sky_region
-                    #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-                    #else: return self.star_finder.saturation_region
+            # Set segmentation map
+            # Add the segmentation map of the galaxies
+            self.segments[name].add_frame(star_segments, "stars")
 
-                    self.saturation_regions[name] = saturation_sky_region
+            # Set the PSF
+            self.psfs[name] = kernel
 
-                if self.star_finder.segments is not None:
+            # Get the statistics
+            self.statistics[name] = statistics
 
-                    #if self.star_finder.segments is None: return None
-                    #if self.downsampled:
-                    #    segments = self.star_finder.segments
-                    #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
-                    #    upsampled.unpad(self.pad_x, self.pad_y)
-                    #    return upsampled
-                    #else: return self.star_finder.segments
+            # Show the FWHM
+            log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
 
-                    star_segments = self.star_finder.segments
-
-                    # Add the segmentation map of the saturated stars
-                    self.segments[name].add_frame(star_segments, "stars")
-
-                # Set the stars
-                self.stars[name] = self.star_finder.stars
-
-                # kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
-                # Set the kernel (PSF)
-                if self.star_finder.config.use_frame_fwhm and frame.fwhm is not None:
-
-                    fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec/pix").value
-                    sigma = fwhm * statistics.fwhm_to_sigma
-                    kernel = Gaussian2DKernel(sigma)
-
-                else: kernel = self.star_finder.kernel
-
-                # Set the PSF
-                self.psfs[name] = kernel
-
-                # Get the statistics
-                self.statistics[name] = self.star_finder.get_statistics()
-
-                # Show the FWHM
-                log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
-
-                # Inform the user
-                log.success("Finished finding the stars for '" + name + "' ...")
-
-                # Reset the settings
-                if original_config is not None: self.star_finder.config = original_config
-
-                # Clear the star finder
-                self.star_finder.clear()
-
-            # No star subtraction for this image
-            else: log.info("Finding stars will not be performed on this frame")
+        # Close and join the process pool
+        self.pool.close()
+        self.pool.join()
 
     # -----------------------------------------------------------------
 
@@ -558,6 +500,9 @@ class SourceFinder(Configurable):
 
         # Inform the user
         log.info("Finding sources in the frame not in the catalog ...")
+
+        # Dictionary to keep result handles
+        results = dict()
 
         # Loop over the frames
         for name in self.frames:
@@ -573,44 +518,41 @@ class SourceFinder(Configurable):
             if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
             else: self.trained_finder.config.classify = True
 
+            # Get masks
             special_mask = self.special_masks[name] if name in self.special_masks else None
             ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
             bad_mask = None
 
-            # Run the trained finder just to find sources
-            self.trained_finder.run(frame=frame, galaxies=self.galaxies[name], stars=self.stars[name], special_mask=special_mask,
-                                    ignore_mask=ignore_mask, bad_mask=bad_mask, galaxy_segments=self.segments[name].frames.galaxies,
-                                    star_segments=self.segments[name].frames.stars, kernel=self.psfs[name])
+            # Create the configuration
+            config = self.config.other_sources.copy()
 
-            if self.trained_finder.region is not None:
+            # Get other input
+            galaxies = self.galaxies[name]
+            stars = self.stars[name]
+            galaxy_segments = self.segments[name].frames.galaxies
+            star_segments = self.segments[name].frames.stars
+            kernel = self.psfs[name]
 
-                other_sky_region = self.trained_finder.region.to_sky(frame.wcs)
+            # Do the detection
+            # frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask
+            result = self.pool.apply_async(detect_other, args=(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask,))
+            results[name] = result
 
-                #if self.downsampled:
-                #    sky_region = self.other_sky_region
-                #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
-                #else: return self.trained_finder.region
+        # Process results
+        for name in results:
 
-                # Add the region
-                self.other_regions[name] = other_sky_region
+            # Get the result
+            region_list, segments = results[name].get()
 
-            if self.trained_finder.segments is not None:
+            # Add the region
+            self.other_regions[name] = region_list
 
-                #if self.trained_finder.segments is None: return None
-                #if self.downsampled:
-                #    segments = self.trained_finder.segments
-                #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
-                #    upsampled.unpad(self.pad_x, self.pad_y)
-                #    return upsampled
-                #else: return self.trained_finder.segments
+            # Add the segmentation map of the other sources
+            self.segments[name].add_frame(segments, "other_sources")
 
-                other_segments = self.trained_finder.segments
-
-                # Add the segmentation map of the other sources
-                self.segments[name].add_frame(other_segments, "other_sources")
-
-            # Inform the user
-            log.success("Finished finding other sources for '" + name + "' ...")
+        # Close and join the process pool
+        self.pool.close()
+        self.pool.join()
 
     # -----------------------------------------------------------------
 
@@ -835,6 +777,201 @@ class SourceFinder(Configurable):
 
 # -----------------------------------------------------------------
 
+def detect_galaxies(frame, catalog, config, special_mask, ignore_mask, bad_mask):
+
+    """
+    This function ...
+    :param frame:
+    :param catalog:
+    :param config:
+    :param special_mask:
+    :param ignore_mask:
+    :param bad_mask:
+    :return:
+    """
+
+    # Create the galaxy finder
+    galaxy_finder = GalaxyFinder(config)
+
+    # Run the galaxy finder
+    galaxy_finder.run(frame=frame, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+
+    # Set the name of the principal galaxy
+    # self.galaxy_name = self.galaxy_finder.principal.name
+
+    # Get the galaxy region
+    # galaxy_sky_region = self.galaxy_finder.finder.galaxy_sky_region
+    # if galaxy_sky_region is not None:
+    #    galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+
+    if galaxy_finder.region is not None:
+
+        galaxy_sky_region = galaxy_finder.region.to_sky(frame.wcs)
+
+        # if self.downsampled:
+        #    sky_region = self.galaxy_sky_region
+        #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+        # ele: return self.galaxy_finder.region
+
+        # Get region list
+        region_list = galaxy_sky_region
+
+    if galaxy_finder.segments is not None:
+
+        # if self.galaxy_finder.segments is None: return None
+        # if self.downsampled:
+
+        #    segments = self.galaxy_finder.segments
+        #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+        #    upsampled.unpad(self.pad_x, self.pad_y)
+        #    return upsampled
+
+        # else: return self.galaxy_finder.segments
+
+        # Get the segments
+        segments = galaxy_finder.segments
+
+    # Get the galaxies
+    galaxies = galaxy_finder.galaxies
+
+    # Inform the user
+    log.success("Finished finding the galaxies for '" + frame.name + "' ...")
+
+    # Return the output
+    return galaxies, region_list, segments
+
+# -----------------------------------------------------------------
+
+def detect_stars(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask):
+
+    """
+    This function ...
+    :param frame:
+    :param galaxies:
+    :param catalog:
+    :param config:
+    :param special_mask:
+    :param ignore_mask:
+    :param bad_mask:
+    :return:
+    """
+
+    # Create the star finder
+    finder = StarFinder(config)
+
+    # Run the star finder
+    finder.run(frame=frame, galaxies=galaxies, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+
+    if finder.star_region is not None:
+
+        star_sky_region = finder.star_region.to_sky(frame.wcs)
+
+        # if self.downsampled:
+        #    sky_region = self.star_sky_region
+        #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+        # else: return self.star_finder.star_region
+
+        star_region_list = star_sky_region
+
+    if finder.saturation_region is not None:
+
+        saturation_sky_region = finder.saturation_region.to_sky(frame.wcs)
+
+        # if self.downsampled:
+        #    sky_region = self.saturation_sky_region
+        #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+        # else: return self.star_finder.saturation_region
+
+        saturation_region_list = saturation_sky_region
+
+    if finder.segments is not None:
+
+        # if self.star_finder.segments is None: return None
+        # if self.downsampled:
+        #    segments = self.star_finder.segments
+        #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+        #    upsampled.unpad(self.pad_x, self.pad_y)
+        #    return upsampled
+        # else: return self.star_finder.segments
+
+        star_segments = finder.segments
+
+    # Set the stars
+    stars = finder.stars
+
+    # kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
+    # Set the kernel (PSF)
+    if finder.config.use_frame_fwhm and frame.fwhm is not None:
+
+        fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec/pix").value
+        sigma = fwhm * statistics.fwhm_to_sigma
+        kernel = Gaussian2DKernel(sigma)
+
+    else: kernel = finder.kernel
+
+    # Inform the user
+    log.success("Finished finding the stars for '" + frame.name + "' ...")
+
+    # Return the output
+    return stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
+
+# -----------------------------------------------------------------
+
+def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask):
+
+    """
+    This function ...
+    :param frame:
+    :param config:
+    :param galaxies:
+    :param stars:
+    :param galaxy_segments:
+    :param star_segments:
+    :param kernel:
+    :param special_mask:
+    :param ignore_mask:
+    :param bad_mask:
+    :return:
+    """
+
+    # Create the trained finder
+    finder = TrainedFinder(config)
+
+    # Run the trained finder just to find sources
+    finder.run(frame=frame, galaxies=galaxies, stars=stars, special_mask=special_mask,
+                            ignore_mask=ignore_mask, bad_mask=bad_mask,
+                            galaxy_segments=galaxy_segments,
+                            star_segments=star_segments, kernel=kernel)
+
+    if finder.region is not None:
+
+        other_sky_region = finder.region.to_sky(frame.wcs)
+
+        # if self.downsampled:
+        #    sky_region = self.other_sky_region
+        #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
+        # else: return self.trained_finder.region
+
+    if finder.segments is not None:
+
+        # if self.trained_finder.segments is None: return None
+        # if self.downsampled:
+        #    segments = self.trained_finder.segments
+        #    upsampled = segments.upsampled(self.config.downsample_factor, integers=True)
+        #    upsampled.unpad(self.pad_x, self.pad_y)
+        #    return upsampled
+        # else: return self.trained_finder.segments
+
+        other_segments = finder.segments
+
+    # Inform the user
+    log.success("Finished finding other sources for '" + frame.name + "' ...")
+
+    # Return the output
+    return other_sky_region, other_segments
+
+# -----------------------------------------------------------------
+
 # From: https://github.com/fred3m/astropyp/blob/master/astropyp/phot/calibrate.py
 
 import numpy as np
@@ -986,7 +1123,6 @@ def calculate_izY_coeffs(instr_mag, instr_color, airmass,
     adjusted_color = calibrate_color(instr_color, airmass, a, b, k1, k2)
 
     if show_plots:
-        import matplotlib
         import matplotlib.pyplot as plt
         for am in np.unique(airmass):
             aidx = airmass[idx] == am
