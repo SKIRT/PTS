@@ -62,8 +62,8 @@ class S4G(Configurable):
         super(S4G, self).__init__(config)
 
         # Names
-        self.ngc_id = None
-        self.ngc_id_nospaces = None
+        self.ngc_name = None
+        self.ngc_name_nospaces = None
 
         # The Vizier querying object
         self.vizier = Vizier()
@@ -154,7 +154,7 @@ class S4G(Configurable):
         :return:
         """
 
-        self.get_ngc_id()
+        self.get_ngc_name()
 
         #self.get_dustpedia_info()
 
@@ -191,7 +191,7 @@ class S4G(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_ngc_id(self):
+    def get_ngc_name(self):
 
         """
         This function ...
@@ -199,11 +199,11 @@ class S4G(Configurable):
         """
 
         # Get the NGC name of the galaxy
-        self.properties.ngc_id = catalogs.get_ngc_name(self.config.galaxy_name)
+        self.properties.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)
 
         # Set ...
-        self.ngc_id = self.properties.ngc_id
-        self.ngc_id_nospaces = self.ngc_id.replace(" ", "")
+        self.ngc_name = self.properties.ngc_name
+        self.ngc_name_nospaces = self.ngc_name.replace(" ", "")
 
     # -----------------------------------------------------------------
 
@@ -218,7 +218,7 @@ class S4G(Configurable):
         log.info("Fetching galaxy info from the DustPedia database ...")
 
         # Get the info
-        self.info = self.database.get_galaxy_info(self.ngc_id_nospaces)
+        self.info = self.database.get_galaxy_info(self.ngc_name_nospaces)
 
     # -----------------------------------------------------------------
 
@@ -382,7 +382,7 @@ class S4G(Configurable):
         # f5: [0.001/0.4] "psf" fraction of the total model flux
         # mag5: [11.5/21.1] "psf" total 3.6um AB magnitude [mag]
 
-        indices = tables.find_indices(table, self.ngc_id_nospaces, "Name")
+        indices = tables.find_indices(table, self.ngc_name_nospaces, "Name")
 
         labels = {"sersic": 1, "edgedisk": 2, "expdisk": 3, "ferrer2": 4, "psf": 5}
 
@@ -533,9 +533,9 @@ class S4G(Configurable):
                 #print(list(name))
 
                 # Only look at the line corresponding to the galaxy
-                if name != self.ngc_id_nospaces: continue
+                if name != self.ngc_name_nospaces: continue
 
-                #if self.ngc_id_nospaces not in name: continue
+                #if self.ngc_name_nospaces not in name: continue
 
                 #self.parameters.model_type = splitted[2]
                 #self.parameters.number_of_components = splitted[3]

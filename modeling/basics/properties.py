@@ -30,7 +30,9 @@ class GalaxyProperties(SimplePropertyComposite):
         """
 
         self.name = kwargs.pop("name", None)
-        self.ngc_id = kwargs.pop("ngc_id", None)
+        self.ngc_name = kwargs.pop("ngc_name", None)
+        self.hyperleda_name = kwargs.pop("hyperleda_name", None)
+        self.galaxy_type = kwargs.pop("galaxy_type", None)
         self.center = kwargs.pop("center", None)
         self.major = kwargs.pop("major", None)
         self.major_arcsec = kwargs.pop("major_arcsec", None)
@@ -41,7 +43,5 @@ class GalaxyProperties(SimplePropertyComposite):
         self.inclination = kwargs.pop("inclination", None)
         self.redshift = kwargs.pop("redshift", None)
         self.common_name = kwargs.pop("common_name", None)
-        self.galaxy_type = kwargs.pop("galaxy_type", None)
-        self.hyperleda_name = kwargs.pop("hyperleda_name", None)
 
 # -----------------------------------------------------------------

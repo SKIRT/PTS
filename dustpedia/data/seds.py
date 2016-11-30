@@ -47,7 +47,7 @@ class SEDFetcher(Configurable):
         self.sed = None
 
         # The NGC ID
-        self.ngc_id = None
+        self.ngc_name = None
 
     # -----------------------------------------------------------------
 
@@ -82,7 +82,7 @@ class SEDFetcher(Configurable):
         super(SEDFetcher, self).setup(**kwargs)
 
         # Get the NGC ID
-        self.ngc_id = self.sample.get_name(self.config.galaxy_name)
+        self.ngc_name = self.sample.get_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -97,7 +97,7 @@ class SEDFetcher(Configurable):
         log.info("Getting the SED ...")
 
         # Get the SED for the galaxy
-        self.sed = self.photometry.get_sed(self.ngc_id, add_iras=self.config.iras, add_planck=self.config.planck)
+        self.sed = self.photometry.get_sed(self.ngc_name, add_iras=self.config.iras, add_planck=self.config.planck)
 
     # -----------------------------------------------------------------
 

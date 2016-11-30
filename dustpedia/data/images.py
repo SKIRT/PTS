@@ -47,8 +47,8 @@ class ImageFetcher(Configurable):
         # The DustPediaDataBase object
         self.database = DustPediaDatabase()
 
-        # The NGC ID
-        self.ngc_id = None
+        # The NGC name
+        self.ngc_name = None
 
     # -----------------------------------------------------------------
 
@@ -82,8 +82,8 @@ class ImageFetcher(Configurable):
         # Call the setup function of the base class
         super(ImageFetcher, self).setup(**kwargs)
 
-        # Get the NGC ID
-        self.ngc_id = self.sample.get_name(self.config.galaxy_name)
+        # Get the NGC name
+        self.ngc_name = self.sample.get_name(self.config.galaxy_name)
 
         # Get username and password for the DustPedia database
         if self.config.database.username is not None:
@@ -103,8 +103,8 @@ class ImageFetcher(Configurable):
         :return:
         """
 
-        #filters = self.database.get_image_filters(self.ngc_id)
-        names_and_urls = self.database.get_image_names_and_urls(self.ngc_id)
+        #filters = self.database.get_image_filters(self.ngc_name)
+        names_and_urls = self.database.get_image_names_and_urls(self.ngc_name)
 
         paths = dict()
 

@@ -119,7 +119,7 @@ class GeometryPlotter(object):
             if isinstance(geometry, SersicModel3D):
 
                 major = 2.0 * geometry.effective_radius.to("pc").value
-                minor = geometry.flattening * major
+                minor = geometry.z_flattening * major
                 angle = geometry.tilt.to("deg").value
 
             elif isinstance(geometry, ExponentialDiskModel3D):

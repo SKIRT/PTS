@@ -242,7 +242,7 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the bulge model ...")
 
         # Create a Sersic model for the bulge
-        self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.galaxy_properties.inclination, self.disk_pa)
+        self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.galaxy_properties.inclination, self.disk_pa, azimuth_or_tilt=self.config.bulge_deprojection_method)
 
     # -----------------------------------------------------------------
 

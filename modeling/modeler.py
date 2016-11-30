@@ -19,7 +19,6 @@ from astropy.units import Unit
 from ..core.basics.configurable import Configurable
 from ..core.tools.logging import log
 from ..core.tools import filesystem as fs
-from .setup import ModelingSetupTool
 from .data.properties import PropertyFetcher
 from .data.images import ImageFetcher
 from .data.seds import SEDFetcher
@@ -35,17 +34,19 @@ from .maps.dust.dust import DustMapMaker
 from .fitting.configuration import FittingConfigurer
 from .fitting.initialization import FittingInitializer
 from .fitting.explorer import ParameterExplorer
-from .core.component import load_modeling_history, get_meta_file_path
-from ..magic.tools import catalogs
+from .fitting.sedfitting import SEDFitter
+from .core.component import load_modeling_history, get_config_file_path, load_modeling_configuration
 from ..core.basics.range import QuantityRange
+from .fitting.component import get_generations_table
+from ..core.launch.synchronizer import RemoteSynchronizer
 
 # -----------------------------------------------------------------
 
 # Define the different modeling methods
-modeling_methods = ["DL14", "FitSKIRT"]
-modeling_methods_descriptions = dict()
-modeling_methods_descriptions["DL14"] = "High-resolution radiative transfer modeling of face-on galaxies based on De Looze et al. 2014"
-modeling_methods_descriptions["FitSKIRT"] = "FitSKIRT method for fitting edge-on galaxies"
+modeling_methods = dict()
+modeling_methods["DL14"] = "High-resolution radiative transfer modeling of face-on galaxies based on De Looze et al. 2014"
+modeling_methods["FitSKIRT"] = "FitSKIRT method for fitting edge-on galaxies"
+modeling_methods["MGE"] = "Panchromatic radiative transfer modeling using Multi-Gaussian expansion"
 
 # -----------------------------------------------------------------
 
@@ -98,14 +99,38 @@ class GalaxyModeler(Configurable):
         # Call the constructor of the base class
         super(GalaxyModeler, self).__init__(config)
 
-        # The HYPERLEDA name of the galaxy
-        self.hyperleda_name = None
-
         # The path to the modeling directory
         self.modeling_path = None
 
+        # The modeling configuration
+        self.modeling_config = None
+
         # The modeling history
         self.history = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ngc_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_config.ngc_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def hyperleda_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_config.hyperleda_name
 
     # -----------------------------------------------------------------
 
@@ -123,16 +148,16 @@ class GalaxyModeler(Configurable):
         self.get_data()
 
         # 3. Data preparation
-        self.prepare_data()
+        #self.prepare_data()
 
         # 4. Decomposition
-        self.decompose()
+        if "decompose" not in self.history: self.decompose()
 
         # 5. Truncation
-        self.truncate()
+        if "truncate" not in self.history: self.truncate()
 
         # 6. Do the photometry
-        self.photometry()
+        if "photometry" not in self.history: self.photometry()
 
         # 7. Make the maps
         self.make_maps()
@@ -155,24 +180,12 @@ class GalaxyModeler(Configurable):
         # Call the setup function of the base class
         super(GalaxyModeler, self).setup()
 
-        # Set the hyperleda name
-        self.hyperleda_name = catalogs.get_hyperleda_name(self.config.galaxy_name)
-
         # Set the path to the modeling directory
-        self.modeling_path = fs.join(self.config.path, self.config.galaxy_name)
+        self.modeling_path = self.config.path
 
-        # Check whether the meta file is present
-        if not fs.is_file(get_meta_file_path(self.modeling_path)):
-
-            # Create the configuration
-            config = dict()
-            config["galaxy_name"] = self.config.galaxy_name
-
-            # Create the modeling setup tool
-            tool = ModelingSetupTool(config)
-
-            # Run the setup tool
-            tool.run()
+        # Check for the presence of the configuration file
+        if not fs.is_file(get_config_file_path(self.modeling_path)): raise ValueError("The current working directory is not a radiative transfer modeling directory (the configuration file is missing)")
+        else: self.modeling_config = load_modeling_configuration(self.modeling_path)
 
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
@@ -268,7 +281,7 @@ class GalaxyModeler(Configurable):
 
         # Create the configuration
         config = dict()
-        config["remote"] = self.config.host_id
+        config["remote"] = self.modeling_config.host_id
         config["halpha_url"] = halpha_urls[self.hyperleda_name]
         config["halpha_flux"] = halpha_fluxes[self.hyperleda_name]
 
@@ -463,16 +476,16 @@ class GalaxyModeler(Configurable):
         log.info("Making the maps describing the model geometries ...")
 
         # Create the map of the old stellar disk
-        self.make_old_stellar_map()
+        if "make_old_map" not in self.history: self.make_old_stellar_map()
 
         # Create the map of the young stellar population
-        self.make_young_stellar_map()
+        if "make_young_map" not in self.history: self.make_young_stellar_map()
 
         # Create the map of the ionizing stellar population
-        self.make_ionizing_stellar_map()
+        if "make_ionizing_map" not in self.history: self.make_ionizing_stellar_map()
 
         # Create the dust map
-        self.make_dust_map()
+        if "make_dust_map" not in self.history: self.make_dust_map()
 
     # -----------------------------------------------------------------
 
@@ -599,13 +612,22 @@ class GalaxyModeler(Configurable):
         log.info("Fitting radiative transfer models to the data ...")
 
         # Configure the fitting
-        self.configure_fit()
+        if "configure_fit" not in self.history: self.configure_fit()
 
         # Initialize the fitting
-        self.initialize_fit()
+        if "initialize_fit" not in self.history: self.initialize_fit()
 
-        # Explore the parameter space
-        self.explore()
+        # Load the generations table
+        generations = get_generations_table(self.modeling_path)
+
+        # If some generations have not finished, check the status of and retrieve simulations
+        if generations.has_unfinished: self.synchronize()
+
+        # If some generations have finished, fit the SED
+        if generations.has_finished: self.fit_sed()
+
+        # IF all generations have finished, explore new generation of models
+        if generations.all_finished: self.explore()
 
     # -----------------------------------------------------------------
 
@@ -623,8 +645,8 @@ class GalaxyModeler(Configurable):
         config = dict()
 
         # Set free parameters
-        config["parameters"] = free_parameters[self.config.method]
-        config["ranges"] = free_parameter_ranges[self.config.method]
+        config["parameters"] = free_parameters[self.modeling_config.method]
+        config["ranges"] = free_parameter_ranges[self.modeling_config.method]
         config["filters"] = fitting_filter_names
 
         # Create the fitting configurer
@@ -670,6 +692,51 @@ class GalaxyModeler(Configurable):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def synchronize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Synchronizing with the remotes (retrieving and analysing finished models) ...")
+
+        # Create the remote synchronizer
+        synchronizer = RemoteSynchronizer()
+
+        # Set the host IDs
+        synchronizer.config.host_ids = self.modeling_config.fitting_host_ids
+
+        # Run the remote synchronizer
+        synchronizer.run()
+
+    # -----------------------------------------------------------------
+
+    def fit_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fitting the SED to the finished generations ...")
+
+        # Create the SED fitter
+        fitter = SEDFitter()
+
+        # Add an entry to the history
+        self.history.add_entry(SEDFitter.command_name())
+
+        # Run the fitter
+        fitter.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
 
     # -----------------------------------------------------------------
 

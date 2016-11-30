@@ -18,7 +18,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
-from ..config.parameters import descriptions, types_and_ranges
+from ..config.parameters import choices, types_and_ranges
 from ..config.parameters import units as parameter_units
 from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
@@ -169,7 +169,7 @@ class FittingConfigurer(FittingComponent):
             # Add the options
             for label in self.parameters_config.free_parameters:
                 in_units_string = " (in " + parameter_units[label] + ")" if label in parameter_units else ""
-                definition.add_optional(label + "_range", types_and_ranges[label][0] + "_range", "range of the " + descriptions[label] + in_units_string, default=types_and_ranges[label][1], convert_default=True)
+                definition.add_optional(label + "_range", types_and_ranges[label][0] + "_range", "range of the " + choices[label] + in_units_string, default=types_and_ranges[label][1], convert_default=True)
 
             # Create configuration setter
             setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)

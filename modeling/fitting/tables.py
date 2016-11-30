@@ -220,6 +220,48 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def all_finished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over each row (generation)
+        for i in range(len(self)):
+
+            finished = not self["Finishing time"].mask[i]
+
+            # At least one is not finished
+            if not finished: return False
+
+        # All finished
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_finished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over each row (generation)
+        for i in range(len(self)):
+
+            finished = not self["Finishing time"].mask[i]
+
+            # At least one is finished
+            if finished: return True
+
+        # None are finished
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
     def finished_generations(self):
 
         """

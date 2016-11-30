@@ -56,8 +56,8 @@ class SEDFetcher(Configurable):
 
         # -- Attributes --
 
-        # Determine the NGC id of the galaxy
-        self.ngc_id = None
+        # Determine the NGC name of the galaxy
+        self.ngc_name = None
 
         # The Vizier querying object
         self.vizier = Vizier(keywords=["galaxies"])
@@ -105,8 +105,8 @@ class SEDFetcher(Configurable):
         keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
         for key in keys: self.filters[key] = Filter.from_string(key)
 
-        # Get the NGC ID
-        self.ngc_id = catalogs.get_ngc_name(self.config.galaxy_name)
+        # Get the NGC name
+        self.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -164,7 +164,7 @@ class SEDFetcher(Configurable):
         if "Planck" in self.config.catalogs: self.get_planck()
 
         # SPECIFIC for M81: not enabled, no time to figure out the unit conversion now
-        # if self.ngc_id == "NGC 3031": self.get_m81()
+        # if self.ngc_name == "NGC 3031": self.get_m81()
 
         # Other interesting catalogs:
         # http://vizier.cfa.harvard.edu/viz-bin/VizieR-3?-source=J/ApJS/199/22
@@ -562,12 +562,12 @@ class SEDFetcher(Configurable):
 
         #print(result[5])
 
-        #print(self.ngc_id)
+        #print(self.ngc_name)
 
         # Create an SED
         sed = ObservedSED()
 
-        galaxy_index = tables.find_index(result[5], self.ngc_id)
+        galaxy_index = tables.find_index(result[5], self.ngc_name)
 
         if galaxy_index is not None:
 
@@ -727,7 +727,7 @@ class SEDFetcher(Configurable):
 
         # Table7 -> index 6
 
-        galaxy_index = tables.find_index(result[6], self.ngc_id)
+        galaxy_index = tables.find_index(result[6], self.ngc_name)
 
         if galaxy_index is not None:
 
@@ -1057,7 +1057,7 @@ class SEDFetcher(Configurable):
         result = self.vizier.get_catalogs("J/ApJS/178/280/table2")
         table = result[0]
 
-        index = tables.find_index(table, self.ngc_id, "Name")
+        index = tables.find_index(table, self.ngc_name, "Name")
         #print(index)
         #index = tables.find_index(table, self.config.galaxy_name, "Name")
         #print(index)
@@ -1302,7 +1302,7 @@ class SEDFetcher(Configurable):
         result = self.vizier.get_catalogs("J/ApJS/190/233/Opt")
         table = result[0]
 
-        galaxy_index = tables.find_index(table, self.ngc_id, "Name")
+        galaxy_index = tables.find_index(table, self.ngc_name, "Name")
 
         # FHa: The Hα 6563 Angstrom line flux (aW/m2)
         # e_FHa: Uncertainty in Ha (aW/m2)

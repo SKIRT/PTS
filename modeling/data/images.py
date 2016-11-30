@@ -133,7 +133,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the names of the images on the DustPedia database ...")
 
         # Get the image names
-        all_urls = self.database.get_image_names_and_urls(self.ngc_id_nospaces)
+        all_urls = self.database.get_image_names_and_urls(self.ngc_name_nospaces)
 
         # Order the names per origin
         for origin in self.data_origins:
@@ -182,7 +182,7 @@ class ImageFetcher(DataComponent):
 
         # Create the configuration dictionary
         config_dict = dict()
-        config_dict["galaxy_name"] = self.ngc_id_nospaces
+        config_dict["galaxy_name"] = self.ngc_name_nospaces
         config_dict["output"] = fs.join(self.data_images_paths["GALEX"], "temp")
         fs.create_directory(config_dict["output"])
 
@@ -210,7 +210,7 @@ class ImageFetcher(DataComponent):
 
         # Create the configuration dictionary
         config_dict = dict()
-        config_dict["galaxy_name"] = self.ngc_id_nospaces
+        config_dict["galaxy_name"] = self.ngc_name_nospaces
         config_dict["output"] = fs.join(self.data_images_paths["SDSS"], "temp")
         fs.create_directory(config_dict["output"])
 

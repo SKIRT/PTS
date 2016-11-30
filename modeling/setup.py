@@ -15,8 +15,10 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..core.basics.configurable import Configurable
 from ..core.tools.logging import log
-from ..magic.tools.catalogs import get_ngc_name
+from ..magic.tools.catalogs import get_ngc_name, get_hyperleda_name
 from ..core.tools import filesystem as fs
+from .core.component import get_config_file_path
+from ..core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
@@ -39,6 +41,15 @@ class ModelingSetupTool(Configurable):
         # The path to the modeling directory
         self.modeling_path = None
 
+        # The NGC name of the galaxy
+        self.ngc_name = None
+
+        # The HYPERLEDA name of the galaxy
+        self.hyperleda_name = None
+
+        # The modeling configuration
+        self.modeling_config = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -51,11 +62,17 @@ class ModelingSetupTool(Configurable):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Create the modeling directory
+        # 3. Resolve the name of the galaxy
+        self.resolve_name()
+
+        # 3. Create the modeling directory
         self.create_directory()
 
-        # 3. Create the meta file
-        self.create_meta()
+        # 4. Create the configuration
+        self.create_config()
+
+        # 5. Writing
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -84,17 +101,15 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Creating the modeling directory ...")
 
+        # Check whether a directory with this name is already present
         if fs.is_directory(self.modeling_path): raise ValueError("A directory with the name '" + self.config.galaxy_name + "' already exists in the current working directory")
 
         # Create the directory
         fs.create_directory(self.modeling_path)
 
-        # Inform the user
-        log.info("Resolving the galaxy name ...")
-
     # -----------------------------------------------------------------
 
-    def create_meta(self):
+    def resolve_name(self):
 
         """
         This function ...
@@ -102,18 +117,74 @@ class ModelingSetupTool(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the meta file ...")
+        log.info("Resolving the galaxy name ...")
 
         # Get the NGC name of the galaxy
-        ngc_name = get_ngc_name(self.config.galaxy_name)
+        self.ngc_name = get_ngc_name(self.config.galaxy_name)
 
         # Inform the user
-        log.info("Galaxy NGC ID is '" + ngc_name + "'")
+        log.info("Galaxy NGC ID is '" + self.ngc_name + "'")
 
-        # Determine the path to the meta file
-        meta_path = fs.join(self.modeling_path, "modeling.meta")
+        # Get the name in the HYPERLEDA catalog
+        self.hyperleda_name = get_hyperleda_name(self.config.galaxy_name)
 
-        # Write the NGC name of the galaxy to the meta file
-        with open(meta_path, 'w') as meta_file: print("Modeling directory for galaxy: " + ngc_name, file=meta_file)
+        # Inform the user
+        log.info("Galaxy HYPERLEDA ID is '" + self.hyperleda_name + "'")
+
+    # -----------------------------------------------------------------
+
+    def create_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the modeling configuration ...")
+
+        # Create a Configuration object
+        self.modeling_config = Configuration()
+
+        # Set the configuration settings
+        self.modeling_config.name = self.config.galaxy_name
+        self.modeling_config.ngc_name = self.ngc_name
+        self.modeling_config.hyperleda_name = self.hyperleda_name
+        self.modeling_config.method = self.config.method
+        self.modeling_config.host_id = self.config.host_id
+        self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the configuration
+        self.write_config()
+
+    # -----------------------------------------------------------------
+
+    def write_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the modeling configuration ...")
+
+        # Determine the path
+        path = get_config_file_path(self.modeling_path)
+
+        # Save the config
+        self.modeling_config.save(path)
 
 # -----------------------------------------------------------------

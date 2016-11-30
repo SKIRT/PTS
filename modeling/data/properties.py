@@ -76,8 +76,8 @@ class PropertyFetcher(DataComponent):
         # 1. Setup
         self.setup()
 
-        # 2. Get the NGC ID
-        self.get_ngc_id()
+        # 2. Get the NGC name
+        self.get_ngc_name()
 
         # 3. Get the basic galaxy information listed on the database
         self.get_dustpedia_info()
@@ -123,7 +123,7 @@ class PropertyFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def get_ngc_id(self):
+    def get_ngc_name(self):
 
         """
         This function ...
@@ -131,7 +131,7 @@ class PropertyFetcher(DataComponent):
         """
 
         # Get the NGC name of the galaxy
-        self.properties.ngc_id = catalogs.get_ngc_name(self.galaxy_name)
+        self.properties.ngc_name = catalogs.get_ngc_name(self.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -146,7 +146,7 @@ class PropertyFetcher(DataComponent):
         log.info("Fetching galaxy info from the DustPedia database ...")
 
         # Get the info
-        self.info = self.database.get_galaxy_info(self.ngc_id_nospaces)
+        self.info = self.database.get_galaxy_info(self.ngc_name_nospaces)
 
         # Get the HYPERLEDA (or DustPedia) name
         self.properties.hyperleda_name = catalogs.get_hyperleda_name(self.galaxy_name)
@@ -168,7 +168,7 @@ class PropertyFetcher(DataComponent):
         ned_entry = ned_result[0]
 
         # Get a more common name for this galaxy (sometimes, the name obtained from NED is one starting with 2MASX .., use the PGC name in this case)
-        if ned_entry["Object Name"].startswith("2MASX "): gal_name = self.ngc_id
+        if ned_entry["Object Name"].startswith("2MASX "): gal_name = self.ngc_name
         else: gal_name = ned_entry["Object Name"]
 
         # Get the redshift

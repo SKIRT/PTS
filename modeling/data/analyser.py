@@ -116,12 +116,12 @@ class MosaicAnalyser(DataComponent):
         log.info("Loading the result of the mosaicing procedure ...")
 
         # Loop over the FITS files found in the output directory
-        for path, name in fs.files_in_path(self.task.local_output_path, extension="fits", contains=self.ngc_id_nospaces, returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.task.local_output_path, extension="fits", contains=self.ngc_name_nospaces, returns=["path", "name"]):
 
             # Split
             splitted = name.split("_")
 
-            assert splitted[0] == self.ngc_id_nospaces
+            assert splitted[0] == self.ngc_name_nospaces
 
             if self.origin is None: self.origin = splitted[1]
             else: assert self.origin == splitted[1]
@@ -152,7 +152,7 @@ class MosaicAnalyser(DataComponent):
         for band_id in self.mosaics:
 
             # Determine the path to the image downloaded from the DustPedia archive
-            path = fs.join(self.data_images_paths[self.origin], self.ngc_id_nospaces + "_" + band_id + ".fits")
+            path = fs.join(self.data_images_paths[self.origin], self.ngc_name_nospaces + "_" + band_id + ".fits")
 
             # Load the reference image
             self.references[band_id] = Frame.from_file(path)
@@ -257,7 +257,7 @@ class MosaicAnalyser(DataComponent):
         for band_id in self.mosaics:
 
             # Determine path
-            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + ".fits")
+            path = fs.join(self.check_paths[band_id], self.ngc_name_nospaces + "_" + band_id + ".fits")
 
             # Save the mosaic frame
             self.mosaics[band_id].save(path)
@@ -278,7 +278,7 @@ class MosaicAnalyser(DataComponent):
         for band_id in self.poisson_frames:
 
             # Determine path
-            path = fs.join(self.data_images_paths[self.origin], self.ngc_id_nospaces + "_" + band_id + "_poisson.fits")
+            path = fs.join(self.data_images_paths[self.origin], self.ngc_name_nospaces + "_" + band_id + "_poisson.fits")
 
             # For GALEX
             if "GALEX" in band_id:
@@ -312,7 +312,7 @@ class MosaicAnalyser(DataComponent):
         for band_id in self.relative_poisson_frames:
 
             # Determine path
-            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + "_relpoisson.fits")
+            path = fs.join(self.check_paths[band_id], self.ngc_name_nospaces + "_" + band_id + "_relpoisson.fits")
 
             # Save the relative poisson error frame
             self.relative_poisson_frames[band_id].save(path)
@@ -333,7 +333,7 @@ class MosaicAnalyser(DataComponent):
         for band_id in self.references:
 
             # Determine path
-            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + "_difference.fits")
+            path = fs.join(self.check_paths[band_id], self.ngc_name_nospaces + "_" + band_id + "_difference.fits")
 
             # Calculate the difference
             difference = self.references[band_id] - self.mosaics[band_id]
@@ -357,7 +357,7 @@ class MosaicAnalyser(DataComponent):
         for band_id in self.references:
 
             # Determine path
-            path = fs.join(self.check_paths[band_id], self.ngc_id_nospaces + "_" + band_id + "_reldifference.fits")
+            path = fs.join(self.check_paths[band_id], self.ngc_name_nospaces + "_" + band_id + "_reldifference.fits")
 
             # Calculate the difference
             reldifference = self.references[band_id] / self.mosaics[band_id]

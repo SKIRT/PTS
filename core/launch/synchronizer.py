@@ -60,32 +60,7 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new RemoteSynchronizer instance
-        synchronizer = cls()
-
-        ## Adjust the configuration settings according to the command-line arguments
-
-        # Set the remote name and the delete dictionary
-        if hasattr(arguments, "remote"): synchronizer.config.remote = arguments.remote
-        if hasattr(arguments, "ids"): synchronizer.config.ids = arguments.ids
-        if hasattr(arguments, "status"): synchronizer.config.statuses = arguments.status
-        if hasattr(arguments, "relaunch"): synchronizer.config.relaunch = arguments.relaunch
-
-        # Return the new synchronizer
-        return synchronizer
-
-    # -----------------------------------------------------------------
-
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -93,7 +68,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Retrieve the simulations and tasks
         self.retrieve()
@@ -106,7 +81,7 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -114,26 +89,31 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Call the setup function of the base class
-        super(RemoteSynchronizer, self).setup()
+        super(RemoteSynchronizer, self).setup(**kwargs)
 
-        # Find host ids for which a configuration file has been created by the user
-        for host_id in find_host_ids():
+        # Load the remote instances
+        if "remotes" in kwargs: self.remotes = kwargs.pop("remotes")
+        else:
 
-            # If a list of remotes is defined and this remote is not in it, skip it
-            if self.config.remote is not None and host_id not in self.config.remote: continue
+            # Determine the host IDs
+            if self.config.host_ids is not None: host_ids = self.config.host_ids
+            else: host_ids = find_host_ids()
 
-            # If there are currently no simulations corresponding to this host, skip it
-            if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
+            # Loop over the host IDs
+            for host_id in host_ids:
 
-            # Create a remote SKIRT execution context
-            if introspection.skirt_is_present(): remote = SkirtRemote()
-            else: remote = Remote()
+                # If there are currently no simulations corresponding to this host, skip it
+                if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
 
-            # Setup the remote execution context
-            remote.setup(host_id)
+                # Create a remote SKIRT execution context
+                if introspection.skirt_is_present(): remote = SkirtRemote()
+                else: remote = Remote()
 
-            # Add the remote to the list of remote objects
-            self.remotes.append(remote)
+                # Setup the remote execution context
+                remote.setup(host_id)
+
+                # Add the remote to the list of remote objects
+                self.remotes.append(remote)
 
     # -----------------------------------------------------------------
 

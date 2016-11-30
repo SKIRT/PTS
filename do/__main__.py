@@ -130,7 +130,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     # Get the class of the configurable of which an instance has to be created
     module = importlib.import_module(module_path)
-    cls = getattr(module, class_name)
+    try: cls = getattr(module, class_name)
+    except AttributeError:
+        raise Exception("The class name for the '" + command_name + "' command is incorrectly specified in the 'commands.dat' file of the '" + subproject + "' subproject")
 
     # Import things
     from pts.core.tools import logging
@@ -189,7 +191,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     ##
 
     # Mark begin of modeling command for history
-    if subproject == "modeling" and command_name != "model_galaxy":
+    if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy":
 
         from ..modeling.core.component import load_modeling_history
         history = load_modeling_history(fs.cwd())
@@ -257,7 +259,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
         log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
 
     # Mark the end of this modeling script
-    if subproject == "modeling":
+    if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy":
         history.mark_end()
         history.save()
 

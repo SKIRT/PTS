@@ -65,7 +65,7 @@ class SersicModel3D(Model):
     This function ...
     """
 
-    def __init__(self, effective_radius, index, flattening, tilt=0):
+    def __init__(self, effective_radius, index, y_flattening=1., z_flattening=1., azimuth=Angle(0.0, "deg"), tilt=Angle(0.0, "deg")):
 
         """
         This function ...
@@ -74,18 +74,21 @@ class SersicModel3D(Model):
 
         self.effective_radius = effective_radius
         self.index = index
-        self.flattening = flattening
+        self.y_flattening = y_flattening
+        self.z_flattening = z_flattening
+        self.azimuth = azimuth
         self.tilt = tilt
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_2d(cls, sersic2d, inclination, position_angle):
+    def from_2d(cls, sersic2d, inclination, position_angle, azimuth_or_tilt="azimuth"):
 
         """
         :param sersic2d:
         :param inclination:
         :param position_angle:
+        :param azimuth_or_tilt:
         :return:
         """
 
@@ -93,15 +96,38 @@ class SersicModel3D(Model):
         effective_radius = sersic2d.effective_radius
         index = sersic2d.index
 
-        # Calculate the intrinsic flattening
-        flattening = intrinsic_flattening(sersic2d.axial_ratio, inclination)
+        # Tilt angle and z flattening
+        if azimuth_or_tilt == "tilt":
 
-        # Calculate the tilt angle of the bulge (tilt w.r.t. the x-axis)
-        tilt = deproject_pa_to_tilt(sersic2d.position_angle - position_angle, inclination)
-        tilt = Angle(90., "deg") - tilt
+            # Calculate the intrinsic flattening
+            y_flattening = 1.
+            z_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
+
+            # Set azimuth
+            azimuth = 0. * Unit("deg")
+
+            # Calculate the tilt angle of the bulge (tilt w.r.t. the x-axis)
+            tilt = deproject_pa_to_tilt(sersic2d.position_angle - position_angle, inclination)
+            tilt = Angle(90., "deg") - tilt
+
+        # Azimuth angle and y flattening
+        elif azimuth_or_tilt == "azimuth":
+
+            # Calculate the intrinsic flattening
+            y_flattening = intrinsic_y_flattening(sersic2d.axial_ratio, inclination)
+            z_flattening = 1.
+
+            # Calculate the azimuth angle of the bulge
+            azimuth = deproject_pa_to_azimuth(sersic2d.position_angle - position_angle, inclination)
+
+            # Set tilt
+            tilt = 0. * Unit("deg")
+
+        # Other input
+        else: raise ValueError("Incorrect value for 'azimuth_or_tilt'")
 
         # Create a new Sersic model and return it
-        return cls(effective_radius, index, flattening, tilt)
+        return cls(effective_radius, index, y_flattening, z_flattening, azimuth, tilt)
 
 # -----------------------------------------------------------------
 
@@ -143,7 +169,7 @@ class ExponentialDiskModel3D(Model):
         radial_scale = exponentialdiskmodel2d.scalelength
 
         # Calculate the intrinsic flattening
-        flattening = intrinsic_flattening(exponentialdiskmodel2d.axial_ratio, inclination)
+        flattening = intrinsic_z_flattening(exponentialdiskmodel2d.axial_ratio, inclination)
 
         # Calculate the axial scale
         axial_scale = flattening * radial_scale
@@ -187,7 +213,7 @@ class DeprojectionModel3D(Model):
 
 # -----------------------------------------------------------------
 
-def intrinsic_flattening(qprime, inclination):
+def intrinsic_z_flattening(qprime, inclination):
 
     """
     This function ...
@@ -200,6 +226,29 @@ def intrinsic_flattening(qprime, inclination):
 
     # Calculate the intrinsic flattening
     q = math.sqrt((qprime**2 - math.cos(i)**2)/math.sin(i)**2)
+
+    # Return the intrinsic flattening
+    return q
+
+# -----------------------------------------------------------------
+
+def intrinsic_y_flattening(qprime, inclination):
+
+    """
+    This function ...
+    :param qprime:
+    :param inclination:
+    :return:
+    """
+
+    # Get the inclination angle in radians
+    i = inclination.to("radian").value
+
+    # Calculate the 'inclination' w.r.t. the y axis
+    i_wrt_y = i + 0.5 * math.pi
+
+    # Calculate the intrinsic flattening
+    q = math.sqrt((qprime ** 2 - math.cos(i_wrt_y) ** 2) / math.sin(i_wrt_y) ** 2)
 
     # Return the intrinsic flattening
     return q

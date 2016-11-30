@@ -76,6 +76,17 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
     def log_dir_path(self):
 
         """
@@ -558,7 +569,7 @@ class ConfigurationDefinition(object):
             description = self.optional[name][1]
             default = self.optional[name][2]
             choices = self.optional[name][3]
-            letter = self.optional[name][5]
+            letter = self.optional[name][4]
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -736,7 +747,7 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, choices=None, choice_descriptions=None, dynamic_list=False):
+    def add_required(self, name, user_type, description, choices=None, dynamic_list=False):
 
         """
         This function ...
@@ -744,7 +755,6 @@ class ConfigurationDefinition(object):
         :param user_type:
         :param description:
         :param choices:
-        :param choice_descriptions:
         :param dynamic_list:
         :return:
         """
@@ -753,12 +763,12 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Add
-        self.required[name] = (real_type, description, choices, choice_descriptions, dynamic_list)
+        self.required[name] = (real_type, description, choices, dynamic_list)
 
     # -----------------------------------------------------------------
 
     def add_positional_optional(self, name, user_type, description, default=None, choices=None,
-                                choice_descriptions=None, convert_default=False, dynamic_list=False):
+                                convert_default=False, dynamic_list=False):
 
         """
         This function ...
@@ -767,7 +777,6 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param choices:
-        :param choice_descriptions:
         :param convert_default:
         :param dynamic_list:
         :return:
@@ -780,12 +789,11 @@ class ConfigurationDefinition(object):
         if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
-        self.pos_optional[name] = (real_type, description, default, choices, choice_descriptions, dynamic_list)
+        self.pos_optional[name] = (real_type, description, default, choices, dynamic_list)
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default=None, choices=None, choice_descriptions=None,
-                     letter=None, convert_default=False, dynamic_list=False):
+    def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False, dynamic_list=False):
 
         """
         This function ...
@@ -794,7 +802,6 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param choices:
-        :param choice_descriptions:
         :param letter:
         :param convert_default:
         :param dynamic_list:
@@ -810,7 +817,7 @@ class ConfigurationDefinition(object):
         if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
-        self.optional[name] = (real_type, description, default, choices, choice_descriptions, letter, dynamic_list)
+        self.optional[name] = (real_type, description, default, choices, letter, dynamic_list)
 
     # -----------------------------------------------------------------
 
@@ -1496,10 +1503,10 @@ def write_definition(definition, configfile, indent=""):
         real_type = definition.required[name][0]
         description = definition.required[name][1]
         choices = definition.required[name][2]
-        choice_descriptions = definition.required[name][3]
 
         choices_string = ""
-        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [required, " + str(real_type) + "]: None" + choices_string, file=configfile)
@@ -1511,10 +1518,10 @@ def write_definition(definition, configfile, indent=""):
         description = definition.pos_optional[name][1]
         default = definition.pos_optional[name][2]
         choices = definition.pos_optional[name][3]
-        choice_descriptions = definition.pos_optional[name][4]
 
         choices_string = ""
-        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [pos_optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
@@ -1526,11 +1533,11 @@ def write_definition(definition, configfile, indent=""):
         description = definition.optional[name][1]
         default = definition.optional[name][2]
         choices = definition.optional[name][3]
-        choice_descriptions = definition.optional[name][4]
         letter = definition.optional[name][5]
 
         choices_string = ""
-        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
@@ -1596,7 +1603,8 @@ def add_settings_from_dict(config, definition, dictionary):
 
         # Check with choices
         if choices is not None:
-            if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+            choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
+            if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
 
         # Set the value
         config[name] = value
@@ -1617,7 +1625,8 @@ def add_settings_from_dict(config, definition, dictionary):
 
             # Check with choices
             if choices is not None:
-                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+                choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
+                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
 
         # Use the default value otherwise
         else: value = default
@@ -1642,7 +1651,8 @@ def add_settings_from_dict(config, definition, dictionary):
 
             # Check with choices
             if choices is not None:
-                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+                choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
+                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
 
         # Use the default value otherwise
         else: value = default
@@ -1775,11 +1785,16 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         real_type = definition.required[name][0]
         description = definition.required[name][1]
         choices = definition.required[name][2]
-        choice_descriptions = definition.required[name][3]
-        dynamic_list = definition.required[name][4]
+        dynamic_list = definition.required[name][3]
 
         # Give name and description
         log.success(name + ": " + description)
+
+        # Get list of choices and a dict of their descriptions
+        if choices is not None:
+            choices_list = choices.keys() if isinstance(choices, dict) else choices
+            choice_descriptions = choices if isinstance(choices, dict) else None
+        else: choices_list = choice_descriptions = None
 
         if choices is not None:
 
@@ -1787,9 +1802,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 log.info("Choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
@@ -1798,7 +1813,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     answer = raw_input("   : ")
                     try:
                         indices = parsing.integer_list(answer)
-                        value = [choices[index] for index in indices] # value is a list
+                        value = [choices_list[index] for index in indices] # value is a list
                         break
                     except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -1806,9 +1821,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 log.info("Choose one of the following options")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = None  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -1818,7 +1833,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     answer = raw_input("   : ")
                     try:
                         index = parsing.integer(answer)
-                        value = choices[index]
+                        value = choices_list[index]
                         break
                     except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -1873,8 +1888,13 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         description = definition.pos_optional[name][1]
         default = definition.pos_optional[name][2]
         choices = definition.pos_optional[name][3]
-        choice_descriptions = definition.pos_optional[name][4]
-        dynamic_list = definition.pos_optional[name][5]
+        dynamic_list = definition.pos_optional[name][4]
+
+        # Get list of choices and a dict of their descriptions
+        if choices is not None:
+            choices_list = choices.keys() if isinstance(choices, dict) else choices
+            choice_descriptions = choices if isinstance(choices, dict) else None
+        else: choices_list = choice_descriptions = None
 
         if not prompt_optional:
             value = default
@@ -1888,15 +1908,15 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         #
         log.info("Press ENTER to use the default value (" + str(default) + ")")
 
-        if choices is not None:
+        if choices_list is not None:
 
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 log.info("or choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default # to remove warning from IDE that value could be referenced (below) without assignment
@@ -1909,7 +1929,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     else:
                         try:
                             indices = parsing.integer_list(answer)
-                            value = [choices[index] for index in indices] # value is a list
+                            value = [choices_list[index] for index in indices] # value is a list
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -1917,9 +1937,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 log.info("or choose one of the following options")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -1932,7 +1952,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     else:
                         try:
                             index = parsing.integer(answer)
-                            value = choices[index]
+                            value = choices_list[index]
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -1997,9 +2017,14 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         description = definition.optional[name][1]
         default = definition.optional[name][2]
         choices = definition.optional[name][3]
-        choice_descriptions = definition.optional[name][4]
-        letter = definition.optional[name][5]
-        dynamic_list = definition.optional[name][6]
+        letter = definition.optional[name][4]
+        dynamic_list = definition.optional[name][5]
+
+        # Get list of choices and a dict of their descriptions
+        if choices is not None:
+            choices_list = choices.keys() if isinstance(choices, dict) else choices
+            choice_descriptions = choices if isinstance(choices, dict) else None
+        else: choices_list = choice_descriptions = None
 
         if not prompt_optional:
             value = default
@@ -2013,15 +2038,15 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         #
         log.info("Press ENTER to use the default value (" + str(default) + ")")
 
-        if choices is not None:
+        if choices_list is not None:
 
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 log.info("or choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -2035,7 +2060,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     else:
                         try:
                             indices = parsing.integer_list(answer)
-                            value = [choices[index] for index in indices] # value is a list here
+                            value = [choices_list[index] for index in indices] # value is a list here
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -2043,9 +2068,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 log.info("or choose one of the following options")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -2059,7 +2084,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     else:
                         try:
                             index = parsing.integer(answer)
-                            value = choices[index] # if we are here, no error was raised
+                            value = choices_list[index] # if we are here, no error was raised
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 

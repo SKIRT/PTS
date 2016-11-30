@@ -71,7 +71,9 @@ class SourceFinder(Configurable):
         self.stellar_catalog = None
 
         # Ignore images
-        self.ignore_images = []
+        self.ignore = []
+        self.ignore_stars = []
+        self.ignore_other_sources = []
 
         # The regions covering areas that should be ignored throughout the entire extraction procedure
         self.special_region = None
@@ -94,6 +96,9 @@ class SourceFinder(Configurable):
         self.galaxy_finder = None
         self.trained_finder = None
 
+        # Settings for the star finder for different bands
+        self.star_finder_settings = dict()
+
         # Galaxy and star lists
         self.galaxies = dict()
         self.stars = dict()
@@ -106,12 +111,13 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_frame(self, name, frame):
+    def add_frame(self, name, frame, star_finder_settings=None):
 
         """
         This function ...
         :param name:
         :param frame:
+        :param star_finder_settings:
         :return:
         """
 
@@ -120,6 +126,9 @@ class SourceFinder(Configurable):
 
         # Set the frame
         self.frames[name] = frame
+
+        # Set the settings
+        if star_finder_settings is not None: self.star_finder_settings[name] = star_finder_settings
 
     # -----------------------------------------------------------------
 
@@ -210,8 +219,17 @@ class SourceFinder(Configurable):
             self.frames = dataset.get_frames()
         else: self.load_frames()
 
+        # Get the settings
+        if "star_finder_settings" in kwargs: self.star_finder_settings = kwargs.pop("star_finder_settings")
+
         # Ignore certain images
-        self.ignore_images = kwargs.pop("ignore_images", [])
+        self.ignore = kwargs.pop("ignore", [])
+
+        # Ignore stars in certain images
+        self.ignore_stars = kwargs.pop("ignore_stars", [])
+
+        # Ignore other sources in certain images
+        self.ignore_other_sources = kwargs.pop("ignore_other_sources", [])
 
         # Load special region
         self.special_region = SkyRegionList.from_file(self.config.special_region) if self.config.special_region is not None else None
@@ -351,7 +369,7 @@ class SourceFinder(Configurable):
         for name in self.frames:
 
             # Ignore if requested
-            if name in self.ignore_images: continue
+            if name in self.ignore: continue
 
             # Get the frame
             frame = self.frames[name]
@@ -426,7 +444,8 @@ class SourceFinder(Configurable):
         for name in self.frames:
 
             # Ignore if requested
-            if name in self.ignore_images: continue
+            if name in self.ignore: continue
+            if name in self.ignore_stars: continue
 
             # Get the frame
             frame = self.frames[name]
@@ -440,6 +459,12 @@ class SourceFinder(Configurable):
                 special_mask = self.special_masks[name] if name in self.special_masks else None
                 ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
                 bad_mask = None
+
+                # Set settings
+                if name in self.star_finder_settings:
+                    original_config = self.star_finder.config.copy()
+                    self.star_finder.config.set_items(self.star_finder_settings[name])
+                else: original_config = None
 
                 # Run the star finder
                 self.star_finder.run(frame=frame, galaxies=self.galaxies[name], catalog=self.stellar_catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
@@ -506,6 +531,9 @@ class SourceFinder(Configurable):
                 # Inform the user
                 log.success("Finished finding the stars for '" + name + "' ...")
 
+                # Reset the settings
+                if original_config is not None: self.star_finder.config = original_config
+
                 # Clear the star finder
                 self.star_finder.clear()
 
@@ -528,7 +556,8 @@ class SourceFinder(Configurable):
         for name in self.frames:
 
             # Ignore if requested
-            if name in self.ignore_images: continue
+            if name in self.ignore: continue
+            if name in self.ignore_other_sources: continue
 
             # Get the frame
             frame = self.frames[name]

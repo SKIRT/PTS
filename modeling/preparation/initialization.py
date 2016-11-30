@@ -21,11 +21,8 @@ from ...magic.sources.finder import SourceFinder
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.misc.imageimporter import ImageImporter
-from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...core.basics.animation import Animation
-from ...core.tools import time
-from ...core.tools import parsing
 from ...magic.core.dataset import DataSet
 
 # -----------------------------------------------------------------
@@ -116,10 +113,10 @@ class PreparationInitializer(PreparationComponent):
         # 4. Create the dataset
         self.create_dataset()
 
-        # Find sources
+        # 5. Find sources
         self.find_sources()
 
-        # 5. Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -273,12 +270,10 @@ class PreparationInitializer(PreparationComponent):
         log.info("Finding sources in the images ...")
 
         # Don't look for stars in the Halpha image
-        #if "Halpha" in image.name: self.finder.config.find_stars = False
-        #else: self.finder.config.find_stars = True  # still up to the SourceFinder to decide whether stars should be found (based on the filter)
+        ignore_stars = ["Mosaic Halpha"]
 
-        # Fix: don't look for other sources in the IRAC images
-        #if "IRAC" in image.name: self.finder.config.find_other_sources = False
-        #else: self.finder.config.find_other_sources = True
+        # Don't look for other sources in the IRAC images
+        ignore_other_sources = ["IRAC I1", "IRAC I2", "IRAC I3", "IRAC I4"]
 
         # Create an animation for the source finder
         #if self.config.visualise: animation = Animation()
@@ -305,7 +300,7 @@ class PreparationInitializer(PreparationComponent):
                 ignore_images.append(prep_name)
 
         # Run the source finder
-        self.finder.run(dataset=self.set, ignore_images=ignore_images)
+        self.finder.run(dataset=self.set, ignore=ignore_images, ignore_stars=ignore_stars, ignore_other_sources=ignore_other_sources)
 
         # Set the FWHM of the images
         for name in self.set:
@@ -341,137 +336,5 @@ class PreparationInitializer(PreparationComponent):
 
         # Save the dataset
         self.set.saveto(self.initial_dataset_path)
-
-    # -----------------------------------------------------------------
-
-    def set_fwhm_from_source_finder(self, image, sources_output_path):
-
-        """
-        This function ...
-        :param image:
-        :param sources_output_path:
-        :return:
-        """
-
-        # Determine the path to the sources/statistics file
-        statistics_path = fs.join(sources_output_path, "statistics.dat")
-
-        # Check whether the file exists
-        if not fs.is_file(statistics_path): raise RuntimeError("The statistics file could not be found")
-
-        # Get the FWHM from the statistics file
-        fwhm = None
-        with open(statistics_path) as statistics_file:
-            for line in statistics_file:
-                if "FWHM" in line: fwhm = parsing.quantity(line.split("FWHM: ")[1].replace("\n", ""))
-
-        # Check whether the FWHM is valid
-        if fwhm is None: raise RuntimeError("The FWHM could not be found")
-
-        # Set the FWHM of the image
-        image.fwhm = fwhm
-
-    # -----------------------------------------------------------------
-
-    def find_sources_for_image_individually(self, image, sources_output_path):
-
-        """
-        This function ...
-        :param image:
-        :param sources_output_path:
-        :return:
-        """
-
-        # Get the mask of bad pixels
-        bad_mask = image.masks.bad if "bad" in image.masks else None
-
-        # Don't look for stars in the Halpha image
-        if "Halpha" in image.name: self.finder.config.find_stars = False
-        else: self.finder.config.find_stars = True  # still up to the SourceFinder to decide whether stars should be found (based on the filter)
-
-        # Fix: don't look for other sources in the IRAC images
-        if "IRAC" in image.name: self.finder.config.find_other_sources = False
-        else: self.finder.config.find_other_sources = True
-
-        # Create an animation for the source finder
-        if self.config.visualise: animation = Animation()
-        else: animation = None
-
-        # Run the source finder on this image
-        #self.finder.run(image.frames.primary, self.galactic_catalog, self.stellar_catalog, bad_mask=bad_mask, animation=animation)
-
-        self.finder.run()
-
-        # Write the animation
-        if self.config.visualise:
-
-            # Determine the path to the animation
-            path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourcefinding") + ".gif")
-
-            # Debugging
-            log.debug("Writing animation of the source finding to '" + path + "' ...")
-
-            # Save the animation
-            animation.save(path)
-
-        # Save the galaxy region
-        galaxy_region = self.finder.galaxy_region
-        galaxy_region_path = fs.join(sources_output_path, "galaxies.reg")
-        galaxy_region.save(galaxy_region_path)
-
-        # Save the star region
-        star_region = self.finder.star_region
-        star_region_path = fs.join(sources_output_path, "stars.reg")
-        if star_region is not None: star_region.save(star_region_path)
-
-        # Save the saturation region
-        saturation_region = self.finder.saturation_region
-        saturation_region_path = fs.join(sources_output_path, "saturation.reg")
-        if saturation_region is not None: saturation_region.save(saturation_region_path)
-
-        # Save the region of other sources
-        other_region = self.finder.other_region
-        path = fs.join(sources_output_path, "other_sources.reg")
-        if other_region is not None: other_region.save(path)
-
-        # -----------------------------------------------------------------
-
-        # Create an image with the segmentation maps
-        segments = Image("segments")
-
-        # Add the segmentation map of the galaxies
-        segments.add_frame(self.finder.galaxy_segments, "galaxies")
-
-        # Add the segmentation map of the saturated stars
-        if self.finder.star_segments is not None: segments.add_frame(self.finder.star_segments, "stars")
-
-        # Add the segmentation map of the other sources
-        if self.finder.other_segments is not None: segments.add_frame(self.finder.other_segments, "other_sources")
-
-        # Save the FITS file with the segmentation maps
-        path = fs.join(sources_output_path, "segments.fits")
-        segments.save(path)
-
-        # -----------------------------------------------------------------
-
-        # Get the FWHM
-        fwhm = self.finder.fwhm
-
-        # Debugging
-        log.debug("The FWHM as determined by the source finder is " + str(fwhm) + " ...")
-
-        # Set the FWHM of the image
-        if image.fwhm is None: image.fwhm = fwhm
-
-        # -----------------------------------------------------------------
-
-        # Write statistics file
-        statistics_path = fs.join(sources_output_path, "statistics.dat")
-        self.finder.write_statistics(statistics_path)
-
-        # -----------------------------------------------------------------
-
-        # Clear the source finder
-        self.finder.clear()
 
 # -----------------------------------------------------------------

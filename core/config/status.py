@@ -15,7 +15,7 @@ from pts.core.basics.host import find_host_ids
 definition = ConfigurationDefinition(write_config=False)
 
 # Add positional optional
-definition.add_positional_optional("remote", "string", "the name of the remote host for which to show/retrieve simulations and tasks", choices=find_host_ids())
+definition.add_positional_optional("host_ids", "string_list", "the name of the remote host for which to show/retrieve simulations and tasks", choices=find_host_ids())
 
 # From remotesynchronizer.cfg:
 # A dictionary that contains the ID's of simulations that have to be deleted from the synchronization in the future

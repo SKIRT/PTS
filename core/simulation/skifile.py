@@ -1579,14 +1579,14 @@ class SkiFile:
         if isinstance(model, SersicModel3D):
 
             # Set the Sersic geometry (with flattening)
-            self.set_stellar_component_sersic_geometry(component_id, model.index, model.effective_radius, z_flattening=model.flattening)
+            self.set_stellar_component_sersic_geometry(component_id, model.index, model.effective_radius, y_flattening=model.y_flattening, z_flattening=model.z_flattening)
 
             # Rotate the Sersic geometry with the tilt angle
-            alpha = Angle(0.0, "deg")
+            alpha = model.azimuth
             beta = model.tilt
             gamma = Angle(0.0, "deg")
             if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
-                alpha = Angle(180, "deg")
+                alpha += Angle(180, "deg")
                 beta = - beta
             self.rotate_stellar_component(component_id, alpha, beta, gamma)
 

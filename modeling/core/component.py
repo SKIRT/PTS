@@ -66,8 +66,8 @@ class ModelingComponent(Configurable):
         # Attributes
         self.galaxy_name = None
 
-        # The modeling meta file
-        self.meta_file_path = None
+        # The modeling configuration file
+        self.config_file_path = None
 
         # The modeling history file
         self.history_file_path = None
@@ -184,11 +184,11 @@ class ModelingComponent(Configurable):
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = fs.name(self.config.path)
 
-        # Determine the path to the modeling meta file
-        self.meta_file_path = fs.join(self.config.path, "modeling.meta")
+        # Determine the path to the modeling configuration file
+        self.config_file_path = fs.join(self.config.path, "modeling.cfg")
 
-        # Check for the presence of the meta file
-        if not fs.is_file(self.meta_file_path): raise ValueError("The current working directory is not a radiative transfer modeling directory (the meta file is missing)")
+        # Check for the presence of the configuration file
+        if not fs.is_file(self.config_file_path): raise ValueError("The current working directory is not a radiative transfer modeling directory (the configuration file is missing)")
 
         # Determine the path to the modeling history file
         self.history_file_path = fs.join(self.config.path, "history.dat")
@@ -298,6 +298,22 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def modeling_configuration(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the configuration
+        config = Configuration.from_file(self.config_file_path)
+
+        # Return the configuration
+        return config
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def history(self):
 
         """
@@ -311,36 +327,40 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ngc_id(self):
+    def ngc_name(self):
 
         """
         This function ...
         :return:
         """
 
-        # If the galaxy properties file has not been created yet
-        if not fs.is_file(self.galaxy_properties_path):
-
-            # Determine the NGC id of the galaxy
-            ngc_id = catalogs.get_ngc_name(self.galaxy_name)
-
-            # Return the ID
-            return ngc_id
-
-        # If the galaxy properties file has been created
-        else: return self.galaxy_properties.ngc_id
+        # Get the NGC name from the configuration
+        return self.modeling_configuration.ngc_name
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def ngc_id_nospaces(self):
+    def ngc_name_nospaces(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.ngc_id.replace(" ", "")
+        return self.ngc_name.replace(" ", "")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def hyperleda_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the HYPERLEDA name from the configuration
+        return self.modeling_configuration.hyperleda_name
 
     # -----------------------------------------------------------------
 
@@ -466,8 +486,8 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        from ..config.parameters import descriptions
-        return descriptions
+        from ..config.parameters import choices
+        return choices
 
     # -----------------------------------------------------------------
 
@@ -504,7 +524,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-
+        pass
 
     # -----------------------------------------------------------------
 
@@ -515,6 +535,8 @@ class ModelingComponent(Configurable):
         This function ...
         :return:
         """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -1396,7 +1418,7 @@ def load_fitting_configuration(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_meta_file_path(modeling_path):
+def get_config_file_path(modeling_path):
 
     """
     This function ...
@@ -1404,11 +1426,27 @@ def get_meta_file_path(modeling_path):
     :return:
     """
 
-    # Determine the path to the meta file
-    meta_path = fs.join(modeling_path, "modeling.meta")
+    # Determine the path to the configuration file
+    path = fs.join(modeling_path, "modeling.cfg")
 
     # Return the path
-    return meta_path
+    return path
+
+# -----------------------------------------------------------------
+
+def load_modeling_configuration(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the path to the modeling configuration file
+    path = get_config_file_path(modeling_path)
+
+    # Open the configuration and return it
+    return Configuration.from_file(path)
 
 # -----------------------------------------------------------------
 
@@ -1420,8 +1458,10 @@ def load_modeling_history(modeling_path):
     :return:
     """
 
+    # Determine history file path
     history_file_path = fs.join(modeling_path, "history.dat")
 
+    # Create new history
     if not fs.is_file(history_file_path):
 
         history = ModelingHistory.initialize()
@@ -1429,6 +1469,7 @@ def load_modeling_history(modeling_path):
 
     else: history = ModelingHistory.from_file(history_file_path)
 
+    # Return the history
     return history
 
 # -----------------------------------------------------------------
