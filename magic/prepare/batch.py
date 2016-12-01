@@ -18,6 +18,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -40,6 +41,27 @@ from ...magic.core.remote import RemoteImage
 from ...magic.core.kernel import ConvolutionKernel
 from ...modeling.preparation import unitconversion
 from ..basics.mask import Mask
+from ...core.basics.composite import SimplePropertyComposite
+
+# -----------------------------------------------------------------
+
+class PreparationStatistics(SimplePropertyComposite):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        The constructor ...
+        :param kwargs:
+        """
+
+        self.convolution_filter = kwargs.pop("convolution_filter")
+        self.rebinning_filter = kwargs.pop("rebinning_filter")
+        self.not_rebinned = kwargs.pop("not_rebinned")
+        self.not_convolved = kwargs.pop("not_convolved")
 
 # -----------------------------------------------------------------
 
@@ -71,6 +93,7 @@ class BatchImagePreparer(Configurable):
         self.pool = None
 
         # Rebinning wcs and convolution filter
+        self.rebinning_filter = None
         self.rebinning_wcs = None
         self.convolution_filter = None
         self.convolution_fwhm = None
@@ -291,6 +314,7 @@ class BatchImagePreparer(Configurable):
         """
 
         max_pixelscale_wcs = None
+        max_pixelscale_filter = None
 
         # Loop over the images
         for name in self.images:
@@ -304,9 +328,12 @@ class BatchImagePreparer(Configurable):
                 continue
 
             # Check if the pixelscale is greater than that of the previous frame (but still below the maximum)
-            if max_pixelscale_wcs is None or pixelscale > max_pixelscale_wcs.average_pixelscale: max_pixelscale_wcs = self.images[name].wcs
+            if max_pixelscale_wcs is None or pixelscale > max_pixelscale_wcs.average_pixelscale:
+                max_pixelscale_wcs = self.images[name].wcs
+                max_pixelscale_filter = self.images[name].filter
 
-        # Now set the rebinning wcs
+        # Now set the rebinning filter and wcs
+        self.rebinning_filter = max_pixelscale_filter
         self.rebinning_wcs = max_pixelscale_wcs
 
     # -----------------------------------------------------------------
@@ -1020,6 +1047,20 @@ class BatchImagePreparer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # The statistics
+        statistics = PreparationStatistics(convolution_filter=self.convolution_filter, rebinning_filter=self.rebinning_filter, not_convolved=self.dont_convolve, not_rebinned=self.dont_rebin)
+        return statistics
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -1034,7 +1075,10 @@ class BatchImagePreparer(Configurable):
         self.write_images()
 
         # Write the new dataset
-        self.write_dataset()
+        if self.config.writing.dataset_path is not None: self.write_dataset()
+
+        # Write statistics
+        if self.config.writing.statistics_path is not None: self.write_statistics()
 
     # -----------------------------------------------------------------
 
@@ -1080,6 +1124,21 @@ class BatchImagePreparer(Configurable):
 
         # Write the dataset
         self.dataset.saveto(self.config.writing.dataset_path)
+
+    # -----------------------------------------------------------------
+
+    def write_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the statistics to '" + self.config.writing.statistics_path + "' ...")
+
+        # Write the statistics
+        self.statistics.save(self.config.writing.statistics_path)
 
 # -----------------------------------------------------------------
 

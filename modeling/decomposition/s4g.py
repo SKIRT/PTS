@@ -89,6 +89,9 @@ class S4GDecomposer(DecompositionComponent):
         # Set the path
         self.components_2d_s4g_path = fs.create_directory_in(self.components_2d_path, "S4G")
 
+        # Set the galaxy name
+        self.s4g.config.galaxy_name = self.galaxy_name
+
         # Don't show results on console
         self.s4g.config.show = False
 

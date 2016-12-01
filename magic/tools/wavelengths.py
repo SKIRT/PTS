@@ -17,6 +17,11 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.basics.map import Map
+from ...core.basics.range import QuantityRange
+
+# -----------------------------------------------------------------
+
+black_body_wavelength_range = QuantityRange(50., 2000., "micron")
 
 # -----------------------------------------------------------------
 

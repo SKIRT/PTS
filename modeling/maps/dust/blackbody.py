@@ -27,6 +27,7 @@ from ....core.tools.logging import log
 from ....magic.core.frame import Frame
 from ....core.launch.pts import PTSRemoteLauncher
 from .fitter import GridBlackBodyFitter, GeneticBlackBodyFitter
+from ....magic.tools import wavelengths
 
 # PTS evolution classes and modules
 from ....evolve.engine import GAEngine, RawScoreCriteria
@@ -168,14 +169,20 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         # Determine the minimum and maximum wavelength
         #min_wavelength = 23. * Unit("micron") for 'old' version
-        min_wavelength = 50. * Unit("micron")
-        max_wavelength = 1000. * Unit("micron")
+
+        # Get the wavelength range
+        wavelength_range = wavelengths.black_body_wavelength_range
 
         # Create the datacube
-        self.datacube = self.dataset.create_datacube(min_wavelength, max_wavelength, exclude=exclude_filters)
+        self.datacube = self.dataset.create_datacube(wavelength_range.min, wavelength_range.max, exclude=exclude_filters)
 
         # Create the error cube
-        self.errorcube = self.dataset.create_errorcube(min_wavelength, max_wavelength, exclude=exclude_filters)
+        self.errorcube = self.dataset.create_errorcube(wavelength_range.min, wavelength_range.max, exclude=exclude_filters)
+
+        #print(self.datacube.wavelengths())
+        #print(self.datacube.frames.keys())
+        #print(self.errorcube.wavelengths())
+        #print(self.errorcube.frames.keys())
 
         # Determine the conversion factor from MJy / sr to Jy/sr
         conversion_factor = 1.0

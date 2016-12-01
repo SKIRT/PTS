@@ -922,6 +922,10 @@ class DataSet(object):
         # Get the frames
         frames = self.get_frames(min_wavelength=min_wavelength, max_wavelength=max_wavelength, exclude=exclude)
 
+        # Debugging
+        log.debug("Frames to be used for constructing the datacube:")
+        for name in frames: log.debug(" - " + name)
+
         # Inform the user
         log.info("Determining which image will be used as the reference for rebinning all other images ...")
 
@@ -937,10 +941,14 @@ class DataSet(object):
             # Don't rebin the reference image
             if name == reference_name: continue
 
+            # Debugging
+            log.debug("Rebinning the " + name + " frame to the pixel grid of the " + reference_name + " image ...")
+
             # Rebin this frame to the lower resolution pixel grid
             frames[name].rebin(frames[reference_name].wcs)
 
         # Create the datacube and return it
+        # NOTE: the frames are sorted by wavelength by the DataCube constructor
         return DataCube.from_frames(frames.values())
 
     # -----------------------------------------------------------------
@@ -958,6 +966,10 @@ class DataSet(object):
         # Get the error maps
         maps = self.get_errormaps(min_wavelength=min_wavelength, max_wavelength=max_wavelength, exclude=exclude)
 
+        # Debugging
+        log.debug("Error maps to be used for constructing the errorcube:")
+        for name in maps: log.debug(" - " + name)
+
         # Inform the user
         log.info("Determining which error map will be used as the reference for rebinning all other error maps ...")
 
@@ -973,10 +985,14 @@ class DataSet(object):
             # Don't rebin the reference map
             if name == reference_name: continue
 
+            # Debugging
+            log.debug("Rebinning the " + name + " error map to the pixel grid of the " + reference_name + " image ...")
+
             # Rebin this error map to the lower resolution pixel grid
             maps[name].rebin(maps[reference_name].wcs)
 
         # Create the datacube and return it
+        # NOTE: the maps are sorted by wavelength by the DataCube constructor
         return DataCube.from_frames(maps.values())
 
     # -----------------------------------------------------------------

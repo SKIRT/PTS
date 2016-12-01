@@ -57,8 +57,8 @@ class Range(object):
         :param inclusive:
         """
 
-        self.min = min_value
-        self.max = max_value
+        self._min = min_value
+        self._max = max_value
         self.inclusive = inclusive
         self.invert = invert
 
@@ -82,6 +82,30 @@ class Range(object):
     # -----------------------------------------------------------------
 
     @property
+    def min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._max
+
+    # -----------------------------------------------------------------
+
+    @property
     def log_min(self):
 
         """
@@ -89,7 +113,7 @@ class Range(object):
         :return:
         """
 
-        return np.log10(self.min)
+        return np.log10(self._min)
 
     # -----------------------------------------------------------------
 
@@ -101,7 +125,7 @@ class Range(object):
         :return:
         """
 
-        return np.log10(self.max)
+        return np.log10(self._max)
 
     # -----------------------------------------------------------------
 
@@ -109,10 +133,11 @@ class Range(object):
 
         """
         This function ...
+        :param npoints:
         :param as_list:
         """
 
-        values = np.linspace(self.min, self.max, npoints, endpoint=self.inclusive)
+        values = np.linspace(self._min, self._max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
 
         if as_list: return list(values)
@@ -146,9 +171,9 @@ class Range(object):
         :return:
         """
 
-        width = self.max - self.min
+        width = self._max - self._min
         normalized = np.linspace(0.0, 1.0, npoints, endpoint=self.inclusive)
-        values = self.min + normalized * width
+        values = self._min + normalized * width
         if self.invert: values = np.flipud(values)
 
         if as_list: return list(values)
@@ -315,6 +340,30 @@ class QuantityRange(Range):
 
         # Set the unit
         self.unit = unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._min * self.unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._max * self.unit
 
     # -----------------------------------------------------------------
 

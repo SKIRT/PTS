@@ -79,7 +79,7 @@ halpha_fluxes = {"NGC3031": 7.8e40 * Unit("erg/s")}
 # Set the filters that are not necessary for making maps and therefore shouldn't be included in the preparation steps
 # that brings all data to the same resolution and pixelscale
 # We want to exclude the SPIRE images from the procedures that bring all images to the same resolution
-lower_resolution_filters = ["SPIRE PSW", "SPIRE PMW", "SPIRE PLW"]
+lower_resolution_filters = ["SPIRE PSW", "SPIRE PMW", "SPIRE PLW", "MIPS 70mu", "MIPS 160mu", "WISE W4"] # WISE W4 because it has just a slightly higher FWHM than Pacs 160mu
 
 # -----------------------------------------------------------------
 
@@ -148,10 +148,12 @@ class GalaxyModeler(Configurable):
         self.get_data()
 
         # 3. Data preparation
-        #self.prepare_data()
+        self.prepare_data()
 
         # 4. Decomposition
         if "decompose" not in self.history: self.decompose()
+
+        exit()
 
         # 5. Truncation
         if "truncate" not in self.history: self.truncate()

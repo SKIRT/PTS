@@ -91,6 +91,7 @@ definition.sections["cropping"].add_optional("limits", "pixel_limits", "pixel li
 definition.add_flag("write", "write")
 definition.add_section("writing", "writing options")
 definition.add_optional("dataset_path", "string", "path for the output dataset")
+definition.add_optional("statistics_path", "string", "path for the statistics file")
 
 # Visualization
 #definition.add_flag("visualise", "make visualisations")

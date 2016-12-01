@@ -114,14 +114,17 @@ class SersicModel3D(Model):
         elif azimuth_or_tilt == "azimuth":
 
             # Calculate the intrinsic flattening
-            y_flattening = intrinsic_y_flattening(sersic2d.axial_ratio, inclination)
-            z_flattening = 1.
+            y_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
+            z_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
 
             # Calculate the azimuth angle of the bulge
             azimuth = deproject_pa_to_azimuth(sersic2d.position_angle - position_angle, inclination)
 
+            print(azimuth)
+
             # Set tilt
-            tilt = 0. * Unit("deg")
+            #tilt = Angle(90., "deg")
+            tilt = Angle(0., "deg")
 
         # Other input
         else: raise ValueError("Incorrect value for 'azimuth_or_tilt'")
@@ -245,7 +248,15 @@ def intrinsic_y_flattening(qprime, inclination):
     i = inclination.to("radian").value
 
     # Calculate the 'inclination' w.r.t. the y axis
-    i_wrt_y = i + 0.5 * math.pi
+    #i_wrt_y = 0.5 * math.pi - i
+
+    print(inclination)
+    print(qprime)
+    print(i_wrt_y)
+    print(math.cos(i_wrt_y))
+    print(math.sin(i_wrt_y))
+
+    #qprime =
 
     # Calculate the intrinsic flattening
     q = math.sqrt((qprime ** 2 - math.cos(i_wrt_y) ** 2) / math.sin(i_wrt_y) ** 2)
@@ -294,7 +305,7 @@ def deproject_pa_to_azimuth(pa, inclination):
     denominator = math.sqrt(math.cos(pa_radian)**2 + math.sin(pa_radian)**2 * math.cos(i_radian)**2)
 
     cos_azimuth = math.cos(pa_radian) / denominator
-    sin_azimuth = math.sin(pa_radian) * math.cos(inclination) / denominator
+    sin_azimuth = math.sin(pa_radian) * math.cos(i_radian) / denominator
 
     azimuth_radian = math.atan2(sin_azimuth, cos_azimuth) * Unit("radian")
 

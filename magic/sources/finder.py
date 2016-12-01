@@ -1016,7 +1016,6 @@ def clip_color_outliers(color, ref_color, dbscan_kwargs={}, show_plots=True):
     db = DBSCAN(**dbscan_kwargs).fit(coords)
     groups = np.unique(db.labels_)
     if show_plots:
-        import matplotlib
         import matplotlib.pyplot as plt
         # for gid in groups:
         #    idx = gid==db.labels_

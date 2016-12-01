@@ -29,9 +29,9 @@ html_handbook_url = "http://herschel.esac.esa.int/Docs/SPIRE/html/spire_om.html"
 
 # Local table paths
 magic_dat_path = introspection.pts_dat_dir("magic")
-kcol_temperature_beta1_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_KcolP_temperature_beta1.csv")
-kcol_temperature_beta2_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_KcolP_temperature_beta2.csv")
-kcol_spectral_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_KcolP_spectral.csv")
+kcol_temperature_beta1_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_Kcol_temperature_beta1.csv")
+kcol_temperature_beta2_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_Kcol_temperature_beta2.csv")
+kcol_spectral_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_Kcol_spectral.csv")
 
 kbeam_temperature_beta1_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_Kbeam_temperature_beta1.csv")
 kbeam_temperature_beta2_table_path = fs.join(magic_dat_path, "SPIRE", "Colour_Corrections_Kbeam_temperature_beta2.csv")
@@ -78,14 +78,19 @@ class SPIRE(object):
         kbeam_temperature_beta1_data = np.genfromtxt(kbeam_temperature_beta1_table_path, delimiter=',')
 
         # Load point Kbeam data
-        self.kbeam_temperature_beta1_point_f250 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 1], kind='cubic')
-        self.kbeam_temperature_beta1_point_f350 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 2], kind='cubic')
-        self.kbeam_temperature_beta1_point_f500 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 3], kind='cubic')
+        #self.kbeam_temperature_beta1_point_f250 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 1], kind='cubic')
+        #self.kbeam_temperature_beta1_point_f350 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 2], kind='cubic')
+        #self.kbeam_temperature_beta1_point_f500 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 3], kind='cubic')
 
         # Load extended Kbeam data
-        self.kbeam_temperature_beta1_extended_f250 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 4], kind='cubic')
-        self.kbeam_temperature_beta1_extended_f350 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 5], kind='cubic')
-        self.kbeam_temperature_beta1_extended_f500 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 6], kind='cubic')
+        #self.kbeam_temperature_beta1_extended_f250 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 4], kind='cubic')
+        #self.kbeam_temperature_beta1_extended_f350 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 5], kind='cubic')
+        #self.kbeam_temperature_beta1_extended_f500 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 6], kind='cubic')
+
+        # Load Kbeam data
+        self.kbeam_temperature_beta1_f250 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 1], kind='cubic')
+        self.kbeam_temperature_beta1_f350 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 2], kind='cubic')
+        self.kbeam_temperature_beta1_f500 = interp1d(kbeam_temperature_beta1_data[:, 0], kbeam_temperature_beta1_data[:, 3], kind='cubic')
 
         ## BETA = 2.0
 
@@ -106,14 +111,19 @@ class SPIRE(object):
         kbeam_temperature_beta2_data = np.genfromtxt(kbeam_temperature_beta2_table_path, delimiter=',')
 
         # Load point Kbeam data
-        self.kbeam_temperature_beta2_point_f250 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 1], kind='cubic')
-        self.kbeam_temperature_beta2_point_f350 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 2], kind='cubic')
-        self.kbeam_temperature_beta2_point_f500 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 3], kind='cubic')
+        #self.kbeam_temperature_beta2_point_f250 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 1], kind='cubic')
+        #self.kbeam_temperature_beta2_point_f350 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 2], kind='cubic')
+        #self.kbeam_temperature_beta2_point_f500 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 3], kind='cubic')
 
         # Load extended Kbeam data
-        self.kbeam_temperature_beta2_extended_f250 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 4], kind='cubic')
-        self.kbeam_temperature_beta2_extended_f350 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 5], kind='cubic')
-        self.kbeam_temperature_beta2_extended_f500 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 6], kind='cubic')
+        #self.kbeam_temperature_beta2_extended_f250 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 4], kind='cubic')
+        #self.kbeam_temperature_beta2_extended_f350 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 5], kind='cubic')
+        #self.kbeam_temperature_beta2_extended_f500 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 6], kind='cubic')
+
+        # Load Kbeam data
+        self.kbeam_temperature_beta2_f250 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 1], kind='cubic')
+        self.kbeam_temperature_beta2_f350 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 2], kind='cubic')
+        self.kbeam_temperature_beta2_f500 = interp1d(kbeam_temperature_beta2_data[:, 0], kbeam_temperature_beta2_data[:, 3], kind='cubic')
 
         # BASED ON SPECTRAL INDEX
         # -----------------------
@@ -135,14 +145,19 @@ class SPIRE(object):
         kbeam_spectral_data = np.genfromtxt(kbeam_spectral_table_path, delimiter=',')
 
         # Load point Kbeam data
-        self.kbeam_spectral_point_f250 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 1], kind='cubic')
-        self.kbeam_spectral_point_f350 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 2], kind='cubic')
-        self.kbeam_spectral_point_f500 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 3], kind='cubic')
+        #self.kbeam_spectral_point_f250 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 1], kind='cubic')
+        #self.kbeam_spectral_point_f350 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 2], kind='cubic')
+        #self.kbeam_spectral_point_f500 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 3], kind='cubic')
 
         # Load extended Kbeam data
-        self.kbeam_spectral_extended_f250 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 4], kind='cubic')
-        self.kbeam_spectral_extended_f350 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 4], kind='cubic')
-        self.kbeam_spectral_extended_f500 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 6], kind='cubic')
+        #self.kbeam_spectral_extended_f250 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 4], kind='cubic')
+        #self.kbeam_spectral_extended_f350 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 4], kind='cubic')
+        #self.kbeam_spectral_extended_f500 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 6], kind='cubic')
+
+        # Load Kbeam data
+        self.kbeam_spectral_f250 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 4], kind='cubic')
+        self.kbeam_spectral_f350 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 5], kind='cubic')
+        self.kbeam_spectral_f500 = interp1d(kbeam_spectral_data[:, 0], kbeam_spectral_data[:, 6], kind='cubic')
 
     # -----------------------------------------------------------------
 
@@ -280,42 +295,40 @@ class SPIRE(object):
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_temperature(self, fltr, temperature, beta, extended=True):
+    def get_kbeam_temperature(self, fltr, temperature, beta):
 
         """
         This function ...
         :param fltr:
         :param temperature:
         :param beta:
-        :param extended:
         :return:
         """
 
-        if fltr == self.psw: return self.get_kbeam_temperature_psw(temperature, beta, extended=extended)
-        elif fltr == self.pmw: return self.get_kbeam_temperature_pmw(temperature, beta, extended=extended)
-        elif fltr == self.plw: return self.get_kbeam_temperature_plw(temperature, beta, extended=extended)
+        if fltr == self.psw: return self.get_kbeam_temperature_psw(temperature, beta)
+        elif fltr == self.pmw: return self.get_kbeam_temperature_pmw(temperature, beta)
+        elif fltr == self.plw: return self.get_kbeam_temperature_plw(temperature, beta)
         else: raise ValueError("Not a SPIRE filter")
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_spectral(self, fltr, spectral_index, extended=True):
+    def get_kbeam_spectral(self, fltr, spectral_index):
 
         """
         This function ...
         :param fltr:
         :param spectral_index:
-        :param extended:
         :return:
         """
 
-        if fltr == self.psw: return self.get_kbeam_spectral_psw(spectral_index, extended=extended)
-        elif fltr == self.pmw: return self.get_kbeam_spectral_pmw(spectral_index, extended=extended)
-        elif fltr == self.plw: return self.get_kbeam_spectral_plw(spectral_index, extended=extended)
+        if fltr == self.psw: return self.get_kbeam_spectral_psw(spectral_index)
+        elif fltr == self.pmw: return self.get_kbeam_spectral_pmw(spectral_index)
+        elif fltr == self.plw: return self.get_kbeam_spectral_plw(spectral_index)
         else: raise ValueError("Not a SPIRE filter")
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_temperature_psw(self, temperature, beta, extended=True):
+    def get_kbeam_temperature_psw(self, temperature, beta):
 
         """
         This function ...
@@ -325,91 +338,71 @@ class SPIRE(object):
         :return:
         """
 
-        if extended:
-            if beta == 1.5: return self.kbeam_temperature_beta1_extended_f250(temperature.to("K").value)
-            elif beta == 2.0: return self.kbeam_temperature_beta2_extended_f250(temperature.to("K").value)
-        else:
-            if beta == 1.5: return self.kbeam_temperature_beta1_point_f250(temperature.to("K").value)
-            elif beta == 2.0: return self.kbeam_temperature_beta2_point_f250(temperature.to("K").value)
+        if beta == 1.5: return self.kbeam_temperature_beta1_f250(temperature.to("K").value)
+        elif beta == 2.0: return self.kbeam_temperature_beta2_f250(temperature.to("K").value)
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_temperature_pmw(self, temperature, beta, extended=True):
+    def get_kbeam_temperature_pmw(self, temperature, beta):
 
         """
         This function ...
         :param temperature:
         :param beta:
-        :param extended:
         :return:
         """
 
-        if extended:
-            if beta == 1.5: return self.kbeam_temperature_beta1_extended_f350(temperature.to("K").value)
-            elif beta == 2.0: return self.kbeam_temperature_beta2_extended_f350(temperature.to("K").value)
-        else:
-            if beta == 1.5: return self.kbeam_temperature_beta1_point_f350(temperature.to("K").value)
-            elif beta == 2.0: return self.kbeam_temperature_beta2_point_f350(temperature.to("K").value)
+        if beta == 1.5: return self.kbeam_temperature_beta1_f350(temperature.to("K").value)
+        elif beta == 2.0: return self.kbeam_temperature_beta2_f350(temperature.to("K").value)
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_temperature_plw(self, temperature, beta, extended=True):
+    def get_kbeam_temperature_plw(self, temperature, beta):
 
         """
         This function ...
         :param temperature:
         :param beta:
-        :param extended:
         :return:
         """
 
-        if extended:
-            if beta == 1.5: return self.kbeam_temperature_beta1_extended_f500(temperature.to("K").value)
-            elif beta == 2.0: return self.kbeam_temperature_beta2_extended_f500(temperature.to("K").value)
-        else:
-            if beta == 1.5: return self.kbeam_temperature_beta1_point_f500(temperature.to("K").value)
-            elif beta == 2.0: return self.kbeam_temperature_beta2_point_f500(temperature.to("K").value)
+        if beta == 1.5: return self.kbeam_temperature_beta1_f500(temperature.to("K").value)
+        elif beta == 2.0: return self.kbeam_temperature_beta2_f500(temperature.to("K").value)
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_spectral_psw(self, spectral_index, extended=True):
+    def get_kbeam_spectral_psw(self, spectral_index):
 
         """
         This function ...
         :param spectral_index:
-        :param extended:
         :return:
         """
 
-        if extended: return self.kbeam_spectral_extended_f250(spectral_index)
-        else: return self.kbeam_spectral_point_f250(spectral_index)
+        return self.kbeam_spectral_f250(spectral_index)
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_spectral_pmw(self, spectral_index, extended=True):
+    def get_kbeam_spectral_pmw(self, spectral_index):
 
         """
         This function ...
         :param spectral_index:
-        :param extended:
         :return:
         """
 
-        if extended: return self.kbeam_spectral_extended_f350(spectral_index)
-        else: return self.kbeam_spectral_point_f350(spectral_index)
+        return self.kbeam_spectral_f350(spectral_index)
 
     # -----------------------------------------------------------------
 
-    def get_kbeam_spectral_plw(self, spectral_index, extended=True):
+    def get_kbeam_spectral_plw(self, spectral_index):
 
         """
         This function ...
         :param spectral_index:
-        :param extended:
         :return:
         """
 
-        if extended: return self.kbeam_spectral_extended_f500(spectral_index)
-        else: return self.kbeam_spectral_point_f500(spectral_index)
+        return self.kbeam_spectral_f500(spectral_index)
 
 # -----------------------------------------------------------------

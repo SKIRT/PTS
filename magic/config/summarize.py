@@ -10,13 +10,14 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+# Create the configuration definition
+definition = ConfigurationDefinition()
 
-# Add optional
-choices = dict()
-choices["azimuth"] = "azimuth angle and y flattening"
-choices["tilt"] = "tilt angle and z flattening"
-definition.add_optional("bulge_deprojection_method", "string", "method of deprojecting a 2D bulge with position angle difference w.r.t. the disk", choices=choices, default="azimuth")
+# Flags
+definition.add_flag("recursive", "look for simulations in directories recursively", True)
+definition.add_flag("list", "list the found images", True)
+
+definition.add_flag("pixelscale", "arrange by increasing pixelscale")
+definition.add_flag("fwhm", "arrange by increasing FWHM")
 
 # -----------------------------------------------------------------

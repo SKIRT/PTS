@@ -24,7 +24,8 @@ from ...core.tools.logging import log
 from ...core.simulation.skifile import SkiFile
 from ...core.simulation.arguments import SkirtArguments
 from ...core.simulation.execute import SkirtExec
-from ...magic.basics.vector import Extent, Position
+from ...magic.basics.vector import Position
+from ...magic.basics.stretch import SkyStretch
 from ...magic.region.ellipse import SkyEllipseRegion
 from ...magic.region.list import SkyRegionList
 from ...magic.core.frame import Frame
@@ -141,7 +142,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Load the PSF kernel and prepare
         aniano = AnianoKernels()
-        self.psf = aniano.get_psf(self.reference_filter)
+        self.psf = aniano.get_psf(self.fwhm_reference_filter)
         self.psf.prepare_for(self.reference_wcs)
 
         # Create the directory to simulate the bulge (2D method)
@@ -627,7 +628,7 @@ class GalaxyDecomposer(DecompositionComponent):
         minor = (1.0 - self.galaxy_properties.ellipticity) * self.galaxy_properties.major_arcsec
 
         # Ellipse radius
-        radius = Extent(self.galaxy_properties.major_arcsec, minor)
+        radius = SkyStretch(self.galaxy_properties.major_arcsec, minor)
 
         # Create sky ellipse
         sky_ellipse = SkyEllipseRegion(self.galaxy_properties.center, radius, self.disk_pa)

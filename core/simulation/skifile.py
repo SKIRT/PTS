@@ -1575,19 +1575,29 @@ class SkiFile:
         #  beta: 0 to 180 degrees
         #  gamma: 0 to 360 degrees
 
+        # the first rotation is by an angle α about the Z axis.
+        # the second rotation is by an angle β about the new X' axis.
+        # the third rotation is by an angle γ about the new Z'' axis.
+
         # Sersic model
         if isinstance(model, SersicModel3D):
 
             # Set the Sersic geometry (with flattening)
             self.set_stellar_component_sersic_geometry(component_id, model.index, model.effective_radius, y_flattening=model.y_flattening, z_flattening=model.z_flattening)
 
-            # Rotate the Sersic geometry with the tilt angle
+            # Determine the Euler angles
             alpha = model.azimuth
             beta = model.tilt
             gamma = Angle(0.0, "deg")
+
+            # Check angles
+            if alpha < Angle(0.0, "deg"): # alpha must be between 0 and 360 degrees
+                alpha = Angle(360., "deg") + alpha
             if beta < Angle(0.0, "deg"): # beta must be between 0 and 180 degrees, if beta is negative, rotate over z axis with 180 degrees first
                 alpha += Angle(180, "deg")
                 beta = - beta
+            if gamma < Angle(0.0,"deg"): # gamma must be between 0 and 360 degrees
+                gamma = Angle(360., "deg") + gamma
             self.rotate_stellar_component(component_id, alpha, beta, gamma)
 
         # Exponential Disk

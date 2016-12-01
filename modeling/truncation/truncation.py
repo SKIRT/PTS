@@ -147,7 +147,7 @@ class Truncator(TruncationComponent):
         """
 
         # Inform the user
-        log.info(" ...")
+        log.info("Making truncated images ...")
 
         # Loop over the different scale factors
         for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
@@ -155,7 +155,7 @@ class Truncator(TruncationComponent):
             # Calculate the corrected 24 micron image
             truncated = self.make_truncated_images(factor)
 
-            # Add the attenuation map to the dictionary
+            # Add the truncated frame to the dictionary
             self.truncated_images[factor] = truncated
 
     # -----------------------------------------------------------------
@@ -169,7 +169,7 @@ class Truncator(TruncationComponent):
         """
 
         # Inform the user
-        log.info("Making ...")
+        log.info("Making truncated image for a scale factor of " + str(factor) + " ...")
 
         # Truncated images
         truncated_images = dict()

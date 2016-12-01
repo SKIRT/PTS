@@ -39,6 +39,7 @@ from ...core.tools.logging import log
 from ...core.basics.configuration import Configuration
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
 from .history import ModelingHistory
+from ...magic.prepare.batch import PreparationStatistics
 
 # -----------------------------------------------------------------
 
@@ -167,6 +168,9 @@ class ModelingComponent(Configurable):
         # The path to the prepared data set file
         self.prepared_dataset_path = None
 
+        # The path to the preparation statistics file
+        self.preparation_statistics_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -294,6 +298,9 @@ class ModelingComponent(Configurable):
 
         # Set the path to the prepared dataset file
         self.prepared_dataset_path = fs.join(self.prep_path, "dataset.dat")
+
+        # Set the path to the preparation statistics file
+        self.preparation_statistics_path = fs.join(self.prep_path, "statistics.dat")
 
     # -----------------------------------------------------------------
 
@@ -517,26 +524,63 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def wcs_reference_image(self):
+    def preparation_statistics(self):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        return PreparationStatistics.from_file(self.preparation_statistics_path)
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def fwhm_reference_image(self):
+    def wcs_reference_filter(self):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        return self.preparation_statistics.rebinning_filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wcs_reference_image_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_name_for_filter(self.wcs_reference_filter)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fwhm_reference_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.preparation_statistics.convolution_filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fwhm_reference_image_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+        return self.dataset.get_name_for_filter(self.fwhm_reference_filter)
 
     # -----------------------------------------------------------------
 
@@ -858,18 +902,6 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def reference_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Filter.from_string(self.reference_image)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
     def reference_wcs_path(self):
 
         """
@@ -877,7 +909,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        reference_path = fs.join(self.prep_path, self.reference_image, "result.fits")
+        reference_path = fs.join(self.prep_path, self.wcs_reference_image_name, "result.fits")
         return reference_path
 
     # -----------------------------------------------------------------

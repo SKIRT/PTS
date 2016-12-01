@@ -67,11 +67,14 @@ class SimplePropertyComposite(object):
 
         properties = dict()
 
-        with open(path, 'r') as instrumentfile:
+        with open(path, 'r') as f:
 
-            for line in instrumentfile:
+            for line in f:
 
                 if "Type:" in line: continue
+
+                line = line[:-1]
+                if not line: continue
 
                 name, rest = line.split(": ")
                 value, dtype = rest.split(" [")

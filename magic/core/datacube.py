@@ -122,14 +122,18 @@ class DataCube(Image):
         wavelengths = []
 
         # Add the frames
+        nframes = 0
         for index in sorted_indices:
 
             # Add the frame
-            frame_name = "frame" + str(index)
+            frame_name = "frame" + str(nframes)
             datacube.add_frame(frames[index], frame_name)
 
             # Add the wavelength
             wavelengths.append(frames[index].filter.pivotwavelength())
+
+            # Increment the number of frames
+            nframes += 1
 
         # Create the wavelength grid
         datacube.wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")
