@@ -462,15 +462,15 @@ def is_std_lib(module):
 
     with ignore_site_packages_paths():
         imported_module = sys.modules.pop(module, None)
-        with suppress_stdout():
-            try:
-                import_module(module)
-            except (ImportError, SystemExit): return False
-            else:
-                return True
-            finally:
-                if imported_module:
-                    sys.modules[module] = imported_module
+        try:
+            with suppress_stdout(): import_module(module)
+        except (ImportError, SystemExit): return False
+        except AttributeError: return False # pip on peggy
+        else:
+            return True
+        finally:
+            if imported_module:
+                sys.modules[module] = imported_module
 
 # -----------------------------------------------------------------
 
@@ -720,12 +720,10 @@ def is_present_package(package):
     :return:
     """
 
-    with suppress_stdout():
-
-        try:
-            imp.find_module(package)
-            return True
-        except (ImportError, SystemExit): return False
+    try:
+        with suppress_stdout(): imp.find_module(package)
+        return True
+    except (ImportError, SystemExit): return False
 
 # -----------------------------------------------------------------
 
