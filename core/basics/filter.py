@@ -237,7 +237,7 @@ class Filter:
                     self._Wavelengths *= 1e-4
 
                     # determine the filter type (there seems to be no better heuristic than using the instrument name)
-                    self._PhotonCounter = not any(["/"+x in self._FilterID.lower() for x in ("mips","pacs","spire")])
+                    self._PhotonCounter = not any(["/"+x in self._FilterID.lower() for x in ("pacs","spire")])
 
                     # calculate the pivot wavelength
                     if self._PhotonCounter:
