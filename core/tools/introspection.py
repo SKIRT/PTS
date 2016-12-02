@@ -100,6 +100,19 @@ skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None el
 
 # -----------------------------------------------------------------
 
+@contextmanager
+def suppress_stdout():
+
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+
+# -----------------------------------------------------------------
+
 def pts_git_branches():
 
     """
@@ -449,15 +462,15 @@ def is_std_lib(module):
 
     with ignore_site_packages_paths():
         imported_module = sys.modules.pop(module, None)
-        try:
-            import_module(module)
-        except ImportError:
-            return False
-        else:
-            return True
-        finally:
-            if imported_module:
-                sys.modules[module] = imported_module
+        with suppress_stdout():
+            try:
+                import_module(module)
+            except (ImportError, SystemExit): return False
+            else:
+                return True
+            finally:
+                if imported_module:
+                    sys.modules[module] = imported_module
 
 # -----------------------------------------------------------------
 
@@ -697,19 +710,6 @@ def installed_python_packages():
 
     # Return the dictionary
     return packages
-
-# -----------------------------------------------------------------
-
-@contextmanager
-def suppress_stdout():
-
-    with open(os.devnull, "w") as devnull:
-        old_stdout = sys.stdout
-        sys.stdout = devnull
-        try:
-            yield
-        finally:
-            sys.stdout = old_stdout
 
 # -----------------------------------------------------------------
 
