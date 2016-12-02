@@ -38,6 +38,7 @@ from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
 from ..basics.vector import Pixel
+from ..units.unit import ImageUnit
 
 # -----------------------------------------------------------------
 
@@ -116,8 +117,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Convert string units to Astropy unit objects
-        if isinstance(unit, basestring): unit = Unit(unit)
+        # Convert string units to ImageUnit object
+        if isinstance(unit, basestring): unit = ImageUnit(unit)
 
         # Set the unit
         self._unit = unit
@@ -759,33 +760,26 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, unit):
+    def convert_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None):
 
         """
         This function ...
-        :param unit:
+        :param to_unit:
+        :param wavelength:
+        :param frequency:
+        :param distance:
+        :param solid_angle:
         :return:
         """
 
-        # Make an Astropy Unit instance
-        if isinstance(unit, basestring): unit = Unit(unit)
-
-        # Inform the user
-        log.debug("Converting the unit of the frame from " + str(self.unit) + " to " + str(unit) + " ...")
-
         # Calculate the conversion factor
-        a = 1.0 * self.unit
-        b = 1.0 * unit
-        factor = (a / b).decompose().value
-
-        # Debug message
-        log.debug("Conversion factor = " + str(factor))
+        factor = self.unit.conversion_factor(self, to_unit, wavelength, frequency, distance, solid_angle)
 
         # Multiply the frame with the conversion factor
         self.__imul__(factor)
 
         # Set the new unit
-        self.unit = unit
+        self.unit = to_unit
 
     # -----------------------------------------------------------------
 

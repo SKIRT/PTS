@@ -815,29 +815,6 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    @unit.setter
-    def unit(self, unit):
-
-        """
-        This function ...
-        :param unit:
-        :return:
-        """
-
-        # Convert string units to Astropy unit objects
-        if isinstance(unit, basestring): unit = Unit(unit)
-
-        # Loop over all frames
-        for frame_name in self.frames:
-
-            # Inform the user
-            log.debug("Setting the unit of the " + frame_name + " frame to " + str(unit) + " ...")
-
-            # Set the unit for this frame
-            self.frames[frame_name].unit = unit
-
-    # -----------------------------------------------------------------
-
     @fwhm.setter
     def fwhm(self, fwhm):
 
@@ -900,23 +877,18 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, unit):
+    def convert_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None):
 
         """
         This function ...
-        :param unit:
+        :param to_unit:
         """
 
-        # Make an Astropy Unit instance
-        if isinstance(unit, basestring): unit = Unit(unit)
-
         # Inform the user
-        log.debug("Converting the unit of the image from " + str(self.unit) + " to " + str(unit) + " ...")
+        log.debug("Converting the unit of the image from " + str(self.unit) + " to " + str(to_unit) + " ...")
 
         # Calculate the conversion factor
-        a = 1.0 * self.unit
-        b = 1.0 * unit
-        factor = (a/b).decompose().value
+        factor = self.unit.conversion_factor(self, to_unit, wavelength, frequency, distance, solid_angle)
 
         # Debug message
         log.debug("Conversion factor = " + str(factor))
@@ -925,7 +897,7 @@ class Image(object):
         self.__imul__(factor)
 
         # Set the new unit
-        self.unit = unit
+        self.unit = to_unit
 
     # -----------------------------------------------------------------
 

@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import re
 import copy
 import numpy as np
 
@@ -22,11 +21,11 @@ from astropy import coordinates
 from astropy import units as u
 
 # Import the relevant PTS classes and modules
-from ..basics.vector import Extent
 from ...core.basics.filter import Filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
+from ..units.unit import ImageUnit
 
 # -----------------------------------------------------------------
 
@@ -416,13 +415,8 @@ def get_unit(header):
 
             value = header[keyword].split("   / ")[0].rstrip()
 
-            if value.isupper(): value = value.replace("DN", "count").replace("SEC", "second").lower()
-            else: value = value.replace("DN", "count")
-
             try:
-                #print(value)
-                unit = u.Unit(value)
-                #print(unit)
+                unit = ImageUnit(value)
                 break
             except ValueError: continue
 
