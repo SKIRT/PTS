@@ -120,6 +120,7 @@ class PTSRemoteLauncher(object):
         self.remote.send_python_line("module = importlib.import_module('" + class_module_path + "')")  # get the module of the class
         self.remote.send_python_line("cls = getattr(module, '" + class_name + "')")  # get the class
 
+        # Inform the user
         log.start("Starting " + exact_command_name + " ...")
 
         # Create a remote temporary directory (for the config and input)
@@ -152,9 +153,13 @@ class PTSRemoteLauncher(object):
         # Remove the original config file
         fs.remove_file(temp_conf_path)
 
-        #####
+        ##### UPLOADING THE INPUT #####
 
+        # If input is given
         if input_dict is not None:
+
+            # Debugging
+            log.debug("Uploading the input ...")
 
             ## Save the input locally
 
@@ -197,8 +202,6 @@ class PTSRemoteLauncher(object):
                 self.remote.send_python_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
         ###
 
-        #self.remote.send_python_line("print(input_dict)", show_output=True)
-
         # Import the Configuration class remotely
         self.remote.import_python_package("Configuration", from_name="pts.core.basics.configuration")
 
@@ -207,8 +210,6 @@ class PTSRemoteLauncher(object):
 
         # Create the class instance, configure it with the configuration settings
         self.remote.send_python_line("inst = cls(config)")
-
-        #self.remote.send_python_line("print(inst.config)", show_output=True)
 
         # Run the instance
         if input_dict is not None: self.remote.send_python_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while

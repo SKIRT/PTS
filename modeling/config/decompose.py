@@ -17,6 +17,6 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 choices = dict()
 choices["azimuth"] = "azimuth angle and y flattening"
 choices["tilt"] = "tilt angle and z flattening"
-definition.add_optional("bulge_deprojection_method", "string", "method of deprojecting a 2D bulge with position angle difference w.r.t. the disk", choices=choices, default="azimuth")
+definition.add_optional("bulge_deprojection_method", "string", "method of deprojecting a 2D bulge with position angle difference w.r.t. the disk", choices=choices, default="tilt")
 
 # -----------------------------------------------------------------

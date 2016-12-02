@@ -413,8 +413,8 @@ class SourceFinder(Configurable):
             self.segments[name].add_frame(segments, "galaxies")
 
         # Close and join the process pool
-        self.pool.close()
-        self.pool.join()
+        #self.pool.close()
+        #self.pool.join()
 
     # -----------------------------------------------------------------
     

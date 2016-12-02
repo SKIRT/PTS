@@ -353,8 +353,11 @@ class GridBlackBodyFitter(BlackBodyFitter):
         # The process pool
         self.pool = None
 
-        # The dust masses
-        self.dust_masses = None
+        # Error map
+        self.cold_mass_errors = None
+        self.warm_mass_errors = None
+        self.cold_temperature_errors = None
+        self.warm_temperature_errors = None
 
     # -----------------------------------------------------------------
 
@@ -416,21 +419,36 @@ class GridBlackBodyFitter(BlackBodyFitter):
         # Get the results
         for index, result in enumerate(results):
 
-            #result = result.get()
+            # Get the output
+            tc, tw, md_c, md_w, chi2, bootstrap = result.get()
 
-            #  return tc, tw, 10.**log_md_c, 10.**log_md_w, chi2
-
-            tc, tw, md_c, md_w, chi2 = result.get()
-
+            # Set properties of this pixel
             self.cold_masses[index] = md_c
             self.warm_masses[index] = md_w
             self.cold_temperatures[index] = tc
             self.warm_temperatures[index] = tw
             self.chi_squared[index] = chi2
 
+            self.cold_mass_errors[index] = bootstrap.cold_mass_error
+            self.warm_mass_errors[index] = bootstrap.warm_mass_error
+            self.cold_temperature_errors[index] = bootstrap.cold_temperature_error
+            self.warm_temperature_errors[index] = bootstrap.warm_temperature_error
+
         # Close and join the process pool
         #self.pool.close()
         #self.pool.join()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_mass_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.sqrt(self.cold_mass_errors**2 + self.warm_mass_errors**2)
 
     # -----------------------------------------------------------------
 
@@ -580,6 +598,29 @@ class GeneticBlackBodyFitter(BlackBodyFitter):
 
 # -----------------------------------------------------------------
 
+class BootstrapResult(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        self.cold_mass = None
+        self.cold_mass_error = None
+        self.warm_mass = None
+        self.warm_mass_error = None
+        self.cold_temperature = None
+        self.cold_temperature_error = None
+        self.warm_temperature = None
+        self.warm_temperature_error = None
+
+# -----------------------------------------------------------------
+
 def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
 
     """
@@ -603,7 +644,8 @@ def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
     ptot = 0
 
     # Lists for the best parameter values found during bootstrapping
-    dust_mass_list = np.zeros(bootstrapn)
+    cold_dust_mass_list = np.zeros(bootstrapn)
+    warm_dust_mass_list = np.zeros(bootstrapn)
     tc_list = np.zeros(bootstrapn)
     tw_list = np.zeros(bootstrapn)
 
@@ -644,7 +686,9 @@ def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
                     T2_sav = T2
 
         # Save best value for parameters for this bootstrap
-        dust_mass_list[iii] = np.log10(10 ** Mds[0] + 10 ** Mds[1])
+        #dust_mass_list[iii] = np.log10(10 ** Mds[0] + 10 ** Mds[1])
+        cold_dust_mass_list[iii] = Mds[0]
+        warm_dust_mass_list[iii] = Mds[1]
         tc_list[iii] = T1_sav
         tw_list[iii] = T2_sav
 
@@ -692,8 +736,13 @@ def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
     # Dust mass statistics
     # log_Md
     # log_Mderr
-    mean_mds = np.mean(dust_mass_list)
-    std_mds = np.std(dust_mass_list)
+    #mean_mds = np.mean(dust_mass_list)
+    #std_mds = np.std(dust_mass_list)
+
+    mean_md_cold = np.mean(cold_dust_mass_list)
+    mean_md_warm = np.mean(warm_dust_mass_list)
+    std_md_cold = np.std(cold_dust_mass_list)
+    std_md_warm = np.std(warm_dust_mass_list)
 
     # T1 statistics
     # Tc
@@ -729,7 +778,8 @@ def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
 
     print("")
     print("Result:")
-    print("Mean Mds:", mean_mds, "+/-", std_mds)
+    print("Mean cold Md:", mean_md_cold, "+/-", std_md_cold)
+    print("Mean warm Md:", mean_md_warm, "+/-", std_md_warm)
     print("Mean Tc:", mean_tc, "+/-", std_tc)
     print("Mean Tw:", mean_tw, "+/-", std_tw)
     print("log_md:", log_md)
@@ -743,6 +793,15 @@ def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
     # Return the values
     #return mean_mds, std_mds, mean_tc, std_tc, mean_tw, std_tw, log_md, log_md_c, log_md_w, tc, tw, chi2
 
-    return tc, tw, 10.**log_md_c, 10.**log_md_w, chi2
+    bootstrap = BootstrapResult()
+    bootstrap.cold_mass = mean_md_cold
+    bootstrap.cold_mass_error = std_md_cold
+    bootstrap.cold_temperature = mean_tc
+    bootstrap.cold_temperature_error = std_tc
+    bootstrap.warm_temperature = mean_tw
+    bootstrap.warm_temperature_error = std_tw
+
+    # Return the output
+    return tc, tw, 10.**log_md_c, 10.**log_md_w, chi2, bootstrap
 
 # -----------------------------------------------------------------

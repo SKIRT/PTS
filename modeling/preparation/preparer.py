@@ -19,7 +19,6 @@ from .component import PreparationComponent
 from ...magic.prepare.batch import BatchImagePreparer
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from ...magic.region import tools as regions
 from ...magic.misc.kernels import aniano_names
 from ...magic.misc.calibration import CalibrationError
 from ...core.launch.pts import PTSRemoteLauncher
@@ -107,7 +106,7 @@ class DataPreparer(PreparationComponent):
         """
 
         # Call the setup function of the base class
-        super(DataPreparer, self).setup(**kwargs)@
+        super(DataPreparer, self).setup(**kwargs)
 
         # Set options for the image preparer
         self.set_preparer_options()
@@ -507,6 +506,7 @@ class DataPreparer(PreparationComponent):
         # Run the PTS prepare_images command remotely and get the output
         frames, errormaps = self.launcher.run_attached("prepare_images", self.preparer_config, input_dict, return_output_names=["frames", "errormaps"], unpack=True)
 
+        # Get the prepared
         self.frames = frames
         #self.errormaps = errormaps
 

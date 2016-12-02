@@ -14,3 +14,4 @@ find_stars | -- | sources.starfinder.StarFinder | arguments | Find stars
 find_other | -- | sources.trainedfinder.TrainedFinder | arguments | Find other contaminating sources (not in catalogs)
 extract | -- | sources.extractor.SourceExtractor | arguments | Extract the sources from an image (based on the results of find_sources)
 subtract_sky | -- | sky.skysubtractor.SkySubtractor | arguments | Run automatic sky subtraction on an astronmical image
+find_unit | -- | misc.unit.UnitFinder | arguments | Find the units of an image based on published photometry

@@ -106,7 +106,7 @@ galex_conversion_factors = {"GALEX.FUV": 1.40e-15, "GALEX.NUV": 2.06e-16}
 ergscmHz_to_Jy = 1e23
 
 # Effective wavelengths for GALEX
-effective_wavelengths = {"GALEX.FUV": 1528.0 * u.Unit("Angstrom"), "GALEX.NUV": 2271.0 * Unit("Angstrom")}
+effective_wavelengths = {"GALEX.FUV": 1528.0 * Unit("Angstrom"), "GALEX.NUV": 2271.0 * Unit("Angstrom")}
 
 # Conversion between flux density in SI units and Jansky
 jansky_to_si = 1e-26  # 1 Jy in W / [ m2 * Hz]
@@ -249,6 +249,11 @@ names = ["Band", "b", "Zero-flux magnitude", "m"]
 
 # -----------------------------------------------------------------
 
+nanomaggy = 3.613e-6 * Unit("Jy")
+nanomaggy_string = "(3.613e-6 Jy)"
+
+# -----------------------------------------------------------------
+
 def analyse_unit(unit):
 
     """
@@ -331,11 +336,28 @@ def analyse_unit(unit):
 
 # -----------------------------------------------------------------
 
+replacements = dict()
+
+replacements["DN"] = "count"
+replacements["SEC"] = "second"
+replacements["nanomaggy"] = nanomaggy_string
+replacements["nmaggy"] = nanomaggy_string
+replacements["nmaggy"] = nanomaggy_string
+replacements["nmgy"] = nanomaggy_string
+replacements["nMgy"] = nanomaggy_string
+replacements["nanomaggies"] = nanomaggy_string
+
+# -----------------------------------------------------------------
+
 class ImageUnit(CompositeUnit):
 
     """
     This function ...
     """
+
+    __slots__ = [] # make the class objects immutable
+
+    # -----------------------------------------------------------------
 
     def __init__(self, unit, density=False):
 
@@ -344,9 +366,7 @@ class ImageUnit(CompositeUnit):
         """
 
         if isinstance(unit, basestring):
-
-            if unit.isupper(): unit = unit.replace("DN", "count").replace("SEC", "second").lower()
-            else: unit = unit.replace("DN", "count")
+            for key in replacements: unit = unit.replace(key, replacements[key])
 
         # Parse the unit
         try: unit = Unit(unit)
@@ -363,7 +383,54 @@ class ImageUnit(CompositeUnit):
 
         # Call the constructor of the base class
         super(ImageUnit, self).__init__(self.scale_factor, unit.bases, unit.powers)
-        # super(ImageUnit, self).__init__(self.base_unit / self.wavelength_unit / self.frequency_unit / self.distance_unit / self.solid_angle_unit)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.base_physical_type == "luminosity"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_flux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.base_physical_type == "flux"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_intensity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.base_physical_type == "intensity"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_surface_brightness(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.base_physical_type == "surface brightness"
 
     # -----------------------------------------------------------------
 
@@ -389,7 +456,30 @@ class ImageUnit(CompositeUnit):
 
         else: base = "detections"
 
+        # Return the base type
         return base
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spectral_density_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Wavelength densities
+        if self.is_wavelength_density: return "wavelength"
+
+        # Frequency densities
+        elif self.is_frequency_density: return "frequency"
+
+        # Neutral density or regular power/flux/surfacebrightness
+        elif self.is_neutral_density: return "neutral"
+
+        # Not a spectral density
+        else: return None
 
     # -----------------------------------------------------------------
 
@@ -420,11 +510,8 @@ class ImageUnit(CompositeUnit):
         """
 
         if self.wavelength_unit != "":
-
             assert self.frequency_unit == ""
-
             return True
-
         else: return False
 
     # -----------------------------------------------------------------
@@ -438,11 +525,8 @@ class ImageUnit(CompositeUnit):
         """
 
         if self.frequency_unit != "":
-
             assert self.wavelength_unit == ""
-
             return True
-
         else: return False
 
     # -----------------------------------------------------------------
@@ -469,174 +553,169 @@ class ImageUnit(CompositeUnit):
         :return:
         """
 
-        # Wavelength densities
-        if self.is_wavelength_density:
+        # Get the spectral density type
+        density_type = self.spectral_density_type
 
-            prefix = "wavelength"
-            suffix = "density"
-
-        # Frequency densities
-        elif self.is_frequency_density:
-
-            prefix = "frequency"
-            suffix = "density"
-
-        # Neutral density or regular power/flux/surfacebrightness
-        elif self.is_neutral_density:
-
-            prefix = "neutral"
-            suffix = "density"
-
-        else:
-
-            prefix = None
-            suffix = None
-
-        # Return
-        if prefix is None: return self.base_physical_type
-        else: return " ".join([prefix, self.base_physical_type, suffix])
+        # Return the type
+        if density_type is None: return self.base_physical_type
+        else: return " ".join([density_type, self.base_physical_type, "density"])
 
     # -----------------------------------------------------------------
 
-    def conversion_factor(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None):
+    def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None, fltr=None, pixelscale=None):
 
         """
         This function ...
         :param to_unit:
+        :param density:
         :param wavelength:
         :param frequency:
         :param distance:
         :param solid_angle:
+        :param fltr:
+        :param pixelscale:
         :return:
         """
 
         # Parse "to unit"
-        to_unit = ImageUnit(to_unit)
+        to_unit = ImageUnit(to_unit, density=density)
 
-        wav = wavelength if wavelength is not None else frequency
+        # Determine wavelength and frequency
+        if wavelength is not None:
+            if frequency is not None: raise ValueError("Either frequency or wavelength can be specified")
+            frequency = wavelength.to("Hz", equivalencies=spectral())
+        elif frequency is not None:
+            wavelength = frequency.to("micron", equivalencies=spectral())
+        elif fltr is not None:
+            wavelength = fltr.pivot
+            frequency = frequency.to("Hz", equivalencies=spectral())
 
         # Same type
         if self.physical_type == self.to_unit.physical_type:
-
             #factor = self.scale_factor * self / self.to_unit
             factor = self / self.to_unit
+            return factor
 
-        # Same base type
-        elif self.base_physical_type == to_unit.base_physical_type:
+        # If solid angle is None, convert pixelscale to solid angle (of one pixel)
+        if solid_angle is None and pixelscale is not None:
+            solid_angle = (pixelscale * Unit("pix")).to("sr")
 
-            if self.is_frequency_density and to_unit.is_wavelength_density:
+        # Neutral density
+        if self.is_neutral_density:
 
-                factor = self.to(to_unit, equivalencies=spectral_density(wav))
+            if to_unit.is_wavelength_density: new_unit = self / wavelength
+            elif to_unit.is_frequency_density: new_unit = self / frequency
+            elif to_unit.is_neutral_density: new_unit = self
+            else: raise ValueError("Cannot convert from spectral density to integrated quantity") # asked to convert to not a spectral density
 
-            elif self.is_wavelength_density and to_unit.is_frequency_density:
+        # Wavelength density
+        elif self.is_wavelength_density:
 
-                factor = self.to(to_unit, equivalencies=spectral_density(wav))
+            if to_unit.is_neutral_density: new_unit = self * wavelength
+            elif to_unit.is_frequency_density: new_unit = self * wavelength / frequency
+            elif to_unit.is_wavelength_density: new_unit = self
+            else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
-            elif self.is_neutral_density and to_unit.is_wavelength_density:
+        # Frequency density
+        elif self.is_frequency_density:
 
-                # get wavelength
-                wavelength = wav.to("micron", equivalencies=spectral())
+            if to_unit.is_neutral_density: new_unit = self * frequency
+            elif to_unit.is_frequency_density: new_unit = self
+            elif to_unit.is_wavelength_density: new_unit = self * frequency / wavelength
+            else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
-                # divide by wavelength
-                new_unit = self / wavelength
-
-                # Determine factor
-                factor = new_unit.to(to_unit)
-
-            elif self.is_neutral_density and to_unit.is_frequency_density:
-
-                # Get frequency
-                frequency = wav.to("Hz", equivalencies=spectral())
-
-                # Divide by frequency
-                new_unit = self / frequency
-
-                # Determine factor
-                factor = new_unit.to(to_unit)
-
-            elif self.is_wavelength_density and to_unit.is_neutral_density:
-
-                # get wavelength
-                wavelength = wav.to("micron", equivalencies=spectral())
-
-                # Multiply by wavelength
-                new_unit = self * wavelength
-
-                # Determine factor
-                factor = new_unit.to(to_unit)
-
-            elif self.is_frequency_density and to_unit.is_neutral_density:
-
-                # Get frequency
-                frequency = wav.to("Hz", equivalencies=spectral())
-
-                # Multiply by frequency
-                new_unit = self * frequency
-
-                # Determine factor
-                factor = new_unit.to(to_unit)
-
-        # Different base type
+        # Not a spectral density
         else:
 
-            if self.base_physical_type == "luminosity"
+            if to_unit.is_neutral_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
+            elif to_unit.is_frequency_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
+            elif to_unit.is_wavelength_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
+            else: new_unit = self
 
-                if to_unit.base_physical_type == "flux":
+        # Same base type
+        if self.base_physical_type == to_unit.base_physical_type:
 
-                    # Divide by 4 pi distance**2
-                    new_unit = self / (4.0 * math.pi * distance**2)
+            # Determine factor
+            factor = new_unit.to(to_unit)
+            return factor
 
-                    # Determine factor
-                    factor = new_unit.to(to_unit)
+        # Different base type, luminosity
+        elif self.base_physical_type == "luminosity":
 
-                elif to_unit.base_physical_type == "intensity":
+            if to_unit.base_physical_type == "flux":
 
-                    # Divide by solid angle
-                    new_unit = self / solid_angle
+                # Divide by 4 pi distance**2
+                new_unit /= (4.0 * math.pi * distance**2)
 
-                    # Determine factor
-                    factor = new_unit.to(to_unit)
+                # Determine factor
+                factor = new_unit.to(to_unit)
 
-                elif to_unit.base_physical_type == "surface brightness":
+            elif to_unit.base_physical_type == "intensity":
 
-                    # Divide by 4 pi distance**2 and solid angle
-                    new_unit = self / (4.0 * math.pi * distance**2 * solid_angle)
+                # Divide by solid angle
+                new_unit /= solid_angle
 
-                    # Determine factor
-                    factor = new_unit.to(to_unit)
+                # Determine factor
+                factor = new_unit.to(to_unit)
 
-            elif self.base_physical_type == "flux":
+            elif to_unit.base_physical_type == "surface brightness":
 
-                if to_unit.base_physical_type == "luminosity":
+                # Divide by 4 pi distance**2 and solid angle
+                new_unit /= (4.0 * math.pi * distance**2 * solid_angle)
 
-                    # Multiply by 4 pi distance**2
-                    new_unit = self * (4.0 * math.pi * distance ** 2)
+                # Determine factor
+                factor = new_unit.to(to_unit)
 
-                    # Determine factor
-                    factor = new_unit.to(to_unit)
+            else: raise RuntimeError("We shouldn't reach this part")
 
-                elif to_unit.base_physical_type == "surface brightness":
+            # Return the conversion factor
+            return factor
 
-                    # Divide by solid angle
-                    new_unit = self / solid_angle
+        # Different base type, flux
+        elif self.base_physical_type == "flux":
 
-                    # Determine factor
-                    factor = new_unit.to(to_unit)
+            if to_unit.base_physical_type == "luminosity":
 
-                elif to_unit.base_physical_type == "intensity":
+                # Multiply by 4 pi distance**2
+                new_unit *= (4.0 * math.pi * distance ** 2)
 
-                    # Divide by solid angle
-                    # Multiply by 4 pi distance**2
-                    new_unit = self / solid_angle * (4.0 * math.pi * distance ** 2)
+                # Determine factor
+                factor = new_unit.to(to_unit)
 
-                    # Determine factor
-                    factor = new_unit.to(to_unit)
+            elif to_unit.base_physical_type == "surface brightness":
 
-            elif self.base_physical_type == "intensity":
+                # Divide by solid angle
+                new_unit /= solid_angle
 
-                pass
+                # Determine factor
+                factor = new_unit.to(to_unit)
 
-        # Return the conversion factor
-        return factor
+            elif to_unit.base_physical_type == "intensity":
+
+                # Divide by solid angle
+                # Multiply by 4 pi distance**2
+                new_unit /= solid_angle * (4.0 * math.pi * distance ** 2)
+
+                # Determine factor
+                factor = new_unit.to(to_unit)
+
+            #
+            else: raise RuntimeError("We shouldn't reach this part")
+
+            # Return the conversion factor
+            return factor
+
+        elif self.base_physical_type == "intensity":
+
+            if to_unit.base_physical_type == "luminosity": pass
+
+            elif to_unit.base_physical_type == "flux": pass
+
+            elif to_unit.base_physical_type == "surface brightness": pass
+
+            else: raise RuntimeError("We shouldn't reach this part")
+
+        else: # surface brightness
+            pass
 
 # -----------------------------------------------------------------

@@ -113,14 +113,15 @@ class SersicModel3D(Model):
         # Azimuth angle and y flattening
         elif azimuth_or_tilt == "azimuth":
 
+            # TODO: this is not working right and therefore unusable for the moment
+
             # Calculate the intrinsic flattening
             y_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
-            z_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
+            #z_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
+            z_flattening = 1.
 
             # Calculate the azimuth angle of the bulge
             azimuth = deproject_pa_to_azimuth(sersic2d.position_angle - position_angle, inclination)
-
-            print(azimuth)
 
             # Set tilt
             #tilt = Angle(90., "deg")

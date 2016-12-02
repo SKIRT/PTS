@@ -366,10 +366,13 @@ class BlackBodyDustMapMaker(MapsComponent):
         else: raise ValueError("Invalid value for 'method'")
 
         # Run PTS remotely and get the output
-        dust_masses = self.launcher.run_attached(command_name, config_dict, input_dict, return_output_names=["dust_masses"], unpack=True)
+        dust_masses, dust_mass_errors = self.launcher.run_attached(command_name, config_dict, input_dict, return_output_names=["dust_masses", "dust_mass_errors"], unpack=True)
 
         # Set the dust masses
         self.dust_masses = dust_masses
+
+        # Set the dust mass errors
+        self.dust_mass_errors = dust_mass_errors
 
     # -----------------------------------------------------------------
 
