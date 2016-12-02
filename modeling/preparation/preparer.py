@@ -107,7 +107,7 @@ class DataPreparer(PreparationComponent):
         """
 
         # Call the setup function of the base class
-        super(DataPreparer, self).setup(**kwargs)
+        super(DataPreparer, self).setup(**kwargs)@
 
         # Set options for the image preparer
         self.set_preparer_options()

@@ -20,7 +20,7 @@ from abc import ABCMeta
 from ..tools import parsing
 from ..tools.logging import log
 from ..tools import formatting as fmt
-from .configuration import stringify_not_list
+from ..tools.stringify import stringify_not_list
 
 # -----------------------------------------------------------------
 

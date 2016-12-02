@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.basics.host import find_host_ids
 
 # -----------------------------------------------------------------
 
@@ -18,5 +19,8 @@ definition.add_optional("image", "string", "the name of the image for which to r
 
 # Add flags
 definition.add_flag("visualise", "make visualisations")
+
+# Remote source detection
+definition.add_optional("remote", "string", "remote host on which to run the source finder", choices=find_host_ids())
 
 # -----------------------------------------------------------------

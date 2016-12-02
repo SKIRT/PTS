@@ -427,6 +427,36 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
+    def errors_min(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        if asarray: return tables.column_as_array(self.table["Error-"], unit=unit)
+        else: return tables.column_as_list(self.table["Error-"], unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def errors_max(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        if asarray: return tables.column_as_array(self.table["Error+"], unit=unit)
+        else: return tables.column_as_list(self.table["Error+"], unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
     def flux_for_filter(self, fltr, unit=None, add_unit=True):
 
         """
@@ -663,7 +693,37 @@ class SED(object):
         :return:
         """
 
-        return tables.columns_as_objects([self.table["Error-"], self.table["Error+"]], ErrorBar, unit=unit, add_unit=add_unit)
+        tables.columns_as_objects([self.table["Error-"], self.table["Error+"]], ErrorBar, unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def errors_min(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        if asarray: return tables.column_as_array(self.table["Error-"], unit=unit)
+        else: return tables.column_as_list(self.table["Error-"], unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    def errors_max(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        if asarray: return tables.column_as_array(self.table["Error+"], unit=unit)
+        else: return tables.column_as_list(self.table["Error+"], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 

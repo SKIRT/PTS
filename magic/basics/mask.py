@@ -30,6 +30,7 @@ from photutils import detect_sources
 # Import the relevant PTS classes and modules
 from .vector import Position
 from ...core.tools.logging import log
+from .vector import Pixel
 
 # -----------------------------------------------------------------
 
@@ -165,6 +166,7 @@ class MaskBase(object):
         """
 
         if isinstance(item, MaskBase): return self._data[item.data]
+        elif isinstance(item, Pixel): return self._data[item.y, item.x]
         else: return self._data[item]
 
     # -----------------------------------------------------------------
@@ -178,6 +180,7 @@ class MaskBase(object):
         """
 
         if isinstance(item, MaskBase): self._data[item.data] = value
+        elif isinstance(item, Pixel): self._data[item.y, item.x] = value
         else: self._data[item] = value
 
     # -----------------------------------------------------------------

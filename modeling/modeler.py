@@ -153,8 +153,6 @@ class GalaxyModeler(Configurable):
         # 4. Decomposition
         if "decompose" not in self.history: self.decompose()
 
-        exit()
-
         # 5. Truncation
         if "truncate" not in self.history: self.truncate()
 
@@ -341,8 +339,12 @@ class GalaxyModeler(Configurable):
         # Inform the user
         log.info("Initializing the data preparation ...")
 
+        # Create the configuration
+        config = dict()
+        config["remote"] = self.modeling_config.host_id
+
         # Create the initializer
-        initializer = PreparationInitializer()
+        initializer = PreparationInitializer(config)
 
         # Add an entry to the history
         self.history.add_entry(PreparationInitializer.command_name())
@@ -371,6 +373,7 @@ class GalaxyModeler(Configurable):
 
         # Create the configuration
         config = dict()
+        config["remote"] = self.modeling_config.host_id
         config["exclude_filters"] = lower_resolution_filters
 
         # Create the data preparer
@@ -593,8 +596,13 @@ class GalaxyModeler(Configurable):
         # Inform the user
         log.info("Making the dust map ...")
 
+        # Create the configuration
+        config = dict()
+        config["black_body"] = dict()
+        config["black_body"]["remote"] = self.modeling_config.host_id
+
         # Create the dust map maker
-        maker = DustMapMaker()
+        maker = DustMapMaker(config)
 
         # Add an entry to the history
         self.history.add_entry(DustMapMaker.command_name())

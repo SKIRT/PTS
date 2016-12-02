@@ -24,6 +24,7 @@ from .units import SkirtUnits
 from ..basics.filter import Filter
 from ..tools import archive as arch
 from ..tools import filesystem as fs
+from ..tools.stringify import str_from_angle, str_from_quantity, str_from_bool
 
 # -----------------------------------------------------------------
 #  SkiFile class
@@ -59,6 +60,10 @@ class SkiFile:
 
         # Replace path by the full, absolute path
         self.path = os.path.abspath(self.path)
+
+    ## This function converts the tree into a string
+    def __str__(self):
+        return etree.tostring(self.tree, encoding="UTF-8", xml_declaration=True, pretty_print=False, with_tail=False)
 
     ## This function saves the (possibly updated) contents of the SkiFile instance into the specified file.
     # The filename \em must end with ".ski". Saving to and thus replacing the ski file from which this
@@ -2462,7 +2467,6 @@ class SkiFile:
 
     ## This (experimental) function converts the ski file structure into a (nested) python dictionary
     def to_dict(self):
-
         return recursive_dict(self.tree.getroot())
 
     ## This (experimental) function converts the ski file structure into json format
@@ -2600,7 +2604,7 @@ class LabeledSkiFile(SkiFile):
         :return:
         """
 
-        from ..basics.configuration import stringify_not_list
+        from ..tools.stringify import stringify_not_list
 
         if label not in self.labels: raise ValueError("The label '" + label + "' is not present in the ski file")
 
@@ -2623,7 +2627,7 @@ class LabeledSkiFile(SkiFile):
         :return:
         """
 
-        from ..basics.configuration import stringify_not_list
+        from ..tools.stringify import stringify_not_list
 
         existing_labels = self.labels
 
@@ -2764,38 +2768,6 @@ def get_unique_element(element, name):
 
 def recursive_dict(element):
     return element.tag, dict(map(recursive_dict, element)) or element.text
-
-# -----------------------------------------------------------------
-
-def str_from_angle(angle):
-
-    try: return str(angle.to("deg").value) + " deg"
-    except AttributeError: return str(angle)
-
-# -----------------------------------------------------------------
-
-def str_from_quantity(quantity, unit=None):
-
-    if unit is not None:
-
-        if not quantity.__class__.__name__ == "Quantity": raise ValueError("Value is not a quantity, so unit cannot be converted")
-        return str(quantity.to(unit).value)
-
-    elif quantity.__class__.__name__ == "Quantity":
-
-        to_string = str(quantity.value) + " " + str(quantity.unit).replace(" ", "")
-        return to_string.replace("solMass", "Msun").replace("solLum", "Lsun")
-
-    else:
-
-        warnings.warn("The given value is not a quantity but a scalar value. No guarantee can be given that the parameter value"
-                      "is specified in the correct unit")
-        return str(quantity)
-
-# -----------------------------------------------------------------
-
-def str_from_bool(boolean):
-    return str(boolean).lower()
 
 # -----------------------------------------------------------------
 

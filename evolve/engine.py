@@ -938,7 +938,7 @@ class GAEngine(object):
         self.generate_new_population()
 
         # Evaluate
-        print(self.generation_description)
+        #print(self.generation_description)
         self.new_population.evaluate()
 
         # Replace population

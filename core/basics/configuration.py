@@ -19,11 +19,10 @@ from types import NoneType
 import sys
 import argparse
 from collections import OrderedDict
-import numpy as np
 
 # Import the relevant PTS classes and modules
 from .map import Map
-from ..tools import parsing
+from ..tools import parsing, stringify
 from ..tools import filesystem as fs
 from ..tools.logging import log
 
@@ -320,7 +319,7 @@ def write_mapping(mappingfile, mapping, indent=""):
             print(indent + "}", file=mappingfile)
 
         else:
-            ptype, string = stringify(mapping[name])
+            ptype, string = stringify.stringify(mapping[name])
             print(indent + name + " [" + ptype + "]: " + string, file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
@@ -353,87 +352,11 @@ def mapping_to_lines(lines, mapping, indent=""):
 
         else:
 
-            ptype, string = stringify(mapping[name])
+            ptype, string = stringify.stringify(mapping[name])
             lines.append(indent + name + " [" + ptype + "]: " + string)
 
         if index != length - 1: lines.append("")
         index += 1
-
-# -----------------------------------------------------------------
-
-def stringify(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    if isinstance(value, list):
-
-        strings = []
-        ptype = None
-        for entry in value:
-
-            parsetype, val = stringify_not_list(entry)
-
-            if ptype is None: ptype = parsetype
-            elif ptype != parsetype: raise ValueError("Nonuniform list")
-
-            strings.append(val)
-
-        return ptype + "_list", ",".join(strings)
-
-    elif isinstance(value, tuple):
-
-        strings = []
-        ptype = None
-        for entry in value:
-
-            parsetype, val = stringify_not_list(entry)
-
-            if ptype is None: ptype = parsetype
-            elif ptype != parsetype: raise ValueError("Nonuniform tuple")
-
-            strings.append(val)
-
-        return ptype + "_tuple", ",".join(strings)
-
-    else: return stringify_not_list(value)
-
-# -----------------------------------------------------------------
-
-def stringify_not_list(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    from astropy.units import Quantity
-    from astropy.coordinates import Angle
-    from pts.magic.basics.coordinate import SkyCoordinate
-    from pts.magic.basics.stretch import SkyStretch
-
-    from .range import RealRange, IntegerRange, QuantityRange
-
-    from .filter import Filter
-
-    if isinstance(value, bool): return "boolean", str(value)
-    elif isinstance(value, int): return "integer", str(value)
-    elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64): return "real", repr(value)
-    elif isinstance(value, basestring): return "string", value
-    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit).replace("solMass", "Msun").replace("solLum", "Lsun").replace(" ", "")
-    elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit).replace(" ", "")
-    elif isinstance(value, NoneType): return "None", "None"
-    elif isinstance(value, RealRange): return "real_range", repr(value)
-    elif isinstance(value, IntegerRange): return "integer_range", repr(value)
-    elif isinstance(value, QuantityRange): return "quantity_range", repr(value)
-    elif isinstance(value, SkyCoordinate): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-    elif isinstance(value, SkyStretch): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-    elif isinstance(value, Filter): return "filter", str(value)
-    else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------
 
@@ -1505,8 +1428,8 @@ def write_definition(definition, configfile, indent=""):
         choices = definition.required[name][2]
 
         choices_string = ""
-        if isinstance(choices, dict): choices_string = " # choices = " + stringify(choices.keys())[1]
-        elif choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [required, " + str(real_type) + "]: None" + choices_string, file=configfile)
@@ -1520,8 +1443,8 @@ def write_definition(definition, configfile, indent=""):
         choices = definition.pos_optional[name][3]
 
         choices_string = ""
-        if isinstance(choices, dict): choices_string = " # choices = " + stringify(choices.keys())[1]
-        elif choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [pos_optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
@@ -1536,8 +1459,8 @@ def write_definition(definition, configfile, indent=""):
         letter = definition.optional[name][5]
 
         choices_string = ""
-        if isinstance(choices, dict): choices_string = " # choices = " + stringify(choices.keys())[1]
-        elif choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)

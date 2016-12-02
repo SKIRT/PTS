@@ -219,3 +219,24 @@ class Extent(Vector):
         return self.__class__(self.x / value, self.y / value)
 
 # -----------------------------------------------------------------
+
+class Pixel(Vector):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, x, y):
+
+        """
+        The constructor ...
+        """
+
+        # Check the arguments
+        if not isinstance(x, int): raise ValueError("Arguments must be integer numbers")
+        if not isinstance(y, int): raise ValueError("Arguments must be integer numbers")
+
+        # Call the constructor of the base class
+        super(Pixel, self).__init__(x, y)
+
+# -----------------------------------------------------------------

@@ -30,7 +30,7 @@ from ...core.simulation.definition import SingleSimulationDefinition
 from .tables import ParametersTable, ChiSquaredTable
 from ...core.launch.options import SchedulingOptions
 from ...core.advanced.runtimeestimator import RuntimeEstimator
-from ...core.basics.configuration import stringify_not_list
+from ...core.tools.stringify import stringify_not_list
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
 

@@ -47,6 +47,14 @@ class SimulationDiscoverer(Configurable):
         # Call the constructor of the base class
         super(SimulationDiscoverer, self).__init__(config)
 
+        # The search path
+        self.search_path = None
+
+        # The paths
+        self.ski_paths = defaultdict(list)
+        self.parameter_paths = dict()
+        self.log_paths = defaultdict(list)
+
         # The simulations
         self.simulations_ski = defaultdict(list)
         self.simulations_no_ski = defaultdict(list)
@@ -104,6 +112,22 @@ class SimulationDiscoverer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(SimulationDiscoverer, self).setup(**kwargs)
+
+        # Set the search path
+        self.search_path = self.config.path
+
+    # -----------------------------------------------------------------
+
     def find(self):
 
         """
@@ -114,13 +138,32 @@ class SimulationDiscoverer(Configurable):
         # Inform the user
         log.info("Finding simulations ...")
 
-        search_path = self.config.path
+        # Find ski files
+        self.find_ski_files()
 
-        ski_files = defaultdict(list)
-        parameter_files = defaultdict(list)
+        # Find parameter files
+        self.find_parameter_files()
+
+        # Find log files
+        self.find_log_files()
+
+        # Find simulations
+        self.find_simulations()
+
+    # -----------------------------------------------------------------
+
+    def find_ski_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding ski files ...")
 
         # Search for ski files
-        for path, name in fs.files_in_path(search_path, extension="ski", recursive=self.config.recursive, returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.search_path, extension="ski", recursive=self.config.recursive, returns=["path", "name"]):
 
             # Determine the prefix
             prefix = name
@@ -128,10 +171,24 @@ class SimulationDiscoverer(Configurable):
             dirpath = fs.directory_of(path)
 
             # Add the path
-            ski_files[prefix].append(dirpath)
+            self.ski_paths[prefix].append(dirpath)
+
+    # -----------------------------------------------------------------
+
+    def find_parameter_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding parameter files ...")
+
+        parameter_files = defaultdict(list)
 
         # Search for parameter files
-        for path, name in fs.files_in_path(search_path, extension="xml", endswith="_parameters", recursive=self.config.recursive, returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.search_path, extension="xml", endswith="_parameters", recursive=self.config.recursive, returns=["path", "name"]):
 
             # Determine the prefix
             prefix = name.split("_parameters")[0]
@@ -141,7 +198,7 @@ class SimulationDiscoverer(Configurable):
             # Add the path
             parameter_files[prefix].append(dirpath)
 
-        parpaths = dict()
+        #parpaths = dict()
 
         # Compare the parameter files
         for prefix in parameter_files:
@@ -164,14 +221,22 @@ class SimulationDiscoverer(Configurable):
                     else: distinct_parpaths[parpath].append(parpath)
 
             # Set ...
-            parpaths[prefix] = distinct_parpaths
+            self.parameter_paths[prefix] = distinct_parpaths
 
-        #print(parpaths[parpaths.keys()[0]])
+    # -----------------------------------------------------------------
 
-        log_files = defaultdict(list)
+    def find_log_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding log files ...")
 
         # Search for log files
-        for path, name in fs.files_in_path(search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
 
             # Determine the prefix
             prefix = name.split("_log")[0]
@@ -181,21 +246,30 @@ class SimulationDiscoverer(Configurable):
 
             dirpath = fs.directory_of(path)
 
-            log_files[prefix].append(dirpath)
+            self.log_paths[prefix].append(dirpath)
+
+    # -----------------------------------------------------------------
+
+    def find_simulations(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         input_paths_ski_files = dict()
 
         # Loop over the ...
-        for prefix in parpaths:
+        for prefix in self.parameter_paths:
 
             # Loop over the unique parameter files, find equal ski file
-            for parpath in parpaths[prefix]:
+            for parpath in self.parameter_paths[prefix]:
 
                 #rel_parpath = parpath.split(self.config.path)[1]
                 ski_found = False
 
                 # Loop over the ski files with this prefix
-                for dirpath in ski_files[prefix]:
+                for dirpath in self.ski_paths[prefix]:
 
                     skipath = fs.join(dirpath, prefix + ".ski")
                     rel_skipath = skipath.split(self.config.path)[1]
@@ -203,6 +277,36 @@ class SimulationDiscoverer(Configurable):
                     #print("DIFFERENCES", parpath, skipath)
                     #for line1, line2 in textfiledifferences(parpath, skipath):
                     #    print(line1, line2)
+
+                    #output = textfiledifferences(parpath, skipath)
+                    #print(output)
+
+                    par = SkiFile(parpath)
+                    ski = SkiFile(skipath)
+
+                    #print(set(par.tree.getroot().text))
+                    #print(set(ski.tree.getroot().text))
+
+                    #par_string = str(par)
+                    #ski_string = str(ski)
+
+                    #par_string = simplify_xml(par_string)
+                    #ski_string = simplify_xml(ski_string)
+
+                    #print(par_string)
+                    #print(ski_string)
+
+                    #par_string = str(par).split("MonteCarloSimulation")[1]
+                    #ski_string = str(ski).split("MonteCarloSimulation")[1]
+
+                    #exit()
+
+                    #par_dict = par.to_dict()
+                    #ski_dict = ski.to_dict()
+
+                    #print(par_dict)
+                    #print(ski_dict)
+                    #exit()
 
                     # Compare ski file with parameter file
                     if equaltextfiles(parpath, skipath, 1):
@@ -213,10 +317,10 @@ class SimulationDiscoverer(Configurable):
                 # String of relative parameter file paths concated together
                 #else: key = " + ".join(map(itemgetter(1), map(lambda x: str.split(x, self.config.config_path), parpaths[prefix][parpath]))) #
                 #else: key = "no ski file found"
-                else: key = tuple(parpaths[prefix][parpath])
+                else: key = tuple(self.parameter_paths[prefix][parpath])
 
                 # Loop over the parameter files, find the corresponding log file
-                for parameter_file_path in parpaths[prefix][parpath]:
+                for parameter_file_path in self.parameter_paths[prefix][parpath]:
 
                     # The simulation output path
                     output_path = fs.directory_of(parameter_file_path)
@@ -232,7 +336,7 @@ class SimulationDiscoverer(Configurable):
 
                     if ski_found: input_paths_ski_files[ski_path] = input_path
 
-                    log_files[prefix].remove(output_path)
+                    self.log_paths[prefix].remove(output_path)
 
                     # Create simulation and return it
                     simulation = SkirtSimulation(prefix, input_path, output_path, ski_path)
@@ -241,12 +345,12 @@ class SimulationDiscoverer(Configurable):
                     self.simulations_ski[key].append(simulation)
 
         # Loop over the log files without parameter file
-        for prefix in log_files:
+        for prefix in self.log_paths:
 
             parameters_ski_files = dict()
 
             # Open the ski files with this prefix
-            for dirpath in ski_files[prefix]:
+            for dirpath in self.ski_paths[prefix]:
 
                 skipath = fs.join(dirpath, prefix + ".ski")
 
@@ -261,7 +365,7 @@ class SimulationDiscoverer(Configurable):
                 parameters_ski_files[skipath] = parameters
 
             # Loop over the log files
-            for output_path in log_files[prefix]:
+            for output_path in self.log_paths[prefix]:
 
                 # Determine the log file path
                 logfile_path = fs.join(output_path, prefix + "_log.txt")
@@ -747,5 +851,26 @@ def comparison_parameters_from_log(log_path):
 
     # Return the parameters
     return log_parameters
+
+# -----------------------------------------------------------------
+
+def simplify_xml(xml_string):
+
+    new_string = xml_string
+    index = 0
+    last_name = None
+    left_or_right = None
+    last_end_index = None
+    while index < len(xml_string):
+        if xml_string[index] == "<" and xml_string[index + 1] != "/":
+            last_name = xml_string[index:].split(" ")[0]
+            left_or_right = "<"
+        elif xml_string[index] == ">" and xml_string[index + 1] != "/":
+            last_end_index = index
+        elif xml_string[index] == "<" and xml_string[index + 1] == "/":
+            name = xml_string[index + 1:].split(">")[0]
+            if name == last_name:
+                new_string = new_string[:last_end_index - 1] + "/>" + new_string[index + len(name) + 1:]
+    return new_string
 
 # -----------------------------------------------------------------

@@ -37,6 +37,7 @@ from ...core.tools.logging import log
 from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
+from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------
 
@@ -132,6 +133,7 @@ class Frame(NDDataArray):
         """
 
         if isinstance(item, MaskBase): return self._data[item.data]
+        elif isinstance(item, Pixel): return self._data[item.y, item.x]
         else: return self._data[item]
 
     # -----------------------------------------------------------------
@@ -145,6 +147,7 @@ class Frame(NDDataArray):
         """
 
         if isinstance(item, MaskBase): self._data[item.data] = value
+        elif isinstance(item, Pixel): self._data[item.y, item.x] = value
         else: self._data[item] = value
 
     # -----------------------------------------------------------------

@@ -13,16 +13,21 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import ABCMeta, abstractmethod
 import random
 import numpy as np
 from scipy.optimize import minimize
 from scipy.constants import h,k,c
-from multiprocessing import Pool
+from multiprocessing import Pool, current_process
+
+# Import astronomical modules
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....magic.misc.spire import SPIRE
 from ....core.basics.configurable import Configurable
+from ....core.basics.range import RealRange, QuantityRange
 
 # PTS evolution classes and modules
 from ....evolve.engine import GAEngine, RawScoreCriteria
@@ -33,13 +38,21 @@ from ....evolve import constants
 
 # -----------------------------------------------------------------
 
-# define temperature grid
-T1dist = np.arange(10, 30, 1)
-T2dist = np.arange(30, 60, 5)
+t1_range = QuantityRange(10., 30., "K")
+t2_range = QuantityRange(30., 60., "K")
+
+# Define temperature grids
+T1dist = np.arange(t1_range.min.to("K").value, t1_range.max.to("K").value, 1)
+T2dist = np.arange(t2_range.min.to("K").value, t2_range.max.to("K").value, 5)
 
 # -----------------------------------------------------------------
 
+beta = 2.0
+
 k850 = 0.077  # Maarten (and SKIRT) use different value you so you might want to change to be consistent
+
+# -----------------------------------------------------------------
+
 bootstrapn = 16  # number of bootstrapped SEDS
 
 # De dust mass absorption coefficient is golflengte afhankelijk, dus je kan ook bv k350 gebruiken en herschalen volgens:
@@ -128,6 +141,39 @@ def chi_squared(Dust, wa, yorig, yerrorig, D, z, T1, T2, corr):
 
 # -----------------------------------------------------------------
 
+def chi_squared_genome(genome, wavelengths, yorig, yerrorig, distance, redshift):
+
+    """
+    This function ...
+    :param genome:
+    :param wavelengths:
+    :param yorig:
+    :param yerrorig:
+    :param distance:
+    :param redshift:
+    :return:
+    """
+
+    T1 = genome.genomeList[0]
+    T2 = genome.genomeList[1]
+    d1 = genome.genomeList[2]
+    d2 = genome.genomeList[3]
+
+    # KEcorr factor dependant on (cold) model SED temperature
+    kecorr_250 = spire.get_kcol_temperature_psw(T1 * Unit("K"), beta, extended=True)
+    kecorr_350 = spire.get_kcol_temperature_pmw(T1 * Unit("K"), beta, extended=True)
+    kecorr_500 = spire.get_kcol_temperature_plw(T1 * Unit("K"), beta, extended=True)
+    corr = [1., 1., kecorr_250, kecorr_350, kecorr_500]  # pacs 70, pacs 160, SPIRE 250, SPIRE 350, SPIRE 500
+
+    # chi_squared, initial_guess, args=(wavelengths, ydatab, yerr, distance, redshift, T1, T2, corr)
+
+    Dust = [d1, d2]
+
+    # Calculate and return the chi squared value
+    return chi_squared(Dust, wavelengths, yorig, yerrorig, distance, redshift, T1, T2, corr)
+
+# -----------------------------------------------------------------
+
 def newdata(y,err):
 
     """
@@ -141,11 +187,20 @@ def newdata(y,err):
 
 # -----------------------------------------------------------------
 
-class GridBlackBodyFitter(Configurable):
+# The SPIRE instance
+spire = SPIRE()
+
+# -----------------------------------------------------------------
+
+class BlackBodyFitter(Configurable):
 
     """
     This class ...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -155,10 +210,7 @@ class GridBlackBodyFitter(Configurable):
         """
 
         # Call the constructor of the base class
-        super(GridBlackBodyFitter, self).__init__(config)
-
-        # The SPIRE instance
-        self.spire = SPIRE()
+        super(BlackBodyFitter, self).__init__(config)
 
         # The pixel or galaxy SEDs
         self.seds = None
@@ -167,11 +219,20 @@ class GridBlackBodyFitter(Configurable):
         self.distances = None
         self.redshifts = None
 
-        # The process pool
-        self.pool = None
+        # The dust masses of the cold dust component
+        self.cold_masses = None
 
-        # The dust masses
-        self.dust_masses = None
+        # The dust masses of the warm dust component
+        self.warm_masses = None
+
+        # The cold dust temperatures
+        self.cold_temperatures = None
+
+        # The warm dust temperatures
+        self.warm_temperatures = None
+
+        # The chi squared values
+        self.chi_squared = None
 
     # -----------------------------------------------------------------
 
@@ -203,18 +264,110 @@ class GridBlackBodyFitter(Configurable):
         """
 
         # Call the setup function of the base class
-        super(GridBlackBodyFitter, self).setup(**kwargs)
+        super(BlackBodyFitter, self).setup(**kwargs)
 
         # Get the SEDs
         self.seds = kwargs.pop("seds")
 
         # Get the distances
         self.distances = kwargs.pop("distances")
-        if not isinstance(self.distances, list): self.distances = [self.distances] * len(self.seds)
+        if not isinstance(self.distances, list): self.distances = [self.distances] * self.nseds
 
         # Get the redshifts
         self.redshifts = kwargs.pop("redshifts")
-        if not isinstance(self.redshifts, list): self.redshifts = [self.redshifts] * len(self.seds)
+        if not isinstance(self.redshifts, list): self.redshifts = [self.redshifts] * self.nseds
+
+        # Resize the result arrays
+        self.cold_masses = np.zeros(self.nseds)
+        self.warm_masses = np.zeros(self.nseds)
+        self.cold_temperatures = np.zeros(self.nseds)
+        self.warm_temperatures = np.zeros(self.nseds)
+        self.chi_squared = np.zeros(self.nseds)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nseds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.seds)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_masses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cold_masses + self.warm_masses
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+class GridBlackBodyFitter(BlackBodyFitter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(GridBlackBodyFitter, self).__init__(config)
+
+        # The process pool
+        self.pool = None
+
+        # The dust masses
+        self.dust_masses = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(GridBlackBodyFitter, self).setup(**kwargs)
 
         # Initialize the process pool
         self.pool = Pool(processes=self.config.nprocesses)
@@ -228,10 +381,16 @@ class GridBlackBodyFitter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Fitting black body spectra to the pixel SEDs ...")
+
         results = []
 
         # Loop over the pixels
         for index in range(len(self.seds)):
+
+            # Debugging
+            log.debug("Fitting SED " + str(index+1) + " of " + str(self.nseds) + " ...")
 
             # Get the sed
             sed = self.seds[index]
@@ -240,22 +399,38 @@ class GridBlackBodyFitter(Configurable):
             distance = self.distances[index]
             redshift = self.redshifts[index]
 
+            # Get the wavelengths
+            wavelengths = sed.wavelengths(unit="micron", asarray=True)
+
             # Get fluxes and errors in Jansky
             ydata = sed.fluxes(unit="Jy", asarray=True)
-            yerr = sed.errors(unit="Jy", asarray=True)
+            yerr_low = sed.errors_min(unit="Jy", asarray=True)
+            yerr_high = sed.errors_max(unit="Jy", asarray=True)
 
             # Execute
-            result = self.pool.apply_async(_fit_one_pixel, args=(ydata, yerr, distance, redshift, self.spire,))  # All simple types (strings)
+            result = self.pool.apply_async(_fit_one_pixel, args=(wavelengths, ydata, yerr_low, yerr_high, distance, redshift,))  # All simple types (strings)
 
             # Add the result
             results.append(result)
 
-        # Get and set the dust masses
-        self.dust_masses = [result.get() for result in results]
+        # Get the results
+        for index, result in enumerate(results):
+
+            #result = result.get()
+
+            #  return tc, tw, 10.**log_md_c, 10.**log_md_w, chi2
+
+            tc, tw, md_c, md_w, chi2 = result.get()
+
+            self.cold_masses[index] = md_c
+            self.warm_masses[index] = md_w
+            self.cold_temperatures[index] = tc
+            self.warm_temperatures[index] = tw
+            self.chi_squared[index] = chi2
 
         # Close and join the process pool
-        self.pool.close()
-        self.pool.join()
+        #self.pool.close()
+        #self.pool.join()
 
     # -----------------------------------------------------------------
 
@@ -270,7 +445,7 @@ class GridBlackBodyFitter(Configurable):
 
 # -----------------------------------------------------------------
 
-class GeneticBlackBodyFitter(Configurable):
+class GeneticBlackBodyFitter(BlackBodyFitter):
 
     """
     This class ...
@@ -285,25 +460,6 @@ class GeneticBlackBodyFitter(Configurable):
 
         # Call the constructor of the base class
         super(GeneticBlackBodyFitter, self).__init__(config)
-
-    # -----------------------------------------------------------------
-
-    def run(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Call the setup function
-        self.setup(**kwargs)
-
-        # Do the fitting
-        self.fit()
-
-        # Writing
-        self.write()
 
     # -----------------------------------------------------------------
 
@@ -329,58 +485,87 @@ class GeneticBlackBodyFitter(Configurable):
 
         log.info("Fitting ...")
 
-    # -----------------------------------------------------------------
+        t1_min = t1_range.min.to("K").value
+        t1_max = t1_range.max.to("K").value
+        t2_min = t1_range.min.to("K").value
+        t2_max = t2_range.max.to("K").value
 
-    def fit_(self, wavelengths, ydata, yerr, D):
+        d1_min = 0.5
+        d1_max = 10.0
+        d2_min = 0.5
+        d2_max = 10.0
 
-        """
-        This function ...
-        :param wavelengths:
-        :param ydata:
-        :param yerr:
-        :param D:
-        :return:
-        """
+        minima = [t1_min, t2_min, d1_min, d2_min]
+        maxima = [t1_max, t2_max, d1_max, d2_max]
 
-        minima = [t1_min, t2_min, md_min, ratio_min]
-        maxima = [t1_max, t2_max, md_max, ratio_max]
+        # Loop over the pixels
+        for index in range(len(self.seds)):
 
-        # Create the first genome
-        genome = G1DList(4)
+            # Get the sed
+            sed = self.seds[index]
 
-        # Set genome options
-        genome.setParams(minima=minima, maxima=maxima, bestrawscore=0.00, rounddecimal=2)
-        genome.initializator.set(initializators.HeterogeneousListInitializerReal)
-        # genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
-        genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
+            # Get the distance and redshift
+            distance = self.distances[index]
+            redshift = self.redshifts[index]
 
-        # Create the genetic algorithm engine
-        engine = GAEngine(genome)
+            # Get the wavelengths
+            wavelengths = sed.wavelengths(unit="micron", asarray=True)
 
-        # Set options for the engine
-        engine.terminationCriteria.set(RawScoreCriteria)
-        engine.setMinimax(constants.minimaxType["minimize"])
-        engine.setGenerations(5)
-        engine.setCrossoverRate(0.5)
-        engine.setPopulationSize(100)
-        engine.setMutationRate(0.5)
+            # Get fluxes and errors in Jansky
+            ydata = sed.fluxes(unit="Jy", asarray=True)
+            yerr_low = sed.errors_min(unit="Jy", asarray=True)
+            yerr_high = sed.errors_max(unit="Jy", asarray=True)
 
-        # Initialize the genetic algorithm
-        engine.initialize()
+            # Observed errors in Jy
+            yerr = 0.5 * (-yerr_low + yerr_high)
 
-        ###
+            # -----------------------------------------------------------------
 
-        engine.evolve()
+            # Create the first genome
+            genome = G1DList(4)
 
-        # Get best individual parameters
-        best = engine.bestIndividual()
-        best_t1 = best.genomeList[0]
-        best_t2 = best.genomeList[1]
-        best_md = best.genomeList[2]
-        best_ratio = best.genomeList[3]
+            # Set genome options
+            genome.setParams(minima=minima, maxima=maxima, bestrawscore=0.00, rounddecimal=2)
+            genome.initializator.set(initializators.HeterogeneousListInitializerReal)
+            genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
+            #genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
 
-        # Return the best fitting parameters
-        return best_t1, best_t2, best_md, best_ratio
+            # Set the evaluator function
+            chi_squared_lambda = lambda genome: chi_squared_genome(genome, wavelengths, ydata, yerr, distance, redshift)
+            genome.evaluator.set(chi_squared_lambda)
+
+            # Create the genetic algorithm engine
+            engine = GAEngine(genome)
+
+            # Set options for the engine
+            engine.terminationCriteria.set(RawScoreCriteria)
+            engine.setMinimax(constants.minimaxType["minimize"])
+            engine.setGenerations(5)
+            engine.setCrossoverRate(0.5)
+            engine.setPopulationSize(100)
+            engine.setMutationRate(0.5)
+
+            # Initialize the genetic algorithm
+            engine.initialize()
+
+            # Evolve
+            engine.evolve()
+
+            # Get best individual parameters
+            best = engine.bestIndividual()
+            best_t1 = best.genomeList[0]
+            best_t2 = best.genomeList[1]
+            best_d1 = best.genomeList[2]
+            best_d2 = best.genomeList[3]
+
+            chi2 = best.score
+
+            #
+            self.cold_masses[index] = best_d1
+            self.warm_masses[index] = best_d2
+            self.cold_temperatures[index] = best_t1
+            self.warm_temperatures[index] = best_t2
+            self.chi_squared[index] = chi2
 
     # -----------------------------------------------------------------
 
@@ -395,18 +580,21 @@ class GeneticBlackBodyFitter(Configurable):
 
 # -----------------------------------------------------------------
 
-def _fit_one_pixel(wavelengths, ydata, yerr, distance, redshift, spire):
+def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
 
     """
     This function ...
     :param wavelengths:
     :param ydata:
-    :param yerr:
+    :param yerr_low:
+    :param yerr_high:
     :return:
     """
 
-    # ydata = [] # observed fluxes in Jy
-    # yerr = [] # observed errors in Jy
+    print("Process " + str(current_process()) + " working on an SED ...")
+
+    # Observed errors in Jy
+    yerr = 0.5 * (-yerr_low + yerr_high)
 
     # Set initial chi squared value
     chi2 = float("inf")
@@ -435,9 +623,9 @@ def _fit_one_pixel(wavelengths, ydata, yerr, distance, redshift, spire):
                 initial_guess = np.array([7., 6.])
 
                 # KEcorr factor dependant on (cold) model SED temperature
-                kecorr_250 = spire.get_ebeam_temperature_psw(T1)
-                kecorr_350 = spire.get_ebeam_temperature_pmw(T1)
-                kecorr_500 = spire.get_ebeam_temperature_plw(T1)
+                kecorr_250 = spire.get_kcol_temperature_psw(T1 * Unit("K"), beta, extended=True)
+                kecorr_350 = spire.get_kcol_temperature_pmw(T1 * Unit("K"), beta, extended=True)
+                kecorr_500 = spire.get_kcol_temperature_plw(T1 * Unit("K"), beta, extended=True)
                 corr = [1., 1., kecorr_250, kecorr_350, kecorr_500] # pacs 70, pacs 160, SPIRE 250, SPIRE 350, SPIRE 500
 
                 # Do the minimization
@@ -474,9 +662,9 @@ def _fit_one_pixel(wavelengths, ydata, yerr, distance, redshift, spire):
             initial_guess = np.array([7., 6.])
 
             # KEcorr factor dependant on (cold) model SED temperature
-            kecorr_250 = spire.f250(T1)
-            kecorr_350 = spire.f350(T1)
-            kecorr_500 = spire.f500(T1)
+            kecorr_250 = spire.get_kcol_temperature_psw(T1 * Unit("K"), beta, extended=True)
+            kecorr_350 = spire.get_kcol_temperature_pmw(T1 * Unit("K"), beta, extended=True)
+            kecorr_500 = spire.get_kcol_temperature_plw(T1 * Unit("K"), beta, extended=True)
             corr = [1., 1., kecorr_250, kecorr_350, kecorr_500]  # pacs 70, pacs 160, SPIRE 250, SPIRE 350, SPIRE 500
 
             # Do minimization
@@ -497,49 +685,64 @@ def _fit_one_pixel(wavelengths, ydata, yerr, distance, redshift, spire):
                 T1_sav = T1dist[ii]
                 T2_sav = T2
 
-        # OUTPUT
+    # OUTPUT
 
-        ## BOOTSTRAPPING
+    ## BOOTSTRAPPING
 
-        # Dust mass statistics
-        # log_Md
-        # log_Mderr
-        mean_mds = np.mean(dust_mass_list)
-        std_mds = np.std(dust_mass_list)
+    # Dust mass statistics
+    # log_Md
+    # log_Mderr
+    mean_mds = np.mean(dust_mass_list)
+    std_mds = np.std(dust_mass_list)
 
-        # T1 statistics
-        # Tc
-        # Tcerr
-        mean_tc = np.mean(tc_list)
-        std_tc = np.std(tc_list)
+    # T1 statistics
+    # Tc
+    # Tcerr
+    mean_tc = np.mean(tc_list)
+    std_tc = np.std(tc_list)
 
-        # T2 statistics
-        # Tw
-        # Twerr
-        mean_tw = np.mean(tw_list)
-        std_tw = np.std(tw_list)
+    # T2 statistics
+    # Tw
+    # Twerr
+    mean_tw = np.mean(tw_list)
+    std_tw = np.std(tw_list)
 
-        ## BEST FIT
+    ## BEST FIT
 
-        # log_Md_bestfit
-        logmd = np.log10(10 ** Mds[0] + 10 ** Mds[1])
+    # log_Md_bestfit
+    log_md = np.log10(10 ** Mds[0] + 10 ** Mds[1])
 
-        # log_Md_c_bestfit
-        log_md_c = Mds[0]
+    # log_Md_c_bestfit
+    log_md_c = Mds[0]
 
-        # log_Md_w_bestfit
-        log_md_w = Mds[1]
+    # log_Md_w_bestfit
+    log_md_w = Mds[1]
 
-        # Tc_bestfit
-        tc = T1_sav
+    # Tc_bestfit
+    tc = T1_sav
 
-        # Tw_bestfit
-        tw = T2_sav
+    # Tw_bestfit
+    tw = T2_sav
 
-        # Chi2_bestfit
-        #chi2 =
+    # Chi2_bestfit
+    #chi2 =
 
-        # Return the values
-        return mean_mds, std_mds, mean_tc, std_tc, mean_tw, std_tw, logmd, log_md_c, log_md_w, tc, tw, chi2
+    print("")
+    print("Result:")
+    print("Mean Mds:", mean_mds, "+/-", std_mds)
+    print("Mean Tc:", mean_tc, "+/-", std_tc)
+    print("Mean Tw:", mean_tw, "+/-", std_tw)
+    print("log_md:", log_md)
+    print("log_md_c:", log_md_c)
+    print("log_md_w:", log_md_w)
+    print("tc:", tc)
+    print("tw:", tw)
+    print("chi2:", chi2)
+    print("")
+
+    # Return the values
+    #return mean_mds, std_mds, mean_tc, std_tc, mean_tw, std_tw, log_md, log_md_c, log_md_w, tc, tw, chi2
+
+    return tc, tw, 10.**log_md_c, 10.**log_md_w, chi2
 
 # -----------------------------------------------------------------

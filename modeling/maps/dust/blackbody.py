@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import random
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
@@ -28,6 +27,7 @@ from ....magic.core.frame import Frame
 from ....core.launch.pts import PTSRemoteLauncher
 from .fitter import GridBlackBodyFitter, GeneticBlackBodyFitter
 from ....magic.tools import wavelengths
+from ....magic.basics.vector import Pixel
 
 # PTS evolution classes and modules
 from ....evolve.engine import GAEngine, RawScoreCriteria
@@ -245,17 +245,32 @@ class BlackBodyDustMapMaker(MapsComponent):
             x = pixels_x[index]
             y = pixels_y[index]
 
+            # Create the pixel ID
+            pixel = Pixel(x, y)
+
             # Get the FIR-submm SED for this pixel
             sed = self.datacube.pixel_sed(x, y, errorcube=self.errorcube)
 
             # Check values
             if np.any(sed.fluxes(asarray=True) < 0): continue
 
-            # Set the pixel coordinate
-            self.pixels.append((x,y))
+            # Set the pixel
+            self.pixels.append(pixel)
 
             # Add the sed
             self.seds.append(sed)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.pixels)
 
     # -----------------------------------------------------------------
 
@@ -369,13 +384,13 @@ class BlackBodyDustMapMaker(MapsComponent):
         log.info("Making the dust mass map ...")
 
         # Loop over the pixels
-        for index in self.pixels:
+        for index in range(self.npixels):
 
-            # Get the coordinate
-            x, y = self.pixels[index]
+            # Get the pixel
+            pixel = self.pixels[index]
 
             # Set the dust mass in the dust mass map
-            self.map[y, x] = self.dust_masses[index]
+            self.map[pixel] = self.dust_masses[index]
 
     # -----------------------------------------------------------------
 

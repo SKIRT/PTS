@@ -34,6 +34,13 @@ from ..region.list import SkyRegionList
 from ..core.image import Image
 from ..core.frame import Frame
 from ..tools import statistics
+from ...core.basics.table import SmartTable
+
+# -----------------------------------------------------------------
+
+class StatisticsTable(SmartTable):
+
+    pass
 
 # -----------------------------------------------------------------
 

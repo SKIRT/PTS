@@ -24,6 +24,7 @@ from ...magic.misc.imageimporter import ImageImporter
 from ...magic.core.frame import Frame
 from ...core.basics.animation import Animation
 from ...magic.core.dataset import DataSet
+from ...core.launch.pts import PTSRemoteLauncher
 
 # -----------------------------------------------------------------
 
@@ -92,6 +93,12 @@ class PreparationInitializer(PreparationComponent):
         # The initial dataset
         self.set = DataSet()
 
+        # Create the PTS remote launcher
+        self.launcher = PTSRemoteLauncher()
+
+        # The statistics
+        self.statistics = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -131,8 +138,9 @@ class PreparationInitializer(PreparationComponent):
         # Call the setup function of the base class
         super(PreparationInitializer, self).setup()
 
-        # Create the source finder
-        self.finder = SourceFinder(self.config.sources)
+        # Setup the remote PTS launcher
+        if self.config.remote is not None: self.launcher.setup(self.config.remote)
+        else: self.finder = SourceFinder(self.config.sources) # Create the source finder
 
     # -----------------------------------------------------------------
 
@@ -299,16 +307,72 @@ class PreparationInitializer(PreparationComponent):
                 # Ignore this image for the source finder
                 ignore_images.append(prep_name)
 
+        # Find sources locally or remotely
+        if self.config.remote is not None: self.find_sources_remote(ignore_images, ignore_stars, ignore_other_sources)
+        else: self.find_sources_local(ignore_images, ignore_stars, ignore_other_sources)
+
+        # Set FWHM of optical images
+        self.set_fwhm()
+
+    # -----------------------------------------------------------------
+
+    def find_sources_local(self, ignore_images, ignore_stars, ignore_other_sources):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding sources locally ...")
+
         # Run the source finder
         self.finder.run(dataset=self.set, ignore=ignore_images, ignore_stars=ignore_stars, ignore_other_sources=ignore_other_sources)
 
-        # Set the FWHM of the images
-        for name in self.set:
+        # Get the statistics
+        self.statistics = self.finder.statistics
 
-            # Set FWHM and save again
-            image = self.set.get_image(name)
-            image.fwhm = fwhms[name]
-            image.save(self.set.paths[name])
+    # -----------------------------------------------------------------
+
+    def find_sources_remote(self, ignore_images, ignore_stars, ignore_other_sources):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding sources remotely on host '" + self.config.remote + "'...")
+
+        # Initialize the input dictionary
+        input_dict = dict()
+
+        # Set the input dataset
+        input_dict["dataset"] = self.set
+        input_dict["ignore_images"] = ignore_images
+        input_dict["ignore_stars"] = ignore_stars
+        input_dict["ignore_other_sources"] = ignore_other_sources
+
+        # Run the PTS find_sources command remotely and get the output
+        self.statistics = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["statistics"], unpack=True)
+
+    # -----------------------------------------------------------------
+
+    def set_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the FWHM of the images
+        for prep_name in self.set:
+
+            if prep_name not in fwhms:
+
+                image = self.set.get_image(prep_name)
+                image.fwhm = self.statistics[prep_name].fwhm
+                image.save(self.set.paths[prep_name])
 
     # -----------------------------------------------------------------
 

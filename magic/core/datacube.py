@@ -28,6 +28,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ...core.basics.filter import Filter
+from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------
 
@@ -240,6 +241,19 @@ class DataCube(Image):
                 stack.append(self.frames[frame_name][item])
             #return np.array(stack)
             return stack # return the list of frame slices
+
+        # If the slicing item is a pixel (x,y)
+        if isinstance(item, Pixel):
+
+            # Create a 1D Numpy array
+            stack = np.zeros(self.nframes)
+
+            # Set the values
+            for index, frame_name in enumerate(self.frames.keys()):
+                stack[index] = self.frames[item]
+
+            # Return the numpy array
+            return stack
 
         # Not implemented
         elif isinstance(item, slice): raise NotImplementedError("Not implemented yet")

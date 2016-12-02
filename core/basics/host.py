@@ -162,6 +162,7 @@ class Host(object):
         self.preferred_walltime = config.preferred_waltime
         self.clusters = config.clusters # mapping
         self.vpn = config.vpn # mapping
+        self.port = config.port
 
     # -----------------------------------------------------------------
 
