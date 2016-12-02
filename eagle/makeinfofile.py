@@ -71,12 +71,13 @@ def _loadfilters():
 #
 # The information file is placed in the SKIRT-run visualization directory, and is named "prefix_info.txt".
 #
-def makeinfofile(skirtrun):
+def makeinfofile(skirtrun, redshift=0):
     simulation = skirtrun.simulation()
 
     # the info dict that will be saved at the end
     info = { }
     info["skirt_run_id"] = skirtrun.runid()
+    info["original_redshift"] = redshift
 
     # load statistics on the EAGLE data from the info file in the input folder
     inpath = skirtrun.inpath()
@@ -111,6 +112,8 @@ def makeinfofile(skirtrun):
     # load filters and wavelength grid
     _loadfilters()
     wavelengths = simulation.wavelengths()
+    shifted_wavelengths = wavelengths * (1 + redshift)
+
     # create a mask that removes the carbon line emission peaks from the dust continuum emission
     cmask = (np.abs(wavelengths-157.5)>3) & (np.abs(wavelengths-360)>20) & (np.abs(wavelengths-600)>20)
 
@@ -148,11 +151,15 @@ def makeinfofile(skirtrun):
         for filterspec,filterobject in _filters.iteritems():
             fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, None, filterobject)
             addfluxinfo(info, simulation, name, filterspec, fluxdensity)
+            fluxdensity = regularfluxdensity(simulation, name, [1], shifted_wavelengths, None, filterobject)
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "redshifted")
 
         # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
         for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
             fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, cmask, _filters[filterspec])
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum")
+            fluxdensity = regularfluxdensity(simulation, name, [1], shifted_wavelengths, cmask, _filters[filterspec])
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum_redshifted")
             fluxdensity = regularfluxdensity(simulation, name, [2,3], wavelengths, cmask, _filters[filterspec])
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "hii_continuum")
             fluxdensity = regularfluxdensity(simulation, name, [4], wavelengths, cmask, _filters[filterspec])
