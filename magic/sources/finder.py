@@ -44,6 +44,12 @@ class StatisticsTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+class PhotometryTable(SmartTable):
+
+    pass
+
+# -----------------------------------------------------------------
+
 class SourceFinder(Configurable):
 
     """
@@ -114,6 +120,9 @@ class SourceFinder(Configurable):
 
         # The statistics
         self.statistics = dict()
+
+        # The photometry table
+        self.photometry = None
 
     # -----------------------------------------------------------------
 

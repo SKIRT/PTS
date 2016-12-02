@@ -96,6 +96,9 @@ class BlackBodyDustMapMaker(MapsComponent):
         # The dust map
         self.map = None
 
+        # The dust mass error map
+        self.error_map = None
+
         # The process pool
         self.pool = None
 
@@ -104,6 +107,9 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         # The dust masses for each pixel
         self.dust_masses = None
+
+        # The error on the dust mas for each pixel
+        self.dust_mass_errors = None
 
     # -----------------------------------------------------------------
 
@@ -215,6 +221,9 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         # Create a map with the same shape as all the data
         self.map = Frame.zeros(self.datacube.shape)
+
+        # Initialize the error map
+        self.error_map = Frame.zeros(self.datacube.shape)
 
     # -----------------------------------------------------------------
 
@@ -395,6 +404,9 @@ class BlackBodyDustMapMaker(MapsComponent):
             # Set the dust mass in the dust mass map
             self.map[pixel] = self.dust_masses[index]
 
+            # Set the dust mass error
+            self.error_map[pixel] = self.dust_mass_errors[index]
+
     # -----------------------------------------------------------------
 
     def make_map_old(self, plot=False):
@@ -524,6 +536,9 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Normalizing the dust map ...")
+
+        # Normalize the error map to relative errors
+        self.error_map /= self.map
 
         # Normalize the dust map
         self.map.normalize()

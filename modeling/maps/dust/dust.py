@@ -47,8 +47,9 @@ class DustMapMaker(MapsComponent):
         # The TIR to FUV ratio (in log)
         self.log_tir_to_fuv = None
 
-        # The dust maps
+        # The dust maps (and error maps)
         self.maps = dict()
+        self.error_maps = dict()
 
         # The best dust map
         self.map = None
@@ -173,6 +174,7 @@ class DustMapMaker(MapsComponent):
 
         # Add the dust map to the dictionary
         self.maps["black-body"] = maker.map
+        self.error_maps["black-body"] = maker.error_map
 
     # -----------------------------------------------------------------
 
@@ -303,6 +305,9 @@ class DustMapMaker(MapsComponent):
         # Write the maps
         self.write_maps()
 
+        # Write the error maps
+        self.write_error_maps()
+
         # Write the final dust map
         self.write_map()
 
@@ -332,6 +337,27 @@ class DustMapMaker(MapsComponent):
 
             # Save the dust map
             self.maps[label].save(path)
+
+    # -----------------------------------------------------------------
+
+    def write_error_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the error maps (with different methods) ...")
+
+        # Loop over the maps
+        for label in self.maps:
+
+            # Determine the path
+            path = fs.join(self.maps_dust_path, label + "_error.fits")
+
+            # Save the error map
+            self.error_maps[label].save(path)
 
     # -----------------------------------------------------------------
 

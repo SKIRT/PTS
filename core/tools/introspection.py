@@ -100,6 +100,110 @@ skirt_run_dir = os.path.join(skirt_root_dir, "run") if skirt_path is not None el
 
 # -----------------------------------------------------------------
 
+def pts_git_branches():
+
+    """
+    This function ...
+    :return:
+    """
+
+    args = ["git", "branch"]
+    output = subprocess.check_output(args, cwd=pts_package_dir)
+
+    branches = []
+    for line in output.split("\n"):
+        if line: branches.append(line.split("* ")[1])
+    return branches
+
+# -----------------------------------------------------------------
+
+def pts_git_remotes():
+
+    """
+    This function ...
+    :return:
+    """
+
+    args = ["git", "remote"]
+    output = subprocess.check_output(args, cwd=pts_package_dir)
+
+    remotes = []
+    for line in output.split("\n"):
+        if line: remotes.append(line)
+    return remotes
+
+# -----------------------------------------------------------------
+
+def pts_git_remote_url(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    args = ["git", "remote", "show", name]
+    output = subprocess.check_output(args, cwd=pts_package_dir)
+
+    for line in output.split("\n"):
+        if "Fetch URL" in line: return line.split(": ")[1]
+
+    raise RuntimeError("Remote '" + name + "' not found!")
+
+# -----------------------------------------------------------------
+
+def skirt_git_branches():
+
+    """
+    This fucntion ...
+    :return:
+    """
+
+    args = ["git", "branch"]
+    output = subprocess.check_output(args, cwd=skirt_repo_dir)
+
+    branches = []
+    for line in output.split("\n"):
+        if line: branches.append(line.split("* ")[1])
+    return branches
+
+# -----------------------------------------------------------------
+
+def skirt_git_remotes():
+
+    """
+    This fucntion ...
+    :return:
+    """
+
+    args = ["git", "remote"]
+    output = subprocess.check_output(args, cwd=skirt_repo_dir)
+
+    remotes = []
+    for line in output.split("\n"):
+        if line: remotes.append(line)
+    return remotes
+
+# -----------------------------------------------------------------
+
+def skirt_git_remote_url(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    args = ["git", "remote", "show", name]
+    output = subprocess.check_output(args, cwd=skirt_repo_dir)
+
+    for line in output.split("\n"):
+        if "Fetch URL" in line: return line.split(": ")[1]
+
+    raise RuntimeError("Remote '" + name + "' not found!")
+
+# -----------------------------------------------------------------
+
 def operating_system():
 
     """
@@ -596,6 +700,19 @@ def installed_python_packages():
 
 # -----------------------------------------------------------------
 
+@contextmanager
+def suppress_stdout():
+
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+
+# -----------------------------------------------------------------
+
 def is_present_package(package):
 
     """
@@ -603,10 +720,12 @@ def is_present_package(package):
     :return:
     """
 
-    try:
-        imp.find_module(package)
-        return True
-    except ImportError: return False
+    with suppress_stdout():
+
+        try:
+            imp.find_module(package)
+            return True
+        except (ImportError, SystemExit): return False
 
 # -----------------------------------------------------------------
 

@@ -186,7 +186,7 @@ class Remote(object):
         log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
 
         # Connect to the remote host
-        self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port)
+        self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=30)
 
         # Check whether connection was succesful
         if not self.connected: raise RuntimeError("Connection failed")

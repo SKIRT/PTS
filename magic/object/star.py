@@ -38,6 +38,15 @@ class Star(SkyObject):
 
         """
         The constructor ...
+        :param index:
+        :param catalog:
+        :param id:
+        :param position:
+        :param ra_error:
+        :param dec_error:
+        :param magnitudes:
+        :param magnitude_errors:
+        :param on_galaxy:
         :return:
         """
 

@@ -202,6 +202,9 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
+        # Inform the user
+        log.info("Installing SKIRT locally ...")
+
         # Check if Qt is installed
         self.check_qt_local()
 
@@ -281,7 +284,7 @@ class SKIRTInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Installing remotely ...")
+        log.info("Installing SKIRT remotely ...")
 
         # Check Qt installation
         has_qt = self.check_qt_remote()
@@ -362,7 +365,7 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        local_script_path =
+        local_script_path = None
 
         screen_name = "SKIRT installation"
 
@@ -383,10 +386,6 @@ class SKIRTInstaller(Installer):
         #
         script_file.write("./makeSKIRT.sh")
 
-
-
-
-
         self.remote.start_screen(name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False)
 
     # -----------------------------------------------------------------
@@ -397,6 +396,8 @@ class SKIRTInstaller(Installer):
         This function ...
         :return:
         """
+
+        pass
 
 # -----------------------------------------------------------------
 
@@ -437,6 +438,17 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Installing PTS remotely ...")
 
+        if self.config.repository is not None:
+            url = introspection.pts_git_remote_url(self.config.repository)
+        elif self.config.private:
+            url = private_pts_https_link
+        else: url = public_pts_link
+
+        command = "git clone " + url + " ~PTS/pts"
+
+        # Execute
+        self.remote.execute(command, show_output=True)
+
     # -----------------------------------------------------------------
 
     def test_local(self):
@@ -446,6 +458,8 @@ class PTSInstaller(Installer):
         :return:
         """
 
+        pass
+
     # -----------------------------------------------------------------
 
     def test_remote(self):
@@ -454,5 +468,7 @@ class PTSInstaller(Installer):
         This function ...
         :return:
         """
+
+        pass
 
 # -----------------------------------------------------------------
