@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add optional
-definition.add_optional("remote", "string", "update on a remote system")
+definition.add_positional_optional("remote", "string", "update on a remote system")
 
 # -----------------------------------------------------------------
 

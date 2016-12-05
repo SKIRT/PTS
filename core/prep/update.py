@@ -173,10 +173,9 @@ class SKIRTUpdater(Updater):
         self.remote.ssh.sendline("git pull origin master")
         self.remote.ssh.expect(":")
 
+        # Expect password
         if "Enter passphrase for key" in self.remote.ssh.before:
-
             self.remote.execute(self.config.pubkey_password, show_output=True)
-
         else: self.remote.prompt()
 
         # Debugging
@@ -231,14 +230,24 @@ class PTSUpdater(Updater):
         pts_git_path = self.remote.pts_package_path
         self.remote.change_cwd(pts_git_path)
 
-        # Git pull
-        self.remote.ssh.sendline("git pull origin master")
-        self.remote.ssh.expect(":")
+        # Set the command
+        command = "git pull origin master"
 
-        if "Enter passphrase for key" in self.remote.ssh.before:
+        # Get username and password
+        username, password = introspection.get_account("github.ugent.be")
 
-            self.remote.execute(self.config.pubkey_password, show_output=True)
+        # Set the command lines
+        lines = []
+        lines.append(command)
+        lines.append(("':", username))
+        lines.append(("':", password))
 
-        else: self.remote.prompt()
+        # Clone the repository
+        self.remote.execute_lines(*lines, show_output=True)
+
+        #if "Enter passphrase for key" in self.remote.ssh.before:
+        #    self.remote.execute(self.config.pubkey_password, show_output=True)
+
+        #else: self.remote.prompt()
 
 # -----------------------------------------------------------------

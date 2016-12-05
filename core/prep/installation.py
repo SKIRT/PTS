@@ -736,6 +736,7 @@ class PTSInstaller(Installer):
                 bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
                 line = 'PATH=' + conda_bin_path + ':$PATH'
                 self.remote.append_line(bashrc_path, line)
+                self.remote.execute("source " + bashrc_path)
 
     # -----------------------------------------------------------------
 
@@ -777,7 +778,7 @@ class PTSInstaller(Installer):
         lines.append(("':", password))
 
         # Clone the repository
-        self.remote.execute_lines(*lines)
+        self.remote.execute_lines(*lines, show_output=True)
 
         # Set PYTHONPATH
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
@@ -786,6 +787,7 @@ class PTSInstaller(Installer):
         lines.append('alias pts="python -m pts.do"')
         lines.append('alias ipts="python -im pts.do"')
         self.remote.append_lines(bashrc_path, lines)
+        self.remote.execute("source " + bashrc_path)
 
     # -----------------------------------------------------------------
 
