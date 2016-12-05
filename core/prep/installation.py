@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import requests
 import urllib
 from abc import ABCMeta, abstractmethod
 
@@ -23,6 +24,7 @@ from ..simulation.remote import Remote
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
+from ..tools import google
 
 # -----------------------------------------------------------------
 
@@ -819,24 +821,81 @@ class PTSInstaller(Installer):
 
         self.remote.end_python_session()
 
+        # Get available conda packages
+        output = self.remote.execute("conda search")
+        available_packages = []
+        for line in output:
+            if not line.split(" ")[0]: continue
+            available_packages.append(line.split(" ")[0])
+
+        # Get already installed packages
+        already_installed = []
+        for line in self.remote.execute("conda list"):
+            if line.startswith("#"): continue
+            already_installed.append(line.split(" ")[0])
+
+        installed = []
+        not_installed = []
+
+        # Loop over the dependencies
         for module in dependencies:
 
-            if module in packages: continue
+            module_name = module
+
+            if module_name in packages: continue
 
             # Skip packages from the standard library
-            if introspection.is_std_lib(module): continue
+            if introspection.is_std_lib(module_name): continue
+
+            # Check if already installed
+            if module_name in already_installed: continue
+
+            # Find name, check if available
+            module_name, via = find_real_name(module_name, available_packages)
+
+            if module_name is None:
+                log.warning("Package '" + module + "' could not be installed")
+                not_installed.append(module)
+                continue
 
             log.debug("Installing '" + module + "' ...")
 
-            command = "conda install " + module
+            if via is None:
 
-            #self.remote.execute(command, show_output=True)
+                command = "conda install " + module_name
 
-            lines = []
-            lines.append(command)
-            lines.append(("Proceed ([y]/n)?", "y"))
+                # self.remote.execute(command, show_output=True)
 
-            self.remote.execute_lines(*lines, show_output=True)
+                lines = []
+                lines.append(command)
+                lines.append(("Proceed ([y]/n)?", "y"))
+
+                self.remote.execute_lines(*lines, show_output=True)
+
+            elif via.startswith("pip"):
+
+                command = via
+
+                self.remote.execute(command)
+
+            else: # not implemented yet
+
+                not_installed.append(module)
+
+            # Add to installed
+            installed.append(module_name)
+
+        # Show installed packages
+        log.info("Packages that were installed:")
+        for module in installed: log.info(" - " + module)
+
+        # Show not installed packages
+        log.info("Packages that could not be installed:")
+        for module in not_installed: log.info(" - " + module)
+
+        # Show already present packages
+        log.info("Packages that were already present:")
+        for module in already_installed: log.info(" - " + module)
 
     # -----------------------------------------------------------------
 
@@ -859,5 +918,44 @@ class PTSInstaller(Installer):
         """
 
         pass
+
+# -----------------------------------------------------------------
+
+def find_real_name(module_name, available_packages):
+
+    """
+    This function ...
+    :return:
+    """
+
+    if module_name in available_packages: return module_name
+
+    # Look for real module name
+    module_url = None
+    for url in google.search(module_name):
+        module_url = url
+        break
+
+    # Search for github.com/ name
+    session = requests.session()
+    r = session.get(module_url)
+    page_as_string = r.content
+
+    if "github.com/" in page_as_string:
+
+        module_name = page_as_string.split("github.com/")[1].split("/")[0]
+
+        if module_name in available_packages: return module_name, None
+        else: return module_name, "github.com"
+
+    if "pip install" in page_as_string:
+
+        module_name = page_as_string.split("pip install ")[1].split(" ")[0]
+
+        if module_name in available_packages: return module_name, None
+        else: return module_name, "pip"
+
+    # Not found
+    return None, None
 
 # -----------------------------------------------------------------
