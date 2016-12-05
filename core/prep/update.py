@@ -199,6 +199,19 @@ class PTSUpdater(Updater):
         :return:
         """
 
+        self.update_pts_local()
+
+        self.update_dependencies_local()
+
+    # -----------------------------------------------------------------
+
+    def update_pts_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Inform the user
         log.info("Updating PTS locally ...")
 
@@ -213,7 +226,29 @@ class PTSUpdater(Updater):
 
     # -----------------------------------------------------------------
 
+    def update_dependencies_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def update_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.update_pts_remote()
+
+        self.update_dependencies_remote()
+
+    # -----------------------------------------------------------------
+
+    def update_pts_remote(self):
 
         """
         This function ...
@@ -249,5 +284,14 @@ class PTSUpdater(Updater):
         #    self.remote.execute(self.config.pubkey_password, show_output=True)
 
         #else: self.remote.prompt()
+
+    # -----------------------------------------------------------------
+
+    def update_dependencies_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
 
 # -----------------------------------------------------------------

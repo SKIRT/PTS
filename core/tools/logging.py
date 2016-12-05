@@ -19,12 +19,11 @@ import types
 import logging
 import warnings
 
-# Import astronomical modules
-from astropy.utils.exceptions import AstropyWarning
-
 # -----------------------------------------------------------------
 
 # Suppress Astropy warnings
+# Import astronomical modules
+#from astropy.utils.exceptions import AstropyWarning
 #warnings.simplefilter('ignore', category=AstropyWarning)
 
 # -----------------------------------------------------------------
