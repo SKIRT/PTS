@@ -40,13 +40,41 @@ from ...core.basics.table import SmartTable
 
 class StatisticsTable(SmartTable):
 
-    pass
+    column_info = [("Star index", int, None, "index of the star")]
 
 # -----------------------------------------------------------------
 
 class PhotometryTable(SmartTable):
 
-    pass
+    """
+    This class ...
+    """
+
+    column_info = [("Star index", int, None, "index of the star")]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def initialize(cls, wavelengths):
+
+        """
+        This function ...
+        :param parameters:
+        :param units:
+        :return:
+        """
+
+        # Add columns for the parameter values
+        for label in parameters:
+
+            unit = units[label] if label in units else None
+            cls.column_info.append((label, float, unit, "value for " + label))
+
+        # Add column for probabilities
+        cls.column_info.append(("Probability", float, None, "model probability"))
+
+        # Call the initialize function of the parameters table function
+        return super(ModelProbabilitiesTable, cls).initialize()
 
 # -----------------------------------------------------------------
 

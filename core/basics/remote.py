@@ -97,9 +97,6 @@ class Remote(object):
         # Load modules
         self.load_modules()
 
-        # Check whether the output directory exists
-        if not self.is_directory(self.host.output_path): raise ValueError("The specified output path does not exist")
-
     # -----------------------------------------------------------------
 
     def __del__(self):
@@ -617,6 +614,85 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def execute_lines(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        output = kwargs.pop("output", True)
+        show_output = kwargs.pop("show_output", False)
+        timeout = kwargs.pop("timeout", None)
+
+        # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+        # Otherwise, assure that the logfile is set to 'None'
+        if show_output: self.ssh.logfile = sys.stdout
+        else: self.ssh.logfile = None
+
+        # Loop over the lines
+        for line in args:
+
+            if isinstance(line, basestring):
+
+                # Send the command
+                self.ssh.sendline(line)
+
+            elif isinstance(line, tuple):
+
+                # Expect
+                self.ssh.expect(line[0])
+                self.ssh.sendline(line[1])
+
+            else: raise ValueError("Lines must be strings or tuples")
+
+        # Synchronize
+        eof = self.ssh.prompt(timeout=timeout)
+
+        # If the command could not be sent, raise an error
+        if not eof: raise RuntimeError("The commands could not be sent")
+
+        # Set the log file back to 'None'
+        self.ssh.logfile = None
+
+        # Return the output
+        if output: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+
+    # -----------------------------------------------------------------
+
+    def in_python_virtual_environment(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # python -c 'import sys; print (sys.real_prefix)'
+
+        lines = []
+        lines.append("import sys")
+        lines.append("answer = False")
+        lines.append("answer = True if hasattr(sys, 'real_prefix') else answer")
+        lines.append("answer = True if 'conda' in sys.prefix.lower() else answer")
+        lines.append("answer = True if 'canopy' in sys.prefix.lower() else answer")
+        lines.append("answer = True if 'epd' in sys.prefix.lower() else answer")
+        lines.append("answer = True if 'enthought' in sys.prefix.lower() else answer")
+        lines.append("print answer")
+
+        # Determine the command
+        command = 'python -c "' + "; ".join(lines) + '"'
+
+        # Run the command
+        output = self.execute(command)
+
+        if output[0] == "True": return True
+        elif output[0] == "False": return False
+        else: raise RuntimeError("Something went wrong: answer from remote = '" + str(output))
+
+    # -----------------------------------------------------------------
+
     def start_python_session(self, assume_pts=True):
 
         """
@@ -1076,6 +1152,33 @@ class Remote(object):
 
             # Create the remote directories
             self.execute("mkdir " + " ".join(paths), output=False)
+
+    # -----------------------------------------------------------------
+
+    def append_line(self, filepath, line):
+
+        """
+        This function ...
+        :param filepath:
+        :param line:
+        :return:
+        """
+
+        command = "echo '" + line + "' >>" + filepath
+        self.execute(command, output=False)
+
+    # -----------------------------------------------------------------
+
+    def append_lines(self, filepath, lines):
+
+        """
+        This function ...
+        :param filepath:
+        :param lines:
+        :return:
+        """
+
+        for line in lines: self.append_line(filepath, line)
 
     # -----------------------------------------------------------------
 
@@ -1911,6 +2014,57 @@ class Remote(object):
 
         # Return the fraction of virtual memory that is currently in use
         return used / total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def platform(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        lines = []
+        lines.append("import platform")
+        lines.append("answer = None")
+        lines.append("answer = 'MacOS' if platform.system() == 'Darwin' else answer")
+        lines.append("answer = 'Windows' if platform.system() == 'Windows' else answer")
+        lines.append("answer = 'Linux' if platform.system() == 'Linux' else answer")
+        lines.append("print answer")
+
+        # Determine the command
+        command = 'python -c "' + "; ".join(lines) + '"'
+
+        # Run the command
+        output = self.execute(command)
+
+        return output[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def architecture(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # architecture
+        lines = []
+        lines.append("import platform")
+        lines.append("answer = None")
+        lines.append("answer = '64bit' if platform.architecture()[0] == '64bit' else answer")
+        lines.append("print answer")
+
+        # Determine the command
+        command = 'python -c "' + "; ".join(lines) + '"'
+
+        # Run the command
+        output = self.execute(command)
+
+        return output[0]
 
     # -----------------------------------------------------------------
 

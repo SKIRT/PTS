@@ -151,8 +151,8 @@ class Host(object):
         self.name = config.name
         self.user = config.user
         self.password = config.password
-        self.output_path = config.output_path
         self.scheduler = config.scheduler
+        self.output_path = config.output_path
         self.mpi_command = config.mpi_command
         self.force_process_binding = config.force_process_binding
         self.use_hyperthreading = config.use_hyperthreading

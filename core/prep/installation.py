@@ -32,6 +32,11 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
+skirt_directories = ["git", "run", "doc", "release", "debug"]
+pts_directories = ["pts", "run", "doc", "temp", "remotes", "user", "ext"]
+
+# -----------------------------------------------------------------
+
 class Installer(Configurable):
 
     """
@@ -65,6 +70,9 @@ class Installer(Configurable):
         # 1. Call the setup function
         self.setup()
 
+        # 2. Create the necessary directories
+        self.create_directories()
+
         # 2. Install
         self.install()
 
@@ -92,6 +100,19 @@ class Installer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def create_directories(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Install locally or remotely
+        if self.remote is None: self.create_directories_local()
+        else: self.create_directories_remote()
+
+
+
     def install(self):
 
         """
@@ -117,6 +138,26 @@ class Installer(Configurable):
         else: self.test_remote()
 
     # -----------------------------------------------------------------
+
+    @abstractmethod
+    def create_directories_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    @abstractmethod
+    def create_directories_remote(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        pass
 
     @abstractmethod
     def install_local(self):
@@ -410,11 +451,176 @@ public_pts_link = "https://github.com/SKIRT/PTS.git"
 
 # -----------------------------------------------------------------
 
+# Anaconda 4.2.0
+
+# LINUX
+
+# Python 3.5 version
+# 64bit: https://repo.continuum.io/archive/Anaconda3-4.2.0-Linux-x86_64.sh
+# 32bit: https://repo.continuum.io/archive/Anaconda3-4.2.0-Linux-x86.sh
+
+# Python 2.7 version
+# 64bit: https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86_64.sh
+# 32bit: https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86.sh
+
+anaconda_linux_url = "https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86_64.sh"
+
+# MACOS
+
+# Python 3.5 version
+# https://repo.continuum.io/archive/Anaconda3-4.2.0-MacOSX-x86_64.sh
+
+# Python 2.7 version
+# https://repo.continuum.io/archive/Anaconda2-4.2.0-MacOSX-x86_64.sh
+
+anaconda_macos_url = "https://repo.continuum.io/archive/Anaconda2-4.2.0-MacOSX-x86_64.sh"
+
+# -----------------------------------------------------------------
+
+# MINICONDA
+
+# LINUX
+
+# Python 3.5 version
+# 64bit: https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+# 32bit: https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86.sh
+
+# Python 2.7 version
+# 64bit: https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
+# 32bit: https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86.sh
+
+miniconda_linux_url = "https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh"
+
+# MACOS
+
+# Python 3.5 version
+# https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+
+# Python 2.7 version
+# https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh
+
+miniconda_macos_url = "https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh"
+
+# -----------------------------------------------------------------
+
+# Silent installation of Miniconda for Linux and OS X is a simple as specifying the -b and -p arguments of the bash installer. The following arguments are supported:
+
+# -b, batch mode
+# -p, installation prefix/path
+# -f, force installation even if prefix -p already exists
+# Batch mode assumes that you agree to the license agreement, and it does not edit the .bashrc or .bash_profile files.
+
+# A complete example:
+
+# wget http://repo.continuum.io/miniconda/Miniconda3-3.7.0-Linux-x86_64.sh -O ~/miniconda.sh
+# bash ~/miniconda.sh -b -p $HOME/miniconda
+# export PATH="$HOME/miniconda/bin:$PATH"
+
+# -----------------------------------------------------------------
+
+# These Miniconda installers contain the conda package manager and Python. Once Miniconda is installed, you can use the conda command to install any other packages and create environments, etc. For example:
+
+# $ conda install numpy
+# ...
+# $ conda create -n py3k anaconda python=3
+
+# There are two variants of the installer: Miniconda is Python 2 based and Miniconda3 is Python 3 based. Note that the choice of which Miniconda is installed only affects the root environment. Regardless of which version of Miniconda you install, you can still install both Python 2.x and Python 3.x environments.
+
+# The other difference is that the Python 3 version of Miniconda will default to Python 3 when creating new environments and building packages. So for instance, the behavior of
+
+# $ conda create -n myenv python
+# will be to install Python 2.7 with the Python 2 Miniconda and to install Python 3.5 with the Python 3 Miniconda. You can override the default by explicitly setting python=2 or python=3. It also determines the default value of CONDA_PY when using conda build.
+
+# We have 32-bit Mac OS X binaries available, please contact us for more details at sales@continuum.io.
+
+# Note: If you already have Miniconda or Anaconda installed, and you just want to upgrade, you should not use the installer. Just use conda update. For instance
+
+# $ conda update conda
+# will update conda.
+
+
+###
+
+# Anaconda has all that plus over 720 open source packages that install with Anaconda or can be installed with the simple conda install command.
+
+
+###
+
+# In your browser download the Miniconda installer for Linux, then in your terminal window type the following and follow the prompts on the installer screens. If unsure about any setting, simply accept the defaults as they all can be changed later:
+
+# bash Miniconda3-latest-Linux-x86_64.sh
+# Now close and re-open your terminal window for the changes to take effect.
+
+# To test your installation, enter the command conda list. If installed correctly, you will see a list of packages that were installed.
+
+# -----------------------------------------------------------------
+
 class PTSInstaller(Installer):
 
     """
     This function ...
     """
+
+    def __init__(self, config=None):
+
+        """
+        This function ...
+        """
+
+        # Call the constructor of the base class
+        super(PTSInstaller, self).__init__(config)
+
+        # Path to python executable
+        self.python_path = None
+
+        # Path to PTS root directory
+        self.pts_root_path = None
+
+        # Path to PTS/pts
+        self.pts_package_path = None
+
+    # -----------------------------------------------------------------
+
+    def create_directories_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def create_directories_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set root path and pacakge path
+        self.pts_root_path = fs.join(self.remote.home_directory, "PTS")
+        self.pts_package_path = fs.join(self.pts_root_path, "pts")
+
+        # Check if already present
+        if self.remote.is_directory(self.pts_root_path):
+            if self.config.force: self.remote.remove_directory(self.pts_root_path)
+            else: raise RuntimeError("PTS is already installed (or partly present) on the remote host")
+
+        # Make the root directory
+        self.remote.create_directory(self.pts_root_path)
+
+        # Create the other directories
+        for name in pts_directories:
+
+            # Determine path
+            path = fs.join(self.pts_root_path, name)
+
+            # Create the directory
+            self.remote.create_directory(path)
+
+    # -----------------------------------------------------------------
 
     def install_local(self):
 
@@ -425,6 +631,34 @@ class PTSInstaller(Installer):
 
         # Inform the user
         log.info("Installing PTS locally ...")
+
+        # Get a python distribution
+        self.get_python_distribution_local()
+
+        # Get PTS
+        self.get_pts_local()
+
+    # -----------------------------------------------------------------
+
+    def get_python_distribution_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def get_pts_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -438,16 +672,134 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Installing PTS remotely ...")
 
+        # Get a python distribution
+        self.get_python_distribution_remote()
+
+        # Get PTS
+        self.get_pts_remote()
+
+        # Get PTS dependencies
+        self.get_dependencies_remote()
+
+    # -----------------------------------------------------------------
+
+    def get_python_distribution_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.in_python_virtual_environment():
+
+            self.python_path = self.remote.execute("which python")[0]
+
+        else:
+
+            if self.remote.platform == "MacOS":
+
+                # Add conda path to .profile
+                profile_path = fs.join(self.remote.home_directory, ".profile")
+
+                # ...
+
+            elif self.remote.platform == "Linux":
+
+                conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
+
+                # Download anaconda
+                #self.remote.download(miniconda_linux_url, conda_installer_path)
+
+                if not self.remote.is_file(conda_installer_path):
+
+                    command = "wget " + miniconda_linux_url + " -O " + conda_installer_path
+                    self.remote.execute(command, show_output=True)
+
+                #conda_installer_path = fs.join(self.remote.home_directory, fs.name(miniconda_linux_url))
+
+                # Run the installer
+                #self.remote.execute("sh " + conda_installer_path, show_output=True)
+
+                conda_installation_path = fs.join(self.remote.home_directory, "miniconda")
+
+                if not self.remote.is_directory(conda_installation_path):
+
+                    command = "bash " + conda_installer_path + " -b -p " + conda_installation_path
+                    self.remote.execute(command, show_output=True)
+
+                conda_bin_path = fs.join(conda_installation_path, "bin")
+                conda_executable_path = fs.join(conda_bin_path, "conda")
+                conda_pip_path = fs.join(conda_bin_path, "pip")
+                conda_python_path = fs.join(conda_bin_path, "python")
+
+                # Add conda bin path to bashrc
+                bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
+                line = 'PATH=' + conda_bin_path + ':$PATH'
+                self.remote.append_line(bashrc_path, line)
+
+    # -----------------------------------------------------------------
+
+    def get_pts_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         if self.config.repository is not None:
             url = introspection.pts_git_remote_url(self.config.repository)
         elif self.config.private:
             url = private_pts_https_link
         else: url = public_pts_link
 
-        command = "git clone " + url + " ~PTS/pts"
 
-        # Execute
-        self.remote.execute(command, show_output=True)
+        # CONVERT TO HTTPS LINK
+        # git@github.ugent.be:sjversto/PTS.git
+        # to
+        # https://github.ugent.be/SKIRT/PTS.git
+
+        host = url.split("@")[1].split(":")[0]
+        user_or_organization = url.split(":")[1].split("/")[0]
+        repo_name = url.split("/")[-1].split(".git")[0]
+
+        url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+        # Set the clone command
+        command = "git clone " + url + " " + self.pts_package_path
+
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        username, password = introspection.get_account(host)
+
+        # Set the command lines
+        lines = []
+        lines.append(command)
+        lines.append(("':", username))
+        lines.append(("':", password))
+
+        # Clone the repository
+        self.remote.execute_lines(*lines)
+
+        # Set PYTHONPATH
+        bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
+        lines = []
+        lines.append("export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH")
+        lines.append('alias pts="python -m pts.do"')
+        lines.append('alias ipts="python -im pts.do"')
+        self.remote.append_lines(bashrc_path, lines)
+
+    # -----------------------------------------------------------------
+
+    def get_dependencies_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Execute PTS depends
+        output = self.remote.execute("pts depends")
+
+        print(output)
 
     # -----------------------------------------------------------------
 

@@ -19,5 +19,6 @@ definition.add_optional("repository", "string", "repository name from which to c
 
 # Add flags
 definition.add_flag("private", "use the private SKIRT/PTS repository")
+definition.add_flag("force", "force re-installation when already present", letter="f")
 
 # -----------------------------------------------------------------

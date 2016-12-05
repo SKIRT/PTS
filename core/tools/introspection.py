@@ -83,6 +83,13 @@ def pts_version():
 
 # -----------------------------------------------------------------
 
+def get_account(service):
+    filepath = fs.join(pts_user_accounts_dir, service + ".txt")
+    username, password = np.loadtxt(filepath, dtype=str)
+    return username, password
+
+# -----------------------------------------------------------------
+
 # The path to the SKIRT executable
 skirt_path = find_executable("skirt")
 
@@ -110,6 +117,22 @@ def suppress_stdout():
             yield
         finally:
             sys.stdout = old_stdout
+
+# -----------------------------------------------------------------
+
+def in_python_virtual_environment():
+
+    """
+    THis function ...
+    :return:
+    """
+
+    if hasattr(sys, "real_prefix"): return True
+    elif "conda" in sys.prefix.lower(): return True
+    elif "canopy" in sys.prefix.lower(): return True
+    elif "epd" in sys.prefix.lower(): return True
+    elif "enthought" in sys.prefix.lower(): return True
+    else: return False
 
 # -----------------------------------------------------------------
 
@@ -582,6 +605,8 @@ def get_all_dependencies():
             # Read the lines of the script file
             for line in open(filepath, 'r'):
 
+                line = line[:-1]
+
                 # If the "HIDE_DEPENDS" keyword is encountered, skip this file
                 if "HIDE_DEPENDS" in line: break
 
@@ -591,17 +616,23 @@ def get_all_dependencies():
                     # Set absolute import
                     if "absolute_import" in line: has_absolute_import = True
 
-                    # Get the name of the module
-                    module = line.split()[1].split(".")[0]
+                    # Get the name of the module(s)
+                    if line.startswith("import") and "," in line:
+                        splitted = [part.strip().split(".")[0] for part in line.split(",")]
+                        modules_line = [splitted[0].split(" ")[1]] + splitted[1:]
+                    else: modules_line = [line.split()[1].split(".")[0]]
 
-                    # Skip "pts"
-                    if module == "pts": continue
+                    # Loop over the modules imported at this line
+                    for module in modules_line:
 
-                    # Skip "mpl_toolkits"
-                    if module == "mpl_toolkits": continue
+                        # Skip "pts"
+                        if module == "pts": continue
 
-                    # Add the module name to the list
-                    if module: modules_file.append(module)
+                        # Skip "mpl_toolkits"
+                        if module == "mpl_toolkits": continue
+
+                        # Add the module name to the list
+                        if module: modules_file.append(module)
 
             # If absolute import is used, add all the imported modules (they must be external packages)
             if has_absolute_import:

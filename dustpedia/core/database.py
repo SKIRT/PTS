@@ -49,11 +49,6 @@ print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
 
 # -----------------------------------------------------------------
 
-# The path to the dustpedia account file
-account_path = fs.join(introspection.pts_user_accounts_dir, "dustpedia.txt")
-
-# -----------------------------------------------------------------
-
 class DustPediaDatabase(object):
 
     """
@@ -660,8 +655,7 @@ def get_account():
     :return:
     """
 
-    username, password = np.loadtxt(account_path, dtype=str)
-    return username, password
+    return introspection.get_account("dustpedia")
 
 # -----------------------------------------------------------------
 
