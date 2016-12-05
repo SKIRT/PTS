@@ -19,7 +19,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-import pylab
+import matplotlib.pyplot as plt
 import numpy
 
 # -----------------------------------------------------------------
@@ -54,12 +54,12 @@ def plotPopScore(population, fitness=False):
 
    """
    score_list = getPopScores(population, fitness)
-   pylab.plot(score_list, 'o')
-   pylab.title("Plot of population score distribution")
-   pylab.xlabel('Individual')
-   pylab.ylabel('Score')
-   pylab.grid(True)
-   pylab.show()
+   plt.plot(score_list, 'o')
+   plt.title("Plot of population score distribution")
+   plt.xlabel('Individual')
+   plt.ylabel('Score')
+   plt.grid(True)
+   plt.show()
 
 # -----------------------------------------------------------------
 
@@ -75,12 +75,12 @@ def plotHistPopScore(population, fitness=False):
 
    """
    score_list = getPopScores(population, fitness)
-   n, bins, patches = pylab.hist(score_list, 50, facecolor='green', alpha=0.75, normed=1)
-   pylab.plot(bins, pylab.normpdf(bins, numpy.mean(score_list), numpy.std(score_list)), 'r--')
-   pylab.xlabel('Score')
-   pylab.ylabel('Frequency')
-   pylab.grid(True)
-   pylab.title("Plot of population score distribution")
-   pylab.show()
+   n, bins, patches = plt.hist(score_list, 50, facecolor='green', alpha=0.75, normed=1)
+   plt.plot(bins, plt.normpdf(bins, numpy.mean(score_list), numpy.std(score_list)), 'r--')
+   plt.xlabel('Score')
+   plt.ylabel('Frequency')
+   plt.grid(True)
+   plt.title("Plot of population score distribution")
+   plt.show()
 
 # -----------------------------------------------------------------

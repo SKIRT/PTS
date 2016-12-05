@@ -1,5 +1,5 @@
 from scipy.optimize import minimize
-import pylab as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import random
 

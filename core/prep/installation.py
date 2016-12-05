@@ -108,10 +108,11 @@ class Installer(Configurable):
         """
 
         # Install locally or remotely
-        if self.remote is None: self.create_directories_local()
-        else: self.create_directories_remote()
+        #if self.remote is None: self.create_directories_local()
+        #else: self.create_directories_remote()
+        pass
 
-
+    # -----------------------------------------------------------------
 
     def install(self):
 
@@ -149,6 +150,8 @@ class Installer(Configurable):
 
         pass
 
+    # -----------------------------------------------------------------
+
     @abstractmethod
     def create_directories_remote(self):
 
@@ -158,6 +161,8 @@ class Installer(Configurable):
         """
 
         pass
+
+    # -----------------------------------------------------------------
 
     @abstractmethod
     def install_local(self):
@@ -673,10 +678,10 @@ class PTSInstaller(Installer):
         log.info("Installing PTS remotely ...")
 
         # Get a python distribution
-        self.get_python_distribution_remote()
+        #self.get_python_distribution_remote()
 
         # Get PTS
-        self.get_pts_remote()
+        #self.get_pts_remote()
 
         # Get PTS dependencies
         self.get_dependencies_remote()
@@ -799,12 +804,39 @@ class PTSInstaller(Installer):
         """
 
         # Execute PTS depends
-        output = self.remote.execute("pts depends")
-
-        print(output)
+        #output = self.remote.execute("pts depends")
+        #print(output)
 
         self.remote.start_python_session()
         self.remote.import_python_package("introspection", from_name="pts.core.tools")
+
+        dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
+
+        packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
+
+        #print(dependencies)
+        #print(packages)
+
+        self.remote.end_python_session()
+
+        for module in dependencies:
+
+            if module in packages: continue
+
+            # Skip packages from the standard library
+            if introspection.is_std_lib(module): continue
+
+            log.debug("Installing '" + module + "' ...")
+
+            command = "conda install " + module
+
+            #self.remote.execute(command, show_output=True)
+
+            lines = []
+            lines.append(command)
+            lines.append(("Proceed ([y]/n)?", "y"))
+
+            self.remote.execute_lines(*lines, show_output=True)
 
     # -----------------------------------------------------------------
 

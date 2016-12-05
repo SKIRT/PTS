@@ -631,6 +631,9 @@ def get_all_dependencies():
                         # Skip "mpl_toolkits"
                         if module == "mpl_toolkits": continue
 
+                        # Skip 'pylab', imports should be replaced by matplotlib.pyplot anyway
+                        if module == "pylab": continue
+
                         # Add the module name to the list
                         if module: modules_file.append(module)
 
@@ -850,6 +853,9 @@ def get_modules(import_statement, script_path, debug=False):
 
     # MPL toolkits
     elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
+
+    # Pylab
+    elif splitted[1].startswith("pylab"): pass # skip pylab
 
     # External module
     else:
