@@ -20,7 +20,6 @@ import imp
 import inspect
 import socket
 import subprocess
-import numpy as np
 from operator import itemgetter, methodcaller
 from collections import defaultdict
 from contextlib import contextmanager
@@ -84,6 +83,7 @@ def pts_version():
 # -----------------------------------------------------------------
 
 def get_account(service):
+    import numpy as np
     filepath = fs.join(pts_user_accounts_dir, service + ".txt")
     username, password = np.loadtxt(filepath, dtype=str)
     return username, password
@@ -1002,6 +1002,8 @@ def get_arguments_tables():
     This function ...
     :return:
     """
+
+    import numpy as np
 
     tables = dict()
 
