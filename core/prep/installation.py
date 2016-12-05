@@ -110,9 +110,8 @@ class Installer(Configurable):
         """
 
         # Install locally or remotely
-        #if self.remote is None: self.create_directories_local()
-        #else: self.create_directories_remote()
-        pass
+        if self.remote is None: self.create_directories_local()
+        else: self.create_directories_remote()
 
     # -----------------------------------------------------------------
 
@@ -680,10 +679,10 @@ class PTSInstaller(Installer):
         log.info("Installing PTS remotely ...")
 
         # Get a python distribution
-        #self.get_python_distribution_remote()
+        self.get_python_distribution_remote()
 
         # Get PTS
-        #self.get_pts_remote()
+        self.get_pts_remote()
 
         # Get PTS dependencies
         self.get_dependencies_remote()
