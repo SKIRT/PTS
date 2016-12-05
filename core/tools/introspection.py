@@ -1003,7 +1003,7 @@ def get_arguments_tables():
     :return:
     """
 
-    import numpy as np
+    #import numpy as np
 
     tables = dict()
 
@@ -1014,7 +1014,25 @@ def get_arguments_tables():
         if not fs.is_file(table_path): continue
 
         # Get the columns
-        commands, configuration, where, method, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
+        #commands, configuration, where, method, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
+        commands = []
+        configuration = []
+        where = []
+        method = []
+        description = []
+
+        # Numpy-less implementation
+        with open(table_path, 'r') as table:
+            for line in table:
+                if line.startswith("#"): continue
+                line = line[:-1]
+                if not line: continue
+                splitted = line.split(" | ")
+                commands.append(splitted[0])
+                configuration.append(splitted[1])
+                where.append(splitted[2])
+                method.append(splitted[3])
+                description.append(splitted[4])
 
         # Fix
         if isinstance(commands, basestring):
