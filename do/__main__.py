@@ -37,7 +37,7 @@ import time as _time
 # Import the relevant PTS modules
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
-from pts.core.tools import time, parsing
+from pts.core.tools import time
 from pts.do.commandline import show_all_available, show_possible_matches
 
 # -----------------------------------------------------------------
@@ -51,8 +51,8 @@ parser.add_argument("--configfile", type=str, help="use a configuration file")
 parser.add_argument("--rerun", action="store_true", help="use the last used configuration")
 parser.add_argument("--remote", type=str, help="launch the PTS command remotely")
 parser.add_argument("--keep", action="store_true", help="keep the remote output")
-parser.add_argument("--input", type=parsing.directory_path, help="the name/path of the input directory")
-parser.add_argument("--output", type=parsing.directory_path, help="the name/path of the output directory")
+parser.add_argument("--input", type=str, help="the name/path of the input directory")
+parser.add_argument("--output", type=str, help="the name/path of the output directory")
 parser.add_argument("options", nargs=argparse.REMAINDER, help="options for the specific do command")
 
 # -----------------------------------------------------------------
@@ -74,6 +74,10 @@ if len(sys.argv) == 1: # nothing but 'pts' is provided
 
 # Parse the command-line arguments
 args = parser.parse_args()
+
+# Check input and output options, should be directories
+if args.input is not None and not fs.is_directory(args.input): raise ValueError("Input path should be an existing directory")
+if args.output is not None and not fs.is_directory(args.output): raise ValueError("Output path should be an existing directory")
 
 # -----------------------------------------------------------------
 

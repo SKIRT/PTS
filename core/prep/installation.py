@@ -803,6 +803,9 @@ class PTSInstaller(Installer):
 
         print(output)
 
+        self.remote.start_python_session()
+        self.remote.import_python_package("introspection", from_name="pts.core.tools")
+
     # -----------------------------------------------------------------
 
     def test_local(self):
