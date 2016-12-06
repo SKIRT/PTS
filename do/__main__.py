@@ -44,7 +44,7 @@ from pts.do.commandline import show_all_available, show_possible_matches
 
 # Create the command-line parser
 parser = argparse.ArgumentParser(prog="pts")
-parser.add_argument("do_command", type=str, help="the name of the PTS do command (preceeded by the subproject name and a slash if ambigious; i.e. 'subproject/do_command')", default=None)
+parser.add_argument("do_command", type=str, help="the name of the PTS do command (preceeded by the subproject name and a slash if ambigious; i.e. 'subproject/do_command')", default=None, nargs='?')
 parser.add_argument("--version", "-v", action="store_true", help="show the PTS version")
 parser.add_argument("--interactive", action="store_true", help="use interactive mode for the configuration")
 parser.add_argument("--arguments", action="store_true", help="use argument mode for the configuration")
