@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import shutil
+import platform
+import subprocess
 
 # Import the relevant PTS classes and modules
 from . import time
@@ -40,6 +42,38 @@ def home():
     """
 
     return os.path.expanduser('~')
+
+# -----------------------------------------------------------------
+
+def open_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Check if existing
+    if not is_file(path): raise ValueError("The file '" + path + "' does not exist")
+
+    if platform.system() == "Darwin": subprocess.Popen(["open", path])
+    else: subprocess.Popen(["xdg-open", path])
+
+# -----------------------------------------------------------------
+
+def open_directory(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Check if existing
+    if not is_directory(path): raise ValueError("The file '" + path + "' does not exist")
+
+    if platform.system() == "Darwin": subprocess.Popen(["open", path])
+    else: subprocess.Popen(["xdg-open", path])
 
 # -----------------------------------------------------------------
 

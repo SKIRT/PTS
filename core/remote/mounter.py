@@ -52,12 +52,14 @@ class RemoteMounter(object):
         self.mount_paths = dict()
 
         # Check which remotes are mounted
-        for path, name in fs.directories_in_path(pts_remotes_path):
+        for path, name in fs.directories_in_path(pts_remotes_path, returns=["path", "name"]):
 
-            # If empty directory
-            if fs.is_empty(path):
-                fs.remove_directory(path)
-                continue
+            try:
+                # If empty directory
+                if fs.is_empty(path):
+                    fs.remove_directory(path)
+                    continue
+            except OSError: pass
 
             # Add the path to the dictionary
             self.mount_paths[name] = path

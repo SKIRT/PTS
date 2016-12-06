@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.mount Mount a remote configured in PTS into a local directory.
+## \package pts.do.core.open Open a file on a remote host to view and/or edit it.
 
 # -----------------------------------------------------------------
 
@@ -22,10 +22,11 @@ from pts.core.tools import filesystem as fs
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
-definition.add_required("remote", "string", "remote host to mount", choices=find_host_ids())
+definition.add_required("remote", "string", "remote host", choices=find_host_ids())
+definition.add_required("filename", "string", "file name")
 
 # Read the command line arguments
-setter = ArgumentConfigurationSetter("mount", "Mount a remote configured in PTS into the local filesystem")
+setter = ArgumentConfigurationSetter("open", "Open a file on a remote host")
 config = setter.run(definition)
 
 # -----------------------------------------------------------------
@@ -36,7 +37,10 @@ mounter = RemoteMounter()
 # Mount and get the mount path
 path = mounter.mount(config.remote)
 
-# Open the directory
-fs.open_directory(path)
+# Determine the file path
+filepath = fs.join(path, config.filename)
+
+# Open the file
+fs.open_file(filepath)
 
 # -----------------------------------------------------------------
