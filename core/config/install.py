@@ -21,4 +21,7 @@ definition.add_optional("repository", "string", "repository name from which to c
 definition.add_flag("private", "use the private SKIRT/PTS repository")
 definition.add_flag("force", "force re-installation when already present", letter="f")
 
+# Add flag
+#definition.add_flag("all_remotes", "update on all remote hosts")
+
 # -----------------------------------------------------------------

@@ -55,26 +55,45 @@ class PhotometryTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def initialize(cls, wavelengths):
+    def initialize(cls, filters):
 
         """
         This function ...
-        :param parameters:
-        :param units:
+        :param filters:
         :return:
         """
 
         # Add columns for the parameter values
-        for label in parameters:
+        for fltr in filters:
 
-            unit = units[label] if label in units else None
-            cls.column_info.append((label, float, unit, "value for " + label))
+            fltr_string = str(fltr)
+            cls.column_info.append((fltr_string, float, "Jy", fltr_string + " flux density"))
 
-        # Add column for probabilities
-        cls.column_info.append(("Probability", float, None, "model probability"))
+        # Call the initialize function of the SmartTable table function
+        return super(PhotometryTable, cls).initialize()
 
-        # Call the initialize function of the parameters table function
-        return super(ModelProbabilitiesTable, cls).initialize()
+    # -----------------------------------------------------------------
+
+    def add_entry(self, index, fluxes):
+
+        """
+        This function ...
+        :param index:
+        :param fluxes:
+        :return:
+        """
+
+        values = [None] * len(self.colnames)
+
+        values[0] = index
+
+        for fltr in fluxes:
+
+            index = self.colnames.index(str(fltr))
+            values[index] = fluxes[fltr]
+
+        # Add a row
+        self.add_row(values)
 
 # -----------------------------------------------------------------
 
@@ -237,6 +256,9 @@ class SourceFinder(Configurable):
         # 4. Look for other sources
         if self.config.find_other_sources: self.find_other_sources()
 
+        # 5. Perform the photometry
+        self.do_photometry()
+
         # 5. Build and update catalog
         #self.build_and_synchronize_catalog()
 
@@ -289,7 +311,22 @@ class SourceFinder(Configurable):
         # Initialize images for the segmentation maps
         for name in self.frames: self.segments[name] = Image("segments")
 
+        # Initialize the photometry table
+        self.photometry = PhotometryTable.initialize(self.filters)
+
         # DOWNSAMPLE ??
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [frame.filter for frame in self.frames.values()]
 
     # -----------------------------------------------------------------
 
@@ -657,6 +694,20 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
+    def do_photometry(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Performing photometry on the stars ...")
+
+        # TODO: this requires matching the star list from one image to the star list of the other images
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -678,6 +729,9 @@ class SourceFinder(Configurable):
 
         # 3. Write ...
         self.write_statistics()
+
+        # Write the photometry table
+        self.write_photometry()
 
     # -----------------------------------------------------------------
 
@@ -818,6 +872,18 @@ class SourceFinder(Configurable):
             # Open the file, write the info
             with open(path, 'w') as statistics_file:
                 statistics_file.write("FWHM: " + str(self.statistics[name].fwhm) + "\n")
+
+    # -----------------------------------------------------------------
+
+    def write_photometry(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the photometry table ...")
 
 # -----------------------------------------------------------------
 

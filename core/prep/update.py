@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.prep.update Contains the SkirtUpdater class
+## \package pts.core.prep.update Contains the SkirtUpdater class.
 
 # -----------------------------------------------------------------
 

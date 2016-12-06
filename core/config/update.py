@@ -16,5 +16,8 @@ definition = ConfigurationDefinition()
 # Add optional
 definition.add_positional_optional("remote", "string", "update on a remote system")
 
+# Add flag
+#definition.add_flag("all_remotes", "update on all remote hosts")
+
 # -----------------------------------------------------------------
 
