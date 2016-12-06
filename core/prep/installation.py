@@ -20,7 +20,7 @@ from abc import ABCMeta, abstractmethod
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.execute import SkirtExec
-from ..simulation.remote import Remote
+from ..remote.remote import Remote
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
@@ -585,6 +585,12 @@ class PTSInstaller(Installer):
         # Path to PTS/pts
         self.pts_package_path = None
 
+        self.conda_executable_path = None
+        self.conda_pip_path = None
+        self.conda_python_path = None
+
+        self.pts_path = None
+
     # -----------------------------------------------------------------
 
     def create_directories_local(self):
@@ -734,14 +740,20 @@ class PTSInstaller(Installer):
                     self.remote.execute(command, show_output=True)
 
                 conda_bin_path = fs.join(conda_installation_path, "bin")
-                conda_executable_path = fs.join(conda_bin_path, "conda")
-                conda_pip_path = fs.join(conda_bin_path, "pip")
-                conda_python_path = fs.join(conda_bin_path, "python")
+                self.conda_executable_path = fs.join(conda_bin_path, "conda")
+                self.conda_pip_path = fs.join(conda_bin_path, "pip")
+                self.conda_python_path = fs.join(conda_bin_path, "python")
 
                 # Add conda bin path to bashrc
                 bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
                 line = 'PATH=' + conda_bin_path + ':$PATH'
+
+                # Debugging
+                log.debug("Adding the conda executables to the PATH ...")
                 self.remote.append_line(bashrc_path, line)
+
+                # Debugging
+                log.debug("Sourcing the bashrc file ...")
                 self.remote.execute("source " + bashrc_path)
 
     # -----------------------------------------------------------------
@@ -793,6 +805,11 @@ class PTSInstaller(Installer):
         lines.append('alias pts="python -m pts.do"')
         lines.append('alias ipts="python -im pts.do"')
         self.remote.append_lines(bashrc_path, lines)
+
+        # Set the path to the main PTS executable
+        self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
+
+        # Load bashrc file
         self.remote.execute("source " + bashrc_path)
 
     # -----------------------------------------------------------------

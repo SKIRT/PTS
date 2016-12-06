@@ -27,7 +27,7 @@ from ..tools.logging import log
 from ..tools import parsing
 from ..tools import filesystem as fs
 from ..tools import time
-from .task import Task
+from ..basics.task import Task
 from ..tools import introspection
 
 # -----------------------------------------------------------------

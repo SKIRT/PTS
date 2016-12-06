@@ -15,14 +15,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import tempfile
-import numpy as np
 import requests
 from lxml import html
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import tables
-from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection

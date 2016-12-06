@@ -19,12 +19,12 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..basics.remote import Remote
+from ..remote.remote import Remote
 from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
 from ..tools.logging import log
-from ..basics.host import Host
+from ..remote.host import Host
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions

@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..basics.remote import Remote
+from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
 

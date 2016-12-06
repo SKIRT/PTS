@@ -14,11 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..simulation.simulation import RemoteSimulation
-from ..basics.host import find_host_ids, has_simulations, has_tasks
+from ..remote.host import find_host_ids, has_simulations, has_tasks
 from .analyser import SimulationAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..basics.remote import Remote
+from ..remote.remote import Remote
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.task import Task

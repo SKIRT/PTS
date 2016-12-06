@@ -18,7 +18,7 @@ import os
 # Import the relevant PTS classes and modules
 from ..tools import introspection, network
 from ..tools import filesystem as fs
-from .configuration import Configuration
+from ..basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 

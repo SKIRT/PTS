@@ -17,7 +17,7 @@ import importlib
 import tempfile
 
 # Import the relevant PTS classes and modules
-from ..basics.remote import Remote
+from ..remote.remote import Remote
 from ..tools import introspection
 from ..tools.logging import log
 from ..basics.configuration import ConfigurationDefinition, DictConfigurationSetter

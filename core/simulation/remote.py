@@ -18,7 +18,7 @@ import math
 import tempfile
 
 # Import the relevant PTS classes and modules
-from ..basics.remote import Remote
+from ..remote.remote import Remote
 from .jobscript import JobScript, MultiJobScript
 from ..tools import time, introspection
 from ..tools import filesystem as fs

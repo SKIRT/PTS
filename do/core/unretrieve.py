@@ -18,7 +18,7 @@ import argparse
 # Import the relevant PTS classes and modules
 from pts.core.simulation.simulation import RemoteSimulation
 from pts.core.tools import filesystem as fs
-from pts.core.basics.remote import Remote
+from pts.core.remote.remote import Remote
 from pts.core.tools import logging, time, parsing
 
 # -----------------------------------------------------------------

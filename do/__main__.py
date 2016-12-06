@@ -206,7 +206,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     if args.remote is not None:
 
         # Additional imports
-        from pts.core.basics.remote import Remote
+        from pts.core.remote.remote import Remote
 
         # Exact command name
         exact_command_name = subproject + "/" + command_name

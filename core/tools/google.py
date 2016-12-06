@@ -28,6 +28,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# -----------------------------------------------------------------
+
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
@@ -55,12 +57,16 @@ except ImportError:
     from BeautifulSoup import BeautifulSoup
     is_bs4 = False
 
+# -----------------------------------------------------------------
+
 # URL templates to make Google searches.
 url_home = "https://www.google.%(tld)s/"
 url_search = "https://www.google.%(tld)s/search?hl=%(lang)s&q=%(query)s&btnG=Google+Search&tbs=%(tbs)s&safe=%(safe)s&tbm=%(tpe)s"
 url_next_page = "https://www.google.%(tld)s/search?hl=%(lang)s&q=%(query)s&start=%(start)d&tbs=%(tbs)s&safe=%(safe)s&tbm=%(tpe)s"
 url_search_num = "https://www.google.%(tld)s/search?hl=%(lang)s&q=%(query)s&num=%(num)d&btnG=Google+Search&tbs=%(tbs)s&safe=%(safe)s&tbm=%(tpe)s"
 url_next_page_num = "https://www.google.%(tld)s/search?hl=%(lang)s&q=%(query)s&num=%(num)d&start=%(start)d&tbs=%(tbs)s&safe=%(safe)s&tbm=%(tpe)s"
+
+# -----------------------------------------------------------------
 
 # Cookie jar. Stored at the user's home folder.
 home_folder = os.getenv('HOME')
@@ -83,9 +89,9 @@ user_agents_file = os.path.join(install_folder, 'user_agents.txt')
 try:
     with open('user_agents.txt') as fp:
         user_agents_list = [_.strip() for _ in fp.readlines()]
-except Exception:
-    user_agents_list = [USER_AGENT]
+except Exception: user_agents_list = [USER_AGENT]
 
+# -----------------------------------------------------------------
 
 # Get a random user agent.
 def get_random_user_agent():
@@ -97,6 +103,7 @@ def get_random_user_agent():
     """
     return random.choice(user_agents_list)
 
+# -----------------------------------------------------------------
 
 # Request the given URL and return the response page, using the cookie jar.
 def get_page(url, user_agent=None):
@@ -128,6 +135,7 @@ def get_page(url, user_agent=None):
     cookie_jar.save()
     return html
 
+# -----------------------------------------------------------------
 
 # Filter links found in the Google result pages HTML code.
 # Returns None if the link doesn't yield a valid result.
@@ -155,49 +163,57 @@ def filter_result(link):
         pass
     return None
 
+# -----------------------------------------------------------------
 
 # Shortcut to search images
 # Beware, this does not return the image link.
-def search_images(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
-                  stop=None, pause=2.0, only_standard=False, extra_params={}):
+def search_images(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0, stop=None, pause=2.0, only_standard=False, extra_params={}):
     return search(query, tld, lang, tbs, safe, num, start, stop, pause, only_standard, extra_params, tpe='isch')
 
+# -----------------------------------------------------------------
 
 # Shortcut to search news
 def search_news(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
                 stop=None, pause=2.0, only_standard=False, extra_params={}):
     return search(query, tld, lang, tbs, safe, num, start, stop, pause, only_standard, extra_params, tpe='nws')
 
+# -----------------------------------------------------------------
 
 # Shortcut to search videos
 def search_videos(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
                   stop=None, pause=2.0, only_standard=False, extra_params={}):
     return search(query, tld, lang, tbs, safe, num, start, stop, pause, only_standard, extra_params, tpe='vid')
 
+# -----------------------------------------------------------------
 
 # Shortcut to search shop
 def search_shop(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
                 stop=None, pause=2.0, only_standard=False, extra_params={}):
     return search(query, tld, lang, tbs, safe, num, start, stop, pause, only_standard, extra_params, tpe='shop')
 
+# -----------------------------------------------------------------
 
 # Shortcut to search books
 def search_books(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
                  stop=None, pause=2.0, only_standard=False, extra_params={}):
     return search(query, tld, lang, tbs, safe, num, start, stop, pause, only_standard, extra_params, tpe='bks')
 
+# -----------------------------------------------------------------
 
 # Shortcut to search apps
 def search_apps(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
                 stop=None, pause=2.0, only_standard=False, extra_params={}):
     return search(query, tld, lang, tbs, safe, num, start, stop, pause, only_standard, extra_params, tpe='app')
 
+# -----------------------------------------------------------------
+
 # Shortcut to single-item search. Evaluates the iterator to return the single
 # URL as a string.
-def lucky(query, tld='com', lang='en', tbs='0', safe='off', only_standard=False,
-          extra_params={}, tpe=''):
+def lucky(query, tld='com', lang='en', tbs='0', safe='off', only_standard=False, extra_params={}, tpe=''):
     gen = search(query, tld, lang, tbs, safe, 1, 0, 1, 0., only_standard, extra_params, tpe)
     return next(gen)
+
+# -----------------------------------------------------------------
 
 # Returns a generator that yields URLs.
 def search(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
@@ -350,3 +366,5 @@ def search(query, tld='com', lang='en', tbs='0', safe='off', num=10, start=0,
             url = url_next_page % vars()
         else:
             url = url_next_page_num % vars()
+
+# -----------------------------------------------------------------

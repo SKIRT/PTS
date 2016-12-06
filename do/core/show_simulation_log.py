@@ -14,10 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.host import find_host_ids
+from pts.core.remote.host import find_host_ids
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.remote import Remote
+from pts.core.remote.remote import Remote
 from pts.core.tools import introspection
 from pts.core.simulation.simulation import RemoteSimulation
 
