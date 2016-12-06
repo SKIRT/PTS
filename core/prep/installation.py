@@ -599,9 +599,9 @@ class SKIRTInstaller(Installer):
         # Set PYTHONPATH
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
         lines = []
-        #lines.append("export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH")
-        #lines.append('alias pts="python -m pts.do"')
-        #lines.append('alias ipts="python -im pts.do"')
+        export_command = "export PATH=" + fs.join(self.skirt_release_path, "SKIRTmain") + ":" + fs.join(self.skirt_release_path, "FitSKIRTmain") + ":$PATH"
+        lines.append("For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT")
+        lines.append(export_command)
         self.remote.append_lines(bashrc_path, lines)
 
         # Set the path to the main SKIRT executable
@@ -644,8 +644,6 @@ class SKIRTInstaller(Installer):
         make_make_command = self.qmake_path + " BuildSKIRT.pro -o ../release/Makefile CONFIG+=release"
         nthreads = self.remote.cores_per_socket
         make_command = "make -j " + str(nthreads) + " -w -C ../release"
-
-        print(make_command)
 
         # Execute the commands
         self.remote.execute(make_make_command, show_output=True)
