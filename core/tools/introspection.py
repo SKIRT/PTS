@@ -195,6 +195,8 @@ def skirt_git_branches():
     :return:
     """
 
+    if skirt_repo_dir is None: raise RuntimeError("SKIRT is not installed (or not found) locally!")
+
     args = ["git", "branch"]
     output = subprocess.check_output(args, cwd=skirt_repo_dir)
 
@@ -211,6 +213,8 @@ def skirt_git_remotes():
     This fucntion ...
     :return:
     """
+
+    if skirt_repo_dir is None: raise RuntimeError("SKIRT is not installed (or not found) locally!")
 
     args = ["git", "remote"]
     output = subprocess.check_output(args, cwd=skirt_repo_dir)
@@ -229,6 +233,8 @@ def skirt_git_remote_url(name):
     :param name:
     :return:
     """
+
+    if skirt_repo_dir is None: raise RuntimeError("SKIRT is not installed (or not found) locally!")
 
     args = ["git", "remote", "show", name]
     output = subprocess.check_output(args, cwd=skirt_repo_dir)

@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import requests
-import urllib
 from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
@@ -222,6 +221,40 @@ public_skirt_https_link = "https://github.com/SKIRT/SKIRT.git"
 
 # -----------------------------------------------------------------
 
+# Determine Qt configure options
+qt_configure_options = []
+qt_configure_options.append("-prefix '$HOME/Qt/Desktop/5.2.1'")
+qt_configure_options.append("-opensource")
+qt_configure_options.append("-confirm-license")
+qt_configure_options.append("-c++11")
+qt_configure_options.append("-no-javascript-jit")
+qt_configure_options.append("-no-qml-debug")
+qt_configure_options.append("-no-gif")
+qt_configure_options.append("-no-libpng")
+qt_configure_options.append("-no-libjpeg")
+qt_configure_options.append("-no-freetype")
+qt_configure_options.append("-no-harfbuzz")
+qt_configure_options.append("-no-openssl")
+qt_configure_options.append("-no-xinput2")
+qt_configure_options.append("-no-xcb-xlib")
+qt_configure_options.append("-no-glib")
+qt_configure_options.append("-no-gui")
+qt_configure_options.append("-no-widgets")
+qt_configure_options.append("-no-nis")
+qt_configure_options.append("-no-cups")
+qt_configure_options.append("-no-fontconfig")
+qt_configure_options.append("-no-dbus")
+qt_configure_options.append("-no-xcb")
+qt_configure_options.append("-no-eglfs")
+qt_configure_options.append("-no-directfb")
+qt_configure_options.append("-no-linuxfb")
+qt_configure_options.append("-no-kms")
+qt_configure_options.append("-no-opengl")
+qt_configure_options.append("-nomake tools")
+qt_configure_options.append("-nomake examples")
+
+# -----------------------------------------------------------------
+
 class SKIRTInstaller(Installer):
 
     """
@@ -239,6 +272,60 @@ class SKIRTInstaller(Installer):
 
         # The path to the qmake executable corresponding to the most recent Qt installation
         self.qmake_path = None
+
+        # Path to SKIRT root directory
+        self.skirt_root_path = None
+
+        # Path to SKIRT/git
+        self.skirt_repo_path = None
+
+        # Path to SKIRT/release
+        self.skirt_release_path = None
+
+        # Path to the SKIRT executable
+        self.skirt_path = None
+
+    # -----------------------------------------------------------------
+
+    def create_directories_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def create_directories_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set root path and pacakge path
+        self.skirt_root_path = fs.join(self.remote.home_directory, "SKIRT")
+        self.skirt_repo_path = fs.join(self.skirt_root_path, "git")
+        self.skirt_release_path = fs.join(self.skirt_root_path, "release")
+
+        # Check if already present
+        if self.remote.is_directory(self.skirt_root_path):
+            if self.config.force: self.remote.remove_directory(self.skirt_root_path)
+            else: raise RuntimeError("SKIRT is already installed (or partly present) on the remote host")
+
+        # Make the root directory
+        self.remote.create_directory(self.skirt_root_path)
+
+        # Create the other directories
+        for name in skirt_directories:
+
+            # Determine path
+            path = fs.join(self.skirt_root_path, name)
+
+            # Create the directory
+            self.remote.create_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -261,8 +348,8 @@ class SKIRTInstaller(Installer):
         # Get the SKIRT code
         self.get_skirt_local()
 
-        # Install SKIRT
-        self.install_skirt_local()
+        # Build SKIRT
+        self.build_skirt_local()
 
     # -----------------------------------------------------------------
 
@@ -312,14 +399,18 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
+        pass
+
     # -----------------------------------------------------------------
 
-    def install_skirt_local(self):
+    def build_skirt_local(self):
 
         """
         This function ...
         :return:
         """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -342,8 +433,8 @@ class SKIRTInstaller(Installer):
         # Get the SKIRT code
         self.get_skirt_remote()
 
-        # Install SKIRT
-        self.install_skirt_remote()
+        # Build SKIRT
+        self.build_skirt_remote()
 
     # -----------------------------------------------------------------
 
@@ -381,13 +472,27 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        link = "http://download.qt.io/official_releases/qt/5.5/5.5.1/single/qt-everywhere-opensource-src-5.5.1.tar.gz"
+        # Inform the user
+        log.info("Installing Qt ...")
+
+        #link = "http://download.qt.io/official_releases/qt/5.5/5.5.1/single/qt-everywhere-opensource-src-5.5.1.tar.gz"
+
+        # Qt URL
+        url = "http://download.qt.io/official_releases/qt/5.7/5.7.0/single/qt-everywhere-opensource-src-5.7.0.tar.gz"
 
         # Determine the path for the Qt source code
-        path = fs.join(None, "qt.tar.gz")
+        path = fs.join(self.remote.home_directory, "qt.tar.gz")
 
-        # Create a
-        urllib.urlretrieve(self.config.qt_link, path)
+        # Download Qt
+        self.remote.download_from_url_to(url, path)
+
+        # Determine commands
+        configure_command = "./configure " + " ".join(qt_configure_options)
+        make_command = "make"
+        install_command = "make install"
+
+        # Execute the commands
+        self.remote.execute_lines(configure_command, make_command, install_command, show_output=True)
 
         # FOR HPC: module load Qt/5.2.1-intel-2015a
 
@@ -402,10 +507,72 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the SKIRT source code ...")
+
+        # Get repository link
+        if self.config.repository is not None:
+            url = introspection.skirt_git_remote_url(self.config.repository)
+        elif self.config.private:
+            url = private_skirt_https_link
+        else: url = public_skirt_https_link
+
+        # CONVERT TO HTTPS LINK
+        host = url.split("@")[1].split(":")[0]
+        user_or_organization = url.split(":")[1].split("/")[0]
+        repo_name = url.split("/")[-1].split(".git")[0]
+        url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+        # Set the clone command
+        command = "git clone " + url + " " + self.skirt_repo_path
+
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        username, password = introspection.get_account(host)
+
+        # Set the command lines
+        lines = []
+        lines.append(command)
+        lines.append(("':", username))
+        lines.append(("':", password))
+
+        # Clone the repository
+        self.remote.execute_lines(*lines, show_output=True)
+
+        # Set PYTHONPATH
+        bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
+        lines = []
+        #lines.append("export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH")
+        #lines.append('alias pts="python -m pts.do"')
+        #lines.append('alias ipts="python -im pts.do"')
+        self.remote.append_lines(bashrc_path, lines)
+
+        # Set the path to the main SKIRT executable
+        self.skirt_path = fs.join(self.skirt_release_path, "SKIRTmain", "skirt")
+
+        # Load bashrc file
+        self.remote.execute("source " + bashrc_path)
 
     # -----------------------------------------------------------------
 
-    def install_skirt_remote(self):
+    def build_skirt_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building SKIRT ...")
+
+        # Determine the path to the make script
+        skirt_make_script = fs.join(self.skirt_repo_path, "makeSKIRT.sh")
+
+        # Execute the script
+        self.remote.execute("sh " + skirt_make_script, show_output=True)
+
+    # -----------------------------------------------------------------
+
+    def build_skirt_hpc(self):
 
         """
         This function ...
@@ -438,6 +605,17 @@ class SKIRTInstaller(Installer):
     # -----------------------------------------------------------------
 
     def test_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def test_remote(self):
 
         """
         This function ...
@@ -724,8 +902,8 @@ class PTSInstaller(Installer):
 
                 if not self.remote.is_file(conda_installer_path):
 
-                    command = "wget " + miniconda_linux_url + " -O " + conda_installer_path
-                    self.remote.execute(command, show_output=True)
+                    # Download the installer
+                    self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
 
                 #conda_installer_path = fs.join(self.remote.home_directory, fs.name(miniconda_linux_url))
 
@@ -821,20 +999,11 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        # Execute PTS depends
-        #output = self.remote.execute("pts depends")
-        #print(output)
-
+        # Use the introspection module on the remote end to get the dependencies and installed python packages
         self.remote.start_python_session()
         self.remote.import_python_package("introspection", from_name="pts.core.tools")
-
         dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
-
         packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
-
-        #print(dependencies)
-        #print(packages)
-
         self.remote.end_python_session()
 
         # Get available conda packages
@@ -850,56 +1019,19 @@ class PTSInstaller(Installer):
             if line.startswith("#"): continue
             already_installed.append(line.split(" ")[0])
 
-        installed = []
-        not_installed = []
+        # Get installation commands
+        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages)
 
-        # Loop over the dependencies
-        for module in dependencies:
+        # Install
+        for module in installation_commands:
 
-            module_name = module
-
-            if module_name in packages: continue
-
-            # Skip packages from the standard library
-            if introspection.is_std_lib(module_name): continue
-
-            # Check if already installed
-            if module_name in already_installed: continue
-
-            # Find name, check if available
-            module_name, via = find_real_name(module_name, available_packages)
-
-            if module_name is None:
-                log.warning("Package '" + module + "' could not be installed")
-                not_installed.append(module)
-                continue
-
+            # Debugging
             log.debug("Installing '" + module + "' ...")
 
-            if via is None:
+            command = installation_commands[module]
 
-                command = "conda install " + module_name
-
-                # self.remote.execute(command, show_output=True)
-
-                lines = []
-                lines.append(command)
-                lines.append(("Proceed ([y]/n)?", "y"))
-
-                self.remote.execute_lines(*lines, show_output=True)
-
-            elif via.startswith("pip"):
-
-                command = via
-
-                self.remote.execute(command)
-
-            else: # not implemented yet
-
-                not_installed.append(module)
-
-            # Add to installed
-            installed.append(module_name)
+            if isinstance(command, list): self.remote.execute_lines(*command, show_output=True)
+            elif isinstance(command, basestring): self.remote.execute(command, show_output=True)
 
         # Show installed packages
         log.info("Packages that were installed:")
@@ -973,5 +1105,74 @@ def find_real_name(module_name, available_packages):
 
     # Not found
     return None, None
+
+# -----------------------------------------------------------------
+
+def get_installation_commands(dependencies, packages, already_installed, available_packages):
+
+    """
+    This function ...
+    :return:
+    """
+
+    installed = []
+    not_installed = []
+
+    commands = dict()
+
+    # Loop over the dependencies
+    for module in dependencies:
+
+        module_name = module
+
+        if module_name in packages: continue
+
+        # Skip packages from the standard library
+        if introspection.is_std_lib(module_name): continue
+
+        # Check if already installed
+        if module_name in already_installed: continue
+
+        # Find name, check if available
+        module_name, via = find_real_name(module_name, available_packages)
+
+        if module_name is None:
+            log.warning("Package '" + module + "' can not be installed")
+            not_installed.append(module)
+            continue
+
+        #log.debug("Installing '" + module + "' ...")
+
+        if via is None:
+
+            command = "conda install " + module_name
+
+            # self.remote.execute(command, show_output=True)
+
+            lines = []
+            lines.append(command)
+            lines.append(("Proceed ([y]/n)?", "y"))
+
+            #self.remote.execute_lines(*lines, show_output=True)
+
+            commands[module] = lines
+
+        elif via.startswith("pip"):
+
+            command = via
+
+            #self.remote.execute(command, show_output=True)
+
+            commands[module] = command
+
+        else: # not implemented yet
+
+            not_installed.append(module)
+
+        # Add to installed
+        installed.append(module_name)
+
+        # Return ...
+        return commands, installed, not_installed
 
 # -----------------------------------------------------------------

@@ -405,6 +405,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def download_from_url_to(self, url, filepath, show_output=True):
+
+        """
+        This function ...
+        :return:
+        """
+
+        command = "wget " + url + " -O " + filepath
+        self.execute(command, show_output=show_output)
+
+    # -----------------------------------------------------------------
+
     def run_pts(self, command, config, input_dict=None, keep_remote_output=False, remove_local_output=False):
 
         """
