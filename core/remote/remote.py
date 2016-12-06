@@ -1067,11 +1067,53 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def directories_in_path(self, path):
+    def items_in_path(self, path, recursive=False):
 
         """
         This function ...
         :param path:
+        :param recursive:
+        :return:
+        """
+
+        if recursive:
+
+            command = "ls -R /path | awk '/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
+            command += '"");s=$0;f=1;next}\n'
+            command += "NF&&f{ print "
+            command += 's"/"$0 }'
+            command += "'"
+
+            output = self.execute(command)
+
+            paths = output
+
+            # Return the paths
+            return paths
+
+        else:
+
+            directories = self.execute("for i in $(ls */); do echo ${i%%/}; done")
+            if "cannot access */" in directories[0]: directories = []
+
+            files = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+
+            # Get paths
+            items = directories + files
+            paths = [fs.join(path, name) for name in items]
+
+            # Return the paths
+            return paths
+
+    # -----------------------------------------------------------------
+
+    def directories_in_path(self, path, startswith=None, recursive=False):
+
+        """
+        This function ...
+        :param path:
+        :param startswith:
+        :param recursive:
         :return:
         """
 
@@ -1085,21 +1127,40 @@ class Remote(object):
             self.change_cwd(path)
 
             # List the directories in the provided path
-            output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
+            if recursive:
+                command = "ls -R -d */ | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
+                command += '"");s=$0;f=1;next}\nNF&&f{ print '
+                command += 's"/"$0 }'
+                command += "'"
+                output = self.execute(command)
+                paths = [dirpath for dirpath in output if self.is_directory(dirpath)]
+            else:
+                output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
+                if "cannot access */" in output[0]: return []
+                paths = [fs.join(path, name) for name in output]
 
             # Change the working directory back to the original working directory
             self.change_cwd(working_directory)
 
-            # Return the list of directories
-            return output
+            # Filter
+            filtered_paths = []
+            for path in paths:
+                if startswith is not None:
+                    name = fs.name(path)
+                    if not name.startswith(startswith): continue
+                filtered_paths.append(path)
+
+            # Return the list of directory paths
+            return filtered_paths
 
     # -----------------------------------------------------------------
 
-    def files_in_path(self, path):
+    def files_in_path(self, path, recursive=False):
 
         """
         This function ...
         :param path:
+        :param recursive:
         :return:
         """
 
@@ -1113,13 +1174,29 @@ class Remote(object):
             self.change_cwd(path)
 
             # List the files in the provided path
-            output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+            if recursive:
+                command = "ls -R " + path + " | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
+                command += '"");s=$0;f=1;next}\nNF&&f{ print '
+                command += 's"/"$0 }'
+                command += "'"
+                output = self.execute(command)
+                paths = [filepath for filepath in output if self.is_file(filepath)]
+            else:
+                output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+                paths = [fs.join(path, name) for name in output]
 
             # Change the working directory back to the original working directory
             self.change_cwd(working_directory)
 
-            # Return the list of directories
-            return output
+            # Recursive mode: SLOW IMPLEMENTATION
+            #if recursive:
+                # Loop over directories in the directory
+                #for directory_path in self.directories_in_path(path):
+                    # Get the file paths in this directory
+                    #paths += self.files_in_path(directory_path, recursive=True)
+
+            # Return the list of files
+            return paths
 
     # -----------------------------------------------------------------
 

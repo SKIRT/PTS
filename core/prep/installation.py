@@ -414,6 +414,18 @@ class SKIRTInstaller(Installer):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_qt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.qmake_path is not None
+
+    # -----------------------------------------------------------------
+
     def install_remote(self):
 
         """
@@ -425,10 +437,10 @@ class SKIRTInstaller(Installer):
         log.info("Installing SKIRT remotely ...")
 
         # Check Qt installation
-        has_qt = self.check_qt_remote()
+        self.check_qt_remote()
 
-        # Install Qt
-        if not has_qt: self.install_qt_remote()
+        # Install Qt if necessary
+        if not self.has_qt: self.install_qt_remote()
 
         # Get the SKIRT code
         self.get_skirt_remote()
@@ -449,7 +461,7 @@ class SKIRTInstaller(Installer):
         log.info("Checking for Qt installation on remote ...")
 
         # Installation modules are defined
-        if self.remote.host.installation_modules is None:
+        if self.remote.host.installation_modules is not None:
 
             # Unload modules that are already loaded
             self.remote.unload_all_modules()
@@ -457,11 +469,57 @@ class SKIRTInstaller(Installer):
             # Load modules necessary for installation (this will hopefully bring out the qmake executable)
             self.remote.load_installation_modules()
 
-        # Check if qmake can be found
-        has_qt = self.remote.is_executable("qmake")
+        # Keep the qmake paths in a list to decide later which one we can use
+        qmake_paths = []
 
-        # Return
-        return has_qt
+        # Search for qmake in the home directory
+        command = "find " + self.remote.home_directory + "/Qt* -name qmake -type f 2>/dev/null"
+        qmake_paths += self.remote.execute(command)
+
+        # Search for qmake in the /usr/local directory
+        command = "find /usr/local/Qt* -name qmake -type f 2>/dev/null"
+        qmake_paths += self.remote.execute(command)
+
+        ## TOO SLOW?
+        # Search for Qt directories in the home directory
+        #for directory_path in self.remote.directories_in_path(self.remote.home_directory, startswith="Qt"):
+            # Search for 'qmake' executables
+            #for path in self.remote.files_in_path(directory_path, recursive=True):
+                # Add the path
+                #qmake_paths.append(path)
+
+        ## TOO SLOW?
+        # Search for Qt directories in /usr/local
+        #for directory_path in self.remote.directories_in_path("/usr/local", startswith="Qt"):
+            # Search for 'qmake' executables
+            #for path in self.remote.files_in_path(directory_path, recursive=True):
+                # Add the path
+                #qmake_paths.append(path)
+
+        # Check if qmake can be found by running 'which'
+        qmake_path = self.remote.find_executable("qmake")
+        if qmake_path is not None: qmake_paths.append(qmake_path)
+
+        latest_version = None
+
+        # Loop over the qmake paths
+        for qmake_path in qmake_paths:
+
+            # Get the version
+            output = self.remote.execute(qmake_path + " -v")
+
+            qt_version = output[1].split("Qt version ")[1].split(" in")[0]
+
+            if qt_version < "5.2.0": continue # oldest supported version
+            if "conda" in qmake_path: continue
+            if "canopy" in qmake_path: continue
+            if "epd" in qmake_path: continue
+            if "enthought" in qmake_path: continue
+
+            if latest_version is None or qt_version > latest_version:
+
+                latest_version = qt_version
+                self.qmake_path = qmake_path
 
     # -----------------------------------------------------------------
 
@@ -550,7 +608,10 @@ class SKIRTInstaller(Installer):
         self.skirt_path = fs.join(self.skirt_release_path, "SKIRTmain", "skirt")
 
         # Load bashrc file
-        self.remote.execute("source " + bashrc_path)
+        #self.remote.execute("source " + bashrc_path)
+
+        # Success
+        log.success("SKIRT was successfully downloaded")
 
     # -----------------------------------------------------------------
 
@@ -564,11 +625,34 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Building SKIRT ...")
 
-        # Determine the path to the make script
-        skirt_make_script = fs.join(self.skirt_repo_path, "makeSKIRT.sh")
+        #skirt_make_script = "makeSKIRT.sh"
+
+        # Navigate to the SKIRT repo directory
+        #self.remote.change_cwd(self.skirt_repo_path)
 
         # Execute the script
-        self.remote.execute("sh " + skirt_make_script, show_output=True)
+        #self.remote.execute("./" + skirt_make_script, show_output=True)
+
+        # # Create the make file and perform the build
+        # $QMAKEPATH BuildSKIRT.pro -o ../release/Makefile CONFIG+=release
+        # make -j ${1:-5} -w -C ../release
+
+        # Navigate to the SKIRT repo directory
+        self.remote.change_cwd(self.skirt_repo_path)
+
+        # Create command strings
+        make_make_command = self.qmake_path + " BuildSKIRT.pro -o ../release/Makefile CONFIG+=release"
+        nthreads = self.remote.cores_per_socket
+        make_command = "make -j " + str(nthreads) + " -w -C ../release"
+
+        print(make_command)
+
+        # Execute the commands
+        self.remote.execute(make_make_command, show_output=True)
+        self.remote.execute(make_command, show_output=True)
+
+        # Success
+        log.success("SKIRT was successfully built")
 
     # -----------------------------------------------------------------
 
