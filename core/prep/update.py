@@ -136,6 +136,21 @@ class SKIRTUpdater(Updater):
         # Inform the user
         log.info("Updating SKIRT locally ...")
 
+        # Pull
+        self.pull_local()
+
+        # Build
+        self.build_local()
+
+    # -----------------------------------------------------------------
+
+    def pull_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Get the SKIRT repo directory
         skirt_repo_path = introspection.skirt_repo_dir
 
@@ -144,6 +159,15 @@ class SKIRTUpdater(Updater):
 
         # Call the appropriate git command at the SKIRT repository directory
         subprocess.call(["git", "pull", "origin", "master"], cwd=skirt_repo_path)
+
+    # -----------------------------------------------------------------
+
+    def build_local(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Compiling latest version ...")
@@ -163,6 +187,16 @@ class SKIRTUpdater(Updater):
         # Inform the user
         log.info("Updating SKIRT remotely on host '" + self.config.remote + "' ...")
 
+        # Pull
+        self.pull_remote()
+
+        # Build
+        self.build_remote()
+
+    # -----------------------------------------------------------------
+
+    def pull_remote(self):
+
         # Debugging
         log.debug("Getting latest version ...")
 
@@ -178,6 +212,15 @@ class SKIRTUpdater(Updater):
         if "Enter passphrase for key" in self.remote.ssh.before:
             self.remote.execute(self.config.pubkey_password, show_output=True)
         else: self.remote.prompt()
+
+    # -----------------------------------------------------------------
+
+    def build_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Compiling latest version ...")

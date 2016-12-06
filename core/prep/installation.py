@@ -600,8 +600,9 @@ class SKIRTInstaller(Installer):
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
         lines = []
         export_command = "export PATH=" + fs.join(self.skirt_release_path, "SKIRTmain") + ":" + fs.join(self.skirt_release_path, "FitSKIRTmain") + ":$PATH"
-        lines.append("For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT")
+        lines.append("# For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT")
         lines.append(export_command)
+        lines.append("")
         self.remote.append_lines(bashrc_path, lines)
 
         # Set the path to the main SKIRT executable
@@ -1007,14 +1008,18 @@ class PTSInstaller(Installer):
                 # Add conda bin path to bashrc
                 bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
                 line = 'PATH=' + conda_bin_path + ':$PATH'
+                lines = []
+                lines.append("# For Miniconda, added by PTS (Python Toolkit for SKIRT)")
+                lines.append(line)
+                lines.append("")
 
                 # Debugging
                 log.debug("Adding the conda executables to the PATH ...")
-                self.remote.append_line(bashrc_path, line)
+                self.remote.append_lines(bashrc_path, lines)
 
                 # Debugging
-                log.debug("Sourcing the bashrc file ...")
-                self.remote.execute("source " + bashrc_path)
+                #log.debug("Sourcing the bashrc file ...")
+                #self.remote.execute("source " + bashrc_path)
 
     # -----------------------------------------------------------------
 
@@ -1061,16 +1066,18 @@ class PTSInstaller(Installer):
         # Set PYTHONPATH
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
         lines = []
+        lines.append("# For PTS, added by PTS (Python Toolkit for SKIRT)")
         lines.append("export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH")
         lines.append('alias pts="python -m pts.do"')
         lines.append('alias ipts="python -im pts.do"')
+        lines.append("")
         self.remote.append_lines(bashrc_path, lines)
 
         # Set the path to the main PTS executable
         self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
 
         # Load bashrc file
-        self.remote.execute("source " + bashrc_path)
+        #self.remote.execute("source " + bashrc_path)
 
     # -----------------------------------------------------------------
 
