@@ -415,7 +415,10 @@ def skirt_version():
     output = process.communicate()[0]
 
     # Return the relevant portion of the output
-    return "SKIRT" + output.splitlines()[0].partition("SKIRT")[2]
+    for line in output.splitlines():
+        if "SKIRT v" not in line: continue
+        return line.split("Welcome to ")[1].split(" built on")[0] + ")"
+    return None
 
 # -----------------------------------------------------------------
 

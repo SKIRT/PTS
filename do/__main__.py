@@ -45,6 +45,7 @@ from pts.do.commandline import show_all_available, show_possible_matches
 # Create the command-line parser
 parser = argparse.ArgumentParser(prog="pts")
 parser.add_argument("do_command", type=str, help="the name of the PTS do command (preceeded by the subproject name and a slash if ambigious; i.e. 'subproject/do_command')", default=None)
+parser.add_argument("--version", "-v", action="store_true", help="show the PTS version")
 parser.add_argument("--interactive", action="store_true", help="use interactive mode for the configuration")
 parser.add_argument("--arguments", action="store_true", help="use argument mode for the configuration")
 parser.add_argument("--configfile", type=str, help="use a configuration file")
@@ -74,6 +75,12 @@ if len(sys.argv) == 1: # nothing but 'pts' is provided
 
 # Parse the command-line arguments
 args = parser.parse_args()
+
+if args.version:
+
+    version = introspection.pts_version()
+    print(version)
+    exit()
 
 # Check input and output options, should be directories
 if args.input is not None and not fs.is_directory(args.input): raise ValueError("Input path should be an existing directory")

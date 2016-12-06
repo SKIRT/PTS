@@ -1507,37 +1507,31 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def install(self, private=False, key_password=None):
+    def version_of(self, name):
 
         """
         This function ...
-        :param private:
-        :param key_password:
+        :param name:
         :return:
         """
 
-        # Navigate to the home directory
-        self.execute("cd ~", output=False)
+        # Execute
+        output = self.execute(name + " -v")
 
-        # Create the SKIRT directory
-        self.create_directory("SKIRT")
+        # Return the relevant portion of the output
+        return output[0]
 
-        # In the SKIRT directory, create the necessary subdirectories
-        self.execute("cd SKIRT", output=False)
-        self.create_directories("git", "run", "release")
+    # -----------------------------------------------------------------
 
-        # Clone the SKIRT repository
-        if private:
-            output = self.execute("git clone git@github.ugent.be:SKIRT/SKIRT.git git", expect_eof=False)
-            self.ssh.expect(['id_rsa: '])
-            self.ssh.sendline(key_password)
+    @property
+    def pts_version(self):
 
-        else: self.execute("git clone https://github.com/SKIRT/SKIRT.git git", output=False)
+        """
+        This function ...
+        :return:
+        """
 
-        # Compile the SKIRT code
-        self.execute("./makeSKIRT.sh", output=False)
-
-        # Put SKIRT in the PATH environment variable
+        return self.execute("pts --version")[0]
 
     # -----------------------------------------------------------------
 
