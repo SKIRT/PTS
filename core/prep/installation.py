@@ -1102,13 +1102,6 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        # Use the introspection module on the remote end to get the dependencies and installed python packages
-        self.remote.start_python_session()
-        self.remote.import_python_package("introspection", from_name="pts.core.tools")
-        dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
-        packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
-        self.remote.end_python_session()
-
         # Get available conda packages
         output = self.remote.execute("conda search")
         available_packages = []
@@ -1122,8 +1115,17 @@ class PTSInstaller(Installer):
             if line.startswith("#"): continue
             already_installed.append(line.split(" ")[0])
 
+        # Use the introspection module on the remote end to get the dependencies and installed python packages
+        self.remote.start_python_session()
+        self.remote.import_python_package("introspection", from_name="pts.core.tools")
+        dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
+        packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
+        #self.remote.end_python_session()
+        # Don't end the python session just yet
+
         # Get installation commands
-        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages)
+        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, self.remote)
+        self.remote.end_python_session()
 
         # Install
         for module in installation_commands:
@@ -1172,20 +1174,27 @@ class PTSInstaller(Installer):
 
 # -----------------------------------------------------------------
 
-def find_real_name(module_name, available_packages):
+def find_real_name(module_name, available_packages, remote):
 
     """
     This function ...
+    :param module_name:
+    :param available_packages:
+    :param remote:
     :return:
     """
 
     if module_name in available_packages: return module_name
 
     # Look for real module name
-    module_url = None
-    for url in google.search(module_name):
-        module_url = url
-        break
+    try:
+        module_url = google.lucky(module_name)
+    except Exception:
+        if remote is not None:
+            # use google on the remote end, because there are strange errors when using it on the client end when it has
+            # a VPN connection open
+            module_url = remote.get_simple_python_property("google", "lucky('" + module_name + "')")
+        else: return None, None
 
     # Search for github.com/ name
     session = requests.session()
@@ -1211,7 +1220,7 @@ def find_real_name(module_name, available_packages):
 
 # -----------------------------------------------------------------
 
-def get_installation_commands(dependencies, packages, already_installed, available_packages):
+def get_installation_commands(dependencies, packages, already_installed, available_packages, remote):
 
     """
     This function ...
@@ -1222,6 +1231,10 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     not_installed = []
 
     commands = dict()
+
+    # Import google, don't pass the remote is importing the google module failed on the remote
+    success = remote.import_python_package("google", from_name="pts.core.tools")
+    if not success: remote = None
 
     # Loop over the dependencies
     for module in dependencies:
@@ -1237,7 +1250,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         if module_name in already_installed: continue
 
         # Find name, check if available
-        module_name, via = find_real_name(module_name, available_packages)
+        module_name, via = find_real_name(module_name, available_packages, remote)
 
         if module_name is None:
             log.warning("Package '" + module + "' can not be installed")

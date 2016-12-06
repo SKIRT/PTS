@@ -13,9 +13,10 @@
 import re
 import sys
 import pexpect
-from pexpect import pxssh
+from pexpect import pxssh, EOF
 import tempfile
 import StringIO
+import subprocess
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
@@ -33,6 +34,25 @@ from ..tools import introspection
 # -----------------------------------------------------------------
 
 connected_remotes = dict()
+
+# -----------------------------------------------------------------
+
+def active_keys():
+
+    """
+    This function ...
+    :return:
+    """
+
+    output = subprocess.check_output(["ssh-add", "-L"])
+
+    names = []
+    for line in output.split("\n"):
+        if not line: continue
+        _, key, name = line.split(" ")
+        names.append(name)
+
+    return names
 
 # -----------------------------------------------------------------
 
@@ -88,6 +108,11 @@ class Remote(object):
 
         # If a VPN connection is required for the remote host
         if self.host.requires_vpn: self.connect_to_vpn()
+
+        # Check if key is active
+        if self.host.key is not None:
+            abspath = fs.absolute(self.host.key)
+            if abspath not in active_keys(): raise RuntimeError("Necessary key is not active!")
 
         # Make the connection
         self.login()
@@ -216,7 +241,7 @@ class Remote(object):
             self.connected = False
 
         # Disconnect from the VPN service if necessary
-        if self.vpn is not None: self.vpn.disconnect()
+        #if self.vpn is not None: self.vpn.disconnect()
 
     # -----------------------------------------------------------------
 
@@ -655,8 +680,15 @@ class Remote(object):
             elif isinstance(line, tuple):
 
                 # Expect
-                self.ssh.expect(line[0])
-                self.ssh.sendline(line[1])
+                if len(line) == 3 and line[2]:
+                    #index = self.ssh.expect([self.ssh.PROMPT, line[0]]) # this is not working, why?
+                    index = self.ssh.expect(["$", line[0]])
+                    if index == 0: pass
+                    elif index == 1: self.ssh.sendline(line[1])
+                    #eof = self.ssh.prompt()
+                else:
+                    self.ssh.expect(line[0])
+                    self.ssh.sendline(line[1])
 
             else: raise ValueError("Lines must be strings or tuples")
 
@@ -846,6 +878,11 @@ class Remote(object):
             # Check output
             last_line = output[-1]
             if "cannot import" in last_line: log.warning(last_line)
+            if "ImportError" in last_line: log.warning(last_line)
+
+            return False
+
+        return True
 
     # -----------------------------------------------------------------
 
@@ -1520,6 +1557,27 @@ class Remote(object):
 
         # Return the relevant portion of the output
         return output[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt_version(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("skirt -v")
+        skirt_version = None
+
+        for line in output:
+
+            if not "Welcome to" in line: continue
+            skirt_version = line.split("Welcome to ")[1].split(" built on")[0] + ")"
+            break
+
+        return skirt_version
 
     # -----------------------------------------------------------------
 

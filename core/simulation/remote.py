@@ -929,22 +929,6 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    @property
-    def skirt_version(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Execute SKIRT with incorrect argument list and get its output
-        output = self.execute("skirt --version")
-
-        # Return the relevant portion of the output
-        return "SKIRT" + output[0].partition("SKIRT")[2]
-
-    # -----------------------------------------------------------------
-
     def get_status(self):
 
         """

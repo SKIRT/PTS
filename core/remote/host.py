@@ -163,6 +163,7 @@ class Host(object):
         self.clusters = config.clusters # mapping
         self.vpn = config.vpn # mapping
         self.port = config.port
+        self.key = config.key
 
     # -----------------------------------------------------------------
 

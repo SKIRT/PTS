@@ -349,13 +349,6 @@ class PTSUpdater(Updater):
 
         # NOTE: this function has completely the same implementation as the function 'get_dependencies_remote' in the PTSInstaller class ! (TODO: accomodate this)
 
-        # Use the introspection module on the remote end to get the dependencies and installed python packages
-        self.remote.start_python_session()
-        self.remote.import_python_package("introspection", from_name="pts.core.tools")
-        dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
-        packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
-        self.remote.end_python_session()
-
         # Get available conda packages
         output = self.remote.execute("conda search")
         available_packages = []
@@ -369,8 +362,17 @@ class PTSUpdater(Updater):
             if line.startswith("#"): continue
             already_installed.append(line.split(" ")[0])
 
+        # Use the introspection module on the remote end to get the dependencies and installed python packages
+        self.remote.start_python_session()
+        self.remote.import_python_package("introspection", from_name="pts.core.tools")
+        dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
+        packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
+        #self.remote.end_python_session()
+        # Don't end the python session just yet
+
         # Get installation commands
-        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages)
+        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, self.remote)
+        self.remote.end_python_session()
 
         # Install
         for module in installation_commands:
@@ -395,6 +397,11 @@ class PTSUpdater(Updater):
         log.info("Packages that were already present:")
         for module in already_installed: log.info(" - " + module)
 
-        # TODO: not only install the packages, but also UPDATE them!!
+        # Update all packages
+        update_command = "conda update --all"
+        lines = []
+        lines.append(update_command)
+        lines.append(("Proceed ([y]/n)?", "y", True))
+        self.remote.execute_lines(*lines, show_output=True)
 
 # -----------------------------------------------------------------

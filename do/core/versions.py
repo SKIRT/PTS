@@ -50,13 +50,8 @@ for host_id in host_ids:
     remote = Remote()
     remote.setup(host_id)
 
-    #skirt_version = remote.version_of("skirt")
-    output = remote.execute("skirt -v")
-    skirt_version = None
-    for line in output:
-        if not "Welcome to" in line: continue
-        skirt_version = line.split("Welcome to ")[1].split(" built on")[0] + ")"
-        break
+    # Get SKIRT and PTS version
+    skirt_version = remote.skirt_version
     pts_version = remote.pts_version
 
     if skirt_version is not None: skirt_versions[host_id] = skirt_version
