@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import requests
+import subprocess
 from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
@@ -24,6 +25,8 @@ from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..tools import google
+from ..tools import network
+from ..tools import archive
 
 # -----------------------------------------------------------------
 
@@ -460,14 +463,62 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking for Qt installation on remote ...")
 
-        # Installation modules are defined
-        if self.remote.host.installation_modules is not None:
+        # Use modules or not
+        if self.remote.has_lmod: self.check_qt_remote_lmod()
+        self.check_qt_remote_no_lmod()
 
-            # Unload modules that are already loaded
-            self.remote.unload_all_modules()
+    # -----------------------------------------------------------------
 
-            # Load modules necessary for installation (this will hopefully bring out the qmake executable)
-            self.remote.load_installation_modules()
+    def check_qt_remote_lmod(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        versions = []
+
+        # Check 'Qt5' module versions
+        versions += self.remote.get_module_versions("Qt5")
+
+        # Check 'Qt' module versions
+        versions += self.remote.get_module_versions("Qt")
+
+        # Get the latest Qt version
+        latest_version = None
+        latest_qt_version = None
+        for version in versions:
+
+            # Only use Intel-compiled stuff
+            if not ("ictce" in version or "intel" in version): continue
+
+            # Parse to get simple Qt version
+            qt_version = version.split("/")[1].split("-")[0]
+
+            # Skip version below Qt 5
+            if int(qt_version[0]) < 5: continue
+
+            if latest_qt_version is None or qt_version > latest_qt_version:
+                latest_version = version
+                latest_qt_version = qt_version
+
+        # If no version could be found, give an error
+        if latest_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
+
+        # Load the module
+        self.remote.load_module(latest_version)
+
+        # Get the qmake path
+        self.qmake_path = self.remote.find_executable("qmake")
+
+    # -----------------------------------------------------------------
+
+    def check_qt_remote_no_lmod(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Keep the qmake paths in a list to decide later which one we can use
         qmake_paths = []
@@ -552,10 +603,6 @@ class SKIRTInstaller(Installer):
         # Execute the commands
         self.remote.execute_lines(configure_command, make_command, install_command, show_output=True)
 
-        # FOR HPC: module load Qt/5.2.1-intel-2015a
-
-        # CHECK IF QMAKE CAN BE FOUND
-
     # -----------------------------------------------------------------
 
     def get_skirt_remote(self):
@@ -575,26 +622,31 @@ class SKIRTInstaller(Installer):
             url = private_skirt_https_link
         else: url = public_skirt_https_link
 
-        # CONVERT TO HTTPS LINK
-        host = url.split("@")[1].split(":")[0]
-        user_or_organization = url.split(":")[1].split("/")[0]
-        repo_name = url.split("/")[-1].split(".git")[0]
-        url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+        # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
+        # because of the private/public key thingy, so use a trick
+        if self.remote.host.name == "login.hpc.ugent.be": self.get_skirt_hpc(url)
+        else:
 
-        # Set the clone command
-        command = "git clone " + url + " " + self.skirt_repo_path
+            # CONVERT TO HTTPS LINK
+            host = url.split("@")[1].split(":")[0]
+            user_or_organization = url.split(":")[1].split("/")[0]
+            repo_name = url.split("/")[-1].split(".git")[0]
+            url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
 
-        # Find the account file for the repository host (e.g. github.ugent.be)
-        username, password = introspection.get_account(host)
+            # Set the clone command
+            command = "git clone " + url + " " + self.skirt_repo_path
 
-        # Set the command lines
-        lines = []
-        lines.append(command)
-        lines.append(("':", username))
-        lines.append(("':", password))
+            # Find the account file for the repository host (e.g. github.ugent.be)
+            username, password = introspection.get_account(host)
 
-        # Clone the repository
-        self.remote.execute_lines(*lines, show_output=True)
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
+
+            # Clone the repository
+            self.remote.execute_lines(*lines, show_output=True)
 
         # Set PYTHONPATH
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
@@ -617,6 +669,57 @@ class SKIRTInstaller(Installer):
 
         # Success
         log.success("SKIRT was successfully downloaded")
+
+    # -----------------------------------------------------------------
+
+    def get_skirt_hpc(self, url):
+
+        """
+        This function ...
+        :param url:
+        :return:
+        """
+
+        # CONVERT TO HTTPS ZIP LINK
+        # example: https://github.ugent.be/sjversto/SKIRT-personal/archive/master.zip
+
+        # CONVERT TO HTTPS LINK
+        host = url.split("@")[1].split(":")[0]
+        user_or_organization = url.split(":")[1].split("/")[0]
+        repo_name = url.split("/")[-1].split(".git")[0]
+        #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + "/archive/master.zip"
+        #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        username, password = introspection.get_account(host)
+        url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+        # Download the repository to the PTS temporary directory locally
+        #zip_path = network.download_file(url, introspection.pts_temp_dir)
+
+        # Clone the repository locally in the pts temporary directory
+        temp_repo_path = fs.join(introspection.pts_temp_dir, "skirt-git")
+        if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
+        command = "git clone " + url + " " + temp_repo_path
+        subprocess.call(command.split())
+
+        # Zip the repository
+        zip_path = fs.join(introspection.pts_temp_dir, "skirt.zip")
+        cwd = fs.change_cwd(temp_repo_path)
+        zip_command = "git archive --format zip --output " + zip_path + " master"
+        subprocess.call(zip_command.split())
+        fs.change_cwd(cwd)
+
+        # Transfer to the remote to the SKIRT directory
+        self.remote.upload(zip_path, self.skirt_root_path)
+        remote_zip_path = fs.join(self.skirt_root_path, fs.name(zip_path))
+
+        # Remove local temporary things
+        fs.remove_file(zip_path)
+        fs.remove_directory(temp_repo_path)
+
+        # Unpack the zip file into the 'git' directory
+        self.remote.decompress_file(remote_zip_path, self.skirt_repo_path)
 
     # -----------------------------------------------------------------
 

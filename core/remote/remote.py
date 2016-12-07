@@ -94,12 +94,13 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None):
+    def setup(self, host_id, cluster_name=None, login_timeout=30):
 
         """
         This function ...
         :param host_id:
         :param cluster_name:
+        :param login_timeout:
         :return:
         """
 
@@ -115,12 +116,10 @@ class Remote(object):
             if abspath not in active_keys(): raise RuntimeError("Necessary key is not active!")
 
         # Make the connection
-        self.login()
+        self.login(login_timeout)
 
-        # TODO: swap to cluster here?
-
-        # Load modules
-        self.load_modules()
+        # Swap cluster
+        if self.host.cluster_name is not None: self.swap_cluster(self.host.cluster_name)
 
     # -----------------------------------------------------------------
 
@@ -136,33 +135,49 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def load_modules(self):
+    def load_modules(self, *args):
 
         """
         This function ...
         :return:
         """
 
-        # Load the necessary modules
-        if self.host.modules is not None:
-
-            log.info("Loading necessary modules...")
-            self.execute("module load " + " ".join(self.host.modules), output=False)
+        for name in args: self.load_module(name)
 
     # -----------------------------------------------------------------
 
-    def load_installation_modules(self):
+    def load_module(self, module_name):
+
+        """
+        This function ...
+        :param module_name:
+        :return:
+        """
+
+        self.execute("module load " + module_name, show_output=True)
+
+    # -----------------------------------------------------------------
+
+    def unload_module(self, module_name):
+
+        """
+        This function ...
+        :param module_name:
+        :return:
+        """
+
+        self.execute("module del " + module_name, show_output=True)
+
+    # -----------------------------------------------------------------
+
+    def reload_all_modules(self):
 
         """
         This function ...
         :return:
         """
 
-        # Load the modules
-        if self.host.installation_modules is not None:
-
-            log.info("Loading installation modules ...")
-            self.execute("module load " + " ".join(self.host.installation_modules), output=False)
+        self.execute("module update", show_output=True)
 
     # -----------------------------------------------------------------
 
@@ -178,6 +193,149 @@ class Remote(object):
 
         # Module purge
         self.execute("module purge", output=False)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def available_modules(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("module spider")
+
+        modules = dict()
+
+        name = None
+        description = None
+        was_empty = True
+
+        for line in output:
+
+            if not line:
+
+                modules[name] = description
+                was_empty = True
+                name = None
+                description = None
+                continue
+
+            if not line.startswith("  "): continue
+
+            if was_empty:
+                name = line.split("  ")[1].split(":")[0]
+                was_empty = False
+            elif description is None:
+                description = line.split("    ")[1]
+                was_empty = False
+            else:
+                print(line)
+                description += line.split("    ")[1]
+                was_empty = False
+
+        return modules
+
+    # -----------------------------------------------------------------
+
+    def get_module_versions(self, module_name, exact=True):
+
+        """
+        This function ...
+        :param module_name:
+        :param exact:
+        :return:
+        """
+
+        if exact: output = self.execute("module spider " + module_name)
+        else: output = self.execute("module spider -r " + module_name)
+
+        versions = []
+
+        triggered = False
+        for line in output:
+            if triggered:
+                if not line.strip(): break
+
+                version = line.strip()
+
+                versions.append(version)
+
+            elif "Versions:" in line: triggered = True
+
+        return versions
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_lmod(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("module -v")
+
+        if "command not found" in output[0]: return False
+
+        for line in output:
+            if "Modules based on Lua" in line: return True
+
+        return False # other executable called 'module'
+
+    # -----------------------------------------------------------------
+
+    @property
+    def loaded_modules(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("module list")
+
+        modules = []
+
+        for line in output:
+
+            if not line: continue
+
+            if not line.startswith("  "): continue
+
+            line = line[2:]
+
+            if ") " not in line: continue
+
+            splitted = line.split("  ")
+
+            for part in splitted:
+
+                if not part.strip(): continue
+                if ") " not in part: continue
+                name = part.split(") ")[1].strip()
+                if not name: continue
+                modules.append(name)
+
+        return modules
+
+    # -----------------------------------------------------------------
+
+    def swap_cluster(self, cluster_name):
+
+        """
+        This function ...
+        :param cluster_name:
+        :return:
+        """
+
+        # Check if not already the loaded cluster
+        if "cluster/" + cluster_name in self.loaded_modules: return
+
+        # Swap to requested cluster
+        self.execute("module swap cluster/" + cluster_name)
 
     # -----------------------------------------------------------------
 
@@ -197,10 +355,11 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def login(self):
+    def login(self, login_timeout=30):
 
         """
         This function ...
+        :param login_timeout:
         :return:
         """
 
@@ -208,7 +367,7 @@ class Remote(object):
         log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
 
         # Connect to the remote host
-        self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=30)
+        self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=login_timeout)
 
         # Check whether connection was succesful
         if not self.connected: raise RuntimeError("Connection failed")
@@ -1278,6 +1437,59 @@ class Remote(object):
 
             # Create the remote directories
             self.execute("mkdir " + " ".join(paths), output=False)
+
+    # -----------------------------------------------------------------
+
+    def decompress_file(self, path, new_path):
+
+        """
+        This function ...
+        :param path:
+        :param new_path:
+        :return:
+        """
+
+        if path.endswith(".bz2"): self.decompress_bz2(path, new_path)
+        elif path.endswith(".gz"): self.decompress_gz(path, new_path)
+        elif path.endswith(".zip"): self.decompress_zip(path, new_path)
+        else: raise ValueError("Unrecognized archive type (must be bz2, gz or zip)")
+
+    # -----------------------------------------------------------------
+
+    def decompress_bz2(self, path, new_path):
+
+        """
+        This function ...
+        """
+
+        raise NotImplementedError()
+
+    # -----------------------------------------------------------------
+
+    def decompress_gz(self, path, new_path):
+
+        """
+        This function ...
+        :param path:
+        :param new_path:
+        :return:
+        """
+
+        raise NotImplementedError()
+
+    # -----------------------------------------------------------------
+
+    def decompress_zip(self, path, new_path):
+
+        """
+        This function ...
+        :param path:
+        :param new_path:
+        :return:
+        """
+
+        command = "unzip " + path + " -d " + new_path
+        self.execute(command, show_output=True)
 
     # -----------------------------------------------------------------
 

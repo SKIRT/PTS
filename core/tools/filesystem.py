@@ -34,6 +34,20 @@ def cwd():
 
 # -----------------------------------------------------------------
 
+def change_cwd(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    previous = cwd()
+    os.chdir(path)
+    return previous
+
+# -----------------------------------------------------------------
+
 def home():
 
     """

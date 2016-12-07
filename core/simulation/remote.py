@@ -609,10 +609,14 @@ class SkirtRemote(Remote):
         walltime = scheduling_options.walltime
         local_jobscript_path = scheduling_options.local_jobscript_path
 
+        modules = []
+        # module spider mympirun
+        modules.append("vsc-mympirun/3.4.3-intel-2016b-Python-2.7.12")
+
         # Create a job script next to the (local) simulation's ski file
         jobscript_name = fs.name(local_jobscript_path)
         jobscript = JobScript(local_jobscript_path, arguments, self.host.cluster, self.skirt_path,
-                              self.host.mpi_command, self.host.modules, walltime, nodes, ppn, name=name, mail=mail,
+                              self.host.mpi_command, modules, walltime, nodes, ppn, name=name, mail=mail,
                               full_node=full_node, bind_to_cores=self.host.force_process_binding)
 
         # Copy the job script to the remote simulation directory

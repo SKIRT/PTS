@@ -156,8 +156,6 @@ class Host(object):
         self.mpi_command = config.mpi_command
         self.force_process_binding = config.force_process_binding
         self.use_hyperthreading = config.use_hyperthreading
-        self.modules = config.modules
-        self.installation_modules = config.installation_modules
         self.maximum_walltime = config.maximal_walltime
         self.preferred_walltime = config.preferred_waltime
         self.clusters = config.clusters # mapping
