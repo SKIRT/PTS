@@ -476,6 +476,41 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
+        # Find latest Qt5 version
+        qt5_version = self.find_latest_qt_version_module()
+
+        # If no version could be found, give an error
+        if qt5_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
+
+        # Load the module
+        self.remote.load_module(qt5_version)
+
+        # Get the qmake path
+        self.qmake_path = self.remote.find_executable("qmake")
+
+        # Get the Intel compiler version
+        if "intel" in qt5_version: intel_version = qt5_version.split("intel-")[1].split("-")[0]
+        else: intel_version = qt5_version.split("ictce-")[1].split("-")[0]
+
+        # Find latest Intel Compiler Toolkit version
+        intel_version = self.find_latest_iimpi_version_module()
+        if intel_version is None:
+            log.warning("Intel Cluster Toolkit Compiler Edition could not be found")
+            # TODO: try 'impi', the Intel compiler
+            return
+
+        # Load the module
+        self.remote.load_module(intel_version)
+
+    # -----------------------------------------------------------------
+
+    def find_latest_qt_version_module(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         versions = []
 
         # Check 'Qt5' module versions
@@ -502,14 +537,47 @@ class SKIRTInstaller(Installer):
                 latest_version = version
                 latest_qt_version = qt_version
 
-        # If no version could be found, give an error
-        if latest_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
+        # Return the latest version
+        return latest_version
 
-        # Load the module
-        self.remote.load_module(latest_version)
+    # -----------------------------------------------------------------
 
-        # Get the qmake path
-        self.qmake_path = self.remote.find_executable("qmake")
+    def find_latest_iimpi_version_module(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the Intel Cluster Toolkit Compiler Edition (inludes Intel MPI)
+        versions = self.remote.get_module_versions("iimpi")
+
+        latest_version = None
+        latest_iimpi_version = None
+        latest_iimpi_year = None
+        for version in versions:
+
+            # Parse to get simple iimpi version
+            iimpi_version = version.split("/")[1].split("-")[0]
+
+            if "." not in iimpi_version:
+
+                iimpi_year = int(iimpi_version)
+                if latest_iimpi_year is None or iimpi_year > latest_iimpi_year:
+                    latest_iimpi_year = iimpi_year
+                    latest_version = version
+
+            elif latest_iimpi_year is not None: # geef voorrang aan jaartallen
+                continue
+
+            else:
+
+                if latest_iimpi_version is None or iimpi_version > latest_iimpi_version:
+                    latest_version = version
+                    latest_iimpi_version = iimpi_version
+
+        # Return the latest version
+        return latest_version
 
     # -----------------------------------------------------------------
 

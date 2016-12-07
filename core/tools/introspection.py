@@ -371,6 +371,22 @@ def simulations_files_for_host(host_id):
 
 # -----------------------------------------------------------------
 
+def is_existing_executable(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    try:
+        devnull = open(os.devnull)
+        subprocess.Popen(name, stdout=devnull, stderr=devnull).communicate()
+        return True
+    except: return False
+
+# -----------------------------------------------------------------
+
 def has_mpi():
 
     """
@@ -379,11 +395,21 @@ def has_mpi():
     """
 
     # Try opening the 'mpirun' executable
-    try:
-        devnull = open(os.devnull)
-        subprocess.Popen("mpirun", stdout=devnull, stderr=devnull).communicate()
-        return True
-    except: return False
+    return is_existing_executable("mpirun")
+
+# -----------------------------------------------------------------
+
+def has_mpi_compiler():
+
+    """
+    This function ...
+    :return:
+    """
+
+    if is_existing_executable("mpiicpc"): return True
+    elif is_existing_executable("mpicxx"): return True
+    elif is_existing_executable("mpiCC"): return True
+    else: return False
 
 # -----------------------------------------------------------------
 
