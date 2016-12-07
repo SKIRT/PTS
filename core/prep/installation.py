@@ -753,6 +753,11 @@ class SKIRTInstaller(Installer):
         nthreads = self.remote.cores_per_socket
         make_command = "make -j " + str(nthreads) + " -w -C ../release"
 
+        # Debugging
+        log.debug("Make commands:")
+        log.debug(" 1) " + make_make_command)
+        log.debug(" 2) " + make_command)
+
         # Execute the commands
         self.remote.execute(make_make_command, show_output=True)
         self.remote.execute(make_command, show_output=True)
