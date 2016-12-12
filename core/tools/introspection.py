@@ -32,6 +32,24 @@ from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
+# Private repository links
+private_skirt_ssh_link = "git@github.ugent.be:SKIRT/SKIRT.git"
+private_skirt_https_link = "https://github.ugent.be/SKIRT/SKIRT.git"
+
+# Public repository links
+public_skirt_https_link = "https://github.com/SKIRT/SKIRT.git"
+
+# -----------------------------------------------------------------
+
+# Private repository links
+private_pts_ssh_link = "git@github.ugent.be:SKIRT/PTS.git"
+private_pts_https_link = "https://github.ugent.be/SKIRT/PTS.git"
+
+# Public repository links
+public_pts_https_link = "https://github.com/SKIRT/PTS.git"
+
+# -----------------------------------------------------------------
+
 possible_cpp_compilers = ["icc", "clang++", "c++", "cxx", "g++", "gcc", "gxx"]
 possible_mpi_compilers = ["mpiicpc", "mpicxx", "mpiCC", "mpic++"]
 possible_mpirun_names = ["mpirun", "orterun", "mpiexec"]
@@ -142,6 +160,48 @@ def in_python_virtual_environment():
 
 # -----------------------------------------------------------------
 
+def is_pts_developer():
+
+    """
+    This function ...
+    :return:
+    """
+
+    if len(pts_git_remotes()) > 1: return True
+    else:
+
+        output = subprocess.check_output(["git", "status"], cwd=pts_package_dir)
+
+        for line in output:
+
+            if "modified" in line: return True
+            if "deleted" in line: return True
+
+        return False
+
+# -----------------------------------------------------------------
+
+def is_skirt_developer():
+
+    """
+    This function ...
+    :return:
+    """
+
+    if len(skirt_git_remotes()) > 1: return True
+    else:
+
+        output = subprocess.check_output(["git", "status"], cwd=skirt_repo_dir)
+
+        for line in output:
+
+            if "modified" in line: return True
+            if "deleted" in line: return True
+
+        return output
+
+# -----------------------------------------------------------------
+
 def pts_git_branches():
 
     """
@@ -191,6 +251,27 @@ def pts_git_remote_url(name):
         if "Fetch URL" in line: return line.split(": ")[1]
 
     raise RuntimeError("Remote '" + name + "' not found!")
+
+# -----------------------------------------------------------------
+
+def pts_git_official_remote():
+
+    """
+    This function ...
+    :return:
+    """
+
+    remote_name = None
+
+    for name in pts_git_remotes():
+
+        url = pts_git_remote_url(name)
+
+        if url == private_pts_https_link: remote_name = name
+        elif url == private_pts_ssh_link: remote_name = name
+        elif remote_name is None and url == public_pts_https_link: remote_name = name
+
+    return remote_name
 
 # -----------------------------------------------------------------
 
@@ -249,6 +330,27 @@ def skirt_git_remote_url(name):
         if "Fetch URL" in line: return line.split(": ")[1]
 
     raise RuntimeError("Remote '" + name + "' not found!")
+
+# -----------------------------------------------------------------
+
+def skirt_git_official_remote():
+
+    """
+    This function ...
+    :return:
+    """
+
+    remote_name = None
+
+    for name in skirt_git_remotes():
+
+        url = skirt_git_remote_url(name)
+
+        if url == private_skirt_https_link: remote_name = name
+        elif url == private_skirt_ssh_link: remote_name = name
+        elif remote_name is None and url == public_skirt_https_link: remote_name = name
+
+    return remote_name
 
 # -----------------------------------------------------------------
 

@@ -12,8 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
@@ -43,48 +41,97 @@ class RemotePythonSession(object):
         self.previous_length = 0
 
         # Generate session ID and screen name
-        self.session_id = timestamp = time.unique_name()
+        self.session_id = time.unique_name()
         self.screen_name = "pts_remotepython_" + self.session_id
+
+        # Create the pipe
+        self.create_pipe()
+
+        # Start the screen
+        self.start_screen()
+
+        # Start the python session
+        self.start_python()
+
+        # Import PTS stuff
+        if assume_pts: self.import_pts()
+
+    # -----------------------------------------------------------------
+
+    def create_pipe(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Create pipe file
         out_pipe_filename = "out_pipe_" + self.session_id + ".txt"
         self.out_pipe_filepath = fs.join(self.remote.home_directory, out_pipe_filename)
 
-        # Create pipe file for input
-        in_pipe_filename = "in_pipe_" + self.session_id + ".txt"
-        self.in_pipe_filepath = fs.join(self.remote.home_directory, in_pipe_filename)
+        # Debugging
+        log.debug("Creating pipe file '" + self.out_pipe_filepath + "' on remote ...")
 
-        # Create the pipe file
+        # Create the pipe file for output
         if self.remote.is_file(self.out_pipe_filepath): self.remote.remove_file(self.out_pipe_filepath)
         self.remote.touch(self.out_pipe_filepath)
 
-        if self.remote.is_file(self.in_pipe_filepath): self.remote.remove_file(self.in_pipe_filepath)
-        self.remote.touch(self.in_pipe_filepath)
+    # -----------------------------------------------------------------
+
+    def start_screen(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Start the screen
         start_screen_command = "screen -dmS " + self.screen_name
+
+        # Debugging
+        log.debug("Starting screen session with command: '" + start_screen_command + "' ...")
+
+        # Start the screen
         self.remote.execute(start_screen_command)
-        #print("START SCREEN COMMAND: ", start_screen_command)
+
+    # -----------------------------------------------------------------
+
+    def start_python(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Start python in the screen session
-        start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + " < " + self.in_pipe_filepath + "\n'"
-        #print("START PYTHON COMMAND: ", start_python_command)
+        # start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + " < " + self.in_pipe_filepath + "\n'"
+        start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + "\n'"
+
+        # Debugging
+        log.debug("Starting python session with command: '" + start_python_command + "' ...")
+
         # Start python
         self.remote.execute(start_python_command)
 
-        # Import PTS stuff
-        if assume_pts:
+    # -----------------------------------------------------------------
 
-            # Import standard PTS tools
-            self.import_package("filesystem", as_name="fs", from_name="pts.core.tools")
+    def import_pts(self):
 
-            # Set logging level to match that of local PTS
-            if log.is_debug():
+        """
+        This function ...
+        :return:
+        """
 
-                self.import_package("setup_log", from_name="pts.core.tools.logging")
-                self.send_line("log = setup_log('DEBUG')")
+        # Import standard PTS tools
+        self.import_package("filesystem", as_name="fs", from_name="pts.core.tools")
 
-            else: self.import_package("log", from_name="pts.core.tools.logging")
+        # Set logging level to match that of local PTS
+        if log.is_debug():
+
+            self.import_package("setup_log", from_name="pts.core.tools.logging")
+            self.send_line("log = setup_log('DEBUG')")
+
+        else: self.import_package("log", from_name="pts.core.tools.logging")
 
     # -----------------------------------------------------------------
 
@@ -268,24 +315,36 @@ class RemotePythonSession(object):
         :return:
         """
 
-        #send_command = "screen -r " + self.screen_name + " -X stuff $'" + line + "\n'"
+        if "'" not in line: send_command = "screen -r " + self.screen_name + " -X stuff $'" + line + "\n'"
+        elif '"' not in line: send_command = 'screen -r ' + self.screen_name + ' -X stuff $"' + line + '\n"'
+        else: raise ValueError("Line cannot contain both single quotes and double quotes")
 
         #print("COMMAND: ", send_command)
 
         # Send the line
-        #self.remote.execute(send_command, output=False)
+        self.remote.execute(send_command, output=False)
 
-        self.remote.append_line(self.in_pipe_filepath, line + "\n")
+        #self.remote.append_line(self.in_pipe_filepath, line + "\n")
 
         # Check the output
         if output:
 
             # Get output
-            output = self.remote.read_text_file(self.out_pipe_filepath)
-            lines = output[self.previous_length:]
-            self.previous_length = len(output)
-            #return lines
-            return output
+            lines = []
+            for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
+                if line == "[PTS]": break
+                lines.append(line)
+            lines.reverse()
+        else: lines = None
+
+        # Mark the end for this command
+        print_marker = 'print("[PTS]")'
+        send_marker_command = "screen -r " + self.screen_name + " -X stuff $'" + print_marker + "\n'"
+        #self.remote.append_to_file(self.out_pipe_filepath, "[PTS]")
+        self.remote.execute(send_marker_command, output=False)
+
+        # Return the output lines
+        return lines
 
     # -----------------------------------------------------------------
 
@@ -499,6 +558,30 @@ class RemotePythonSession(object):
         """
 
         return self.get_simple_variable("fs.is_subdirectory('" + path + "', '" + parent_path + "')")
+
+    # -----------------------------------------------------------------
+
+    def read_lines(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        for line in self.get_simple_variable("list(fs.read_lines('" + path + "'))"): yield line
+
+    # -----------------------------------------------------------------
+
+    def read_lines_reversed(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        for line in self.get_simple_variable("list(fs.read_lines_reversed('" + path + "'))"): yield line
 
     # -----------------------------------------------------------------
 

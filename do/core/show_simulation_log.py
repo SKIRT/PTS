@@ -68,7 +68,7 @@ remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.t
 if not remote.is_file(remote_log_file_path): raise RuntimeError("The log file does not exist remotely")
 
 # Read the log file
-lines = remote.read_text_file(remote_log_file_path)
+lines = remote.read_lines(remote_log_file_path)
 
 # Print the lines of the log file
 for line in lines: print(line)

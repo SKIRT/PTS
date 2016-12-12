@@ -70,7 +70,7 @@ for filename in remote.files_in_path(log_output_path):
 if log_path is None: raise RuntimeError("Log does not exist remotely")
 
 # Read the text file
-lines = remote.read_text_file(log_path)
+lines = remote.read_lines(log_path)
 
 # Print the lines of the log file
 for line in lines: print(line)

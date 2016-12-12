@@ -1553,6 +1553,45 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def read_lines(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Expand the path to absolute form
+        path = self.absolute_path(path)
+
+        # Load the text file into a variable
+        self.execute("value='cat " + path + "'")
+
+        # Print the variable to the console, and obtain the output
+        for line in self.execute('echo "$($value)"'): yield line
+
+    # -----------------------------------------------------------------
+
+    def read_lines_reversed(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Expand the path to absolute form
+        path = self.absolute_path(path)
+
+        # Launch the command
+        command = "sed '1!G;h;$!d' " + path
+        output = self.execute(command)
+
+        # Return the output
+        for line in output: yield line
+
+    # -----------------------------------------------------------------
+
     def download(self, origin, destination, timeout=60, new_name=None, compress=False, show_output=False):
 
         """
@@ -1778,14 +1817,7 @@ class Remote(object):
         :return:
         """
 
-        # Expand the path to absolute form
-        path = self.absolute_path(path)
 
-        # Load the text file into a variable
-        self.execute("value='cat " + path + "'")
-
-        # Print the variable to the console, and obtain the output
-        return self.execute('echo "$($value)"')
 
     # -----------------------------------------------------------------
 

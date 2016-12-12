@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from code import InteractiveConsole
+#from IPython.core.interactiveshell import InteractiveShell
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
@@ -22,6 +23,7 @@ from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
 from pts.core.remote.remote import Remote
 from pts.core.tools.logging import log
+from pts.core.remote.python import RemotePythonSession
 
 # -----------------------------------------------------------------
 
@@ -50,11 +52,14 @@ class PTSConsole(InteractiveConsole):
 
         # Call the constructor of the base class
         InteractiveConsole.__init__(self, *args)
+        #InteractiveShell.__init__(self, *args)
 
         # The remote
         #self.remote = kwargs.pop("remote", None)
 
-        self.host_id = kwargs.pop("host_id", None)
+        #self.host_id = kwargs.pop("host_id", None)
+
+        #self.remote_session = kwargs.pop("remote_session", None)
 
     # -----------------------------------------------------------------
 
@@ -69,15 +74,26 @@ class PTSConsole(InteractiveConsole):
         """
 
         #if self.remote is not None:
-        if self.host_id is not None:
-
-            source = source.replace("Frame.from_file(", "RemoteFrame")
+        #if self.remote_session is not None:
+        if self.locals["session"] is not None:
 
             if "Frame.from_file" in source:
 
-                source = source.split(" = Frame")[0] + " = RemoteFrame.from_file(" + source.split("Frame(")[1].split(",")[0] + ", '" + self.host_id + "')"
+                variable_name = source.split("=")[0].strip()
 
-                print(source)
+                #print(variable_name)
+
+                #print(source.split("Frame(")[1])
+
+                arguments = source.split("from_file(")[1].split(")")[0].split(",")
+
+                path = arguments[0]
+
+                #print(arguments)
+
+                source = variable_name + " = RemoteFrame.from_file(" + path + ", session)"
+
+                #print(source)
 
             #source = source.replace("Image.from_file(", "RemoteImage")
             #source = source.replace("DataCube.from_file", "RemoteDataCube")
@@ -94,7 +110,12 @@ class PTSConsole(InteractiveConsole):
 #    remote.setup(config.host_id)
 #else: remote = None
 #console = PTSConsole(remote=remote)
-console = PTSConsole(host_id=config.host_id)
+
+# Remote session
+#if config.host_id is not None:
+#    session = RemotePythonSession.from_host_id(config.host_id)
+#else: session = None
+console = PTSConsole()
 
 log.info("Importing modules ...")
 
@@ -106,7 +127,12 @@ console.runcode("from pts.magic.core.frame import Frame")
 console.runcode("from pts.magic.core.image import Image")
 console.runcode("from pts.magic.core.datacube import DataCube")
 console.runcode("from pts.magic.core.kernel import ConvolutionKernel")
-console.runcode("from pts.magic.remote import RemoteFrame, RemoteImage, RemoteDataCube")
+console.runcode("from pts.magic.core.remote import RemoteFrame, RemoteImage, RemoteDataCube")
+
+if config.host_id is not None:
+    console.runcode("from pts.core.remote.python import RemotePythonSession")
+    console.runcode("session = RemotePythonSession.from_host_id('" + config.host_id + "')")
+else: console.runcode("session = None")
 
 # Do the interaction
 console.interact()

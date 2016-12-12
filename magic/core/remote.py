@@ -70,19 +70,19 @@ def import_necessary_modules(session):
     log.info("Importing necessary modules ...")
 
     # Import standard modules
-    #remote.import_python_package("tempfile")  ## doesn't work: we seem to have no permissions in this directory on nancy
-    session.import_python_package("urllib")
-    session.import_python_package("numpy", as_name="np")
+    #session.import_package("tempfile")  ## doesn't work: we seem to have no permissions in this directory on nancy
+    session.import_package("urllib")
+    session.import_package("numpy", as_name="np")
 
     # Import the necessary PTS classes and modules
-    session.import_python_package("Frame", from_name="pts.magic.core.frame")
-    session.import_python_package("Image", from_name="pts.magic.core.image")
-    session.import_python_package("DataCube", from_name="pts.magic.core.datacube")
-    session.import_python_package("ConvolutionKernel", from_name="pts.magic.core.kernel")
-    session.import_python_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
-    session.import_python_package("archive", from_name="pts.core.tools")
-    session.import_python_package("parsing", from_name="pts.core.tools")
-    session.import_python_package("Filter", from_name="pts.core.basics.filter")
+    session.import_package("Frame", from_name="pts.magic.core.frame")
+    session.import_package("Image", from_name="pts.magic.core.image")
+    session.import_package("DataCube", from_name="pts.magic.core.datacube")
+    session.import_package("ConvolutionKernel", from_name="pts.magic.core.kernel")
+    session.import_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
+    session.import_package("archive", from_name="pts.core.tools")
+    session.import_package("parsing", from_name="pts.core.tools")
+    session.import_package("Filter", from_name="pts.core.basics.filter")
 
 # -----------------------------------------------------------------
 

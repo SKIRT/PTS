@@ -14,12 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import sys
 import shutil
 import platform
 import subprocess
 
 # Import the relevant PTS classes and modules
 from . import time
+
+# Check if Python 2 or higher
+if (sys.version_info > (3, 0)): PYTHON_2 = False # Python 3 or higher
+else: PYTHON_2 = True # Python 2
 
 # -----------------------------------------------------------------
 
@@ -789,5 +794,73 @@ def copy_files(file_paths, directory_path):
     """
 
     for file_path in file_paths: copy_file(file_path, directory_path)
+
+# -----------------------------------------------------------------
+
+def read_lines(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Resolve path
+    path = absolute_path(path)
+
+    # Open the file
+    with open(path, 'r') as fh:
+
+        # Loop over the lines, cut off the end-of-line characters
+        for line in fh.readlines(): yield line[:-1]
+
+# -----------------------------------------------------------------
+
+def read_lines_reversed(path, buf_size=8192):
+
+    """
+    This function is a generator that returns the lines of a file in reverse order
+    FROM http://stackoverflow.com/questions/2301789/read-a-file-in-reverse-order-using-python
+    :param path:
+    :param buf_size:
+    :return:
+    """
+
+    # Resolve path
+    path = absolute_path(path)
+
+    # Open the file
+    with open(path) as fh:
+
+        segment = None
+        offset = 0
+        if PYTHON_2: fh.seek(0, os.SEEK_END)
+        else: file_size = fh.seek(0, os.SEEK_END)
+        total_size = remaining_size = fh.tell()
+
+        while remaining_size > 0:
+            offset = min(total_size, offset + buf_size)
+            if PYTHON_2: fh.seek(-offset, os.SEEK_END)
+            else: fh.seek(file_size - offset)
+            buffer = fh.read(min(remaining_size, buf_size))
+            remaining_size -= buf_size
+            lines = buffer.split('\n')
+            # the first line of the buffer is probably not a complete line so
+            # we'll save it and append it to the last line of the next buffer
+            # we read
+            if segment is not None:
+                # if the previous chunk starts right from the beginning of line
+                # do not concact the segment to the last line of new chunk
+                # instead, yield the segment first
+                if buffer[-1] is not '\n':
+                    lines[-1] += segment
+                else:
+                    yield segment
+            segment = lines[0]
+            for index in range(len(lines) - 1, 0, -1):
+                if len(lines[index]):
+                    yield lines[index]
+
+        yield segment
 
 # -----------------------------------------------------------------

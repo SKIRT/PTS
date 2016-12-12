@@ -1170,7 +1170,7 @@ class SkirtRemote(Remote):
         :return:
         """
 
-        output = self.read_text_file(file_path)
+        output = self.read_lines(file_path)
 
         phase = None
         cycle = None

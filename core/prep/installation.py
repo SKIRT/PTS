@@ -215,15 +215,6 @@ class Installer(Configurable):
 
 # -----------------------------------------------------------------
 
-# Private repository links
-private_skirt_ssh_link = "git@github.ugent.be:SKIRT/SKIRT.git"
-private_skirt_https_link = "https://github.ugent.be/SKIRT/SKIRT.git"
-
-# Public repository links
-public_skirt_https_link = "https://github.com/SKIRT/SKIRT.git"
-
-# -----------------------------------------------------------------
-
 # Determine Qt configure options
 qt_configure_options = []
 qt_configure_options.append("-prefix '$HOME/Qt/Desktop/5.2.1'")
@@ -550,8 +541,8 @@ class SKIRTInstaller(Installer):
         if self.config.repository is not None:
             url = introspection.skirt_git_remote_url(self.config.repository)
         elif self.config.private:
-            url = private_skirt_https_link
-        else: url = public_skirt_https_link
+            url = introspection.private_skirt_https_link
+        else: url = introspection.public_skirt_https_link
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
         # because of the private/public key thingy, so use a trick
@@ -686,15 +677,6 @@ class SKIRTInstaller(Installer):
         """
 
         pass
-
-# -----------------------------------------------------------------
-
-# Private repository links
-private_pts_ssh_link = "git@github.ugent.be:SKIRT/PTS.git"
-private_pts_https_link = "https://github.ugent.be/SKIRT/PTS.git"
-
-# Public repository links
-public_pts_link = "https://github.com/SKIRT/PTS.git"
 
 # -----------------------------------------------------------------
 
@@ -1017,8 +999,8 @@ class PTSInstaller(Installer):
         if self.config.repository is not None:
             url = introspection.pts_git_remote_url(self.config.repository)
         elif self.config.private:
-            url = private_pts_https_link
-        else: url = public_pts_link
+            url = introspection.private_pts_https_link
+        else: url = introspection.public_pts_https_link
 
 
         # CONVERT TO HTTPS LINK
@@ -1093,14 +1075,14 @@ class PTSInstaller(Installer):
 
         # Use the introspection module on the remote end to get the dependencies and installed python packages
         session = self.remote.start_python_session()
-        session.import_python_package("introspection", from_name="pts.core.tools")
+        session.import_package("introspection", from_name="pts.core.tools")
         dependencies = session.get_simple_python_property("introspection", "get_all_dependencies().keys()")
         packages = session.get_simple_python_property("introspection", "installed_python_packages()")
         #self.remote.end_python_session()
         # Don't end the python session just yet
 
         # Get installation commands
-        session.import_python_package("google", from_name="pts.core.tools")
+        session.import_package("google", from_name="pts.core.tools")
         installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, session)
 
         # Stop the python session
@@ -1159,7 +1141,7 @@ def find_real_name(module_name, available_packages, session):
     This function ...
     :param module_name:
     :param available_packages:
-    :param remote:
+    :param session:
     :return:
     """
 

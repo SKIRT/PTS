@@ -496,7 +496,7 @@ class PTSUpdater(Updater):
 
         # Use the introspection module on the remote end to get the dependencies and installed python packages
         python = self.remote.start_python_session()
-        python.import_python_package("introspection", from_name="pts.core.tools")
+        python.import_package("introspection", from_name="pts.core.tools")
         dependencies = python.get_simple_property("introspection", "get_all_dependencies().keys()")
         packages = python.get_simple_property("introspection", "installed_python_packages()")
         #self.remote.end_python_session()
