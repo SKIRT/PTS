@@ -273,6 +273,10 @@ class SKIRTInstaller(Installer):
         # Call the constructor of the base class
         super(SKIRTInstaller, self).__init__(config)
 
+        # The paths to the C++ compiler and MPI compiler
+        self.compiler_path = None
+        self.mpi_compiler_path = None
+
         # The path to the qmake executable corresponding to the most recent Qt installation
         self.qmake_path = None
 
@@ -342,6 +346,9 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing SKIRT locally ...")
 
+        # Check compilers (C++ and mpi)
+        self.check_compilers_local()
+
         # Check if Qt is installed
         self.check_qt_local()
 
@@ -353,6 +360,17 @@ class SKIRTInstaller(Installer):
 
         # Build SKIRT
         self.build_skirt_local()
+
+    # -----------------------------------------------------------------
+
+    def check_compilers_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -439,6 +457,9 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing SKIRT remotely ...")
 
+        # Check the compilers (C++ and MPI)
+        self.check_compilers_remote()
+
         # Check Qt installation
         self.check_qt_remote()
 
@@ -453,6 +474,22 @@ class SKIRTInstaller(Installer):
 
     # -----------------------------------------------------------------
 
+    def check_compilers_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of C++ and MPI compilers ...")
+
+        # Get the compiler paths
+        self.compiler_path = self.remote.find_and_load_cpp_compiler()
+        self.mpi_compiler_path = self.remote.find_and_load_mpi_compiler()
+
+    # -----------------------------------------------------------------
+
     def check_qt_remote(self):
 
         """
@@ -463,182 +500,8 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking for Qt installation on remote ...")
 
-        # Use modules or not
-        if self.remote.has_lmod: self.check_qt_remote_lmod()
-        self.check_qt_remote_no_lmod()
-
-    # -----------------------------------------------------------------
-
-    def check_qt_remote_lmod(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Find latest Qt5 version
-        qt5_version = self.find_latest_qt_version_module()
-
-        # If no version could be found, give an error
-        if qt5_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
-
-        # Load the module
-        self.remote.load_module(qt5_version)
-
-        # Get the qmake path
-        self.qmake_path = self.remote.find_executable("qmake")
-
-        # Get the Intel compiler version
-        if "intel" in qt5_version: intel_version = qt5_version.split("intel-")[1].split("-")[0]
-        else: intel_version = qt5_version.split("ictce-")[1].split("-")[0]
-
-        # Find latest Intel Compiler Toolkit version
-        intel_version = self.find_latest_iimpi_version_module()
-        if intel_version is None:
-            log.warning("Intel Cluster Toolkit Compiler Edition could not be found")
-            # TODO: try 'impi', the Intel compiler
-            return
-
-        # Load the module
-        self.remote.load_module(intel_version)
-
-    # -----------------------------------------------------------------
-
-    def find_latest_qt_version_module(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        versions = []
-
-        # Check 'Qt5' module versions
-        versions += self.remote.get_module_versions("Qt5")
-
-        # Check 'Qt' module versions
-        versions += self.remote.get_module_versions("Qt")
-
-        # Get the latest Qt version
-        latest_version = None
-        latest_qt_version = None
-        for version in versions:
-
-            # Only use Intel-compiled stuff
-            if not ("ictce" in version or "intel" in version): continue
-
-            # Parse to get simple Qt version
-            qt_version = version.split("/")[1].split("-")[0]
-
-            # Skip version below Qt 5
-            if int(qt_version[0]) < 5: continue
-
-            if latest_qt_version is None or qt_version > latest_qt_version:
-                latest_version = version
-                latest_qt_version = qt_version
-
-        # Return the latest version
-        return latest_version
-
-    # -----------------------------------------------------------------
-
-    def find_latest_iimpi_version_module(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load the Intel Cluster Toolkit Compiler Edition (inludes Intel MPI)
-        versions = self.remote.get_module_versions("iimpi")
-
-        latest_version = None
-        latest_iimpi_version = None
-        latest_iimpi_year = None
-        for version in versions:
-
-            # Parse to get simple iimpi version
-            iimpi_version = version.split("/")[1].split("-")[0]
-
-            if "." not in iimpi_version:
-
-                iimpi_year = int(iimpi_version)
-                if latest_iimpi_year is None or iimpi_year > latest_iimpi_year:
-                    latest_iimpi_year = iimpi_year
-                    latest_version = version
-
-            elif latest_iimpi_year is not None: # geef voorrang aan jaartallen
-                continue
-
-            else:
-
-                if latest_iimpi_version is None or iimpi_version > latest_iimpi_version:
-                    latest_version = version
-                    latest_iimpi_version = iimpi_version
-
-        # Return the latest version
-        return latest_version
-
-    # -----------------------------------------------------------------
-
-    def check_qt_remote_no_lmod(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Keep the qmake paths in a list to decide later which one we can use
-        qmake_paths = []
-
-        # Search for qmake in the home directory
-        command = "find " + self.remote.home_directory + "/Qt* -name qmake -type f 2>/dev/null"
-        qmake_paths += self.remote.execute(command)
-
-        # Search for qmake in the /usr/local directory
-        command = "find /usr/local/Qt* -name qmake -type f 2>/dev/null"
-        qmake_paths += self.remote.execute(command)
-
-        ## TOO SLOW?
-        # Search for Qt directories in the home directory
-        #for directory_path in self.remote.directories_in_path(self.remote.home_directory, startswith="Qt"):
-            # Search for 'qmake' executables
-            #for path in self.remote.files_in_path(directory_path, recursive=True):
-                # Add the path
-                #qmake_paths.append(path)
-
-        ## TOO SLOW?
-        # Search for Qt directories in /usr/local
-        #for directory_path in self.remote.directories_in_path("/usr/local", startswith="Qt"):
-            # Search for 'qmake' executables
-            #for path in self.remote.files_in_path(directory_path, recursive=True):
-                # Add the path
-                #qmake_paths.append(path)
-
-        # Check if qmake can be found by running 'which'
-        qmake_path = self.remote.find_executable("qmake")
-        if qmake_path is not None: qmake_paths.append(qmake_path)
-
-        latest_version = None
-
-        # Loop over the qmake paths
-        for qmake_path in qmake_paths:
-
-            # Get the version
-            output = self.remote.execute(qmake_path + " -v")
-
-            qt_version = output[1].split("Qt version ")[1].split(" in")[0]
-
-            if qt_version < "5.2.0": continue # oldest supported version
-            if "conda" in qmake_path: continue
-            if "canopy" in qmake_path: continue
-            if "epd" in qmake_path: continue
-            if "enthought" in qmake_path: continue
-
-            if latest_version is None or qt_version > latest_version:
-
-                latest_version = qt_version
-                self.qmake_path = qmake_path
+        # Load Qt module, find the qmake path
+        self.qmake_path = self.remote.find_and_load_qmake()
 
     # -----------------------------------------------------------------
 
@@ -692,7 +555,7 @@ class SKIRTInstaller(Installer):
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
         # because of the private/public key thingy, so use a trick
-        if self.remote.host.name == "login.hpc.ugent.be": self.get_skirt_hpc(url)
+        if self.remote.host.name == "login.hpc.ugent.be": get_skirt_hpc(self.remote, url, self.skirt_root_path, self.skirt_repo_path)
         else:
 
             # CONVERT TO HTTPS LINK
@@ -740,57 +603,6 @@ class SKIRTInstaller(Installer):
 
     # -----------------------------------------------------------------
 
-    def get_skirt_hpc(self, url):
-
-        """
-        This function ...
-        :param url:
-        :return:
-        """
-
-        # CONVERT TO HTTPS ZIP LINK
-        # example: https://github.ugent.be/sjversto/SKIRT-personal/archive/master.zip
-
-        # CONVERT TO HTTPS LINK
-        host = url.split("@")[1].split(":")[0]
-        user_or_organization = url.split(":")[1].split("/")[0]
-        repo_name = url.split("/")[-1].split(".git")[0]
-        #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + "/archive/master.zip"
-        #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
-
-        # Find the account file for the repository host (e.g. github.ugent.be)
-        username, password = introspection.get_account(host)
-        url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
-
-        # Download the repository to the PTS temporary directory locally
-        #zip_path = network.download_file(url, introspection.pts_temp_dir)
-
-        # Clone the repository locally in the pts temporary directory
-        temp_repo_path = fs.join(introspection.pts_temp_dir, "skirt-git")
-        if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
-        command = "git clone " + url + " " + temp_repo_path
-        subprocess.call(command.split())
-
-        # Zip the repository
-        zip_path = fs.join(introspection.pts_temp_dir, "skirt.zip")
-        cwd = fs.change_cwd(temp_repo_path)
-        zip_command = "git archive --format zip --output " + zip_path + " master"
-        subprocess.call(zip_command.split())
-        fs.change_cwd(cwd)
-
-        # Transfer to the remote to the SKIRT directory
-        self.remote.upload(zip_path, self.skirt_root_path)
-        remote_zip_path = fs.join(self.skirt_root_path, fs.name(zip_path))
-
-        # Remove local temporary things
-        fs.remove_file(zip_path)
-        fs.remove_directory(temp_repo_path)
-
-        # Unpack the zip file into the 'git' directory
-        self.remote.decompress_file(remote_zip_path, self.skirt_repo_path)
-
-    # -----------------------------------------------------------------
-
     def build_skirt_remote(self):
 
         """
@@ -800,18 +612,6 @@ class SKIRTInstaller(Installer):
 
         # Inform the user
         log.info("Building SKIRT ...")
-
-        #skirt_make_script = "makeSKIRT.sh"
-
-        # Navigate to the SKIRT repo directory
-        #self.remote.change_cwd(self.skirt_repo_path)
-
-        # Execute the script
-        #self.remote.execute("./" + skirt_make_script, show_output=True)
-
-        # # Create the make file and perform the build
-        # $QMAKEPATH BuildSKIRT.pro -o ../release/Makefile CONFIG+=release
-        # make -j ${1:-5} -w -C ../release
 
         # Navigate to the SKIRT repo directory
         self.remote.change_cwd(self.skirt_repo_path)
@@ -1292,16 +1092,19 @@ class PTSInstaller(Installer):
             already_installed.append(line.split(" ")[0])
 
         # Use the introspection module on the remote end to get the dependencies and installed python packages
-        self.remote.start_python_session()
-        self.remote.import_python_package("introspection", from_name="pts.core.tools")
-        dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
-        packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
+        session = self.remote.start_python_session()
+        session.import_python_package("introspection", from_name="pts.core.tools")
+        dependencies = session.get_simple_python_property("introspection", "get_all_dependencies().keys()")
+        packages = session.get_simple_python_property("introspection", "installed_python_packages()")
         #self.remote.end_python_session()
         # Don't end the python session just yet
 
         # Get installation commands
-        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, self.remote)
-        self.remote.end_python_session()
+        session.import_python_package("google", from_name="pts.core.tools")
+        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, session)
+
+        # Stop the python session
+        del session
 
         # Install
         for module in installation_commands:
@@ -1350,7 +1153,7 @@ class PTSInstaller(Installer):
 
 # -----------------------------------------------------------------
 
-def find_real_name(module_name, available_packages, remote):
+def find_real_name(module_name, available_packages, session):
 
     """
     This function ...
@@ -1366,10 +1169,10 @@ def find_real_name(module_name, available_packages, remote):
     try:
         module_url = google.lucky(module_name)
     except Exception:
-        if remote is not None:
+        if session is not None:
             # use google on the remote end, because there are strange errors when using it on the client end when it has
             # a VPN connection open
-            module_url = remote.get_simple_python_property("google", "lucky('" + module_name + "')")
+            module_url = session.get_simple_property("google", "lucky('" + module_name + "')")
         else: return None, None
 
     # Search for github.com/ name
@@ -1396,7 +1199,7 @@ def find_real_name(module_name, available_packages, remote):
 
 # -----------------------------------------------------------------
 
-def get_installation_commands(dependencies, packages, already_installed, available_packages, remote):
+def get_installation_commands(dependencies, packages, already_installed, available_packages, session):
 
     """
     This function ...
@@ -1407,10 +1210,6 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     not_installed = []
 
     commands = dict()
-
-    # Import google, don't pass the remote is importing the google module failed on the remote
-    success = remote.import_python_package("google", from_name="pts.core.tools")
-    if not success: remote = None
 
     # Loop over the dependencies
     for module in dependencies:
@@ -1426,7 +1225,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         if module_name in already_installed: continue
 
         # Find name, check if available
-        module_name, via = find_real_name(module_name, available_packages, remote)
+        module_name, via = find_real_name(module_name, available_packages, session)
 
         if module_name is None:
             log.warning("Package '" + module + "' can not be installed")
@@ -1466,5 +1265,59 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
         # Return ...
         return commands, installed, not_installed
+
+# -----------------------------------------------------------------
+
+def get_skirt_hpc(remote, url, skirt_root_path, skirt_repo_path):
+
+    """
+    This function ...
+    :param remote:
+    :param url:
+    :param skirt_root_path:
+    :param skirt_repo_path:
+    :return:
+    """
+
+    # CONVERT TO HTTPS ZIP LINK
+    # example: https://github.ugent.be/sjversto/SKIRT-personal/archive/master.zip
+
+    # CONVERT TO HTTPS LINK
+    host = url.split("@")[1].split(":")[0]
+    user_or_organization = url.split(":")[1].split("/")[0]
+    repo_name = url.split("/")[-1].split(".git")[0]
+    #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + "/archive/master.zip"
+    #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+    # Find the account file for the repository host (e.g. github.ugent.be)
+    username, password = introspection.get_account(host)
+    url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+    # Download the repository to the PTS temporary directory locally
+    #zip_path = network.download_file(url, introspection.pts_temp_dir)
+
+    # Clone the repository locally in the pts temporary directory
+    temp_repo_path = fs.join(introspection.pts_temp_dir, "skirt-git")
+    if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
+    command = "git clone " + url + " " + temp_repo_path
+    subprocess.call(command.split())
+
+    # Zip the repository
+    zip_path = fs.join(introspection.pts_temp_dir, "skirt.zip")
+    cwd = fs.change_cwd(temp_repo_path)
+    zip_command = "git archive --format zip --output " + zip_path + " master"
+    subprocess.call(zip_command.split())
+    fs.change_cwd(cwd)
+
+    # Transfer to the remote to the SKIRT directory
+    remote.upload(zip_path, skirt_root_path)
+    remote_zip_path = fs.join(skirt_root_path, fs.name(zip_path))
+
+    # Remove local temporary things
+    fs.remove_file(zip_path)
+    fs.remove_directory(temp_repo_path)
+
+    # Unpack the zip file into the 'git' directory
+    remote.decompress_file(remote_zip_path, skirt_repo_path)
 
 # -----------------------------------------------------------------

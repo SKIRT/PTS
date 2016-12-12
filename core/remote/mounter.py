@@ -20,6 +20,7 @@ from .vpn import VPN
 from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..tools import introspection
+from .remote import active_keys, add_key
 
 # -----------------------------------------------------------------
 
@@ -112,6 +113,10 @@ class RemoteMounter(object):
 
         # If a VPN connection is required for the remote host
         if host.requires_vpn: self.connect_to_vpn(host)
+
+        # Check if key is active
+        if host.key is not None:
+            if host.key not in active_keys(): add_key(host.key)
 
         # Create directory for remote
         mount_path = fs.join(pts_remotes_path, host.id)

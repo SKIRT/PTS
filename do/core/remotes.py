@@ -12,11 +12,8 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from pexpect import ExceptionPexpect
-
 # Import the relevant PTS classes and modules
-from pts.core.remote.host import find_host_ids
+from pts.core.remote.host import find_host_ids, HostDownException
 from pts.core.remote.remote import Remote
 from pts.core.tools import formatting as fmt
 from pts.core.tools.logging import setup_log
@@ -34,7 +31,7 @@ for host_id in find_host_ids():
 
     up = True
     try: remote.setup(host_id, login_timeout=15) # only try for 15 seconds
-    except ExceptionPexpect: up = False
+    except HostDownException: up = False
 
     if up: print(fmt.green + host_id + ": up" + fmt.reset)
     else: print(fmt.red + host_id + ": down" + fmt.reset)

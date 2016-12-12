@@ -29,6 +29,7 @@ from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
 from pts.magic.tools import plotting
 from pts.core.basics.filter import Filter
+from pts.core.remote.python import RemotePythonSession
 
 # -----------------------------------------------------------------
 
@@ -148,7 +149,8 @@ wavelengths = wavelength_grid.wavelengths(asarray=True) # list of wavelengths
 datacube_path = fs.join(modeling_path, "fit_before_new", "best", "images", "M81_earth_total.fits")
 
 # Local or remote
-if config.remote is not None: datacube = RemoteDataCube.from_file(datacube_path, wavelength_grid, config.remote)
+session = RemotePythonSession.from_host_id(config.remote)
+if config.remote is not None: datacube = RemoteDataCube.from_file(datacube_path, wavelength_grid, session)
 else: datacube = DataCube.from_file(datacube_path, wavelength_grid)
 
 x = []

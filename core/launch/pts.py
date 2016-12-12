@@ -113,12 +113,12 @@ class PTSRemoteLauncher(object):
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
 
         # START REMOTE PYTHON SESSION
-        self.remote.start_python_session()
+        python = self.remote.start_python_session()
 
         # Import the class from which to make an instance
-        self.remote.import_python_package("importlib")
-        self.remote.send_python_line("module = importlib.import_module('" + class_module_path + "')")  # get the module of the class
-        self.remote.send_python_line("cls = getattr(module, '" + class_name + "')")  # get the class
+        python.import_package("importlib")
+        python.send_line("module = importlib.import_module('" + class_module_path + "')")  # get the module of the class
+        python.send_line("cls = getattr(module, '" + class_name + "')")  # get the class
 
         # Inform the user
         log.start("Starting " + exact_command_name + " ...")
@@ -183,7 +183,7 @@ class PTSRemoteLauncher(object):
 
             ### LOAD THE INPUT DICT REMOTELY
 
-            self.remote.send_python_line("input_dict = dict()")
+            python.send_python_line("input_dict = dict()")
 
             for name in input_dict:
 
@@ -195,25 +195,25 @@ class PTSRemoteLauncher(object):
 
                 modulepath, classname = classpath.rsplit(".", 1)
 
-                self.remote.send_python_line("input_module = importlib.import_module('" + modulepath + "')")  # get the module of the class
-                self.remote.send_python_line("input_cls = getattr(input_module, '" + classname + "')")  # get the class
+                python.send_line("input_module = importlib.import_module('" + modulepath + "')")  # get the module of the class
+                python.send_line("input_cls = getattr(input_module, '" + classname + "')")  # get the class
 
                 # Open the input file
-                self.remote.send_python_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
+                python.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
         ###
 
         # Import the Configuration class remotely
-        self.remote.import_python_package("Configuration", from_name="pts.core.basics.configuration")
+        python.import_package("Configuration", from_name="pts.core.basics.configuration")
 
         # Load the config into the remote python session
-        self.remote.send_python_line("config = Configuration.from_file('" + remote_conf_path + "')")
+        python.send_python_line("config = Configuration.from_file('" + remote_conf_path + "')")
 
         # Create the class instance, configure it with the configuration settings
-        self.remote.send_python_line("inst = cls(config)")
+        python.send_python_line("inst = cls(config)")
 
         # Run the instance
-        if input_dict is not None: self.remote.send_python_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
-        else: self.remote.send_python_line("inst.run()", show_output=True, timeout=None) # no timeout, this can take a while
+        if input_dict is not None: python.send_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
+        else: python.send_line("inst.run()", show_output=True, timeout=None) # no timeout, this can take a while
 
         # Set the output
         output_list = None
@@ -223,12 +223,12 @@ class PTSRemoteLauncher(object):
             output_list = []
 
             # Fill in the values in the dict
-            for name in return_output_names: output_list.append(self.remote.get_simple_python_property("inst", name))
+            for name in return_output_names: output_list.append(python.get_simple_python_property("inst", name))
 
         ######
 
-        # Now END THE PYTHON SESSION
-        self.remote.end_python_session()
+        # End the python session
+        del python
 
         # Return the output(can be None if return_output_names was None)
         if output_list is None: return

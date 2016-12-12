@@ -41,8 +41,11 @@ remote = Remote()
 # Log in
 remote.setup(config.remote)
 
+# Get remote python session
+remote_python = remote.start_python_session(assume_pts=False)
+
 # Get all python packages installed on the remote host
-remote_packages = remote.installed_python_packages
+remote_packages = remote_python.installed_packages
 
 # Get local python package version
 local_packages = introspection.installed_python_packages()
@@ -68,7 +71,7 @@ for dependency in introspection.get_all_dependencies():
         remote_version = remote_packages[dependency]
     else:
         # Check again for present by importing
-        remotely_present = remote.is_present_package(dependency)
+        remotely_present = rmeote_python.is_present_package(dependency)
         remote_version = None
 
     # If present both locally and remotely

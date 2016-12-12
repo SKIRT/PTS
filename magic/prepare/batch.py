@@ -42,6 +42,7 @@ from ...magic.core.kernel import ConvolutionKernel
 from ...modeling.preparation import unitconversion
 from ..basics.mask import Mask
 from ...core.basics.composite import SimplePropertyComposite
+from ...core.remote.python import RemotePythonSession
 
 # -----------------------------------------------------------------
 
@@ -1252,7 +1253,8 @@ def _convolve(image, kernel_path, kernel_fwhm, visualisation_path=None, host_id=
         log.info("Convolution will be performed remotely on host '" + host_id + "' ...")
 
         # Create remote image, convolve and make local again
-        remote_image = RemoteImage.from_local(image, host_id)
+        session = RemotePythonSession.from_host_id(host_id)
+        remote_image = RemoteImage.from_local(image, session)
         remote_image.convolve(kernel, allow_huge=True)
         new_image = remote_image.to_local()
 
@@ -1297,7 +1299,8 @@ def _rebin(image, reference_wcs, exact, host_id=None):
         log.info("Rebinning will be performed remotely on host '" + host_id + "' ...")
 
         # Create remote image, rebin and make local again
-        remote_image = RemoteImage.from_local(image, host_id)
+        session = RemotePythonSession.from_host_id(host_id)
+        remote_image = RemoteImage.from_local(image, session)
         remote_image.rebin(reference_wcs, exact=exact)
         new_image = remote_image.to_local()
 

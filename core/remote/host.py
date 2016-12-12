@@ -22,6 +22,14 @@ from ..basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
+class HostDownException(Exception):
+
+    """
+    This exception should be raised when connection to a host is not possible because it is temporarily down
+    """
+
+# -----------------------------------------------------------------
+
 def find_host_ids(schedulers=None):
 
     """

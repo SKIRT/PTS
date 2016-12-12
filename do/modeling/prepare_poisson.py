@@ -24,6 +24,7 @@ from pts.magic.misc.extinction import GalacticExtinction
 from pts.magic.misc.kernels import AnianoKernels
 from pts.magic.core.kernel import ConvolutionKernel
 from pts.core.tools import parsing
+from pts.core.remote.python import RemotePythonSession
 
 # -----------------------------------------------------------------
 
@@ -80,6 +81,7 @@ aniano = AnianoKernels()
 # -----------------------------------------------------------------
 
 remote_host_id = "nancy"
+session = RemotePythonSession.from_host_id(remote_host_id)
 
 # -----------------------------------------------------------------
 
@@ -125,7 +127,7 @@ for path in paths:
                 if "FWHM" in line: fwhm = parsing.quantity(line.split("FWHM: ")[1].replace("\n", ""))
 
     # Get the kernel path for convolution from this filter to the Pacs red filter
-    kernel_file_path = aniano.get_kernel_path(fltr, "Pacs red", fwhm=fwhm)
+    kernel_file_path = aniano.get_kernel_path(fltr, "Pacs red", from_fwhm=fwhm)
     kernel = ConvolutionKernel.from_file(kernel_file_path)
 
     # Prepare the kernel

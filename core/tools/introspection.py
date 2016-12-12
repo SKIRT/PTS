@@ -32,6 +32,12 @@ from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
+possible_cpp_compilers = ["icc", "clang++", "c++", "cxx", "g++", "gcc", "gxx"]
+possible_mpi_compilers = ["mpiicpc", "mpicxx", "mpiCC", "mpic++"]
+possible_mpirun_names = ["mpirun", "orterun", "mpiexec"]
+
+# -----------------------------------------------------------------
+
 subprojects = ["core", "magic", "eagle", "modeling", "dustpedia"]
 
 # The path to the root PTS directory
@@ -394,8 +400,9 @@ def has_mpi():
     :return:
     """
 
-    # Try opening the 'mpirun' executable
-    return is_existing_executable("mpirun")
+    for name in possible_mpirun_names:
+        if is_existing_executable(name): return True
+    return False
 
 # -----------------------------------------------------------------
 
@@ -406,10 +413,9 @@ def has_mpi_compiler():
     :return:
     """
 
-    if is_existing_executable("mpiicpc"): return True
-    elif is_existing_executable("mpicxx"): return True
-    elif is_existing_executable("mpiCC"): return True
-    else: return False
+    for name in possible_mpi_compilers:
+        if is_existing_executable(name): return True
+    return False
 
 # -----------------------------------------------------------------
 
@@ -425,7 +431,10 @@ def mpi_version():
     output = process.communicate()[0]
 
     # Return the relevant portion of the output
-    return "OpenMPI " + output.splitlines()[0].split(") ")[1]
+    for line in output:
+        if "OpenMPI" in line: return "OpenMPI " + line.split(") ")[1]
+        elif "Intel" in line: return "Intel MPI " + line.split("Version ")[1].split(" Build")[0]
+    return " ".join(output) # unknown MPI version
 
 # -----------------------------------------------------------------
 

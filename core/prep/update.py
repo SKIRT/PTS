@@ -21,7 +21,7 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands
+from .installation import get_installation_commands, get_skirt_hpc
 
 # -----------------------------------------------------------------
 
@@ -126,6 +126,24 @@ class SKIRTUpdater(Updater):
     This class ...
     """
 
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(SKIRTUpdater, self).__init__(config)
+
+        # The paths to the C++ compiler and MPI compiler
+        self.compiler_path = None
+        self.mpi_compiler_path = None
+
+        # The path to the qmake executable corresponding to the most recent Qt installation
+        self.qmake_path = None
+
+    # -----------------------------------------------------------------
+
     def update_local(self):
 
         """
@@ -136,11 +154,39 @@ class SKIRTUpdater(Updater):
         # Inform the user
         log.info("Updating SKIRT locally ...")
 
+        # Check the compilers (C++ and MPI)
+        self.check_compilers_local()
+
+        # Check Qt installation, find qmake
+        self.check_qt_local()
+
         # Pull
         self.pull_local()
 
         # Build
         self.build_local()
+
+    # -----------------------------------------------------------------
+
+    def check_compilers_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def check_qt_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -187,6 +233,12 @@ class SKIRTUpdater(Updater):
         # Inform the user
         log.info("Updating SKIRT remotely on host '" + self.config.remote + "' ...")
 
+        # Check the compilers (C++ and MPI)
+        self.check_compilers_remote()
+
+        # Check Qt installation, find qmake
+        self.check_qt_remote()
+
         # Pull
         self.pull_remote()
 
@@ -195,23 +247,103 @@ class SKIRTUpdater(Updater):
 
     # -----------------------------------------------------------------
 
+    def check_compilers_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of C++ and MPI compilers ...")
+
+        # Get the compiler paths
+        self.compiler_path = self.remote.find_and_load_cpp_compiler()
+        self.mpi_compiler_path = self.remote.find_and_load_mpi_compiler()
+
+    # -----------------------------------------------------------------
+
+    def check_qt_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking for Qt installation on remote ...")
+
+        # Load Qt module, find the qmake path
+        self.qmake_path = self.remote.find_and_load_qmake()
+
+    # -----------------------------------------------------------------
+
     def pull_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Getting latest version ...")
 
-        # Change working directory to repository directory
-        skirt_git_path = self.remote.skirt_repo_path
-        self.remote.change_cwd(skirt_git_path)
+        # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
+        # because of the private/public key thingy, so use a trick
+        if self.remote.host.name == "login.hpc.ugent.be":
 
-        # Git pull
-        self.remote.ssh.sendline("git pull origin master")
-        self.remote.ssh.expect(":")
+            # TODO: implement this
 
-        # Expect password
-        if "Enter passphrase for key" in self.remote.ssh.before:
-            self.remote.execute(self.config.pubkey_password, show_output=True)
-        else: self.remote.prompt()
+            pass
+
+            # First remove the previous SKIRT/git directory
+            #self.remote.remove_directory(self.remote.skirt_repo_path)
+
+            # Get the new code
+            #get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
+
+        # Else
+        else:
+
+            # Change working directory to repository directory
+            skirt_git_path = self.remote.skirt_repo_path
+            self.remote.change_cwd(skirt_git_path)
+
+            # FOR SSH:
+            # Git pull
+            #self.remote.ssh.sendline("git pull origin master")
+            #self.remote.ssh.expect(":")
+            # Expect password
+            #if "Enter passphrase for key" in self.remote.ssh.before:
+            #    self.remote.execute(self.config.pubkey_password, show_output=True)
+            #else: self.remote.prompt()
+
+            # Set the clone command
+            command = "git pull origin master"
+
+            # Get the url of the repo from which cloned
+            args = ["git", "remote", "show", "origin"]
+            output = self.remote.execute(args)
+            url = None
+            for line in output:
+                if "Fetch URL" in line: url = line.split(": ")[1]
+            # url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+            host = url.split("https://")[1].split("/")[0]
+
+            # Find the account file for the repository host (e.g. github.ugent.be)
+            username, password = introspection.get_account(host)
+
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
+
+            # Clone the repository
+            self.remote.execute_lines(*lines, show_output=True)
+
+        # Success
+        log.success("SKIRT was successfully updated")
 
     # -----------------------------------------------------------------
 
@@ -226,7 +358,7 @@ class SKIRTUpdater(Updater):
         log.debug("Compiling latest version ...")
 
         # Build SKIRT
-        self.remote.execute("./makeSKIRT.sh", show_output=True, output=False)
+        #self.remote.execute("./makeSKIRT.sh", show_output=True, output=False)
 
 # -----------------------------------------------------------------
 
@@ -363,16 +495,18 @@ class PTSUpdater(Updater):
             already_installed.append(line.split(" ")[0])
 
         # Use the introspection module on the remote end to get the dependencies and installed python packages
-        self.remote.start_python_session()
-        self.remote.import_python_package("introspection", from_name="pts.core.tools")
-        dependencies = self.remote.get_simple_python_property("introspection", "get_all_dependencies().keys()")
-        packages = self.remote.get_simple_python_property("introspection", "installed_python_packages()")
+        python = self.remote.start_python_session()
+        python.import_python_package("introspection", from_name="pts.core.tools")
+        dependencies = python.get_simple_property("introspection", "get_all_dependencies().keys()")
+        packages = python.get_simple_property("introspection", "installed_python_packages()")
         #self.remote.end_python_session()
         # Don't end the python session just yet
 
         # Get installation commands
         installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, self.remote)
-        self.remote.end_python_session()
+
+        # End the python session
+        del python
 
         # Install
         for module in installation_commands:

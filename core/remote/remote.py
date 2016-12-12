@@ -13,7 +13,7 @@
 import re
 import sys
 import pexpect
-from pexpect import pxssh, EOF
+from pexpect import pxssh, ExceptionPexpect
 import tempfile
 import StringIO
 import subprocess
@@ -22,7 +22,7 @@ import subprocess
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from .host import Host
+from .host import Host, HostDownException
 from .vpn import VPN
 from ..tools.logging import log
 from ..tools import parsing
@@ -30,6 +30,8 @@ from ..tools import filesystem as fs
 from ..tools import time
 from ..basics.task import Task
 from ..tools import introspection
+from ..tools.introspection import possible_cpp_compilers, possible_mpi_compilers, possible_mpirun_names
+from .python import RemotePythonSession
 
 # -----------------------------------------------------------------
 
@@ -49,10 +51,28 @@ def active_keys():
     names = []
     for line in output.split("\n"):
         if not line: continue
-        _, key, name = line.split(" ")
+        _, key, path = line.split(" ")
+        name = fs.name(path)
         names.append(name)
 
     return names
+
+# -----------------------------------------------------------------
+
+def add_key(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    # Check if the key exists
+    key_path = fs.join("~/.ssh", name)
+    if not fs.is_file(key_path): raise ValueError("The key '" + name + "' does not exist in the .ssh directory")
+
+    # Add the key
+    subprocess.call(["ssh-add", key_path])
 
 # -----------------------------------------------------------------
 
@@ -89,12 +109,9 @@ class Remote(object):
         # A regular expression object that strips away special unicode characters, used on the remote console output
         self.ansi_escape = re.compile(r'\x1b[^m]*m')
 
-        # Flag that says whether we are in a remote python session
-        self.in_python_session = False
-
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=30):
+    def setup(self, host_id, cluster_name=None, login_timeout=15):
 
         """
         This function ...
@@ -112,8 +129,7 @@ class Remote(object):
 
         # Check if key is active
         if self.host.key is not None:
-            abspath = fs.absolute(self.host.key)
-            if abspath not in active_keys(): raise RuntimeError("Necessary key is not active!")
+            if self.host.key not in active_keys(): add_key(self.host.key)
 
         # Make the connection
         self.login(login_timeout)
@@ -323,6 +339,74 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def has_cpp_compiler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in possible_cpp_compilers:
+            if self.is_executable(name): return True
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cpp_compiler_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in possible_cpp_compilers:
+            path = self.find_executable(name)
+            if path is not None: return path
+        return None
+
+    # -----------------------------------------------------------------
+
+    def has_mpi(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in possible_mpirun_names:
+            if self.is_executable(name): return True
+        return False
+
+    # -----------------------------------------------------------------
+
+    def has_mpi_compiler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in possible_mpi_compilers:
+            if self.is_executable(name): return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mpi_compiler_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in possible_mpi_compilers:
+            path = self.find_executable(name)
+            if path is not None: return path
+        return None
+
+    # -----------------------------------------------------------------
+
     def swap_cluster(self, cluster_name):
 
         """
@@ -336,6 +420,234 @@ class Remote(object):
 
         # Swap to requested cluster
         self.execute("module swap cluster/" + cluster_name)
+
+    # -----------------------------------------------------------------
+
+    def find_and_load_cpp_compiler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load intel compiler toolkit if possible
+        if self.has_lmod: self.load_intel_compiler_toolkit()
+
+        # Search for the compiler and return its path
+        return self.cpp_compiler_path
+
+    # -----------------------------------------------------------------
+
+    def load_intel_compiler_toolkit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find latest Intel Compiler Toolkit version and load it
+        intel_version = self._find_latest_iimpi_version_module()
+        if intel_version is None:
+            log.warning("Intel Cluster Toolkit Compiler Edition could not be found")
+        elif intel_version not in self.loaded_modules: self.load_module(intel_version) # Load the module
+
+    # -----------------------------------------------------------------
+
+    def _find_latest_iimpi_version_module(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the Intel Cluster Toolkit Compiler Edition (inludes Intel MPI)
+        versions = self.get_module_versions("iimpi")
+
+        latest_version = None
+        latest_iimpi_version = None
+        latest_iimpi_year = None
+        for version in versions:
+
+            # Parse to get simple iimpi version
+            iimpi_version = version.split("/")[1].split("-")[0]
+
+            if "." not in iimpi_version:
+
+                iimpi_year = int(iimpi_version)
+                if latest_iimpi_year is None or iimpi_year > latest_iimpi_year:
+                    latest_iimpi_year = iimpi_year
+                    latest_version = version
+
+            elif latest_iimpi_year is not None: # geef voorrang aan jaartallen
+                continue
+
+            else:
+
+                if latest_iimpi_version is None or iimpi_version > latest_iimpi_version:
+                    latest_version = version
+                    latest_iimpi_version = iimpi_version
+
+        # Return the latest version
+        return latest_version
+
+    # -----------------------------------------------------------------
+
+    def find_and_load_mpi_compiler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_lmod:
+            self.load_intel_compiler_toolkit()
+            return self.mpi_compiler_path
+        else: return self.mpi_compiler_path
+
+    # -----------------------------------------------------------------
+
+    def find_and_load_qmake(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Use modules or not
+        if self.has_lmod: self._check_qt_remote_lmod()
+        else: self._check_qt_remote_no_lmod()
+
+    # -----------------------------------------------------------------
+
+    def _check_qt_remote_lmod(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find latest Qt5 version
+        qt5_version = self._find_latest_qt_version_module()
+
+        # If no version could be found, give an error
+        if qt5_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
+
+        # Load the module
+        self.load_module(qt5_version)
+
+        # Get the qmake path
+        qmake_path = self.find_executable("qmake")
+
+        # Get the Intel compiler version
+        #if "intel" in qt5_version: intel_version = qt5_version.split("intel-")[1].split("-")[0]
+        #else: intel_version = qt5_version.split("ictce-")[1].split("-")[0]
+
+        # Return the qmake path
+        return qmake_path
+
+    # -----------------------------------------------------------------
+
+    def _check_qt_remote_no_lmod(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Keep the qmake paths in a list to decide later which one we can use
+        qmake_paths = []
+
+        # Search for qmake in the home directory
+        command = "find " + self.home_directory + "/Qt* -name qmake -type f 2>/dev/null"
+        qmake_paths += self.execute(command)
+
+        # Search for qmake in the /usr/local directory
+        command = "find /usr/local/Qt* -name qmake -type f 2>/dev/null"
+        qmake_paths += self.execute(command)
+
+        ## TOO SLOW?
+        # Search for Qt directories in the home directory
+        #for directory_path in self.remote.directories_in_path(self.remote.home_directory, startswith="Qt"):
+            # Search for 'qmake' executables
+            #for path in self.remote.files_in_path(directory_path, recursive=True):
+                # Add the path
+                #qmake_paths.append(path)
+
+        ## TOO SLOW?
+        # Search for Qt directories in /usr/local
+        #for directory_path in self.remote.directories_in_path("/usr/local", startswith="Qt"):
+            # Search for 'qmake' executables
+            #for path in self.remote.files_in_path(directory_path, recursive=True):
+                # Add the path
+                #qmake_paths.append(path)
+
+        # Check if qmake can be found by running 'which'
+        qmake_path = self.find_executable("qmake")
+        if qmake_path is not None: qmake_paths.append(qmake_path)
+
+        latest_version = None
+
+        latest_qmake_path = None
+
+        # Loop over the qmake paths
+        for qmake_path in qmake_paths:
+
+            # Get the version
+            output = self.execute(qmake_path + " -v")
+
+            qt_version = output[1].split("Qt version ")[1].split(" in")[0]
+
+            if qt_version < "5.2.0": continue # oldest supported version
+            if "conda" in qmake_path: continue
+            if "canopy" in qmake_path: continue
+            if "epd" in qmake_path: continue
+            if "enthought" in qmake_path: continue
+
+            if latest_version is None or qt_version > latest_version:
+
+                latest_version = qt_version
+                latest_qmake_path = qmake_path
+
+        # Return the path
+        return latest_qmake_path
+
+    # -----------------------------------------------------------------
+
+    def _find_latest_qt_version_module(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        versions = []
+
+        # Check 'Qt5' module versions
+        versions += self.get_module_versions("Qt5")
+
+        # Check 'Qt' module versions
+        versions += self.get_module_versions("Qt")
+
+        # Get the latest Qt version
+        latest_version = None
+        latest_qt_version = None
+        for version in versions:
+
+            # Only use Intel-compiled stuff
+            if not ("ictce" in version or "intel" in version): continue
+
+            # Parse to get simple Qt version
+            qt_version = version.split("/")[1].split("-")[0]
+
+            # Skip version below Qt 5
+            if int(qt_version[0]) < 5: continue
+
+            if latest_qt_version is None or qt_version > latest_qt_version:
+                latest_version = version
+                latest_qt_version = qt_version
+
+        # Return the latest version
+        return latest_version
 
     # -----------------------------------------------------------------
 
@@ -366,8 +678,9 @@ class Remote(object):
         # Inform the user
         log.info("Logging in to the remote environment on host '" + self.host.id + "' ...")
 
-        # Connect to the remote host
-        self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=login_timeout)
+        # Try connecting to the remote host
+        try: self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=login_timeout)
+        except ExceptionPexpect: raise HostDownException()
 
         # Check whether connection was succesful
         if not self.connected: raise RuntimeError("Connection failed")
@@ -392,8 +705,7 @@ class Remote(object):
         # Disconnect
         if self.connected:
 
-            # End python session if running
-            if self.in_python_session: self.end_python_session()
+            # TODO: Check if there are python sessions open?
 
             self.ssh.logout()
             if connected_remotes is not None: del connected_remotes[self.host.id] # the conditional statement is because 'connected_remotes' is set to None during destruction at the end of a script
@@ -904,255 +1216,8 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session:
-            log.warning("Already in a python session")
-            return
-
-        # Initiate a python session
-        self.ssh.sendline("python")
-        self.ssh.expect("\r\n>>>")
-
-        # Set flag
-        self.in_python_session = True
-
-        if assume_pts:
-
-            # Import standard PTS tools
-            self.import_python_package("filesystem", as_name="fs", from_name="pts.core.tools")
-
-            # Set logging level to match that of local PTS
-            if log.is_debug():
-
-                self.import_python_package("setup_log", from_name="pts.core.tools.logging")
-                self.send_python_line("log = setup_log('DEBUG')")
-
-            else: self.import_python_package("log", from_name="pts.core.tools.logging")
-
-    # -----------------------------------------------------------------
-
-    def send_python_line(self, line, output=False, in_loop=False, show_output=False, timeout=30):
-
-        """
-        This function ...
-        :param line:
-        :param output:
-        :param in_loop:
-        :param show_output:
-        :param timeout: default is 30 seconds, use None to have no timeout
-        :return:
-        """
-
-        if not self.in_python_session:
-            log.warning("Not in a remote python session")
-            return
-
-        # Show output
-        if show_output: self.ssh.logfile = sys.stdout
-        else: self.ssh.logfile = None
-
-        # Send line and expect
-        self.ssh.sendline(line)
-        if in_loop: self.ssh.expect("\r\n...", timeout=timeout)
-        else: self.ssh.expect("\r\n>>>", timeout=timeout)
-
-        # Set the log file back to 'None'
-        self.ssh.logfile = None
-
-        # Check and return output
-        output_lines = self.ssh.before.split("\r\n")[1:]
-
-        # Check for errors
-        if len(output_lines) > 0 and "Traceback (most recent call last)" in output_lines[0]:
-
-            # Print error message and traceback
-            log.error("Something went wrong during remote execution on host " + self.host_id)
-            log.error("Command: " + line)
-            for line in output_lines: log.error(line)
-            exit()
-
-        if output: return output_lines
-
-    # -----------------------------------------------------------------
-
-    def do_python_loop(self, top_statement, in_loop_lines, show_output=False):
-
-        """
-        This function ...
-        :param top_statement:
-        :param in_loop_lines:
-        :param show_output:
-        :return:
-        """
-
-        # Top statement
-        self.send_python_line(top_statement, in_loop=True)
-
-        # In-loop lines
-        for line in in_loop_lines: self.send_python_line("    " + line, in_loop=True, show_output=show_output)
-
-        # Finish the loop
-        self.send_python_line("")
-
-    # -----------------------------------------------------------------
-
-    def remove_python_variable(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        self.send_python_line("del " + name)
-
-    # -----------------------------------------------------------------
-
-    def import_python_package(self, name, as_name=None, from_name=None):
-
-        """
-        This function ...
-        :param name:
-        :param as_name:
-        :param from_name:
-        :return:
-        """
-
-        command = ""
-
-        if from_name is not None:
-            command += "from " + from_name + " "
-
-        command += "import " + name
-
-        if as_name is not None:
-            command += " as " + as_name
-
-        # Execute the import command
-        #output = self.send_python_line(command, output=True, show_output=log.is_debug())
-        output = self.send_python_line(command, output=True)
-
-        # If output is given, this is normally not so good
-        if len(output) > 0:
-
-            # Check output
-            last_line = output[-1]
-            if "cannot import" in last_line: log.warning(last_line)
-            if "ImportError" in last_line: log.warning(last_line)
-
-            return False
-
-        return True
-
-    # -----------------------------------------------------------------
-
-    def define_simple_python_variable(self, name, value):
-
-        """
-        This function ...
-        :param name:
-        :param value:
-        :return:
-        """
-
-        command = name + " = " + str(value)
-        self.send_python_line(command)
-
-    # -----------------------------------------------------------------
-
-    def get_python_attributes(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        return self.get_simple_python_variable("vars(" + name + ")")
-
-    # -----------------------------------------------------------------
-
-    def get_simple_python_variable(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        output = self.send_python_line(name, output=True)
-
-        #if len(output) < 1: raise NameError("No such variable: '" + name + "'")
-        if len(output) == 0: return None
-        elif len(output) > 1: raise RuntimeError("Unexpected output: " + str(output))
-
-        return eval(output[0])
-
-    # -----------------------------------------------------------------
-
-    def get_simple_python_property(self, variable, name):
-
-        """
-        This function ...
-        :param variable:
-        :param name:
-        :return:
-        """
-
-        try: return self.get_simple_python_variable(variable + "." + name)
-        except NameError: raise AttributeError("Variable '" + variable + "' has no attribute '" + name + "'")
-
-    # -----------------------------------------------------------------
-
-    def get_python_string(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        output = self.send_python_line(name, output=True)
-        return output[0][1:-1]
-
-    # -----------------------------------------------------------------
-
-    def python_variables(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the complete dir() list of variables
-        variables = self.get_simple_python_variable("dir()")
-
-        # '__builtins__', '__doc__', '__name__', '__package__'
-        variables.remove("__builtins__")
-        variables.remove("__doc__")
-        variables.remove("__name__")
-        variables.remove("__package__")
-
-        # Return the list of user-defined variables
-        return variables
-
-    # -----------------------------------------------------------------
-
-    def end_python_session(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if not self.in_python_session:
-            log.warning("Not in a remote python session")
-            return
-
-        self.ssh.sendline("exit()")
-        self.ssh.prompt()
-
-        # Set flag
-        self.in_python_session = False
+        # Start python session and return it
+        return RemotePythonSession(self, assume_pts=assume_pts)
 
     # -----------------------------------------------------------------
 
@@ -1165,36 +1230,26 @@ class Remote(object):
         :return:
         """
 
-        # If already in python session
-        if self.in_python_session:
+        # Create python session
+        python = self.start_python_session()
 
-            # Send the lines consecutively
-            for line in lines: self.send_python_line(line, show_output=show_output)
+        # Execute the lines
+        output = python.send_lines(lines, show_output=show_output)
 
-        # Not yet in python session
-        else:
-
-            # Don't import PTS stuff
-            self.start_python_session(assume_pts=False)
-
-            # Send the lines consecutively
-            for line in lines: self.send_python_line(line, show_output=show_output)
-
-            # End the python session
-            self.end_python_session()
+        # Return the output
+        return output
 
     # -----------------------------------------------------------------
 
-    def execute_python_script(self, script_path, show_output=False):
+    def touch(self, path):
 
         """
-        This function ...
-        :param script_path:
-        :param show_output:
+        Touch a file
+        :param path:
         :return:
         """
 
-        pass
+        self.execute("touch " + path)
 
     # -----------------------------------------------------------------
 
@@ -1208,15 +1263,12 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: self.send_python_line("fs.rename_file('" + directory + "', '" + old_name + "', '" + new_name + "')")
-        else:
+        # Determine the old and new file path
+        old_path = fs.join(directory, old_name)
+        new_path = fs.join(directory, new_name)
 
-            # Determine the old and new file path
-            old_path = fs.join(directory, old_name)
-            new_path = fs.join(directory, new_name)
-
-            # Use the 'mv' command to rename the file
-            self.execute("mv " + old_path + " " + new_path)
+        # Use the 'mv' command to rename the file
+        self.execute("mv " + old_path + " " + new_path)
 
     # -----------------------------------------------------------------
 
@@ -1228,8 +1280,7 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: self.send_python_line("fs.remove_directory('" + path + "')")
-        else: self.execute("rm -rf " + path, output=False)
+        self.execute("rm -rf " + path, output=False)
 
     # -----------------------------------------------------------------
 
@@ -1241,8 +1292,7 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: self.send_python_line("fs.remove_file('" + path + "')")
-        else: self.execute("rm " + path, output=False)
+        self.execute("rm " + path, output=False)
 
     # -----------------------------------------------------------------
 
@@ -1254,12 +1304,9 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: raise RuntimeError("Cannot change the working directory while in a remote python interactive session.")
-        else:
-
-            # Try to change the directory, give an error if this fails
-            output = self.execute("cd " + path)
-            if len(output) > 0 and "No such file or directory" in output[0]: raise RuntimeError("The directory does not exist")
+        # Try to change the directory, give an error if this fails
+        output = self.execute("cd " + path)
+        if len(output) > 0 and "No such file or directory" in output[0]: raise RuntimeError("The directory does not exist")
 
     # -----------------------------------------------------------------
 
@@ -1313,41 +1360,38 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: return self.get_simple_python_variable("fs.directories_in_path('" + path + "')")
+        # Get the path to the current working directory
+        working_directory = self.working_directory
+
+        # Change the working directory to the provided path
+        self.change_cwd(path)
+
+        # List the directories in the provided path
+        if recursive:
+            command = "ls -R -d */ | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
+            command += '"");s=$0;f=1;next}\nNF&&f{ print '
+            command += 's"/"$0 }'
+            command += "'"
+            output = self.execute(command)
+            paths = [dirpath for dirpath in output if self.is_directory(dirpath)]
         else:
+            output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
+            if "cannot access */" in output[0]: return []
+            paths = [fs.join(path, name) for name in output]
 
-            # Get the path to the current working directory
-            working_directory = self.working_directory
+        # Change the working directory back to the original working directory
+        self.change_cwd(working_directory)
 
-            # Change the working directory to the provided path
-            self.change_cwd(path)
+        # Filter
+        filtered_paths = []
+        for path in paths:
+            if startswith is not None:
+                name = fs.name(path)
+                if not name.startswith(startswith): continue
+            filtered_paths.append(path)
 
-            # List the directories in the provided path
-            if recursive:
-                command = "ls -R -d */ | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
-                command += '"");s=$0;f=1;next}\nNF&&f{ print '
-                command += 's"/"$0 }'
-                command += "'"
-                output = self.execute(command)
-                paths = [dirpath for dirpath in output if self.is_directory(dirpath)]
-            else:
-                output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
-                if "cannot access */" in output[0]: return []
-                paths = [fs.join(path, name) for name in output]
-
-            # Change the working directory back to the original working directory
-            self.change_cwd(working_directory)
-
-            # Filter
-            filtered_paths = []
-            for path in paths:
-                if startswith is not None:
-                    name = fs.name(path)
-                    if not name.startswith(startswith): continue
-                filtered_paths.append(path)
-
-            # Return the list of directory paths
-            return filtered_paths
+        # Return the list of directory paths
+        return filtered_paths
 
     # -----------------------------------------------------------------
 
@@ -1360,39 +1404,36 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: return self.get_simple_python_variable("fs.files_in_path('" + path + "')")
+        # Get the path to the current working directory
+        working_directory = self.working_directory
+
+        # Change the working directory to the provided path
+        self.change_cwd(path)
+
+        # List the files in the provided path
+        if recursive:
+            command = "ls -R " + path + " | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
+            command += '"");s=$0;f=1;next}\nNF&&f{ print '
+            command += 's"/"$0 }'
+            command += "'"
+            output = self.execute(command)
+            paths = [filepath for filepath in output if self.is_file(filepath)]
         else:
+            output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+            paths = [fs.join(path, name) for name in output]
 
-            # Get the path to the current working directory
-            working_directory = self.working_directory
+        # Change the working directory back to the original working directory
+        self.change_cwd(working_directory)
 
-            # Change the working directory to the provided path
-            self.change_cwd(path)
+        # Recursive mode: SLOW IMPLEMENTATION
+        #if recursive:
+            # Loop over directories in the directory
+            #for directory_path in self.directories_in_path(path):
+                # Get the file paths in this directory
+                #paths += self.files_in_path(directory_path, recursive=True)
 
-            # List the files in the provided path
-            if recursive:
-                command = "ls -R " + path + " | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
-                command += '"");s=$0;f=1;next}\nNF&&f{ print '
-                command += 's"/"$0 }'
-                command += "'"
-                output = self.execute(command)
-                paths = [filepath for filepath in output if self.is_file(filepath)]
-            else:
-                output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
-                paths = [fs.join(path, name) for name in output]
-
-            # Change the working directory back to the original working directory
-            self.change_cwd(working_directory)
-
-            # Recursive mode: SLOW IMPLEMENTATION
-            #if recursive:
-                # Loop over directories in the directory
-                #for directory_path in self.directories_in_path(path):
-                    # Get the file paths in this directory
-                    #paths += self.files_in_path(directory_path, recursive=True)
-
-            # Return the list of files
-            return paths
+        # Return the list of files
+        return paths
 
     # -----------------------------------------------------------------
 
@@ -1401,8 +1442,6 @@ class Remote(object):
         """
         This function ...
         """
-
-        if self.in_python_session: raise RuntimeError("Cannot navigate to other directories whilst in a remote python interactive session")
 
         # Navigate to the home directory
         self.execute("cd ~", output=False)
@@ -1417,11 +1456,8 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: self.send_python_line("fs.create_directory('" + path + "')")
-        else:
-
-            # Create the remote directory
-            self.execute("mkdir " + path, output=False)
+        # Create the remote directory
+        self.execute("mkdir " + path, output=False)
 
     # -----------------------------------------------------------------
 
@@ -1432,11 +1468,8 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: self.send_python_line("fs.create_directories(*" + str(paths) + ")")
-        else:
-
-            # Create the remote directories
-            self.execute("mkdir " + " ".join(paths), output=False)
+        # Create the remote directories
+        self.execute("mkdir " + " ".join(paths), output=False)
 
     # -----------------------------------------------------------------
 
@@ -1825,18 +1858,9 @@ class Remote(object):
         :return:
         """
 
-        # If we are in a python session
-        if self.in_python_session:
-
-            self.import_python_package("expanduser", from_name="os.path")
-            return self.get_python_string("expanduser('~')")
-
-        # If we are not in a python session
-        else:
-
-            # Find out the path to the user's home directory and return it
-            output = self.execute("echo $HOME")
-            return output[0]
+        # Find out the path to the user's home directory and return it
+        output = self.execute("echo $HOME")
+        return output[0]
 
     # -----------------------------------------------------------------
 
@@ -1851,14 +1875,8 @@ class Remote(object):
         # Determine the path to a new temporary directory
         path = fs.join(self.pts_temp_path, time.unique_name("session"))
 
-        # Create the directory from within the remote python session
-        if self.in_python_session:
-
-            # Create from python
-            self.send_python_line("fs.create_directory('" + path + "')")
-
         # Create the directory using a bash command
-        else: self.create_directory(path)
+        self.create_directory(path)
 
         # Return the path to the new temporary directory
         return path
@@ -1875,14 +1893,8 @@ class Remote(object):
         # Generate the path to a new unique temporary directory
         path = fs.join(self.pts_temp_path, time.unique_name("new"))
 
-        # Create the directory from within the remote python session
-        if self.in_python_session:
-
-            # Create from python
-            self.send_python_line("fs.create_directory('" + path + "')")
-
         # Create the directory using a bash command
-        else: self.create_directory(path)
+        self.create_directory(path)
 
         # Return the path to the new temporary directory
         return path
@@ -2454,61 +2466,6 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def installed_python_packages(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Check if in python session
-        was_in_python_session = self.in_python_session
-
-        # Start python session
-        if not was_in_python_session: self.start_python_session()
-
-        # Import PTS introspection tools
-        self.import_python_package("introspection", from_name="pts.core.tools")
-
-        # Get packages
-        packages = self.get_simple_python_variable("introspection.installed_python_packages()")
-
-        # End python session again
-        if not was_in_python_session: self.end_python_session()
-
-        # Return the dictionary of python packages with their version numbers
-        return packages
-
-    # -----------------------------------------------------------------
-
-    def is_present_package(self, package):
-
-        """"
-        This function ...
-        :param package:
-        """
-
-        # Check if in python session
-        was_in_python_session = self.in_python_session
-
-        # Start python session
-        if not was_in_python_session: self.start_python_session()
-
-        # Import PTS introspection tools
-        self.import_python_package("introspection", from_name="pts.core.tools")
-
-        # Check if present
-        present = self.get_simple_python_variable("introspection.is_present_package('" + package + "')")
-
-        # End python session again
-        if not was_in_python_session: self.end_python_session()
-
-        # Return
-        return present
-
-    # -----------------------------------------------------------------
-
     def file_or_directory(self, path):
 
         """
@@ -2517,16 +2474,12 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: return self.get_simple_python_variable("fs.file_or_directory('" + path + "')")
+        # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
+        output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
 
-        else:
-
-            # Launch a bash command to check whether the path exists as either a file or a directory on the remote file system
-            output = self.execute("if [ -f " + path + " ]; then echo file; elif [ -d " + path + " ]; then echo directory; else echo None; fi")
-
-            # Return the result
-            if output[0] == "None": return None
-            else: return output[0]
+        # Return the result
+        if output[0] == "None": return None
+        else: return output[0]
 
     # -----------------------------------------------------------------
 
@@ -2557,11 +2510,8 @@ class Remote(object):
         :return:
         """
 
-        # Call the corresponding PTS function
-        if self.in_python_session: return self.get_simple_python_variable("fs.is_directory('" + path + "')")
-
         # Launch a bash command to check whether the path exists as a directory on the remote file system
-        else: return self.evaluate_boolean_expression("-d " + path)
+        return self.evaluate_boolean_expression("-d " + path)
 
     # -----------------------------------------------------------------
 
@@ -2573,11 +2523,8 @@ class Remote(object):
         :return:
         """
 
-        # Call the corresponding PTS function
-        if self.in_python_session: return self.get_simple_python_variable("fs.is_file('" + path + "')")
-
         # Launch a bash command to check whether the path exists as a regular file on the remote file system
-        else: return self.evaluate_boolean_expression("-f " + path)
+        return self.evaluate_boolean_expression("-f " + path)
 
     # -----------------------------------------------------------------
 
@@ -2590,14 +2537,11 @@ class Remote(object):
         :return:
         """
 
-        if self.in_python_session: return self.get_simple_python_variable("fs.is_subdirectory('" + path + "', '" + parent_path + "')")
-        else:
+        if not self.is_directory(path): raise ValueError("Not a directory: " + path)
 
-            if not self.is_directory(path): raise ValueError("Not a directory: " + path)
-
-            path = self.expand_user_path(path)
-            parent_path = self.expand_user_path(parent_path)
-            return path.startswith(parent_path)
+        path = self.expand_user_path(path)
+        parent_path = self.expand_user_path(parent_path)
+        return path.startswith(parent_path)
 
     # -----------------------------------------------------------------
 

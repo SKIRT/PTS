@@ -45,8 +45,14 @@ if config.not_remotes is not None:
 skirt_versions = dict()
 pts_versions = dict()
 
+qt_versions = dict()
+cpp_versions = dict()
+mpi_versions = dict()
+
+# Loop over the different hosts
 for host_id in host_ids:
 
+    # Setup the remote (login)
     remote = Remote()
     remote.setup(host_id)
 
@@ -56,6 +62,12 @@ for host_id in host_ids:
 
     if skirt_version is not None: skirt_versions[host_id] = skirt_version
     if pts_version is not None: pts_versions[host_id] = pts_version
+
+    # Get Qt version
+
+
+    # Get C++ compiler and MPI compiler version
+
 
 print("")
 print(fmt.bold + fmt.green + "SKIRT" + fmt.reset + ":")

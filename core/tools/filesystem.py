@@ -59,6 +59,31 @@ def home():
 
 # -----------------------------------------------------------------
 
+def to_home_directory():
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    change_cwd(home())
+
+# -----------------------------------------------------------------
+
+def touch(path):
+
+    """
+    This function replicates the behaviour of 'touch' in terminal
+    :param path:
+    :return:
+    """
+
+    with open(path, 'a'):
+        os.utime(path, None)
+
+# -----------------------------------------------------------------
+
 def open_file(path):
 
     """

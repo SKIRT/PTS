@@ -35,6 +35,7 @@ from ..animation.sourceextraction import SourceExtractionAnimation
 from ..core.kernel import ConvolutionKernel
 from ..core.remote import RemoteImage
 from ..core.frame import Frame
+from ...core.remote.python import RemotePythonSession
 
 # -----------------------------------------------------------------
 
@@ -406,7 +407,8 @@ class ImagePreparer(Configurable):
             log.info("Convolution will be performed remotely on host '" + self.config.convolution.remote + "' ...")
 
             # Create remote image, convolve and make local again
-            remote_image = RemoteImage.from_local(self.image, self.config.convolution.remote)
+            session = RemotePythonSession.from_host_id(self.config.convolution.remote)
+            remote_image = RemoteImage.from_local(self.image, session)
             remote_image.convolve(kernel, allow_huge=True)
             self.image = remote_image.to_local()
 
@@ -451,7 +453,8 @@ class ImagePreparer(Configurable):
             log.info("Rebinning will be performed remotely on host '" + self.config.rebinning.remote + "' ...")
 
             # Create remote image, rebin and make local again
-            remote_image = RemoteImage.from_local(self.image, self.config.rebinning.remote)
+            session = RemotePythonSession.from_host_id(self.config.rebinning.remote)
+            remote_image = RemoteImage.from_local(self.image, session)
             remote_image.rebin(reference_system, exact=self.config.rebinning.exact)
             self.image = remote_image.to_local()
 
