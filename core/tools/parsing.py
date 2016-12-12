@@ -197,7 +197,7 @@ def directory_path(argument):
     :return:
     """
 
-    path = fs.absolute(argument)
+    path = fs.absolute_path(argument)
     if not fs.is_directory(path): raise ValueError("Is not a directory: " + path)
     return path
 
@@ -211,7 +211,7 @@ def file_path(argument):
     :return:
     """
 
-    path = fs.absolute(argument)
+    path = fs.absolute_path(argument)
     if not fs.is_file(path): raise ValueError("Is not a file: " + path)
     return path
 

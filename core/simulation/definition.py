@@ -35,7 +35,7 @@ def create_definitions(path, output_path, input_path, recursive=False):
     if not recursive:
         # Create an 'out' directory if the output directory is not specified
         if output_path is None: output_path = fs.create_directory_in(path, "out")
-        else: output_path = fs.absolute(output_path)
+        else: output_path = fs.absolute_path(output_path)
     else: output_path = None
 
     # Keep track of the directories where ski files were found

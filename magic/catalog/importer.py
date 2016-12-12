@@ -196,7 +196,7 @@ class CatalogImporter(Configurable):
         """
 
         # Determine the full path to the catalog file
-        path = fs.absolute(self.config.galaxies.catalog_path)
+        path = fs.absolute_path(self.config.galaxies.catalog_path)
 
         # Inform the user
         log.info("Importing galactic catalog from file " + path + " ...")
@@ -214,7 +214,7 @@ class CatalogImporter(Configurable):
         """
 
         # Determine the full path to the catalog file
-        path = fs.absolute(self.config.stars.catalog_path)
+        path = fs.absolute_path(self.config.stars.catalog_path)
 
         # Inform the user
         log.info("Importing stellar catalog from file " + path + " ...")

@@ -1779,7 +1779,7 @@ class Remote(object):
         """
 
         # Expand the path to absolute form
-        path = self.expand_user_path(path)
+        path = self.absolute_path(path)
 
         # Load the text file into a variable
         self.execute("value='cat " + path + "'")
@@ -1901,7 +1901,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def expand_user_path(self, path):
+    def absolute_path(self, path):
 
         """
         This function ...
@@ -1909,8 +1909,33 @@ class Remote(object):
         :return:
         """
 
-        if not path.startswith("~"): return path
-        else: return fs.join(self.home_directory, path.split("~/")[1])
+        if path.startswith("~"): return fs.join(self.home_directory, path.split("~/")[1])
+        elif path.startswith("/"): return path
+        else: return fs.join(self.working_directory, path)
+
+    # -----------------------------------------------------------------
+
+    def relative_to_home(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return path.split(self.home_directory + "/")[1]
+
+    # -----------------------------------------------------------------
+
+    def relative_to_cwd(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        return path.split(self.working_directory + "/")[1]
 
     # -----------------------------------------------------------------
 
@@ -2539,8 +2564,8 @@ class Remote(object):
 
         if not self.is_directory(path): raise ValueError("Not a directory: " + path)
 
-        path = self.expand_user_path(path)
-        parent_path = self.expand_user_path(parent_path)
+        path = self.absolute_path(path)
+        parent_path = self.absolute_path(parent_path)
         return path.startswith(parent_path)
 
     # -----------------------------------------------------------------
@@ -2577,7 +2602,7 @@ class Remote(object):
         :return:
         """
 
-        path = self.expand_user_path("~/SKIRT")
+        path = self.absolute_path("~/SKIRT")
         return path
 
     # -----------------------------------------------------------------
@@ -2602,7 +2627,7 @@ class Remote(object):
         :return:
         """
 
-        path = self.expand_user_path("~/PTS")
+        path = self.absolute_path("~/PTS")
         return path
 
     # -----------------------------------------------------------------

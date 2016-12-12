@@ -466,7 +466,7 @@ class SkirtRemote(Remote):
             remote_output_path = fs.join(self.host.output_path, remote_simulation_name)
 
             # Expand the alias to the user's home directory
-            remote_output_path = self.expand_user_path(remote_output_path)
+            remote_output_path = self.absolute_path(remote_output_path)
 
             # If the remote output path is the same as the remote simulation path, use a folder called 'out' inside
             # the simulation directory instead for the output

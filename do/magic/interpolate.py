@@ -61,7 +61,7 @@ arguments = parser.parse_args()
 if arguments.input is not None:
 
     # Determine the full path to the input directory
-    input_path = fs.absolute(arguments.input)
+    input_path = fs.absolute_path(arguments.input)
 
     # Give an error if the input directory does not exist
     if not fs.is_directory(input_path): raise argparse.ArgumentError(input_path, "The input directory does not exist")
@@ -75,7 +75,7 @@ else: input_path = fs.cwd()
 if arguments.output is not None:
     
     # Determine the full path to the output directory
-    output_path = fs.absolute(arguments.output)
+    output_path = fs.absolute_path(arguments.output)
     
     # Create the directory if it does not yet exist
     if not fs.is_directory(output_path): fs.create_directory(output_path)
@@ -101,7 +101,7 @@ log.start("Starting interpolate ...")
 log.info("Loading the image ...")
 
 # Determine the full path to the image
-image_path = fs.absolute(arguments.image)
+image_path = fs.absolute_path(arguments.image)
 
 # Import the image
 importer = ImageImporter()

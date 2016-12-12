@@ -17,17 +17,33 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.remote.mounter import RemoteMounter
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
+from pts.core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
 definition.add_required("remote", "string", "remote host", choices=find_host_ids())
-definition.add_required("filename", "string", "file name")
+definition.add_required("filename", "string", "file name (or path)")
 
 # Read the command line arguments
 setter = ArgumentConfigurationSetter("open", "Open a file on a remote host")
 config = setter.run(definition)
+
+# -----------------------------------------------------------------
+
+# Connect to remote
+remote = Remote()
+remote.setup(config.remote)
+
+# Determine the absolute file path
+filepath = remote.absolute_path(config.filename)
+
+# Determine the file path relative to the home directory
+relative_filepath = remote.relative_to_home(filepath)
+
+# Disconnect the remote
+remote.logout()
 
 # -----------------------------------------------------------------
 
@@ -37,8 +53,8 @@ mounter = RemoteMounter()
 # Mount and get the mount path
 path = mounter.mount(config.remote)
 
-# Determine the file path
-filepath = fs.join(path, config.filename)
+# Determine the local file path
+filepath = fs.join(path, relative_filepath)
 
 # Open the file
 fs.open_file(filepath)

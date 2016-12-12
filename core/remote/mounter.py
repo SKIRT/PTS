@@ -55,12 +55,29 @@ class RemoteMounter(object):
         # Check which remotes are mounted
         for path, name in fs.directories_in_path(pts_remotes_path, returns=["path", "name"]):
 
-            try:
-                # If empty directory
+            # Check if this is an existing mount point
+            if fs.is_mount_point(path):
+
+                # Try looping over the files in the mounted directory
+                try:
+                    for _ in fs.files_in_path(path): pass
+                    # If this doesn't give an error, this is a valid mount point
+                except OSError: # mount point in limbo (connection has been lost but not unmounted)
+                    # unmount
+                    subprocess.call(["umount", path])
+                    # Remove the directory
+                    fs.remove_directory(path)
+                    # Continue
+                    continue
+
+            # Just a directory
+            elif fs.is_directory(path):
                 if fs.is_empty(path):
                     fs.remove_directory(path)
                     continue
-            except OSError: pass
+                else: raise RuntimeError("An error occured: directory '" + path + "' not empty but also not mounted")
+
+            else: continue
 
             # Add the path to the dictionary
             self.mount_paths[name] = path

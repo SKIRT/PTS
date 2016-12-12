@@ -50,9 +50,16 @@ class RemotePythonSession(object):
         out_pipe_filename = "out_pipe_" + self.session_id + ".txt"
         self.out_pipe_filepath = fs.join(self.remote.home_directory, out_pipe_filename)
 
+        # Create pipe file for input
+        in_pipe_filename = "in_pipe_" + self.session_id + ".txt"
+        self.in_pipe_filepath = fs.join(self.remote.home_directory, in_pipe_filename)
+
         # Create the pipe file
         if self.remote.is_file(self.out_pipe_filepath): self.remote.remove_file(self.out_pipe_filepath)
         self.remote.touch(self.out_pipe_filepath)
+
+        if self.remote.is_file(self.in_pipe_filepath): self.remote.remove_file(self.in_pipe_filepath)
+        self.remote.touch(self.in_pipe_filepath)
 
         # Start the screen
         start_screen_command = "screen -dmS " + self.screen_name
@@ -60,7 +67,7 @@ class RemotePythonSession(object):
         #print("START SCREEN COMMAND: ", start_screen_command)
 
         # Start python in the screen session
-        start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + "\n'"
+        start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + " < " + self.in_pipe_filepath + "\n'"
         #print("START PYTHON COMMAND: ", start_python_command)
         # Start python
         self.remote.execute(start_python_command)
@@ -261,12 +268,14 @@ class RemotePythonSession(object):
         :return:
         """
 
-        send_command = "screen -r " + self.screen_name + " -X stuff $'" + line + "\n'"
+        #send_command = "screen -r " + self.screen_name + " -X stuff $'" + line + "\n'"
 
         #print("COMMAND: ", send_command)
 
         # Send the line
-        self.remote.execute(send_command, output=False)
+        #self.remote.execute(send_command, output=False)
+
+        self.remote.append_line(self.in_pipe_filepath, line + "\n")
 
         # Check the output
         if output:
@@ -275,7 +284,8 @@ class RemotePythonSession(object):
             output = self.remote.read_text_file(self.out_pipe_filepath)
             lines = output[self.previous_length:]
             self.previous_length = len(output)
-            return lines
+            #return lines
+            return output
 
     # -----------------------------------------------------------------
 

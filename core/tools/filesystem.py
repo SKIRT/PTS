@@ -138,7 +138,7 @@ def documents():
 
 # -----------------------------------------------------------------
 
-def absolute(path):
+def absolute_path(path):
 
     """
     This function ...
@@ -146,7 +146,7 @@ def absolute(path):
     :return:
     """
 
-    return os.path.abspath(path)
+    return os.path.abspath(os.path.expanduser(path))
 
 # -----------------------------------------------------------------
 
@@ -288,6 +288,18 @@ def is_directory(path):
     """
 
     return os.path.isdir(path)
+
+# -----------------------------------------------------------------
+
+def is_mount_point(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.ismount(path)
 
 # -----------------------------------------------------------------
 
@@ -536,7 +548,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     if path is None: path = os.getcwd()
 
     # Determine absolute path
-    path = absolute(path)
+    path = absolute_path(path)
 
     # Initialize a list to contain the paths of the files that are found in the given directory
     file_paths = []
@@ -644,7 +656,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
     if path is None: path = os.getcwd()
 
     # Determine absolute path
-    path = absolute(path)
+    path = absolute_path(path)
 
     # Initialize a list to contain the paths of the directories that are found in the given directory
     directory_paths = []
