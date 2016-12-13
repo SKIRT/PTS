@@ -1075,8 +1075,8 @@ class PTSInstaller(Installer):
         # Use the introspection module on the remote end to get the dependencies and installed python packages
         session = self.remote.start_python_session()
         session.import_package("introspection", from_name="pts.core.tools")
-        dependencies = session.get_simple_python_property("introspection", "get_all_dependencies().keys()")
-        packages = session.get_simple_python_property("introspection", "installed_python_packages()")
+        dependencies = session.get_simple_property("introspection", "get_all_dependencies().keys()")
+        packages = session.get_simple_property("introspection", "installed_python_packages()")
         #self.remote.end_python_session()
         # Don't end the python session just yet
 

@@ -223,7 +223,7 @@ class PTSRemoteLauncher(object):
             output_list = []
 
             # Fill in the values in the dict
-            for name in return_output_names: output_list.append(python.get_simple_python_property("inst", name))
+            for name in return_output_names: output_list.append(python.get_simple_property("inst", name))
 
         ######
 

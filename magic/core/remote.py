@@ -602,7 +602,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.session.get_python_property(self.label, "is_constant()")
+        return self.session.get_simple_property(self.label, "is_constant()")
 
     # -----------------------------------------------------------------
 
