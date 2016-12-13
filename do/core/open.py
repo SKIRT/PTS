@@ -18,6 +18,7 @@ from pts.core.remote.mounter import RemoteMounter
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
 from pts.core.remote.remote import Remote
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -41,6 +42,11 @@ filepath = remote.absolute_path(config.filename)
 
 # Determine the file path relative to the home directory
 relative_filepath = remote.relative_to_home(filepath)
+
+# Check if the file exists; otherwise don't bother mounting
+if not remote.is_file(filepath):
+    log.error("The file does not exist")
+    exit()
 
 # Disconnect the remote
 remote.logout()

@@ -356,6 +356,71 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def fix_configuration_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check if bashrc exists, if not create it
+        bashrc_path = fs.join(self.home_directory, ".bashrc")
+        if not self.is_file(bashrc_path): self.touch(bashrc_path)
+
+        # Check whether .profile exists
+        profile_path = fs.join(self.home_directory, ".profile")
+        bash_profile_path = fs.join(self.home_directory, ".bash_profile")
+
+        # If bash_profile file exists
+        if self.is_file(bash_profile_path):
+
+            # Check if it points to the bashrc file
+            links_bashrc = ".bashrc" in ";".join(self.read_lines(bash_profile_path))
+
+            # Add link to bashrc
+            if not links_bashrc: self._add_bashrc_link(bash_profile_path)
+
+        # If profile file exists
+        elif self.is_file(profile_path):
+
+            # Check if it points to the bashrc file
+            links_bashrc = ".bashrc" in ";".join(self.read_lines(profile_path))
+
+            # Add link to bashrc
+            if not links_bashrc: self._add_bashrc_link(profile_path)
+
+        # Profile and bash_profile files do not exist
+        else:
+
+            # Make bash profile
+            self.touch(bash_profile_path)
+
+            # Make it link to bashrc
+            self._add_bashrc_link(bash_profile_path)
+
+    # -----------------------------------------------------------------
+
+    def _add_bashrc_link(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        lines = []
+        lines.append("")
+        lines.append("When logging in from a console, .bashrc will be called.")
+        lines.append("if [ -f ~/.bashrc ]; then")
+        lines.append("   source ~/.bashrc")
+        lines.append("fi")
+        lines.append("")
+
+        # Add the lines
+        self.append_lines(path, lines)
+
+    # -----------------------------------------------------------------
+
     @property
     def python_path(self):
 

@@ -102,6 +102,9 @@ class Installer(Configurable):
             self.remote = Remote()
             self.remote.setup(self.config.remote)
 
+            # Fix configuration files
+            self.remote.fix_configuration_files()
+
     # -----------------------------------------------------------------
 
     def create_directories(self):
