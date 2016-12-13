@@ -983,10 +983,8 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        if self.config.repository is not None:
-            url = introspection.pts_git_remote_url(self.config.repository)
-        elif self.config.private:
-            url = introspection.private_pts_https_link
+        if self.config.repository is not None: url = introspection.pts_git_remote_url(self.config.repository)
+        elif self.config.private: url = introspection.private_pts_https_link
         else: url = introspection.public_pts_https_link
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
@@ -1262,54 +1260,7 @@ def get_skirt_hpc(remote, url, skirt_root_path, skirt_repo_path):
     :return:
     """
 
-    # CONVERT TO HTTPS ZIP LINK
-    # example: https://github.ugent.be/sjversto/SKIRT-personal/archive/master.zip
-
-    # CONVERT TO HTTPS LINK
-    host = url.split("@")[1].split(":")[0]
-    user_or_organization = url.split(":")[1].split("/")[0]
-    repo_name = url.split("/")[-1].split(".git")[0]
-    #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + "/archive/master.zip"
-    #url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
-
-    # Find the account file for the repository host (e.g. github.ugent.be)
-    username, password = introspection.get_account(host)
-    url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
-
-    # Download the repository to the PTS temporary directory locally
-    #zip_path = network.download_file(url, introspection.pts_temp_dir)
-
-    # Clone the repository locally in the pts temporary directory
-    temp_repo_path = fs.join(introspection.pts_temp_dir, "skirt-git")
-    if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
-    command = "git clone " + url + " " + temp_repo_path
-    subprocess.call(command.split())
-
-    # Zip the repository
-    zip_path = fs.join(introspection.pts_temp_dir, "skirt.zip")
-    zip_command = "git archive --format zip --output " + zip_path + " master"
-    subprocess.call(zip_command.split(), cwd=temp_repo_path)
-
-    # Get the git version
-    first_part_command = "git rev-list HEAD | wc -l"
-    second_part_command = "git describe --dirty --always"
-    first_part = subprocess.check_output(first_part_command.split(), cwd=temp_repo_path).strip()
-    second_part = subprocess.check_output(second_part_command.split(), cwd=temp_repo_path).strip()
-    git_version = first_part + "-" + second_part
-
-    # Transfer to the remote to the SKIRT directory
-    remote.upload(zip_path, skirt_root_path)
-    remote_zip_path = fs.join(skirt_root_path, fs.name(zip_path))
-
-    # Remove local temporary things
-    fs.remove_file(zip_path)
-    fs.remove_directory(temp_repo_path)
-
-    # Unpack the zip file into the 'git' directory
-    remote.decompress_file(remote_zip_path, skirt_repo_path)
-
-    # Return the git version
-    return git_version
+    return get_skirt_or_pts_hpc(remote, url, skirt_root_path, skirt_repo_path, "skirt")
 
 # -----------------------------------------------------------------
 
@@ -1324,6 +1275,22 @@ def get_pts_hpc(remote, url, pts_root_path, pts_package_path):
     :return:
     """
 
+    return get_skirt_or_pts_hpc(remote, url, pts_root_path, pts_package_path, "pts")
+
+# -----------------------------------------------------------------
+
+def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
+
+    """
+    This function ...
+    :param remote:
+    :param url:
+    :param root_path:
+    :param repo_path:
+    :param skirt_or_pts:
+    :return:
+    """
+
     # CONVERT TO HTTPS LINK
     host = url.split("@")[1].split(":")[0]
     user_or_organization = url.split(":")[1].split("/")[0]
@@ -1334,33 +1301,37 @@ def get_pts_hpc(remote, url, pts_root_path, pts_package_path):
     url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
 
     # Clone the repository locally in the pts temporary directory
-    temp_repo_path = fs.join(introspection.pts_temp_dir, "pts-git")
+    temp_repo_path = fs.join(introspection.pts_temp_dir, skirt_or_pts + "-git")
     if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
     command = "git clone " + url + " " + temp_repo_path
     subprocess.call(command.split())
 
     # Zip the repository
-    zip_path = fs.join(introspection.pts_temp_dir, "pts.zip")
+    zip_path = fs.join(introspection.pts_temp_dir, skirt_or_pts + ".zip")
     zip_command = "git archive --format zip --output " + zip_path + " master"
     subprocess.call(zip_command.split(), cwd=temp_repo_path)
 
     # Get the git version
-    first_part_command = "git rev-list HEAD | wc -l"
+    first_part_command = "git rev-list --count HEAD"
     second_part_command = "git describe --dirty --always"
     first_part = subprocess.check_output(first_part_command.split(), cwd=temp_repo_path).strip()
     second_part = subprocess.check_output(second_part_command.split(), cwd=temp_repo_path).strip()
     git_version = first_part + "-" + second_part
 
-    # Transfer to the remote to the PTS directory
-    remote.upload(zip_path, pts_root_path)
-    remote_zip_path = fs.join(pts_root_path, fs.name(zip_path))
+    # Transfer to the remote to the SKIRT/PTS directory
+    remote.upload(zip_path, root_path)
+    remote_zip_path = fs.join(root_path, fs.name(zip_path))
 
     # Remove local temporary things
     fs.remove_file(zip_path)
     fs.remove_directory(temp_repo_path)
 
     # Unpack the zip file into the 'git' directory
-    remote.decompress_file(remote_zip_path, pts_package_path)
+    remote.decompress_file(remote_zip_path, repo_path)
+
+    # Make a 'origin' file with the url of the repository
+    origin_path = fs.join(repo_path, "origin.txt")
+    remote.write_line(origin_path, url)
 
     # Return the git version
     return git_version

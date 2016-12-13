@@ -1610,6 +1610,20 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def write_line(self, filepath, line):
+
+        """
+        This function ...
+        :param filepath:
+        :param line:
+        :return:
+        """
+
+        command = "echo '" + line + "' > " + filepath
+        self.execute(command, output=False)
+
+    # -----------------------------------------------------------------
+
     def append_line(self, filepath, line):
 
         """

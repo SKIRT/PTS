@@ -21,7 +21,8 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, get_skirt_hpc
+from .installation import get_installation_commands, get_skirt_hpc, get_pts_hpc
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -292,15 +293,15 @@ class SKIRTUpdater(Updater):
         # because of the private/public key thingy, so use a trick
         if self.remote.host.name == "login.hpc.ugent.be":
 
-            # TODO: implement this
+            # Get the repo URL
+            origin_path = fs.join(self.remote.skirt_repo_path, "origin.txt")
+            url = self.remote.read_lines(origin_path)[0]
 
-            pass
-
-            # First remove the previous SKIRT/git directory
-            #self.remote.remove_directory(self.remote.skirt_repo_path)
+            # Remove the previous SKIRT/git directory
+            self.remote.remove_directory(self.remote.skirt_repo_path)
 
             # Get the new code
-            #get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
+            get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
 
         # Else
         else:
@@ -376,14 +377,14 @@ class PTSUpdater(Updater):
         """
 
         # Update PTS
-        self.update_pts_local()
+        self.pull_local()
 
         # Update the dependencies
         self.update_dependencies_local()
 
     # -----------------------------------------------------------------
 
-    def update_pts_local(self):
+    def pull_local(self):
 
         """
         This function ...
@@ -423,49 +424,63 @@ class PTSUpdater(Updater):
         """
 
         # Update PTS
-        self.update_pts_remote()
+        self.pull_remote()
 
         # Update the dependencies
         self.update_dependencies_remote()
 
     # -----------------------------------------------------------------
 
-    def update_pts_remote(self):
+    def pull_remote(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Updating PTS remotely on host '" + self.config.remote + "' ...")
-
         # Debugging
         log.debug("Getting latest version ...")
 
-        # Change working directory to repository directory
-        pts_git_path = self.remote.pts_package_path
-        self.remote.change_cwd(pts_git_path)
+        # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
+        # because of the private/public key thingy, so use a trick
+        if self.remote.host.name == "login.hpc.ugent.be":
 
-        # Set the command
-        command = "git pull origin master"
+            # Get the repo URL
+            origin_path = fs.join(self.remote.pts_package_path, "origin.txt")
+            url = self.remote.read_lines(origin_path)[0]
 
-        # Get username and password
-        username, password = introspection.get_account("github.ugent.be")
+            # Remove the previous PTS/pts directory
+            self.remote.remove_directory(self.remote.pts_package_path)
 
-        # Set the command lines
-        lines = []
-        lines.append(command)
-        lines.append(("':", username))
-        lines.append(("':", password))
+            # Get the new code
+            get_pts_hpc(self.remote, url, self.remote.pts_root_path, self.remote.pts_package_path)
 
-        # Clone the repository
-        self.remote.execute_lines(*lines, show_output=True)
+        # Else
+        else:
 
-        #if "Enter passphrase for key" in self.remote.ssh.before:
-        #    self.remote.execute(self.config.pubkey_password, show_output=True)
+            # Change working directory to repository directory
+            pts_git_path = self.remote.pts_package_path
+            self.remote.change_cwd(pts_git_path)
 
-        #else: self.remote.prompt()
+            # Set the command
+            command = "git pull origin master"
+
+            # Get username and password
+            username, password = introspection.get_account("github.ugent.be")
+
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
+
+            # Clone the repository
+            self.remote.execute_lines(*lines, show_output=True)
+
+            #if "Enter passphrase for key" in self.remote.ssh.before:
+            #    self.remote.execute(self.config.pubkey_password, show_output=True)
+
+            #else: self.remote.prompt()
 
     # -----------------------------------------------------------------
 
