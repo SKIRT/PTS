@@ -17,9 +17,11 @@ from pexpect import pxssh, ExceptionPexpect
 import tempfile
 import StringIO
 import subprocess
+from lxml import etree
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from .host import Host, HostDownException
@@ -410,7 +412,7 @@ class Remote(object):
 
         lines = []
         lines.append("")
-        lines.append("When logging in from a console, .bashrc will be called.")
+        lines.append("# When logging in from a console, .bashrc will be called.")
         lines.append("if [ -f ~/.bashrc ]; then")
         lines.append("   source ~/.bashrc")
         lines.append("fi")
@@ -961,6 +963,46 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def screen_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("screen -ls | grep \(")
+
+        # Get the names
+        names = []
+        for line in output:
+            name = line.split(".")[1].split("(")[0].strip()
+            names.append(name)
+
+        # Return the screen names
+        return names
+
+    # -----------------------------------------------------------------
+
+    def screen_numbers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("screen -ls | grep \(")
+
+        # Get the numbers
+        numbers = []
+        for line in output:
+            number = int(line.split(".")[0])
+            numbers.append(number)
+
+        # Return the screen numbers
+        return numbers
+
+    # -----------------------------------------------------------------
+
     def screen_state(self, name):
 
         """
@@ -1022,6 +1064,24 @@ class Remote(object):
         """
 
         return self.screen_state(name) == "detached"
+
+    # -----------------------------------------------------------------
+
+    def screen_number(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Execute the 'screen -ls' command
+        output = self.execute("screen -ls | grep " + name)
+
+        if len(output) > 1: raise ValueError("Multiple screens with name '" + name + "'")
+
+        line = output[0]
+        return int(line.split(".")[0])
 
     # -----------------------------------------------------------------
 
@@ -1247,7 +1307,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None):
+    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None, expect=None):
 
         """
         This function ...
@@ -1269,13 +1329,14 @@ class Remote(object):
         else: self.ssh.logfile = None
 
         # Retrieve the output if requested
-        eof = self.ssh.prompt(timeout=timeout)
+        if expect is None: matched = self.ssh.prompt(timeout=timeout)
+        else: matched = self.ssh.expect(expect, timeout=timeout)
 
         # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
-        if contains_extra_eof: eof = self.ssh.prompt()
+        if contains_extra_eof: matched = self.ssh.prompt()
 
         # If the command could not be sent, raise an error
-        if not eof and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
+        if not matched and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
 
         # Set the log file back to 'None'
         self.ssh.logfile = None
@@ -2337,6 +2398,31 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def cpu_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #output = self.execute("cat /proc/cpuinfo | grep 'model name'")
+        #first_line = output[0]
+        #return first_line.split(": ")[1]
+        #return first_line
+
+        model_names = []
+
+        output = self.read_lines("/proc/cpuinfo")
+
+        for line in output:
+
+            if line.startswith("model name"): model_names.append(line.split(":")[1])
+
+        return model_names[0]
+
+    # -----------------------------------------------------------------
+
+    @property
     def virtual_memory_per_node(self):
 
         """
@@ -2355,7 +2441,7 @@ class Remote(object):
             splitted = output[0].split(":")[1].split()
 
             # Calculate the free amount of memory in gigabytes
-            total_swap = float(splitted[0]) / 1e6
+            total_swap = float(splitted[0]) * 1e-6 * Unit("GB")
 
             # Return the free amount of virtual memory in gigabytes
             return total_swap
@@ -2540,29 +2626,33 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
-    def hpc_ugent_node_status(self):
+    def is_multinode(self):
 
         """
         This function ...
         :return:
         """
 
-        lines = ["from vsc.jobs.pbs.nodes import collect_nodeinfo"]
-        lines.append("node_list, state_list, types = collect_nodeinfo()")
-        lines.append("print node_list")
-        lines.append("print state_list")
-        lines.append("print types")
+        return self.is_executable("pbsnodes")
 
-        # For interpreting 'types':
-        #template = "%sppn=%s, physmem=%sGB, swap=%sGB, vmem=%sGB, local disk=%sGB"
-        #for typ, nodes in sorted(types.items(), key=lambda x: len(x[1]), reverse=True):
-            # most frequent first
-            #cores, phys, swap, disk = typ
-            #txt.append(template % (offset, cores, phys, swap, phys + swap, disk))
+    # -----------------------------------------------------------------
 
-        output = self.execute_python_interactive(lines)
+    def get_node_status(self):
 
-        return output
+        """
+        This function ...
+        :return:
+        """
+
+        # Execute the pbsnodes command
+        output = self.execute("pbsnodes -x")
+        string = output[0]
+
+        # Parse the tree
+        tree = etree.fromstring(string, parser=etree.XMLParser(remove_blank_text=True))
+
+        # Return the tree
+        return tree
 
     # -----------------------------------------------------------------
 
@@ -2629,6 +2719,19 @@ class Remote(object):
         # Run the command
         output = self.execute(command)
 
+        return output[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def operating_system(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("uname")
         return output[0]
 
     # -----------------------------------------------------------------

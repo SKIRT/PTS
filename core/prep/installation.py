@@ -827,6 +827,8 @@ class PTSInstaller(Installer):
         :return:
         """
 
+        return
+
         # Set root path and pacakge path
         self.pts_root_path = fs.join(self.remote.home_directory, "PTS")
         self.pts_package_path = fs.join(self.pts_root_path, "pts")
@@ -901,10 +903,10 @@ class PTSInstaller(Installer):
         log.info("Installing PTS remotely ...")
 
         # Get a python distribution
-        self.get_python_distribution_remote()
+        #self.get_python_distribution_remote()
 
         # Get PTS
-        self.get_pts_remote()
+        #self.get_pts_remote()
 
         # Get PTS dependencies
         self.get_dependencies_remote()

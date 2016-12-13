@@ -74,7 +74,10 @@ class RemotePythonSession(object):
 
         # Create the pipe file for output
         if self.remote.is_file(self.out_pipe_filepath): self.remote.remove_file(self.out_pipe_filepath)
-        self.remote.touch(self.out_pipe_filepath)
+        #self.remote.touch(self.out_pipe_filepath)
+        self.remote.write_line(self.out_pipe_filepath, "")
+
+        #print(self.out_pipe_filepath)
 
     # -----------------------------------------------------------------
 
@@ -86,13 +89,17 @@ class RemotePythonSession(object):
         """
 
         # Start the screen
-        start_screen_command = "screen -dmS " + self.screen_name
+        #start_screen_command = "screen -dmS " + self.screen_name
 
         # Debugging
-        log.debug("Starting screen session with command: '" + start_screen_command + "' ...")
+        #log.debug("Starting screen session with command:")
+        #log.debug(start_screen_command)
 
         # Start the screen
-        self.remote.execute(start_screen_command)
+        #self.remote.execute(start_screen_command, show_output=True)
+
+        command = "tmux new-session -d -n " + self.screen_name + " python > " + self.out_pipe_filepath
+        self.remote.execute(command, show_output=True)
 
     # -----------------------------------------------------------------
 
@@ -105,13 +112,38 @@ class RemotePythonSession(object):
 
         # Start python in the screen session
         # start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + " < " + self.in_pipe_filepath + "\n'"
-        start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + "\n'"
+        #start_python_command = "screen -r -S " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + "\n'"
+
+        #start_python_command = "screen -r -S " + self.screen_name + " -X stuff $'python\n'"
+
+        #start_python_command = "screen -r -X stuff $'python\n'"
+        #start_python_command = "screen -r -S " + self.screen_name + " -p 0 -X stuff 'python > " + self.out_pipe_filepath + "\n'"
+        #start_python_command = 'screen -r ' + self.screen_name + ' -X stuff "python > ' + self.out_pipe_filepath + '"'
+
+        #start_python_command = "screen -r -S " + self.screen_name
 
         # Debugging
-        log.debug("Starting python session with command: '" + start_python_command + "' ...")
+        log.debug("Starting python session with command:")
+        #log.debug(start_python_command)
 
         # Start python
-        self.remote.execute(start_python_command)
+        #self.remote.execute(start_python_command, expect="$")
+        #self.remote.execute(start_python_command)
+
+        #start_python_command = "python > " + self.out_pipe_filepath
+
+        # Start python again
+        #self.remote.execute(start_python_command, expect=">>>")
+
+        # Detach
+        #self.remote.execute("$'\x01'")
+        #self.remote.execute("d")
+
+        #self.remote.execute("\n")
+
+        #self.send_line("import sys")
+        #self.do_loop("def my_display(x):", ["with open('" + self.out_pipe_filepath + "', 'a') as fh: fh.write(x)"], show_output=True)
+        #self.send_line("sys.displayhook = my_display")
 
     # -----------------------------------------------------------------
 
@@ -238,6 +270,8 @@ class RemotePythonSession(object):
 
         output = self.send_line(name, output=True)
 
+        #print(output)
+
         #if len(output) < 1: raise NameError("No such variable: '" + name + "'")
         if len(output) == 0: return None
         elif len(output) > 1: raise RuntimeError("Unexpected output: " + str(output))
@@ -299,6 +333,7 @@ class RemotePythonSession(object):
         """
         This function ...
         :param line:
+        :param output:
         :return:
         """
 
@@ -315,11 +350,21 @@ class RemotePythonSession(object):
         :return:
         """
 
-        if "'" not in line: send_command = "screen -r " + self.screen_name + " -X stuff $'" + line + "\n'"
-        elif '"' not in line: send_command = 'screen -r ' + self.screen_name + ' -X stuff $"' + line + '\n"'
-        else: raise ValueError("Line cannot contain both single quotes and double quotes")
+        #if "'" not in line: send_command = "screen -r -S " + self.screen_name + " -X stuff $'" + line + "\n'"
+        #elif '"' not in line: send_command = 'screen -r -S ' + self.screen_name + ' -X stuff $"' + line + '\n"'
+        #else: raise ValueError("Line cannot contain both single quotes and double quotes")
+
+        #if "'" not in line: send_command = "screen -r -S " + self.screen_name + " -p 0 -X stuff '" + line + "\n'"
+        #elif '"' not in line: send_command = 'screen -r -S ' + self.screen_name + ' -p 0 -X stuff "' + line + '\n"'
+        #else: raise ValueError("Line cannot contain both single quotes and double quotes")
 
         #print("COMMAND: ", send_command)
+
+        send_command = 'tmux send-keys -t ' + self.screen_name + ' "' + line + '"'
+
+        # Debugging
+        log.debug("The command to execute the line is:")
+        log.debug(send_command)
 
         # Send the line
         self.remote.execute(send_command, output=False)
@@ -328,6 +373,9 @@ class RemotePythonSession(object):
 
         # Check the output
         if output:
+
+            # Debugging
+            log.debug("Reading output from file '" + self.out_pipe_filepath + "' ...")
 
             # Get output
             lines = []
@@ -339,8 +387,15 @@ class RemotePythonSession(object):
 
         # Mark the end for this command
         print_marker = 'print("[PTS]")'
-        send_marker_command = "screen -r " + self.screen_name + " -X stuff $'" + print_marker + "\n'"
+        #send_marker_command = "screen -r -S " + self.screen_name + " -X stuff $'" + print_marker + "\n'"
+        #send_marker_command = "screen -r -S " + self.screen_name + " -X stuff '" + print_marker + "\n'"
         #self.remote.append_to_file(self.out_pipe_filepath, "[PTS]")
+        send_marker_command = "tmux send-keys -t " + self.screen_name + " '" + print_marker + "'"
+
+        # Debugging
+        log.debug("The command to send the marker is:")
+        log.debug(send_marker_command)
+
         self.remote.execute(send_marker_command, output=False)
 
         # Return the output lines
@@ -656,13 +711,13 @@ class RemotePythonSession(object):
         """
 
         # Stop the python session
-        end_python_command = "screen -r " + self.screen_name + " -X stuff $'exit()\n'"
+        end_python_command = "screen -r -S " + self.screen_name + " -X stuff 'exit()\n'"
         self.remote.execute(end_python_command)
 
         # Stop screen session
         self.remote.kill_screen(self.screen_name)
 
         # Remove the pipe file
-        self.remote.remove_file(self.out_pipe_filepath)
+        #self.remote.remove_file(self.out_pipe_filepath)
 
 # -----------------------------------------------------------------

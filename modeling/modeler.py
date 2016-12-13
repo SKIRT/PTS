@@ -40,6 +40,7 @@ from ..core.basics.range import QuantityRange
 from .fitting.component import get_generations_table
 from ..core.launch.synchronizer import RemoteSynchronizer
 from ..core.remote.remote import is_available
+from ..core.prep.update import SKIRTUpdater, PTSUpdater
 
 # -----------------------------------------------------------------
 
@@ -138,6 +139,27 @@ class GalaxyModeler(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def used_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        host_ids = set()
+
+        # Add main host ID
+        host_ids.add(self.host_id)
+
+        # Add fitting host ids
+        for host_id in self.config.fitting_host_ids: host_ids.add(host_id)
+
+        # Return the list of host IDs
+        return list(host_ids)
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """
@@ -197,6 +219,12 @@ class GalaxyModeler(Configurable):
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
 
+        # Update SKIRT
+        self.update_skirt()
+
+        # Update PTS
+        self.update_pts()
+
     # -----------------------------------------------------------------
 
     def find_available_host(self):
@@ -212,6 +240,54 @@ class GalaxyModeler(Configurable):
 
         # No available host in the list of preferred host ids
         if self.host_id is None: raise RuntimeError("None of the preferred hosts are available at this moment")
+
+    # -----------------------------------------------------------------
+
+    def update_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating SKIRT (locally and remotely) ...")
+
+        # Loop over the used host IDs
+        for host_id in self.used_host_ids:
+
+            # Create the updater
+            updater = SKIRTUpdater()
+
+            # Set remote host ID
+            updater.config.remote = host_id
+
+            # Run the updater
+            updater.run()
+
+    # -----------------------------------------------------------------
+
+    def update_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Updating PTS (locally and remotely) ...")
+
+        # Loop over the used host IDs
+        for host_id in self.used_host_ids:
+
+            # Create the updater
+            updater = PTSUpdater()
+
+            # Set remote host ID
+            updater.config.remote = self.host_id
+
+            # Run the updater
+            updater.run()
 
     # -----------------------------------------------------------------
 
