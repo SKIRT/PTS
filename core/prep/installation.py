@@ -541,10 +541,8 @@ class SKIRTInstaller(Installer):
         log.info("Getting the SKIRT source code ...")
 
         # Get repository link
-        if self.config.repository is not None:
-            url = introspection.skirt_git_remote_url(self.config.repository)
-        elif self.config.private:
-            url = introspection.private_skirt_https_link
+        if self.config.repository is not None: url = introspection.skirt_git_remote_url(self.config.repository)
+        elif self.config.private: url = introspection.private_skirt_https_link
         else: url = introspection.public_skirt_https_link
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
@@ -574,7 +572,7 @@ class SKIRTInstaller(Installer):
             self.remote.execute_lines(*lines, show_output=True)
 
             # Get the git version
-            first_part_command = "git rev-list HEAD | wc -l"
+            first_part_command = "git rev-list --count HEAD"
             second_part_command = "git describe --dirty --always"
             first_part = self.remote.execute(first_part_command)[0].strip()
             second_part = self.remote.execute(second_part_command)[0].strip()
@@ -803,6 +801,9 @@ class PTSInstaller(Installer):
 
         self.pts_path = None
 
+        # The git version
+        self.git_version = None
+
     # -----------------------------------------------------------------
 
     def create_directories_local(self):
@@ -988,32 +989,46 @@ class PTSInstaller(Installer):
             url = introspection.private_pts_https_link
         else: url = introspection.public_pts_https_link
 
+        # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
+        # because of the private/public key thingy, so use a trick
+        if self.remote.host.name == "login.hpc.ugent.be": self.git_version = get_pts_hpc(self.remote, url, self.pts_root_path, self.pts_package_path)
+        else:
 
-        # CONVERT TO HTTPS LINK
-        # git@github.ugent.be:sjversto/PTS.git
-        # to
-        # https://github.ugent.be/SKIRT/PTS.git
+            # CONVERT TO HTTPS LINK
+            # git@github.ugent.be:sjversto/PTS.git
+            # to
+            # https://github.ugent.be/SKIRT/PTS.git
 
-        host = url.split("@")[1].split(":")[0]
-        user_or_organization = url.split(":")[1].split("/")[0]
-        repo_name = url.split("/")[-1].split(".git")[0]
+            host = url.split("@")[1].split(":")[0]
+            user_or_organization = url.split(":")[1].split("/")[0]
+            repo_name = url.split("/")[-1].split(".git")[0]
 
-        url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+            url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
 
-        # Set the clone command
-        command = "git clone " + url + " " + self.pts_package_path
+            # Set the clone command
+            command = "git clone " + url + " " + self.pts_package_path
 
-        # Find the account file for the repository host (e.g. github.ugent.be)
-        username, password = introspection.get_account(host)
+            # Find the account file for the repository host (e.g. github.ugent.be)
+            username, password = introspection.get_account(host)
 
-        # Set the command lines
-        lines = []
-        lines.append(command)
-        lines.append(("':", username))
-        lines.append(("':", password))
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
 
-        # Clone the repository
-        self.remote.execute_lines(*lines, show_output=True)
+            # Clone the repository
+            self.remote.execute_lines(*lines, show_output=True)
+
+            # Get the git version
+            first_part_command = "git rev-list --count HEAD"
+            second_part_command = "git describe --dirty --always"
+            first_part = self.remote.execute(first_part_command)[0].strip()
+            second_part = self.remote.execute(second_part_command)[0].strip()
+            self.git_version = first_part + "-" + second_part
+
+        # Show the git version
+        log.info("The git version to be installed is '" + self.git_version + "'")
 
         # Set PYTHONPATH
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
@@ -1292,6 +1307,60 @@ def get_skirt_hpc(remote, url, skirt_root_path, skirt_repo_path):
 
     # Unpack the zip file into the 'git' directory
     remote.decompress_file(remote_zip_path, skirt_repo_path)
+
+    # Return the git version
+    return git_version
+
+# -----------------------------------------------------------------
+
+def get_pts_hpc(remote, url, pts_root_path, pts_package_path):
+
+    """
+    This function ...
+    :param remote:
+    :param url:
+    :param pts_root_path:
+    :param pts_package_path:
+    :return:
+    """
+
+    # CONVERT TO HTTPS LINK
+    host = url.split("@")[1].split(":")[0]
+    user_or_organization = url.split(":")[1].split("/")[0]
+    repo_name = url.split("/")[-1].split(".git")[0]
+
+    # Find the account file for the repository host (e.g. github.ugent.be)
+    username, password = introspection.get_account(host)
+    url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+    # Clone the repository locally in the pts temporary directory
+    temp_repo_path = fs.join(introspection.pts_temp_dir, "pts-git")
+    if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
+    command = "git clone " + url + " " + temp_repo_path
+    subprocess.call(command.split())
+
+    # Zip the repository
+    zip_path = fs.join(introspection.pts_temp_dir, "pts.zip")
+    zip_command = "git archive --format zip --output " + zip_path + " master"
+    subprocess.call(zip_command.split(), cwd=temp_repo_path)
+
+    # Get the git version
+    first_part_command = "git rev-list HEAD | wc -l"
+    second_part_command = "git describe --dirty --always"
+    first_part = subprocess.check_output(first_part_command.split(), cwd=temp_repo_path).strip()
+    second_part = subprocess.check_output(second_part_command.split(), cwd=temp_repo_path).strip()
+    git_version = first_part + "-" + second_part
+
+    # Transfer to the remote to the PTS directory
+    remote.upload(zip_path, pts_root_path)
+    remote_zip_path = fs.join(pts_root_path, fs.name(zip_path))
+
+    # Remove local temporary things
+    fs.remove_file(zip_path)
+    fs.remove_directory(temp_repo_path)
+
+    # Unpack the zip file into the 'git' directory
+    remote.decompress_file(remote_zip_path, pts_package_path)
 
     # Return the git version
     return git_version
