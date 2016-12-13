@@ -339,6 +339,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def python_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.find_executable("python")
+
+    # -----------------------------------------------------------------
+
     def has_cpp_compiler(self):
 
         """
@@ -423,6 +435,80 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def find_and_load_python(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.has_lmod: self.load_python_module()
+        return self.python_path
+
+    # -----------------------------------------------------------------
+
+    def load_python_module(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find Python module versions
+        versions = self.get_module_versions("Python")
+
+        latest_version = None
+        latest_floating_python_version = None
+        latest_intel_version = None
+        latest_intel_year = None
+
+        for version in versions:
+
+            # Get python version
+            python_version = version.split("/")[1].split("-")[0]
+            if int(python_version[0]) >= 3: continue # no python3
+
+            compiler_version = version.split(python_version + "-")[1]
+
+            if not ("intel" in compiler_version or "ictce" in compiler_version): continue
+
+            splitted = python_version.split(".")
+            floating_python_version = float(splitted[0]) + float(splitted[1]) / 100. + float(splitted[2]) / 10000.
+
+            if latest_version is None or floating_python_version > latest_floating_python_version:
+                latest_version = version
+                latest_floating_python_version = floating_python_version
+
+            elif floating_python_version == latest_floating_python_version:
+
+                # Parse to get intel version
+                intel_version = version.split("-")[2]
+
+                if "." not in intel_version:
+
+                    intel_year = int(intel_version) if len(intel_version) == 4 else int(intel_version[0:4])
+                    if latest_intel_year is None or intel_year > latest_intel_year:
+                        latest_intel_year = intel_year
+                        latest_version = version
+
+                elif latest_intel_year is not None:  # geef voorrang aan jaartallen
+                    continue
+
+                else:
+
+                    if latest_intel_version is None or intel_version > latest_intel_version:
+                        latest_version = version
+                        latest_intel_version = intel_version
+
+            else: continue
+
+        # Return the latest version
+        #return latest_version
+
+        self.load_module(latest_version)  # Load the python module
+
+    # -----------------------------------------------------------------
+
     def find_and_load_cpp_compiler(self):
 
         """
@@ -499,10 +585,8 @@ class Remote(object):
         :return:
         """
 
-        if self.has_lmod:
-            self.load_intel_compiler_toolkit()
-            return self.mpi_compiler_path
-        else: return self.mpi_compiler_path
+        if self.has_lmod: self.load_intel_compiler_toolkit()
+        return self.mpi_compiler_path
 
     # -----------------------------------------------------------------
 

@@ -914,10 +914,7 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        if self.remote.in_python_virtual_environment():
-
-            self.python_path = self.remote.execute("which python")[0]
-
+        if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
         else:
 
             if self.remote.platform == "MacOS":

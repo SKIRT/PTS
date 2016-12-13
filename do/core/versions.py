@@ -69,8 +69,8 @@ for host_id in host_ids:
     compiler_path = remote.find_and_load_cpp_compiler()
     mpi_compiler_path = remote.find_and_load_mpi_compiler()
 
-    print(compiler_path)
-    print(mpi_compiler_path)
+    #print(compiler_path)
+    #print(mpi_compiler_path)
 
     # Get C++ compiler and MPI compiler version
     compiler_version = remote.version_of(compiler_path) if compiler_path is not None else None
@@ -79,13 +79,16 @@ for host_id in host_ids:
     # Load Qt module, find the qmake path
     qmake_path = remote.find_and_load_qmake()
 
-    print(qmake_path)
+    #print(qmake_path)
 
     # Get qmake version
     qmake_version = remote.version_of(qmake_path) if qmake_path is not None else None
 
+    # Load python
+    python_path = remote.find_and_load_python()
+
     # Get python version
-    python_version = remote.version_of("python")
+    python_version = remote.version_of(python_path)
 
     # Get SKIRT and PTS version
     skirt_version = remote.skirt_version
