@@ -283,6 +283,9 @@ class SKIRTInstaller(Installer):
         # Path to the SKIRT executable
         self.skirt_path = None
 
+        # Git version of SKIRT to be installed
+        self.git_version = None
+
     # -----------------------------------------------------------------
 
     def create_directories_local(self):
@@ -546,7 +549,7 @@ class SKIRTInstaller(Installer):
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
         # because of the private/public key thingy, so use a trick
-        if self.remote.host.name == "login.hpc.ugent.be": get_skirt_hpc(self.remote, url, self.skirt_root_path, self.skirt_repo_path)
+        if self.remote.host.name == "login.hpc.ugent.be": self.git_version = get_skirt_hpc(self.remote, url, self.skirt_root_path, self.skirt_repo_path)
         else:
 
             # CONVERT TO HTTPS LINK
@@ -569,6 +572,16 @@ class SKIRTInstaller(Installer):
 
             # Clone the repository
             self.remote.execute_lines(*lines, show_output=True)
+
+            # Get the git version
+            first_part_command = "git rev-list HEAD | wc -l"
+            second_part_command = "git describe --dirty --always"
+            first_part = self.remote.execute(first_part_command)[0].strip()
+            second_part = self.remote.execute(second_part_command)[0].strip()
+            self.git_version = first_part + "-" + second_part
+
+        # Show the git version
+        log.info("The git version to be installed is '" + self.git_version + "'")
 
         # Set PYTHONPATH
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
@@ -617,44 +630,20 @@ class SKIRTInstaller(Installer):
         log.debug(" 1) " + make_make_command)
         log.debug(" 2) " + make_command)
 
-        # Execute the commands
+        # Configure
         self.remote.execute(make_make_command, show_output=True)
+
+        # Overwrite the git version
+        git_version_content = 'const char* git_version = " ' + self.git_version + ' " ;'
+        git_version_path = fs.join(self.skirt_repo_path, "SKIRTmain", "git_version.h")
+        write_command = 'echo "' + git_version_content + '" > ' + git_version_path
+        self.remote.execute(write_command)
+
+        # Make
         self.remote.execute(make_command, show_output=True)
 
         # Success
         log.success("SKIRT was successfully built")
-
-    # -----------------------------------------------------------------
-
-    def build_skirt_hpc(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        local_script_path = None
-
-        screen_name = "SKIRT installation"
-
-        # Open the job script file
-        script_file = open(local_script_path, 'w')
-
-        # Write a general header to the batch script
-        script_file.write("#!/bin/sh\n")
-        script_file.write("# Batch script for running SKIRT on a remote system\n")
-        script_file.write("# To execute manualy, copy this file to the remote filesystem and enter the following commmand:\n")
-        script_file.write("# screen -S " + screen_name + " -L -d -m " + fs.name(local_script_path) + "'\n")
-        script_file.write("\n")
-
-        # Load modules
-        script_file.write("module load lxml/3.4.2-intel-2015a-Python-2.7.9")
-        script_file.write("module load Qt/5.2.1-intel-2015a")
-
-        #
-        script_file.write("./makeSKIRT.sh")
-
-        self.remote.start_screen(name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False)
 
     # -----------------------------------------------------------------
 
@@ -1286,10 +1275,15 @@ def get_skirt_hpc(remote, url, skirt_root_path, skirt_repo_path):
 
     # Zip the repository
     zip_path = fs.join(introspection.pts_temp_dir, "skirt.zip")
-    cwd = fs.change_cwd(temp_repo_path)
     zip_command = "git archive --format zip --output " + zip_path + " master"
-    subprocess.call(zip_command.split())
-    fs.change_cwd(cwd)
+    subprocess.call(zip_command.split(), cwd=temp_repo_path)
+
+    # Get the git version
+    first_part_command = "git rev-list HEAD | wc -l"
+    second_part_command = "git describe --dirty --always"
+    first_part = subprocess.check_output(first_part_command.split(), cwd=temp_repo_path).strip()
+    second_part = subprocess.check_output(second_part_command.split(), cwd=temp_repo_path).strip()
+    git_version = first_part + "-" + second_part
 
     # Transfer to the remote to the SKIRT directory
     remote.upload(zip_path, skirt_root_path)
@@ -1301,5 +1295,8 @@ def get_skirt_hpc(remote, url, skirt_root_path, skirt_repo_path):
 
     # Unpack the zip file into the 'git' directory
     remote.decompress_file(remote_zip_path, skirt_repo_path)
+
+    # Return the git version
+    return git_version
 
 # -----------------------------------------------------------------

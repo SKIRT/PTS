@@ -473,7 +473,7 @@ class Remote(object):
 
             if "." not in iimpi_version:
 
-                iimpi_year = int(iimpi_version)
+                iimpi_year = int(iimpi_version) if len(iimpi_version) == 4 else int(iimpi_version[0:4])
                 if latest_iimpi_year is None or iimpi_year > latest_iimpi_year:
                     latest_iimpi_year = iimpi_year
                     latest_version = version
@@ -1809,18 +1809,6 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def read_text_file(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-
-
-    # -----------------------------------------------------------------
-
     def version_of(self, name):
 
         """
@@ -1830,7 +1818,7 @@ class Remote(object):
         """
 
         # Execute
-        output = self.execute(name + " -v")
+        output = self.execute(name + " --version")
 
         # Return the relevant portion of the output
         return output[0]

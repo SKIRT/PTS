@@ -144,6 +144,17 @@ def suppress_stdout():
 
 # -----------------------------------------------------------------
 
+def python_version():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return subprocess.check_output(["python", "--version"])
+
+# -----------------------------------------------------------------
+
 def in_python_virtual_environment():
 
     """

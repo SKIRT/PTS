@@ -1,8 +1,0 @@
-# %ECSV 0.9
-# ---
-# datatype:
-# - {name: Command, datatype: string}
-# - {name: Start time, datatype: string}
-# - {name: End time, datatype: string}
-Command "Start time" "End time"
-make_dust_map "01/12/2016 12:05:39.736" --
