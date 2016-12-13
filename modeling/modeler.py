@@ -39,6 +39,7 @@ from .core.component import load_modeling_history, get_config_file_path, load_mo
 from ..core.basics.range import QuantityRange
 from .fitting.component import get_generations_table
 from ..core.launch.synchronizer import RemoteSynchronizer
+from ..core.remote.remote import is_available
 
 # -----------------------------------------------------------------
 
@@ -104,6 +105,9 @@ class GalaxyModeler(Configurable):
 
         # The modeling configuration
         self.modeling_config = None
+
+        # Host id of the first host currently available
+        self.host_id = None
 
         # The modeling history
         self.history = None
@@ -187,8 +191,25 @@ class GalaxyModeler(Configurable):
         if not fs.is_file(get_config_file_path(self.modeling_path)): raise ValueError("The current working directory is not a radiative transfer modeling directory (the configuration file is missing)")
         else: self.modeling_config = load_modeling_configuration(self.modeling_path)
 
+        # Find the first currently available host
+        self.find_available_host()
+
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    def find_available_host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for host_id in self.modeling_config.host_ids:
+            if is_available(host_id): self.host_id = host_id
+
+        if self.host_id is None: raise RuntimeError("None of the preferred hosts are available at this moment")
 
     # -----------------------------------------------------------------
 
@@ -285,7 +306,7 @@ class GalaxyModeler(Configurable):
 
         # Create the configuration
         config = dict()
-        config["remote"] = self.modeling_config.host_id
+        config["remote"] = self.host_id
         config["halpha_url"] = halpha_urls[self.hyperleda_name]
         config["halpha_flux"] = halpha_fluxes[self.hyperleda_name]
 
@@ -341,7 +362,7 @@ class GalaxyModeler(Configurable):
 
         # Create the configuration
         config = dict()
-        config["remote"] = self.modeling_config.host_id
+        config["remote"] = self.host_id
 
         # Create the initializer
         initializer = PreparationInitializer(config)
@@ -373,7 +394,7 @@ class GalaxyModeler(Configurable):
 
         # Create the configuration
         config = dict()
-        config["remote"] = self.modeling_config.host_id
+        config["remote"] = self.host_id
         config["exclude_filters"] = lower_resolution_filters
 
         # Create the data preparer
@@ -599,7 +620,7 @@ class GalaxyModeler(Configurable):
         # Create the configuration
         config = dict()
         config["black_body"] = dict()
-        config["black_body"]["remote"] = self.modeling_config.host_id
+        config["black_body"]["remote"] = self.host_id
 
         # Create the dust map maker
         maker = DustMapMaker(config)

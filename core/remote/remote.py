@@ -39,6 +39,23 @@ connected_remotes = dict()
 
 # -----------------------------------------------------------------
 
+def is_available(host_id):
+
+    """
+    This function ...
+    :param host_id:
+    :return:
+    """
+
+    remote = Remote()
+
+    try: remote.setup(host_id)
+    except HostDownException: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
 def active_keys():
 
     """
