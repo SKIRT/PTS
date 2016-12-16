@@ -284,7 +284,7 @@ class GalaxyModeler(Configurable):
             updater = PTSUpdater()
 
             # Set remote host ID
-            updater.config.remote = self.host_id
+            updater.config.remote = host_id
 
             # Run the updater
             updater.run()

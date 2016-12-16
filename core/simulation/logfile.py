@@ -161,7 +161,7 @@ class LogFile(object):
         # Cannot determine total runtime
         if self.finished_simulation_message is None: return None
 
-        seconds = float(self.finished_simulation_message.split(" in ")[1].split(" s")[0])
+        seconds = float(self.finished_simulation_message.split(" in ")[-1].split(" s")[0])
         return seconds
 
     # -----------------------------------------------------------------

@@ -201,6 +201,20 @@ class Range(object):
 
         return repr(self.min) + " > " + repr(self.max)
 
+    # -----------------------------------------------------------------
+
+    def adjust(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Adjust minimal and maximal speedup
+        if value < self.min: self._min = value
+        elif value > self.max: self._max = value
+
 # -----------------------------------------------------------------
 
 class IntegerRange(Range):
@@ -298,6 +312,32 @@ class RealRange(Range):
 
         # Call the constructor of the base class
         super(RealRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def infinity(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return cls(-float("inf"), float("inf"))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def zero(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return cls(-0., 0.)
+
+
 
 # -----------------------------------------------------------------
 

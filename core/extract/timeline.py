@@ -30,7 +30,7 @@ class TimeLineTable(Table):
     """
 
     @classmethod
-    def from_columns(cls, process_list, phase_list, start_list, end_list):
+    def from_columns(cls, process_list, phase_list, start_list, end_list, annotation_list):
 
         """
         This function ...
@@ -38,11 +38,12 @@ class TimeLineTable(Table):
         :param phase_list:
         :param start_list:
         :param end_list:
+        :param annotation_list:
         :return:
         """
 
-        names = ["Process rank", "Simulation phase", "Start time", "End time"]
-        data = [process_list, phase_list, start_list, end_list]
+        names = ["Process rank", "Simulation phase", "Start time", "End time", "Annotation"]
+        data = [process_list, phase_list, start_list, end_list, annotation_list]
 
         # Call the constructor of the base class
         table = cls(data, names=names, masked=True)
@@ -228,28 +229,78 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def dustem(self):
+    def dustemission_spectra(self):
 
         """
         This function ...
         :return:
         """
 
-        # Loop over the table rows in opposite direction so that we know the first dust photon shooting phase is the
-        # final dust emission phase
-        for i in reversed(range(len(self))):
+        # Loop over the rows
+        for i in range(len(self)):
 
             # Only add the contributions from the root process
             if self["Process rank"][i] > 0: break
 
-            # Check whether the current entry corresponds to the desired phase
-            if self["Simulation phase"][i] == "dust":
+            # Check whether the current entry corresponds to a spectra calculation step
+            if self["Simulation phase"][i] != "spectra": continue
+
+            # Check whether this dust spectra calculation phase belongs to the (final) dust emission phase
+            if self["Annotation"] == "dust emission phase":
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
                 end = self["End time"][i]
 
+                # Calculate the time duration for the spectra calculation of the dust emission phase
+                return end - start
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustemission_photons(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Old implementation:
+
+        # Loop over the table rows in opposite direction so that we know the first dust photon shooting phase is the
+        # final dust emission phase
+        #for i in reversed(range(len(self))):
+
+            # Only add the contributions from the root process
+            #if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to the desired phase
+            #if self["Simulation phase"][i] == "dust":
+
+                # Get the start and end time for the phase
+                #start = self["Start time"][i]
+                #end = self["End time"][i]
+
                 # Calculate the time duration for the dust emission phase (only the shooting part)
+                #return end - start
+
+        # Loop over the rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to a dust shooting phase
+            if self["Simulation phase"][i] != "dust": continue
+
+            # Check whether this dust photon shooting phase belongs to the (final) dust emission phase
+            if self["Annotation"] == "dust emission phase":
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration for the photon shooting part of the dust emission phase
                 return end - start
 
     # -----------------------------------------------------------------
@@ -275,6 +326,151 @@ class TimeLineTable(Table):
         """
 
         return self.duration("comm")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_densities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to a communication phase
+            if self["Simulation phase"][i] != "comm": continue
+
+            # Check whether this communication phase is the communication of the dust densities during the setup
+            if self["Annotation"].contains("dust densities"):
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration for the photon shooting part of the dust emission phase
+                return end - start
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_stellar_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to a communication phase
+            if self["Simulation phase"][i] != "comm": continue
+
+            # Check whether this communication phase is the (first) communication of the absorbed stellar luminosities
+            if self["Annotation"].contains("Absorbed Stellar Luminosity Table"):
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration and return it
+                return end - start
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_dust_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to a communication phase
+            if self["Simulation phase"][i] != "comm": continue
+
+            # Check whether this communication phase is the (first) communication of the absorbed stellar luminosities
+            if self["Annotation"].contains("Absorbed Dust Luminosity Table"):
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration and return it
+                return end - start
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_emission(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to a communication phase
+            if self["Simulation phase"][i] != "comm": continue
+
+            # Check whether this communication phase is the (first) communication of the dust emission spectra
+            if self["Annotation"].contains("Dust Emission Spectra Table"):
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration and return it
+                return end - start
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the rows
+        for i in range(len(self)):
+
+            # Only add the contributions from the root process
+            if self["Process rank"][i] > 0: break
+
+            # Check whether the current entry corresponds to a communication phase
+            if self["Simulation phase"][i] != "comm": continue
+
+            # Check whether this communication phase is the communication of the observed fluxes
+            if self["Annotation"].contains("observed fluxes"):
+
+                # Get the start and end time for the phase
+                start = self["Start time"][i]
+                end = self["End time"][i]
+
+                # Calculate the time duration and return it
+                return end - start
 
     # -----------------------------------------------------------------
 
@@ -424,11 +620,15 @@ class TimeLineExtractor(object):
         phase_list = []
         start_list = []
         end_list = []
+        annotation_list = []
 
         # Loop over all log files to determine the earliest recorded time
         t_0 = datetime.now()
         for log_file in self.log_files:
             if log_file.t_0 < t_0: t_0 = log_file.t_0
+
+        # Keep track of whether we are in a dust self-absorption cycle or in the dust emission phase
+        dust_phase = None
 
         # Loop over the log files again and fill the column lists
         unique_processes = []
@@ -444,28 +644,50 @@ class TimeLineExtractor(object):
             phase_list.append(current_phase)
             start_list.append((log_file.t_0 - t_0).total_seconds())
 
-            # Loop over all log file entries
+            # Loop over all log file entries (lines)
             for j in range(len(log_file.contents)):
 
                 # Get the description of the current simulation phase
                 phase = log_file.contents["Phase"][j]
 
-                # If a new phase is entered
-                if phase != current_phase:
+                # Get the current message
+                message = log_file.contents["Message"][j]
 
-                    # Determine the current time
-                    seconds = (log_file.contents["Time"][j] - t_0).total_seconds()
+                # Check for markers that indicate a dust self-absorption cycle or the dust emission phase
+                if "Starting the" and "dust self-absorption cycle" in message:
+                    dust_phase = message.split("Starting the ")[1].split("...")[0]
+                elif message == "Starting the dust emission phase" in message:
+                    dust_phase = message.split("Starting the ")[1]
 
-                    # Mark the end of the previous phase
-                    end_list.append(seconds)
+                # If a new phase is not entered
+                if phase == current_phase: continue
 
-                    # Mark the start of the current phase
-                    process_list.append(process)
-                    phase_list.append(phase)
-                    start_list.append(seconds)
+                # Determine the current time
+                seconds = (log_file.contents["Time"][j] - t_0).total_seconds()
 
-                    # Update the current phase
-                    current_phase = phase
+                # Check whether the current entry corresponds to the desired phase
+                if phase == "dust": annotation = dust_phase
+                elif phase == "spectra": annotation = dust_phase
+                elif phase == "comm":
+
+                    communication_of = log_file.contents["Message"][j].split("communication of")[1]
+                    annotation = communication_of
+
+                else: annotation = None
+
+                # Mark the end of the previous phase
+                end_list.append(seconds)
+
+                # Mark the start of the current phase
+                process_list.append(process)
+                phase_list.append(phase)
+                start_list.append(seconds)
+
+                # Set the annotation
+                annotation_list.append(annotation)
+
+                # Update the current phase
+                current_phase = phase
 
             # Add the last recorded time in the log file as the end of the last simulation phase
             end_list.append((log_file.t_last - t_0).total_seconds())
@@ -474,7 +696,7 @@ class TimeLineExtractor(object):
         if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list)
 
         # Create the table
-        self.table = TimeLineTable.from_columns(process_list, phase_list, start_list, end_list)
+        self.table = TimeLineTable.from_columns(process_list, phase_list, start_list, end_list, annotation_list)
 
     # -----------------------------------------------------------------
 

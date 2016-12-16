@@ -36,6 +36,7 @@ from ..launch.timing import TimingTable
 from ..launch.memory import MemoryTable
 from ..extract.timeline import TimeLineExtractor
 from ..simulation.discover import SimulationDiscoverer
+from ..basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -225,7 +226,7 @@ class ScalingPlotter(Configurable):
         self.plot()
 
         # 4. Write
-        self.write()
+        if self.config.output is not None: self.write()
 
     # -----------------------------------------------------------------
 
@@ -581,6 +582,7 @@ class ScalingPlotter(Configurable):
         # Check if serial data is found
         if len(self.serial_timing) == 0 and self.needs_timing:
 
+            # Give warning
             log.warning("Serial (one core) timing data not found, searching for longest runtime for each phase (any parallelization mode)")
 
             # Loop over the phases
@@ -608,6 +610,7 @@ class ScalingPlotter(Configurable):
         # Check if serial data is found
         if len(self.serial_memory) == 0 and self.needs_memory:
 
+            # Give warning
             log.warning("Serial (one core) memory data not found, searching for highest memory usage for each phase (any parallelization mode)")
 
             # Loop over the phases
@@ -669,7 +672,10 @@ class ScalingPlotter(Configurable):
             if phase not in parallel_phases: continue
 
             # Skip phases for which a serial timing is not present
-            if not self.has_serial_timing(phase): continue
+            if not self.has_serial_timing(phase): #continue
+
+                # Give warning
+                log.warning("Serial (one core) timing data not found, using longest runtime (any parallelization mode) for normalizing the speedups (and efficiencies) for the fit")
 
             # Get the serial runtime (and error) for this phase (create a Quantity object)
             serial_time = self.serial_timing[phase].time
@@ -709,18 +715,23 @@ class ScalingPlotter(Configurable):
                 speedup_weigths = speedup_errors if not np.any(np.isinf(speedup_errors)) else None
                 if np.count_nonzero(speedup_weigths) == 0: speedup_weigths = None
 
+                # Calculate the normalized processor counts (relative to the number of processors used for the serial run)
+                normalized_processor_counts = processor_counts / self.serial_timing_ncores[phase]
+
+                print(normalized_processor_counts)
+
                 # Fit (standard or modified) Amdahl's law to the speedups
                 if len(processor_counts) < 10:
 
                     # Fit parameters for the speedups to Amdahl's law
-                    popt, pcov = curve_fit(amdahl_law, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                    popt, pcov = curve_fit(amdahl_law, normalized_processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
                     perr = np.sqrt(np.diag(pcov))
                     parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": 0.0, "a_error": 0.0, "b": 0.0, "b_error": 0.0, "c": 0.0, "c_error": 0.0})
 
                 else:
 
                     # Fit parameters for the speedups to Amdahl's law
-                    popt, pcov = curve_fit(modified_amdahl_law, processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
+                    popt, pcov = curve_fit(modified_amdahl_law, normalized_processor_counts, speedups, sigma=speedup_weigths, absolute_sigma=False)
                     perr = np.sqrt(np.diag(pcov))
                     parameters[mode] = Map({"p": popt[0], "p_error": perr[0], "a": popt[1], "a_error": perr[1], "b": popt[2], "b_error": perr[2], "c": popt[3], "c_error": perr[3]})
 
@@ -790,8 +801,11 @@ class ScalingPlotter(Configurable):
             weights = errors if not np.any(np.isinf(errors)) else None
             if np.count_nonzero(weights) == 0: weights = None
 
+            # Calculate the normalized processor counts (relative to the number of processors used for the serial run)
+            normalized_processor_counts = processor_counts / self.serial_timing_ncores["communication"]
+
             # Fit logarithmic + linear curve to the data
-            popt, pcov = curve_fit(communication_time_scaling, processor_counts, times, sigma=weights, absolute_sigma=False)
+            popt, pcov = curve_fit(communication_time_scaling, normalized_processor_counts, times, sigma=weights, absolute_sigma=False)
             perr = np.sqrt(np.diag(pcov))
             parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": popt[2], "c_error": perr[2]})
 
@@ -1137,6 +1151,9 @@ class ScalingPlotter(Configurable):
             # Get the fit parameters
             parameters = self.timing_fit_parameters[phase]
 
+            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+            reference_ncores = self.serial_timing_ncores[phase]
+
             # Plot the fitted speedup curves and write the parameters to the file
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
             for mode in parameters:
@@ -1147,7 +1164,7 @@ class ScalingPlotter(Configurable):
                 c = parameters[mode].c
 
                 # Calculate the fitted times
-                fit_times = [communication_time_scaling(n, a, b, c) for n in fit_ncores]
+                fit_times = [communication_time_scaling(n / float(reference_ncores), a, b, c) for n in fit_ncores]
 
                 # Add the plot
                 plt.plot(fit_ncores, fit_times, color="grey")
@@ -1204,6 +1221,9 @@ class ScalingPlotter(Configurable):
         serial_error = self.serial_timing[phase].error
         serial = Quantity(serial_time, serial_error)
 
+        # Keep track of the minimal and maximal speedup
+        speedup_range = RealRange.zero()
+
         # Loop over the different parallelization modes (the different curves)
         for mode in self.timing_data[phase]:
 
@@ -1225,6 +1245,9 @@ class ScalingPlotter(Configurable):
 
                 # Calculate the speedup based on the current runtime and the serial runtime
                 speedup = serial / time
+
+                # Adjust the speedup range
+                speedup_range.adjust(speedup.value)
 
                 # Add the value and the propagated error of the speedup to the appropriate lists
                 speedups.append(speedup.value)
@@ -1249,6 +1272,9 @@ class ScalingPlotter(Configurable):
             # Get the fit parameters
             parameters = self.timing_fit_parameters[phase]
 
+            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+            reference_ncores = self.serial_timing_ncores[phase]
+
             # Plot the fitted speedup curves and write the parameters to the file
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
             for mode in parameters:
@@ -1260,7 +1286,7 @@ class ScalingPlotter(Configurable):
                 c = parameters[mode].c
 
                 # Calculate the fitted speedups
-                fit_speedups = [modified_amdahl_law(n, p, a, b, c) for n in fit_ncores]
+                fit_speedups = [modified_amdahl_law(n/reference_ncores, p, a, b, c) for n in fit_ncores]
 
                 # Add the plot
                 plt.plot(fit_ncores, fit_speedups, color="grey")
@@ -1272,7 +1298,8 @@ class ScalingPlotter(Configurable):
         ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
         ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
         plt.xlim(ticks[0], ticks[-1])
-        if not self.config.hybridisation: plt.ylim(ticks[0], ticks[-1])
+        #if not self.config.hybridisation: plt.ylim(ticks[0], ticks[-1])
+        plt.ylim(speedup_range.min, speedup_range.max)
         plt.grid(True)
 
         # Plot a line that denotes linear scaling (speedup = nthreads)
@@ -1373,6 +1400,9 @@ class ScalingPlotter(Configurable):
         # Plot fit
         if not self.config.hybridisation and self.config.fit and self.config.plot_fit and self.has_timing_fit(phase):
 
+            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+            reference_ncores = self.serial_timing_ncores[phase]
+
             # Plot the fitted speedup curves
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
             for mode in self.timing_fit_parameters[phase]:
@@ -1384,7 +1414,7 @@ class ScalingPlotter(Configurable):
                 c = self.timing_fit_parameters[phase][mode].c
 
                 # Calculate the fitted efficiencies
-                fit_efficiencies = [modified_amdahl_law(n, p, a, b, c) / n for n in fit_ncores]
+                fit_efficiencies = [modified_amdahl_law(n/float(reference_ncores), p, a, b, c) / (n*reference_ncores) for n in fit_ncores]
 
                 # Add the plot
                 plt.plot(fit_ncores, fit_efficiencies, color="grey")
@@ -1479,6 +1509,9 @@ class ScalingPlotter(Configurable):
             # Get the fit parameters
             parameters = self.timing_fit_parameters[phase]
 
+            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+            reference_ncores = self.serial_timing_ncores[phase]
+
             # Plot the fitted speedup curves and write the parameters to the file
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
             for mode in parameters:
@@ -1489,7 +1522,7 @@ class ScalingPlotter(Configurable):
                 c = parameters[mode].c
 
                 # Calculate the fitted times
-                fit_times = [communication_time_scaling(n, a, b, c) * n for n in fit_ncores]
+                fit_times = [communication_time_scaling(n/reference_ncores, a, b, c) * n for n in fit_ncores]
 
                 # Add the plot
                 plt.plot(fit_ncores, fit_times, color="grey")
@@ -1901,7 +1934,44 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the timing table
+        self.write_timing()
+
+        # Write the memory table
+        self.write_memory()
+
+    # -----------------------------------------------------------------
+
+    def write_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing timing table ...")
+
+        table_path = fs.join(self.config.output, "timing.dat")
+        self.timing.saveto(table_path)
+
+    # -----------------------------------------------------------------
+
+    def write_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing memory table ...")
+
+        table_path = fs.join(self.config.output, "memory.dat")
+        self.memory.saveto(table_path)
 
 # -----------------------------------------------------------------
 
@@ -2026,6 +2096,44 @@ def modified_memory_scaling(n, a, b, c):
     """
 
     return a / n + b + c * n
+
+# -----------------------------------------------------------------
+
+def serial_time_scaling(n, a):
+
+    """
+    This function ...
+    :param n:
+    :param a:
+    :return:
+    """
+
+    return a
+
+# -----------------------------------------------------------------
+
+def parallel_time_scaling(n, a):
+
+    """
+    This function ...
+    :param n:
+    :param a:
+    :return:
+    """
+
+    return a/n
+
+# -----------------------------------------------------------------
+
+def waiting_time_scaling(n, ):
+
+    """
+    This function ...
+    :param n:
+    :return:
+    """
+
+    return a * n
 
 # -----------------------------------------------------------------
 
