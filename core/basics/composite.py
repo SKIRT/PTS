@@ -20,7 +20,7 @@ from abc import ABCMeta
 from ..tools import parsing
 from ..tools.logging import log
 from ..tools import formatting as fmt
-from ..tools.stringify import stringify_not_list
+from ..tools.stringify import stringify
 
 # -----------------------------------------------------------------
 
@@ -46,7 +46,7 @@ class SimplePropertyComposite(object):
         # Loop over the variables
         for name in vars(self):
 
-            dtype, value = stringify_not_list(getattr(self, name))
+            dtype, value = stringify(getattr(self, name))
             line = " - " + fmt.bold +  name + fmt.reset + ": " + value
             lines.append(line)
 
@@ -109,7 +109,7 @@ class SimplePropertyComposite(object):
             # Loop over the variables
             for name in vars(self):
 
-                dtype, value = stringify_not_list(getattr(self, name))
+                dtype, value = stringify(getattr(self, name))
                 print(name + ":", value + " [" + dtype + "]", file=instrumentfile)
 
     # -----------------------------------------------------------------

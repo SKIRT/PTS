@@ -10,7 +10,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools.stringify import stringify_not_list
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.component import load_fitting_configuration
-from pts.core.basics.host import find_host_ids
+from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 

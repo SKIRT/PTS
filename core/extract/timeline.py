@@ -30,7 +30,7 @@ class TimeLineTable(Table):
     """
 
     @classmethod
-    def from_columns(cls, process_list, phase_list, start_list, end_list, annotation_list):
+    def from_columns(cls, process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list):
 
         """
         This function ...
@@ -38,12 +38,13 @@ class TimeLineTable(Table):
         :param phase_list:
         :param start_list:
         :param end_list:
+        :param simulation_phase_list:
         :param annotation_list:
         :return:
         """
 
-        names = ["Process rank", "Simulation phase", "Start time", "End time", "Annotation"]
-        data = [process_list, phase_list, start_list, end_list, annotation_list]
+        names = ["Process rank", "Phase", "Start time", "End time", "Simulation phase", "Annotation"]
+        data = [process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list]
 
         # Call the constructor of the base class
         table = cls(data, names=names, masked=True)
@@ -113,7 +114,7 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to the desired phase
-            if self["Simulation phase"][i] == phase:
+            if self["Phase"][i] == phase:
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -154,7 +155,7 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a phase different from the specified phase
-            if self["Simulation phase"][i] not in phases:
+            if self["Phase"][i] not in phases:
 
                 # Get the start and end time for this phase
                 start = self["Start time"][i]
@@ -243,10 +244,10 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a spectra calculation step
-            if self["Simulation phase"][i] != "spectra": continue
+            if self["Phase"][i] != "spectra": continue
 
             # Check whether this dust spectra calculation phase belongs to the (final) dust emission phase
-            if self["Annotation"] == "dust emission phase":
+            if self["Simulation phase"] == "DUST EMISSION":
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -291,10 +292,10 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a dust shooting phase
-            if self["Simulation phase"][i] != "dust": continue
+            if self["Phase"][i] != "dust": continue
 
             # Check whether this dust photon shooting phase belongs to the (final) dust emission phase
-            if self["Annotation"] == "dust emission phase":
+            if self["Simulation phase"] == "DUST EMISSION":
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -344,10 +345,10 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a communication phase
-            if self["Simulation phase"][i] != "comm": continue
+            if self["Phase"][i] != "comm": continue
 
             # Check whether this communication phase is the communication of the dust densities during the setup
-            if self["Annotation"].contains("dust densities"):
+            if "dust densities" in self["Annotation"][i]:
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -373,10 +374,10 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a communication phase
-            if self["Simulation phase"][i] != "comm": continue
+            if self["Phase"][i] != "comm": continue
 
             # Check whether this communication phase is the (first) communication of the absorbed stellar luminosities
-            if self["Annotation"].contains("Absorbed Stellar Luminosity Table"):
+            if "absorbed stellar luminosity table" in self["Annotation"][i]:
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -402,10 +403,10 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a communication phase
-            if self["Simulation phase"][i] != "comm": continue
+            if self["Phase"][i] != "comm": continue
 
             # Check whether this communication phase is the (first) communication of the absorbed stellar luminosities
-            if self["Annotation"].contains("Absorbed Dust Luminosity Table"):
+            if "absorbed dust luminosity table" in self["Annotation"][i]:
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -431,10 +432,10 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a communication phase
-            if self["Simulation phase"][i] != "comm": continue
+            if self["Phase"][i] != "comm": continue
 
             # Check whether this communication phase is the (first) communication of the dust emission spectra
-            if self["Annotation"].contains("Dust Emission Spectra Table"):
+            if "dust emission spectra table" in self["Annotation"][i]:
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -460,10 +461,10 @@ class TimeLineTable(Table):
             if self["Process rank"][i] > 0: break
 
             # Check whether the current entry corresponds to a communication phase
-            if self["Simulation phase"][i] != "comm": continue
+            if self["Phase"][i] != "comm": continue
 
             # Check whether this communication phase is the communication of the observed fluxes
-            if self["Annotation"].contains("observed fluxes"):
+            if "observed fluxes" in self["Annotation"][i]:
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
@@ -620,6 +621,7 @@ class TimeLineExtractor(object):
         phase_list = []
         start_list = []
         end_list = []
+        simulation_phase_list = []
         annotation_list = []
 
         # Loop over all log files to determine the earliest recorded time
@@ -627,8 +629,12 @@ class TimeLineExtractor(object):
         for log_file in self.log_files:
             if log_file.t_0 < t_0: t_0 = log_file.t_0
 
-        # Keep track of whether we are in a dust self-absorption cycle or in the dust emission phase
-        dust_phase = None
+        # Keep track of the actual simulation phase (setup, stellar, self-absorption, dust emission, writing)
+        simulation_phase = None
+
+        # Keep track of the dust self-absorption stage and cycle
+        dust_selfabsorption_stage = None
+        dust_selfabsorption_cycle = None
 
         # Loop over the log files again and fill the column lists
         unique_processes = []
@@ -638,11 +644,16 @@ class TimeLineExtractor(object):
             process = log_file.process
             unique_processes.append(process)
 
+            # Get the first message
+            message = log_file.contents["Message"][0]
+
             # Keep track of the current phase while looping over the log file entries
             current_phase = log_file.contents["Phase"][0]
             process_list.append(process)
             phase_list.append(current_phase)
             start_list.append((log_file.t_0 - t_0).total_seconds())
+            simulation_phase_list.append(get_simulation_phase(message, None))
+            annotation_list.append(None)
 
             # Loop over all log file entries (lines)
             for j in range(len(log_file.contents)):
@@ -653,11 +664,21 @@ class TimeLineExtractor(object):
                 # Get the current message
                 message = log_file.contents["Message"][j]
 
-                # Check for markers that indicate a dust self-absorption cycle or the dust emission phase
-                if "Starting the" and "dust self-absorption cycle" in message:
-                    dust_phase = message.split("Starting the ")[1].split("...")[0]
-                elif message == "Starting the dust emission phase" in message:
-                    dust_phase = message.split("Starting the ")[1]
+                # Get the simulation phase
+                simulation_phase = get_simulation_phase(message, simulation_phase)
+
+                # Check for markers that indicate a dust self-absorption cycle
+                if "Starting the" in message and "dust self-absorption cycle" in message:
+                    stage_description = message.split("Starting the ")[1].split(" dust self-absorption")[0]
+                    if stage_description == "first-stage": dust_selfabsorption_stage = 0
+                    elif stage_description == "second-stage": dust_selfabsorption_stage = 1
+                    elif stage_description == "last-stage": dust_selfabsorption_stage = 2
+                    else: raise ValueError("Invalid dust self-absorption stage: " + stage_description)
+                    dust_selfabsorption_cycle = int(message.split("dust self-absorption cycle ")[1].split("...")[0])
+
+                if simulation_phase == "DUST EMISSION":
+                    dust_selfabsorption_stage = None
+                    dust_selfabsorption_cycle = None
 
                 # If a new phase is not entered
                 if phase == current_phase: continue
@@ -666,14 +687,14 @@ class TimeLineExtractor(object):
                 seconds = (log_file.contents["Time"][j] - t_0).total_seconds()
 
                 # Check whether the current entry corresponds to the desired phase
-                if phase == "dust": annotation = dust_phase
-                elif phase == "spectra": annotation = dust_phase
-                elif phase == "comm":
-
-                    communication_of = log_file.contents["Message"][j].split("communication of")[1]
+                annotation = None
+                if simulation_phase == "DUST SELF-ABSORPTION":
+                    if phase == "dust": annotation = str(dust_selfabsorption_stage) + "," + str(dust_selfabsorption_cycle)
+                    elif phase == "spectra": annotation = str(dust_selfabsorption_stage) + "," + str(dust_selfabsorption_cycle)
+                if phase == "comm":
+                    communication_of = log_file.contents["Message"][j].split("communication of")[1].split("...")[0].lower()
+                    if communication_of.startswith("the "): communication_of = communication_of.split("the ")[1]
                     annotation = communication_of
-
-                else: annotation = None
 
                 # Mark the end of the previous phase
                 end_list.append(seconds)
@@ -682,6 +703,9 @@ class TimeLineExtractor(object):
                 process_list.append(process)
                 phase_list.append(phase)
                 start_list.append(seconds)
+
+                # Set the simulation phase
+                simulation_phase_list.append(simulation_phase)
 
                 # Set the annotation
                 annotation_list.append(annotation)
@@ -693,10 +717,10 @@ class TimeLineExtractor(object):
             end_list.append((log_file.t_last - t_0).total_seconds())
 
         # Fix for when the number of phases does not correspond between the different processes
-        if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list)
+        if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list)
 
         # Create the table
-        self.table = TimeLineTable.from_columns(process_list, phase_list, start_list, end_list, annotation_list)
+        self.table = TimeLineTable.from_columns(process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list)
 
     # -----------------------------------------------------------------
 
@@ -725,7 +749,7 @@ class TimeLineExtractor(object):
 
 # -----------------------------------------------------------------
 
-def verify_phases(process_list, phase_list, start_list, end_list):
+def verify_phases(process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list):
 
     """
     This function ...
@@ -733,6 +757,8 @@ def verify_phases(process_list, phase_list, start_list, end_list):
     :param phase_list:
     :param start_list:
     :param end_list:
+    :param simulation_phase_list:
+    :param annotation_list:
     :return:
     """
 
@@ -763,14 +789,40 @@ def verify_phases(process_list, phase_list, start_list, end_list):
             missing_phase = phase_list[process_indices[1]+entry_index]
             missing_end = end_list[process_indices[1]+entry_index]
 
+            missing_simulation_phase = simulation_phase_list[process_indices[1]+entry_index]
+            missing_annotation = simulation_phase_list[process_indices[1]+entry_index]
+
             process_list.insert(entry_index, 0)
             phase_list.insert(entry_index, missing_phase)
             start_list.insert(entry_index, end_list[entry_index-1])
             end_list.insert(entry_index, missing_end)
+            simulation_phase_list.insert(entry_index, missing_simulation_phase)
+            annotation_list.insert(entry_index, missing_annotation)
 
         #for rank in range(1,nprocs):
 
             #print(phase_process_0, phase_list[process_indices[rank]+entry_index])
             #print(rank, process_list[process_indices[rank]+entry_index])
+
+# -----------------------------------------------------------------
+
+def get_simulation_phase(message, simulation_phase):
+
+    """
+    This function ...
+    :param message:
+    :param simulation_phase:
+    :return:
+    """
+
+    # Check for marker for the setup phase
+    if message == "Starting setup...": simulation_phase = "SETUP"
+    elif message == "Starting the stellar emission phase...": simulation_phase = "STELLAR EMISSION"
+    elif message == "Starting the dust self-absorption phase...": simulation_phase = "DUST SELF-ABSORPTION"
+    elif message == "Starting the dust emission phase...": simulation_phase = "DUST EMISSION"
+    elif message == "Starting writing results...": simulation_phase = "WRITING"
+    else: pass
+
+    return simulation_phase
 
 # -----------------------------------------------------------------

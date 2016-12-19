@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from .fetch import definition
-from ...core.basics.host import find_host_ids
+from ...core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 

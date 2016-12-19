@@ -53,6 +53,11 @@ class TimingTable(SmartTable):
                    ("Writing time", float, "s", "time spent writing to disk"),
                    ("Waiting time", float, "s", "time spent waiting for other processes"),
                    ("Communication time", float, "s", "time spent in inter-process communication"),
+                   ("Dust densities communication time", float, "s", "time spent in communication of dust densities"),
+                   ("Stellar absorption communication time", float, "s", "time spent in communication of stellar absorption luminosities"),
+                   ("Dust absorption communication time", float, "s", "time spent in communication of dust absorption luminosities"),
+                   ("Emission spectra communication time", float, "s", "time spent in communication of emission spectra"),
+                   ("Instruments communication time", float, "s", "time spent in communication of instrument data"),
                    ("Intermediate time", float, "s", "time spent in between other phases")]
 
     # -----------------------------------------------------------------
@@ -61,7 +66,9 @@ class TimingTable(SmartTable):
                   packages, ncells, grid_type, min_level, max_level, search_method, sample_count, max_optical_depth,
                   max_mass_fraction, max_density_dispersion, selfabsorption, transient_heating, data_parallel,
                   total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
-                  communication_time, intermediate_time):
+                  communication_time, densities_communication_time, stellar_absorption_communication_time,
+                  dust_absorption_communication_time, emission_communication_time, instruments_communication_time,
+                  intermediate_time):
 
         """
         This function ...
@@ -94,6 +101,11 @@ class TimingTable(SmartTable):
         :param writing_time:
         :param waiting_time:
         :param communication_time:
+        :param densities_communication_time:
+        :param stellar_absorption_communication_time:
+        :param dust_absorption_communication_time:
+        :param emission_communication_time:
+        :param instruments_communication_time:
         :param intermediate_time:
         :return:
         """
@@ -103,7 +115,9 @@ class TimingTable(SmartTable):
                   ncells, grid_type, min_level, max_level, search_method, sample_count, max_optical_depth,
                   max_mass_fraction, max_density_dispersion, selfabsorption, transient_heating, data_parallel,
                   total_runtime, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
-                  communication_time, intermediate_time]
+                  communication_time, densities_communication_time, stellar_absorption_communication_time,
+                  dust_absorption_communication_time, emission_communication_time, instruments_communication_time,
+                  intermediate_time]
 
         # Add a row to the table
         self.add_row(values)
@@ -236,14 +250,21 @@ class TimingTable(SmartTable):
         writing_time = timeline.writing
         waiting_time = timeline.waiting
         communication_time = timeline.communication
+        densities_communication_time = timeline.communication_densities
+        stellar_absorption_communication_time = timeline.communication_stellar_absorption
+        dust_absorption_communication_time = timeline.communication_dust_absorption
+        emission_communication_time = timeline.communication_emission
+        instruments_communication_time = timeline.communication_instruments
         intermediate_time = timeline.other
 
         # Add an entry to the timing table
         self.add_entry(simulation_name, submitted_at, host_id, cluster_name, cores,
-                               hyperthreads, processes, wavelengths, packages, ncells, grid_type, min_level, max_level,
-                               search_method, sample_count, max_optical_depth, max_mass_fraction, max_dens_disp,
-                               selfabsorption, transient_heating, data_parallel, total_runtime, setup_time,
-                               stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
-                               intermediate_time)
+                       hyperthreads, processes, wavelengths, packages, ncells, grid_type, min_level, max_level,
+                       search_method, sample_count, max_optical_depth, max_mass_fraction, max_dens_disp,
+                       selfabsorption, transient_heating, data_parallel, total_runtime, setup_time,
+                       stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time,
+                       densities_communication_time, stellar_absorption_communication_time,
+                       dust_absorption_communication_time, emission_communication_time,
+                       instruments_communication_time, intermediate_time)
 
 # -----------------------------------------------------------------

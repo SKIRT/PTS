@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.host import find_host_ids
+from pts.core.remote.host import find_host_ids
 from pts.core.config.simulation.logging import definition as logging_definition
 from pts.core.config.simulation.launch import definition
 from pts.core.config.simulation.analysis import definition as analysis_definition

@@ -526,10 +526,10 @@ class ConfigurationDefinition(object):
             # Add the argument
             if letter is None:
                 if default is False: parser.add_argument("--" + name, action="store_true", help=description)
-                else: parser.add_argument("--!" + name, action="store_true", help="don't " + description)
+                else: parser.add_argument("--not_" + name, action="store_true", help="don't " + description)
             else:
                 if default is False: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
-                else: parser.add_argument("-!" + letter, "--!" + name, action="store_true", help="don't " + description)
+                else: parser.add_argument("-not_" + letter, "--not_" + name, action="store_true", help="don't " + description)
 
         # Add arguments of sections
         for section_name in self.sections:
@@ -593,7 +593,7 @@ class ConfigurationDefinition(object):
 
             if default: # if default == True
 
-                argument_name = "!" + argument_name
+                argument_name = "not_" + argument_name
                 settings[name] = not getattr(arguments, argument_name)
 
             else: settings[name] = getattr(arguments, argument_name)

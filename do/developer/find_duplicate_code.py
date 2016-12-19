@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.info Show information about a certain remote simulation.
+## \package pts.do.developer.find_duplicate_code Find duplicate code in PTS.
 
 # -----------------------------------------------------------------
 
@@ -13,19 +13,16 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import argparse
+from inspect import getmembers, isfunction, getdoc
+
+# Import the relevant PTS classes and modules
+from pts.core.tools import parsing
+from pts.core.tools import formatting as fmt
+from pts.core.tools import introspection
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-#parser = argparse.ArgumentParser()
-#parser.add_argument("--remote", type=str, help="install SKIRT remotely")
-#parser.add_argument("--private", action="store_true", help="use the private SKIRT repository")
-#parser.add_argument("--debug", action="store_true", help="add this option to enable debug output for the installation procedure")
-
-# Parse the command line arguments
-arguments = parser.parse_args()
-
-# -----------------------------------------------------------------
+print("Not implemented yet")
 
 # -----------------------------------------------------------------

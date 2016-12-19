@@ -87,7 +87,7 @@ class ProgressPlotter(Plotter):
             for i in range(len(self.table)):
 
                 # Skip entries that do not belong to the current simulation phase
-                if not self.table["Simulation phase"][i] == phase: continue
+                if not self.table["Phase"][i] == phase: continue
 
                 # Get the process rank
                 rank = self.table["Process rank"][i]

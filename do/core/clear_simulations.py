@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.host import find_host_ids
+from pts.core.remote.host import find_host_ids
 from pts.core.tools import logging, introspection
 from pts.core.tools import filesystem as fs
 

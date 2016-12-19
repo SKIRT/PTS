@@ -1505,3 +1505,20 @@ def load_modeling_history(modeling_path):
     return history
 
 # -----------------------------------------------------------------
+
+def load_preparation_statistics(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine path
+    prep_path = fs.join(modeling_path, "prep")
+    path = fs.join(prep_path, "statistics.dat")
+
+    # Load and return the statistics
+    return PreparationStatistics.from_file(path)
+
+# -----------------------------------------------------------------
