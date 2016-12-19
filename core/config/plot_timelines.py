@@ -19,4 +19,7 @@ definition.add_flag("recursive", "look for simulation in directories recursively
 # Output
 definition.add_optional("output", "directory_path", "output directory", letter="o")
 
+# Flags
+definition.add_flag("other", "also plot the 'other' phases")
+
 # -----------------------------------------------------------------

@@ -15,12 +15,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-import os.path
 import matplotlib
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
 from collections import defaultdict
+from collections import Callable
+from types import FunctionType
+from string import ascii_lowercase
 
 # Import astronomical modules
 from astropy.table import Table
@@ -40,13 +42,29 @@ from ..basics.range import RealRange
 
 # -----------------------------------------------------------------
 
+alphabet = list(ascii_lowercase)
+
+# -----------------------------------------------------------------
+
 phase_names = {"total": "total simulation", "setup": "simulation setup", "stellar": "stellar emission phase",
                "spectra": "calculation of dust emission spectra", "dust": "dust emission phase",
-               "writing": "writing phase", "waiting": "waiting phases", "communication": "communication phases"}
+               "writing": "writing phase", "waiting": "waiting phases", "communication": "communication phases",
+               "dust densities communication": "commmunication of the dust densities",
+               "stellar absorption communication": "communication of the absorbed stellar luminosities",
+               "dust absorption communication": "communication of the absorbed dust luminosities",
+               "emission spectra communication": "communication of the dust emission spectra",
+               "instruments communication": "communication of the instrument data",
+               "intermediate": "intermediate procedures"}
 
 phase_labels = {"total": "Total runtime", "setup": "Setup time", "stellar": "Stellar runtime",
                 "spectra": "Runtime of dust spectra calculation", "dust": "Dust emission runtime",
-                "writing": "Writing time", "waiting": "Waiting time", "communication": "Communication time"}
+                "writing": "Writing time", "waiting": "Waiting time", "communication": "Communication time",
+                "dust densities communication": "Dust densities communication time",
+                "stellar absorption communication": "Stellar absorption table communication time",
+                "dust absorption communication": "Dust absorption table communication time",
+                "emission spectra communication": "Emission spectra communication time",
+                "instruments communication": "Instrument tables communication time",
+                "intermediate": "Intermediate time"}
 
 # -----------------------------------------------------------------
 
@@ -56,12 +74,71 @@ serial_phases = ["writing", "setup"]
 
 # -----------------------------------------------------------------
 
+# Scaling properties
 scaling_properties = ["runtime", "speedup", "efficiency", "CPU-time", "memory", "memory-gain", "total-memory", "timeline"]
+
+# Scaling phases
 simulation_phases = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication", "intermediate"]
+
+simulation_phases.append("dust densities communication")
+simulation_phases.append("stellar absorption communication")
+simulation_phases.append("dust absorption communication")
+simulation_phases.append("emission spectra communication")
+simulation_phases.append("instruments communication")
 
 # Seperate types of properties
 timing_properties = ["runtime", "speedup", "efficiency", "CPU-time", "timeline"]
 memory_properties = ["memory", "memory-gain", "total-memory"]
+
+# -----------------------------------------------------------------
+
+# Communication things:
+# dust densities communication
+# stellar absorption communication
+# dust absorption communication
+# emission spectra communication
+# instruments communication
+
+# -----------------------------------------------------------------
+
+pure_scaling_behaviour = dict()
+
+# Setup
+pure_scaling_behaviour["setup"] = [0]
+
+# Stellar emission
+pure_scaling_behaviour["stellar"] = [-1]
+
+# Dust emission
+pure_scaling_behaviour["dust"] = [-1]
+
+# Spectra
+pure_scaling_behaviour["spectra"] = [-1]
+
+# Communication
+pure_scaling_behaviour["dust densities communication"] = [0, 1, 2, "log"]
+pure_scaling_behaviour["stellar absorption communication"] = [0, 1, 2, "log"]
+pure_scaling_behaviour["dust absorption communication"] = [0, 1, 2, "log"]
+pure_scaling_behaviour["emission spectra communication"] = [0, 1, 2, "log"]
+pure_scaling_behaviour["instruments communication"] = [0, 1, 2, "log"]
+
+# Waiting
+pure_scaling_behaviour["waiting"] = [0, 1, 2]
+
+# Writing
+pure_scaling_behaviour["writing"] = [0]
+
+# -----------------------------------------------------------------
+
+composite_scaling_behaviour = dict()
+
+# Communication
+composite_scaling_behaviour["communication"] = ("dust densities communication", "stellar absorption communication",
+                                                "dust absorption communication", "emission spectra communication",
+                                                "instruments communication")
+
+# Total simulation
+composite_scaling_behaviour["total"] = ("setup", "stellar", "dust", "spectra", "communication", "waiting", "writing")
 
 # -----------------------------------------------------------------
 
@@ -96,8 +173,13 @@ class ScalingPlotter(Configurable):
         self.serial_timing = None
         self.serial_memory = None
 
+        # Fit functions
+        self.timing_fit_functions = dict()
+
         # Fit parameters
         self.timing_fit_parameters = dict()
+        self.timing_fit_parameter_errors = dict()
+
         self.memory_fit_parameters = dict()
 
         # ...
@@ -254,6 +336,11 @@ class ScalingPlotter(Configurable):
         # Call the setup function of the base class
         super(ScalingPlotter, self).setup(**kwargs)
 
+        # Check for 'all' flag
+        if self.config.all:
+            self.config.properties = scaling_properties
+            self.config.phases = simulation_phases
+
         # Timing or memory specified
         self.timing = kwargs.pop("timing", None)
         self.memory = kwargs.pop("memory", None)
@@ -311,6 +398,7 @@ class ScalingPlotter(Configurable):
         # Inform the user
         log.info("Extracting the timing and memory information ...")
 
+        # Check whether timing and/or memory tables have to be extracted
         extract_timing = self.timing is None
         extract_memory = self.memory is None
 
@@ -322,6 +410,9 @@ class ScalingPlotter(Configurable):
 
         # Loop over the simulations
         for simulation in self.simulations:
+
+            # Debugging
+            log.debug("Extracting timeline and memory information from simulation in '" + simulation.output_path + "' ...")
 
             # Load the log file
             log_file = simulation.log_file
@@ -408,15 +499,21 @@ class ScalingPlotter(Configurable):
         writing_times = defaultdict(lambda: defaultdict(list))
         waiting_times = defaultdict(lambda: defaultdict(list))
         communication_times = defaultdict(lambda: defaultdict(list))
+        densities_communication_times = defaultdict(lambda: defaultdict(list))
+        stellarabsorption_communication_times = defaultdict(lambda: defaultdict(list))
+        dustabsorption_communication_times = defaultdict(lambda: defaultdict(list))
+        emission_communication_times = defaultdict(lambda: defaultdict(list))
+        instruments_communication_times = defaultdict(lambda: defaultdict(list))
         intermediate_times = defaultdict(lambda: defaultdict(list))
 
-        total_memory = defaultdict(lambda: defaultdict(list))
-        setup_memory =  defaultdict(lambda: defaultdict(list))
-        stellar_memory = defaultdict(lambda: defaultdict(list))
-        spectra_memory =  defaultdict(lambda: defaultdict(list))
-        dust_memory =  defaultdict(lambda: defaultdict(list))
-        writing_memory =  defaultdict(lambda: defaultdict(list))
+        total_memorys = defaultdict(lambda: defaultdict(list))
+        setup_memorys =  defaultdict(lambda: defaultdict(list))
+        stellar_memorys = defaultdict(lambda: defaultdict(list))
+        spectra_memorys =  defaultdict(lambda: defaultdict(list))
+        dust_memorys =  defaultdict(lambda: defaultdict(list))
+        writing_memorys =  defaultdict(lambda: defaultdict(list))
 
+        # Number of cores for the serial memory runs
         serial_memory_ncores = None
 
         # Loop over the different entries in the timing table
@@ -444,28 +541,52 @@ class ScalingPlotter(Configurable):
                         else: mode = "mpi task"
                 else: mode = "multithreading"
 
+            # Get the times
+            total_time = self.timing["Total runtime"][i]
+            setup_time = self.timing["Setup time"][i]
+            stellar_time = self.timing["Stellar emission time"][i]
+            spectra_time = self.timing["Spectra calculation time"][i]
+            dust_time = self.timing["Dust emission time"][i]
+            writing_time = self.timing["Writing time"][i]
+            waiting_time = self.timing["Waiting time"][i]
+            communication_time = self.timing["Communication time"][i]
+            densities_comm_time = self.timing["Dust densities communication time"][i]
+            stellarabsorption_comm_time = self.timing["Stellar absorption communication time"][i]
+            dustabsorption_comm_time = self.timing["Dust absorption communication time"][i]
+            emission_comm_time = self.timing["Emission spectra communication time"][i]
+            instruments_comm_time = self.timing["Instruments communication time"][i]
+            intermediate_time = self.timing["Intermediate time"][i]
+
+            # Get the memory usages
+            total_memory = self.memory["Total peak memory"][i]
+            setup_memory = self.memory["Setup peak memory"][i]
+            stellar_memory = self.memory["Stellar emission peak memory"][i]
+            spectra_memory = self.memory["Spectra calculation peak memory"][i]
+            dust_memory = self.memory["Dust emission peak memory"][i]
+            writing_memory = self.memory["Writing peak memory"][i]
+
             # If the number of processors is 1, add the runtimes for the different simulation phases to the
             # dictionary that contains the serial runtimes
             if (self.config.hybridisation and processes == 1) or (not self.config.hybridisation and processors == 1):
 
-                serial_times["total"].append(self.timing["Total runtime"][i])
-                serial_times["setup"].append(self.timing["Setup time"][i])
-                serial_times["stellar"].append(self.timing["Stellar emission time"][i])
-                serial_times["spectra"].append(self.timing["Spectra calculation time"][i])
-                serial_times["dust"].append(self.timing["Dust emission time"][i])
-                serial_times["writing"].append(self.timing["Writing time"][i])
-                serial_times["waiting"].append(self.timing["Waiting time"][i])
-                serial_times["communication"].append(self.timing["Communication time"][i])
+                serial_times["total"].append(total_time)
+                serial_times["setup"].append(setup_time)
+                serial_times["stellar"].append(stellar_time)
+                serial_times["spectra"].append(spectra_time)
+                serial_times["dust"].append(dust_time)
+                serial_times["writing"].append(writing_time)
+                serial_times["waiting"].append(waiting_time)
+                serial_times["communication"].append(communication_time)
 
             # Number of processes = 1: equivalent to 'serial' in terms of memory consumption
             if processes == 1:
 
-                serial_memory["total"].append(self.memory["Total peak memory"][i])
-                serial_memory["setup"].append(self.memory["Setup peak memory"][i])
-                serial_memory["stellar"].append(self.memory["Stellar emission peak memory"][i])
-                serial_memory["spectra"].append(self.memory["Spectra calculation peak memory"][i])
-                serial_memory["dust"].append(self.memory["Dust emission peak memory"][i])
-                serial_memory["writing"].append(self.memory["Writing peak memory"][i])
+                serial_memory["total"].append(total_memory)
+                serial_memory["setup"].append(setup_memory)
+                serial_memory["stellar"].append(stellar_memory)
+                serial_memory["spectra"].append(spectra_memory)
+                serial_memory["dust"].append(dust_memory)
+                serial_memory["writing"].append(writing_memory)
 
                 serial_memory_ncores = processors
 
@@ -475,23 +596,28 @@ class ScalingPlotter(Configurable):
             modes[mode].add(processes_or_processors)
 
             # Fill in the runtimes and memory usage at the appropriate place in the dictionaries
-            total_times[mode][processes_or_processors].append(self.timing["Total runtime"][i])
-            setup_times[mode][processes_or_processors].append(self.timing["Setup time"][i])
-            stellar_times[mode][processes_or_processors].append(self.timing["Stellar emission time"][i])
-            spectra_times[mode][processes_or_processors].append(self.timing["Spectra calculation time"][i])
-            dust_times[mode][processes_or_processors].append(self.timing["Dust emission time"][i])
-            writing_times[mode][processes_or_processors].append(self.timing["Writing time"][i])
-            waiting_times[mode][processes_or_processors].append(self.timing["Waiting time"][i])
-            communication_times[mode][processes_or_processors].append(self.timing["Communication time"][i])
-            intermediate_times[mode][processes_or_processors].append(self.timing["Intermediate time"][i])
+            total_times[mode][processes_or_processors].append(total_time)
+            setup_times[mode][processes_or_processors].append(setup_time)
+            stellar_times[mode][processes_or_processors].append(stellar_time)
+            spectra_times[mode][processes_or_processors].append(spectra_time)
+            dust_times[mode][processes_or_processors].append(dust_time)
+            writing_times[mode][processes_or_processors].append(writing_time)
+            waiting_times[mode][processes_or_processors].append(waiting_time)
+            communication_times[mode][processes_or_processors].append(communication_time)
+            densities_communication_times[mode][processes_or_processors].append(densities_comm_time)
+            stellarabsorption_communication_times[mode][processes_or_processors].append(stellarabsorption_comm_time)
+            dustabsorption_communication_times[mode][processes_or_processors].append(dustabsorption_comm_time)
+            emission_communication_times[mode][processes_or_processors].append(emission_comm_time)
+            instruments_communication_times[mode][processes_or_processors].append(instruments_comm_time)
+            intermediate_times[mode][processes_or_processors].append(intermediate_time)
 
             # Fill in the memory usage at the appropriate place in the dictionaries
-            total_memory[mode][processes_or_processors].append(self.memory["Total peak memory"][i])
-            setup_memory[mode][processes_or_processors].append(self.memory["Setup peak memory"][i])
-            stellar_memory[mode][processes_or_processors].append(self.memory["Stellar emission peak memory"][i])
-            spectra_memory[mode][processes_or_processors].append(self.memory["Spectra calculation peak memory"][i])
-            dust_memory[mode][processes_or_processors].append(self.memory["Dust emission peak memory"][i])
-            writing_memory[mode][processes_or_processors].append(self.memory["Writing peak memory"][i])
+            total_memorys[mode][processes_or_processors].append(total_memory)
+            setup_memorys[mode][processes_or_processors].append(setup_memory)
+            stellar_memorys[mode][processes_or_processors].append(stellar_memory)
+            spectra_memorys[mode][processes_or_processors].append(spectra_memory)
+            dust_memorys[mode][processes_or_processors].append(dust_memory)
+            writing_memorys[mode][processes_or_processors].append(writing_memory)
 
         # Average the serial runtimes, loop over each phase
         for phase in serial_times:
@@ -549,6 +675,26 @@ class ScalingPlotter(Configurable):
                 self.timing_data["communication"][mode].times.append(np.mean(communication_times[mode][processors]))
                 self.timing_data["communication"][mode].errors.append(self.config.sigma_level * np.std(communication_times[mode][processors]))
 
+                self.timing_data["dust densities communication"][mode].processor_counts.append(processors)
+                self.timing_data["dust densities communication"][mode].times.append(np.mean(densities_communication_times[mode][processors]))
+                self.timing_data["dust densities communication"][mode].errors.append(self.config.sigma_level * np.std(densities_communication_times[mode][processors]))
+
+                self.timing_data["stellar absorption communication"][mode].processor_counts.append(processors)
+                self.timing_data["stellar absorption communication"][mode].times.append(np.mean(stellarabsorption_communication_times[mode][processors]))
+                self.timing_data["stellar absorption communication"][mode].errors.append(self.config.sigma_level * np.std(stellarabsorption_communication_times[mode][processors]))
+
+                self.timing_data["dust absorption communication"][mode].processor_counts.append(processors)
+                self.timing_data["dust absorption communication"][mode].times.append(np.mean(dustabsorption_communication_times[mode][processors]))
+                self.timing_data["dust absorption communication"][mode].errors.append(self.config.sigma_level * np.std(dustabsorption_communication_times[mode][processors]))
+
+                self.timing_data["emission spectra communication"][mode].processor_counts.append(processors)
+                self.timing_data["emission spectra communication"][mode].times.append(np.mean(emission_communication_times[mode][processors]))
+                self.timing_data["emission spectra communication"][mode].errors.append(self.config.sigma_level * np.std(emission_communication_times[mode][processors]))
+
+                self.timing_data["instruments communication"][mode].processor_counts.append(processors)
+                self.timing_data["instruments communication"][mode].times.append(np.mean(instruments_communication_times[mode][processors]))
+                self.timing_data["instruments communication"][mode].errors.append(self.config.sigma_level * np.std(instruments_communication_times[mode][processors]))
+
                 self.timing_data["intermediate"][mode].processor_counts.append(processors)
                 self.timing_data["intermediate"][mode].times.append(np.mean(intermediate_times[mode][processors]))
                 self.timing_data["intermediate"][mode].errors.append(self.config.sigma_level * np.std(intermediate_times[mode][processors]))
@@ -556,28 +702,28 @@ class ScalingPlotter(Configurable):
                 ## MEMORY
 
                 self.memory_data["total"][mode].processor_counts.append(processors)
-                self.memory_data["total"][mode].memory.append(np.mean(total_memory[mode][processors]))
-                self.memory_data["total"][mode].errors.append(self.config.sigma_level * np.std(total_memory[mode][processors]))
+                self.memory_data["total"][mode].memory.append(np.mean(total_memorys[mode][processors]))
+                self.memory_data["total"][mode].errors.append(self.config.sigma_level * np.std(total_memorys[mode][processors]))
 
                 self.memory_data["setup"][mode].processor_counts.append(processors)
-                self.memory_data["setup"][mode].memory.append(np.mean(setup_memory[mode][processors]))
-                self.memory_data["setup"][mode].errors.append(self.config.sigma_level * np.std(setup_memory[mode][processors]))
+                self.memory_data["setup"][mode].memory.append(np.mean(setup_memorys[mode][processors]))
+                self.memory_data["setup"][mode].errors.append(self.config.sigma_level * np.std(setup_memorys[mode][processors]))
 
                 self.memory_data["stellar"][mode].processor_counts.append(processors)
-                self.memory_data["stellar"][mode].memory.append(np.mean(stellar_memory[mode][processors]))
-                self.memory_data["stellar"][mode].errors.append(self.config.sigma_level * np.std(stellar_memory[mode][processors]))
+                self.memory_data["stellar"][mode].memory.append(np.mean(stellar_memorys[mode][processors]))
+                self.memory_data["stellar"][mode].errors.append(self.config.sigma_level * np.std(stellar_memorys[mode][processors]))
 
                 self.memory_data["spectra"][mode].processor_counts.append(processors)
-                self.memory_data["spectra"][mode].memory.append(np.mean(spectra_memory[mode][processors]))
-                self.memory_data["spectra"][mode].errors.append(self.config.sigma_level * np.std(spectra_memory[mode][processors]))
+                self.memory_data["spectra"][mode].memory.append(np.mean(spectra_memorys[mode][processors]))
+                self.memory_data["spectra"][mode].errors.append(self.config.sigma_level * np.std(spectra_memorys[mode][processors]))
 
                 self.memory_data["dust"][mode].processor_counts.append(processors)
-                self.memory_data["dust"][mode].memory.append(np.mean(dust_memory[mode][processors]))
-                self.memory_data["dust"][mode].errors.append(self.config.sigma_level * np.std(dust_memory[mode][processors]))
+                self.memory_data["dust"][mode].memory.append(np.mean(dust_memorys[mode][processors]))
+                self.memory_data["dust"][mode].errors.append(self.config.sigma_level * np.std(dust_memorys[mode][processors]))
 
                 self.memory_data["writing"][mode].processor_counts.append(processors)
-                self.memory_data["writing"][mode].memory.append(np.mean(writing_memory[mode][processors]))
-                self.memory_data["writing"][mode].errors.append(self.config.sigma_level * np.std(writing_memory[mode][processors]))
+                self.memory_data["writing"][mode].memory.append(np.mean(writing_memorys[mode][processors]))
+                self.memory_data["writing"][mode].errors.append(self.config.sigma_level * np.std(writing_memorys[mode][processors]))
 
         # Check if serial data is found
         if len(self.serial_timing) == 0 and self.needs_timing:
@@ -656,6 +802,108 @@ class ScalingPlotter(Configurable):
     # -----------------------------------------------------------------
 
     def fit_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the phases
+        for phase in self.config.phases:
+
+            # Skip phases for which a serial timing is not present
+            #if not self.has_serial_timing(phase):  # continue
+            #    # Give warning
+            #    log.warning("Serial (one core) timing data not found, using longest runtime (any parallelization mode) for normalizing the speedups (and efficiencies) for the fit")
+
+            # Debugging
+            log.debug("Fitting timing data for " + phase_names[phase] + " ...")
+
+            # Get the serial runtime (and error) for this phase (create a Quantity object)
+            #serial_time = self.serial_timing[phase].time
+            #serial_error = self.serial_timing[phase].error
+            #serial = Quantity(serial_time, serial_error)
+
+            # Create a dictionary that stores the fitted parameters for each different mode
+            parameters = dict()
+            parameter_errors = dict()
+
+            # Generate the fit function
+            behaviour = generate_scaling_behaviour(phase)
+            fit_function, nparameters = generate_fit_function(behaviour)
+
+            # Debugging
+            log.debug("Expected scaling behaviour: " + str(behaviour))
+
+            # Loop over the different parallelization modes (the different curves)
+            for mode in self.timing_data[phase]:
+
+                # Get the list of processor counts, runtimes and errors
+                processor_counts = self.timing_data[phase][mode].processor_counts
+                times = self.timing_data[phase][mode].times
+                errors = self.timing_data[phase][mode].errors
+
+                # Sort the lists
+                processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
+
+                # Set the weights of the different timing points for the fitting procedure
+                weigths = errors if not np.any(np.isinf(errors)) else None
+                if np.count_nonzero(errors) == 0: weights = None
+
+                # Calculate the normalized processor counts (relative to the number of processors used for the serial run)
+                normalized_processor_counts = processor_counts / self.serial_timing_ncores[phase]
+
+                from scipy.optimize.minpack import _initialize_feasible, prepare_bounds
+                n = nparameters
+                bounds = (-np.inf, np.inf)
+                lb, ub = prepare_bounds(bounds, n)
+                p0 = _initialize_feasible(lb, ub)
+
+                # Fit parameters for the speedups to Amdahl's law
+                popt, pcov = curve_fit(fit_function, normalized_processor_counts, times, sigma=weigths, absolute_sigma=False, p0=p0)
+                perr = np.sqrt(np.diag(pcov))
+
+                parameters[mode] = popt
+                parameter_errors[mode] = perr
+
+            # If output path is specified, write parameter files
+            if self.config.output is not None:
+
+                mode_list = []
+                other_columns = defaultdict(list)
+
+                # Fill columns
+                for mode in parameters:
+                    mode_list.append(mode)
+                    for i in range(len(parameters[mode])):
+                        other_columns[alphabet[i]].append(parameters[mode][i])
+                        other_columns[alphabet[i] + "_error"].append(parameter_errors[mode][i])
+
+                # Create a data file to contain the fitted parameters
+                directory = self.config.output
+                parameter_file_path = fs.join(directory, "parameters_timing_" + phase + ".dat")
+
+                # Create the parameters table and write to file
+                data = [mode_list]
+                names = ["Parallelization mode"]
+
+                for column_name in other_columns:
+                    data.append(other_columns[column_name])
+                    names.append(column_name)
+
+                print(data)
+                print(names)
+                table = Table(data=data, names=names)
+                table.write(parameter_file_path, format="ascii.commented_header")
+
+            # Add the parameters
+            self.timing_fit_functions[phase] = fit_function
+            self.timing_fit_parameters[phase] = parameters
+            self.timing_fit_parameter_errors[phase] = parameter_errors
+
+    # -----------------------------------------------------------------
+
+    def fit_timing_old(self):
 
         """
         This function ...
@@ -1112,7 +1360,7 @@ class ScalingPlotter(Configurable):
         """
 
         # Inform the user
-        log.info("Plotting the runtimes for the " + phase_names[phase] + "...")
+        log.info("Plotting the runtimes for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=self.config.figsize)
@@ -1145,29 +1393,52 @@ class ScalingPlotter(Configurable):
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
-        # Plot curve of communication times
-        if not self.config.hybridisation and self.config.fit and self.config.plot_fit and phase == "communication":
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
-            # Get the fit parameters
-            parameters = self.timing_fit_parameters[phase]
+            # Get the fit function
+            fit_function = self.timing_fit_functions[phase]
 
             # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
-            reference_ncores = self.serial_timing_ncores[phase]
+            #reference_ncores = self.serial_timing_ncores[phase]
 
-            # Plot the fitted speedup curves and write the parameters to the file
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-            for mode in parameters:
+            for mode in self.timing_fit_parameters[phase]:
 
                 # Get the parameter values
-                a = parameters[mode].a
-                b = parameters[mode].b
-                c = parameters[mode].c
+                parameters = self.timing_fit_parameters[phase][mode]
+
+                # Get the parameter errors
+                parameter_errors = self.timing_fit_parameter_errors[phase][mode]
 
                 # Calculate the fitted times
-                fit_times = [communication_time_scaling(n / float(reference_ncores), a, b, c) for n in fit_ncores]
+                fit_times = [fit_function(n, *parameters) for n in fit_ncores]
 
                 # Add the plot
                 plt.plot(fit_ncores, fit_times, color="grey")
+
+        # Plot curve of communication times
+        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit and phase == "communication":
+
+            # Get the fit parameters
+            #parameters = self.timing_fit_parameters[phase]
+
+            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+            #reference_ncores = self.serial_timing_ncores[phase]
+
+            # Plot the fitted speedup curves and write the parameters to the file
+            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            #for mode in parameters:
+
+                # Get the parameter values
+                #a = parameters[mode].a
+                #b = parameters[mode].b
+                #c = parameters[mode].c
+
+                # Calculate the fitted times
+                #fit_times = [communication_time_scaling(n / float(reference_ncores), a, b, c) for n in fit_ncores]
+
+                # Add the plot
+                #plt.plot(fit_ncores, fit_times, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -1207,7 +1478,7 @@ class ScalingPlotter(Configurable):
         """
 
         # Inform the user of the fact that the speedups are being calculated and plotted
-        log.info("Plotting the speedups for the " + phase_names[phase] + "...")
+        log.info("Plotting the speedups for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=self.config.figsize)
@@ -1269,27 +1540,47 @@ class ScalingPlotter(Configurable):
 
         if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
-            # Get the fit parameters
-            parameters = self.timing_fit_parameters[phase]
+            # Get the fit function
+            fit_function = self.timing_fit_functions[phase]
 
-            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
-            reference_ncores = self.serial_timing_ncores[phase]
-
-            # Plot the fitted speedup curves and write the parameters to the file
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-            for mode in parameters:
+            for mode in self.timing_fit_parameters[phase]:
 
                 # Get the parameter values
-                p = parameters[mode].p
-                a = parameters[mode].a
-                b = parameters[mode].b
-                c = parameters[mode].c
+                parameters = self.timing_fit_parameters[phase][mode]
+
+                # Get the parameter errors
+                parameter_errors = self.timing_fit_parameter_errors[phase][mode]
 
                 # Calculate the fitted speedups
-                fit_speedups = [modified_amdahl_law(n/reference_ncores, p, a, b, c) for n in fit_ncores]
+                fit_speedups = [serial.value / fit_function(n, *parameters) for n in fit_ncores]
 
                 # Add the plot
                 plt.plot(fit_ncores, fit_speedups, color="grey")
+
+        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+
+            # Get the fit parameters
+            #parameters = self.timing_fit_parameters[phase]
+
+            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+            #reference_ncores = self.serial_timing_ncores[phase]
+
+            # Plot the fitted speedup curves and write the parameters to the file
+            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            #for mode in parameters:
+
+                # Get the parameter values
+                #p = parameters[mode].p
+                #a = parameters[mode].a
+                #b = parameters[mode].b
+                #c = parameters[mode].c
+
+                # Calculate the fitted speedups
+                #fit_speedups = [modified_amdahl_law(n/reference_ncores, p, a, b, c) for n in fit_ncores]
+
+                # Add the plot
+                #plt.plot(fit_ncores, fit_speedups, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -1337,7 +1628,7 @@ class ScalingPlotter(Configurable):
         """
 
         # Inform the user of the fact that the efficiencies are being calculated and plotted
-        log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + "...")
+        log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=self.config.figsize)
@@ -1398,26 +1689,47 @@ class ScalingPlotter(Configurable):
         ticks.append(ticks[-1] * 2)
 
         # Plot fit
-        if not self.config.hybridisation and self.config.fit and self.config.plot_fit and self.has_timing_fit(phase):
+        if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
-            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
-            reference_ncores = self.serial_timing_ncores[phase]
+            # Get the fit function
+            fit_function = self.timing_fit_functions[phase]
 
-            # Plot the fitted speedup curves
             fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
             for mode in self.timing_fit_parameters[phase]:
 
                 # Get the parameter values
-                p = self.timing_fit_parameters[phase][mode].p
-                a = self.timing_fit_parameters[phase][mode].a
-                b = self.timing_fit_parameters[phase][mode].b
-                c = self.timing_fit_parameters[phase][mode].c
+                parameters = self.timing_fit_parameters[phase][mode]
+
+                # Get the parameter errors
+                parameter_errors = self.timing_fit_parameter_errors[phase][mode]
 
                 # Calculate the fitted efficiencies
-                fit_efficiencies = [modified_amdahl_law(n/float(reference_ncores), p, a, b, c) / (n*reference_ncores) for n in fit_ncores]
+                fit_efficiencies = [serial.value / fit_function(n, *parameters) / n for n in fit_ncores]
 
                 # Add the plot
                 plt.plot(fit_ncores, fit_efficiencies, color="grey")
+
+        # Plot fit
+        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit and self.has_timing_fit(phase):
+
+            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+            #reference_ncores = self.serial_timing_ncores[phase]
+
+            # Plot the fitted speedup curves
+            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+            #for mode in self.timing_fit_parameters[phase]:
+
+                # Get the parameter values
+                #p = self.timing_fit_parameters[phase][mode].p
+                #a = self.timing_fit_parameters[phase][mode].a
+                #b = self.timing_fit_parameters[phase][mode].b
+                #c = self.timing_fit_parameters[phase][mode].c
+
+                # Calculate the fitted efficiencies
+                #fit_efficiencies = [modified_amdahl_law(n/float(reference_ncores), p, a, b, c) / (n*reference_ncores) for n in fit_ncores]
+
+                # Add the plot
+                #plt.plot(fit_ncores, fit_efficiencies, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -1458,7 +1770,7 @@ class ScalingPlotter(Configurable):
         """
 
         # Inform the user
-        log.info("Plotting the CPU times for the " + phase_names[phase] + "...")
+        log.info("Plotting the CPU times for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=self.config.figsize)
@@ -1565,7 +1877,11 @@ class ScalingPlotter(Configurable):
         """
 
         # Inform the user
-        log.info("Plotting the memory scaling...")
+        log.info("Plotting the memory scaling for the " + phase_names[phase] + " ...")
+
+        if len(self.memory_data[phase]) == 0:
+            log.warning("No memory data for the " + phase_names[phase])
+            return
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=self.config.figsize)
@@ -1654,7 +1970,11 @@ class ScalingPlotter(Configurable):
         """
 
         # Inform the user
-        log.info("Plotting the memory scaling...")
+        log.info("Plotting the memory gain scaling for the " + phase_names[phase] + " ...")
+
+        if len(self.memory_data[phase]) == 0:
+            log.warning("No memory data for the " + phase_names[phase])
+            return
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=self.config.figsize)
@@ -1746,7 +2066,11 @@ class ScalingPlotter(Configurable):
         """
 
         # Inform the user
-        log.info("Plotting the total memory scaling (all processes combined)...")
+        log.info("Plotting the total memory scaling (all processes combined) for the " + phase_names[phase] + " ...")
+
+        if len(self.memory_data[phase]) == 0:
+            log.warning("No memory data for the " + phase_names[phase])
+            return
 
         # Initialize figure with the appropriate size
         plt.figure(figsize=self.config.figsize)
@@ -2164,5 +2488,68 @@ def sort_lists(*args, **kwargs):
 
     if to_arrays: return [np.array(list(t)) for t in zip(*sorted(zip(*args)))]
     else: return [list(t) for t in zip(*sorted(zip(*args)))]
+
+# -----------------------------------------------------------------
+
+def generate_scaling_behaviour(phase):
+
+    """
+    This function ...
+    :param phase:
+    :return:
+    """
+
+    behaviour = set()
+
+    # Pure scaling term
+    if phase in pure_scaling_behaviour:
+        for component in pure_scaling_behaviour[phase]: behaviour.add(component)
+
+    # Composite scaling term
+    elif phase in composite_scaling_behaviour:
+        for composite_phase in composite_scaling_behaviour[phase]:
+            for component in generate_scaling_behaviour(composite_phase): behaviour.add(component)
+
+    # Not recognized
+    else: raise ValueError("Phase '" + phase + "' not recognized")
+
+    # Return the scaling behaviour
+    return list(behaviour)
+
+# -----------------------------------------------------------------
+
+class FitFunction(Callable):
+#class FitFunction(FunctionType):
+
+    def __init__(self, powers):
+
+        self.powers = powers
+        self.n = len(self.powers)
+
+    def __call__(self, *args):
+        x = args[0]
+        result = 0.
+        for i in range(self.n):
+            a = args[i+1]
+            if self.powers[i] == "log":
+                result += a * np.log10(x)
+            else: result += a * x**self.powers[i]
+        return result
+
+# -----------------------------------------------------------------
+
+def generate_fit_function(behaviour):
+
+    """
+    This function ...
+    :param behaviour:
+    :return:
+    """
+
+    function = FitFunction(behaviour)
+
+    nparameters = len(behaviour)
+
+    return function.__call__, nparameters
 
 # -----------------------------------------------------------------

@@ -69,11 +69,11 @@ class BatchTimeLinePlotter(Configurable):
         self.simulations = []
 
         # The timelines
-        self.timelines = []
+        self.timelines = dict()
 
         # The data
-        self.single_data = []
-        self.multi_data = []
+        self.single_data = dict()
+        self.multi_data = None
 
     # -----------------------------------------------------------------
 
@@ -91,10 +91,13 @@ class BatchTimeLinePlotter(Configurable):
         # 2. Extract
         self.extract()
 
-        # Prepare
+        # 3. Prepare
         self.prepare()
 
-        # 3. Plot
+        # 4. Writing
+        self.write()
+
+        # 5. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -127,7 +130,17 @@ class BatchTimeLinePlotter(Configurable):
             # Set the simulations
             self.simulations = discoverer.simulations_single_ski
 
-            #self.simulations = load_simulations(self.config.path)
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_prefix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.simulations[0].prefix()
 
     # -----------------------------------------------------------------
 
@@ -150,8 +163,26 @@ class BatchTimeLinePlotter(Configurable):
             # Run the timeline extractor
             timeline = extractor.run(simulation)
 
+            # Get the simulation output path
+            output_path = simulation.output_path
+
+            # Check whether unique
+            if output_path in self.timelines: raise RuntimeError("Multiple simulations have their output in the '" + output_path + "' directory")
+
             # Add the timeline
-            self.timelines.append(timeline)
+            self.timelines[output_path] = timeline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_multi(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.timelines) > 1
 
     # -----------------------------------------------------------------
 
@@ -165,8 +196,11 @@ class BatchTimeLinePlotter(Configurable):
         # Inform the user
         log.info("Preparing the data for plotting ...")
 
-        # Prepare
+        # Prepare data for single-simulation plots
         self.prepare_single()
+
+        # Prepare for multi-simulation plot
+        if self.has_multi: self.prepare_multi()
 
     # -----------------------------------------------------------------
 
@@ -177,8 +211,17 @@ class BatchTimeLinePlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Preparing the timeline data for making single-simulation plots ...")
+
         # Loop over the timelines
-        for timeline in self.timelines:
+        for output_path in self.timelines:
+
+            # Get the timeline
+            timeline = self.timelines[output_path]
+
+            # Check the timeline
+            check_timeline(timeline)
 
             # Get a list of the different process ranks
             ranks = np.unique(timeline["Process rank"])
@@ -187,15 +230,32 @@ class BatchTimeLinePlotter(Configurable):
             # indexed on the phase
             data = []
 
+            # Skipped entries
+            skipped = []
+
+            nphases = 0
+
+            counter = 0
+
+            previous_rank = 0
+
             # Iterate over the different entries in the timeline table
             for i in range(len(timeline)):
 
-                if timeline["Process rank"][i] == 0:
+                rank = timeline["Process rank"][i]
 
-                    phase = timeline["Simulation phase"][i]
+                if rank == 0:
+
+                    nphases += 1
 
                     # Few special cases where we want the phase indicator to just say 'other'
+                    phase = timeline["Phase"][i]
                     if phase is None or phase == "start" or isinstance(phase, np.ma.core.MaskedConstant): phase = "other"
+
+                    # Don't plot 'other' phases
+                    if phase == "other" and not self.config.other:
+                        skipped.append(i)
+                        continue
 
                     # Add the data
                     data.append([phase, [], []])
@@ -204,12 +264,160 @@ class BatchTimeLinePlotter(Configurable):
 
                 else:
 
-                    nphases = len(data)
-                    data[i % nphases][1].append(timeline["Start time"][i])
-                    data[i % nphases][2].append(timeline["End time"][i])
+                    if rank != previous_rank: counter = 0
+
+                    # Few special cases where we want the phase indicator to just say 'other'
+                    phase = timeline["Phase"][i]
+                    if phase is None or phase == "start" or isinstance(phase, np.ma.core.MaskedConstant): phase = "other"
+
+                    # Don't plot 'other' phases
+                    if phase == "other" and not self.config.other:
+                        skipped.append(i)
+                        continue
+
+                    #index = i % nphases
+                    #if index in skipped:
+                    #    continue # skip skipped entries
+
+                    index = counter
+
+                    data[index][1].append(timeline["Start time"][i])
+                    data[index][2].append(timeline["End time"][i])
+
+                    counter += 1
+                    previous_rank = rank
 
             # Add the data
-            self.single_data.append((ranks, data))
+            self.single_data[output_path] = (ranks, data)
+
+    # -----------------------------------------------------------------
+
+    def prepare_multi(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Preparing the timeline data for making multi-simulation plots ...")
+
+        # Initialize data structures
+        data = []
+        nprocs_list = []
+
+        data.append(["setup", [], []])
+        data.append(["stellar", [], []])
+        data.append(["spectra", [], []])
+        data.append(["dust", [], []])
+        data.append(["write", [], []])
+        data.append(["wait", [], []])
+        data.append(["comm", [], []])
+
+        # The simulation names
+        simulation_names = []
+
+        # Loop over the timelines
+        for output_path in self.timelines:
+
+            # Get the timeline
+            timeline = self.timelines[output_path]
+
+            # Get the number of processes
+            nprocesses = timeline.processes
+
+            # Get the average runtimes for the different phases corresponding to the current processor count
+            setup_time = timeline.setup * nprocesses
+            stellar_time = timeline.stellar * nprocesses
+            spectra_time = timeline.spectra * nprocesses
+            dust_time = timeline.dust * nprocesses
+            writing_time = timeline.writing * nprocesses
+            waiting_time = timeline.waiting * nprocesses
+            communication_time = timeline.communication * nprocesses
+
+            total = 0.0
+
+            # Setup
+            data[0][1].append(total)
+            total += setup_time
+            data[0][2].append(total)
+
+            # Stellar
+            data[1][1].append(total)
+            total += stellar_time
+            data[1][2].append(total)
+
+            # Spectra
+            data[2][1].append(total)
+            total += spectra_time
+            data[2][2].append(total)
+
+            # Dust
+            data[3][1].append(total)
+            total += dust_time
+            data[3][2].append(total)
+
+            # Writing
+            data[4][1].append(total)
+            total += writing_time
+            data[4][2].append(total)
+
+            # Waiting
+            data[5][1].append(total)
+            total += waiting_time
+            data[5][2].append(total)
+
+            # Communication
+            data[6][1].append(total)
+            total += communication_time
+            data[6][2].append(total)
+
+            # Add the process count
+            nprocs_list.append(nprocesses)
+
+            # Add the simulation name
+            simulation_name = fs.name(output_path)
+            simulation_names.append(simulation_name)
+
+        # Set the data
+        self.multi_data = (nprocs_list, simulation_names, data)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the extracted timelines
+        self.write_timelines()
+
+    # -----------------------------------------------------------------
+
+    def write_timelines(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the timelines ...")
+
+        # Loop over the data
+        for output_path in self.timelines:
+
+            # Determine path
+            if self.config.output is not None: path = fs.join(self.config.output, "timeline_" + fs.name(output_path) + ".dat")
+            else: path = fs.join(output_path, "timeline.dat")
+
+            # Write the timeline
+            self.timelines[output_path].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -223,7 +431,11 @@ class BatchTimeLinePlotter(Configurable):
         # Inform the user
         log.info("Plotting ...")
 
+        # Plot single
         self.plot_single()
+
+        # Plot multi
+        if self.has_multi: self.plot_multi()
 
     # -----------------------------------------------------------------
 
@@ -234,16 +446,50 @@ class BatchTimeLinePlotter(Configurable):
         :return:
         """
 
-        # Loop over the data
-        for ranks, data in self.single_data:
+        # Inform the user
+        log.info("Plotting timelines of individual simulations ...")
 
-            # Determine the path
-            if self.config.output is not None:
-                plot_path = fs.join(self.config.output, "timeline.pdf")
-            else: plot_path = fs.join(fs.cwd(), "timeline.pdf")
+        # Loop over the data
+        for output_path in self.single_data:
+
+            # Debugging
+            log.debug("Plotting timeline for the " + fs.name(output_path) + " path simulation ...")
+
+            # Get the data
+            ranks, data = self.single_data[output_path]
+
+            # Determine path
+            if self.config.output is not None: path = fs.join(self.config.output, "timeline_" + fs.name(output_path) + ".pdf")
+            else: path = fs.join(output_path, "timeline.pdf")
 
             # Create the plot
-            create_timeline_plot(data, ranks, plot_path)
+            create_timeline_plot(data, ranks, path)
+
+    # -----------------------------------------------------------------
+
+    def plot_multi(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting a timeline of the CPU time of all simulations ...")
+
+        # Set the plot title
+        title = "Timeline of CPU time"
+
+        # Get the data
+        nprocs_list, simulation_names, data = self.multi_data
+
+        # Determine the path
+        if self.config.output is not None: path = fs.join(self.config.output, "timeline_cputime.pdf")
+        else: path = fs.join(self.config.path, "timeline_cputime.pdf")
+
+        # Create the plot
+        create_timeline_plot(data, nprocs_list, path, percentages=True, totals=True, unordered=True, numberofproc=True,
+                             cpu=True, title=title, ylabels=simulation_names, yaxis="Simulations")
 
 # -----------------------------------------------------------------
 
@@ -301,7 +547,7 @@ class TimeLinePlotter(Plotter):
 
             if self.table["Process rank"][i] == 0:
 
-                phase = self.table["Simulation phase"][i]
+                phase = self.table["Phase"][i]
 
                 # Few special cases where we want the phase indicator to just say 'other'
                 if phase is None or phase == "start" or isinstance(phase, np.ma.core.MaskedConstant): phase = "other"
@@ -336,7 +582,8 @@ class TimeLinePlotter(Plotter):
 
 # -----------------------------------------------------------------
 
-def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentages=False, totals=False, unordered=False, numberofproc=False, cpu=False, title=None):
+def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentages=False, totals=False, unordered=False,
+                         numberofproc=False, cpu=False, title=None, ylabels=None, yaxis=None):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
@@ -350,6 +597,9 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     :param unordered:
     :param numberofproc:
     :param cpu:
+    :param title:
+    :param ylabels:
+    :param yaxis:
     :return:
     """
 
@@ -369,9 +619,6 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     # Get the ordering
     if unordered: yticks = np.array(procranks).argsort().argsort()
     else: yticks = procranks
-
-    #print("yticks=", yticks)
-    #print("durations=", durations)
 
     durations_list = []
     totaldurations = np.zeros(nprocs)
@@ -439,6 +686,14 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
 
     #ax.yaxis.grid(True)
 
+    # Custom y labels
+    if ylabels is not None:
+        plt.yticks(yticks, ylabels)
+        ax.set_ylabel("")
+
+    # Custom y axis label
+    if yaxis is not None: ax.set_ylabel(yaxis)
+
     if nprocs == 1:
 
         ax.set_frame_on(False)
@@ -462,5 +717,37 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     if path is not None: plt.savefig(path, bbox_inches="tight", pad_inches=0.40)
     else: plt.show()
     plt.close()
+
+# -----------------------------------------------------------------
+
+def check_timeline(timeline):
+
+    """
+    This function ...
+    :param timeline:
+    :return:
+    """
+
+    phases = []
+
+    # Iterate over the different entries in the timeline table
+    for i in range(len(timeline)):
+
+        if timeline["Process rank"][i] == 0:
+
+            phase = timeline["Phase"][i]
+
+            phases.append(phase)
+
+        else:
+
+            nphases = len(phases)
+            index = i % nphases
+
+            phase = timeline["Phase"][i]
+
+            #print(phases[index], phase)
+
+            if phases[index] != phase: raise RuntimeError("Timeline is not consistent")
 
 # -----------------------------------------------------------------
