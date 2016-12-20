@@ -21,11 +21,12 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
 from collections import defaultdict
 from collections import Callable
-from types import FunctionType
+#from types import FunctionType
 from string import ascii_lowercase
 
 # Import astronomical modules
 from astropy.table import Table
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..basics.quantity import Quantity
@@ -183,9 +184,9 @@ class ScalingPlotter(Configurable):
 
         self.memory_fit_parameters = dict()
 
-        # ...
-        self.serial_timing_ncores = dict()
-        self.serial_memory_ncores = dict()
+        # The number of cores used for the 'serial' timing and memory data
+        self.serial_timing_ncores = defaultdict(dict)
+        self.serial_memory_ncores = defaultdict(dict)
 
         # Parameter set mapping for the simulations
         self.distinct_parameter_sets = []
@@ -541,7 +542,7 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def different_parameters_timing(self):
 
         """
@@ -549,11 +550,11 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
-        return self.timing.different_parameters()
+        return self.timing.different_ski_parameters()
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def different_parameters_memory(self):
 
         """
@@ -561,7 +562,77 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
-        return self.memory.different_parameters()
+        return self.memory.different_ski_parameters()
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_set_timing(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Get relevant simulation properties
+        #relevant_parameters = Map()
+        #for parameter in self.different_parameters_timing:
+        #    relevant_parameters[parameter] = self.timing[parameter][i]
+        #if len(relevant_parameters) == 0: relevant_parameters = "empty"
+
+        values = []
+
+        for parameter in self.different_parameters_timing: values.append(self.timing[parameter][index])
+
+        if len(values) == 0: values = "empty"
+        elif len(values) == 1: values = values[0]
+        else: values = tuple(values)
+
+        return values
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_set_memory(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        values = []
+
+        for parameter in self.different_parameters_memory: values.append(self.memory[parameter][index])
+
+        if len(values) == 0: values = "empty"
+        elif len(values) == 1: values = values[0]
+        else: values = tuple(values)
+
+        return values
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_index_timing(self, parameter_name):
+
+        """
+        This function ...
+        :param parameter_name:
+        :return:
+        """
+
+        return self.different_parameters_timing.index(parameter_name)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_index_memory(self, parameter_name):
+
+        """
+        This function ...
+        :param parameter_name:
+        :return:
+        """
+
+        return self.different_parameters_memory.index(parameter_name)
 
     # -----------------------------------------------------------------
 
@@ -622,14 +693,14 @@ class ScalingPlotter(Configurable):
         # Number of cores for the serial memory runs
         serial_memory_ncores = dict()
 
+        # Debugging
+        log.debug("The parameters that differ between the simulations are: " + ", ".join(self.different_parameters_timing))
+
         # Loop over the different entries in the timing table
         for i in range(len(self.timing)):
 
-            # Get relevant simulation properties
-            relevant_parameters = dict()
-            for parameter in self.different_parameters_timing:
-                relevant_parameters[parameter] = self.timing[parameter][i]
-            if len(relevant_parameters) == 0: relevant_parameters = "empty"
+            # Get the relevant parameters
+            relevant_parameters = self.get_parameter_set_timing(i)
 
             # Get the number of processes and threads
             processes = self.timing["Processes"][i]
@@ -883,22 +954,33 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
+        # Give warning
+        log.warning("Serial (one core) timing data not found, extrapolating timing data created with other numbers of photon packages ...")
+
         the_other_npackages = None
         the_other_parameter_set = None
 
         # Loop over the other parameter sets
         other_parameter_sets = parameters_modes_processor_counts_dict.keys()
         other_parameter_sets.remove(parameter_set)
+        if len(other_parameter_sets) == 0: return
         for other_parameter_set in other_parameter_sets:
 
             other_npackages = None
 
-            for name in other_parameter_set:
+            # before parameter sets were tuples instead of dictionaries / Maps
+            #for name in other_parameter_set:
+            #    if name == "Packages": other_npackages = other_parameter_set["Packages"]
+            #    elif other_parameter_set[name] != parameter_set[name]:
+            #        break
 
+            for index in range(len(self.different_parameters_timing)):
+
+                name = self.different_parameters_timing[index]
                 if name == "Packages":
-                    other_npackages = other_parameter_set["Packages"]
-                elif other_parameter_set[name] != parameter_set[name]:
-                    break
+                    if isinstance(other_parameter_set, tuple): other_npackages = other_parameter_set[index]
+                    else: other_npackages = other_parameter_set
+                elif other_parameter_set[index] != parameter_set[index]: break
 
             # If a break is not encountered
             else:
@@ -912,7 +994,9 @@ class ScalingPlotter(Configurable):
         if the_other_parameter_set is None: return
 
         # Multiplication factor
-        npackages_factor = float(the_other_npackages) / float(parameter_set["Packages"])
+        npackages_index = self.get_parameter_index_timing("Packages")
+        if isinstance(parameter_set, tuple): npackages_factor = float(the_other_npackages) / float(parameter_set[npackages_index])
+        else: npackages_factor = float(the_other_npackages) / parameter_set # the parameter set = only just the npackages value
 
         the_mode = None
         the_serial_index = None
@@ -929,17 +1013,19 @@ class ScalingPlotter(Configurable):
         # Only if a serial run was found for any mode
         if the_mode is None: return
 
+        # GET TIMING DATA FROM PARAMETER SET THAT DIFFERS ONLY IN THE NUMBER OF PACKAGES
+
         # Scale the runtimes of the emission phases
-        stellar_time = self.timing_data["stellar"][parameter_set][the_mode].times[the_serial_index] * npackages_factor
-        dust_time = self.timing_data["dust"][parameter_set][the_mode].times[the_serial_index] * npackages_factor
+        stellar_time = self.timing_data["stellar"][the_other_parameter_set][the_mode].times[the_serial_index] * npackages_factor
+        dust_time = self.timing_data["dust"][the_other_parameter_set][the_mode].times[the_serial_index] * npackages_factor
 
         # Other runtimes
-        setup_time = self.timing_data["setup"][parameter_set][the_mode].times[the_serial_index]
-        spectra_time = self.timing_data["spectra"][parameter_set][the_mode].times[the_serial_index]
-        writing_time = self.timing_data["writing"][parameter_set][the_mode].times[the_serial_index]
-        waiting_time = self.timing_data["waiting"][parameter_set][the_mode].times[the_serial_index]
+        setup_time = self.timing_data["setup"][the_other_parameter_set][the_mode].times[the_serial_index]
+        spectra_time = self.timing_data["spectra"][the_other_parameter_set][the_mode].times[the_serial_index]
+        writing_time = self.timing_data["writing"][the_other_parameter_set][the_mode].times[the_serial_index]
+        waiting_time = self.timing_data["waiting"][the_other_parameter_set][the_mode].times[the_serial_index]
         communication_time = 0.0  # serial run
-        intermediate_time = self.timing_data["intermediate"][parameter_set][the_mode].times[the_serial_index]
+        intermediate_time = self.timing_data["intermediate"][the_other_parameter_set][the_mode].times[the_serial_index]
 
         # Calculate other
         densities_comm_time = 0.0  # serial run
@@ -948,6 +1034,8 @@ class ScalingPlotter(Configurable):
         emission_comm_time = 0.0  # serial run
         instruments_comm_time = 0.0  # serial run
         total_time = setup_time + stellar_time + spectra_time + dust_time + writing_time + waiting_time + communication_time + intermediate_time
+
+        # FILL IN FOR THE PARAMETER SET WHICH WE WERE SEARCHING SERIAL DATA FOR
 
         # total
         self.serial_timing[parameter_set]["total"].time = total_time
@@ -1710,22 +1798,27 @@ class ScalingPlotter(Configurable):
         ticks = set()
 
         # Loop over the different parameter sets (different ski files)
-        for parameter_set in self.timing_data:
+        for parameter_set in self.timing_data[phase]:
+
+            # Debugging
+            log.debug("Plotting the runtimes for the " + phase_names[phase] + " for the simulations with parameters: " + parameter_set_to_string(parameter_set, self.different_parameters_timing))
 
             # Loop over the different parallelization modes (the different curves)
-            for mode in self.timing_data[parameter_set][phase]:
+            for mode in self.timing_data[phase][parameter_set]:
 
                 # Get the list of processor counts, runtimes and errors
-                processor_counts = self.timing_data[parameter_set][phase][mode].processor_counts
-                times = self.timing_data[parameter_set][phase][mode].times
-                errors = self.timing_data[parameter_set][phase][mode].errors
+                processor_counts = self.timing_data[phase][parameter_set][mode].processor_counts
+                times = self.timing_data[phase][parameter_set][mode].times
+                errors = self.timing_data[phase][parameter_set][mode].errors
 
                 # Sort the lists
                 processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
 
                 # Determine the label
                 if parameter_set == "empty": label = mode
-                else: label = mode + " [" + ", ".join([name + ": " + str(parameter_set[name]) for name in parameter_set]) + "]"
+                elif isinstance(parameter_set, tuple):
+                    label = mode + " [" + ", ".join([self.different_parameters_timing[index] + ": " + str(parameter_set[index]) for index in range(len(self.different_parameters_timing))]) + "]"
+                else: label = mode + " [" + self.different_parameters_timing[0] + ": " + str(parameter_set) + "]"
 
                 # Plot the data points for this mode
                 plt.errorbar(processor_counts, times, errors, marker='.', label=label)
@@ -1847,15 +1940,18 @@ class ScalingPlotter(Configurable):
         speedup_range = RealRange.zero()
 
         # Loop over the different parameter sets (different ski files)
-        for parameter_set in self.timing_data:
+        for parameter_set in self.timing_data[phase]:
+
+            # Debugging
+            log.debug("Plotting the speedups for the " + phase_names[phase] + " for the simulations with parameters: " + parameter_set_to_string(parameter_set, self.different_parameters_timing))
 
             # Loop over the different parallelization modes (the different curves)
-            for mode in self.timing_data[parameter_set][phase]:
+            for mode in self.timing_data[phase][parameter_set]:
 
                 # Get the list of processor counts, runtimes and errors
-                processor_counts = self.timing_data[parameter_set][phase][mode].processor_counts
-                times = self.timing_data[parameter_set][phase][mode].times
-                errors = self.timing_data[parameter_set][phase][mode].errors
+                processor_counts = self.timing_data[phase][parameter_set][mode].processor_counts
+                times = self.timing_data[phase][parameter_set][mode].times
+                errors = self.timing_data[phase][parameter_set][mode].errors
 
                 # Sort the lists
                 processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
@@ -1880,7 +1976,9 @@ class ScalingPlotter(Configurable):
 
                 # Determine the label
                 if parameter_set == "empty": label = mode
-                else: label = mode + " [" + ", ".join([name + ": " + str(parameter_set[name]) for name in parameter_set]) + "]"
+                elif isinstance(parameter_set, tuple):
+                    label = mode + " [" + ", ".join([self.different_parameters_timing[index] + ": " + str(parameter_set[index]) for index in range(len(self.different_parameters_timing))]) + "]"
+                else: label = mode + " [" + self.different_parameters_timing[0] + ": " + str(parameter_set) + "]"
 
                 # Plot the data points for this curve
                 plt.errorbar(processor_counts, speedups, speedup_errors, marker='.', label=label)
@@ -2006,15 +2104,18 @@ class ScalingPlotter(Configurable):
         serial_ncores = self.serial_timing_ncores[phase] if phase in self.serial_timing_ncores else 1
 
         # Loop over the different parameter sets (different ski files)
-        for parameter_set in self.timing_data:
+        for parameter_set in self.timing_data[phase]:
+
+            # Debugging
+            log.debug("Plotting the efficiencies for the " + phase_names[phase] + " for the simulations with parameters: " + parameter_set_to_string(parameter_set, self.different_parameters_timing))
 
             # Loop over the different parallelization modes (the different curves)
-            for mode in self.timing_data[parameter_set][phase]:
+            for mode in self.timing_data[phase][parameter_set]:
 
                 # Get the list of processor counts, runtimes and errors
-                processor_counts = self.timing_data[parameter_set][phase][mode].processor_counts
-                times = self.timing_data[parameter_set][phase][mode].times
-                errors = self.timing_data[parameter_set][phase][mode].errors
+                processor_counts = self.timing_data[phase][parameter_set][mode].processor_counts
+                times = self.timing_data[phase][parameter_set][mode].times
+                errors = self.timing_data[phase][parameter_set][mode].errors
 
                 # Sort the lists
                 processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
@@ -2042,7 +2143,9 @@ class ScalingPlotter(Configurable):
 
                 # Determine the label
                 if parameter_set == "empty": label = mode
-                else: label = mode + " [" + ", ".join([name + ": " + str(parameter_set[name]) for name in parameter_set]) + "]"
+                elif isinstance(parameter_set, tuple):
+                    label = mode + " [" + ", ".join([self.different_parameters_timing[index] + ": " + str(parameter_set[index]) for index in range(len(self.different_parameters_timing))]) + "]"
+                else: label = mode + " [" + self.different_parameters_timing[0] + ": " + str(parameter_set) + "]"
 
                 # Plot the data points for this curve
                 plt.errorbar(processor_counts, efficiencies, efficiency_errors, marker='.', label=label)
@@ -2152,15 +2255,18 @@ class ScalingPlotter(Configurable):
         ticks = set()
 
         # Loop over the different parameter sets (different ski files)
-        for parameter_set in self.timing_data:
+        for parameter_set in self.timing_data[phase]:
+
+            # Debugging
+            log.debug("Plotting the CPU times for the " + phase_names[phase] + " for the simulations with parameters: " + parameter_set_to_string(parameter_set, self.different_parameters_timing))
 
             # Loop over the different parallelization modes (the different curves)
-            for mode in self.timing_data[parameter_set][phase]:
+            for mode in self.timing_data[phase][parameter_set]:
 
                 # Get the list of processor counts, runtimes and errors
-                processor_counts = self.timing_data[parameter_set][phase][mode].processor_counts
-                times = self.timing_data[parameter_set][phase][mode].times
-                errors = self.timing_data[parameter_set][phase][mode].errors
+                processor_counts = self.timing_data[phase][parameter_set][mode].processor_counts
+                times = self.timing_data[phase][parameter_set][mode].times
+                errors = self.timing_data[phase][parameter_set][mode].errors
 
                 # Sort the lists
                 processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
@@ -2178,7 +2284,9 @@ class ScalingPlotter(Configurable):
 
                 # Determine the label
                 if parameter_set == "empty": label = mode
-                else: label = mode + " [" + ", ".join([name + ": " + str(parameter_set[name]) for name in parameter_set]) + "]"
+                elif isinstance(parameter_set, tuple):
+                    label = mode + " [" + ", ".join([self.different_parameters_timing[index] + ": " + str(parameter_set[index]) for index in range(len(self.different_parameters_timing))]) + "]"
+                else: label = mode + " [" + self.different_parameters_timing[0] + ": " + str(parameter_set) + "]"
 
                 # Plot the data points for this mode
                 plt.errorbar(processor_counts, times, errors, marker='.', label=label)
@@ -2960,5 +3068,29 @@ def get_parallelization_mode(processes, threads, data_parallel):
 
     # Return the mode
     return mode
+
+# -----------------------------------------------------------------
+
+def parameter_set_to_string(parameter_set, parameter_names):
+
+    """
+    This function ...
+    :param parameter_set:
+    :param parameter_names:
+    :return:
+    """
+
+    # string that says 'empty' (no different parameters for the simulations)
+    if parameter_set == "empty": string = ""
+
+    # tuple
+    elif isinstance(parameter_set, tuple):
+
+        string = "[" + ", ".join([parameter_names[index] + ": " + str(parameter_set[index]) for index in range(len(parameter_names))]) + "]"
+
+    # only one value
+    else: string = "[" + parameter_names[0] + ": " + str(parameter_set) + "]"
+
+    return string
 
 # -----------------------------------------------------------------

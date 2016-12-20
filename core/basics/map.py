@@ -92,8 +92,8 @@ class Map(dict):
 
             elif value != other_value:
 
-                try: keys = value.keys() # if mapping-like
-                except AttributeError: print("value " + str(value) + " and " + str(other_value) + " are not equal")
+                #try: keys = value.keys() # if mapping-like
+                #except AttributeError: print("value " + str(value) + " and " + str(other_value) + " are not equal")
                 return False
 
         return True

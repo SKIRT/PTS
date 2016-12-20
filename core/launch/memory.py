@@ -241,4 +241,21 @@ class MemoryTable(SmartTable):
                        selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage, setup_peak_memory,
                        stellar_peak_memory, spectra_peak_memory, dust_peak_memory, writing_peak_memory)
 
+    # -----------------------------------------------------------------
+
+    def different_ski_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        parameters = []
+        ski_parameters = ["Wavelengths", "Dust cells", "Grid type", "Min level", "Max level", "Search method", "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion", "Self-absorption", "Transient heating", "Number of pixels"]
+        for parameter in ski_parameters:
+            if not self.all_equal(parameter): parameters.append(parameter)
+
+        # Return the parameters
+        return parameters
+
 # -----------------------------------------------------------------
