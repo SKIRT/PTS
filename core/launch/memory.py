@@ -14,7 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..basics.table import SmartTable
+from ..tools import tables, time
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -161,6 +163,12 @@ class MemoryTable(SmartTable):
         # Invalid argument
         else: raise ValueError("Invalid argument for 'simulation'")
 
+        # Check whether the name is unique
+        if simulation_name in self["Simulation name"]:
+            log.warning("A simulation with the name '" + simulation_name + "' is already present in this memory table")
+            simulation_name = time.unique_name(simulation_name)
+            log.warning("Generating the unique name '" + simulation_name + "' for this simulation")
+
         # Get the peak memory usage
         peak_memory_usage = None
         try: peak_memory_usage = log_file.peak_memory
@@ -241,6 +249,21 @@ class MemoryTable(SmartTable):
                        selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage, setup_peak_memory,
                        stellar_peak_memory, spectra_peak_memory, dust_peak_memory, writing_peak_memory)
 
+        # Return the unique simulation name
+        return simulation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
     # -----------------------------------------------------------------
 
     def different_ski_parameters(self):
@@ -256,6 +279,28 @@ class MemoryTable(SmartTable):
             if not self.all_equal(parameter): parameters.append(parameter)
 
         # Return the parameters
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def ski_parameters_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        index = tables.find_index(self, simulation_name)
+
+        # Initialize dictionary
+        parameters = dict()
+
+        # Set the parameter values
+        for parameter in self.different_ski_parameters(): parameters[parameter] = self[parameter][index]
+
+        # Return the parameter values
         return parameters
 
 # -----------------------------------------------------------------

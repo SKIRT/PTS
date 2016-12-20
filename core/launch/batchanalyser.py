@@ -173,7 +173,10 @@ class BatchAnalyser(Configurable):
         timing_table = TimingTable.from_file(self.timing_table_path)
 
         # Add an entry
-        timing_table.add_from_simulation(self.simulation, self.ski, self.log_file, self.timeline)
+        unique_name = timing_table.add_from_simulation(self.simulation, self.ski, self.log_file, self.timeline)
+
+        # Check
+        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name: I don't know what to do at this moment")
 
         # Save the table
         timing_table.save()
@@ -194,7 +197,10 @@ class BatchAnalyser(Configurable):
         memory_table = MemoryTable.from_file(self.memory_table_path)
 
         # Add an entry
-        memory_table.add_from_simulation(self.simulation, self.ski, self.log_file)
+        unique_name = memory_table.add_from_simulation(self.simulation, self.ski, self.log_file)
+
+        # Check
+        if unique_name != self.simulation.name: raise RuntimeError("The simulation did not have a unique name: I don't know what to do at this moment")
 
         # Save the table
         memory_table.save()

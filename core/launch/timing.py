@@ -14,7 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..basics.table import SmartTable
+from ..tools import tables, time
 from ..simulation.simulation import RemoteSimulation, SkirtSimulation
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -182,6 +184,12 @@ class TimingTable(SmartTable):
         # Invalid argument
         else: raise ValueError("Invalid argument for 'simulation'")
 
+        # Check whether the name is unique
+        if simulation_name in self["Simulation name"]:
+            log.warning("A simulation with the name '" + simulation_name + "' is already present in this timing table")
+            simulation_name = time.unique_name(simulation_name)
+            log.warning("Generating the unique name '" + simulation_name + "' for this simulation")
+
         # Get the total runtime (in seconds)
         total_runtime = log_file.total_runtime
 
@@ -267,6 +275,21 @@ class TimingTable(SmartTable):
                        dust_absorption_communication_time, emission_communication_time,
                        instruments_communication_time, intermediate_time)
 
+        # Return the unique simulation name
+        return simulation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
     # -----------------------------------------------------------------
 
     def different_ski_parameters(self):
@@ -283,5 +306,63 @@ class TimingTable(SmartTable):
 
         # Return the parameters
         return parameters
+
+    # -----------------------------------------------------------------
+
+    def ski_parameters_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        index = tables.find_index(self, simulation_name)
+
+        # Initialize dictionary
+        parameters = dict()
+
+        # Set the parameter values
+        for parameter in self.different_ski_parameters():
+            parameters[parameter] = self[parameter][index]
+
+        # Return the parameter values
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def indices_for_parameters(self, parameters):
+
+        """
+        This function ...
+        :return:
+        """
+
+        indices = []
+
+        # Loop over the rows
+        for index in range(len(self)):
+
+            for label in parameters:
+
+                if self[label][index] != parameters[label]: break
+
+            # Break is not encountered: all parameters match for this row
+            else: indices.append(index)
+
+        return indices
+
+    # -----------------------------------------------------------------
+
+    def simulation_names_for_parameters(self, parameters):
+
+        """
+        This function ...
+        :param parameters:
+        :return:
+        """
+
+        return self["Simulation name"][self.indices_for_parameters(parameters)]
 
 # -----------------------------------------------------------------
