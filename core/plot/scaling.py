@@ -1931,11 +1931,6 @@ class ScalingPlotter(Configurable):
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
-        # Get the serial runtime (and error) for this phase (create a Quantity object)
-        serial_time = self.serial_timing[phase].time
-        serial_error = self.serial_timing[phase].error
-        serial = Quantity(serial_time, serial_error)
-
         # Keep track of the minimal and maximal speedup
         speedup_range = RealRange.zero()
 
@@ -1944,6 +1939,11 @@ class ScalingPlotter(Configurable):
 
             # Debugging
             log.debug("Plotting the speedups for the " + phase_names[phase] + " for the simulations with parameters: " + parameter_set_to_string(parameter_set, self.different_parameters_timing))
+
+            # Get the serial runtime (and error) for this phase (create a Quantity object)
+            serial_time = self.serial_timing[parameter_set][phase].time
+            serial_error = self.serial_timing[parameter_set][phase].error
+            serial = Quantity(serial_time, serial_error)
 
             # Loop over the different parallelization modes (the different curves)
             for mode in self.timing_data[phase][parameter_set]:
@@ -2097,17 +2097,17 @@ class ScalingPlotter(Configurable):
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
-        # Get the serial runtime (and error) for this phase (create a Quantity object)
-        serial_time = self.serial_timing[phase].time
-        serial_error = self.serial_timing[phase].error
-        serial = Quantity(serial_time, serial_error)
-        serial_ncores = self.serial_timing_ncores[phase] if phase in self.serial_timing_ncores else 1
-
         # Loop over the different parameter sets (different ski files)
         for parameter_set in self.timing_data[phase]:
 
             # Debugging
             log.debug("Plotting the efficiencies for the " + phase_names[phase] + " for the simulations with parameters: " + parameter_set_to_string(parameter_set, self.different_parameters_timing))
+
+            # Get the serial runtime (and error) for this phase (create a Quantity object)
+            serial_time = self.serial_timing[parameter_set][phase].time
+            serial_error = self.serial_timing[parameter_set][phase].error
+            serial = Quantity(serial_time, serial_error)
+            serial_ncores = self.serial_timing_ncores[parameter_set][phase] if phase in self.serial_timing_ncores[parameter_set] else 1
 
             # Loop over the different parallelization modes (the different curves)
             for mode in self.timing_data[phase][parameter_set]:
