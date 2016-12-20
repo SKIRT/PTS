@@ -214,6 +214,26 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def all_equal(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        if len(self[column_name]) == 0: return True
+
+        # Doesn't work with strings I think ...
+        #return (self[column_name] == self[column_name][0]).all() # all equal to the first element
+
+        first = self[column_name][0]
+        for i in range(len(self[column_name])):
+            if self[column_name][i] != first: return False
+        return True
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """

@@ -33,6 +33,13 @@ definition.add_flag("plot_fit", "plot the fitted relations", True)
 
 definition.add_flag("split_communication", "split the different communication steps")
 
-definition.add_flag("all", "plot everything")
+# Enable all properties and phases
+definition.add_flag("all", "plot everything (enable all properties and phases)")
+
+# ADVANCED STUFF; USE WITH CARE
+definition.add_flag("hetero", "not necessarily a single ski")
+definition.add_flag("extrapolate_npackages", "extrapolate the number of photon packages of a serial run to obtain a serial run for a series of simulations with a higher number of packages (requires 'hetero' to be enabled)")
+definition.add_flag("extrapolate_ncores", "extrapolate the data to a number of cores of one to get a serial timing")
+definition.add_flag("extrapolate_nwavelengths", "extrapolate the number of wavelengths of a serial run to obtain a serial run for a series of simulations with a higher number of wavelengths (requires 'hetero' to be enabled) [THIS OPTION IS VERY TRICKY: LOAD BALANCING CAN VARY!]")
 
 # -----------------------------------------------------------------

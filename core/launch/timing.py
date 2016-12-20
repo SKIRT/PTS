@@ -267,4 +267,23 @@ class TimingTable(SmartTable):
                        dust_absorption_communication_time, emission_communication_time,
                        instruments_communication_time, intermediate_time)
 
+    # -----------------------------------------------------------------
+
+    def different_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        parameters = []
+
+        ski_parameters = ["Wavelengths", "Packages", "Dust cells", "Grid type", "Min level", "Max level", "Search method", "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion", "Self-absorption", "Transient heating", "Data-parallel"]
+
+        for parameter in ski_parameters:
+
+            if not self.all_equal(parameter): parameters.append(parameter)
+
+        return parameters
+
 # -----------------------------------------------------------------

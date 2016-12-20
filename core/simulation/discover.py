@@ -108,7 +108,12 @@ class SimulationDiscoverer(Configurable):
         :return:
         """
 
-        return self.simulations_ski.values() + self.simulations_no_ski.values()
+        simulations = []
+
+        for key in self.simulations_ski: simulations += self.simulations_ski[key]
+        for key in self.simulations_no_ski: simulations += self.simulations_no_ski[key]
+
+        return simulations
 
     # -----------------------------------------------------------------
 
