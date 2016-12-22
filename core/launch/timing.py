@@ -138,11 +138,11 @@ class TimingTable(SmartTable):
         :return:
         """
 
+        # Get the simulation name
+        simulation_name = simulation.name
+
         # Remote simulation
         if isinstance(simulation, RemoteSimulation):
-
-            # Get the simulation name
-            simulation_name = simulation.name
 
             # Time of submitting
             submitted_at = simulation.submitted_at
@@ -161,8 +161,6 @@ class TimingTable(SmartTable):
 
         # Basic simulation object
         elif isinstance(simulation, SkirtSimulation):
-
-            simulation_name = simulation.prefix()
 
             # Time of submitting
             submitted_at = None
@@ -300,12 +298,28 @@ class TimingTable(SmartTable):
         """
 
         parameters = []
-        ski_parameters = ["Wavelengths", "Packages", "Dust cells", "Grid type", "Min level", "Max level", "Search method", "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion", "Self-absorption", "Transient heating"]
+        ski_parameters = ["Wavelengths", "Packages", "Dust cells", "Grid type", "Min level", "Max level",
+                          "Search method", "Sample count", "Max optical depth", "Max mass fraction",
+                          "Max density dispersion", "Self-absorption", "Transient heating"]
         for parameter in ski_parameters:
-            if not self.all_equal(parameter): parameters.append(parameter)
+            if not self.all_equal(parameter): parameters.append(str(parameter)) # dtype('S21') to str
 
         # Return the parameters
         return parameters
+
+    # -----------------------------------------------------------------
+
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        index = tables.find_index(self, simulation_name)
+        return index
 
     # -----------------------------------------------------------------
 
@@ -318,14 +332,14 @@ class TimingTable(SmartTable):
         """
 
         # Find index of the simulation
-        index = tables.find_index(self, simulation_name)
+        index = self.index_for_simulation(simulation_name)
 
         # Initialize dictionary
         parameters = dict()
 
         # Set the parameter values
         for parameter in self.different_ski_parameters():
-            parameters[parameter] = self[parameter][index]
+            parameters[str(parameter)] = self[parameter][index] # dtype('S21') to str
 
         # Return the parameter values
         return parameters

@@ -35,13 +35,27 @@ definition.add_flag("split_communication", "split the different communication st
 
 # Enable all properties and phases
 definition.add_flag("all", "plot everything (enable all properties and phases)")
+definition.add_flag("all_timing", "plot everything related to timing")
+definition.add_flag("all_memory", "plot everything related to memory usage")
 
-# ADVANCED STUFF; USE WITH CARE
+# FROM HERE: ADVANCED STUFF: USE WITH CARE
 definition.add_flag("hetero", "not necessarily a single ski")
-definition.add_flag("extrapolate_npackages", "extrapolate the number of photon packages of a serial run to obtain a serial run for a series of simulations with a higher number of packages (requires 'hetero' to be enabled)")
-definition.add_flag("extrapolate_ncores", "extrapolate the data toi a number of cores of one to get a serial timing")
-definition.add_flag("extrapolate_nwavelengths", "extrapolate the number of wavelengths of a serial run to obtain a serial run for a series of simulations with a higher number of wavelengths (requires 'hetero' to be enabled) [THIS OPTION IS VERY TRICKY: LOAD BALANCING CAN VARY!]")
 
-definition.add_flag("extrapolate_in_times", "not only extrapolate for normalizing, but also plot the serial time as if it were a genuine data point")
+# EXTRAPOLATION
+definition.add_section("extrapolation", "extrapolate ...")
+
+# TIMING
+definition.sections["extrapolation"].add_section("timing", "extrapolation of timing data")
+definition.sections["extrapolation"].sections["timing"].add_flag("ncores", "extrapolate the data to a number of cores of one to get a serial timing")
+definition.sections["extrapolation"].sections["timing"].add_flag("npackages", "extrapolate the number of photon packages of a serial run to obtain a serial run for a series of simulations with a higher number of packages (requires 'hetero' to be enabled)")
+definition.sections["extrapolation"].sections["timing"].add_flag("nwavelengths", "extrapolate the number of wavelengths of a serial run to obtain a serial run for a series of simulations with a higher number of wavelengths (requires 'hetero' to be enabled) [THIS OPTION IS VERY TRICKY: LOAD BALANCING CAN VARY!]")
+definition.sections["extrapolation"].sections["timing"].add_flag("in_times", "not only extrapolate for normalizing, but also plot the serial time as if it were a genuine data point")
+
+# MEMORY
+definition.sections["extrapolation"].add_section("memory", "extrapolation of memory data")
+definition.sections["extrapolation"].sections["memory"].add_flag("nprocesses", "extrapolate the data to a number of processes of one to get serial memory data points")
+definition.sections["extrapolation"].sections["memory"].add_flag("nwavelengths", "extrapolate the number of wavelengths of a serial run to obtain a serial run for a series of simulations with a higher number of wavelengths (required 'hetero' to be enabled)")
+definition.sections["extrapolation"].sections["memory"].add_flag("extrapolate_ncells", "extrapolate the number of dust cells")
+definition.sections["extrapolation"].sections["memory"].add_flag("in_memory", "not only extrapolate for normalizing, but also plot the serial time as if it were a genuine data point")
 
 # -----------------------------------------------------------------

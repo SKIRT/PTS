@@ -105,7 +105,7 @@ class SkirtSimulation(object):
     # - outpath: the output path of the simulation; the path may be absolute, relative to a user's home folder,
     #   or relative to the current working directory. A missing or empty outpath means the current working directory.
     #
-    def __init__(self, prefix="", inpath="", outpath="", ski_path=None, parameters=None):
+    def __init__(self, prefix="", inpath="", outpath="", ski_path=None, parameters=None, name=None):
 
         # Set the full path to the input directory or the paths to the input files
         if inpath is not None:
@@ -138,7 +138,7 @@ class SkirtSimulation(object):
         self._threads = None
 
         # A name given to the simulation
-        self.name = None
+        self._name = name
 
         # The options for analysing the simulation output
         self.analysis = AnalysisOptions()
@@ -151,6 +151,16 @@ class SkirtSimulation(object):
     ## This function returns the simulation name, used as a prefix for output filenames
     def prefix(self):
         return self._prefix
+
+    ## This function returns the simulation name, which is the prefix is a name was not set
+    @property
+    def name(self):
+        return self._name if self._name is not None else self.prefix()
+
+    ## This functions sets the name
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     ## This function returns the absolute input path of the simulation
     def inpath(self):

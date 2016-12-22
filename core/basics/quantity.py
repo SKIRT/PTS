@@ -41,7 +41,8 @@ class Quantity(object):
         :return:
         """
 
-        return self.error / self.value
+        try: return self.error / self.value
+        except ZeroDivisionError: return float("nan")
 
     # -----------------------------------------------------------------
 
