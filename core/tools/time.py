@@ -74,7 +74,7 @@ def parse_date_time(date, time):
     try: day, month, year = date.split('/')
     except ValueError: return None
     hour, minute, second = time.split(':')
-    second, microsecond = second.split('.')
+    second, millisecond = second.split('.')
 
     # Convert the strings to integers
     year = int(year)
@@ -83,7 +83,9 @@ def parse_date_time(date, time):
     hour = int(hour)
     minute = int(minute)
     second = int(second)
-    microsecond = int(microsecond)
+    millisecond = int(millisecond)
+
+    microsecond = millisecond * 1000
 
     # Create and return a datetime object
     return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
