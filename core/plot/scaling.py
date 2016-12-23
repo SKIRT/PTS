@@ -167,6 +167,9 @@ pure_scaling_behaviour["waiting"] = [0, 1, 2]
 # Writing
 pure_scaling_behaviour["writing"] = [0]
 
+# Intermediate
+pure_scaling_behaviour["intermediate"] = [0]
+
 # -----------------------------------------------------------------
 
 composite_scaling_behaviour = dict()
@@ -410,6 +413,9 @@ class ScalingPlotter(Configurable):
         # Check for 'all_phases' flag
         if self.config.all_phases: self.config.phases = simulation_phases
 
+        # Check for 'all_properties' flag
+        if self.config.all_properties: self.config.properties = scaling_properties
+
         # Timing or memory specified
         self.timing = kwargs.pop("timing", None)
         self.memory = kwargs.pop("memory", None)
@@ -467,6 +473,7 @@ class ScalingPlotter(Configurable):
         # Create the simulation discoverer
         discoverer = SimulationDiscoverer()
         discoverer.config.path = self.config.path
+        discoverer.config.directories = self.config.input
         discoverer.config.list = False
 
         # Run the simulation discoverer
@@ -1142,7 +1149,7 @@ class ScalingPlotter(Configurable):
                 # Number of processes = 1: equivalent to 'serial' in terms of memory consumption
                 if processes == 1:
 
-                    for phase in self.simulation_phases_and_subphases_memory: serial_memory[timing_parameters][phase].append(memory_per_phase[phase])
+                    for phase in self.simulation_phases_and_subphases_memory: serial_memory[memory_parameters][phase].append(memory_per_phase[phase])
                     serial_memory_ncores[memory_parameters] = processors
 
             processes_or_processors = processes if self.config.hybridisation else processors

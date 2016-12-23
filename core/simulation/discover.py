@@ -47,8 +47,8 @@ class SimulationDiscoverer(Configurable):
         # Call the constructor of the base class
         super(SimulationDiscoverer, self).__init__(config)
 
-        # The search path
-        self.search_path = None
+        # The search paths
+        self.search_paths = []
 
         # The paths
         self.ski_paths = defaultdict(list)
@@ -129,7 +129,15 @@ class SimulationDiscoverer(Configurable):
         super(SimulationDiscoverer, self).setup(**kwargs)
 
         # Set the search path
-        self.search_path = self.config.path
+        if self.config.directories is None: self.search_paths = [self.config.path]
+        else:
+
+            # Loop over the directories
+            for name in self.config.directories:
+
+                # Determine the full path and add it to the list of search paths
+                path = fs.absolute_or_in(name, self.config.path)
+                self.search_paths.append(path)
 
     # -----------------------------------------------------------------
 
@@ -167,16 +175,19 @@ class SimulationDiscoverer(Configurable):
         # Inform the user
         log.info("Finding ski files ...")
 
-        # Search for ski files
-        for path, name in fs.files_in_path(self.search_path, extension="ski", recursive=self.config.recursive, returns=["path", "name"]):
+        # Loop over the search paths
+        for search_path in self.search_paths:
 
-            # Determine the prefix
-            prefix = name
+            # Search for ski files
+            for path, name in fs.files_in_path(search_path, extension="ski", recursive=self.config.recursive, returns=["path", "name"]):
 
-            dirpath = fs.directory_of(path)
+                # Determine the prefix
+                prefix = name
 
-            # Add the path
-            self.ski_paths[prefix].append(dirpath)
+                dirpath = fs.directory_of(path)
+
+                # Add the path
+                self.ski_paths[prefix].append(dirpath)
 
     # -----------------------------------------------------------------
 
@@ -192,16 +203,19 @@ class SimulationDiscoverer(Configurable):
 
         parameter_files = defaultdict(list)
 
-        # Search for parameter files
-        for path, name in fs.files_in_path(self.search_path, extension="xml", endswith="_parameters", recursive=self.config.recursive, returns=["path", "name"]):
+        # Loop over the search paths
+        for search_path in self.search_paths:
 
-            # Determine the prefix
-            prefix = name.split("_parameters")[0]
+            # Search for parameter files
+            for path, name in fs.files_in_path(search_path, extension="xml", endswith="_parameters", recursive=self.config.recursive, returns=["path", "name"]):
 
-            dirpath = fs.directory_of(path)
+                # Determine the prefix
+                prefix = name.split("_parameters")[0]
 
-            # Add the path
-            parameter_files[prefix].append(dirpath)
+                dirpath = fs.directory_of(path)
+
+                # Add the path
+                parameter_files[prefix].append(dirpath)
 
         #parpaths = dict()
 
@@ -240,18 +254,21 @@ class SimulationDiscoverer(Configurable):
         # Inform the user
         log.info("Finding log files ...")
 
-        # Search for log files
-        for path, name in fs.files_in_path(self.search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
+        # Loop over the search paths
+        for search_path in self.search_paths:
 
-            # Determine the prefix
-            prefix = name.split("_log")[0]
+            # Search for log files
+            for path, name in fs.files_in_path(search_path, extension="txt", endswith="log", recursive=self.config.recursive, returns=["path", "name"]):
 
-            # The simulation output path
-            #output_path = fs.directory_of(path)
+                # Determine the prefix
+                prefix = name.split("_log")[0]
 
-            dirpath = fs.directory_of(path)
+                # The simulation output path
+                #output_path = fs.directory_of(path)
 
-            self.log_paths[prefix].append(dirpath)
+                dirpath = fs.directory_of(path)
+
+                self.log_paths[prefix].append(dirpath)
 
     # -----------------------------------------------------------------
 

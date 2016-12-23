@@ -203,6 +203,18 @@ def directory_path(argument):
 
 # -----------------------------------------------------------------
 
+def directorypath_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [directory_path(path) for path in string_list(argument)]
+
+# -----------------------------------------------------------------
+
 def file_path(argument):
 
     """

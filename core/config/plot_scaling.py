@@ -23,10 +23,14 @@ definition.add_positional_optional("phases", "string_list", "simulation phases f
 
 definition.add_flag("hybridisation", "plot as a function of number of processes for constant number of cores")
 
+# Input
+definition.add_optional("input", "directorypath_list", "input director(y)(ies)", letter='i')
+
 # Output
 definition.add_optional("output", "directory_path", "output directory", letter="o")
-definition.add_optional("figsize", "integer_tuple", "figure size", default=(12,8))
 
+# Plot
+definition.add_optional("figsize", "integer_tuple", "figure size", default=(12,8))
 definition.add_flag("xlog", "log scale for x axis", True)
 definition.add_flag("ylog", "log scale for y axis", True)
 
@@ -52,6 +56,9 @@ definition.add_flag("all_memory", "plot everything related to memory usage")
 
 # Enable all phases
 definition.add_flag("all_phases", "enable all phases")
+
+# Enable all properties
+definition.add_flag("all_properties", "enable all properties")
 
 # Timelines
 definition.add_section("timelines", "options for plotting timelines")
