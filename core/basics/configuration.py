@@ -560,26 +560,65 @@ class ConfigurationDefinition(object):
         # Add required
         for name in self.required:
 
+            real_type = self.required[name][0]
+            choices = self.required[name][2]
+
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
-            settings[name] = getattr(arguments, argument_name)
+            # Get the value
+            value = getattr(arguments, argument_name)
+
+            # Check each value in the list, if applicable
+            if real_type.__name__.endswith("_list") and choices is not None:
+                # Check whether they are all in the choices
+                for item in value:
+                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+
+            # Set the value
+            settings[name] = value
 
         # Add positional optional
         for name in self.pos_optional:
 
+            real_type = self.pos_optional[name][0]
+            choices = self.pos_optional[name][3]
+
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
-            settings[name] = getattr(arguments, argument_name)
+            # Get the value
+            value = getattr(arguments, argument_name)
+
+            # Check each value in the list, if applicable
+            if real_type.__name__.endswith("_list") and choices is not None:
+                # Check whether they are all in the choices
+                for item in value:
+                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+
+            # Set the value
+            settings[name] = value
 
         # Add optional
         for name in self.optional:
 
+            real_type = self.optional[name][0]
+            choices = self.optional[name][3]
+
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
-            settings[name] = getattr(arguments, argument_name)
+            # Get the value
+            value = getattr(arguments, argument_name)
+
+            # Check each value in the list, if applicable
+            if real_type.__name__.endswith("_list") and choices is not None:
+                # Check whether they are all in the choices
+                for item in value:
+                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+
+            # Set the value
+            settings[name] = value
 
         # Add flags
         for name in self.flags:

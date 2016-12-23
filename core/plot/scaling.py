@@ -290,7 +290,7 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def needs_timing(self):
 
         """
@@ -304,7 +304,7 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def needs_memory(self):
 
         """
@@ -1121,24 +1121,29 @@ class ScalingPlotter(Configurable):
 
             # Get the runtimes per phase
             time_per_phase = dict()
-            for phase in self.simulation_phases_and_subphases_timing: time_per_phase[phase] = self.timing[phases_table_mapping_timing[phase]][i]
+            if self.needs_timing:
+                for phase in self.simulation_phases_and_subphases_timing: time_per_phase[phase] = self.timing[phases_table_mapping_timing[phase]][i]
 
             # Get the memory usage per phase
             memory_per_phase = dict()
-            for phase in self.simulation_phases_and_subphases_memory: memory_per_phase[phase] = self.memory[phases_table_mapping_memory[phase]][j]
+            if self.needs_memory:
+                for phase in self.simulation_phases_and_subphases_memory: memory_per_phase[phase] = self.memory[phases_table_mapping_memory[phase]][j]
 
-            # If the number of processors is 1, add the runtimes for the different simulation phases to the
-            # dictionary that contains the serial runtimes
-            if (self.config.hybridisation and processes == 1) or (not self.config.hybridisation and processors == 1):
+            if self.needs_timing:
 
-                for phase in self.simulation_phases_and_subphases_timing: serial_times[timing_parameters][phase].append(time_per_phase[phase])
+                # If the number of processors is 1, add the runtimes for the different simulation phases to the
+                # dictionary that contains the serial runtimes
+                if (self.config.hybridisation and processes == 1) or (not self.config.hybridisation and processors == 1):
 
-            # Number of processes = 1: equivalent to 'serial' in terms of memory consumption
-            if processes == 1:
+                    for phase in self.simulation_phases_and_subphases_timing: serial_times[timing_parameters][phase].append(time_per_phase[phase])
 
-                for phase in self.simulation_phases_and_subphases_memory: serial_memory[timing_parameters][phase].append(memory_per_phase[phase])
+            if self.needs_memory:
 
-                serial_memory_ncores[memory_parameters] = processors
+                # Number of processes = 1: equivalent to 'serial' in terms of memory consumption
+                if processes == 1:
+
+                    for phase in self.simulation_phases_and_subphases_memory: serial_memory[timing_parameters][phase].append(memory_per_phase[phase])
+                    serial_memory_ncores[memory_parameters] = processors
 
             processes_or_processors = processes if self.config.hybridisation else processors
 
@@ -1152,61 +1157,69 @@ class ScalingPlotter(Configurable):
             # Fill in the memory usage at the appropriate place in the dictionaries
             for phase in memory_per_phase: memorys[phase][memory_parameters][mode][processes_or_processors].append(memory_per_phase[phase])
 
-        # Average the serial runtimes, loop over each parameter set and phase
-        for parameter_set in serial_times:
-            for phase in serial_times[parameter_set]:
+        if self.needs_timing:
 
-                self.serial_timing[parameter_set][phase].time = np.mean(serial_times[parameter_set][phase])
-                self.serial_timing[parameter_set][phase].error = self.config.sigma_level * np.std(serial_times[parameter_set][phase])
-                self.serial_timing_ncores[parameter_set][phase] = 1
+            # Average the serial runtimes, loop over each parameter set and phase
+            for parameter_set in serial_times:
+                for phase in serial_times[parameter_set]:
 
-        # Average the serial memory usages, loop over each phase
-        for parameter_set in serial_memory:
-            for phase in serial_memory[parameter_set]:
+                    self.serial_timing[parameter_set][phase].time = np.mean(serial_times[parameter_set][phase])
+                    self.serial_timing[parameter_set][phase].error = self.config.sigma_level * np.std(serial_times[parameter_set][phase])
+                    self.serial_timing_ncores[parameter_set][phase] = 1
 
-                self.serial_memory[parameter_set][phase].memory = np.mean(serial_memory[parameter_set][phase])
-                self.serial_memory[parameter_set][phase].error = self.config.sigma_level * np.std(serial_memory[parameter_set][phase])
-                self.serial_memory_ncores[parameter_set][phase] = serial_memory_ncores[parameter_set]
+        if self.needs_memory:
+
+            # Average the serial memory usages, loop over each phase
+            for parameter_set in serial_memory:
+                for phase in serial_memory[parameter_set]:
+
+                    self.serial_memory[parameter_set][phase].memory = np.mean(serial_memory[parameter_set][phase])
+                    self.serial_memory[parameter_set][phase].error = self.config.sigma_level * np.std(serial_memory[parameter_set][phase])
+                    self.serial_memory_ncores[parameter_set][phase] = serial_memory_ncores[parameter_set]
 
         ## TIMING
 
-        # Loop over all parameter sets of the timing data
-        for parameter_set in parameters_modes_processor_counts_dict_timing:
+        if self.needs_timing:
 
-            # Loop over all encountered parallelization modes
-            modes = parameters_modes_processor_counts_dict_timing[parameter_set]
-            for mode in modes:
+            # Loop over all parameter sets of the timing data
+            for parameter_set in parameters_modes_processor_counts_dict_timing:
 
-                # Loop over all processor counts encountered for this mode
-                for processors in modes[mode]:
+                # Loop over all encountered parallelization modes
+                modes = parameters_modes_processor_counts_dict_timing[parameter_set]
+                for mode in modes:
 
-                    # Average the runtimes for the different simulation phases for the different
-                    # runs for a certain parallelization mode and number of processors (or processes)
-                    for phase in times:
+                    # Loop over all processor counts encountered for this mode
+                    for processors in modes[mode]:
 
-                        self.timing_data[phase][parameter_set][mode].processor_counts.append(processors)
-                        self.timing_data[phase][parameter_set][mode].times.append(np.mean(times[phase][parameter_set][mode][processors]))
-                        self.timing_data[phase][parameter_set][mode].errors.append(self.config.sigma_level * np.std(times[phase][parameter_set][mode][processors]))
+                        # Average the runtimes for the different simulation phases for the different
+                        # runs for a certain parallelization mode and number of processors (or processes)
+                        for phase in times:
+
+                            self.timing_data[phase][parameter_set][mode].processor_counts.append(processors)
+                            self.timing_data[phase][parameter_set][mode].times.append(np.mean(times[phase][parameter_set][mode][processors]))
+                            self.timing_data[phase][parameter_set][mode].errors.append(self.config.sigma_level * np.std(times[phase][parameter_set][mode][processors]))
 
         ## MEMORY
 
-        # Loop over all parameter sets of the memory data
-        for parameter_set in parameters_modes_processor_counts_dict_memory:
+        if self.needs_memory:
 
-            # Loop over all encountered parallelization modes
-            modes = parameters_modes_processor_counts_dict_memory[parameter_set]
-            for mode in modes:
+            # Loop over all parameter sets of the memory data
+            for parameter_set in parameters_modes_processor_counts_dict_memory:
 
-                # Loop over all processor counts encountered for this mode
-                for processors in modes[mode]:
+                # Loop over all encountered parallelization modes
+                modes = parameters_modes_processor_counts_dict_memory[parameter_set]
+                for mode in modes:
 
-                    # Average the memory usage for the different simulation phases for the different
-                    # runs for a certain parallelization mode and number of processors (or processes)
-                    for phase in memorys:
+                    # Loop over all processor counts encountered for this mode
+                    for processors in modes[mode]:
 
-                        self.memory_data[phase][parameter_set][mode].processor_counts.append(processors)
-                        self.memory_data[phase][parameter_set][mode].memory.append(np.mean(memorys[phase][parameter_set][mode][processors]))
-                        self.memory_data[phase][parameter_set][mode].errors.append(self.config.sigma_level * np.std(memorys[phase][parameter_set][mode][processors]))
+                        # Average the memory usage for the different simulation phases for the different
+                        # runs for a certain parallelization mode and number of processors (or processes)
+                        for phase in memorys:
+
+                            self.memory_data[phase][parameter_set][mode].processor_counts.append(processors)
+                            self.memory_data[phase][parameter_set][mode].memory.append(np.mean(memorys[phase][parameter_set][mode][processors]))
+                            self.memory_data[phase][parameter_set][mode].errors.append(self.config.sigma_level * np.std(memorys[phase][parameter_set][mode][processors]))
 
         # Set equivalent timing data
         if self.needs_timing: self.set_equivalent_timing_data(parameters_modes_processor_counts_dict_timing)
@@ -3558,16 +3571,16 @@ class ScalingPlotter(Configurable):
         log.info("Writing ...")
 
         # Write the timing table
-        self.write_timing()
+        if self.needs_timing: self.write_timing()
 
         # Write the memory table
-        self.write_memory()
+        if self.needs_memory: self.write_memory()
 
         # Write the timing data
-        self.write_timing_data()
+        if self.needs_timing: self.write_timing_data()
 
         # Write the memory data
-        self.write_memory_data()
+        if self.needs_memory: self.write_memory_data()
 
         # Write timing fit data
         #self.write_timing_fits()
