@@ -695,9 +695,9 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     else: ax.set_xlabel('Time (s)', fontsize='large')
 
     # Set y label
-    if rpc == 'r': ax.set_ylabel('Process rank', fontsize='small')
-    elif rpc == 'p': ax.set_ylabel('Number of processes', fontsize='small')
-    elif rpc == 'c': ax.set_ylabel('Number of cores', fontsize='small')
+    if rpc == 'r': ax.set_ylabel('Process rank', fontsize='large')
+    elif rpc == 'p': ax.set_ylabel('Number of processes', fontsize='large')
+    elif rpc == 'c': ax.set_ylabel('Number of cores', fontsize='large')
 
     #ax.yaxis.grid(True)
 

@@ -37,6 +37,10 @@ definition.add_optional("sigma_level", "real", "sigma level for plotting error b
 definition.add_flag("fit", "fit theoretical curves to timing and memory data", True)
 definition.add_flag("plot_fit", "plot the fitted relations", True)
 
+# Normalize runtimes and memory usages
+definition.add_flag("normalize_runtimes", "normalize runtimes for plotting")
+definition.add_flag("normalize_memory", "normalize memory usage for plotting")
+
 # Split communication into subphases
 definition.add_flag("split_communication", "split the different communication steps")
 definition.add_optional("communication_subphases", "string_list", "communication subphases to plot", communication_phases)
@@ -46,9 +50,13 @@ definition.add_flag("all", "plot everything (enable all properties and phases)")
 definition.add_flag("all_timing", "plot everything related to timing")
 definition.add_flag("all_memory", "plot everything related to memory usage")
 
+# Enable all phases
+definition.add_flag("all_phases", "enable all phases")
+
 # Timelines
 definition.add_section("timelines", "options for plotting timelines")
 definition.sections["timelines"].add_flag("add_serial", "add CPU times of serial run for comparison")
+definition.sections["timelines"].add_flag("percentages", "add percentages for the different phases compared to the total simulation", True)
 
 # FROM HERE: ADVANCED STUFF: USE WITH CARE
 definition.add_flag("hetero", "not necessarily a single ski")
