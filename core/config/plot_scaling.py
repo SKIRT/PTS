@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.plot.scaling import scaling_properties, simulation_phases
+from pts.core.plot.scaling import scaling_properties, simulation_phases, communication_phases
 
 # -----------------------------------------------------------------
 
@@ -23,20 +23,32 @@ definition.add_positional_optional("phases", "string_list", "simulation phases f
 
 definition.add_flag("hybridisation", "plot as a function of number of processes for constant number of cores")
 
+# Output
 definition.add_optional("output", "directory_path", "output directory", letter="o")
 definition.add_optional("figsize", "integer_tuple", "figure size", default=(12,8))
 
+definition.add_flag("xlog", "log scale for x axis", True)
+definition.add_flag("ylog", "log scale for y axis", True)
+
+# Sigma level for plotting error bars
 definition.add_optional("sigma_level", "real", "sigma level for plotting error bars", 1.0)
 
+# Make fit and plot fit
 definition.add_flag("fit", "fit theoretical curves to timing and memory data", True)
 definition.add_flag("plot_fit", "plot the fitted relations", True)
 
+# Split communication into subphases
 definition.add_flag("split_communication", "split the different communication steps")
+definition.add_optional("communication_subphases", "string_list", "communication subphases to plot", communication_phases)
 
 # Enable all properties and phases
 definition.add_flag("all", "plot everything (enable all properties and phases)")
 definition.add_flag("all_timing", "plot everything related to timing")
 definition.add_flag("all_memory", "plot everything related to memory usage")
+
+# Timelines
+definition.add_section("timelines", "options for plotting timelines")
+definition.sections["timelines"].add_flag("add_serial", "add CPU times of serial run for comparison")
 
 # FROM HERE: ADVANCED STUFF: USE WITH CARE
 definition.add_flag("hetero", "not necessarily a single ski")

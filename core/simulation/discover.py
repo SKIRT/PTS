@@ -395,7 +395,7 @@ class SimulationDiscoverer(Configurable):
                     log_parameters.npackages = npackages_reference
                     #parameters_ski_files[skipath].npackages = None
 
-                    if parameters_ski_files[skipath] == log_parameters and math.ceil(npackages_reference/float(processes)) == math.ceil(npackages/float(processes)):
+                    if parameters_ski_files[skipath] == log_parameters and matching_npackages(npackages_reference, npackages, processes):
 
                         input_path = input_paths_ski_files[skipath] if skipath in input_paths_ski_files else None
 
@@ -435,7 +435,7 @@ class SimulationDiscoverer(Configurable):
                         properties[0] = npackages_reference
                         properties = tuple(properties)
 
-                        if key == properties and math.ceil(npackages_reference / float(processes)) == math.ceil(npackages / float(processes)):
+                        if key == properties and matching_npackages(npackages_reference, npackages, processes):
                             properties = key
                             break
 
@@ -877,5 +877,19 @@ def simplify_xml(xml_string):
             if name == last_name:
                 new_string = new_string[:last_end_index - 1] + "/>" + new_string[index + len(name) + 1:]
     return new_string
+
+# -----------------------------------------------------------------
+
+def matching_npackages(npackages1, npackages2, nprocesses):
+
+    """
+    This function ...
+    :param npackages1:
+    :param npackages2:
+    :param nprocesses:
+    :return:
+    """
+
+    return math.ceil(npackages1 / float(nprocesses)) == math.ceil(npackages2 / float(nprocesses))
 
 # -----------------------------------------------------------------

@@ -12,11 +12,15 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import the relevant PTS classes and modules
 from ..basics.table import SmartTable
 from ..tools import tables, time
 from ..simulation.simulation import RemoteSimulation, SkirtSimulation
 from ..tools.logging import log
+from ..simulation.discover import matching_npackages
 
 # -----------------------------------------------------------------
 
@@ -378,5 +382,41 @@ class TimingTable(SmartTable):
         """
 
         return self["Simulation name"][self.indices_for_parameters(parameters)]
+
+    # -----------------------------------------------------------------
+
+    def even_npackages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        different_npackages = defaultdict(list)
+
+        # Loop over the rows
+        for i in range(len(self)):
+
+            # Get the number of photon packages
+            npackages = self["Packages"][i]
+
+            # Get the number of processes
+            nprocesses = self["Processes"][i]
+
+            # Loop over the previous npackages
+            for np in different_npackages:
+
+                if matching_npackages(np, npackages, nprocesses):
+                    different_npackages[np].append(i)
+                    break
+
+            # If break is not encountered, add as unique value
+            else: different_npackages[npackages].append(i)
+
+        for npackages in different_npackages:
+
+            for index in different_npackages[npackages]:
+
+                self["Packages"][index] = npackages
 
 # -----------------------------------------------------------------

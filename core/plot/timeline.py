@@ -397,6 +397,9 @@ class BatchTimeLinePlotter(Configurable):
         # Write the extracted timelines
         self.write_timelines()
 
+        # Write the data
+        self.write_data()
+
     # -----------------------------------------------------------------
 
     def write_timelines(self):
@@ -418,6 +421,17 @@ class BatchTimeLinePlotter(Configurable):
 
             # Write the timeline
             self.timelines[output_path].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -488,8 +502,7 @@ class BatchTimeLinePlotter(Configurable):
         else: path = fs.join(self.config.path, "timeline_cputime.pdf")
 
         # Create the plot
-        create_timeline_plot(data, nprocs_list, path, percentages=True, totals=True, unordered=True, numberofproc=True,
-                             cpu=True, title=title, ylabels=simulation_names, yaxis="Simulations")
+        create_timeline_plot(data, nprocs_list, path, percentages=True, totals=True, unordered=True, cpu=True, title=title, ylabels=simulation_names, yaxis="Simulations")
 
 # -----------------------------------------------------------------
 
@@ -583,7 +596,7 @@ class TimeLinePlotter(Plotter):
 # -----------------------------------------------------------------
 
 def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentages=False, totals=False, unordered=False,
-                         numberofproc=False, cpu=False, title=None, ylabels=None, yaxis=None):
+                         cpu=False, title=None, ylabels=None, yaxis=None, rpc="r"):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
@@ -595,11 +608,11 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     :param percentages:
     :param totals:
     :param unordered:
-    :param numberofproc:
     :param cpu:
     :param title:
     :param ylabels:
     :param yaxis:
+    :param rpc: 'rank', 'processes' or 'cores'
     :return:
     """
 
@@ -681,8 +694,10 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     if cpu: ax.set_xlabel('CPU time (s)', fontsize='large')
     else: ax.set_xlabel('Time (s)', fontsize='large')
 
-    if numberofproc: ax.set_ylabel('Number of processes', fontsize='large')
-    else: ax.set_ylabel('Process rank', fontsize='large')
+    # Set y label
+    if rpc == 'r': ax.set_ylabel('Process rank', fontsize='small')
+    elif rpc == 'p': ax.set_ylabel('Number of processes', fontsize='small')
+    elif rpc == 'c': ax.set_ylabel('Number of cores', fontsize='small')
 
     #ax.yaxis.grid(True)
 

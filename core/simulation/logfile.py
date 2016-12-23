@@ -843,28 +843,28 @@ class LogFile(object):
         """
 
         # Loop over all log file entries
-        #for i in range(len(self.contents)):
+        for i in range(len(self.contents)):
 
             # Get the current log message
-            #message = self.contents["Message"][i]
+            message = self.contents["Message"][i]
 
             # Look for a message that indicates whether the Absorbed Stellar Luminosity Table is distributed or not
-            #if "Absorbed Stellar Luminosity Table" in message:
+            if "Absorbed Stellar Luminosity Table" in message:
 
-                #if "is not distributed" in message: return False
-                #elif "is distributed" in message: return True
-                #else: raise ValueError("Log message truncated")
+                if "is not distributed" in message: return False
+                elif "is distributed" in message: return True
+                else: raise ValueError("Log message truncated")
 
             # Alternatively, look at the Dust Emission Spectra Table
 
         # Return false if no messages regarding the distributed-ness of the tables was encountered
-        #return False
+        return False
 
         # Simple implementation (only works if the log file is complete)
         #return "in data parallelization mode" in self.finished_simulation_message
 
-        # Simple implementation
-        return "in data parallelization mode" in self.starting_simulation_message
+        # Simple implementation (should be enough, but I was working with log files where this was not yet present)
+        #return "in data parallelization mode" in self.starting_simulation_message
 
 # -----------------------------------------------------------------
 

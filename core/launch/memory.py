@@ -317,4 +317,27 @@ class MemoryTable(SmartTable):
         # Return the parameter values
         return parameters
 
+    # -----------------------------------------------------------------
+
+    def indices_for_parameters(self, parameters):
+
+        """
+        This function ...
+        :return:
+        """
+
+        indices = []
+
+        # Loop over the rows
+        for index in range(len(self)):
+
+            for label in parameters:
+
+                if self[label][index] != parameters[label]: break
+
+            # Break is not encountered: all parameters match for this row
+            else: indices.append(index)
+
+        return indices
+
 # -----------------------------------------------------------------
