@@ -77,6 +77,7 @@ definition.sections["extrapolation"].sections["timing"].add_flag("ncores", "extr
 definition.sections["extrapolation"].sections["timing"].add_flag("npackages", "extrapolate the number of photon packages of a serial run to obtain a serial run for a series of simulations with a higher number of packages (requires 'hetero' to be enabled)")
 definition.sections["extrapolation"].sections["timing"].add_flag("nwavelengths", "extrapolate the number of wavelengths of a serial run to obtain a serial run for a series of simulations with a higher number of wavelengths (requires 'hetero' to be enabled) [THIS OPTION IS VERY TRICKY: LOAD BALANCING CAN VARY!]")
 definition.sections["extrapolation"].sections["timing"].add_flag("in_times", "not only extrapolate for normalizing, but also plot the serial time as if it were a genuine data point")
+definition.sections["extrapolation"].sections["timing"].add_flag("for_hybrid", "also extrapolate to serial for hybrid runs for visualisation purposes (which can per definition not be run on 1 core)")
 
 # MEMORY
 definition.sections["extrapolation"].add_section("memory", "extrapolation of memory data")

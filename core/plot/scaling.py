@@ -140,6 +140,18 @@ memory_properties = ["memory", "memory-gain", "total-memory"]
 
 # -----------------------------------------------------------------
 
+dont_fit_phases = ["setup", "intermediate", "writing", "waiting"]
+
+# -----------------------------------------------------------------
+
+multiprocessing_phases = ["communication", "waiting"]
+
+phases_not_relevant_for_multithreading = ["communication", "waiting"] # start from nprocesses = 2 or higher (otherwise we have runtimes of zero, doesn't work on a log-log plot)
+
+phases_not_logaritmic_runtimes = ["communication", "waiting"]
+
+# -----------------------------------------------------------------
+
 pure_scaling_behaviour = dict()
 
 # Setup
@@ -218,11 +230,12 @@ class ScalingPlotter(Configurable):
         # Fit functions
         self.timing_fit_functions = defaultdict(dict)
 
-        # Fit parameters
+        # Fit parameters for timing data
         self.timing_fit_parameters = defaultdict(dict)
         self.timing_fit_parameter_errors = defaultdict(dict)
 
-        self.memory_fit_parameters = dict()
+        # Fit parameters for memory data
+        self.memory_fit_parameters = defaultdict(dict)
 
         # The number of cores used for the 'serial' timing and memory data
         self.serial_timing_ncores = defaultdict(dict)
@@ -321,27 +334,41 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def has_timing_fit(self, phase):
+    def has_timing_fit(self, phase, parameter_set, mode):
 
         """
         This function ...
         :param phase:
+        :param parameter_set:
+        :param mode:
         :return:
         """
 
-        return phase in self.timing_fit_parameters
+        if phase in self.timing_fit_parameters:
+            if parameter_set in self.timing_fit_parameters[phase]:
+                if mode in self.timing_fit_parameters[phase][parameter_set]: return True
+                else: return False
+            else: return False
+        else: return False
 
     # -----------------------------------------------------------------
 
-    def has_memory_fit(self, phase):
+    def has_memory_fit(self, phase, parameter_set, mode):
 
         """
         This function ...
         :param phase:
+        :param parameter_set:
+        :param mode:
         :return:
         """
 
-        return phase in self.memory_fit_parameters
+        if phase in self.memory_fit_parameters:
+            if parameter_set in self.memory_fit_parameters[phase]:
+                if mode in self.memory_fit_parameters[phase][parameter_set]: return True
+                else: return False
+            else: return False
+        else: return False
 
     # -----------------------------------------------------------------
 
@@ -688,7 +715,20 @@ class ScalingPlotter(Configurable):
         # Debugging
         log.debug("Checking the coverage of the data ...")
 
-        ## TIMING
+        # Timing
+        self.check_coverage_timing()
+
+        # Memory
+        self.check_coverage_memory()
+
+    # -----------------------------------------------------------------
+
+    def check_coverage_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # If simulations with different parameters are used
         if self.has_multiparameters_timing:
@@ -723,7 +763,14 @@ class ScalingPlotter(Configurable):
             else:
                 if np.min(self.timing["Cores"]) == np.max(self.timing["Cores"]): raise RuntimeError("All runtimes are generated on the same number of cores. Run with --hybridisation")
 
-        ## MEMORY
+    # -----------------------------------------------------------------
+
+    def check_coverage_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # If simulations with different parameters are used
         if self.has_multiparameters_memory:
@@ -920,8 +967,10 @@ class ScalingPlotter(Configurable):
         #if len(relevant_parameters) == 0: relevant_parameters = "empty"
 
         values = []
-
-        for parameter in self.different_parameters_timing: values.append(str(self.timing[parameter][index])) # dtype('S21') to str
+        for parameter in self.different_parameters_timing:
+            value = self.timing[parameter][index]
+            if hasattr(value, "dtype") and np.issubdtype(str(value.dtype), np.string_): value = str(value) # dtype('S..') to str
+            values.append(value)
 
         if len(values) == 0: values = "empty"
         elif len(values) == 1: values = values[0]
@@ -941,7 +990,10 @@ class ScalingPlotter(Configurable):
 
         values = []
 
-        for parameter in self.different_parameters_memory: values.append(str(self.memory[parameter][index])) # dtype('S21') to str
+        for parameter in self.different_parameters_memory:
+            value = self.timing[parameter][index]
+            if hasattr(value, "dtype") and np.issubdtype(str(value.dtype), np.string_): value = str(value) # dtype('S..') to str
+            values.append(value)
 
         if len(values) == 0: values = "empty"
         elif len(values) == 1: values = values[0]
@@ -1240,6 +1292,12 @@ class ScalingPlotter(Configurable):
         # Set missing serial memory data
         if self.needs_memory: self.set_missing_serial_memory(parameters_modes_processor_counts_dict_memory)
 
+        # Check coverage of data in the different modes
+        self.check_coverage_modes()
+
+        # Add communication and waiting times of zero for 1 process
+        if not self.config.hybridisation: self.add_fixed_multiprocessing_phases_runtimes()
+
     # -----------------------------------------------------------------
 
     def set_equivalent_timing_data(self, parameters_modes_processor_counts_dict_timing):
@@ -1273,6 +1331,8 @@ class ScalingPlotter(Configurable):
 
             # Get all parallelization modes
             modes = parameters_modes_processor_counts_dict_timing[parameter_set]
+
+            #print(parameter_set, modes)
 
             # Does multithreading mode exist in the modes?
             if not "multithreading" in modes: continue
@@ -1641,7 +1701,7 @@ class ScalingPlotter(Configurable):
             # Also use the extrapolated value in the runtimes
             if self.config.extrapolation.timing.in_times:
                 for mode in self.timing_data[phase][parameter_set]:  # Loop over all modes but not hybrid modes!
-                    if "hybrid" in mode: continue
+                    if "hybrid" in mode and (phase in multiprocessing_phases or not self.config.extrapolation.timing.for_hybrid): continue
                     self.timing_data[phase][parameter_set][mode].processor_counts.append(1)
                     self.timing_data[phase][parameter_set][mode].times.append(time)
                     self.timing_data[phase][parameter_set][mode].errors.append(0.0)
@@ -1655,8 +1715,8 @@ class ScalingPlotter(Configurable):
             dust_time = self.serial_timing[parameter_set]["dust"].time
             writing_time = self.serial_timing[parameter_set]["writing"].time
             waiting_time = self.serial_timing[parameter_set]["waiting"].time
-            communication_time = self.serial_timing[parameter_set]["communication"]
-            intermediate_time = self.serial_timing[parameter_set]["intermediate"]
+            communication_time = self.serial_timing[parameter_set]["communication"].time
+            intermediate_time = self.serial_timing[parameter_set]["intermediate"].time
 
             # Calculate the total time
             total_time = setup_time + stellar_time + spectra_time + dust_time + writing_time + waiting_time + communication_time + intermediate_time
@@ -1860,6 +1920,126 @@ class ScalingPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def check_coverage_modes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the data coverage for the different parallelization modes ...")
+
+        # Timing
+        self.check_coverage_modes_timing()
+
+        # Memory
+        self.check_coverage_modes_memory()
+
+    # -----------------------------------------------------------------
+
+    def check_coverage_modes_timing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the timing data coverage for the different parallelization modes ...")
+
+        # Loop over the parameter sets
+        for parameter_set in self.parameter_sets_timing:
+
+            # Loop over the modes
+            for mode in self.modes_for_timing_parameter_set(parameter_set):
+
+                # Loop over the phases
+                for phase in self.timing_data:
+
+                    # Check
+                    if len(self.timing_data[phase][parameter_set][mode].processor_counts) < 2:
+
+                        # Debugging
+                        if self.has_multiparameters_timing: log.debug("Removing timing data for " + phase_names[phase] + " for " + parameter_set_to_string_inline(parameter_set, self.different_parameters_timing) + " in " + mode + " mode ...")
+                        else: log.debug("Removing timing data for " + phase_names[phase] + " in " + mode + " mode ...")
+
+                        # Remove
+                        del self.timing_data[phase][parameter_set][mode]
+
+                        # If no modes left for the parameter set
+                        if len(self.timing_data[phase][parameter_set]) == 0: del self.timing_data[phase][parameter_set]
+
+    # -----------------------------------------------------------------
+
+    def check_coverage_modes_memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the memory data coverage for the different parallelization modes ...")
+
+        # Loop over the parameter sets
+        for parameter_set in self.parameter_sets_memory:
+
+            # Loop over the modes
+            for mode in self.modes_for_memory_parameter_set(parameter_set):
+
+                # Loop over the phases
+                for phase in self.memory_data:
+
+                    # Check
+                    if len(self.memory_data[phase][parameter_set][mode].processor_counts) < 2:
+
+                        # Debugging
+                        if self.has_multiparameters_memory: log.debug("Removing memory data for " + phase_names[phase] + " for " + parameter_set_to_string_inline(parameter_set, self.different_parameters_memory) + " in " + mode + " mode ...")
+                        else: log.debug("Removing memory data for " + phase_names[phase] + " in " + mode + " mode ...")
+
+                        # Remove
+                        del self.memory_data[phase][parameter_set][mode]
+
+                        # If no modes left for the parameter set
+                        if len(self.memory_data[phase][parameter_set]) == 0: del self.memory_data[phase][parameter_set]
+
+    # -----------------------------------------------------------------
+
+    def add_fixed_multiprocessing_phases_runtimes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the parameter sets
+        for parameter_set in self.parameter_sets_timing:
+
+            # Loop over the modes
+            for mode in self.modes_for_timing_parameter_set(parameter_set):
+
+                # Skip multithreading
+                if mode == "multithreading": continue
+
+                # Get threads per process
+                if "hybrid" in mode: threadspp = nthreads_per_process_for_hybrid_mode(mode)
+                else: threadspp = 1
+
+                # For one process, ncores = threadspp (x 1)
+                ncores = threadspp
+
+                # Check whether 1 process is present in MPI phases
+                for phase in multiprocessing_phases:
+
+                    if ncores not in self.timing_data[phase][parameter_set][mode].processor_counts:
+
+                        self.timing_data[phase][parameter_set][mode].processor_counts.append(ncores)
+                        self.timing_data[phase][parameter_set][mode].times.append(0.0)
+                        self.timing_data[phase][parameter_set][mode].errors.append(0.0)
+
+    # -----------------------------------------------------------------
+
     @property
     def parameter_sets_timing(self):
 
@@ -1868,7 +2048,10 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
-        return self.timing_data["total"].keys()
+        #phase = "total" # not always present
+        phase = self.timing_data.keys()[0]
+
+        return self.timing_data[phase].keys()
 
     # -----------------------------------------------------------------
 
@@ -1880,7 +2063,40 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
-        return self.memory_data["total"].keys()
+        # phase = "total" # not always present
+        phase = self.timing_data.keys()[0]
+
+        return self.memory_data[phase].keys()
+
+    # -----------------------------------------------------------------
+
+    def modes_for_timing_parameter_set(self, parameter_set):
+
+        """
+        This function ...
+        :param parameter_set:
+        :return:
+        """
+
+        # phase = "total" # not always present
+        phase = self.timing_data.keys()[0]
+
+        return self.timing_data[phase][parameter_set].keys()
+
+    # -----------------------------------------------------------------
+
+    def modes_for_memory_parameter_set(self, parameter_set):
+
+        """
+        This function ...
+        :param parameter_set:
+        :return:
+        """
+
+        # phase = "total" # not always present
+        phase = self.timing_data.keys()[0]
+
+        return self.memory_data[phase][parameter_set].keys()
 
     # -----------------------------------------------------------------
 
@@ -1898,7 +2114,7 @@ class ScalingPlotter(Configurable):
         if self.needs_timing: self.fit_timing()
 
         # Fit memory
-        #if self.needs_memory: self.fit_memory()
+        if self.needs_memory: self.fit_memory()
 
     # -----------------------------------------------------------------
 
@@ -1919,20 +2135,13 @@ class ScalingPlotter(Configurable):
             if parameter_set in self.ignore_parameter_sets_timing: continue
 
             # Loop over the phases
-            for phase in self.config.phases:
+            for phase in self.simulation_phases_and_subphases_timing:
 
-                # Skip phases for which a serial timing is not present
-                #if not self.has_serial_timing(phase):  # continue
-                #    # Give warning
-                #    log.warning("Serial (one core) timing data not found, using longest runtime (any parallelization mode) for normalizing the speedups (and efficiencies) for the fit")
+                # Don't fit for this phase
+                if phase in dont_fit_phases: continue
 
                 # Debugging
                 log.debug("Fitting timing data for " + phase_names[phase] + " ...")
-
-                # Get the serial runtime (and error) for this phase (create a Quantity object)
-                #serial_time = self.serial_timing[phase].time
-                #serial_error = self.serial_timing[phase].error
-                #serial = Quantity(serial_time, serial_error)
 
                 # Create a dictionary that stores the fitted parameters for each different mode
                 parameters = dict()
@@ -1943,26 +2152,27 @@ class ScalingPlotter(Configurable):
                 fit_function, nparameters = generate_fit_function(behaviour)
 
                 # Debugging
-                log.debug("Expected scaling behaviour: " + str(behaviour))
+                log.debug("Expected scaling behaviour: " + behaviour_to_function_string(behaviour))
 
                 # Loop over the different parallelization modes (the different curves)
-                for mode in self.timing_data[parameter_set][phase]:
+                for mode in self.timing_data[phase][parameter_set]:
 
                     # Get the list of processor counts, runtimes and errors
-                    processor_counts = self.timing_data[parameter_set][phase][mode].processor_counts
-                    times = self.timing_data[parameter_set][phase][mode].times
-                    errors = self.timing_data[parameter_set][phase][mode].errors
+                    processor_counts = self.timing_data[phase][parameter_set][mode].processor_counts
+                    times = self.timing_data[phase][parameter_set][mode].times
+                    errors = self.timing_data[phase][parameter_set][mode].errors
 
                     # Sort the lists
                     processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
 
                     # Set the weights of the different timing points for the fitting procedure
-                    weigths = errors if not np.any(np.isinf(errors)) else None
+                    weights = errors if not np.any(np.isinf(errors)) else None
                     if np.count_nonzero(errors) == 0: weights = None
 
                     # Calculate the normalized processor counts (relative to the number of processors used for the serial run)
                     normalized_processor_counts = processor_counts / self.serial_timing_ncores[parameter_set][phase]
 
+                    # Hack so that number of parameters doesn't need to be inferred by Scipy from the fit function prescription (because it uses *args)
                     from scipy.optimize.minpack import _initialize_feasible, prepare_bounds
                     n = nparameters
                     bounds = (-np.inf, np.inf)
@@ -1970,44 +2180,17 @@ class ScalingPlotter(Configurable):
                     p0 = _initialize_feasible(lb, ub)
 
                     # Fit parameters for the speedups to Amdahl's law
-                    popt, pcov = curve_fit(fit_function, normalized_processor_counts, times, sigma=weigths, absolute_sigma=False, p0=p0)
+                    #print(mode, p0, normalized_processor_counts, times, weights)
+                    popt, pcov = curve_fit(fit_function, normalized_processor_counts, times, sigma=weights, absolute_sigma=False, p0=p0)
                     perr = np.sqrt(np.diag(pcov))
 
                     parameters[mode] = popt
                     parameter_errors[mode] = perr
 
-                # If output path is specified, write parameter files
-                if self.config.output is not None:
-
-                    mode_list = []
-                    other_columns = defaultdict(list)
-
-                    # Fill columns
-                    for mode in parameters:
-                        mode_list.append(mode)
-                        for i in range(len(parameters[mode])):
-                            other_columns[alphabet[i]].append(parameters[mode][i])
-                            other_columns[alphabet[i] + "_error"].append(parameter_errors[mode][i])
-
-                    # Create a data file to contain the fitted parameters
-                    directory = self.config.output
-                    parameter_file_path = fs.join(directory, "parameters_timing_" + phase + ".dat")
-
-                    # Create the parameters table and write to file
-                    data = [mode_list]
-                    names = ["Parallelization mode"]
-
-                    for column_name in other_columns:
-                        data.append(other_columns[column_name])
-                        names.append(column_name)
-
-                    table = Table(data=data, names=names)
-                    tables.write(table, parameter_file_path)
-
                 # Add the parameters
-                self.timing_fit_functions[parameter_set][phase] = fit_function
-                self.timing_fit_parameters[parameter_set][phase] = parameters
-                self.timing_fit_parameter_errors[parameter_set][phase] = parameter_errors
+                self.timing_fit_functions[phase][parameter_set] = fit_function
+                self.timing_fit_parameters[phase][parameter_set] = parameters
+                self.timing_fit_parameter_errors[phase][parameter_set] = parameter_errors
 
     # -----------------------------------------------------------------
 
@@ -2215,89 +2398,65 @@ class ScalingPlotter(Configurable):
         # Inform the user
         log.info("Fitting the memory data ...")
 
-        # Loop over the phases
-        for phase in self.config.phases:
+        # Loop over the parameter sets
+        for parameter_set in self.parameter_sets_memory:
 
-            # Get the serial (1 process) memory consumption (and error) for this phase (create a Quantity object)
-            #serial_memory = self.serial_memory[phase].memory
-            #serial_error = self.serial_memory[phase].error
-            #serial = Quantity(serial_memory, serial_error)
+            # Ignore
+            if parameter_set in self.ignore_parameter_sets_memory: continue
 
-            # Create a dictionary that stores the fitted parameters for each different mode
-            parameters = dict()
+            # Loop over the phases
+            for phase in self.simulation_phases_and_subphases_memory:
 
-            # Loop over the different parallelization modes (the different curves)
-            for mode in self.memory_data[phase]:
+                # Get the serial (1 process) memory consumption (and error) for this phase (create a Quantity object)
+                #serial_memory = self.serial_memory[phase].memory
+                #serial_error = self.serial_memory[phase].error
+                #serial = Quantity(serial_memory, serial_error)
 
-                # Skip modes that are not data parallel
-                if not "task+data" in mode: continue
+                # Create a dictionary that stores the fitted parameters for each different mode
+                parameters = dict()
+                parameter_errors = dict()
 
-                # Get the list of processor counts, memory and errors
-                processor_counts = self.memory_data[phase][mode].processor_counts
-                memories = self.memory_data[phase][mode].memory
-                errors = self.memory_data[phase][mode].errors
+                # Loop over the different parallelization modes (the different curves)
+                for mode in self.memory_data[phase][parameter_set]:
 
-                # Sort the lists
-                processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
+                    # Skip modes that are not data parallel
+                    if not "task+data" in mode: continue
 
-                # Set the weights of the different memory points for the fitting procedure
-                weights = errors if not np.any(np.isinf(errors)) else None
-                if np.count_nonzero(weights) == 0: weights = None
+                    # Get the list of processor counts, memory and errors
+                    processor_counts = self.memory_data[phase][parameter_set][mode].processor_counts
+                    memories = self.memory_data[phase][parameter_set][mode].memory
+                    errors = self.memory_data[phase][parameter_set][mode].errors
 
-                # Check data
-                if np.any(np.isinf(memories)) or np.any(np.isnan(memories)):
-                    log.warning("Fitting not possible to the memory data of " + mode + " for " + phase_names[phase].lower() + " (nans and/or infs)")
-                    continue
+                    # Sort the lists
+                    processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
 
-                # Get list of nprocesses
-                nprocesses = nprocesses_from_mode(mode, processor_counts)
+                    # Set the weights of the different memory points for the fitting procedure
+                    weights = errors if not np.any(np.isinf(errors)) else None
+                    if np.count_nonzero(weights) == 0: weights = None
 
-                # Fit (standard or modified) memory scaling law
-                if len(processor_counts) < 5:
+                    # Check data
+                    if np.any(np.isinf(memories)) or np.any(np.isnan(memories)):
+                        log.warning("Fitting not possible to the memory data of " + mode + " for " + phase_names[phase].lower() + " (nans and/or infs)")
+                        continue
 
-                    popt, pcov = curve_fit(memory_scaling, nprocesses, memories, sigma=weights, absolute_sigma=False)
-                    perr = np.sqrt(np.diag(pcov))
-                    parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": 0.0, "c_error": 0.0})
+                    # Get list of nprocesses
+                    nprocesses = nprocesses_from_mode(mode, processor_counts)
 
-                else:
+                    # Fit (standard or modified) memory scaling law
+                    if len(processor_counts) < 5:
 
-                    popt, pcov = curve_fit(modified_memory_scaling, nprocesses, memories, sigma=weights, absolute_sigma=False)
-                    perr = np.sqrt(np.diag(pcov))
-                    parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": popt[2], "c_error": perr[2]})
+                        popt, pcov = curve_fit(memory_scaling, nprocesses, memories, sigma=weights, absolute_sigma=False)
+                        perr = np.sqrt(np.diag(pcov))
+                        parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": 0.0, "c_error": 0.0})
 
-            # If output path is specified, write parameter files
-            if self.config.output is not None:
+                    else:
 
-                mode_list = []
-                a_list = []
-                a_error_list = []
-                b_list = []
-                b_error_list = []
-                c_list = []
-                c_error_list = []
+                        popt, pcov = curve_fit(modified_memory_scaling, nprocesses, memories, sigma=weights, absolute_sigma=False)
+                        perr = np.sqrt(np.diag(pcov))
+                        parameters[mode] = Map({"a": popt[0], "a_error": perr[0], "b": popt[1], "b_error": perr[1], "c": popt[2], "c_error": perr[2]})
 
-                for mode in parameters:
-
-                    mode_list.append(mode)
-                    a_list.append(parameters[mode].a)
-                    a_error_list.append(parameters[mode].a_error)
-                    b_list.append(parameters[mode].b)
-                    b_error_list.append(parameters[mode].b_error)
-                    c_list.append(parameters[mode].c)
-                    c_error_list.append(parameters[mode].c_error)
-
-                # Create a data file to contain the fitted parameters
-                directory = self.config.output
-                parameter_file_path = fs.join(directory, "parameters_memory_" + phase + ".dat")
-
-                # Create the parameters table and write to file
-                data = [mode_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
-                names = ["Parallelization mode", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c", "Error on c"]
-                table = Table(data=data, names=names)
-                table.write(parameter_file_path, format="ascii.commented_header")
-
-            # Add the parameters
-            self.memory_fit_parameters[phase] = parameters
+                # Add the parameters
+                self.memory_fit_parameters[phase][parameter_set] = parameters
 
     # -----------------------------------------------------------------
 
@@ -2537,7 +2696,7 @@ class ScalingPlotter(Configurable):
 
         # Use a logarithmic scale for the x axis (nthreads) and the y axis (time)
         if self.config.xlog: plt.xscale('log')
-        if self.config.ylog: plt.yscale('log')
+        if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale('log')
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
@@ -2570,52 +2729,28 @@ class ScalingPlotter(Configurable):
             if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
                 # Loop over the parameter sets
-                for parameter_set in self.timing_fit_functions:
+                for parameter_set in self.timing_fit_functions[plot_phase]:
 
                     # Get the fit function
-                    fit_function = self.timing_fit_functions[parameter_set][plot_phase]
+                    fit_function = self.timing_fit_functions[plot_phase][parameter_set]
 
                     # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
                     #reference_ncores = self.serial_timing_ncores[phase]
 
                     fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-                    for mode in self.timing_fit_parameters[parameter_set][plot_phase]:
+                    for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
 
                         # Get the parameter values
-                        parameters = self.timing_fit_parameters[parameter_set][plot_phase][mode]
+                        parameters = self.timing_fit_parameters[plot_phase][parameter_set][mode]
 
                         # Get the parameter errors
-                        parameter_errors = self.timing_fit_parameter_errors[parameter_set][plot_phase][mode]
+                        parameter_errors = self.timing_fit_parameter_errors[plot_phase][parameter_set][mode]
 
                         # Calculate the fitted times
                         fit_times = [fit_function(n, *parameters) for n in fit_ncores]
 
                         # Add the plot
                         plt.plot(fit_ncores, fit_times, color="grey")
-
-        # Plot curve of communication times
-        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit and phase == "communication":
-
-            # Get the fit parameters
-            #parameters = self.timing_fit_parameters[phase]
-
-            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
-            #reference_ncores = self.serial_timing_ncores[phase]
-
-            # Plot the fitted speedup curves and write the parameters to the file
-            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-            #for mode in parameters:
-
-                # Get the parameter values
-                #a = parameters[mode].a
-                #b = parameters[mode].b
-                #c = parameters[mode].c
-
-                # Calculate the fitted times
-                #fit_times = [communication_time_scaling(n / float(reference_ncores), a, b, c) for n in fit_ncores]
-
-                # Add the plot
-                #plt.plot(fit_ncores, fit_times, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -2769,49 +2904,25 @@ class ScalingPlotter(Configurable):
             if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
                 # Loop over the parameter sets
-                for parameter_set in self.timing_fit_functions:
+                for parameter_set in self.timing_fit_functions[plot_phase]:
 
                     # Get the fit function
-                    fit_function = self.timing_fit_functions[parameter_set][plot_phase]
+                    fit_function = self.timing_fit_functions[plot_phase][parameter_set]
 
                     fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-                    for mode in self.timing_fit_parameters[parameter_set][plot_phase]:
+                    for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
 
                         # Get the parameter values
-                        parameters = self.timing_fit_parameters[parameter_set][plot_phase][mode]
+                        parameters = self.timing_fit_parameters[plot_phase][parameter_set][mode]
 
                         # Get the parameter errors
-                        parameter_errors = self.timing_fit_parameter_errors[parameter_set][plot_phase][mode]
+                        parameter_errors = self.timing_fit_parameter_errors[plot_phase][parameter_set][mode]
 
                         # Calculate the fitted speedups
                         fit_speedups = [serial.value / fit_function(n, *parameters) for n in fit_ncores]
 
                         # Add the plot
                         plt.plot(fit_ncores, fit_speedups, color="grey")
-
-        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
-
-            # Get the fit parameters
-            #parameters = self.timing_fit_parameters[phase]
-
-            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
-            #reference_ncores = self.serial_timing_ncores[phase]
-
-            # Plot the fitted speedup curves and write the parameters to the file
-            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-            #for mode in parameters:
-
-                # Get the parameter values
-                #p = parameters[mode].p
-                #a = parameters[mode].a
-                #b = parameters[mode].b
-                #c = parameters[mode].c
-
-                # Calculate the fitted speedups
-                #fit_speedups = [modified_amdahl_law(n/reference_ncores, p, a, b, c) for n in fit_ncores]
-
-                # Add the plot
-                #plt.plot(fit_ncores, fit_speedups, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -2952,47 +3063,25 @@ class ScalingPlotter(Configurable):
             if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
 
                 # Loop over the parameter sets
-                for parameter_set in self.timing_fit_functions:
+                for parameter_set in self.timing_fit_functions[plot_phase]:
 
                     # Get the fit function
-                    fit_function = self.timing_fit_functions[parameter_set][plot_phase]
+                    fit_function = self.timing_fit_functions[plot_phase][parameter_set]
 
                     fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-                    for mode in self.timing_fit_parameters[parameter_set][plot_phase]:
+                    for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
 
                         # Get the parameter values
-                        parameters = self.timing_fit_parameters[parameter_set][plot_phase][mode]
+                        parameters = self.timing_fit_parameters[plot_phase][parameter_set][mode]
 
                         # Get the parameter errors
-                        parameter_errors = self.timing_fit_parameter_errors[parameter_set][plot_phase][mode]
+                        parameter_errors = self.timing_fit_parameter_errors[plot_phase][parameter_set][mode]
 
                         # Calculate the fitted efficiencies
                         fit_efficiencies = [serial.value / fit_function(n, *parameters) / n for n in fit_ncores]
 
                         # Add the plot
                         plt.plot(fit_ncores, fit_efficiencies, color="grey")
-
-        # Plot fit
-        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit and self.has_timing_fit(phase):
-
-            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
-            #reference_ncores = self.serial_timing_ncores[phase]
-
-            # Plot the fitted speedup curves
-            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-            #for mode in self.timing_fit_parameters[phase]:
-
-                # Get the parameter values
-                #p = self.timing_fit_parameters[phase][mode].p
-                #a = self.timing_fit_parameters[phase][mode].a
-                #b = self.timing_fit_parameters[phase][mode].b
-                #c = self.timing_fit_parameters[phase][mode].c
-
-                # Calculate the fitted efficiencies
-                #fit_efficiencies = [modified_amdahl_law(n/float(reference_ncores), p, a, b, c) / (n*reference_ncores) for n in fit_ncores]
-
-                # Add the plot
-                #plt.plot(fit_ncores, fit_efficiencies, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -3042,78 +3131,114 @@ class ScalingPlotter(Configurable):
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
-        # Loop over the different parameter sets (different ski files)
-        for parameter_set in self.timing_data[phase]:
+        # Phases for this plot
+        add_phase_to_label = False
+        if phase == "communication" and self.config.split_communication:
+            plot_phases = communication_phases
+            add_phase_to_label = True
+        else: plot_phases = [phase]
 
-            # Ignore
-            if parameter_set in self.ignore_parameter_sets_timing: continue
+        # Loop over the plot phases
+        for plot_phase in plot_phases:
 
-            # Debugging
-            log.debug("Plotting the CPU times for the " + phase_names[phase] + " for the simulations with parameters: " + parameter_set_to_string_inline(parameter_set, self.different_parameters_timing))
+            # Loop over the different parameter sets (different ski files)
+            for parameter_set in self.timing_data[plot_phase]:
 
-            # Loop over the different parallelization modes (the different curves)
-            for mode in self.timing_data[phase][parameter_set]:
+                # Ignore
+                if parameter_set in self.ignore_parameter_sets_timing: continue
 
-                # Get the list of processor counts, runtimes and errors
-                processor_counts = self.timing_data[phase][parameter_set][mode].processor_counts
-                times = self.timing_data[phase][parameter_set][mode].times
-                errors = self.timing_data[phase][parameter_set][mode].errors
+                # Debugging
+                log.debug("Plotting the CPU times for the " + phase_names[plot_phase] + " for the simulations with parameters: " + parameter_set_to_string_inline(parameter_set, self.different_parameters_timing))
 
-                # Sort the lists
-                processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
+                # Loop over the different parallelization modes (the different curves)
+                for mode in self.timing_data[plot_phase][parameter_set]:
 
-                # Get array of number of used cores
-                if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
-                else: ncores = processor_counts
+                    # Get the list of processor counts, runtimes and errors
+                    processor_counts = self.timing_data[plot_phase][parameter_set][mode].processor_counts
+                    times = self.timing_data[plot_phase][parameter_set][mode].times
+                    errors = self.timing_data[plot_phase][parameter_set][mode].errors
 
-                # Get list of process count
-                #processes = nprocesses_from_mode(mode, processor_counts)
+                    # Sort the lists
+                    processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
 
-                # Multiply to get total
-                times *= ncores
-                errors *= ncores
+                    # Get array of number of used cores
+                    if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
+                    else: ncores = processor_counts
 
-                # Determine the label
-                if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                else: label = mode
+                    # Get list of process count
+                    #processes = nprocesses_from_mode(mode, processor_counts)
 
-                # Plot the data points for this mode
-                plt.errorbar(processor_counts, times, errors, marker='.', label=label)
+                    # Multiply to get total
+                    times *= ncores
+                    errors *= ncores
 
-                # Add the appropriate ticks
-                ticks |= set(processor_counts)
+                    # Determine the label
+                    if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
+                    else: label = mode
+
+                    # Plot the data points for this mode
+                    plt.errorbar(processor_counts, times, errors, marker='.', label=label)
+
+                    # Add the appropriate ticks
+                    ticks |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
-        plt.xscale("log")
-        plt.yscale("log")
+        if self.config.xlog: plt.xscale("log")
+        if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale("log")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
         ticks.append(ticks[-1] * 2)
 
-        # Plot curve of communication times
-        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit and phase == "communication":
+        # Loop over the plot phases
+        for plot_phase in plot_phases:
 
-            # Get the fit parameters
-            #parameters = self.timing_fit_parameters[phase]
+            # Plot a line that denotes linear scaling (CPU time = serial runtime / ncores)
+            if not self.config.hybridisation and plot_phase in parallel_phases:
 
-            # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
-            #reference_ncores = self.serial_timing_ncores[phase]
+                # Loop over the parameter sets
+                for parameter_set in self.timing_data[plot_phase]:
 
-            # Plot the fitted speedup curves and write the parameters to the file
-            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-            #for mode in parameters:
+                    # Ignore
+                    if parameter_set in self.ignore_parameter_sets_timing: continue
 
-                # Get the parameter values
-                #a = parameters[mode].a
-                #b = parameters[mode].b
-                #c = parameters[mode].c
+                    # Get the serial runtime (and error) for this phase (create a Quantity object)
+                    serial_time = self.serial_timing[parameter_set][plot_phase].time
+                    serial_error = self.serial_timing[parameter_set][plot_phase].error
+                    serial = Quantity(serial_time, serial_error)
 
-                # Calculate the fitted times
-                #fit_times = [communication_time_scaling(n/reference_ncores, a, b, c) * n for n in fit_ncores]
+                    # Calculate the ideal runtimes
+                    runtimes = [serial.value] * len(ticks)
 
-                # Add the plot
-                #plt.plot(fit_ncores, fit_times, color="grey")
+                    # Plot the line
+                    plt.plot(ticks, runtimes, linestyle='--')
+
+            # Plot the fit
+            if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+
+                # Loop over the parameter sets
+                for parameter_set in self.timing_fit_functions[plot_phase]:
+
+                    # Get the fit function
+                    fit_function = self.timing_fit_functions[plot_phase][parameter_set]
+
+                    # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
+                    # reference_ncores = self.serial_timing_ncores[phase]
+
+                    fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
+
+                        # Get the parameter values
+                        parameters = self.timing_fit_parameters[plot_phase][parameter_set][mode]
+
+                        # Get the parameter errors
+                        parameter_errors = self.timing_fit_parameter_errors[plot_phase][parameter_set][mode]
+
+                        # Calculate the fitted times
+                        fit_times = [fit_function(n, *parameters) * n for n in fit_ncores]
+
+                        # Add the plot
+                        plt.plot(fit_ncores, fit_times, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -3590,10 +3715,10 @@ class ScalingPlotter(Configurable):
         if self.needs_memory: self.write_memory_data()
 
         # Write timing fit data
-        #self.write_timing_fits()
+        if self.needs_timing: self.write_timing_fits()
 
         # Write memory fit data
-        #self.write_memory_fits()
+        if self.needs_memory: self.write_memory_fits()
 
     # -----------------------------------------------------------------
 
@@ -3669,30 +3794,47 @@ class ScalingPlotter(Configurable):
         # Inform the user
         log.info("Writing the timing fit results ...")
 
-        mode_list = []
-        other_columns = defaultdict(list)
+        # Loop over the phases
+        for phase in self.timing_fit_parameters:
 
-        # Fill columns
-        for mode in parameters:
-            mode_list.append(mode)
-            for i in range(len(parameters[mode])):
-                other_columns[alphabet[i]].append(parameters[mode][i])
-                other_columns[alphabet[i] + "_error"].append(parameter_errors[mode][i])
+            # Loop over the parameter sets
+            for parameter_set in self.timing_fit_parameters[phase]:
 
-        # Create a data file to contain the fitted parameters
-        directory = self.config.output
-        parameter_file_path = fs.join(directory, "parameters_timing_" + phase + ".dat")
+                # Get the modes
+                modes = self.timing_fit_parameters[phase][parameter_set].keys()
 
-        # Create the parameters table and write to file
-        data = [mode_list]
-        names = ["Parallelization mode"]
+                mode_list = []
+                other_columns = defaultdict(list)
 
-        for column_name in other_columns:
-            data.append(other_columns[column_name])
-            names.append(column_name)
+                # Fill columns
+                for mode in modes:
 
-        table = Table(data=data, names=names)
-        tables.write(table, parameter_file_path)
+                    mode_list.append(mode)
+
+                    fit_parameters = self.timing_fit_parameters[phase][parameter_set][mode]
+                    fit_parameter_errors = self.timing_fit_parameter_errors[phase][parameter_set][mode]
+
+                    for i in range(len(fit_parameters)):
+
+                        other_columns[alphabet[i]].append(fit_parameters[i])
+                        other_columns[alphabet[i] + "_error"].append(fit_parameter_errors[i])
+
+                # Create a data file to contain the fitted parameters
+                directory = self.config.output
+                parameter_file_path = fs.join(directory, "parameters_timing_" + parameter_set_to_string_for_filename(parameter_set, self.different_parameters_timing) + "_" + phase + ".dat")
+
+                # Create the parameters table and write to file
+                data = [mode_list]
+                names = ["Parallelization mode"]
+
+                # Set data and names
+                for column_name in other_columns:
+                    data.append(other_columns[column_name])
+                    names.append(column_name)
+
+                # Write the table
+                table = Table(data=data, names=names)
+                tables.write(table, parameter_file_path)
 
     # -----------------------------------------------------------------
 
@@ -3705,6 +3847,46 @@ class ScalingPlotter(Configurable):
 
         # Inform the user
         log.info("Writing the memory fit results ...")
+
+        # Loop over the phases
+        for phase in self.memory_fit_parameters:
+
+            # Loop over the parameter sets
+            for parameter_set in self.memory_fit_parameters[phase]:
+
+                # Get the modes
+                modes = self.memory_fit_parameters[phase][parameter_set].keys()
+
+                mode_list = []
+                a_list = []
+                a_error_list = []
+                b_list = []
+                b_error_list = []
+                c_list = []
+                c_error_list = []
+
+                for mode in modes:
+
+                    parameters = self.memory_fit_parameters[phase][parameter_set][mode]
+
+                    mode_list.append(mode)
+                    a_list.append(parameters.a)
+                    a_error_list.append(parameters.a_error)
+                    b_list.append(parameters.b)
+                    b_error_list.append(parameters.b_error)
+                    c_list.append(parameters.c)
+                    c_error_list.append(parameters.c_error)
+
+                # Create a data file to contain the fitted parameters
+                directory = self.config.output
+                parameter_file_path = fs.join(directory, "parameters_memory_" + parameter_set_to_string_for_filename(parameter_set, self.different_parameters_memory) + "_" + phase + ".dat")
+
+                # Create the parameters table and write to file
+                data = [mode_list, a_list, a_error_list, b_list, b_error_list, c_list, c_error_list]
+                names = ["Parallelization mode", "Parameter a", "Error on a", "Parameter b", "Error on b", "Parameter c",
+                         "Error on c"]
+                table = Table(data=data, names=names)
+                tables.write(table, parameter_file_path)
 
 # -----------------------------------------------------------------
 
@@ -4037,12 +4219,10 @@ def parameter_set_to_string_inline(parameter_set, parameter_names):
     if parameter_set == "empty": string = "none"
 
     # tuple
-    elif isinstance(parameter_set, tuple):
-
-        string = ", ".join([parameter_names[index] + ": " + str(parameter_set[index]) for index in range(len(parameter_names))])
+    elif isinstance(parameter_set, tuple): string = ", ".join([parameter_names[index] + ": " + stringify.stringify_not_list(parameter_set[index], scientific=True)[1] for index in range(len(parameter_names))])
 
     # only one value
-    else: string = parameter_names[0] + ": " + str(parameter_set)
+    else: string = parameter_names[0] + ": " + stringify.stringify_not_list(parameter_set, scientific=True)[1]
 
     # return
     return string
@@ -4062,12 +4242,10 @@ def parameter_set_to_string_for_label(parameter_set, parameter_names):
     if parameter_set == "empty": string = ""
 
     # tuple
-    elif isinstance(parameter_set, tuple):
-
-        string = " [" + ", ".join([parameter_names[index] + ": " + str(parameter_set[index]) for index in range(len(parameter_names))]) + "]"
+    elif isinstance(parameter_set, tuple): string = " [" + ", ".join([parameter_names[index] + ": " + stringify.stringify_not_list(parameter_set[index], scientific=True)[1] for index in range(len(parameter_names))]) + "]"
 
     # only one value
-    else: string = " [" + parameter_names[0] + ": " + str(parameter_set) + "]"
+    else: string = " [" + parameter_names[0] + ": " + stringify.stringify_not_list(parameter_set, scientific=True)[1] + "]"
 
     # return
     return string
@@ -4087,10 +4265,10 @@ def parameter_set_to_string_for_filename(parameter_set, parameter_names):
 
     elif isinstance(parameter_set, tuple):
 
-        string = "_" + "_".join([parameter_names[index] + "=" + str(parameter_set[index]) for index in range(len(parameter_names))])
+        string = "_" + "_".join([parameter_names[index] + "=" + stringify.stringify_not_list(parameter_set[index], scientific=True)[1] for index in range(len(parameter_names))])
 
     # Only one value
-    else: string = "_" + parameter_names[0] + "=" + str(parameter_set)
+    else: string = "_" + parameter_names[0] + "=" + stringify.stringify_not_list(parameter_set, scientific=True)[1]
 
     # Return
     return string
@@ -4212,5 +4390,33 @@ def add_timeline_row(data, setup_time, stellar_time, spectra_time, dust_time, wr
     data[6][1].append(total)
     total += communication_time
     data[6][2].append(total)
+
+# -----------------------------------------------------------------
+
+def behaviour_to_function_string(behaviour):
+
+    """
+    This function ...
+    :param behaviour:
+    :return:
+    """
+
+    string = "T(N_c) ="
+
+    alphabet_iterator = iter(alphabet)
+
+    terms = []
+
+    for power in behaviour:
+
+        if power == "log": terms.append(alphabet_iterator.next() + " x log(N_c)")
+        elif power == -1: terms.append(alphabet_iterator.next() + " / N_c")
+        elif power == 0: terms.append(alphabet_iterator.next())
+        elif power == 1: terms.append(alphabet_iterator.next() + " x N_c")
+        else: terms.append("N_c^" + str(power))
+
+    string += " " + " + ".join(terms)
+
+    return string
 
 # -----------------------------------------------------------------

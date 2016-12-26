@@ -65,11 +65,13 @@ def stringify(value):
 
 # -----------------------------------------------------------------
 
-def stringify_not_list(value):
+def stringify_not_list(value, scientific=False, decimal_places=2):
 
     """
     This function ...
     :param value:
+    :param scientific:
+    :param decimal_places:
     :return:
     """
 
@@ -79,8 +81,12 @@ def stringify_not_list(value):
     from pts.magic.basics.stretch import SkyStretch
 
     if isinstance(value, bool): return "boolean", str(value)
-    elif isinstance(value, int): return "integer", str(value)
-    elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64): return "real", repr(value)
+    elif isinstance(value, int) or isinstance(value, np.int32) or isinstance(value, np.int64) or isinstance(value, np.uint32) or isinstance(value, np.uint64):
+        if scientific: return "integer", "{:.0e}".format(value).replace("+", "").replace("e0", "e")
+        else: return "integer", str(value)
+    elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64):
+        if scientific: return "real", ("{:." + str(decimal_places) + "e}").format(value).replace("+", "").replace("e0", "e")
+        else: return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
     elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit).replace("solMass", "Msun").replace("solLum", "Lsun").replace(" ", "")
     elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit).replace(" ", "")

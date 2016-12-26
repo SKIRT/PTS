@@ -324,7 +324,7 @@ class BatchTimeLinePlotter(Configurable):
             timeline = self.timelines[output_path]
 
             # Get the number of processes
-            nprocesses = timeline.processes
+            nprocesses = timeline.nprocesses
 
             # Get the average runtimes for the different phases corresponding to the current processor count
             setup_time = timeline.setup * nprocesses
