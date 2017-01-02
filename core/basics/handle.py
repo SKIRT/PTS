@@ -78,4 +78,32 @@ class ExecutionHandle(object):
 
         return cls("job", job_id, host_id)
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def group_job(cls, job_id, host_id):
+
+        """
+        This function ...
+        :param job_id:
+        :param host_id:
+        :return:
+        """
+
+        return cls("group-job", job_id, host_id)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def sql(cls, name, host_id):
+
+        """
+        This function ...
+        :param name:
+        :param host_id:
+        :return:
+        """
+
+        return cls("sql", name, host_id)
+
 # -----------------------------------------------------------------

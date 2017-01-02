@@ -20,6 +20,7 @@ from collections import defaultdict
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..remote.remote import Remote
+from ..remote.host import HostDownException
 from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
@@ -629,10 +630,16 @@ class BatchLauncher(Configurable):
             cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
 
             # Setup the remote for the specified host
-            remote.setup(host_id, cluster_name=cluster_name)
+            try: remote.setup(host_id, cluster_name=cluster_name)
+            except HostDownException:
+                log.warning("Remote host '" + host_id + "' is down")
+                continue
 
             # Add the remote to the list of remote objects
             self.remotes.append(remote)
+
+        # Check if any remotes are initialized
+        if len(self.remotes) == 0: raise RuntimeError("No remotes are available")
 
     # -----------------------------------------------------------------
 
@@ -871,22 +878,25 @@ class BatchLauncher(Configurable):
                 local_script_path = fs.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
             else: local_script_path = None
 
-            # Determine screen name
-            screen_name = time.unique_name("batch_launcher")
+            # Determine queue name (name of the screen session or the remote simulation queue)
+            queue_name = time.unique_name("batch_launcher")
 
             # Set a path for the screen output to be saved remotely (for debugging)
             if remote.host_id in self.save_screen_output:
                 remote_skirt_dir_path = remote.skirt_dir
                 remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen output")
                 if not remote.is_directory(remote_skirt_screen_output_path): remote.create_directory(remote_skirt_screen_output_path)
-                this_screen_output_path = fs.join(remote_skirt_screen_output_path, screen_name)
+                this_screen_output_path = fs.join(remote_skirt_screen_output_path, queue_name)
                 remote.create_directory(this_screen_output_path)
                 screen_output_path = this_screen_output_path
             else: screen_output_path = None
 
             # Start the queue
             jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
-            handles = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, group_walltime=self.config.group_walltime, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=jobscripts_path, attached=self.config.attached)
+            handles = remote.start_queue(queue_name=queue_name, group_simulations=self.config.group_simulations,
+                                         group_walltime=self.config.group_walltime, use_pts=self.config.use_pts,
+                                         local_script_path=local_script_path, screen_output_path=screen_output_path,
+                                         jobscripts_path=jobscripts_path, attached=self.config.attached)
 
             # SET THE EXECUTION HANDLES
             # Loop over the simulation for this remote

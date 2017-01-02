@@ -25,6 +25,7 @@ definition.add_optional("nnodes", "integer", "number of computing nodes to be us
 # Advanced options
 definition.add_flag("shared_input", "whether the different simulations share their input folder", False)
 definition.add_flag("group_simulations", "group multiple simulations in one job", False)
+definition.add_flag("use_pts", "use PTS one the remote end to dynamicaly pick simulations for the job")
 definition.add_optional("group_walltime", "real", "preferred walltime per job of grouped simulations")
 
 # The timing and memory table

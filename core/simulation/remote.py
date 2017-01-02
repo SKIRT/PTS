@@ -176,16 +176,17 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue(self, screen_name=None, local_script_path=None, screen_output_path=None, group_simulations=False,
-                    group_walltime=None, jobscripts_path=None, attached=False):
+    def start_queue(self, queue_name=None, local_script_path=None, screen_output_path=None, group_simulations=False,
+                    group_walltime=None, use_pts=False, jobscripts_path=None, attached=False):
 
         """
         This function ...
-        :param screen_name:
+        :param queue_name:
         :param local_script_path:
         :param screen_output_path:
         :param group_simulations:
         :param group_walltime:
+        :param use_pts:
         :param jobscripts_path:
         :param attached:
         :return:
@@ -201,10 +202,13 @@ class SkirtRemote(Remote):
         if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
 
         # If the remote host uses a scheduling system, schedule all the simulations in the queue
-        if self.scheduler: handles = self.start_queue_jobs(group_simulations, group_walltime=group_walltime, jobscripts_path=jobscripts_path)
+        if self.scheduler: handles = self.start_queue_jobs(group_simulations=group_simulations,
+                                                           group_walltime=group_walltime,
+                                                           use_pts=use_pts,
+                                                           jobscripts_path=jobscripts_path, queue_name=queue_name)
 
         # Else, initiate a screen session in which the simulations are executed
-        else: handles = self.start_queue_screen(screen_name, local_script_path, screen_output_path, attached=attached)
+        else: handles = self.start_queue_screen(queue_name, local_script_path, screen_output_path, attached=attached)
 
         # Clear the queue
         self.clear_queue()
@@ -214,21 +218,24 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_jobs(self, group_simulations=False, group_walltime=None, jobscripts_path=None):
+    def start_queue_jobs(self, group_simulations=False, group_walltime=None, use_pts=False, jobscripts_path=None,
+                         queue_name=None):
 
         """
         This function ...
         :param group_simulations:
         :param group_walltime:
+        :param use_pts:
         :param jobscripts_path:
+        :param queue_name:
         :return:
         """
 
         # Inform the user
-        log.info("Starting the queue by scheduling the simulation as seperate jobs ...")
+        log.info("Starting the queue by scheduling the simulations in one or multiple jobs ...")
 
-        # Initialize a list to contain the execution handles
-        handles = dict()
+        # Determine queue name
+        if queue_name is None: queue_name = time.unique_name("simulations")
 
         # Group simulations in one job script
         if group_simulations:
@@ -236,62 +243,15 @@ class SkirtRemote(Remote):
             # Determine the preferred walltime per job
             preferred_walltime = group_walltime if group_walltime is not None else self.host.preferred_walltime
 
-            current_walltime = 0.
-
-            threads_for_job = None
-            processes_for_job = None
-            scheduling_options_for_job = SchedulingOptions()
-            scheduling_options_for_job.walltime = preferred_walltime * 3600. # in seconds
-            simulations_for_job = []
-
-            # Loop over the items in the queue
-            for arguments, name in self.queue:
-
-                # Get the estimated walltime
-                estimated_walltime = self.scheduling_options[name].walltime
-
-                # If this simulation doesn't fit in the current job anymore
-                if current_walltime + estimated_walltime > preferred_walltime:
-
-                    # Schedule
-                    job_id = self.schedule_multisim(simulations_for_job, scheduling_options_for_job, jobscripts_path)
-                    handles[name] = ExecutionHandle.job(job_id, self.host_id)
-
-                    # Reset the current walltime
-                    current_walltime = 0.0
-
-                    # Reset threads and processes for job
-                    threads_for_job = None
-                    processes_for_job = None
-
-                    # Reset the scheduling options
-                    scheduling_options_for_job = SchedulingOptions()
-                    scheduling_options_for_job.walltime = preferred_walltime * 3600.  # in seconds
-
-                    # Reset the list of simulations for job
-                    simulations_for_job = []
-
-                # If this simulation still fits in the current job
-                else:
-
-                    # Check the scheduling options and parallelization
-                    threads = arguments.parallel.threads
-                    processes = arguments.parallel.processes
-
-                    if threads_for_job is None: threads_for_job = threads
-                    elif threads_for_job != threads: raise ValueError("Number of threads must be equal for all simulations in job")
-
-                    if processes_for_job is None: processes_for_job = processes
-                    elif processes_for_job != processes: raise ValueError("Number of processes must be equal for all simulations in job")
-
-                    # Add this simulation to the list for the current job
-                    simulations_for_job.append(arguments)
-
-                    # Update the current walltime
-                    current_walltime += estimated_walltime
+            # Use PTS or jobs
+            if use_pts: handles = self._start_queue_jobs_pts(preferred_walltime, queue_name)
+            else: handles = self._start_queue_jobs_groups(preferred_walltime, jobscripts_path)
 
         # Don't group simulations
         else:
+
+            # Initialize a list to contain the execution handles
+            handles = dict()
 
             # Loop over the items in the queue
             for arguments, name in self.queue:
@@ -306,6 +266,130 @@ class SkirtRemote(Remote):
                 handles[name] = ExecutionHandle.job(job_id, self.host_id)
 
         # Return execution handles
+        return handles
+
+    # -----------------------------------------------------------------
+
+    def _start_queue_jobs_pts(self, preferred_walltime, queue_name):
+
+        """
+        This function ...
+        :param preferred_walltime:
+        :return:
+        """
+
+        # Initialize a list to contain the execution handles
+        #handles = dict()
+
+        # Start a remote python session
+        session = self.start_python_session(assume_pts=True)
+
+        # Initializing the simulation queue
+        session.import_package("SimulationQueue", "pts.core.remote.queue")
+        session.send_line("queue = SimulationQueue('" + queue_name + "')")
+        session.send_line("queue.createtable()")
+        #session.send_line("queue.close()")
+
+        # Add the simulations
+        with_statement = "with queue.transaction():"
+        for_statement = "for record in records:"
+        line = "db.insert(label, eaglesim, 0, record['galaxyid'], skitemplate)"
+        lines = [line]
+
+        # Execute the statements
+        session.with_statement_and_loop(with_statement, for_statement, lines)
+
+        # Close the queue
+        session.send_line("queue.close()")
+
+        # For each simulation:
+
+        # update the records to indicate that a run has been scheduled and submit the job;
+        # do this within a single transaction context to ensure that the scheduled job sees the updated records
+        #print("Submitting job to queue", config.queue, "for run-ids", runids)
+        #with db.transaction():
+        #    db.updatestatus(runids, 'scheduled')
+        #    db.updatefield(runids, 'queue', config.queue)
+        #    subprocess.call(("bsub",), stdin=open(jobscriptname))
+
+        #return handles
+
+        # The execution handle is the same for all simulations (= the simulation queue database)
+        handle = ExecutionHandle.sql(queue_name, self.host_id)
+
+        # Return the execution handle
+        return handle
+
+    # -----------------------------------------------------------------
+
+    def _start_queue_jobs_groups(self, preferred_walltime, jobscripts_path):
+
+        """
+        This function ...
+        :param preferred_walltime:
+        :param jobscripts_path:
+        :return:
+        """
+
+        # Initialize a list to contain the execution handles
+        handles = dict()
+
+        # Keep track of the walltime
+        current_walltime = 0.
+
+        threads_for_job = None
+        processes_for_job = None
+        scheduling_options_for_job = SchedulingOptions()
+        scheduling_options_for_job.walltime = preferred_walltime * 3600.  # in seconds
+        simulations_for_job = []
+
+        # Loop over the items in the queue
+        for arguments, name in self.queue:
+
+            # Get the estimated walltime
+            estimated_walltime = self.scheduling_options[name].walltime
+
+            # If this simulation doesn't fit in the current job anymore
+            if current_walltime + estimated_walltime > preferred_walltime:
+
+                # Schedule
+                job_id = self.schedule_multisim(simulations_for_job, scheduling_options_for_job, jobscripts_path)
+                handles[name] = ExecutionHandle.group_job(job_id, self.host_id)
+
+                # Reset the current walltime
+                current_walltime = 0.0
+
+                # Reset threads and processes for job
+                threads_for_job = None
+                processes_for_job = None
+
+                # Reset the scheduling options
+                scheduling_options_for_job = SchedulingOptions()
+                scheduling_options_for_job.walltime = preferred_walltime * 3600.  # in seconds
+
+                # Reset the list of simulations for job
+                simulations_for_job = []
+
+            # If this simulation still fits in the current job
+            else:
+
+                # Check the scheduling options and parallelization
+                threads = arguments.parallel.threads
+                processes = arguments.parallel.processes
+
+                if threads_for_job is None: threads_for_job = threads
+                elif threads_for_job != threads: raise ValueError("Number of threads must be equal for all simulations in job")
+
+                if processes_for_job is None: processes_for_job = processes
+                elif processes_for_job != processes: raise ValueError("Number of processes must be equal for all simulations in job")
+
+                # Add this simulation to the list for the current job
+                simulations_for_job.append(arguments)
+
+                # Update the current walltime
+                current_walltime += estimated_walltime
+
+        # Return the execution handles
         return handles
 
     # -----------------------------------------------------------------
@@ -934,6 +1018,190 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
+    def _get_simulation_status_not_scheduler(self, simulation):
+
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        # The name of the ski file (the simulation prefix)
+        ski_name = simulation.prefix()
+
+        # The path to the simulation log file
+        remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
+
+        # Check whether the simulation has already been analysed
+        if simulation.analysed: simulation_status = "analysed"
+
+        # Check whether the simulation has already been retrieved
+        elif simulation.retrieved: simulation_status = "retrieved"
+
+        # Get the simulation status from the remote log file if not yet retrieved
+        else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name)
+
+        # Return the simulation status
+        return simulation_status
+
+    # -----------------------------------------------------------------
+
+    def _get_simulation_status_scheduler(self, simulation, jobs_status, python_session):
+
+        """
+        This function ...
+        :param simulation:
+        :param python_session:
+        :return:
+        """
+
+        # The name of the ski file (the simulation prefix)
+        ski_name = simulation.prefix()
+
+        # The path to the simulation log file
+        remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
+
+        # Check if the simulation has already been analysed
+        if simulation.analysed: simulation_status = "analysed"
+
+        # Check if the simulation has already been retrieved
+        elif simulation.retrieved: simulation_status = "retrieved"
+
+        # Simulation is a job
+        elif simulation.handle.type == "job":
+
+            # Get the job ID
+            job_id = simulation.handle.value
+
+            # Check if the job ID is in the list of queued or running jobs
+            if job_id in jobs_status:
+
+                # Check the status of this simulation
+                job_status = jobs_status[job_id]
+
+                # This simulation is still queued
+                if job_status == 'Q': simulation_status = "queued"
+
+                # This simulation is currently running
+                elif job_status == 'R': simulation_status = self.running_status_from_log_file(remote_log_file_path)
+
+                # If the job has been cancelled, check whether some part of the log file was already present
+                # (the simulation was running but was aborted) or the log file is not present (the simulation is cancelled)
+                elif job_status == "C":
+
+                    if self.is_file(remote_log_file_path): simulation_status = "aborted"
+                    else: simulation_status = "cancelled"
+
+                # This simulation has an unknown status, check the log file
+                else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
+
+            # Job not present in the queue anymore: finished, crashed or aborted
+            else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
+
+        # Simulation is part of a group of simulations in a job
+        elif simulation.handle.type == "group-job":
+
+            # Get the job ID
+            job_id = simulation.handle.value
+
+            # Check if the job ID is in the list of queued or running jobs
+            if job_id in jobs_status:
+
+                # Check the status of the job
+                job_status = jobs_status[job_id]
+
+                # If the job is still queued, the simulation is also still queued
+                if job_status == 'Q': simulation_status = "queued"
+
+                # If the job is running
+                elif job_status == 'R':
+
+                    # Check if the log file exists
+                    if self.is_file(remote_log_file_path):
+
+                        # Get the last two lines of the remote log file
+                        output = self.execute("tail -2 " + remote_log_file_path)
+
+                        # Get the last line of the actual simulation
+                        if len(output) == 0: return "invalid: cannot read log file" #simulation_status = "invalid: cannot read log file"
+                        elif len(output) == 1: last = output[0]
+                        elif " Available memory: " in output[1]: last = output[0]
+                        else: last = output[1]
+
+                        # Interpret the content of the last line
+                        if " Finished simulation " + ski_name in last: simulation_status = "finished"
+                        elif " *** Error: " in last: simulation_status = "crashed"
+                        else: simulation_status = self.running_status_from_log_file(remote_log_file_path)
+
+                    # The job is running but this simulation does not have a log file yet
+                    else: simulation_status = "queued"
+
+                # If the job has been cancelled
+                elif job_status == 'C':
+
+                    # Check if the log file exists
+                    if self.is_file(remote_log_file_path): simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
+                    else: simulation_status = "cancelled"
+
+                # This simulation has an unknown status, check the log file
+                else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
+
+        # Simulation is managed with an SQL database
+        elif simulation.handle.type == "sql":
+
+            # Get the simulation queue name
+            queue_name = simulation.handle.value
+
+            # Get the queue variable name in the remote python session
+            queue_variable_name = "queue__" + queue_name
+
+            # Get the status
+            simulation_status = python_session.get_simple_property(queue_variable_name, "select('name=?', (simulation_name,))[0]['status']")
+
+        # Return the simulation status
+        return simulation_status
+
+    # -----------------------------------------------------------------
+
+    def get_jobs_status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a dictionary that contains the status of the different jobs that are scheduled or running on the cluster
+        queue_status = dict()
+
+        # Obtain job status information through the 'qstat' command
+        output = self.execute("qstat")
+
+        # Check every line in the output
+        for line in output:
+
+            # If this line mentions a job
+            if "master15" in line:
+
+                # Get the job ID
+                jobid = int(line.split(".")[0])
+
+                # Split the line
+                splitted_line = line.split(" ")
+
+                # Get the status (Q=queued, R=running)
+                if "short" in splitted_line: position = splitted_line.index("short")
+                elif "long" in splitted_line: position = splitted_line.index("long")
+                else: continue
+                jobstatus = splitted_line[position - 1]
+
+                # Add the status of this job to the dictionary
+                queue_status[jobid] = jobstatus
+
+        # Return the queue status
+        return queue_status
+
+    # -----------------------------------------------------------------
+
     def get_status(self):
 
         """
@@ -953,20 +1221,8 @@ class SkirtRemote(Remote):
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
-                # The name of the ski file (the simulation prefix)
-                ski_name = simulation.prefix()
-
-                # The path to the simulation log file
-                remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
-
-                # Check whether the simulation has already been analysed
-                if simulation.analysed: simulation_status = "analysed"
-
-                # Check whether the simulation has already been retrieved
-                elif simulation.retrieved: simulation_status = "retrieved"
-
-                # Get the simulation status from the remote log file if not yet retrieved
-                else: simulation_status = self.status_from_log_file(remote_log_file_path, simulation.handle, ski_name)
+                # Get the status
+                simulation_status = self._get_simulation_status_not_scheduler(simulation)
 
                 # Add the simulation properties to the list
                 entries.append((path, simulation_status))
@@ -974,78 +1230,35 @@ class SkirtRemote(Remote):
         # If the remote has a scheduling system for launching jobs
         else:
 
-            # Obtain job status information through the 'qstat' command
-            output = self.execute("qstat")
+            # Get the status of the jobs
+            jobs_status = self.get_jobs_status()
 
-            # Create a dictionary that contains the status of the different jobs that are scheduled or running on the cluster
-            queue_status = dict()
+            # Start a remote python session
+            if self.has_pts:
 
-            # Check every line in the output
-            for line in output:
+                # Start python session
+                session = self.start_python_session(assume_pts=True)
 
-                # If this line mentions a job
-                if "master15" in line:
+                # Import statements
+                session.import_package("SimulationQueue", from_name="pts.core.remote.queue")
 
-                    # Get the job ID
-                    jobid = int(line.split(".")[0])
+                # Load all simulation queues
+                for path, name in session.files_in_path(self.pts_run_path, extension="queue", returns=["path", "name"]):
 
-                    # Split the line
-                    splitted_line = line.split(" ")
+                    # Load the queue
+                    session.define_simple_variable("queue__" + name, "SimulationQueue.from_file('" + path + "'")
 
-                    # Get the status (Q=queued, R=running)
-                    if "short" in splitted_line: position = splitted_line.index("short")
-                    elif "long" in splitted_line: position = splitted_line.index("long")
-                    else: continue
-                    jobstatus = splitted_line[position-1]
+            # Do not open a session
+            else: session = None
 
-                    # Add the status of this job to the dictionary
-                    queue_status[jobid] = jobstatus
-
-            # Search for files in the SKIRT run directory
+            # Search for simulation files in the SKIRT run directory
             for path, name in fs.files_in_path(self.local_skirt_host_run_dir, extension="sim", returns=["path", "name"]):
 
                 # Open the simulation file
                 simulation = RemoteSimulation.from_file(path)
 
-                # The name of the ski file (the simulation prefix)
-                ski_name = simulation.prefix()
-
-                # The path to the simulation log file
-                remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
-
-                # Get the job ID from the name of the simulation file
-                job_id = int(name)
-
-                # Check if the simulation has already been analysed
-                if simulation.analysed: simulation_status = "analysed"
-
-                # Check if the simulation has already been retrieved
-                elif simulation.retrieved: simulation_status = "retrieved"
-
-                # Check if the job ID is in the list of queued or running jobs
-                elif job_id in queue_status:
-
-                    # Check the status of this simulation
-                    job_status = queue_status[job_id]
-
-                    # This simulation is still queued
-                    if job_status == 'Q': simulation_status = "queued"
-
-                    # This simulation is currently running
-                    elif job_status == 'R': simulation_status = self.running_status_from_log_file(remote_log_file_path)
-
-                    # If the job has been cancelled, check whether some part of the log file was already present
-                    # (the simulation was running but was aborted) or the log file is not present (the simulation is cancelled)
-                    elif job_status == "C":
-
-                        if self.is_file(remote_log_file_path): simulation_status = "aborted"
-                        else: simulation_status = "cancelled"
-
-                    # This simulation has an unknown status, check the log file
-                    else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
-
-                # If the simulation is not in the list of jobs
-                else: simulation_status = self.status_from_log_file_job(remote_log_file_path, ski_name)
+                # Get the status
+                simulation_status = self._get_simulation_status_scheduler(simulation, jobs_status, session)
 
                 # Add the simulation properties to the list
                 entries.append((path, simulation_status))

@@ -430,6 +430,38 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
+    def with_statement_and_loop(self, with_statement, for_statement, in_loop_lines, show_output=False):
+
+        """
+        This function ...
+        :param with_statement:
+        :param for_statement:
+        :param in_loop_lines:
+        :param show_output:
+        :return:
+        """
+
+        # With statement
+        self.send_line(with_statement)
+
+        # For loop
+        self.send_line("    " + for_statement)
+
+        # In-loop lines
+        for line in in_loop_lines:
+
+            # Send the line
+            output = self.send_line("        " + line, output=True)
+
+            # Show output
+            if show_output:
+                for o in output: print(o)
+
+        # Finish the loop
+        self.send_line("    ")
+
+    # -----------------------------------------------------------------
+
     def do_loop(self, top_statement, in_loop_lines, show_output=False):
 
         """
@@ -522,14 +554,18 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
-    def files_in_path(self, path, recursive=False):
+    def files_in_path(self, path, recursive=False, extension=None, returns="path"):
 
         """
         This function ...
+        :param path:
+        :param recursive:
+        :param extension:
+        :param returns:
         :return:
         """
 
-        return self.get_simple_variable("fs.files_in_path('" + path + "', recursive=" + repr(recursive) + ")")
+        return self.get_simple_variable("fs.files_in_path('" + path + "', recursive=" + repr(recursive) + ", extension=" + repr(extension) + ", returns=" + repr(returns) + ")")
 
     # -----------------------------------------------------------------
 

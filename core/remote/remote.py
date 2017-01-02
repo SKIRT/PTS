@@ -2067,6 +2067,18 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_executable("skirt")
+
+    # -----------------------------------------------------------------
+
+    @property
     def skirt_version(self):
 
         """
@@ -2088,6 +2100,18 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_executable("pts")
+
+    # -----------------------------------------------------------------
+
+    @property
     def pts_version(self):
 
         """
@@ -2095,7 +2119,8 @@ class Remote(object):
         :return:
         """
 
-        return self.execute("pts --version")[0]
+        if self.has_pts: return self.execute("pts --version")[0]
+        else: return None
 
     # -----------------------------------------------------------------
 
@@ -2956,6 +2981,20 @@ class Remote(object):
         """
 
         path = fs.join(self.pts_root_path, "temp")
+        if not self.is_directory(path): self.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.pts_root_path, "run")
         if not self.is_directory(path): self.create_directory(path)
         return path
 
