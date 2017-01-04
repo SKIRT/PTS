@@ -19,7 +19,7 @@ import tempfile
 
 # Import the relevant PTS classes and modules
 from ..remote.remote import Remote
-from .jobscript import JobScript, MultiJobScript
+from .jobscript import JobScript, MultiJobScript, SKIRTJobScript
 from ..tools import time, introspection
 from ..tools import filesystem as fs
 from .simulation import RemoteSimulation
@@ -700,9 +700,16 @@ class SkirtRemote(Remote):
 
         # Create a job script next to the (local) simulation's ski file
         jobscript_name = fs.name(local_jobscript_path)
-        jobscript = JobScript(local_jobscript_path, arguments, self.host.cluster, self.skirt_path,
-                              self.host.mpi_command, modules, walltime, nodes, ppn, name=name, mail=mail,
-                              full_node=full_node, bind_to_cores=self.host.force_process_binding)
+        #jobscript = JobScript(local_jobscript_path, arguments, self.host.cluster, self.skirt_path,
+        #                      self.host.mpi_command, modules, walltime, nodes, ppn, name=name, mail=mail,
+        #                      full_node=full_node, bind_to_cores=self.host.force_process_binding)
+
+        # Create the job script
+        jobscript = SKIRTJobScript(name, arguments, self.host.cluster, self.skirt_path, self.host.mpi_command, walltime,
+                                   modules, mail=mail, bind_to_cores=self.host.force_process_binding)
+
+        # Save the job script locally
+        jobscript.saveto(local_jobscript_path)
 
         # Copy the job script to the remote simulation directory
         remote_simulation_path = fs.directory_of(arguments.ski_pattern) # NEW, to avoid having to pass this as an argument

@@ -316,6 +316,18 @@ def string_list(argument):
 
 # -----------------------------------------------------------------
 
+def mixed_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [eval(value) for value in argument.split(",")]
+
+# -----------------------------------------------------------------
+
 def duration(argument):
 
     """
@@ -370,6 +382,18 @@ def integer_list(string):
         return range(int(splitted[0]), int(splitted[1])+1)
 
     else: raise ValueError("Values must be seperated by commas or by a '-' in the case of a range")
+
+# -----------------------------------------------------------------
+
+def real_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [real(value) for value in string_list(argument)]
 
 # -----------------------------------------------------------------
 

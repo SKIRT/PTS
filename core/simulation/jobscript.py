@@ -16,6 +16,10 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 
+# Import the relevant PTS classes and modules
+from ..remote.jobscript import JobScript as _JobScript
+from ..tools import filesystem as fs
+
 # -----------------------------------------------------------------
 
 class JobScript(object):
@@ -280,5 +284,139 @@ class MultiJobScript(object):
 
         # Remove the script file from disk
         if os.path.isfile(self.path): os.remove(self.path)
+
+# -----------------------------------------------------------------
+
+class SKIRTJobScript(_JobScript):
+
+    """
+    This class
+    """
+
+    def __init__(self, name, arguments, cluster, skirt_path, mpi_command, walltime, modules, mail=False, bind_to_cores=False):
+
+        """
+        The constructor ...
+        :param name:
+        :param arguments:
+        :param cluster:
+        :param skirt_path:
+        :param mpi_command:
+        :param walltime:
+        :param mail:
+        :param bind_to_cores:
+        """
+
+        # Determine the paths to the output and error files
+        output_file_path = fs.join(arguments.output_path, "output_" + name + ".txt")
+        error_file_path = fs.join(arguments.output_path, "error_" + name + ".txt")
+
+        cores_per_node = cluster.cores_per_socket * cluster.sockets_per_node
+        threads_per_core = cluster.threads_per_core
+        threads_per_node = threads_per_core * cores_per_node
+
+        # Determine number of processors per process
+        processors_per_process = arguments.parallel.threads / threads_per_node
+        assert int(processors_per_process) == processors_per_process
+        processors_per_process = int(processors_per_process)
+
+        # HYBRID
+        if arguments.parallel.processes > 1 and arguments.parallel.threads > 1:
+
+            processes_per_node = threads_per_node // arguments.parallel.threads
+
+            if processes_per_node == 0: raise RuntimeError("Impossible parallelization scheme: too many threads to fit on a node")
+
+            processors_per_node = processes_per_node * processors_per_process
+            processors = processors_per_process * arguments.parallel.processes
+            nodes, ppn = get_requirements(processors, cores_per_node, full_node=True)
+
+        # Multiprocessing
+        elif arguments.parallel.processes > 1 and arguments.parallel.threads == 1:
+
+            if arguments.parallel.processes > cores_per_node:
+
+                # Determine necessary number of nodes
+                nodes, ppn = get_requirements(arguments.parallel.processes, cores_per_node, full_node=True)
+
+                # Divide the processes over the nodes
+                processes_per_node = arguments.parallel.processes / nodes
+                if not is_integer(processes_per_node): raise RuntimeError("Impossible parallelization scheme: " + str(arguments.parallel.processes) + " cannot be distributed over " + str(nodes) + " nodes")
+                processes_per_node = int(processes_per_node)
+
+            else:
+
+                processes_per_node = cores_per_node
+                nodes = 1
+                ppn = cores_per_node
+
+        # Multithreading
+        elif arguments.parallel.threads > 1 and arguments.parallel.processes == 1:
+
+            if arguments.parallel.threads > threads_per_node: raise RuntimeError("Impossible parallelization schem: too many threads to fit on a node")
+            else:
+
+                processes_per_node = 1
+                nodes = 1
+                ppn = cores_per_node
+
+        # Singlethreading (nthreads = nprocesses = 1)
+        else:
+
+            processes_per_node = 1
+            nodes = 1
+            ppn = cores_per_node
+
+        # Call the constructor of the base class
+        super(SKIRTJobScript, self).__init__(name, walltime, nodes, ppn, output_file_path, error_file_path, mail)
+
+        # Add the appropriate syntax for hybrid / multithreaded runs
+        mpi_command += " --hybrid " + str(processes_per_node)
+
+        # Write the command string to the job script
+        command = arguments.to_command(skirt_path, mpi_command, scheduler=True, bind_to_cores=bind_to_cores, threads_per_core=threads_per_core, to_string=True)
+
+        # Add the SKIRT command
+        self.add_command(command, "Launch SKIRT")
+
+        # Add modules to load
+        for module in modules: self.import_module(module)
+
+# -----------------------------------------------------------------
+
+def get_requirements(processors, cores_per_node, full_node=False):
+
+    """
+    This function calculates the required amount of nodes and processors per node, given a certain number of
+    processors.
+    :param processors:
+    :param cores_per_node:
+    :param full_node:
+    :return:
+    """
+
+    # Calculate the necessary amount of nodes
+    nodes = processors // cores_per_node + (processors % cores_per_node > 0)
+
+    # Determine the number of processors per node
+    ppn = processors if nodes == 1 else cores_per_node
+
+    # Always use full nodes if requested
+    if full_node: ppn = cores_per_node
+
+    # Return the number of nodes and processors per node
+    return nodes, ppn
+
+# -----------------------------------------------------------------
+
+def is_integer(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return int(value) == value
 
 # -----------------------------------------------------------------

@@ -19,11 +19,12 @@ import numpy as np
 import matplotlib
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
+from matplotlib.ticker import FormatStrFormatter, ScalarFormatter, LogFormatter
 from collections import defaultdict
 from collections import Callable
 #from types import FunctionType
 from string import ascii_lowercase
+from matplotlib import rc
 
 # Import astronomical modules
 from astropy.table import Table
@@ -43,6 +44,11 @@ from ..simulation.discover import SimulationDiscoverer
 from ..basics.range import RealRange
 from ..tools import tables
 from ..tools import stringify
+from ..tools import parsing
+
+# -----------------------------------------------------------------
+
+rc('text', usetex=True)
 
 # -----------------------------------------------------------------
 
@@ -60,15 +66,17 @@ phase_names = {"total": "total simulation", "setup": "simulation setup", "stella
                "instruments communication": "communication of the instrument data",
                "intermediate": "intermediate procedures"}
 
-phase_labels = {"total": "Total runtime", "setup": "Setup time", "stellar": "Stellar runtime",
-                "spectra": "Runtime of dust spectra calculation", "dust": "Dust emission runtime",
-                "writing": "Writing time", "waiting": "Waiting time", "communication": "Communication time",
-                "dust densities communication": "Dust densities communication time",
-                "stellar absorption communication": "Stellar absorption table communication time",
-                "dust absorption communication": "Dust absorption table communication time",
-                "emission spectra communication": "Emission spectra communication time",
-                "instruments communication": "Instrument tables communication time",
-                "intermediate": "Intermediate time"}
+phase_labels_timing = {"total": "Total runtime", "setup": "Setup time", "stellar": "Stellar runtime",
+                    "spectra": "Runtime of dust spectra calculation", "dust": "Dust emission runtime",
+                    "writing": "Writing time", "waiting": "Waiting time", "communication": "Communication time",
+                    "dust densities communication": "Dust densities communication time",
+                    "stellar absorption communication": "Stellar absorption table communication time",
+                    "dust absorption communication": "Dust absorption table communication time",
+                    "emission spectra communication": "Emission spectra communication time",
+                    "instruments communication": "Instrument tables communication time",
+                    "intermediate": "Intermediate time"}
+
+#phase_labels_memory = {"total", "total simulation peak memory"}
 
 # -----------------------------------------------------------------
 
@@ -84,6 +92,16 @@ scaling_properties_timing = ["runtime", "speedup", "efficiency", "CPU-time", "ti
 scaling_properties_memory = ["memory", "memory-gain", "total-memory"]
 
 # -----------------------------------------------------------------
+
+# Whether properties are expected to scale generally up or down
+properties_behaviour = dict()
+properties_behaviour["runtime"] = "descending"
+properties_behaviour["speedup"] = "ascending"
+properties_behaviour["efficiency"] = "descending"
+properties_behaviour["CPU-time"] = "ascending"
+properties_behaviour["memory"] = "descending"
+properties_behaviour["memory-gain"] = "ascending"
+properties_behaviour["total-memory"] = "ascending"
 
 # Timing phases
 simulation_phases_timing = ["total", "setup", "stellar", "spectra", "dust", "writing", "waiting", "communication", "intermediate"]
@@ -167,11 +185,7 @@ pure_scaling_behaviour["dust"] = [-1]
 pure_scaling_behaviour["spectra"] = [-1]
 
 # Communication
-pure_scaling_behaviour["dust densities communication"] = [0, 1, 2, "log"]
-pure_scaling_behaviour["stellar absorption communication"] = [0, 1, 2, "log"]
-pure_scaling_behaviour["dust absorption communication"] = [0, 1, 2, "log"]
-pure_scaling_behaviour["emission spectra communication"] = [0, 1, 2, "log"]
-pure_scaling_behaviour["instruments communication"] = [0, 1, 2, "log"]
+pure_scaling_behaviour["communication"] = [0, 1, 2, "log"]
 
 # Waiting
 pure_scaling_behaviour["waiting"] = [0, 1, 2]
@@ -184,12 +198,17 @@ pure_scaling_behaviour["intermediate"] = [0]
 
 # -----------------------------------------------------------------
 
-composite_scaling_behaviour = dict()
+derived_scaling_behaviour = dict()
 
-# Communication
-composite_scaling_behaviour["communication"] = ("dust densities communication", "stellar absorption communication",
-                                                "dust absorption communication", "emission spectra communication",
-                                                "instruments communication")
+derived_scaling_behaviour["dust densities communication"] = "communication"
+derived_scaling_behaviour["stellar absorption communication"] = "communication"
+derived_scaling_behaviour["dust absorption communication"] = "communication"
+derived_scaling_behaviour["emission spectra communication"] = "communication"
+derived_scaling_behaviour["instruments communication"] = "communication"
+
+# -----------------------------------------------------------------
+
+composite_scaling_behaviour = dict()
 
 # Total simulation
 composite_scaling_behaviour["total"] = ("setup", "stellar", "dust", "spectra", "communication", "waiting", "writing")
@@ -254,8 +273,16 @@ class ScalingPlotter(Configurable):
         # Entries in the memory table to be ignored
         self.ignore_memory_entries = []
 
+        # Parameter sets to be ignored
         self.ignore_parameter_sets_timing = set() # set of parameter sets (tuples)
         self.ignore_parameter_sets_memory = set()
+
+        # Flag
+        self.is_prepared = False
+
+        # Different ski parameters in timing and memory data
+        self._different_parameters_timing = None
+        self._different_parameters_memory = None
 
     # -----------------------------------------------------------------
 
@@ -384,7 +411,7 @@ class ScalingPlotter(Configurable):
         self.setup(**kwargs)
 
         # 2. Prepare data into plottable format
-        self.prepare()
+        if not self.is_prepared: self.prepare()
 
         # 3. Do fitting
         if not self.config.hybridisation and self.config.fit: self.fit()
@@ -447,20 +474,48 @@ class ScalingPlotter(Configurable):
         self.timing = kwargs.pop("timing", None)
         self.memory = kwargs.pop("memory", None)
 
-        # If either extracted timing or memory information is not passed
-        if self.timing is None or self.memory is None:
+        # If path of timing table is given
+        if self.config.timing_table is not None: self.timing = TimingTable.from_file(self.config.timing_table)
 
-            # If simulations are passed
-            if "simulations" in kwargs: self.simulations = kwargs.pop("simulations")
+        # If path of memory table is given
+        if self.config.memory_table is not None: self.memory = MemoryTable.from_file(self.config.memory_table)
 
-            # If simulations have been added
-            elif len(self.simulations) > 0: pass
+        # If data input path is given
+        if self.config.data_input is not None:
 
-            # Load simulations from working directory if none have been added
-            else: self.load_simulations()
+            self.timing_data = load_dict(fs.join(self.config.data_input, "timing_data.dat"))
+            self.memory_data = load_dict(fs.join(self.config.data_input, "memory_data.dat"))
+            self.serial_timing = load_dict(fs.join(self.config.data_input, "serial_timing_data.dat"))
+            self.serial_memory = load_dict(fs.join(self.config.data_input, "serial_memory_data.dat"))
+            self.serial_timing_ncores = load_dict(fs.join(self.config.data_input, "serial_timing_ncores.dat"))
+            self.serial_memory_ncores = load_dict(fs.join(self.config.data_input, "serial_memory_ncores.dat"))
+            self._different_parameters_timing = load_list(fs.join(self.config.data_input, "different_parameters_timing.dat"))
+            self._different_parameters_memory = load_list(fs.join(self.config.data_input, "different_parameters_memory.dat"))
+            self.ignore_parameter_sets_timing = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_timing.dat"))
+            self.ignore_parameter_sets_memory = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_memory.dat"))
 
-            # Do extraction
-            self.extract()
+            #print(self.timing_data)
+
+            self.is_prepared = True
+
+            return
+
+        else:
+
+            # If either extracted timing or memory information is not passed
+            if self.timing is None or self.memory is None:
+
+                # If simulations are passed
+                if "simulations" in kwargs: self.simulations = kwargs.pop("simulations")
+
+                # If simulations have been added
+                elif len(self.simulations) > 0: pass
+
+                # Load simulations from working directory if none have been added
+                else: self.load_simulations()
+
+                # Do extraction
+                self.extract()
 
         # Even out properties in the timing and memory tables
         self.even_out_ski_properties()
@@ -860,7 +915,8 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
-        return self.timing.different_ski_parameters()
+        if self._different_parameters_timing is None: self._different_parameters_timing = self.timing.different_ski_parameters()
+        return self._different_parameters_timing
 
     # -----------------------------------------------------------------
 
@@ -872,7 +928,8 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
-        return self.memory.different_ski_parameters()
+        if self._different_parameters_memory is None: self._different_parameters_memory = self.memory.different_ski_parameters()
+        return self._different_parameters_memory
 
     # -----------------------------------------------------------------
 
@@ -1283,8 +1340,12 @@ class ScalingPlotter(Configurable):
         # Set equivalent timing data
         if self.needs_timing: self.set_equivalent_timing_data(parameters_modes_processor_counts_dict_timing)
 
+        #print(self.memory_data)
+
         # Set equivalent memory data
         if self.needs_memory: self.set_equivalent_memory_data(parameters_modes_processor_counts_dict_memory)
+
+        #print(self.memory_data)
 
         # Set missing serial timing data
         if self.needs_timing: self.set_missing_serial_timing(parameters_modes_processor_counts_dict_timing)
@@ -1292,11 +1353,16 @@ class ScalingPlotter(Configurable):
         # Set missing serial memory data
         if self.needs_memory: self.set_missing_serial_memory(parameters_modes_processor_counts_dict_memory)
 
+        #print(self.memory_data)
+
         # Check coverage of data in the different modes
         self.check_coverage_modes()
 
         # Add communication and waiting times of zero for 1 process
         if not self.config.hybridisation: self.add_fixed_multiprocessing_phases_runtimes()
+
+        # Set flag
+        self.is_prepared = True
 
     # -----------------------------------------------------------------
 
@@ -1982,6 +2048,10 @@ class ScalingPlotter(Configurable):
         # Inform the user
         log.info("Checking the memory data coverage for the different parallelization modes ...")
 
+        #print(self.parameter_sets_memory)
+        parameter_set = self.parameter_sets_memory[0]
+        #print(self.modes_for_memory_parameter_set(parameter_set))
+
         # Loop over the parameter sets
         for parameter_set in self.parameter_sets_memory:
 
@@ -1990,6 +2060,8 @@ class ScalingPlotter(Configurable):
 
                 # Loop over the phases
                 for phase in self.memory_data:
+
+                    #print(self.memory_data[phase][parameter_set][mode].processor_counts)
 
                     # Check
                     if len(self.memory_data[phase][parameter_set][mode].processor_counts) < 2:
@@ -2064,7 +2136,7 @@ class ScalingPlotter(Configurable):
         """
 
         # phase = "total" # not always present
-        phase = self.timing_data.keys()[0]
+        phase = self.memory_data.keys()[0]
 
         return self.memory_data[phase].keys()
 
@@ -2094,7 +2166,9 @@ class ScalingPlotter(Configurable):
         """
 
         # phase = "total" # not always present
-        phase = self.timing_data.keys()[0]
+        phase = self.memory_data.keys()[0]
+
+        #for phase in sel.t
 
         return self.memory_data[phase][parameter_set].keys()
 
@@ -2148,7 +2222,7 @@ class ScalingPlotter(Configurable):
                 parameter_errors = dict()
 
                 # Generate the fit function
-                behaviour = generate_scaling_behaviour(phase)
+                behaviour = generate_scaling_behaviour(phase, self.config.fitting)
                 fit_function, nparameters = generate_fit_function(behaviour)
 
                 # Debugging
@@ -2616,6 +2690,9 @@ class ScalingPlotter(Configurable):
         plt.figure(figsize=self.config.figsize)
         plt.clf()
 
+        # Set background
+        set_background(plt.gcf(), plt.gca(), self.config)
+
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
@@ -2625,6 +2702,11 @@ class ScalingPlotter(Configurable):
             plot_phases = communication_phases
             add_phase_to_label = True
         else: plot_phases = [phase]
+
+        # The plot handles for the different parameter sets
+        handles = defaultdict(list)
+
+        #multiple_phases = len(plot_phases) > 1
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -2682,14 +2764,20 @@ class ScalingPlotter(Configurable):
                         errors = np.array(new_errors)
 
                     # Determine the label
-                    if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    else: label = mode
+                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
+                    #else: label = mode
+                    #if multiple_phases: label = mode + " (" + plot_phase + ")"
+                    #else: label = mode
+                    label = mode
 
                     # Add phase to label
                     if add_phase_to_label: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this mode
-                    plt.errorbar(processor_counts, times, errors, marker='.', label=label)
+                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label, linewidth=self.config.linewidth)
+
+                    # Add the handle to the dictionary
+                    handles[parameter_set].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -2700,7 +2788,7 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -2723,10 +2811,10 @@ class ScalingPlotter(Configurable):
                     runtimes = [serial.value / ncores for ncores in ticks]
 
                     # Plot the line
-                    plt.plot(ticks, runtimes, linestyle='--')
+                    plt.plot(ticks, runtimes, linestyle='--', linewidth=self.config.linewidth)
 
             # Plot the fit
-            if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+            if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
 
                 # Loop over the parameter sets
                 for parameter_set in self.timing_fit_functions[plot_phase]:
@@ -2750,32 +2838,45 @@ class ScalingPlotter(Configurable):
                         fit_times = [fit_function(n, *parameters) for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_times, color="grey")
+                        plt.plot(fit_ncores, fit_times, color="grey", linewidth=self.config.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
-        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter())
-        plt.xlim(ticks[0], ticks[-1])
-        plt.grid(True)
+        #ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        #ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
-        # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
-        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
-        plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
-        if self.config.hybridisation: plt.legend(title="Number of cores")
-        else: plt.legend(title="Parallelization modes")
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(LogFormatter())
+
+        plt.xlim(ticks[0], ticks[-1])
+
+        # Set grid
+        set_grid(self.config)
+
+        # Set borders
+        set_borders(ax, self.config)
+
+        # Add axis labels
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
+        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
+        plt.ylabel("Runtime (s)", fontsize=self.config.label_fontsize)
+
+        # Add the legends
+        # if self.config.hybridisation: plt.legend(title="Number of cores")
+        # else: plt.legend(title="Parallelization modes")
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "runtime")
 
         # Set the plot title
-        plt.title("Scaling of the " + phase_labels[phase].lower())
+        if self.config.add_titles: plt.suptitle("Scaling of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
 
         # Set file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "runtimes_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
-        if file_path is not None: plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path, transparent=True)
         else: plt.show()
         plt.close()
 
@@ -2796,6 +2897,9 @@ class ScalingPlotter(Configurable):
         plt.figure(figsize=self.config.figsize)
         plt.clf()
 
+        # Set background
+        set_background(plt.gcf(), plt.gca(), self.config)
+
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
@@ -2808,6 +2912,11 @@ class ScalingPlotter(Configurable):
             plot_phases = communication_phases
             add_phase_to_label = True
         else: plot_phases = [phase]
+
+        #multiple_phases = len(plot_phases) > 1
+
+        # The plot handles for the different parameter sets
+        handles = defaultdict(list)
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -2860,11 +2969,14 @@ class ScalingPlotter(Configurable):
                     speedup_errors = np.array(speedup_errors)
 
                     # Determine the label
-                    if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    else: label = mode
+                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
+                    #else: label = mode
+                    #if multiple_phases: label = mode + " (" + plot_phase + ")"
+                    #else: label = mode
+                    label = mode
 
                     # Add phase to label
-                    if add_phase_to_label: label += " (" + phase + ")"
+                    if add_phase_to_label: label += " (" + plot_phase + ")"
 
                     # Eliminate Nans
                     not_nan = np.logical_not(np.isnan(speedups))
@@ -2879,7 +2991,10 @@ class ScalingPlotter(Configurable):
                     if np.all(speedups == 0): continue
 
                     # Plot the data points for this curve
-                    plt.errorbar(processor_counts, speedups, speedup_errors, marker='.', label=label)
+                    handle = plt.errorbar(processor_counts, speedups, speedup_errors, marker='.', label=label, linewidth=self.config.linewidth)
+
+                    # Add the plot handle
+                    handles[parameter_set].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -2895,13 +3010,13 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
 
             # Plot the fit
-            if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+            if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
 
                 # Loop over the parameter sets
                 for parameter_set in self.timing_fit_functions[plot_phase]:
@@ -2922,38 +3037,45 @@ class ScalingPlotter(Configurable):
                         fit_speedups = [serial.value / fit_function(n, *parameters) for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_speedups, color="grey")
+                        plt.plot(fit_ncores, fit_speedups, color="grey", linewidth=self.config.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
         if not self.config.hybridisation: ax.set_yticks(ticks)
-        ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
         #if not self.config.hybridisation: plt.ylim(ticks[0], ticks[-1])
         plt.ylim(speedup_range.min, speedup_range.max)
-        plt.grid(True)
+
+        # Set grid
+        set_grid(self.config)
+
+        # Set borders
+        set_borders(ax, self.config)
+
+        # Add axis labels
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
+        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
+        plt.ylabel("Speedup", fontsize=self.config.label_fontsize)
 
         # Plot a line that denotes linear scaling (speedup = nthreads)
-        if not self.config.hybridisation and phase in parallel_phases: plt.plot(ticks, ticks, linestyle='--')
+        if not self.config.hybridisation and phase in parallel_phases: plt.plot(ticks, ticks, linestyle='--', linewidth=self.config.linewidth)
 
-        # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
-        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
-        plt.ylabel(phase_labels[phase] + " speedup $S$", fontsize='large')
-        if self.config.hybridisation: plt.legend(title="Number of cores")
-        else: plt.legend(title="Parallelization modes")
+        # Add the legends
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "speedup")
 
         # Set the plot title
-        plt.title("Speedup of the " + phase_labels[phase].lower())
+        if self.config.add_titles: plt.suptitle("Speedup of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
 
         # Set file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "speedups_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
-        if file_path is not None: plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path, transparent=True)
         else: plt.show()
         plt.close()
 
@@ -2976,6 +3098,9 @@ class ScalingPlotter(Configurable):
         plt.figure(figsize=self.config.figsize)
         plt.clf()
 
+        # Set background
+        set_background(plt.gcf(), plt.gca(), self.config)
+
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
@@ -2985,6 +3110,10 @@ class ScalingPlotter(Configurable):
             plot_phases = communication_phases
             add_phase_to_label = True
         else: plot_phases = [phase]
+        multiple_phases = len(plot_phases) > 1
+
+        # The plot handles
+        handles = defaultdict(list)
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -3037,14 +3166,18 @@ class ScalingPlotter(Configurable):
                         efficiency_errors.append(efficiency_error)
 
                     # Determine the label
-                    if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    else: label = mode
+                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
+                    #else: label = mode
+                    label = mode
 
                     # Add phase to label
-                    if add_phase_to_label: label += " (" + phase + ")"
+                    if add_phase_to_label: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this curve
-                    plt.errorbar(processor_counts, efficiencies, efficiency_errors, marker='.', label=label)
+                    handle = plt.errorbar(processor_counts, efficiencies, efficiency_errors, marker='.', label=label, linewidth=self.config.linewidth)
+
+                    # Add the handle
+                    handles[parameter_set].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -3054,13 +3187,13 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
 
             # Plot fit
-            if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+            if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
 
                 # Loop over the parameter sets
                 for parameter_set in self.timing_fit_functions[plot_phase]:
@@ -3081,33 +3214,43 @@ class ScalingPlotter(Configurable):
                         fit_efficiencies = [serial.value / fit_function(n, *parameters) / n for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_efficiencies, color="grey")
+                        plt.plot(fit_ncores, fit_efficiencies, color="grey", linewidth=self.config.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        #ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
         #plt.ylim(0, 1.1)
-        plt.grid(True)
+
+        # Set grid
+        set_grid(self.config)
+
+        # Set borders
+        set_borders(ax, self.config)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
-        else: plt.xlabel("Number of cores $N_c$", fontsize="large")
-        plt.ylabel(phase_labels[phase] + " efficiency $\epsilon$", fontsize='large')
-        if self.config.hybridisation: plt.legend(title="Number of cores")
-        else: plt.legend(title="Parallelization modes")
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
+        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
+        plt.ylabel("Efficiency", fontsize=self.config.label_fontsize)
+
+        # Add the legends
+        # if self.config.hybridisation: plt.legend(title="Number of cores")
+        # else: plt.legend(title="Parallelization modes")
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "efficiency")
 
         # Set the plot title
-        plt.title("Efficiency of the " + phase_labels[phase].lower())
+        if self.config.add_titles: plt.suptitle("Efficiency of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
 
         # Determine the path
         if self.config.output is not None: file_path = fs.join(self.config.output, "efficiencies_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
-        if file_path is not None: plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path, transparent=True)
         else: plt.show()
         plt.close()
 
@@ -3128,6 +3271,9 @@ class ScalingPlotter(Configurable):
         plt.figure(figsize=self.config.figsize)
         plt.clf()
 
+        # Set background
+        set_background(plt.gcf(), plt.gca(), self.config)
+
         # Create a set that stores the tick labels for the plot
         ticks = set()
 
@@ -3137,6 +3283,9 @@ class ScalingPlotter(Configurable):
             plot_phases = communication_phases
             add_phase_to_label = True
         else: plot_phases = [phase]
+
+        # The plot handles
+        handles = defaultdict(list)
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -3173,11 +3322,18 @@ class ScalingPlotter(Configurable):
                     errors *= ncores
 
                     # Determine the label
-                    if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    else: label = mode
+                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
+                    #else: label = mode
+                    label = mode
+
+                    # Add phase to label
+                    if add_phase_to_label: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this mode
-                    plt.errorbar(processor_counts, times, errors, marker='.', label=label)
+                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label, linewidth=self.config.linewidth)
+
+                    # Add the plot handle
+                    handles[parameter_set].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -3188,7 +3344,7 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -3211,10 +3367,10 @@ class ScalingPlotter(Configurable):
                     runtimes = [serial.value] * len(ticks)
 
                     # Plot the line
-                    plt.plot(ticks, runtimes, linestyle='--')
+                    plt.plot(ticks, runtimes, linestyle='--', linewidth=self.config.linewidth)
 
             # Plot the fit
-            if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+            if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
 
                 # Loop over the parameter sets
                 for parameter_set in self.timing_fit_functions[plot_phase]:
@@ -3238,32 +3394,41 @@ class ScalingPlotter(Configurable):
                         fit_times = [fit_function(n, *parameters) * n for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_times, color="grey")
+                        plt.plot(fit_ncores, fit_times, color="grey", linewidth=self.config.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
-        plt.grid(True)
+
+        # Set grid
+        set_grid(self.config)
+
+        # Set borders
+        set_borders(ax, self.config)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
-        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
-        plt.ylabel(phase_labels[phase] + " T (s)", fontsize='large')
-        if self.config.hybridisation: plt.legend(title="Number of cores")
-        else: plt.legend(title="Parallelization modes")
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
+        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
+        plt.ylabel("CPU time (s)", fontsize=self.config.label_fontsize)
+
+        # Add the legends
+        # if self.config.hybridisation: plt.legend(title="Number of cores")
+        # else: plt.legend(title="Parallelization modes")
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "CPU-time")
 
         # Set the plot title
-        plt.title("Scaling of the total CPU time of the " + phase_labels[phase].lower())
+        if self.config.add_titles: plt.title("Scaling of the total CPU time of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "cpu_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
-        if file_path is not None: plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path, transparent=True)
         else: plt.show()
         plt.close()
 
@@ -3284,8 +3449,14 @@ class ScalingPlotter(Configurable):
         plt.figure(figsize=self.config.figsize)
         plt.clf()
 
+        # Set background
+        set_background(plt.gcf(), plt.gca(), self.config)
+
         # Create a set that stores the tick labels for the plot
         ticks = set()
+
+        # Plot handles
+        handles = defaultdict(list)
 
         # Loop over the different parameter sets (different ski files)
         for parameter_set in self.memory_data[phase]:
@@ -3337,7 +3508,10 @@ class ScalingPlotter(Configurable):
                 else: label = mode
 
                 # Plot the data points for this mode
-                plt.errorbar(processor_counts, memories, errors, marker='.', label=label)
+                handle = plt.errorbar(processor_counts, memories, errors, marker='.', label=label, linewidth=self.config.linewidth)
+
+                # Add the handle
+                handles[parameter_set].append(handle)
 
                 # Add the appropriate ticks
                 ticks |= set(processor_counts)
@@ -3350,7 +3524,7 @@ class ScalingPlotter(Configurable):
         #ticks.append(ticks[-1] * 2)
 
         # Plot fit
-        #if not self.config.hybridisation and self.config.fit and self.config.plot_fit:
+        #if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
 
             # Plot the fitted curves
             #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
@@ -3371,26 +3545,35 @@ class ScalingPlotter(Configurable):
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
-        plt.grid(True)
+
+        # Set grid
+        set_grid(self.config)
+
+        # Set borders
+        set_borders(ax, self.config)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
-        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
-        plt.ylabel("Memory usage per process (GB)", fontsize='large')
-        if self.config.hybridisation: plt.legend(title="Number of cores")
-        else: plt.legend(title="Parallelization modes")
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
+        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
+        plt.ylabel("Memory usage per process (GB)", fontsize=self.config.label_fontsize)
+
+        # Add the legends
+        # if self.config.hybridisation: plt.legend(title="Number of cores")
+        # else: plt.legend(title="Parallelization modes")
+        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory")
 
         # Set the plot title
-        plt.title("Scaling of the memory usage (per process) of the " + phase + " phase")
+        if self.config.add_titles: plt.suptitle("Scaling of the memory usage (per process) of the " + phase_names[phase] + " phase", fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "memory_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
-        if file_path is not None: plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path, transparent=True)
         else: plt.show()
         plt.close()
 
@@ -3411,8 +3594,14 @@ class ScalingPlotter(Configurable):
         plt.figure(figsize=self.config.figsize)
         plt.clf()
 
+        # Set background
+        set_background(plt.gcf(), plt.gca(), self.config)
+
         # Create a set that stores the tick labels for the plot
         ticks = set()
+
+        # The plot handles
+        handles = defaultdict(list)
 
         # Loop over the different parameter sets (different ski files)
         for parameter_set in self.memory_data[phase]:
@@ -3456,7 +3645,10 @@ class ScalingPlotter(Configurable):
                 else: label = mode
 
                 # Plot the data points for this mode
-                plt.errorbar(processor_counts, gains, gain_errors, marker='.', label=label)
+                handle = plt.errorbar(processor_counts, gains, gain_errors, marker='.', label=label, linewidth=self.config.linewidth)
+
+                # Add the handle
+                handles[parameter_set].append(handle)
 
                 # Add the appropriate ticks
                 ticks |= set(processor_counts)
@@ -3467,32 +3659,41 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        #ticks.append(ticks[-1] * 2)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
-        plt.grid(True)
+
+        # Set grid
+        set_grid(self.config)
+
+        # Set borders
+        set_borders(ax, self.config)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
-        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
-        plt.ylabel("Memory gain", fontsize='large')
-        if self.config.hybridisation: plt.legend(title="Number of cores")
-        else: plt.legend(title="Parallelization modes")
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
+        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
+        plt.ylabel("Memory gain", fontsize=self.config.label_fontsize)
+
+        # Add the legends
+        # if self.config.hybridisation: plt.legend(title="Number of cores")
+        # else: plt.legend(title="Parallelization modes")
+        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory-gain")
 
         # Set the plot title
-        plt.title("Scaling of the memory gain (serial memory usage per process / memory usage per process) of the " + phase_labels[phase].lower())
+        if self.config.add_titles: plt.suptitle("Scaling of the memory gain (serial memory usage per process / memory usage per process) of the " + phase_names[phase].lower(), fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "memorygain_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
-        if file_path is not None: plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path, transparent=True)
         else: plt.show()
         plt.close()
 
@@ -3513,8 +3714,14 @@ class ScalingPlotter(Configurable):
         plt.figure(figsize=self.config.figsize)
         plt.clf()
 
+        # Set background
+        set_background(plt.gcf(), plt.gca(), self.config)
+
         # Create a set that stores the tick labels for the plot
         ticks = set()
+
+        # The plot handles
+        handles = defaultdict(list)
 
         # Loop over the different parameter sets (different ski files)
         for parameter_set in self.memory_data[phase]:
@@ -3546,7 +3753,10 @@ class ScalingPlotter(Configurable):
                 else: label = mode
 
                 # Plot the data points for this mode
-                plt.errorbar(processor_counts, memories, errors, marker='.', label=label)
+                handle = plt.errorbar(processor_counts, memories, errors, marker='.', label=label, linewidth=self.config.linewidth)
+
+                # Add the plot handle
+                handles[parameter_set].append(handle)
 
                 # Add the appropriate ticks
                 ticks |= set(processor_counts)
@@ -3557,32 +3767,41 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
-        ticks.append(ticks[-1] * 2)
+        #ticks.append(ticks[-1] * 2)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
-        plt.grid(True)
+
+        # Set grid
+        set_grid(self.config)
+
+        # Set borders
+        set_borders(ax, self.config)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes $N_p$", fontsize='large')
-        else: plt.xlabel("Number of cores $N_c$", fontsize='large')
-        plt.ylabel("Total memory usage (all processes) (GB)", fontsize='large')
-        if self.config.hybridisation: plt.legend(title="Number of cores")
-        else: plt.legend(title="Parallelization modes")
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
+        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
+        plt.ylabel("Total memory usage (all processes) (GB)", fontsize=self.config.label_fontsize)
+
+        # Add the legends
+        # if self.config.hybridisation: plt.legend(title="Number of cores")
+        # else: plt.legend(title="Parallelization modes")
+        add_legends(ax, handles, self.different_parameters_memory, self.config, "total-memory")
 
         # Set the plot title
-        plt.title("Memory scaling for " + phase_labels[phase])
+        if self.config.add_titles: plt.suptitle("Memory scaling for " + phase_names[phase], fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "totalmemory_" + phase + ".pdf")
         else: file_path = None
 
         # Save the figure
-        if file_path is not None: plt.savefig(file_path)
+        if file_path is not None: plt.savefig(file_path, transparent=True)
         else: plt.show()
         plt.close()
 
@@ -3684,11 +3903,12 @@ class ScalingPlotter(Configurable):
                     add_timeline_row(data, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time)
 
                 # Set the plot title
-                title = "Scaling timeline"
+                if self.config.add_titles: title = "Scaling timeline"
+                else: title = None
 
                 # Create the plot
-                if self.config.hybridisation: create_timeline_plot(data, nprocs_list, plot_file_path, percentages=self.config.timelines.percentages, totals=True, unordered=True, cpu=True, title=title, rpc='p')
-                else: create_timeline_plot(data, ncores_list, plot_file_path, percentages=self.config.timelines.percentages, totals=True, unordered=True, cpu=True, title=title, rpc='c')
+                if self.config.hybridisation: create_timeline_plot(data, nprocs_list, plot_file_path, percentages=self.config.timelines.percentages, totals=True, unordered=True, cpu=True, title=title, rpc='p', add_border=self.config.add_border)
+                else: create_timeline_plot(data, ncores_list, plot_file_path, percentages=self.config.timelines.percentages, totals=True, unordered=True, cpu=True, title=title, rpc='c', add_border=self.config.add_border)
 
     # -----------------------------------------------------------------
 
@@ -3703,10 +3923,10 @@ class ScalingPlotter(Configurable):
         log.info("Writing ...")
 
         # Write the timing table
-        if self.needs_timing: self.write_timing()
+        if self.needs_timing and self.timing is not None: self.write_timing()
 
         # Write the memory table
-        if self.needs_memory: self.write_memory()
+        if self.needs_memory and self.memory is not None: self.write_memory()
 
         # Write the timing data
         if self.needs_timing: self.write_timing_data()
@@ -3766,6 +3986,22 @@ class ScalingPlotter(Configurable):
         path = fs.join(self.config.output, "timing_data.dat")
         write_dict(self.timing_data, path)
 
+        # Write serial
+        path = fs.join(self.config.output, "serial_timing_data.dat")
+        write_dict(self.serial_timing, path)
+
+        # Write serial ncores
+        path = fs.join(self.config.output, "serial_timing_ncores.dat")
+        write_dict(self.serial_timing_ncores, path)
+
+        # Write different parameters
+        path = fs.join(self.config.output, "different_parameters_timing.dat")
+        write_list(self.different_parameters_timing, path)
+
+        # Write ignore
+        path = fs.join(self.config.output, "ignore_parameter_sets_timing.dat")
+        write_list(list(self.ignore_parameter_sets_timing), path)
+
     # -----------------------------------------------------------------
 
     def write_memory_data(self):
@@ -3781,6 +4017,22 @@ class ScalingPlotter(Configurable):
         # Write
         path = fs.join(self.config.output, "memory_data.dat")
         write_dict(self.memory_data, path)
+
+        # Write serial
+        path = fs.join(self.config.output, "serial_memory_data.dat")
+        write_dict(self.serial_memory, path)
+
+        # Write serial ncores
+        path = fs.join(self.config.output, "serial_memory_ncores.dat")
+        write_dict(self.serial_memory_ncores, path)
+
+        # Write different parameters
+        path = fs.join(self.config.output, "different_parameters_memory.dat")
+        write_list(self.different_parameters_memory, path)
+
+        # Write ignore
+        path = fs.join(self.config.output, "ignore_parameter_sets_memory.dat")
+        write_list(list(self.ignore_parameter_sets_memory), path)
 
     # -----------------------------------------------------------------
 
@@ -4107,24 +4359,29 @@ def sort_lists(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
-def generate_scaling_behaviour(phase):
+def generate_scaling_behaviour(phase, config):
 
     """
     This function ...
     :param phase:
+    :param config:
     :return:
     """
 
     behaviour = set()
 
     # Pure scaling term
-    if phase in pure_scaling_behaviour:
-        for component in pure_scaling_behaviour[phase]: behaviour.add(component)
+    if phase in config.pure_scaling_behaviour:
+        for component in config.pure_scaling_behaviour[phase]: behaviour.add(component)
 
     # Composite scaling term
-    elif phase in composite_scaling_behaviour:
-        for composite_phase in composite_scaling_behaviour[phase]:
-            for component in generate_scaling_behaviour(composite_phase): behaviour.add(component)
+    elif phase in config.composite_scaling_behaviour:
+        for composite_phase in config.composite_scaling_behaviour[phase]:
+            for component in generate_scaling_behaviour(composite_phase, config): behaviour.add(component)
+
+    # Derived (all specific communication phases derive the same function from the total communication 'phase')
+    elif phase in derived_scaling_behaviour:
+        for component in config.pure_scaling_behaviour[derived_scaling_behaviour[phase]]: behaviour.add(component)
 
     # Not recognized
     else: raise ValueError("Phase '" + phase + "' not recognized")
@@ -4252,6 +4509,29 @@ def parameter_set_to_string_for_label(parameter_set, parameter_names):
 
 # -----------------------------------------------------------------
 
+def parameter_set_to_string_for_legend(parameter_set, parameter_names):
+
+    """
+    This function ...
+    :param parameter_set:
+    :param parameter_names:
+    :return:
+    """
+
+    # string that says 'empty'
+    if parameter_set == "empty": string = None
+
+    # tuple
+    elif isinstance(parameter_set, tuple): string = "\n".join([parameter_names[index] + ": " + stringify.stringify_not_list(parameter_set[index], scientific=True)[1] for index in range(len(parameter_names))])
+
+    # only one value
+    else: string = parameter_names[0] + ": " + stringify.stringify_not_list(parameter_set, scientific=True)[1]
+
+    # Return
+    return string
+
+# -----------------------------------------------------------------
+
 def parameter_set_to_string_for_filename(parameter_set, parameter_names):
 
     """
@@ -4292,6 +4572,73 @@ def all_equal(lst):
 
 # -----------------------------------------------------------------
 
+def write_list(lst, path):
+
+    """
+    This function ...
+    :param lst:
+    :param path:
+    :return:
+    """
+
+    with open(path, 'w') as fh: write_list_impl(fh, lst)
+
+# -----------------------------------------------------------------
+
+def write_list_impl(listfile, lst):
+
+    """
+    This function ...
+    :param listfile:
+    :param lst:
+    :return:
+    """
+
+    for element in lst:
+
+        ptype, string = stringify.stringify(element)
+        listfile.write("[" + ptype + "] " + string + "\n")
+
+# -----------------------------------------------------------------
+
+def load_list(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    lst = []
+    with open(path, 'r') as fh: load_list_impl(fh, lst)
+    return lst
+
+# -----------------------------------------------------------------
+
+def load_list_impl(listfile, lst):
+
+    """
+    This function ...
+    :param listfile:
+    :param lst:
+    :return:
+    """
+
+    for line in listfile:
+
+        line = line[:-1]
+        if not line: continue
+
+        ptype = line.split("]")[0].split("[")[1]
+        string = line.split("]")[1].strip()
+
+        parsing_function = getattr(parsing, ptype)
+        value = parsing_function(string)
+
+        lst.append(value)
+
+# -----------------------------------------------------------------
+
 def write_dict(dct, path):
 
     """
@@ -4321,20 +4668,124 @@ def write_dict_impl(dictfile, dct, indent=""):
 
         value = dct[name]
 
-        if isinstance(value, dict):
+        if isinstance(value, Map):
 
-            print(indent + str(name) + ":", file=dictfile)
+            name_ptype, name_string = stringify.stringify_not_list(name)
+
+            print(indent + "[" + name_ptype + "] " + name_string + " [Map]:", file=dictfile)
+            print(indent + "{", file=dictfile)
+            write_dict_impl(dictfile, value, indent=indent + "    ")
+            print(indent + "}", file=dictfile)
+
+        elif isinstance(value, dict):
+
+            name_ptype, name_string = stringify.stringify_not_list(name)
+
+            print(indent + "[" + name_ptype + "] " + name_string + " [dict]:", file=dictfile)
             print(indent + "{", file=dictfile)
             write_dict_impl(dictfile, value, indent=indent+"    ")
             print(indent + "}", file=dictfile)
 
         else:
 
+            name_ptype, name_string = stringify.stringify_not_list(name)
+
             ptype, string = stringify.stringify(dct[name])
-            print(indent + str(name) + " [" + ptype + "]: " + string, file=dictfile)
+            print(indent + "[" + name_ptype + "] " + name_string + " [" + ptype + "]: " + string, file=dictfile)
 
         if index != length - 1: print("", file=dictfile)
         index += 1
+
+# -----------------------------------------------------------------
+
+def load_dict(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    dct = dict()
+    with open(path, 'r') as fh: load_dict_impl(fh, dct)
+    return dct
+
+# -----------------------------------------------------------------
+
+def load_dict_impl(dictfile, dct, indent=""):
+
+    """
+    This function ...
+    :param dictfile:
+    :param dct:
+    :param indent:
+    :return:
+    """
+
+    # Loop over the lines in the file
+    for line in dictfile:
+
+        # Strip end-of-line character
+        line = line.rstrip("\n")
+
+        # Empty line
+        if not line: continue
+
+        #end = indent + "}"
+        #print(list(line))
+        #print(list(line))
+        #print(list(end))
+
+        #if line.startswith(end): return
+
+        if line.strip() == "}": return
+
+        if ":" in line:
+
+            name_and_specification = line.split(":")[0].strip()
+
+            #stripped = name_and_specification.strip()
+
+            #if name_and_specification.endswith("]"):
+            if line.split(":")[1].strip() != "":
+
+            #if "[" in name_and_specification and "]" in name_and_specification:
+
+                name_ptype = name_and_specification.split("]")[0][1:]
+                name_string = name_and_specification.split("] ")[1].split(" [")[0]
+                name_value = getattr(parsing, name_ptype)(name_string)
+
+                ptype = line.split(name_string + " [")[1].split("]")[0]
+                string = line.split(":")[1].strip()
+
+                #print(string)
+                #print(list(name))
+                #print(list(indent))
+                #name = name.split(indent)[1]
+                #string = string.split(indent)[1]
+
+                parsing_function = getattr(parsing, ptype)
+                value = parsing_function(string)
+
+                dct[name_value] = value
+
+            else:
+
+                name_ptype = name_and_specification.split("[")[1].split("]")[0]
+                name_string = name_and_specification.split("] ")[1].split(" [")[0]
+
+                new_indent = indent + "   "
+
+                name_value = getattr(parsing, name_ptype)(name_string)
+
+                #print(name_and_specification)
+
+                map_or_dict = name_and_specification.split(name_string + " [")[1].split("]")[0]
+
+                if map_or_dict == "dict": dct[name_value] = dict()
+                elif map_or_dict == "Map": dct[name_value] = Map()
+
+                load_dict_impl(dictfile, dct[name_value], new_indent)
 
 # -----------------------------------------------------------------
 
@@ -4418,5 +4869,174 @@ def behaviour_to_function_string(behaviour):
     string += " " + " + ".join(terms)
 
     return string
+
+# -----------------------------------------------------------------
+
+def add_legends(ax, handles, different_parameters, config, property):
+
+    """
+    This function ...
+    :param ax:
+    :param handles:
+    :param different_parameters:
+    :param config:
+    :param property:
+    :return:
+    """
+
+    if config.legend_below:
+
+        # Shrink current axis's height by 10% on the bottom
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.15, box.width, box.height * 0.85])
+
+    if properties_behaviour[property] == "ascending":
+        location = "lower right"
+    elif properties_behaviour[property] == "descending":
+        location = "upper right"
+    else: raise RuntimeError("Unkown property: " + property)
+
+    axbox = ax.get_position()
+
+    x_value = 0.0
+    y_value = 0.0
+
+    plot_width = axbox.width
+    plot_height = axbox.height
+
+    #print(axbox.x0, axbox.y0, plot_width, plot_height)
+
+    nlegends = len(handles)
+
+    # Loop over the parameter sets
+    first_box = None
+    height = 0.0
+    width = 0.0
+    width_per_legend = 1. / len(handles)
+    for index in range(len(handles)):
+
+        # Get the parameter set
+        parameter_set = handles.keys()[index]
+
+        # Determine the legend title
+        legend_title = parameter_set_to_string_for_legend(parameter_set, different_parameters)
+        if legend_title is not None: legend_title =  r"\underline{" + legend_title + "}"
+
+        # Create a legend for this parameter set
+        if config.legend_below:
+
+            legend = plt.legend(handles=handles[parameter_set], loc="upper center", title=legend_title,
+                                bbox_to_anchor=(0. + width_per_legend * index, -0.05), fancybox=False, shadow=False,
+                                ncol=1)
+
+        elif nlegends > 1:
+
+            #if index == 0:
+            #    loc = location
+            #    legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=loc)
+
+            #if index == 0:
+                #if properties_behaviour
+                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + plot_width, axbox.y0 + y_value))
+            if properties_behaviour[property] == "ascending":
+                #height = first_box.height
+                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(first_box.x0, first_box.y0 + height))
+                #upper_right = bbleg2.corners()[3]
+                #legend = plt.legend(handles=handles[parameter_set], title=legend_title,
+                #                    loc='lower right',
+                #                    bbox_to_anchor=list(upper_right),
+                #                    bbox_transform=ax.transAxes)
+                legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + 0.65*plot_width, 0.05 + y_value + index * 0.25 * height))
+            elif properties_behaviour[property] == "descending":
+                #width = first_box.width
+                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(first_box.x0 + width, first_box.y0))
+                #upper_right = bbleg2.corners()[3]
+                #legend = plt.legend(handles=handles[parameter_set], title=legend_title,
+                #                    loc='lower right',
+                #                    bbox_to_anchor=list(upper_right),
+                #                    bbox_transform=ax.transAxes)
+                legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + 0.65*plot_width - index * 0.5 * width, 0.05 + y_value + 0.95 * plot_height))
+
+            if index == 0:
+                first_box = legend.axes.get_position()
+                height = first_box.height
+                width = first_box.width
+
+        else:
+            legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc='best')
+
+        frame = legend.get_frame()
+
+        # Set legend frame color and line width
+        if config.add_legend_border: frame.set_linewidth(config.legend_borderwidth)
+        else: frame.set_linewidth(0)
+        frame.set_edgecolor(config.legend_bordercolor)
+
+        # Set background color
+        frame.set_facecolor('0.5')
+        legend.legendPatch.set_alpha(0.25)
+
+        # Move to foreground
+        legend.set_zorder(100+index)
+
+        #  Add the legend manually to the current axes (except when it is the last)
+        if index != len(handles) - 1:
+            legend_ax = ax.add_artist(legend)
+            #legend_ax.set_zorder(100+index)
+
+        # Set fontsize
+        plt.setp(legend.get_title(), fontsize=str(config.legend_title_fontsize))
+
+# -----------------------------------------------------------------
+
+def set_borders(ax, config):
+
+    """
+    This function ...
+    :param ax:
+    :param config:
+    :return:
+    """
+
+    # Set border width
+    if config.add_borders: [i.set_linewidth(config.borderwidth) for i in ax.spines.itervalues()]
+
+    # Remove borders
+    else:
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.tick_params(axis=u'both', which=u'both', length=0)
+
+# -----------------------------------------------------------------
+
+def set_grid(config):
+
+    """
+    This function ...
+    :param config:
+    :return:
+    """
+
+    if config.add_grid: plt.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle)
+
+# -----------------------------------------------------------------
+
+def set_background(fig, ax, config):
+
+    """
+    This function ...
+    :param fig:
+    :param ax:
+    :param config:
+    :return:
+    """
+
+    if config.transparent_background:
+
+        # Set transparent background
+        for item in [fig, ax]:
+            item.patch.set_visible(False)
 
 # -----------------------------------------------------------------

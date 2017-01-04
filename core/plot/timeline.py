@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
+from matplotlib import rc
 
 # Import the relevant PTS classes and modules
 from .plotter import Plotter
@@ -24,6 +26,10 @@ from ..tools import filesystem as fs
 from ..extract.timeline import TimeLineExtractor
 from ..basics.configurable import Configurable
 from ..simulation.discover import SimulationDiscoverer
+
+# -----------------------------------------------------------------
+
+rc('text', usetex=True)
 
 # -----------------------------------------------------------------
 
@@ -596,7 +602,7 @@ class TimeLinePlotter(Plotter):
 # -----------------------------------------------------------------
 
 def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentages=False, totals=False, unordered=False,
-                         cpu=False, title=None, ylabels=None, yaxis=None, rpc="r"):
+                         cpu=False, title=None, ylabels=None, yaxis=None, rpc="r", add_border=False):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
@@ -621,6 +627,9 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     plt.clf()
 
     ax = plt.gca()
+
+    # Set x axis grid
+    ax.xaxis.grid(linestyle="dotted", linewidth=2.0)
 
     legend_entries = []
     legend_names = []
@@ -690,6 +699,16 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
         ax.set_yticks(procranks)
         ax.set_yticklabels(procranks)
 
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
+
+    if not add_border:
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.tick_params(axis=u'both', which=u'both', length=0)
+
     # Format the axis ticks and labels
     if cpu: ax.set_xlabel('CPU time (s)', fontsize='large')
     else: ax.set_xlabel('Time (s)', fontsize='large')
@@ -722,8 +741,9 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     ax.set_position([box.x0, box.y0 + box.height * 0.2, box.width, box.height * 0.8])
 
     # Set the plot title
-    if title is None: plt.title("Timeline of the different simulation phases")
-    else: plt.title(title)
+    #if title is None: plt.title("Timeline of the different simulation phases")
+    #else: plt.title(title)
+    if title is not None: plt.suptitle(title, fontsize=20)
 
     # Put a legend below current axis
     ax.legend(legend_entries, legend_names, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size': 12})
