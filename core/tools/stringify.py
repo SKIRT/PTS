@@ -40,7 +40,9 @@ def stringify(value):
             parsetype, val = stringify_not_list(entry)
 
             if ptype is None: ptype = parsetype
-            elif ptype != parsetype: raise ValueError("Nonuniform list")
+            elif ptype != parsetype:
+                #raise ValueError("Nonuniform list")
+                ptype = "mixed"
 
             strings.append(val)
 

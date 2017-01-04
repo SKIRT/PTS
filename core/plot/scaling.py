@@ -44,7 +44,7 @@ from ..simulation.discover import SimulationDiscoverer
 from ..basics.range import RealRange
 from ..tools import tables
 from ..tools import stringify
-from ..tools import parsing
+from ..tools.serialization import write_dict, load_dict, write_list, load_list
 
 # -----------------------------------------------------------------
 
@@ -483,16 +483,23 @@ class ScalingPlotter(Configurable):
         # If data input path is given
         if self.config.data_input is not None:
 
-            self.timing_data = load_dict(fs.join(self.config.data_input, "timing_data.dat"))
-            self.memory_data = load_dict(fs.join(self.config.data_input, "memory_data.dat"))
-            self.serial_timing = load_dict(fs.join(self.config.data_input, "serial_timing_data.dat"))
-            self.serial_memory = load_dict(fs.join(self.config.data_input, "serial_memory_data.dat"))
-            self.serial_timing_ncores = load_dict(fs.join(self.config.data_input, "serial_timing_ncores.dat"))
-            self.serial_memory_ncores = load_dict(fs.join(self.config.data_input, "serial_memory_ncores.dat"))
-            self._different_parameters_timing = load_list(fs.join(self.config.data_input, "different_parameters_timing.dat"))
-            self._different_parameters_memory = load_list(fs.join(self.config.data_input, "different_parameters_memory.dat"))
-            self.ignore_parameter_sets_timing = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_timing.dat"))
-            self.ignore_parameter_sets_memory = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_memory.dat"))
+            timing_data_path = fs.join(self.config.data_input, "timing_data.dat")
+            if fs.is_file(timing_data_path):
+
+                self.timing_data = load_dict(timing_data_path)
+                self.serial_timing = load_dict(fs.join(self.config.data_input, "serial_timing_data.dat"))
+                self.serial_timing_ncores = load_dict(fs.join(self.config.data_input, "serial_timing_ncores.dat"))
+                self._different_parameters_timing = load_list(fs.join(self.config.data_input, "different_parameters_timing.dat"))
+                self.ignore_parameter_sets_timing = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_timing.dat"))
+
+            memory_data_path = fs.join(self.config.data_input, "memory_data.dat")
+            if fs.is_file(memory_data_path):
+
+                self.memory_data = load_dict(fs.join(self.config.data_input, "memory_data.dat"))
+                self.serial_memory = load_dict(fs.join(self.config.data_input, "serial_memory_data.dat"))
+                self.serial_memory_ncores = load_dict(fs.join(self.config.data_input, "serial_memory_ncores.dat"))
+                self._different_parameters_memory = load_list(fs.join(self.config.data_input, "different_parameters_memory.dat"))
+                self.ignore_parameter_sets_memory = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_memory.dat"))
 
             #print(self.timing_data)
 
@@ -1340,20 +1347,14 @@ class ScalingPlotter(Configurable):
         # Set equivalent timing data
         if self.needs_timing: self.set_equivalent_timing_data(parameters_modes_processor_counts_dict_timing)
 
-        #print(self.memory_data)
-
         # Set equivalent memory data
         if self.needs_memory: self.set_equivalent_memory_data(parameters_modes_processor_counts_dict_memory)
-
-        #print(self.memory_data)
 
         # Set missing serial timing data
         if self.needs_timing: self.set_missing_serial_timing(parameters_modes_processor_counts_dict_timing)
 
         # Set missing serial memory data
         if self.needs_memory: self.set_missing_serial_memory(parameters_modes_processor_counts_dict_memory)
-
-        #print(self.memory_data)
 
         # Check coverage of data in the different modes
         self.check_coverage_modes()
@@ -1374,6 +1375,9 @@ class ScalingPlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting equivalent timing data ...")
+
         # Between hybrid task and hybrid task+data
         # (in hybridisation plotting mode the single-process end of the curve is not labeled as
         # 'multithreading mode' but just as xx cores [task/task+data])
@@ -1391,6 +1395,9 @@ class ScalingPlotter(Configurable):
         :param parameters_modes_processor_counts_dict_timing:
         :return:
         """
+
+        # Debugging
+        log.debug("Setting equivalent timing data from multithreading data ...")
 
         # Loop over all parameter sets of the timing data
         for parameter_set in parameters_modes_processor_counts_dict_timing:
@@ -1435,7 +1442,7 @@ class ScalingPlotter(Configurable):
                     for mode in other_modes:
 
                         # Skip modes that are not purily multiprocessing
-                        if mode != "multiprocessing": continue
+                        if not mode.startswith("multiprocessing"): continue
 
                         # Fill in the processor count of 1, the time and the error on the time
                         self.timing_data[phase][parameter_set][mode].processor_counts.append(1)
@@ -1842,7 +1849,7 @@ class ScalingPlotter(Configurable):
             for mode in self.timing_data[phase][parameter_set]:
 
                 # Get index for lowest processor count
-                index = np.argmax(self.timing_data[phase][parameter_set][mode].processor_counts)
+                index = np.argmin(self.timing_data[phase][parameter_set][mode].processor_counts)
 
                 # Get properties
                 ncores = self.timing_data[phase][parameter_set][mode].processor_counts[index]
@@ -1965,7 +1972,7 @@ class ScalingPlotter(Configurable):
             for mode in self.memory_data[phase][parameter_set]:
 
                 # Get the index for the lowest number of cores
-                index = np.argmax(self.memory_data[phase][parameter_set][mode].processor_counts)
+                index = np.argmin(self.memory_data[phase][parameter_set][mode].processor_counts)
 
                 # Get properties
                 ncores = self.memory_data[phase][parameter_set][mode].processor_counts[index]
@@ -1997,10 +2004,10 @@ class ScalingPlotter(Configurable):
         log.info("Checking the data coverage for the different parallelization modes ...")
 
         # Timing
-        self.check_coverage_modes_timing()
+        if self.needs_timing: self.check_coverage_modes_timing()
 
         # Memory
-        self.check_coverage_modes_memory()
+        if self.needs_memory: self.check_coverage_modes_memory()
 
     # -----------------------------------------------------------------
 
@@ -2848,7 +2855,9 @@ class ScalingPlotter(Configurable):
         #ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
 
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(LogFormatter())
+        #ax.yaxis.set_major_formatter(LogFormatter())
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
 
         plt.xlim(ticks[0], ticks[-1])
 
@@ -3044,7 +3053,8 @@ class ScalingPlotter(Configurable):
         ax.set_xticks(ticks)
         if not self.config.hybridisation: ax.set_yticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
         #if not self.config.hybridisation: plt.ylim(ticks[0], ticks[-1])
@@ -3219,9 +3229,11 @@ class ScalingPlotter(Configurable):
         # Format the axis ticks and create a grid
         ax = plt.gca()
         ax.set_xticks(ticks)
-        ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%d'))
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
         #ax.xaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter())
-        ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(matplotlib.ticker.ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
         #plt.ylim(0, 1.1)
@@ -3400,7 +3412,9 @@ class ScalingPlotter(Configurable):
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
 
@@ -3545,7 +3559,9 @@ class ScalingPlotter(Configurable):
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
 
@@ -3665,7 +3681,9 @@ class ScalingPlotter(Configurable):
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
 
@@ -3773,7 +3791,9 @@ class ScalingPlotter(Configurable):
         ax = plt.gca()
         ax.set_xticks(ticks)
         ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+        #ax.yaxis.set_major_formatter(ScalarFormatter())
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
 
@@ -3907,8 +3927,16 @@ class ScalingPlotter(Configurable):
                 else: title = None
 
                 # Create the plot
-                if self.config.hybridisation: create_timeline_plot(data, nprocs_list, plot_file_path, percentages=self.config.timelines.percentages, totals=True, unordered=True, cpu=True, title=title, rpc='p', add_border=self.config.add_border)
-                else: create_timeline_plot(data, ncores_list, plot_file_path, percentages=self.config.timelines.percentages, totals=True, unordered=True, cpu=True, title=title, rpc='c', add_border=self.config.add_border)
+                if self.config.hybridisation: create_timeline_plot(data, nprocs_list, plot_file_path,
+                                                                   percentages=self.config.timelines.percentages,
+                                                                   totals=True, unordered=True, cpu=True, title=title,
+                                                                   rpc='p', add_border=self.config.add_border,
+                                                                   label_fontsize=self.config.label_fontsize,
+                                                                   figsize=self.config.figsize)
+                else: create_timeline_plot(data, ncores_list, plot_file_path,
+                                           percentages=self.config.timelines.percentages, totals=True, unordered=True,
+                                           cpu=True, title=title, rpc='c', add_border=self.config.add_border,
+                                           label_fontsize=self.config.label_fontsize, figsize=self.config.figsize)
 
     # -----------------------------------------------------------------
 
@@ -4572,223 +4600,6 @@ def all_equal(lst):
 
 # -----------------------------------------------------------------
 
-def write_list(lst, path):
-
-    """
-    This function ...
-    :param lst:
-    :param path:
-    :return:
-    """
-
-    with open(path, 'w') as fh: write_list_impl(fh, lst)
-
-# -----------------------------------------------------------------
-
-def write_list_impl(listfile, lst):
-
-    """
-    This function ...
-    :param listfile:
-    :param lst:
-    :return:
-    """
-
-    for element in lst:
-
-        ptype, string = stringify.stringify(element)
-        listfile.write("[" + ptype + "] " + string + "\n")
-
-# -----------------------------------------------------------------
-
-def load_list(path):
-
-    """
-    This function ...
-    :param path:
-    :return:
-    """
-
-    lst = []
-    with open(path, 'r') as fh: load_list_impl(fh, lst)
-    return lst
-
-# -----------------------------------------------------------------
-
-def load_list_impl(listfile, lst):
-
-    """
-    This function ...
-    :param listfile:
-    :param lst:
-    :return:
-    """
-
-    for line in listfile:
-
-        line = line[:-1]
-        if not line: continue
-
-        ptype = line.split("]")[0].split("[")[1]
-        string = line.split("]")[1].strip()
-
-        parsing_function = getattr(parsing, ptype)
-        value = parsing_function(string)
-
-        lst.append(value)
-
-# -----------------------------------------------------------------
-
-def write_dict(dct, path):
-
-    """
-    This function ...
-    :param dct:
-    :param path:
-    :return:
-    """
-
-    with open(path, 'w') as fh: write_dict_impl(fh, dct)
-
-# -----------------------------------------------------------------
-
-def write_dict_impl(dictfile, dct, indent=""):
-
-    """
-    This function ...
-    :param dictfile:
-    :param dct:
-    :param indent:
-    :return:
-    """
-
-    index = 0
-    length = len(dct)
-    for name in dct:
-
-        value = dct[name]
-
-        if isinstance(value, Map):
-
-            name_ptype, name_string = stringify.stringify_not_list(name)
-
-            print(indent + "[" + name_ptype + "] " + name_string + " [Map]:", file=dictfile)
-            print(indent + "{", file=dictfile)
-            write_dict_impl(dictfile, value, indent=indent + "    ")
-            print(indent + "}", file=dictfile)
-
-        elif isinstance(value, dict):
-
-            name_ptype, name_string = stringify.stringify_not_list(name)
-
-            print(indent + "[" + name_ptype + "] " + name_string + " [dict]:", file=dictfile)
-            print(indent + "{", file=dictfile)
-            write_dict_impl(dictfile, value, indent=indent+"    ")
-            print(indent + "}", file=dictfile)
-
-        else:
-
-            name_ptype, name_string = stringify.stringify_not_list(name)
-
-            ptype, string = stringify.stringify(dct[name])
-            print(indent + "[" + name_ptype + "] " + name_string + " [" + ptype + "]: " + string, file=dictfile)
-
-        if index != length - 1: print("", file=dictfile)
-        index += 1
-
-# -----------------------------------------------------------------
-
-def load_dict(path):
-
-    """
-    This function ...
-    :param path:
-    :return:
-    """
-
-    dct = dict()
-    with open(path, 'r') as fh: load_dict_impl(fh, dct)
-    return dct
-
-# -----------------------------------------------------------------
-
-def load_dict_impl(dictfile, dct, indent=""):
-
-    """
-    This function ...
-    :param dictfile:
-    :param dct:
-    :param indent:
-    :return:
-    """
-
-    # Loop over the lines in the file
-    for line in dictfile:
-
-        # Strip end-of-line character
-        line = line.rstrip("\n")
-
-        # Empty line
-        if not line: continue
-
-        #end = indent + "}"
-        #print(list(line))
-        #print(list(line))
-        #print(list(end))
-
-        #if line.startswith(end): return
-
-        if line.strip() == "}": return
-
-        if ":" in line:
-
-            name_and_specification = line.split(":")[0].strip()
-
-            #stripped = name_and_specification.strip()
-
-            #if name_and_specification.endswith("]"):
-            if line.split(":")[1].strip() != "":
-
-            #if "[" in name_and_specification and "]" in name_and_specification:
-
-                name_ptype = name_and_specification.split("]")[0][1:]
-                name_string = name_and_specification.split("] ")[1].split(" [")[0]
-                name_value = getattr(parsing, name_ptype)(name_string)
-
-                ptype = line.split(name_string + " [")[1].split("]")[0]
-                string = line.split(":")[1].strip()
-
-                #print(string)
-                #print(list(name))
-                #print(list(indent))
-                #name = name.split(indent)[1]
-                #string = string.split(indent)[1]
-
-                parsing_function = getattr(parsing, ptype)
-                value = parsing_function(string)
-
-                dct[name_value] = value
-
-            else:
-
-                name_ptype = name_and_specification.split("[")[1].split("]")[0]
-                name_string = name_and_specification.split("] ")[1].split(" [")[0]
-
-                new_indent = indent + "   "
-
-                name_value = getattr(parsing, name_ptype)(name_string)
-
-                #print(name_and_specification)
-
-                map_or_dict = name_and_specification.split(name_string + " [")[1].split("]")[0]
-
-                if map_or_dict == "dict": dct[name_value] = dict()
-                elif map_or_dict == "Map": dct[name_value] = Map()
-
-                load_dict_impl(dictfile, dct[name_value], new_indent)
-
-# -----------------------------------------------------------------
-
 def add_timeline_row(data, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time,
                      communication_time):
 
@@ -4973,8 +4784,8 @@ def add_legends(ax, handles, different_parameters, config, property):
         frame.set_edgecolor(config.legend_bordercolor)
 
         # Set background color
-        frame.set_facecolor('0.5')
-        legend.legendPatch.set_alpha(0.25)
+        frame.set_facecolor('0.85')
+        legend.legendPatch.set_alpha(0.75)
 
         # Move to foreground
         legend.set_zorder(100+index)

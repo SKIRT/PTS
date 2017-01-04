@@ -26,6 +26,7 @@ from ..tools import filesystem as fs
 from ..extract.timeline import TimeLineExtractor
 from ..basics.configurable import Configurable
 from ..simulation.discover import SimulationDiscoverer
+from ..tools.serialization import write_dict, load_dict, write_list, load_list
 
 # -----------------------------------------------------------------
 
@@ -437,7 +438,43 @@ class BatchTimeLinePlotter(Configurable):
         :return:
         """
 
-        pass
+        # Write single data
+        self.write_single_data()
+
+        # Write multi data
+        self.write_multi_data()
+
+    # -----------------------------------------------------------------
+
+    def write_single_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        if self.config.output is not None: path = fs.join(self.config.output, "single_data.dat")
+        else: path = fs.join(self.config.path, "single_data.dat")
+
+        # Write
+        write_dict(self.single_data, path)
+
+    # -----------------------------------------------------------------
+
+    def write_multi_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path
+        if self.config.output is not None: path = fs.join(self.config.output, "multi_data.dat")
+        else: path = fs.join(self.config.path, "multi_data.dat")
+
+        # Write
+        write_dict(self.multi_data, path)
 
     # -----------------------------------------------------------------
 
@@ -483,7 +520,10 @@ class BatchTimeLinePlotter(Configurable):
             else: path = fs.join(output_path, "timeline.pdf")
 
             # Create the plot
-            create_timeline_plot(data, ranks, path)
+            create_timeline_plot(data, ranks, path, figsize=self.config.figsize, percentages=self.config.percentages,
+                                 totals=self.config.totals, unordered=False, cpu=False, title=self.config.title,
+                                 ylabels=None, yaxis=None, rpc="r", add_border=self.config.add_border,
+                                 show_ranks=self.config.show_ranks, label_fontsize=self.config.label_fontsize)
 
     # -----------------------------------------------------------------
 
@@ -602,7 +642,8 @@ class TimeLinePlotter(Plotter):
 # -----------------------------------------------------------------
 
 def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentages=False, totals=False, unordered=False,
-                         cpu=False, title=None, ylabels=None, yaxis=None, rpc="r", add_border=False):
+                         cpu=False, title=None, ylabels=None, yaxis=None, rpc="r", add_border=False, show_ranks=True,
+                         label_fontsize=18):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
@@ -619,6 +660,9 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     :param ylabels:
     :param yaxis:
     :param rpc: 'rank', 'processes' or 'cores'
+    :param add_border:
+    :param show_ranks:
+    :param label_fontsize:
     :return:
     """
 
@@ -692,12 +736,18 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
 
     if unordered:
 
-        plt.yticks(yticks, procranks)
+        #print("YTICKS", yticks)
+        #print("PROCRANKS", procranks)
+        #plt.yticks(yticks, procranks)
+        if not (rpc == 'r' and not show_ranks):
+            ax.set_yticks(yticks)
+            ax.set_yticklabels(procranks)
 
     else:
 
-        ax.set_yticks(procranks)
-        ax.set_yticklabels(procranks)
+        if not (rpc == 'r' and not show_ranks):
+            ax.set_yticks(procranks)
+            ax.set_yticklabels(procranks)
 
     ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
     ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
@@ -710,13 +760,15 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
         ax.tick_params(axis=u'both', which=u'both', length=0)
 
     # Format the axis ticks and labels
-    if cpu: ax.set_xlabel('CPU time (s)', fontsize='large')
-    else: ax.set_xlabel('Time (s)', fontsize='large')
+    if cpu: ax.set_xlabel('CPU time (s)', fontsize=label_fontsize)
+    else: ax.set_xlabel('Time (s)', fontsize=label_fontsize)
 
     # Set y label
-    if rpc == 'r': ax.set_ylabel('Process rank', fontsize='large')
-    elif rpc == 'p': ax.set_ylabel('Number of processes', fontsize='large')
-    elif rpc == 'c': ax.set_ylabel('Number of cores', fontsize='large')
+    if rpc == 'r':
+        if show_ranks: ax.set_ylabel('Process rank', fontsize=label_fontsize)
+        else: ax.set_ylabel("Processes", fontsize=label_fontsize)
+    elif rpc == 'p': ax.set_ylabel('Number of processes', fontsize=label_fontsize)
+    elif rpc == 'c': ax.set_ylabel('Number of cores', fontsize=label_fontsize)
 
     #ax.yaxis.grid(True)
 

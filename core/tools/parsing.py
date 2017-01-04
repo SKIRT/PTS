@@ -286,6 +286,18 @@ def quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def mixed_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return tuple(argument.split(","))
+
+# -----------------------------------------------------------------
+
 def quantity_vector(argument):
 
     """
