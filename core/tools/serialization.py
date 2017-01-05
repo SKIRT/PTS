@@ -22,6 +22,46 @@ from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
+def write_data_tuple(data, path):
+
+    """
+    This function ...
+    :param data:
+    :param path:
+    :return:
+    """
+
+    with open(path, 'w') as fh: write_data_tuple_impl(fh, data)
+
+# -----------------------------------------------------------------
+
+def write_data_tuple_impl(fh, data, indent=""):
+
+    """
+    This function ...
+    :param fh:
+    :param data:
+    :param indent:
+    :return:
+    """
+
+    for index in range(len(data)):
+
+        value = data[index]
+
+        if isinstance(value, list):
+
+            #print(indent + "[0] [" + ptype + "]: " + string, file=fh)
+            print(indent + "[" + str(index) + "] [list]:", file=fh)
+            write_list_impl(fh, value, indent=indent + "    ", use_serialization=True)
+
+        else:
+
+            ptype, string = stringify.stringify(data[index])
+            print(indent + "[" + str(index) + "] [" + ptype + "]: " + string, file=fh)
+
+# -----------------------------------------------------------------
+
 def write_dict(dct, path):
 
     """
@@ -49,11 +89,11 @@ def write_dict_impl(dictfile, dct, indent=""):
     length = len(dct)
     for name in dct:
 
+        name_ptype, name_string = stringify.stringify_not_list(name)
+
         value = dct[name]
 
         if isinstance(value, Map):
-
-            name_ptype, name_string = stringify.stringify_not_list(name)
 
             print(indent + "[" + name_ptype + "] " + name_string + " [Map]:", file=dictfile)
             print(indent + "{", file=dictfile)
@@ -62,16 +102,19 @@ def write_dict_impl(dictfile, dct, indent=""):
 
         elif isinstance(value, dict):
 
-            name_ptype, name_string = stringify.stringify_not_list(name)
-
             print(indent + "[" + name_ptype + "] " + name_string + " [dict]:", file=dictfile)
             print(indent + "{", file=dictfile)
             write_dict_impl(dictfile, value, indent=indent+"    ")
             print(indent + "}", file=dictfile)
 
-        else:
+        elif isinstance(value, tuple):
 
-            name_ptype, name_string = stringify.stringify_not_list(name)
+            print(indent + "[" + name_ptype + "] " + name_string + " [tuple]:", file=dictfile)
+            print(indent + "{", file=dictfile)
+            write_data_tuple_impl(dictfile, value, indent=indent+"    ")
+            print(indent + "}", file=dictfile)
+
+        else:
 
             ptype, string = stringify.stringify(dct[name])
             print(indent + "[" + name_ptype + "] " + name_string + " [" + ptype + "]: " + string, file=dictfile)
@@ -185,19 +228,24 @@ def write_list(lst, path):
 
 # -----------------------------------------------------------------
 
-def write_list_impl(listfile, lst):
+def write_list_impl(listfile, lst, indent="", use_serialization=False):
 
     """
     This function ...
     :param listfile:
     :param lst:
+    :param indent:
     :return:
     """
 
     for element in lst:
 
-        ptype, string = stringify.stringify(element)
-        listfile.write("[" + ptype + "] " + string + "\n")
+        if isinstance(element, list) and use_serialization:
+            write_list_impl(indent + "[list]:")
+            write_list_impl(listfile, element, indent=indent+"    ", use_serialization=True)
+        else:
+            ptype, string = stringify.stringify(element)
+            listfile.write(indent + "[" + ptype + "] " + string + "\n")
 
 # -----------------------------------------------------------------
 

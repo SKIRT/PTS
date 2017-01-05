@@ -31,6 +31,8 @@ def stringify(value):
     :return:
     """
 
+    #print(type(value))
+
     # List or derived from list
     if isinstance(value, list):
 
@@ -38,7 +40,8 @@ def stringify(value):
         ptype = None
         for entry in value:
 
-            parsetype, val = stringify_not_list(entry)
+            #parsetype, val = stringify_not_list(entry)
+            parsetype, val = stringify(entry)
 
             if ptype is None: ptype = parsetype
             elif ptype != parsetype:
@@ -53,7 +56,6 @@ def stringify(value):
     elif isinstance(value, np.ndarray):
 
         ptype, val = stringify_not_list(value[0])
-
         return ptype + "_array", ",".join([repr(el) for el in value])
 
     # Tuple or derived from tuple

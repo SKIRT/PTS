@@ -27,7 +27,7 @@ from ..tools import filesystem as fs
 from ..extract.timeline import TimeLineExtractor
 from ..basics.configurable import Configurable
 from ..simulation.discover import SimulationDiscoverer
-from ..tools.serialization import write_dict, load_dict, write_list, load_list
+from ..tools.serialization import write_dict, write_data_tuple
 from ..simulation.parallelization import Parallelization
 
 # -----------------------------------------------------------------
@@ -58,7 +58,7 @@ phase_label_names = {"setup": "setup",
 
 # -----------------------------------------------------------------
 
-class BatchTimeLinePlotter(Configurable):
+class TimeLinePlotter(Configurable):
 
     """
     This class ...
@@ -72,7 +72,7 @@ class BatchTimeLinePlotter(Configurable):
         """
 
         # Call the constructor of the base class
-        super(BatchTimeLinePlotter, self).__init__(config)
+        super(TimeLinePlotter, self).__init__(config)
 
         # The simulations
         self.simulations = []
@@ -101,10 +101,10 @@ class BatchTimeLinePlotter(Configurable):
         self.setup(**kwargs)
 
         # 2. Extract
-        self.extract()
+        if not self.is_extracted: self.extract()
 
         # 3. Prepare
-        self.prepare()
+        if not self.is_prepared: self.prepare()
 
         # 4. Writing
         self.write()
@@ -123,7 +123,16 @@ class BatchTimeLinePlotter(Configurable):
         """
 
         # Call the setup function of the base class
-        super(BatchTimeLinePlotter, self).setup(**kwargs)
+        super(TimeLinePlotter, self).setup(**kwargs)
+
+        if "timeline" in kwargs:
+            output_path = self.config.output if self.config.output is not None else self.config.path
+            self.timelines[output_path] = kwargs.pop("timeline")
+        elif "timelines" in kwargs:
+            timelines = kwargs.pop("timelines")
+            if isinstance(timelines, list): raise ValueError("Timelines must be a dictionary")
+            elif isinstance(timelines, dict): self.timelines = timelines
+            else: raise ValueError("Timelines must be a dictionary")
 
         # Load simulations from working directory if none have been added
         if len(self.simulations) == 0:
@@ -154,6 +163,30 @@ class BatchTimeLinePlotter(Configurable):
         """
 
         return self.simulations[0].prefix()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_extracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.timelines) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_prepared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.single_data) > 0
 
     # -----------------------------------------------------------------
 
@@ -425,9 +458,7 @@ class BatchTimeLinePlotter(Configurable):
         self.write_timelines()
 
         # Write the data
-        #self.write_data()
-        # Doesn't work yet:
-        # ValueError: Unrecognized type: <class 'astropy.table.column.MaskedColumn'>
+        self.write_data()
 
     # -----------------------------------------------------------------
 
@@ -460,6 +491,9 @@ class BatchTimeLinePlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the timeline data ...")
+
         # Write single data
         self.write_single_data()
 
@@ -474,6 +508,9 @@ class BatchTimeLinePlotter(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the single timeline data ...")
 
         # Determine the path
         if self.config.output is not None: path = fs.join(self.config.output, "single_data.dat")
@@ -491,12 +528,15 @@ class BatchTimeLinePlotter(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the multi timeline data ...")
+
         # Determine the path
         if self.config.output is not None: path = fs.join(self.config.output, "multi_data.dat")
         else: path = fs.join(self.config.path, "multi_data.dat")
 
         # Write
-        write_dict(self.multi_data, path)
+        write_data_tuple(self.multi_data, path)
 
     # -----------------------------------------------------------------
 
@@ -514,7 +554,7 @@ class BatchTimeLinePlotter(Configurable):
         self.plot_single()
 
         # Plot combined timelines
-        self.plot_combined()
+        if self.has_multi: self.plot_combined()
 
         # Plot multi
         if self.has_multi: self.plot_multi()
@@ -625,96 +665,8 @@ class BatchTimeLinePlotter(Configurable):
         else: path = fs.join(self.config.path, "timeline_cputime.pdf")
 
         # Create the plot
-        create_timeline_plot(data, nprocs_list, path, percentages=True, totals=True, unordered=True, cpu=True, title=title, ylabels=simulation_names, yaxis="Simulations")
-
-# -----------------------------------------------------------------
-
-class TimeLinePlotter(Plotter):
-
-    """
-    An instance of the TimeLinePlotter class is used to create timeline diagrams for the different simulation phases
-    """
-
-    def __init__(self):
-
-        """
-        The constructor ...
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(TimeLinePlotter, self).__init__()
-
-        # -- Attributes --
-
-        # A list of the process ranks
-        self.ranks = None
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def default_input():
-
-        """
-        This function ...
-        :return:
-        """
-
-        return "timeline.dat"
-
-    # -----------------------------------------------------------------
-
-    def prepare_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get a list of the different process ranks
-        self.ranks = np.unique(self.table["Process rank"])
-
-        # Initialize the data structure to contain the start times and endtimes for the different processes,
-        # indexed on the phase
-        self.data = []
-
-        # Iterate over the different entries in the timeline table
-        for i in range(len(self.table)):
-
-            if self.table["Process rank"][i] == 0:
-
-                phase = self.table["Phase"][i]
-
-                # Few special cases where we want the phase indicator to just say 'other'
-                if phase is None or phase == "start" or isinstance(phase, np.ma.core.MaskedConstant): phase = "other"
-
-                # Add the data
-                self.data.append([phase, [], []])
-                self.data[len(self.data) - 1][1].append(self.table["Start time"][i])
-                self.data[len(self.data) - 1][2].append(self.table["End time"][i])
-
-            else:
-
-                nphases = len(self.data)
-                self.data[i % nphases][1].append(self.table["Start time"][i])
-                self.data[i % nphases][2].append(self.table["End time"][i])
-
-    # -----------------------------------------------------------------
-
-    def plot(self):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the plots...")
-
-        # Create the plot
-        plot_path = fs.join(self.output_path, "timeline.pdf")
-        create_timeline_plot(self.data, self.ranks, plot_path)
+        create_timeline_plot(data, nprocs_list, path, percentages=True, totals=True, unordered=True, cpu=True,
+                             title=title, ylabels=simulation_names, yaxis="Simulations")
 
 # -----------------------------------------------------------------
 

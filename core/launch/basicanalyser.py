@@ -413,8 +413,11 @@ class BasicAnalyser(Configurable):
         # Create a TimeLinePlotter object
         plotter = TimeLinePlotter()
 
+        # Set the output path
+        plotter.config.output = self.plotting_options.path
+
         # Run the timeline plotter
-        plotter.run(self.timeline, self.plotting_options.path)
+        plotter.run(timeline=self.timeline)
 
     # -----------------------------------------------------------------
 

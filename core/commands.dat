@@ -14,6 +14,6 @@ parallelization | -- | launch.parallelization.ParallelizationTool | interactive 
 test_performance | -- | test.performance.PerformanceTest | interactive | Run the SKIRT performance test suite
 plot_seds | -- | plot.sed.SEDPlotter | arguments | Plot a series of observed SEDs
 plot_scaling | -- | plot.scaling.ScalingPlotter | arguments | Plot the performance and or memory scaling of a (batch of) simulation(s)
-plot_timelines | -- | plot.timeline.BatchTimeLinePlotter | arguments | Plot timelines of a (batch of) simulation(s)
+plot_timelines | -- | plot.timeline.TimeLinePlotter | arguments | Plot timelines of a (batch of) simulation(s)
 discover | -- | simulation.discover.SimulationDiscoverer | arguments | Discover simulations in current working directory (and subdirectories)
 fill_ski | -- | simulation.fill.SkiFiller | arguments | Fill a ski file with the default and hidden settings for SKIRT

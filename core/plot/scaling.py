@@ -510,6 +510,9 @@ class ScalingPlotter(Configurable):
                 self._different_parameters_timing = load_list(fs.join(self.config.data_input, "different_parameters_timing.dat"))
                 self.ignore_parameter_sets_timing = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_timing.dat"))
 
+                # Set flag
+                self.is_prepared = True
+
             memory_data_path = fs.join(self.config.data_input, "memory_data.dat")
             if fs.is_file(memory_data_path):
 
@@ -519,11 +522,18 @@ class ScalingPlotter(Configurable):
                 self._different_parameters_memory = load_list(fs.join(self.config.data_input, "different_parameters_memory.dat"))
                 self.ignore_parameter_sets_memory = load_list(fs.join(self.config.data_input, "ignore_parameter_sets_memory.dat"))
 
-            #print(self.timing_data)
+                # Set flag
+                self.is_prepared = True
 
-            self.is_prepared = True
+            if self.is_prepared: return
+            else:
 
-            return
+                timing_path = fs.join(self.config.data_input, "timing.dat")
+                memory_path = fs.join(self.config.data_input, "memory.dat")
+
+                # Load timing and/or memory table
+                if fs.is_file(timing_path): self.timing = TimingTable.from_file(timing_path)
+                if fs.is_file(memory_path): self.memory = MemoryTable.from_file(memory_path)
 
         else:
 
