@@ -25,6 +25,7 @@ from collections import Callable
 #from types import FunctionType
 from string import ascii_lowercase
 from matplotlib import rc
+from textwrap import wrap
 
 # Import astronomical modules
 from astropy.table import Table
@@ -77,6 +78,23 @@ phase_labels_timing = {"total": "Total runtime", "setup": "Setup time", "stellar
                     "intermediate": "Intermediate time"}
 
 #phase_labels_memory = {"total", "total simulation peak memory"}
+
+# For legend, be concise
+phase_names_for_legend = dict()
+phase_names_for_legend["total"] = "simulation"
+phase_names_for_legend["setup"] = "setup"
+phase_names_for_legend["stellar"] = "stellar emission"
+phase_names_for_legend["spectra"] = "dust emission spectra calculation"
+phase_names_for_legend["dust"] = "dust emission"
+phase_names_for_legend["writing"] = "writing"
+phase_names_for_legend["waiting"] = "waiting"
+phase_names_for_legend["communication"] = "communication"
+phase_names_for_legend["dust densities communication"] = "dust densities"
+phase_names_for_legend["stellar absorption communication"] = "absorbed stellar luminosities"
+phase_names_for_legend["dust absorption communication"] = "absorbed dust luminosities"
+phase_names_for_legend["emission spectra communication"] = "dust emission spectra"
+phase_names_for_legend["instruments communication"] = "instruments"
+phase_names_for_legend["intermediate"] = "intermediate"
 
 # -----------------------------------------------------------------
 
@@ -1242,6 +1260,18 @@ class ScalingPlotter(Configurable):
 
             #print(processes, threads_per_core, cores_per_process, data_parallel, mode)
 
+            # Skip certain modes if requested
+            simple_mode = mode.split(" ")[0]
+            if simple_mode not in self.config.modes: continue
+
+            # Skip task+data or task parallel mode if requested
+            if mode.startswith("multiprocessing") or mode.startswith("hybrid"):
+
+                if "task+data" in mode:
+                    if not self.config.use_task_data_parallel: continue
+                else:
+                    if not self.config.use_task_parallel: continue
+
             # Get the runtimes per phase
             time_per_phase = dict()
             if self.needs_timing:
@@ -1360,7 +1390,7 @@ class ScalingPlotter(Configurable):
         self.check_coverage_modes()
 
         # Add communication and waiting times of zero for 1 process
-        if not self.config.hybridisation: self.add_fixed_multiprocessing_phases_runtimes()
+        if not self.config.hybridisation and self.needs_timing: self.add_fixed_multiprocessing_phases_runtimes()
 
         # Set flag
         self.is_prepared = True
@@ -1594,7 +1624,7 @@ class ScalingPlotter(Configurable):
                     for mode in other_modes:
 
                         # Skip modes that are not purily multiprocessing
-                        if mode != "multiprocessing": continue
+                        if mode.startswith("multiprocessing"): continue
 
                         # Fill in the processor count of 1, the memory data and the error on the time
                         self.memory_data[phase][parameter_set][mode].processor_counts.append(1)
@@ -2524,7 +2554,7 @@ class ScalingPlotter(Configurable):
                     nprocesses = nprocesses_from_mode(mode, processor_counts)
 
                     # Fit (standard or modified) memory scaling law
-                    if len(processor_counts) < 5:
+                    if len(processor_counts) < 6:
 
                         popt, pcov = curve_fit(memory_scaling, nprocesses, memories, sigma=weights, absolute_sigma=False)
                         perr = np.sqrt(np.diag(pcov))
@@ -2704,16 +2734,15 @@ class ScalingPlotter(Configurable):
         ticks = set()
 
         # Phases for this plot
-        add_phase_to_label = False
-        if phase == "communication" and self.config.split_communication:
-            plot_phases = communication_phases
-            add_phase_to_label = True
+        if phase == "communication" and self.config.split_communication: plot_phases = communication_phases
         else: plot_phases = [phase]
+        multi_phases = len(plot_phases) > 1
 
-        # The plot handles for the different parameter sets
+        # Check whether we have multiple parameter sets
+        multi_parameter_sets = len(self.timing_data[plot_phases[0]]) > 1
+
+        # The plot handles for the different parameter sets (or phases if there is only one parameter set)
         handles = defaultdict(list)
-
-        #multiple_phases = len(plot_phases) > 1
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -2771,20 +2800,22 @@ class ScalingPlotter(Configurable):
                         errors = np.array(new_errors)
 
                     # Determine the label
-                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    #else: label = mode
-                    #if multiple_phases: label = mode + " (" + plot_phase + ")"
-                    #else: label = mode
                     label = mode
 
                     # Add phase to label
-                    if add_phase_to_label: label += " (" + plot_phase + ")"
+                    if multi_parameter_sets and multi_phases: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this mode
-                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label, linewidth=self.config.linewidth)
+                    fmt = '' if self.config.connect_points else 'o'
+                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label,
+                                          linewidth=self.config.linewidth, fmt=fmt, markersize=self.config.markersize)
+
+                    # Determine key for handle dictionary
+                    if not multi_parameter_sets and multi_phases: key = plot_phase
+                    else: key = parameter_set
 
                     # Add the handle to the dictionary
-                    handles[parameter_set].append(handle)
+                    handles[key].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -2861,6 +2892,10 @@ class ScalingPlotter(Configurable):
 
         plt.xlim(ticks[0], ticks[-1])
 
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+
         # Set grid
         set_grid(self.config)
 
@@ -2875,10 +2910,16 @@ class ScalingPlotter(Configurable):
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "runtime")
+        print(multi_parameter_sets)
+        print(multi_phases)
+        pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "runtime", pa_or_ph)
 
         # Set the plot title
-        if self.config.add_titles: plt.suptitle("Scaling of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
+        if self.config.add_titles:
+            title = "Scaling of the " + phase_labels_timing[phase].lower()
+            title = "\n".join(wrap(title, 60))
+            plt.suptitle(title, fontsize=self.config.title_fontsize)
 
         # Set file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "runtimes_" + phase + ".pdf")
@@ -2916,15 +2957,14 @@ class ScalingPlotter(Configurable):
         speedup_range = RealRange.zero()
 
         # Phases for this plot
-        add_phase_to_label = False
-        if phase == "communication" and self.config.split_communication:
-            plot_phases = communication_phases
-            add_phase_to_label = True
+        if phase == "communication" and self.config.split_communication: plot_phases = communication_phases
         else: plot_phases = [phase]
+        multi_phases = len(plot_phases) > 1
 
-        #multiple_phases = len(plot_phases) > 1
+        # Check whether we have multiple parameter sets
+        multi_parameter_sets = len(self.timing_data[plot_phases[0]]) > 1
 
-        # The plot handles for the different parameter sets
+        # The plot handles for the different parameter sets (or phases if there is only one parameter set)
         handles = defaultdict(list)
 
         # Loop over the plot phases
@@ -2978,14 +3018,10 @@ class ScalingPlotter(Configurable):
                     speedup_errors = np.array(speedup_errors)
 
                     # Determine the label
-                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    #else: label = mode
-                    #if multiple_phases: label = mode + " (" + plot_phase + ")"
-                    #else: label = mode
                     label = mode
 
                     # Add phase to label
-                    if add_phase_to_label: label += " (" + plot_phase + ")"
+                    if multi_parameter_sets and multi_phases: label += " (" + plot_phase + ")"
 
                     # Eliminate Nans
                     not_nan = np.logical_not(np.isnan(speedups))
@@ -3000,10 +3036,16 @@ class ScalingPlotter(Configurable):
                     if np.all(speedups == 0): continue
 
                     # Plot the data points for this curve
-                    handle = plt.errorbar(processor_counts, speedups, speedup_errors, marker='.', label=label, linewidth=self.config.linewidth)
+                    fmt = '' if self.config.connect_points else 'o'
+                    handle = plt.errorbar(processor_counts, speedups, speedup_errors, marker='.', label=label,
+                                          linewidth=self.config.linewidth, fmt=fmt, markersize=self.config.markersize)
+
+                    # Determine key for handle dictionary
+                    if not multi_parameter_sets and multi_phases: key = plot_phase
+                    else: key = parameter_set
 
                     # Add the plot handle
-                    handles[parameter_set].append(handle)
+                    handles[key].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -3060,6 +3102,10 @@ class ScalingPlotter(Configurable):
         #if not self.config.hybridisation: plt.ylim(ticks[0], ticks[-1])
         plt.ylim(speedup_range.min, speedup_range.max)
 
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+
         # Set grid
         set_grid(self.config)
 
@@ -3075,10 +3121,14 @@ class ScalingPlotter(Configurable):
         if not self.config.hybridisation and phase in parallel_phases: plt.plot(ticks, ticks, linestyle='--', linewidth=self.config.linewidth)
 
         # Add the legends
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "speedup")
+        pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "speedup", pa_or_ph)
 
         # Set the plot title
-        if self.config.add_titles: plt.suptitle("Speedup of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
+        if self.config.add_titles:
+            title = "Speedup of the " + phase_labels_timing[phase].lower()
+            title = "\n".join(wrap(title, 60))
+            plt.suptitle(title, fontsize=self.config.title_fontsize)
 
         # Set file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "speedups_" + phase + ".pdf")
@@ -3115,14 +3165,14 @@ class ScalingPlotter(Configurable):
         ticks = set()
 
         # Phases for this plot
-        add_phase_to_label = False
-        if phase == "communication" and self.config.split_communication:
-            plot_phases = communication_phases
-            add_phase_to_label = True
+        if phase == "communication" and self.config.split_communication: plot_phases = communication_phases
         else: plot_phases = [phase]
-        multiple_phases = len(plot_phases) > 1
+        multi_phases = len(plot_phases) > 1
 
-        # The plot handles
+        # Check whether we have multiple parameter sets
+        multi_parameter_sets = len(self.timing_data[plot_phases[0]]) > 1
+
+        # The plot handles for the different parameter sets (or phases if there is only one parameter set)
         handles = defaultdict(list)
 
         # Loop over the plot phases
@@ -3176,18 +3226,22 @@ class ScalingPlotter(Configurable):
                         efficiency_errors.append(efficiency_error)
 
                     # Determine the label
-                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    #else: label = mode
                     label = mode
 
                     # Add phase to label
-                    if add_phase_to_label: label += " (" + plot_phase + ")"
+                    if multi_parameter_sets and multi_phases: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this curve
-                    handle = plt.errorbar(processor_counts, efficiencies, efficiency_errors, marker='.', label=label, linewidth=self.config.linewidth)
+                    fmt = '' if self.config.connect_points else 'o'
+                    handle = plt.errorbar(processor_counts, efficiencies, efficiency_errors, marker='.', label=label,
+                                          linewidth=self.config.linewidth, fmt=fmt, markersize=self.config.markersize)
+
+                    # Determine key for handle dictionary
+                    if not multi_parameter_sets and multi_phases: key = plot_phase
+                    else: key = parameter_set
 
                     # Add the handle
-                    handles[parameter_set].append(handle)
+                    handles[key].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -3238,6 +3292,10 @@ class ScalingPlotter(Configurable):
         plt.xlim(ticks[0], ticks[-1])
         #plt.ylim(0, 1.1)
 
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+
         # Set grid
         set_grid(self.config)
 
@@ -3252,10 +3310,14 @@ class ScalingPlotter(Configurable):
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "efficiency")
+        pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "efficiency", pa_or_ph)
 
         # Set the plot title
-        if self.config.add_titles: plt.suptitle("Efficiency of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
+        if self.config.add_titles:
+            title = "Efficiency of the " + phase_labels_timing[phase].lower()
+            title = "\n".join(wrap(title, 60))
+            plt.suptitle(title, fontsize=self.config.title_fontsize)
 
         # Determine the path
         if self.config.output is not None: file_path = fs.join(self.config.output, "efficiencies_" + phase + ".pdf")
@@ -3290,13 +3352,14 @@ class ScalingPlotter(Configurable):
         ticks = set()
 
         # Phases for this plot
-        add_phase_to_label = False
-        if phase == "communication" and self.config.split_communication:
-            plot_phases = communication_phases
-            add_phase_to_label = True
+        if phase == "communication" and self.config.split_communication: plot_phases = communication_phases
         else: plot_phases = [phase]
+        multi_phases = len(plot_phases) > 1
 
-        # The plot handles
+        # Check whether we have multiple parameter sets
+        multi_parameter_sets = len(self.timing_data[plot_phases[0]]) > 1
+
+        # The plot handles for the different parameter sets (or phases if there is only one parameter set)
         handles = defaultdict(list)
 
         # Loop over the plot phases
@@ -3334,18 +3397,22 @@ class ScalingPlotter(Configurable):
                     errors *= ncores
 
                     # Determine the label
-                    #if len(self.parameters_timing_left_after_ignored) > 0: label = mode + parameter_set_to_string_for_label(parameter_set, self.different_parameters_timing)
-                    #else: label = mode
                     label = mode
 
                     # Add phase to label
-                    if add_phase_to_label: label += " (" + plot_phase + ")"
+                    if multi_parameter_sets and multi_phases: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this mode
-                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label, linewidth=self.config.linewidth)
+                    fmt = '' if self.config.connect_points else 'o'
+                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label,
+                                          fmt=fmt, linewidth=self.config.linewidth, markersize=self.config.markersize)
+
+                    # Determine key for handle dictionary
+                    if not multi_parameter_sets and multi_phases: key = plot_phase
+                    else: key = parameter_set
 
                     # Add the plot handle
-                    handles[parameter_set].append(handle)
+                    handles[key].append(handle)
 
                     # Add the appropriate ticks
                     ticks |= set(processor_counts)
@@ -3418,6 +3485,10 @@ class ScalingPlotter(Configurable):
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
 
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+
         # Set grid
         set_grid(self.config)
 
@@ -3432,10 +3503,14 @@ class ScalingPlotter(Configurable):
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "CPU-time")
+        pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
+        add_legends(ax, handles, self.different_parameters_timing, self.config, "CPU-time", pa_or_ph)
 
         # Set the plot title
-        if self.config.add_titles: plt.title("Scaling of the total CPU time of the " + phase_labels_timing[phase].lower(), fontsize=self.config.title_fontsize)
+        if self.config.add_titles:
+            title = "Scaling of the total CPU time of the " + phase_labels_timing[phase].lower()
+            title = "\n".join(wrap(title, 60))
+            plt.title(title, fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "cpu_" + phase + ".pdf")
@@ -3471,6 +3546,9 @@ class ScalingPlotter(Configurable):
 
         # Plot handles
         handles = defaultdict(list)
+
+        # Check whether we have multiple parameter sets
+        multi_parameter_sets = len(self.memory_data[phase]) > 1
 
         # Loop over the different parameter sets (different ski files)
         for parameter_set in self.memory_data[phase]:
@@ -3522,7 +3600,9 @@ class ScalingPlotter(Configurable):
                 else: label = mode
 
                 # Plot the data points for this mode
-                handle = plt.errorbar(processor_counts, memories, errors, marker='.', label=label, linewidth=self.config.linewidth)
+                fmt = '' if self.config.connect_points else 'o'
+                handle = plt.errorbar(processor_counts, memories, errors, marker='.', label=label,
+                                      linewidth=self.config.linewidth, fmt=fmt, markersize=12)
 
                 # Add the handle
                 handles[parameter_set].append(handle)
@@ -3537,23 +3617,28 @@ class ScalingPlotter(Configurable):
         ticks = sorted(ticks)
         #ticks.append(ticks[-1] * 2)
 
-        # Plot fit
-        #if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
+        # data model: self.memory_fit_parameters[phase][parameter_set][mode]
 
-            # Plot the fitted curves
-            #fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
-            #for mode in self.memory_fit_parameters[phase]:
+        # Plot the fit
+        if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
 
-                # Get the parameter values
-                #a = self.memory_fit_parameters[phase][mode].a
-                #b = self.memory_fit_parameters[phase][mode].b
-                #c = self.memory_fit_parameters[phase][mode].c
+            # Loop over the parameter sets
+            for parameter_set in self.memory_fit_parameters[phase]:
 
-                # Calculate the fitted memory usages
-                #fit_memories = [modified_memory_scaling(nprocesses_from_mode_single(mode, ncores), a, b, c) for ncores in fit_ncores]
+                # Plot the fitted curves
+                fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                for mode in self.memory_fit_parameters[phase][parameter_set]:
 
-                # Add the plot
-                #plt.plot(fit_ncores, fit_memories, color="grey")
+                    # Get the parameter values
+                    a = self.memory_fit_parameters[phase][parameter_set][mode].a
+                    b = self.memory_fit_parameters[phase][parameter_set][mode].b
+                    c = self.memory_fit_parameters[phase][parameter_set][mode].c
+
+                    # Calculate the fitted memory usages
+                    fit_memories = [modified_memory_scaling(nprocesses_from_mode_single(mode, ncores), a, b, c) for ncores in fit_ncores]
+
+                    # Add the plot
+                    plt.plot(fit_ncores, fit_memories, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -3564,6 +3649,10 @@ class ScalingPlotter(Configurable):
         ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
+
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
 
         # Set grid
         set_grid(self.config)
@@ -3579,10 +3668,13 @@ class ScalingPlotter(Configurable):
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory")
+        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory", "parameters")
 
         # Set the plot title
-        if self.config.add_titles: plt.suptitle("Scaling of the memory usage (per process) of the " + phase_names[phase] + " phase", fontsize=self.config.title_fontsize)
+        if self.config.add_titles:
+            title = "Scaling of the memory usage of the " + phase_names[phase].lower()
+            title = "\n".join(wrap(title, 60))
+            plt.suptitle(title, fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "memory_" + phase + ".pdf")
@@ -3618,6 +3710,9 @@ class ScalingPlotter(Configurable):
 
         # The plot handles
         handles = defaultdict(list)
+
+        # Check whether we have multiple parameter sets
+        multi_parameter_sets = len(self.memory_data[phase]) > 1
 
         # Loop over the different parameter sets (different ski files)
         for parameter_set in self.memory_data[phase]:
@@ -3687,6 +3782,10 @@ class ScalingPlotter(Configurable):
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
 
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+
         # Set grid
         set_grid(self.config)
 
@@ -3701,10 +3800,13 @@ class ScalingPlotter(Configurable):
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory-gain")
+        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory-gain", "parameters")
 
         # Set the plot title
-        if self.config.add_titles: plt.suptitle("Scaling of the memory gain (serial memory usage per process / memory usage per process) of the " + phase_names[phase].lower(), fontsize=self.config.title_fontsize)
+        if self.config.add_titles:
+            title = "Scaling of the memory gain of the " + phase_names[phase].lower()
+            title = "\n".join(wrap(title, 60))
+            plt.suptitle(title, fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "memorygain_" + phase + ".pdf")
@@ -3740,6 +3842,9 @@ class ScalingPlotter(Configurable):
 
         # The plot handles
         handles = defaultdict(list)
+
+        # Check whether we have multiple parameter sets
+        multi_parameter_sets = len(self.memory_data[phase]) > 1
 
         # Loop over the different parameter sets (different ski files)
         for parameter_set in self.memory_data[phase]:
@@ -3797,6 +3902,10 @@ class ScalingPlotter(Configurable):
         #ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
         plt.xlim(ticks[0], ticks[-1])
 
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+
         # Set grid
         set_grid(self.config)
 
@@ -3811,10 +3920,13 @@ class ScalingPlotter(Configurable):
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_memory, self.config, "total-memory")
+        add_legends(ax, handles, self.different_parameters_memory, self.config, "total-memory", "parameters")
 
         # Set the plot title
-        if self.config.add_titles: plt.suptitle("Memory scaling for " + phase_names[phase], fontsize=self.config.title_fontsize)
+        if self.config.add_titles:
+            title = "Memory scaling for " + phase_names[phase].lower()
+            title = "\n".join(wrap(title, 60))
+            plt.suptitle(title, fontsize=self.config.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "totalmemory_" + phase + ".pdf")
@@ -3932,11 +4044,14 @@ class ScalingPlotter(Configurable):
                                                                    totals=True, unordered=True, cpu=True, title=title,
                                                                    rpc='p', add_border=self.config.add_border,
                                                                    label_fontsize=self.config.label_fontsize,
-                                                                   figsize=self.config.figsize)
+                                                                   figsize=self.config.figsize,
+                                                                   title_fontsize=self.config.title_fontsize,
+                                                                   ticks_fontsize=self.config.ticks_fontsize)
                 else: create_timeline_plot(data, ncores_list, plot_file_path,
                                            percentages=self.config.timelines.percentages, totals=True, unordered=True,
                                            cpu=True, title=title, rpc='c', add_border=self.config.add_border,
-                                           label_fontsize=self.config.label_fontsize, figsize=self.config.figsize)
+                                           label_fontsize=self.config.label_fontsize, figsize=self.config.figsize,
+                                           title_fontsize=self.config.title_fontsize, ticks_fontsize=self.config.ticks_fontsize)
 
     # -----------------------------------------------------------------
 
@@ -4683,7 +4798,7 @@ def behaviour_to_function_string(behaviour):
 
 # -----------------------------------------------------------------
 
-def add_legends(ax, handles, different_parameters, config, property):
+def add_legends(ax, handles, different_parameters, config, property, pa_or_ph):
 
     """
     This function ...
@@ -4692,20 +4807,29 @@ def add_legends(ax, handles, different_parameters, config, property):
     :param different_parameters:
     :param config:
     :param property:
+    :param pa_or_ph:
     :return:
     """
 
+    nlegends = len(handles)
+
     if config.legend_below:
 
-        # Shrink current axis's height by 10% on the bottom
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0 + box.height * 0.15, box.width, box.height * 0.85])
+        if nlegends > 1: percentage = 25.
+        else: percentage = 10.
 
-    if properties_behaviour[property] == "ascending":
-        location = "lower right"
-    elif properties_behaviour[property] == "descending":
-        location = "upper right"
-    else: raise RuntimeError("Unkown property: " + property)
+        # Shrink current axis's height by a certain percentage on the bottom
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * percentage/100., box.width, box.height * (100-percentage)/100.])
+
+    # Define inverse transform, transforms display coordinates (pixels) to axes coordinates
+    inv = ax.transAxes.inverted()
+
+    # Find how may pixels there are on the x-axis
+    x_pixels = ax.transAxes.transform((1, 0)) - ax.transAxes.transform((0, 0))
+
+    # Find how many pixels there are on the y-axis
+    y_pixels = ax.transAxes.transform((0, 1)) - ax.transAxes.transform((0, 0))
 
     axbox = ax.get_position()
 
@@ -4715,66 +4839,69 @@ def add_legends(ax, handles, different_parameters, config, property):
     plot_width = axbox.width
     plot_height = axbox.height
 
-    #print(axbox.x0, axbox.y0, plot_width, plot_height)
 
-    nlegends = len(handles)
+    # Generate one legend now to get the dimensions of the legend
+    #legend = plt.legend(handles=handles[handles.keys()[0]], title="dummy title", loc="upper center")
+    #legend_ax = ax.add_artist(legend)
+    #plt.draw()
+
+    #legend.draw()
+    #p = legend.get_window_extent()
+    #print(p)
+
+    #legbounds = legend.get_frame().get_bbox().bounds
+    #print(legbounds)
+
+    #legbox = legend.get_bbox_to_anchor()
+    #legheight = legbox.height
+    #legwidth = legbox.width
+
+    #print()
+    #print(plot_width, plot_height)
+    #print(legwidth, legheight)
+    #print(x_pixels, y_pixels)
+    #print()
 
     # Loop over the parameter sets
-    first_box = None
     height = 0.0
     width = 0.0
-    width_per_legend = 1. / len(handles)
+    width_per_legend = 1. / len(handles) * 1.1
     for index in range(len(handles)):
 
-        # Get the parameter set
+        # Get the parameter set (or phase)
         parameter_set = handles.keys()[index]
 
         # Determine the legend title
-        legend_title = parameter_set_to_string_for_legend(parameter_set, different_parameters)
+        if pa_or_ph == "parameters": legend_title = parameter_set_to_string_for_legend(parameter_set, different_parameters)
+        else: legend_title = phase_names_for_legend[parameter_set].capitalize()
         if legend_title is not None: legend_title =  r"\underline{" + legend_title + "}"
 
         # Create a legend for this parameter set
         if config.legend_below:
 
-            legend = plt.legend(handles=handles[parameter_set], loc="upper center", title=legend_title,
-                                bbox_to_anchor=(0. + width_per_legend * index, -0.05), fancybox=False, shadow=False,
-                                ncol=1)
+            if nlegends > 1:
+                legend = plt.legend(handles=handles[parameter_set], loc="upper center", title=legend_title,
+                                    bbox_to_anchor=(0.2 + width_per_legend * index, -0.15), fancybox=False, shadow=False,
+                                    ncol=1)
+            else:
+                legend = plt.legend(handles=handles[parameter_set], loc="upper center", title=legend_title,
+                                    bbox_to_anchor=(0.5, -0.11), fancybox=False, shadow=False, ncol=2)
 
         elif nlegends > 1:
 
-            #if index == 0:
-            #    loc = location
-            #    legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=loc)
-
-            #if index == 0:
-                #if properties_behaviour
-                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + plot_width, axbox.y0 + y_value))
             if properties_behaviour[property] == "ascending":
-                #height = first_box.height
-                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(first_box.x0, first_box.y0 + height))
-                #upper_right = bbleg2.corners()[3]
-                #legend = plt.legend(handles=handles[parameter_set], title=legend_title,
-                #                    loc='lower right',
-                #                    bbox_to_anchor=list(upper_right),
-                #                    bbox_transform=ax.transAxes)
-                legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + 0.65*plot_width, 0.05 + y_value + index * 0.25 * height))
+                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + 0.65*plot_width, 0.05 + y_value + index * 0.25 * height))
+                legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + plot_width - 0.5*legwidth, 0.5*legheight + y_value + index * 0.25 * height))
             elif properties_behaviour[property] == "descending":
-                #width = first_box.width
-                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(first_box.x0 + width, first_box.y0))
-                #upper_right = bbleg2.corners()[3]
-                #legend = plt.legend(handles=handles[parameter_set], title=legend_title,
-                #                    loc='lower right',
-                #                    bbox_to_anchor=list(upper_right),
-                #                    bbox_transform=ax.transAxes)
-                legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + 0.65*plot_width - index * 0.5 * width, 0.05 + y_value + 0.95 * plot_height))
+                #legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + 0.65*plot_width - index * 0.5 * width, 0.05 + y_value + 0.95 * plot_height))
+                legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc=(axbox.x0 + x_value + plot_width - 0.5*legwidth - index * 0.5 * width, 0.05 + y_value + plot_height - 0.5*legheight))
 
             if index == 0:
                 first_box = legend.axes.get_position()
                 height = first_box.height
                 width = first_box.width
 
-        else:
-            legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc='best')
+        else: legend = plt.legend(handles=handles[parameter_set], title=legend_title, loc='best')
 
         frame = legend.get_frame()
 

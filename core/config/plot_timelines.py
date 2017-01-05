@@ -31,5 +31,6 @@ definition.add_flag("totals", "show totals")
 definition.add_optional("title", "string", "plot title")
 definition.add_flag("add_border", "add plot border")
 definition.add_flag("show_ranks", "show process ranks")
+definition.add_optional("ticks_fontsize", "positive_integer", "fontsize of the axes ticks", default=12)
 
 # -----------------------------------------------------------------

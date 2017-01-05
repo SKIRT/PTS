@@ -796,6 +796,18 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nprocesses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.processes
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def threads(self):
 
@@ -831,6 +843,18 @@ class LogFile(object):
 
         # We should not get here
         raise ValueError("The number of threads could not be determined from the log file")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nthreads(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.threads
 
     # -----------------------------------------------------------------
 

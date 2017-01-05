@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib import rc
+from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from .plotter import Plotter
@@ -27,6 +28,7 @@ from ..extract.timeline import TimeLineExtractor
 from ..basics.configurable import Configurable
 from ..simulation.discover import SimulationDiscoverer
 from ..tools.serialization import write_dict, load_dict, write_list, load_list
+from ..simulation.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -77,6 +79,9 @@ class BatchTimeLinePlotter(Configurable):
 
         # The timelines
         self.timelines = dict()
+
+        # The parallelization schemes
+        self.parallelizations = dict()
 
         # The data
         self.single_data = dict()
@@ -135,7 +140,8 @@ class BatchTimeLinePlotter(Configurable):
             discoverer.run()
 
             # Set the simulations
-            self.simulations = discoverer.simulations_single_ski
+            if self.config.hetero: self.simulations = discoverer.simulations
+            else: self.simulations = discoverer.simulations_single_ski
 
     # -----------------------------------------------------------------
 
@@ -175,6 +181,20 @@ class BatchTimeLinePlotter(Configurable):
 
             # Check whether unique
             if output_path in self.timelines: raise RuntimeError("Multiple simulations have their output in the '" + output_path + "' directory")
+
+            # Get the log file
+            log_file = simulation.log_file
+
+            # Get properties
+            nprocesses = log_file.nprocesses
+            nthreads = log_file.nthreads
+            data_parallel = log_file.data_parallel
+
+            # Create parallelization scheme
+            parallelization = Parallelization.from_processes_and_threads(nprocesses, nthreads, data_parallel=data_parallel)
+
+            # Set the parallelization
+            self.parallelizations[output_path] = parallelization
 
             # Add the timeline
             self.timelines[output_path] = timeline
@@ -405,7 +425,9 @@ class BatchTimeLinePlotter(Configurable):
         self.write_timelines()
 
         # Write the data
-        self.write_data()
+        #self.write_data()
+        # Doesn't work yet:
+        # ValueError: Unrecognized type: <class 'astropy.table.column.MaskedColumn'>
 
     # -----------------------------------------------------------------
 
@@ -491,6 +513,9 @@ class BatchTimeLinePlotter(Configurable):
         # Plot single
         self.plot_single()
 
+        # Plot combined timelines
+        self.plot_combined()
+
         # Plot multi
         if self.has_multi: self.plot_multi()
 
@@ -510,7 +535,7 @@ class BatchTimeLinePlotter(Configurable):
         for output_path in self.single_data:
 
             # Debugging
-            log.debug("Plotting timeline for the " + fs.name(output_path) + " path simulation ...")
+            log.debug("Plotting timeline for the " + fs.name(output_path) + " simulation ...")
 
             # Get the data
             ranks, data = self.single_data[output_path]
@@ -523,7 +548,59 @@ class BatchTimeLinePlotter(Configurable):
             create_timeline_plot(data, ranks, path, figsize=self.config.figsize, percentages=self.config.percentages,
                                  totals=self.config.totals, unordered=False, cpu=False, title=self.config.title,
                                  ylabels=None, yaxis=None, rpc="r", add_border=self.config.add_border,
-                                 show_ranks=self.config.show_ranks, label_fontsize=self.config.label_fontsize)
+                                 show_ranks=self.config.show_ranks, label_fontsize=self.config.label_fontsize,
+                                 ticks_fontsize=self.config.ticks_fontsize)
+
+    # -----------------------------------------------------------------
+
+    def plot_combined(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Combining timelines of different simulations with the same number of processes in the same plot ...")
+
+        # Dictionary
+        output_paths_per_nproc = defaultdict(list)
+
+        # Loop over the data
+        for output_path in self.single_data:
+
+            # Get the number of processes
+            ranks, data = self.single_data[output_path]
+            nproc = len(ranks)
+
+            # Add the output path to the dictionary
+            output_paths_per_nproc[nproc].append(output_path)
+
+        # Loop over the different nprocs
+        for nproc in output_paths_per_nproc:
+
+            # Determine path
+            if self.config.output is not None: path = fs.join(self.config.output, "timelines_" + str(nproc) + "processes.pdf")
+            else: path = fs.join(self.config.path, "timelines_" + str(nproc) + "processes.pdf")
+
+            # Gather the data
+            nproc_dict = dict()
+            data_dict = dict()
+
+            # Loop over the timelines
+            for output_path in output_paths_per_nproc[nproc]:
+
+                #print(output_path)
+                #print(self.single_data)
+
+                # Gather the data
+                nproc_dict[output_path] = self.single_data[output_path][0]
+                data_dict[output_path] = self.single_data[output_path][1]
+
+            # Create the plot
+            create_multiple_timelines_plot(data_dict, nproc_dict, self.parallelizations, path, show_ranks=False,
+                                           title="Timelines for " + str(nproc) + " processes",
+                                           figsize=self.config.figsize, ticks_fontsize=self.config.ticks_fontsize)
 
     # -----------------------------------------------------------------
 
@@ -643,7 +720,7 @@ class TimeLinePlotter(Plotter):
 
 def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentages=False, totals=False, unordered=False,
                          cpu=False, title=None, ylabels=None, yaxis=None, rpc="r", add_border=False, show_ranks=True,
-                         label_fontsize=18):
+                         label_fontsize=18, title_fontsize=20, ticks_fontsize=12):
 
     """
     This function actually plots the timeline based on a data structure containing the starttimes and endtimes
@@ -663,6 +740,8 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     :param add_border:
     :param show_ranks:
     :param label_fontsize:
+    :param title_fontsize:
+    :param ticks_fontsize:
     :return:
     """
 
@@ -739,13 +818,26 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
         #print("YTICKS", yticks)
         #print("PROCRANKS", procranks)
         #plt.yticks(yticks, procranks)
-        if not (rpc == 'r' and not show_ranks):
+        if rpc == 'r':
+            if show_ranks:
+                ax.set_yticks(yticks)
+                ax.set_yticklabels(procranks)
+            else:
+                ax.set_yticks([])
+                ax.set_yticklabels([])
+        else:
             ax.set_yticks(yticks)
             ax.set_yticklabels(procranks)
-
     else:
 
-        if not (rpc == 'r' and not show_ranks):
+        if rpc == 'r':
+            if show_ranks:
+                ax.set_yticks(procranks)
+                ax.set_yticklabels(procranks)
+            else:
+                ax.set_yticks([])
+                ax.set_yticklabels([])
+        else:
             ax.set_yticks(procranks)
             ax.set_yticklabels(procranks)
 
@@ -780,6 +872,10 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     # Custom y axis label
     if yaxis is not None: ax.set_ylabel(yaxis)
 
+    # Set ticks fontsize
+    plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=ticks_fontsize)
+    plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=ticks_fontsize)
+
     if nprocs == 1:
 
         ax.set_frame_on(False)
@@ -795,10 +891,169 @@ def create_timeline_plot(data, procranks, path=None, figsize=(12, 8), percentage
     # Set the plot title
     #if title is None: plt.title("Timeline of the different simulation phases")
     #else: plt.title(title)
-    if title is not None: plt.suptitle(title, fontsize=20)
+    if title is not None: plt.suptitle(title, fontsize=title_fontsize)
 
     # Put a legend below current axis
-    ax.legend(legend_entries, legend_names, loc='upper center', bbox_to_anchor=(0.5, -0.10), fancybox=True, shadow=False, ncol=4, prop={'size': 12})
+    legend = ax.legend(legend_entries, legend_names, loc='upper center', bbox_to_anchor=(0.5, -0.2), fancybox=False, shadow=False, ncol=4, prop={'size': 12})
+
+    # Change legend properties
+    frame = legend.get_frame()
+    frame.set_linewidth(0)
+    frame.set_facecolor('0.85')
+    legend.legendPatch.set_alpha(0.75)
+
+    # Save the figure
+    if path is not None: plt.savefig(path, bbox_inches="tight", pad_inches=0.40)
+    else: plt.show()
+    plt.close()
+
+# -----------------------------------------------------------------
+
+def create_multiple_timelines_plot(data_dict, procranks_dict, parallelization, path=None, figsize=(12, 8), unordered=False,
+                                   cpu=False, title=None, ylabels=None, yaxis=None, add_border=False, show_ranks=True,
+                                   label_fontsize=18, title_fontsize=20, ticks_fontsize=12):
+
+    """
+    This function ...
+    :param data_dict:
+    :param procranks_dict:
+    :param path:
+    :param figsize:
+    :param unordered:
+    :param cpu:
+    :param title:
+    :param ylabels:
+    :param yaxis:
+    :param rpc:
+    :param add_border:
+    :param show_ranks:
+    :param label_fontsize:
+    :param title_fontsize:
+    :param ticks_fontsize:
+    :return:
+    """
+
+    # Initialize figure
+    fig = plt.figure(figsize=figsize)
+    plt.clf()
+
+    ax = plt.gca()
+    fig.subplots_adjust(hspace=0.2)
+
+    #   subplot(211)
+    #produces a subaxes in a figure which represents the top plot (i.e. the
+    #first) in a 2 row by 1 column notional grid
+
+    ntimelines = len(data_dict)
+
+    legend_entries = []
+    legend_names = []
+    unique_phases = []  # A LIST OF THE UNIQUE PHASE NAMES
+
+    shared_axis = None
+    last_axis = None
+    for index in range(ntimelines):
+
+        output_path = data_dict.keys()[index]
+        data = data_dict[output_path]
+
+        # Add subplot
+        subplot_spec = ntimelines * 100 + 10 + index + 1
+        ax = plt.subplot(subplot_spec, sharex=shared_axis)
+
+        # Set x axis grid
+        ax.xaxis.grid(linestyle="dotted", linewidth=2.0)
+
+        # Determine the number of processes
+        procranks = procranks_dict[output_path]
+        nprocs = len(procranks)
+
+        durations_list = []
+        totaldurations = np.zeros(nprocs)
+        patch_handles = []
+
+        # Get the ordering
+        if unordered: yticks = np.array(procranks).argsort().argsort()
+        else: yticks = procranks
+
+        # Make the timeline plot, consisting of a set of bars of the same color for each simulation phase
+        for phase, starttimes, endtimes in data:
+
+            durations = np.array(endtimes) - np.array(starttimes)
+            durations_list.append(durations)
+
+            totaldurations += durations
+
+            patch_handle = ax.barh(yticks, durations, color=colors[phase], align='center', left=starttimes, alpha=0.8, lw=0)
+            patch_handles.append(patch_handle)
+
+            if index == 0:
+                if phase not in unique_phases and not (phase == "comm" and nprocs == 1):
+                    unique_phases.append(phase)
+                    legend_entries.append(patch_handle)
+                    legend_names.append(phase_label_names[phase])
+
+        #plt.plot(t, s1)
+
+        # Set axis limits
+        #ax.set_xlim([xmin, xmax])
+        ax.set_ylim([-0.5, nprocs-0.5])
+
+        # Hide process ranks
+        if not show_ranks:
+            ax.set_yticks([])
+            ax.set_yticklabels([])
+
+        # Set x label
+        if ax.is_last_row(): ax.set_xlabel('Time (s)', fontsize=label_fontsize)
+
+        # Set y label
+        ax.set_ylabel("Processes")
+
+        # Set title
+        if parallelization[output_path].nprocesses > 1:
+            if parallelization[output_path].nthreads > 1:
+                subplot_title = "Hybrid task+data parallelization" if parallelization[output_path].data_parallel else "Hybrid task parallelization"
+            else:
+                subplot_title = "Multiprocessing task+data parallelization" if parallelization[output_path].data_parallel else "Multiprocessing task parallelization"
+        else: subplot_title = None
+        ax.set_title(subplot_title)
+
+        # Set axes tick formatter
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%d'))
+
+        # Remove border if requested
+        if not add_border:
+
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+            ax.tick_params(axis=u'both', which=u'both', length=0)
+
+        if ax.is_last_row():
+            # Set ticks fontsize
+            plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=ticks_fontsize)
+            plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=ticks_fontsize)
+            last_axis = ax
+        else:
+            # make these tick labels invisible
+            plt.setp(ax.get_xticklabels(), visible=False)
+
+        if index == 0: shared_axis = ax
+
+    # Set the plot title
+    if title is not None: plt.suptitle(title, fontsize=title_fontsize)
+
+    # Put a legend below current axis
+    legend = last_axis.legend(legend_entries, legend_names, loc='upper center', bbox_to_anchor=(0.5, -0.2), fancybox=False, shadow=False, ncol=4, prop={'size': 12})
+
+    # Change legend properties
+    frame = legend.get_frame()
+    frame.set_linewidth(0)
+    frame.set_facecolor('0.85')
+    legend.legendPatch.set_alpha(0.75)
 
     # Save the figure
     if path is not None: plt.savefig(path, bbox_inches="tight", pad_inches=0.40)

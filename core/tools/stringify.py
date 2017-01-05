@@ -31,6 +31,7 @@ def stringify(value):
     :return:
     """
 
+    # List or derived from list
     if isinstance(value, list):
 
         strings = []
@@ -48,6 +49,14 @@ def stringify(value):
 
         return ptype + "_list", ",".join(strings)
 
+    # Array or derived from Array
+    elif isinstance(value, np.ndarray):
+
+        ptype, val = stringify_not_list(value[0])
+
+        return ptype + "_array", ",".join([repr(el) for el in value])
+
+    # Tuple or derived from tuple
     elif isinstance(value, tuple):
 
         strings = []
@@ -63,6 +72,7 @@ def stringify(value):
 
         return ptype + "_tuple", ",".join(strings)
 
+    # All other
     else: return stringify_not_list(value)
 
 # -----------------------------------------------------------------

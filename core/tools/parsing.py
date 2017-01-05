@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
+import numpy as np
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -24,6 +25,30 @@ from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
 from ..basics.filter import Filter
+
+# -----------------------------------------------------------------
+
+def integer_array(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return np.array(integer_list(argument))
+
+# -----------------------------------------------------------------
+
+def real_array(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return np.array(real_list(argument))
 
 # -----------------------------------------------------------------
 

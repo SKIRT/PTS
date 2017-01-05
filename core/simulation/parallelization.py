@@ -52,6 +52,18 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @property
+    def nprocesses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.processes
+
+    # -----------------------------------------------------------------
+
+    @property
     def threads(self):
 
         """
@@ -66,6 +78,18 @@ class Parallelization(object):
     # -----------------------------------------------------------------
 
     @property
+    def nthreads(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.threads
+
+    # -----------------------------------------------------------------
+
+    @property
     def cores_per_process(self):
 
         """
@@ -76,6 +100,18 @@ class Parallelization(object):
         corespp = self.cores / self.processes
         assert int(corespp) == corespp
         return int(corespp)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncores_per_process(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cores_per_process
 
     # -----------------------------------------------------------------
 

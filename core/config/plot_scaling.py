@@ -29,6 +29,11 @@ definition.add_optional("data_input", "directory_path", "path to the directory w
 
 definition.add_flag("hybridisation", "plot as a function of number of processes for constant number of cores")
 
+parallelization_modes = ["multithreading", "multiprocessing", "hybrid"]
+definition.add_optional("modes", "string_list", "parallelization modes to plot", choices=parallelization_modes, default=parallelization_modes)
+definition.add_flag("use_task_parallel", "use data from task parallelized simulations in the plots", True)
+definition.add_flag("use_task_data_parallel", "use data from task+data parallelized simulations in the plots", True)
+
 # Input
 definition.add_optional("input", "directorypath_list", "input director(y)(ies)", letter='i')
 
@@ -54,6 +59,9 @@ definition.add_optional("label_fontsize", "positive_integer", "fontsize of the a
 definition.add_flag("add_legend_border", "add border to legend", True)
 definition.add_flag("transparent_background", "transparent background", True)
 definition.add_optional("title_fontsize", "positive_integer", "fontsize of the plot title", default=20)
+definition.add_optional("ticks_fontsize", "positive_integer", "fontsize of the axes ticks", default=12)
+definition.add_optional("markersize", "positive_integer", "size of the data point markers", default=12)
+definition.add_flag("connect_points", "connect data points with lines", True)
 
 # Sigma level for plotting error bars
 definition.add_optional("sigma_level", "real", "sigma level for plotting error bars", 1.0)
