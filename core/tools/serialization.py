@@ -52,13 +52,15 @@ def write_data_tuple_impl(fh, data, indent=""):
         if isinstance(value, list):
 
             #print(indent + "[0] [" + ptype + "]: " + string, file=fh)
-            print(indent + "[" + str(index) + "] [list]:", file=fh)
-            write_list_impl(fh, value, indent=indent + "    ", use_serialization=True)
+            #print(indent + "[" + str(index) + "] [list]:", file=fh)
+            print(indent + "x [list]:", file=fh)
+            write_list_impl(fh, value, indent=indent + "    ")
 
         else:
 
             ptype, string = stringify.stringify(data[index])
-            print(indent + "[" + str(index) + "] [" + ptype + "]: " + string, file=fh)
+            #print(indent + "[" + str(index) + "] [" + ptype + "]: " + string, file=fh)
+            print(indent + "x [" + ptype + "]: " + string, file=fh)
 
 # -----------------------------------------------------------------
 
@@ -228,21 +230,36 @@ def write_list(lst, path):
 
 # -----------------------------------------------------------------
 
-def write_list_impl(listfile, lst, indent="", use_serialization=False):
+def contains_other_lists(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    for element in lst:
+        if isinstance(element, list): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def write_list_impl(listfile, lst, indent=""):
 
     """
     This function ...
     :param listfile:
     :param lst:
     :param indent:
+    :param use_serialization:
     :return:
     """
 
     for element in lst:
 
-        if isinstance(element, list) and use_serialization:
-            write_list_impl(indent + "[list]:")
-            write_list_impl(listfile, element, indent=indent+"    ", use_serialization=True)
+        if isinstance(element, list) and contains_other_lists(element):
+            print(indent + "[list]:", file=listfile)
+            write_list_impl(listfile, element, indent=indent + "    ")
         else:
             ptype, string = stringify.stringify(element)
             listfile.write(indent + "[" + ptype + "] " + string + "\n")
