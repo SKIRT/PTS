@@ -89,6 +89,9 @@ pts_user_config_dir = os.path.join(pts_user_dir, "config")
 # The path to the PTS do directory containing launchable scripts (PTS/pts/do)
 pts_do_dir = os.path.join(pts_package_dir, "do")
 
+# The path to the PTS executable
+pts_executable_path = os.path.join(pts_do_dir, "__main__.py")
+
 # The path to the main directory for a given PTS subproject
 def pts_subproject_dir(subproject): return os.path.join(pts_package_dir, subproject)
 

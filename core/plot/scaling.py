@@ -591,7 +591,7 @@ class ScalingPlotter(Configurable):
         discoverer = SimulationDiscoverer()
         discoverer.config.path = self.config.path
         discoverer.config.directories = self.config.input
-        discoverer.config.list = False
+        discoverer.config.list = self.config.report_simulations
 
         # Run the simulation discoverer
         discoverer.run()
@@ -1268,19 +1268,20 @@ class ScalingPlotter(Configurable):
             if self.config.hybridisation: mode = get_hybridisation_mode(self.timing["Cores"][i], data_parallel)
             else: mode = get_parallelization_mode(processes, threads, data_parallel)
 
-            #print(processes, threads_per_core, cores_per_process, data_parallel, mode)
-
             # Skip certain modes if requested
-            simple_mode = mode.split(" ")[0]
-            if simple_mode not in self.config.modes: continue
+            if not self.config.hybridisation:
 
-            # Skip task+data or task parallel mode if requested
-            if mode.startswith("multiprocessing") or mode.startswith("hybrid"):
+                # Skip certain modes if requested
+                simple_mode = mode.split(" ")[0]
+                if simple_mode not in self.config.modes: continue
 
-                if "task+data" in mode:
-                    if not self.config.use_task_data_parallel: continue
-                else:
-                    if not self.config.use_task_parallel: continue
+                # Skip task+data or task parallel mode if requested
+                if mode.startswith("multiprocessing") or mode.startswith("hybrid"):
+
+                    if "task+data" in mode:
+                        if not self.config.use_task_data_parallel: continue
+                    else:
+                        if not self.config.use_task_parallel: continue
 
             # Get the runtimes per phase
             time_per_phase = dict()
@@ -1384,17 +1385,14 @@ class ScalingPlotter(Configurable):
                             self.memory_data[phase][parameter_set][mode].memory.append(np.mean(memorys[phase][parameter_set][mode][processors]))
                             self.memory_data[phase][parameter_set][mode].errors.append(self.config.sigma_level * np.std(memorys[phase][parameter_set][mode][processors]))
 
-        # Set equivalent timing data
-        if self.needs_timing: self.set_equivalent_timing_data(parameters_modes_processor_counts_dict_timing)
+        # Check whether we have data
+        self.check_data()
 
-        # Set equivalent memory data
-        if self.needs_memory: self.set_equivalent_memory_data(parameters_modes_processor_counts_dict_memory)
+        # Set equivalent data
+        self.set_equivalent_data(parameters_modes_processor_counts_dict_timing, parameters_modes_processor_counts_dict_memory)
 
-        # Set missing serial timing data
-        if self.needs_timing: self.set_missing_serial_timing(parameters_modes_processor_counts_dict_timing)
-
-        # Set missing serial memory data
-        if self.needs_memory: self.set_missing_serial_memory(parameters_modes_processor_counts_dict_memory)
+        # Set missing data
+        self.set_missing_data(parameters_modes_processor_counts_dict_timing, parameters_modes_processor_counts_dict_memory)
 
         # Check coverage of data in the different modes
         self.check_coverage_modes()
@@ -1404,6 +1402,66 @@ class ScalingPlotter(Configurable):
 
         # Set flag
         self.is_prepared = True
+
+    # -----------------------------------------------------------------
+
+    def check_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking whether data is present ...")
+
+        # Check whether we have timing data
+        if self.needs_timing: self.check_timing_data()
+
+        # Check whether we have memory data
+        if self.needs_memory: self.check_memory_data()
+
+    # -----------------------------------------------------------------
+
+    def check_timing_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.timing_data) == 0: raise RuntimeError("We have no timing data")
+
+    # -----------------------------------------------------------------
+
+    def check_memory_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.memory_data) == 0: raise RuntimeError("We have no memory data")
+
+    # -----------------------------------------------------------------
+
+    def set_equivalent_data(self, parameters_modes_processor_counts_dict_timing, parameters_modes_processor_counts_dict_memory):
+
+        """
+        This function ...
+        :param parameters_modes_processor_counts_dict_timing:
+        :param parameters_modes_processor_counts_dict_memory:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting equivalent data ...")
+
+        # Set equivalent timing data
+        if self.needs_timing: self.set_equivalent_timing_data(parameters_modes_processor_counts_dict_timing)
+
+        # Set equivalent memory data
+        if self.needs_memory: self.set_equivalent_memory_data(parameters_modes_processor_counts_dict_memory)
 
     # -----------------------------------------------------------------
 
@@ -1680,6 +1738,26 @@ class ScalingPlotter(Configurable):
         """
 
         return parameter_set in self.serial_timing
+
+    # -----------------------------------------------------------------
+
+    def set_missing_data(self, parameters_modes_processor_counts_dict_timing, parameters_modes_processor_counts_dict_memory):
+
+        """
+        This function ...
+        :param parameters_modes_processor_counts_dict_timing:
+        :param parameters_modes_processor_counts_dict_memory:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting missing data ...")
+
+        # Set missing serial timing data
+        if self.needs_timing: self.set_missing_serial_timing(parameters_modes_processor_counts_dict_timing)
+
+        # Set missing serial memory data
+        if self.needs_memory: self.set_missing_serial_memory(parameters_modes_processor_counts_dict_memory)
 
     # -----------------------------------------------------------------
 
@@ -2738,10 +2816,11 @@ class ScalingPlotter(Configurable):
         plt.clf()
 
         # Set background
-        set_background(plt.gcf(), plt.gca(), self.config)
+        set_background(plt.gcf(), plt.gca(), self.config.plot)
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
+        ticks_ncores = set()
 
         # Phases for this plot
         if phase == "communication" and self.config.split_communication: plot_phases = communication_phases
@@ -2753,6 +2832,10 @@ class ScalingPlotter(Configurable):
 
         # The plot handles for the different parameter sets (or phases if there is only one parameter set)
         handles = defaultdict(list)
+
+        # Set unit for runtimes
+        if self.config.normalize_runtimes: ylabel = "Normalized runtime"
+        else: ylabel = "Runtime (s)"
 
         # Loop over the plot phases
         for plot_phase in plot_phases:
@@ -2774,7 +2857,7 @@ class ScalingPlotter(Configurable):
                 else: serial = None
 
                 # Loop over the different parallelization modes (the different curves)
-                for mode in self.timing_data[plot_phase][parameter_set]:
+                for mode in sorted(self.timing_data[plot_phase][parameter_set].keys()): # sort alphabetically
 
                     # Get the list of processor counts, runtimes and errors
                     processor_counts = self.timing_data[plot_phase][parameter_set][mode].processor_counts
@@ -2783,6 +2866,14 @@ class ScalingPlotter(Configurable):
 
                     # Sort the lists
                     processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
+
+                    # Get the array of x values
+                    if self.config.hybridisation: x_values = processor_counts
+                    # actually, in hybridisation mode,
+                    # processor_counts contains actually the process counts
+                    else:
+                        x_values = get_x_values(processor_counts, mode, self.config.x_quantity)
+                        if x_values is None: continue
 
                     # Normalize runtimes
                     if self.config.normalize_runtimes:
@@ -2816,9 +2907,9 @@ class ScalingPlotter(Configurable):
                     if multi_parameter_sets and multi_phases: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this mode
-                    fmt = '' if self.config.connect_points else 'o'
-                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label,
-                                          linewidth=self.config.linewidth, fmt=fmt, markersize=self.config.markersize)
+                    fmt = '' if self.config.plot.connect_points else 'o'
+                    handle = plt.errorbar(x_values, times, errors, marker='.', label=label,
+                                          linewidth=self.config.plot.linewidth, fmt=fmt, markersize=self.config.plot.markersize)
 
                     # Determine key for handle dictionary
                     if not multi_parameter_sets and multi_phases: key = plot_phase
@@ -2828,14 +2919,16 @@ class ScalingPlotter(Configurable):
                     handles[key].append(handle)
 
                     # Add the appropriate ticks
-                    ticks |= set(processor_counts)
+                    ticks |= set(x_values)
+                    ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads) and the y axis (time)
-        if self.config.xlog: plt.xscale('log')
-        if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale('log')
+        if self.config.plot.xlog: plt.xscale('log')
+        if self.config.plot.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale('log')
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
+        ticks_ncores = sorted(ticks_ncores)
         #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
@@ -2856,10 +2949,10 @@ class ScalingPlotter(Configurable):
                     serial = Quantity(serial_time, serial_error)
 
                     # Calculate the ideal runtimes
-                    runtimes = [serial.value / ncores for ncores in ticks]
+                    runtimes = [serial.value / ncores for ncores in ticks_ncores]
 
                     # Plot the line
-                    plt.plot(ticks, runtimes, linestyle='--', linewidth=self.config.linewidth)
+                    plt.plot(ticks, runtimes, linestyle='--', linewidth=self.config.plot.linewidth)
 
             # Plot the fit
             if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
@@ -2873,7 +2966,8 @@ class ScalingPlotter(Configurable):
                     # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
                     #reference_ncores = self.serial_timing_ncores[phase]
 
-                    fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_x_values = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_ncores = np.logspace(np.log10(ticks_ncores[0]), np.log10(ticks_ncores[-1]), 50)
                     for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
 
                         # Get the parameter values
@@ -2886,7 +2980,7 @@ class ScalingPlotter(Configurable):
                         fit_times = [fit_function(n, *parameters) for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_times, color="grey", linewidth=self.config.linewidth)
+                        plt.plot(fit_x_values, fit_times, color="grey", linewidth=self.config.plot.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -2903,33 +2997,31 @@ class ScalingPlotter(Configurable):
         plt.xlim(ticks[0], ticks[-1])
 
         # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Set grid
-        set_grid(self.config)
+        set_grid(self.config.plot)
 
         # Set borders
-        set_borders(ax, self.config)
+        set_borders(ax, self.config.plot)
 
         # Add axis labels
-        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
-        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
-        plt.ylabel("Runtime (s)", fontsize=self.config.label_fontsize)
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.plot.label_fontsize)
+        else: plt.xlabel("Number of " + self.config.x_quantity, fontsize=self.config.plot.label_fontsize)
+        plt.ylabel(ylabel, fontsize=self.config.plot.label_fontsize)
 
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        print(multi_parameter_sets)
-        print(multi_phases)
         pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "runtime", pa_or_ph)
+        add_legends(ax, handles, self.different_parameters_timing, self.config.plot, "runtime", pa_or_ph)
 
         # Set the plot title
-        if self.config.add_titles:
+        if self.config.plot.add_titles:
             title = "Scaling of the " + phase_labels_timing[phase].lower()
             title = "\n".join(wrap(title, 60))
-            plt.suptitle(title, fontsize=self.config.title_fontsize)
+            plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Set file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "runtimes_" + phase + ".pdf")
@@ -2954,14 +3046,15 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the speedups for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.figsize)
+        plt.figure(figsize=self.config.plot.figsize)
         plt.clf()
 
         # Set background
-        set_background(plt.gcf(), plt.gca(), self.config)
+        set_background(plt.gcf(), plt.gca(), self.config.plot)
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
+        ticks_ncores = set()
 
         # Keep track of the minimal and maximal speedup
         speedup_range = RealRange.zero()
@@ -2995,7 +3088,7 @@ class ScalingPlotter(Configurable):
                 serial = Quantity(serial_time, serial_error)
 
                 # Loop over the different parallelization modes (the different curves)
-                for mode in self.timing_data[plot_phase][parameter_set]:
+                for mode in sorted(self.timing_data[plot_phase][parameter_set].keys()): # sort alphabetically
 
                     # Get the list of processor counts, runtimes and errors
                     processor_counts = self.timing_data[plot_phase][parameter_set][mode].processor_counts
@@ -3004,6 +3097,14 @@ class ScalingPlotter(Configurable):
 
                     # Sort the lists
                     processor_counts, times, errors = sort_lists(processor_counts, times, errors, to_arrays=True)
+
+                    # Get the array of x values
+                    if self.config.hybridisation: x_values = processor_counts
+                    # actually, in hybridisation mode,
+                    # processor_counts contains actually the process counts
+                    else:
+                        x_values = get_x_values(processor_counts, mode, self.config.x_quantity)
+                        if x_values is None: continue
 
                     # Calculate the speedups and the errors on the speedups
                     speedups = []
@@ -3046,9 +3147,9 @@ class ScalingPlotter(Configurable):
                     if np.all(speedups == 0): continue
 
                     # Plot the data points for this curve
-                    fmt = '' if self.config.connect_points else 'o'
-                    handle = plt.errorbar(processor_counts, speedups, speedup_errors, marker='.', label=label,
-                                          linewidth=self.config.linewidth, fmt=fmt, markersize=self.config.markersize)
+                    fmt = '' if self.config.plot.connect_points else 'o'
+                    handle = plt.errorbar(x_values, speedups, speedup_errors, marker='.', label=label,
+                                          linewidth=self.config.plot.linewidth, fmt=fmt, markersize=self.config.plot.markersize)
 
                     # Determine key for handle dictionary
                     if not multi_parameter_sets and multi_phases: key = plot_phase
@@ -3058,11 +3159,12 @@ class ScalingPlotter(Configurable):
                     handles[key].append(handle)
 
                     # Add the appropriate ticks
-                    ticks |= set(processor_counts)
+                    ticks |= set(x_values)
+                    ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for both axes
-        if self.config.xlog: plt.xscale('log')
-        if self.config.ylog: plt.yscale('log')
+        if self.config.plot.xlog: plt.xscale('log')
+        if self.config.plot.ylog: plt.yscale('log')
 
         # No data points
         if len(ticks) == 0:
@@ -3071,6 +3173,7 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
+        ticks_ncores = sorted(ticks_ncores)
         #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
@@ -3085,7 +3188,8 @@ class ScalingPlotter(Configurable):
                     # Get the fit function
                     fit_function = self.timing_fit_functions[plot_phase][parameter_set]
 
-                    fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_x_values = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_ncores = np.logspace(np.log10(ticks_ncores[0]), np.log10(ticks_ncores[-1]), 50)
                     for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
 
                         # Get the parameter values
@@ -3098,7 +3202,7 @@ class ScalingPlotter(Configurable):
                         fit_speedups = [serial.value / fit_function(n, *parameters) for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_speedups, color="grey", linewidth=self.config.linewidth)
+                        plt.plot(fit_x_values, fit_speedups, color="grey", linewidth=self.config.plot.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -3113,32 +3217,32 @@ class ScalingPlotter(Configurable):
         plt.ylim(speedup_range.min, speedup_range.max)
 
         # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Set grid
-        set_grid(self.config)
+        set_grid(self.config.plot)
 
         # Set borders
-        set_borders(ax, self.config)
+        set_borders(ax, self.config.plot)
 
         # Add axis labels
-        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
-        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
-        plt.ylabel("Speedup", fontsize=self.config.label_fontsize)
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.plot.label_fontsize)
+        else: plt.xlabel("Number of " + self.config.x_quantity, fontsize=self.config.plot.label_fontsize)
+        plt.ylabel("Speedup", fontsize=self.config.plot.label_fontsize)
 
         # Plot a line that denotes linear scaling (speedup = nthreads)
-        if not self.config.hybridisation and phase in parallel_phases: plt.plot(ticks, ticks, linestyle='--', linewidth=self.config.linewidth)
+        if not self.config.hybridisation and phase in parallel_phases: plt.plot(ticks, ticks, linestyle='--', linewidth=self.config.plot.linewidth)
 
         # Add the legends
         pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "speedup", pa_or_ph)
+        add_legends(ax, handles, self.different_parameters_timing, self.config.plot, "speedup", pa_or_ph)
 
         # Set the plot title
-        if self.config.add_titles:
+        if self.config.plot.add_titles:
             title = "Speedup of the " + phase_labels_timing[phase].lower()
             title = "\n".join(wrap(title, 60))
-            plt.suptitle(title, fontsize=self.config.title_fontsize)
+            plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Set file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "speedups_" + phase + ".pdf")
@@ -3165,14 +3269,15 @@ class ScalingPlotter(Configurable):
         log.info("Calculating and plotting the efficiencies for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.figsize)
+        plt.figure(figsize=self.config.plot.figsize)
         plt.clf()
 
         # Set background
-        set_background(plt.gcf(), plt.gca(), self.config)
+        set_background(plt.gcf(), plt.gca(), self.config.plot)
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
+        ticks_ncores = set()
 
         # Phases for this plot
         if phase == "communication" and self.config.split_communication: plot_phases = communication_phases
@@ -3204,7 +3309,7 @@ class ScalingPlotter(Configurable):
                 serial_ncores = self.serial_timing_ncores[parameter_set][plot_phase] if plot_phase in self.serial_timing_ncores[parameter_set] else 1
 
                 # Loop over the different parallelization modes (the different curves)
-                for mode in self.timing_data[plot_phase][parameter_set]:
+                for mode in sorted(self.timing_data[plot_phase][parameter_set].keys()): # sort alphabetically
 
                     # Get the list of processor counts, runtimes and errors
                     processor_counts = self.timing_data[plot_phase][parameter_set][mode].processor_counts
@@ -3217,6 +3322,14 @@ class ScalingPlotter(Configurable):
                     # Get array of number of used cores
                     if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
                     else: ncores = processor_counts
+
+                    # Get the array of x values
+                    if self.config.hybridisation: x_values = processor_counts
+                    # actually, in hybridisation mode,
+                    # processor_counts contains actually the process counts
+                    else:
+                        x_values = get_x_values(processor_counts, mode, self.config.x_quantity)
+                        if x_values is None: continue
 
                     # Calculate the efficiencies and the errors on the efficiencies
                     efficiencies = []
@@ -3242,9 +3355,9 @@ class ScalingPlotter(Configurable):
                     if multi_parameter_sets and multi_phases: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this curve
-                    fmt = '' if self.config.connect_points else 'o'
-                    handle = plt.errorbar(processor_counts, efficiencies, efficiency_errors, marker='.', label=label,
-                                          linewidth=self.config.linewidth, fmt=fmt, markersize=self.config.markersize)
+                    fmt = '' if self.config.plot.connect_points else 'o'
+                    handle = plt.errorbar(x_values, efficiencies, efficiency_errors, marker='.', label=label,
+                                          linewidth=self.config.plot.linewidth, fmt=fmt, markersize=self.config.plot.markersize)
 
                     # Determine key for handle dictionary
                     if not multi_parameter_sets and multi_phases: key = plot_phase
@@ -3254,13 +3367,16 @@ class ScalingPlotter(Configurable):
                     handles[key].append(handle)
 
                     # Add the appropriate ticks
-                    ticks |= set(processor_counts)
+                    ticks |= set(x_values)
+                    ticks_ncores |= set(processor_counts)
 
         # Use a logaritmic scale for the x axis (nthreads)
-        if self.config.xlog: plt.xscale('log')
+        if self.config.plot.xlog: plt.xscale('log')
+        if self.config.plot.ylog: log.warning("Not using y log scale for efficieny plots")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
+        ticks_ncores = sorted(ticks_ncores)
         #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
@@ -3275,7 +3391,8 @@ class ScalingPlotter(Configurable):
                     # Get the fit function
                     fit_function = self.timing_fit_functions[plot_phase][parameter_set]
 
-                    fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_x_values = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_ncores = np.logspace(np.log10(ticks_ncores[0]), np.log10(ticks_ncores[-1]), 50)
                     for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
 
                         # Get the parameter values
@@ -3288,7 +3405,7 @@ class ScalingPlotter(Configurable):
                         fit_efficiencies = [serial.value / fit_function(n, *parameters) / n for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_efficiencies, color="grey", linewidth=self.config.linewidth)
+                        plt.plot(fit_x_values, fit_efficiencies, color="grey", linewidth=self.config.plot.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -3303,31 +3420,31 @@ class ScalingPlotter(Configurable):
         #plt.ylim(0, 1.1)
 
         # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Set grid
-        set_grid(self.config)
+        set_grid(self.config.plot)
 
         # Set borders
-        set_borders(ax, self.config)
+        set_borders(ax, self.config.plot)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
-        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
-        plt.ylabel("Efficiency", fontsize=self.config.label_fontsize)
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.plot.label_fontsize)
+        else: plt.xlabel("Number of " + self.config.x_quantity, fontsize=self.config.plot.label_fontsize)
+        plt.ylabel("Efficiency", fontsize=self.config.plot.label_fontsize)
 
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
         pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "efficiency", pa_or_ph)
+        add_legends(ax, handles, self.different_parameters_timing, self.config.plot, "efficiency", pa_or_ph)
 
         # Set the plot title
-        if self.config.add_titles:
+        if self.config.plot.add_titles:
             title = "Efficiency of the " + phase_labels_timing[phase].lower()
             title = "\n".join(wrap(title, 60))
-            plt.suptitle(title, fontsize=self.config.title_fontsize)
+            plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine the path
         if self.config.output is not None: file_path = fs.join(self.config.output, "efficiencies_" + phase + ".pdf")
@@ -3352,14 +3469,15 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the CPU times for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.figsize)
+        plt.figure(figsize=self.config.plot.figsize)
         plt.clf()
 
         # Set background
-        set_background(plt.gcf(), plt.gca(), self.config)
+        set_background(plt.gcf(), plt.gca(), self.config.plot)
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
+        ticks_ncores = set()
 
         # Phases for this plot
         if phase == "communication" and self.config.split_communication: plot_phases = communication_phases
@@ -3385,7 +3503,7 @@ class ScalingPlotter(Configurable):
                 log.debug("Plotting the CPU times for the " + phase_names[plot_phase] + " for the simulations with parameters: " + parameter_set_to_string_inline(parameter_set, self.different_parameters_timing))
 
                 # Loop over the different parallelization modes (the different curves)
-                for mode in self.timing_data[plot_phase][parameter_set]:
+                for mode in sorted(self.timing_data[plot_phase][parameter_set].keys()): # sort alphabetically
 
                     # Get the list of processor counts, runtimes and errors
                     processor_counts = self.timing_data[plot_phase][parameter_set][mode].processor_counts
@@ -3398,6 +3516,14 @@ class ScalingPlotter(Configurable):
                     # Get array of number of used cores
                     if self.config.hybridisation: ncores = np.ones(len(processor_counts)) * int(mode.split(" cores")[0])
                     else: ncores = processor_counts
+
+                    # Get the array of x values
+                    if self.config.hybridisation: x_values = processor_counts
+                    # actually, in hybridisation mode,
+                    # processor_counts contains actually the process counts
+                    else:
+                        x_values = get_x_values(processor_counts, mode, self.config.x_quantity)
+                        if x_values is None: continue
 
                     # Get list of process count
                     #processes = nprocesses_from_mode(mode, processor_counts)
@@ -3413,9 +3539,9 @@ class ScalingPlotter(Configurable):
                     if multi_parameter_sets and multi_phases: label += " (" + plot_phase + ")"
 
                     # Plot the data points for this mode
-                    fmt = '' if self.config.connect_points else 'o'
-                    handle = plt.errorbar(processor_counts, times, errors, marker='.', label=label,
-                                          fmt=fmt, linewidth=self.config.linewidth, markersize=self.config.markersize)
+                    fmt = '' if self.config.plot.connect_points else 'o'
+                    handle = plt.errorbar(x_values, times, errors, marker='.', label=label,
+                                          fmt=fmt, linewidth=self.config.plot.linewidth, markersize=self.config.plot.markersize)
 
                     # Determine key for handle dictionary
                     if not multi_parameter_sets and multi_phases: key = plot_phase
@@ -3425,14 +3551,16 @@ class ScalingPlotter(Configurable):
                     handles[key].append(handle)
 
                     # Add the appropriate ticks
-                    ticks |= set(processor_counts)
+                    ticks |= set(x_values)
+                    ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
-        if self.config.xlog: plt.xscale("log")
-        if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale("log")
+        if self.config.plot.xlog: plt.xscale("log")
+        if self.config.plot.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale("log")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
+        ticks_ncores = sorted(ticks_ncores)
         #ticks.append(ticks[-1] * 2)
 
         # Loop over the plot phases
@@ -3453,10 +3581,10 @@ class ScalingPlotter(Configurable):
                     serial = Quantity(serial_time, serial_error)
 
                     # Calculate the ideal runtimes
-                    runtimes = [serial.value] * len(ticks)
+                    runtimes = [serial.value] * len(ticks_ncores)
 
                     # Plot the line
-                    plt.plot(ticks, runtimes, linestyle='--', linewidth=self.config.linewidth)
+                    plt.plot(ticks, runtimes, linestyle='--', linewidth=self.config.plot.linewidth)
 
             # Plot the fit
             if not self.config.hybridisation and self.config.fit and self.config.fitting.plot_fit:
@@ -3470,7 +3598,8 @@ class ScalingPlotter(Configurable):
                     # Get the number of processers taken as the reference for normalization, and thus calculation of the speedups and as reference for the fit
                     # reference_ncores = self.serial_timing_ncores[phase]
 
-                    fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_x_values = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                    fit_ncores = np.logspace(np.log10(ticks_ncores[0]), np.log10(ticks_ncores[-1]), 50)
                     for mode in self.timing_fit_parameters[plot_phase][parameter_set]:
 
                         # Get the parameter values
@@ -3483,7 +3612,7 @@ class ScalingPlotter(Configurable):
                         fit_times = [fit_function(n, *parameters) * n for n in fit_ncores]
 
                         # Add the plot
-                        plt.plot(fit_ncores, fit_times, color="grey", linewidth=self.config.linewidth)
+                        plt.plot(fit_x_values, fit_times, color="grey", linewidth=self.config.plot.linewidth)
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -3496,31 +3625,31 @@ class ScalingPlotter(Configurable):
         plt.xlim(ticks[0], ticks[-1])
 
         # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Set grid
-        set_grid(self.config)
+        set_grid(self.config.plot)
 
         # Set borders
-        set_borders(ax, self.config)
+        set_borders(ax, self.config.plot)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
-        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
-        plt.ylabel("CPU time (s)", fontsize=self.config.label_fontsize)
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.plot.label_fontsize)
+        else: plt.xlabel("Number of " + self.config.x_quantity, fontsize=self.config.plot.label_fontsize)
+        plt.ylabel("CPU time (s)", fontsize=self.config.plot.label_fontsize)
 
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
         pa_or_ph = "phases" if not multi_parameter_sets and multi_phases else "parameters"
-        add_legends(ax, handles, self.different_parameters_timing, self.config, "CPU-time", pa_or_ph)
+        add_legends(ax, handles, self.different_parameters_timing, self.config.plot, "CPU-time", pa_or_ph)
 
         # Set the plot title
         if self.config.add_titles:
             title = "Scaling of the total CPU time of the " + phase_labels_timing[phase].lower()
             title = "\n".join(wrap(title, 60))
-            plt.title(title, fontsize=self.config.title_fontsize)
+            plt.title(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "cpu_" + phase + ".pdf")
@@ -3545,14 +3674,15 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the memory scaling for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.figsize)
+        plt.figure(figsize=self.config.plot.figsize)
         plt.clf()
 
         # Set background
-        set_background(plt.gcf(), plt.gca(), self.config)
+        set_background(plt.gcf(), plt.gca(), self.config.plot)
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
+        ticks_ncores = set()
 
         # Plot handles
         handles = defaultdict(list)
@@ -3574,7 +3704,7 @@ class ScalingPlotter(Configurable):
             else: serial = None
 
             # Loop over the different parallelization modes (the different curves)
-            for mode in self.memory_data[phase][parameter_set]:
+            for mode in sorted(self.memory_data[phase][parameter_set].keys()): # sort alphabetically
 
                 # Get the list of processor counts, runtimes and errors
                 processor_counts = self.memory_data[phase][parameter_set][mode].processor_counts
@@ -3583,6 +3713,14 @@ class ScalingPlotter(Configurable):
 
                 # Sort the lists
                 processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
+
+                # Get the array of x values
+                if self.config.hybridisation: x_values = processor_counts
+                # actually, in hybridisation mode,
+                # processor_counts contains actually the process counts
+                else:
+                    x_values = get_x_values(processor_counts, mode, self.config.x_quantity)
+                    if x_values is None: continue
 
                 # Calculate the gains and the errors on the gains
                 if self.config.normalize_memory:
@@ -3610,21 +3748,23 @@ class ScalingPlotter(Configurable):
                 else: label = mode
 
                 # Plot the data points for this mode
-                fmt = '' if self.config.connect_points else 'o'
-                handle = plt.errorbar(processor_counts, memories, errors, marker='.', label=label,
-                                      linewidth=self.config.linewidth, fmt=fmt, markersize=12)
+                fmt = '' if self.config.plot.connect_points else 'o'
+                handle = plt.errorbar(x_values, memories, errors, marker='.', label=label,
+                                      linewidth=self.config.plot.linewidth, fmt=fmt, markersize=12)
 
                 # Add the handle
                 handles[parameter_set].append(handle)
 
                 # Add the appropriate ticks
-                ticks |= set(processor_counts)
+                ticks |= set(x_values)
+                ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
         plt.xscale('log')
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
+        ticks_ncores = sorted(ticks_ncores)
         #ticks.append(ticks[-1] * 2)
 
         # data model: self.memory_fit_parameters[phase][parameter_set][mode]
@@ -3636,7 +3776,8 @@ class ScalingPlotter(Configurable):
             for parameter_set in self.memory_fit_parameters[phase]:
 
                 # Plot the fitted curves
-                fit_ncores = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                fit_x_values = np.logspace(np.log10(ticks[0]), np.log10(ticks[-1]), 50)
+                fit_ncores = np.logspace(np.log10(ticks_ncores[0]), np.log10(ticks_ncores[-1]), 50)
                 for mode in self.memory_fit_parameters[phase][parameter_set]:
 
                     # Get the parameter values
@@ -3648,7 +3789,7 @@ class ScalingPlotter(Configurable):
                     fit_memories = [modified_memory_scaling(nprocesses_from_mode_single(mode, ncores), a, b, c) for ncores in fit_ncores]
 
                     # Add the plot
-                    plt.plot(fit_ncores, fit_memories, color="grey")
+                    plt.plot(fit_x_values, fit_memories, color="grey")
 
         # Format the axis ticks and create a grid
         ax = plt.gca()
@@ -3661,30 +3802,30 @@ class ScalingPlotter(Configurable):
         plt.xlim(ticks[0], ticks[-1])
 
         # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Set grid
-        set_grid(self.config)
+        set_grid(self.config.plot)
 
         # Set borders
-        set_borders(ax, self.config)
+        set_borders(ax, self.config.plot)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
-        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
-        plt.ylabel("Memory usage per process (GB)", fontsize=self.config.label_fontsize)
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.plot.label_fontsize)
+        else: plt.xlabel("Number of " + self.config.x_quantity, fontsize=self.config.plot.label_fontsize)
+        plt.ylabel("Memory usage per process (GB)", fontsize=self.config.plot.label_fontsize)
 
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory", "parameters")
+        add_legends(ax, handles, self.different_parameters_memory, self.config.plot, "memory", "parameters")
 
         # Set the plot title
-        if self.config.add_titles:
+        if self.config.plot.add_titles:
             title = "Scaling of the memory usage of the " + phase_names[phase].lower()
             title = "\n".join(wrap(title, 60))
-            plt.suptitle(title, fontsize=self.config.title_fontsize)
+            plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "memory_" + phase + ".pdf")
@@ -3709,14 +3850,15 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the memory gain scaling for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.figsize)
+        plt.figure(figsize=self.config.plot.figsize)
         plt.clf()
 
         # Set background
-        set_background(plt.gcf(), plt.gca(), self.config)
+        set_background(plt.gcf(), plt.gca(), self.config.plot)
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
+        ticks_ncores = set()
 
         # The plot handles
         handles = defaultdict(list)
@@ -3736,7 +3878,7 @@ class ScalingPlotter(Configurable):
             serial = Quantity(serial_memory, serial_error)
 
             # Loop over the different parallelization modes (the different curves)
-            for mode in self.memory_data[phase][parameter_set]:
+            for mode in sorted(self.memory_data[phase][parameter_set].keys()): # sort alphabetically
 
                 # Get the list of processor counts, runtimes and errors
                 processor_counts = self.memory_data[phase][parameter_set][mode].processor_counts
@@ -3745,6 +3887,14 @@ class ScalingPlotter(Configurable):
 
                 # Sort the lists
                 processor_counts, memories, errors = sort_lists(processor_counts, memories, errors, to_arrays=True)
+
+                # Get the array of x values
+                if self.config.hybridisation: x_values = processor_counts
+                # actually, in hybridisation mode,
+                # processor_counts contains actually the process counts
+                else:
+                    x_values = get_x_values(processor_counts, mode, self.config.x_quantity)
+                    if x_values is None: continue
 
                 # Calculate the gains and the errors on the gains
                 gains = []
@@ -3766,13 +3916,14 @@ class ScalingPlotter(Configurable):
                 else: label = mode
 
                 # Plot the data points for this mode
-                handle = plt.errorbar(processor_counts, gains, gain_errors, marker='.', label=label, linewidth=self.config.linewidth)
+                handle = plt.errorbar(x_values, gains, gain_errors, marker='.', label=label, linewidth=self.config.plot.linewidth)
 
                 # Add the handle
                 handles[parameter_set].append(handle)
 
                 # Add the appropriate ticks
-                ticks |= set(processor_counts)
+                ticks |= set(x_values)
+                ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
         plt.xscale("log")
@@ -3780,6 +3931,7 @@ class ScalingPlotter(Configurable):
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
+        ticks_ncores = sorted(ticks_ncores)
         #ticks.append(ticks[-1] * 2)
 
         # Format the axis ticks and create a grid
@@ -3793,30 +3945,30 @@ class ScalingPlotter(Configurable):
         plt.xlim(ticks[0], ticks[-1])
 
         # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Set grid
-        set_grid(self.config)
+        set_grid(self.config.plot)
 
         # Set borders
-        set_borders(ax, self.config)
+        set_borders(ax, self.config.plot)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
-        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
-        plt.ylabel("Memory gain", fontsize=self.config.label_fontsize)
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.plot.label_fontsize)
+        else: plt.xlabel("Number of " + self.config.x_quantity, fontsize=self.config.plot.label_fontsize)
+        plt.ylabel("Memory gain", fontsize=self.config.plot.label_fontsize)
 
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_memory, self.config, "memory-gain", "parameters")
+        add_legends(ax, handles, self.different_parameters_memory, self.config.plot, "memory-gain", "parameters")
 
         # Set the plot title
-        if self.config.add_titles:
+        if self.config.plot.add_titles:
             title = "Scaling of the memory gain of the " + phase_names[phase].lower()
             title = "\n".join(wrap(title, 60))
-            plt.suptitle(title, fontsize=self.config.title_fontsize)
+            plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "memorygain_" + phase + ".pdf")
@@ -3841,14 +3993,15 @@ class ScalingPlotter(Configurable):
         log.info("Plotting the total memory scaling (all processes combined) for the " + phase_names[phase] + " ...")
 
         # Initialize figure with the appropriate size
-        plt.figure(figsize=self.config.figsize)
+        plt.figure(figsize=self.config.plot.figsize)
         plt.clf()
 
         # Set background
-        set_background(plt.gcf(), plt.gca(), self.config)
+        set_background(plt.gcf(), plt.gca(), self.config.plot)
 
         # Create a set that stores the tick labels for the plot
         ticks = set()
+        ticks_ncores = set()
 
         # The plot handles
         handles = defaultdict(list)
@@ -3863,7 +4016,7 @@ class ScalingPlotter(Configurable):
             if parameter_set in self.ignore_parameter_sets_memory: continue
 
             # Loop over the different parallelization modes (the different curves)
-            for mode in self.memory_data[phase][parameter_set]:
+            for mode in sorted(self.memory_data[phase][parameter_set].keys()): # sort alphabetically
 
                 # Get the list of processor counts, runtimes and errors
                 processor_counts = self.memory_data[phase][parameter_set][mode].processor_counts
@@ -3877,6 +4030,14 @@ class ScalingPlotter(Configurable):
                 if self.config.hybridisation: processes = processor_counts
                 else: processes = nprocesses_from_mode(mode, processor_counts)
 
+                # Get the array of x values
+                if self.config.hybridisation: x_values = processor_counts
+                # actually, in hybridisation mode,
+                # processor_counts contains actually the process counts
+                else:
+                    x_values = get_x_values(processor_counts, mode, self.config.x_quantity)
+                    if x_values is None: continue
+
                 # Multiply the memory usage for each processor count with the corresponding number of processes (to get the total)
                 memories *= processes
                 errors *= processes
@@ -3886,13 +4047,14 @@ class ScalingPlotter(Configurable):
                 else: label = mode
 
                 # Plot the data points for this mode
-                handle = plt.errorbar(processor_counts, memories, errors, marker='.', label=label, linewidth=self.config.linewidth)
+                handle = plt.errorbar(x_values, memories, errors, marker='.', label=label, linewidth=self.config.plot.linewidth)
 
                 # Add the plot handle
                 handles[parameter_set].append(handle)
 
                 # Add the appropriate ticks
-                ticks |= set(processor_counts)
+                ticks |= set(x_values)
+                ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
         plt.xscale("log")
@@ -3913,30 +4075,30 @@ class ScalingPlotter(Configurable):
         plt.xlim(ticks[0], ticks[-1])
 
         # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.ticks_fontsize)
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Set grid
-        set_grid(self.config)
+        set_grid(self.config.plot)
 
         # Set borders
-        set_borders(ax, self.config)
+        set_borders(ax, self.config.plot)
 
         # Add axis labels and a legend
-        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.label_fontsize)
-        else: plt.xlabel("Number of cores", fontsize=self.config.label_fontsize)
-        plt.ylabel("Total memory usage (all processes) (GB)", fontsize=self.config.label_fontsize)
+        if self.config.hybridisation: plt.xlabel("Number of processes", fontsize=self.config.plot.label_fontsize)
+        else: plt.xlabel("Number of " + self.config.x_quantity, fontsize=self.config.plot.label_fontsize)
+        plt.ylabel("Total memory usage (all processes) (GB)", fontsize=self.config.plot.label_fontsize)
 
         # Add the legends
         # if self.config.hybridisation: plt.legend(title="Number of cores")
         # else: plt.legend(title="Parallelization modes")
-        add_legends(ax, handles, self.different_parameters_memory, self.config, "total-memory", "parameters")
+        add_legends(ax, handles, self.different_parameters_memory, self.config.plot, "total-memory", "parameters")
 
         # Set the plot title
-        if self.config.add_titles:
+        if self.config.plot.add_titles:
             title = "Memory scaling for " + phase_names[phase].lower()
             title = "\n".join(wrap(title, 60))
-            plt.suptitle(title, fontsize=self.config.title_fontsize)
+            plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path
         if self.config.output is not None: file_path = fs.join(self.config.output, "totalmemory_" + phase + ".pdf")
@@ -3969,7 +4131,7 @@ class ScalingPlotter(Configurable):
             log.debug("Plotting the scaling timeline for " + parameter_set_to_string_inline(parameter_set, self.different_parameters_timing) + " ...")
 
             # Loop over the different parallelization modes
-            for mode in self.timing_data["total"][parameter_set]:
+            for mode in sorted(self.timing_data["total"][parameter_set].keys()): # sort alphabetically
 
                 # Determine plot path
                 if self.config.output is not None: plot_file_path = fs.join(self.config.output, "timeline" + parameter_set_to_string_for_filename(parameter_set, self.different_parameters_timing) + "_" + mode + ".pdf")
@@ -4045,23 +4207,23 @@ class ScalingPlotter(Configurable):
                     add_timeline_row(data, setup_time, stellar_time, spectra_time, dust_time, writing_time, waiting_time, communication_time)
 
                 # Set the plot title
-                if self.config.add_titles: title = "Scaling timeline"
+                if self.config.plot.add_titles: title = "Scaling timeline"
                 else: title = None
 
                 # Create the plot
                 if self.config.hybridisation: create_timeline_plot(data, nprocs_list, plot_file_path,
                                                                    percentages=self.config.timelines.percentages,
                                                                    totals=True, unordered=True, cpu=True, title=title,
-                                                                   rpc='p', add_border=self.config.add_border,
-                                                                   label_fontsize=self.config.label_fontsize,
-                                                                   figsize=self.config.figsize,
-                                                                   title_fontsize=self.config.title_fontsize,
-                                                                   ticks_fontsize=self.config.ticks_fontsize)
+                                                                   rpc='p', add_border=self.config.plot.add_border,
+                                                                   label_fontsize=self.config.plot.label_fontsize,
+                                                                   figsize=self.config.plot.figsize,
+                                                                   title_fontsize=self.config.plot.title_fontsize,
+                                                                   ticks_fontsize=self.config.plot.ticks_fontsize)
                 else: create_timeline_plot(data, ncores_list, plot_file_path,
                                            percentages=self.config.timelines.percentages, totals=True, unordered=True,
-                                           cpu=True, title=title, rpc='c', add_border=self.config.add_border,
-                                           label_fontsize=self.config.label_fontsize, figsize=self.config.figsize,
-                                           title_fontsize=self.config.title_fontsize, ticks_fontsize=self.config.ticks_fontsize)
+                                           cpu=True, title=title, rpc='c', add_border=self.config.plot.add_border,
+                                           label_fontsize=self.config.plot.label_fontsize, figsize=self.config.plot.figsize,
+                                           title_fontsize=self.config.plot.title_fontsize, ticks_fontsize=self.config.plot.ticks_fontsize)
 
     # -----------------------------------------------------------------
 
@@ -4986,5 +5148,53 @@ def set_background(fig, ax, config):
         # Set transparent background
         for item in [fig, ax]:
             item.patch.set_visible(False)
+
+# -----------------------------------------------------------------
+
+def get_x_values(processor_counts, mode, x_quantity):
+
+    """
+    This function ...
+    :param processor_counts:
+    :param mode:
+    :param x_quantity:
+    :return:
+    """
+
+    # Convert x quantity if necessary
+    # Cores on x axis
+    if x_quantity == "cores": x_values = processor_counts
+
+    # Processes on x axis
+    elif x_quantity == "processes":
+
+        # Skip multithreading modes
+        if mode == "multithreading":
+            log.warning("Cannot plot the runtimes for " + mode + " mode when the number of processes is to be used for the x axis")
+            return None
+
+        # Get list of nprocesses
+        x_values = nprocesses_from_mode(mode, processor_counts)
+
+    # Threads on x axis
+    elif x_quantity == "threads":
+
+        # Skip multiprocessing and hybrid modes
+        if mode.startswith("multiprocessing"):
+            log.warning("Cannot plot the runtimes for " + mode + " mode when the number of threads is to be used for the x axis")
+            return None
+
+        elif mode.startswith("hybrid"):
+            log.warning("Cannot plot the runtimes for " + mode + " mode when the number of threads is to be used for the x axis")
+            return None
+
+        # Get list of nthreads = ncores in multithreading mode
+        x_values = processor_counts
+
+    # Invalid
+    else: raise ValueError("Invalid x quantity")
+
+    # Return
+    return x_values
 
 # -----------------------------------------------------------------

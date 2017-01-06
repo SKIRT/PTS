@@ -138,9 +138,8 @@ class IonizingStellarMapMaker(MapsComponent):
         # Call the setup function of the base class
         super(IonizingStellarMapMaker, self).setup()
 
-        # Set
+        # Set paths
         self.maps_ionizing_24mu_path = fs.create_directory_in(self.maps_ionizing_path, "24mu")
-
         self.maps_ionizing_solar_path = fs.create_directory_in(self.maps_ionizing_path, "solar")
 
     # -----------------------------------------------------------------

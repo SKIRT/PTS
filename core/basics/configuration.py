@@ -519,17 +519,17 @@ class ConfigurationDefinition(object):
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
 
+            if default is True:
+                name = "not_" + name
+                description = "don't " + description
+
             if prefix is not None:
                 name = prefix + "/" + name
                 letter = None
 
             # Add the argument
-            if letter is None:
-                if default is False: parser.add_argument("--" + name, action="store_true", help=description)
-                else: parser.add_argument("--not_" + name, action="store_true", help="don't " + description)
-            else:
-                if default is False: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
-                else: parser.add_argument("-not_" + letter, "--not_" + name, action="store_true", help="don't " + description)
+            if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
+            else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
 
         # Add arguments of sections
         for section_name in self.sections:
@@ -625,16 +625,14 @@ class ConfigurationDefinition(object):
 
             default = self.flags[name][2]
 
-            if prefix is not None: argument_name = prefix + "/" + name
-            else: argument_name = name
+            if default is True: command_name = "not_" + name
+            else: command_name = name
 
-            #print(self.flags)
+            if prefix is not None: argument_name = prefix + "/" + command_name
+            else: argument_name = command_name
 
-            if default: # if default == True
-
-                argument_name = "not_" + argument_name
-                settings[name] = not getattr(arguments, argument_name)
-
+            # Get the value
+            if default is True: settings[name] = not getattr(arguments, argument_name)
             else: settings[name] = getattr(arguments, argument_name)
 
         # Add the configuration settings of the various sections

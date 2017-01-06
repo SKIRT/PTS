@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.plot.scaling import scaling_properties, simulation_phases, communication_phases
 from pts.core.plot.scaling import pure_scaling_behaviour, composite_scaling_behaviour, phase_names
+from pts.core.config.plot import definition as plot_definition
 
 # -----------------------------------------------------------------
 
@@ -30,7 +31,7 @@ definition.add_optional("data_input", "directory_path", "path to the directory w
 definition.add_flag("hybridisation", "plot as a function of number of processes for constant number of cores")
 
 parallelization_modes = ["multithreading", "multiprocessing", "hybrid"]
-definition.add_optional("modes", "string_list", "parallelization modes to plot", choices=parallelization_modes, default=parallelization_modes)
+definition.add_optional("modes", "string_list", "parallelization modes to plot (not for hybridization mode)", choices=parallelization_modes, default=parallelization_modes)
 definition.add_flag("use_task_parallel", "use data from task parallelized simulations in the plots", True)
 definition.add_flag("use_task_data_parallel", "use data from task+data parallelized simulations in the plots", True)
 
@@ -40,28 +41,14 @@ definition.add_optional("input", "directorypath_list", "input director(y)(ies)",
 # Output
 definition.add_optional("output", "directory_path", "output directory", letter="o")
 
-# Plot
-definition.add_optional("figsize", "integer_tuple", "figure size", default=(12,8))
-definition.add_flag("xlog", "log scale for x axis", True)
-definition.add_flag("ylog", "log scale for y axis", True)
-definition.add_optional("linewidth", "real", "line width", default=2.0)
-definition.add_optional("borderwidth", "real", "border width", default=2.0)
-definition.add_flag("add_titles", "add titles to the plots", True)
-definition.add_optional("legend_title_fontsize", "positive_integer", "fontsize of legend titles", default=14)
-definition.add_flag("legend_below", "place legends below the plots")
-definition.add_optional("legend_borderwidth", "real", "border width of legend", default=2.0)
-definition.add_optional("legend_bordercolor", "string", "border color of legend", default="k")
-definition.add_flag("add_grid", "add a grid", True)
-definition.add_optional("grid_linewidth", "real", "linewidth of grid", default=2.0)
-definition.add_optional("grid_linestyle", "string", "linestyle of grid", default="dotted", choices=["solid", "dashed", "dashdot", "dotted", "offset", "on-off-dash-seq", '-', '--', '-.', ':', 'None', ' ', ''])
-definition.add_flag("add_border", "add border to the plot", True)
-definition.add_optional("label_fontsize", "positive_integer", "fontsize of the axes labels", default=18)
-definition.add_flag("add_legend_border", "add border to legend", True)
-definition.add_flag("transparent_background", "transparent background", True)
-definition.add_optional("title_fontsize", "positive_integer", "fontsize of the plot title", default=20)
-definition.add_optional("ticks_fontsize", "positive_integer", "fontsize of the axes ticks", default=12)
-definition.add_optional("markersize", "positive_integer", "size of the data point markers", default=12)
-definition.add_flag("connect_points", "connect data points with lines", True)
+# Report which simulations are used for the plotting
+definition.add_flag("report_simulations", "report which simulations are used for the data")
+
+# Plotting options
+definition.import_section("plot", "plotting options", plot_definition)
+
+# The quantity to be used for the x axis
+definition.add_optional("x_quantity", "string", "quantity to be used for the x axis (not for hybridization mode)", choices=["cores", "processes", "threads"], default="cores")
 
 # Sigma level for plotting error bars
 definition.add_optional("sigma_level", "real", "sigma level for plotting error bars", 1.0)

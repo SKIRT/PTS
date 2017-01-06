@@ -62,7 +62,7 @@ class ModelingSetupTool(Configurable):
         # 1. Call the setup function
         self.setup()
 
-        # 3. Resolve the name of the galaxy
+        # 2. Resolve the name of the galaxy
         self.resolve_name()
 
         # 3. Create the modeling directory

@@ -113,3 +113,29 @@ class Mask(MaskBase):
         io.write_frame(self._data.astype(int), header, path)
 
 # -----------------------------------------------------------------
+
+def union(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    arrays = [arg.data for arg in args]
+    return Mask(np.sum(arrays, axis=0))
+
+# -----------------------------------------------------------------
+
+def intersection(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    arrays = [arg.data for arg in args]
+    return Mask(np.product(arrays, axis=0))
+
+# -----------------------------------------------------------------
