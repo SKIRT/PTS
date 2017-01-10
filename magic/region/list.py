@@ -1054,6 +1054,8 @@ def make_regular_region(specs):
             # Create the line
             reg = PixelLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include, label=label)
 
+        else: raise ValueError("No central coordinate")
+
     # VECTORS
     elif region_type == "vector":
 
@@ -1258,6 +1260,10 @@ class RegionList(list):
         """
         This function ...
         :param region_string:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -1278,6 +1284,10 @@ class RegionList(list):
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -1285,7 +1295,13 @@ class RegionList(list):
         with open(path) as fh: region_string = fh.read()
 
         # Open from string
-        return cls.from_string(region_string, only, ignore, color, ignore_color)
+        region_list = cls.from_string(region_string, only, ignore, color, ignore_color)
+
+        # Set the path
+        region_list.path = path
+
+        # Return
+        return region_list
 
     # -----------------------------------------------------------------
 
@@ -1299,9 +1315,27 @@ class RegionList(list):
         # Call the constructor of the base class (list)
         super(RegionList, self).__init__()
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
-    def save(self, path, coordsys='fk5'):
+    def save(self, coordsys='fk5'):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path exists
+        if self.path is None: raise RuntimeError("Path is not defined for this region list")
+
+        # Save
+        self.saveto(self.path, coordsys=coordsys)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, coordsys='fk5'):
 
         """
         This function ...
@@ -1315,6 +1349,9 @@ class RegionList(list):
 
         # Write
         with open(path, 'w') as fh: fh.write(output)
+
+        # Update the path
+        self.path = path
 
     # -----------------------------------------------------------------
 
@@ -1880,6 +1917,10 @@ class SkyRegionList(RegionList):
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -1900,6 +1941,11 @@ class SkyRegionList(RegionList):
         """
         This function ...
         :param path:
+        :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 

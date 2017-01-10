@@ -47,6 +47,9 @@ definition.add_flag("report_simulations", "report which simulations are used for
 # Plotting options
 definition.import_section("plot", "plotting options", plot_definition)
 
+definition.add_flag("xlog", "log scale for x axis", True)
+definition.add_flag("ylog", "log scale for y axis", True)
+
 # The quantity to be used for the x axis
 definition.add_optional("x_quantity", "string", "quantity to be used for the x axis (not for hybridization mode)", choices=["cores", "processes", "threads"], default="cores")
 

@@ -451,7 +451,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         log.info("Writing the wavelength grid ...")
 
         # Save the wavelength grid
-        self.wavelength_grid.save(self.analysis_run.heating_wavelength_grid_path)
+        self.wavelength_grid.saveto(self.analysis_run.heating_wavelength_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -472,7 +472,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             path = fs.join(self.analysis_run.heating_instruments_path, name + ".instr")
 
             # Save
-            self.instruments[name].save(path)
+            self.instruments[name].saveto(path)
 
     # -----------------------------------------------------------------
 

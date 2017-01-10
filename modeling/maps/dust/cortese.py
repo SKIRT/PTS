@@ -405,7 +405,7 @@ class CorteseDustMapMaker(MapsComponent):
             path = fs.join(self.maps_dust_cortese_path, "ssfr_" + name + ".fits")
 
             # Write
-            self.ssfr_maps[name].save(path)
+            self.ssfr_maps[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -426,6 +426,6 @@ class CorteseDustMapMaker(MapsComponent):
             path = fs.join(self.maps_dust_cortese_path, "fuv_attenuation_" + name + ".fits")
 
             # Write
-            self.attenuation_maps[name].save(path)
+            self.attenuation_maps[name].saveto(path)
 
 # -----------------------------------------------------------------

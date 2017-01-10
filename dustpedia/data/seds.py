@@ -127,6 +127,6 @@ class SEDFetcher(Configurable):
         path = fs.join(self.config.path, self.config.galaxy_name + ".dat")
 
         # Save the SED
-        self.sed.save(path)
+        self.sed.saveto(path)
 
 # -----------------------------------------------------------------

@@ -421,7 +421,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         #import os
         #from ..core import Frame
         #frame = Frame(source.cutout)
-        #frame.save(os.path.join(os.getcwd(), "lalalalalal-nans.fits"))
+        #frame.saveto(os.path.join(os.getcwd(), "lalalalalal-nans.fits"))
         #plotting.plot_box(source.cutout)
 
         if special:

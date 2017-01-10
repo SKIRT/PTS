@@ -34,6 +34,20 @@ class Configuration(Map):
     This function ...
     """
 
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        # Call the constructor of the base class
+        super(Configuration, self).__init__()
+
+        # The path
+        self._path = None
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path):
 
@@ -48,6 +62,9 @@ class Configuration(Map):
 
         # Load the settings
         with open(path, 'r') as configfile: load_mapping(configfile, config)
+
+        # Set the path
+        config._path = path
 
         # Return the config
         return config
@@ -148,7 +165,22 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self._path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self._path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -156,7 +188,11 @@ class Configuration(Map):
         :return:
         """
 
+        # Write
         with open(path, 'w') as configfile: write_mapping(configfile, self)
+
+        # Update the path
+        self._path = path
 
 # -----------------------------------------------------------------
 
@@ -308,6 +344,9 @@ def write_mapping(mappingfile, mapping, indent=""):
     index = 0
     length = len(mapping)
     for name in mapping:
+
+        # Skip internal stuff
+        if name.startswith("_"): continue
 
         value = mapping[name]
 

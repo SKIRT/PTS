@@ -502,11 +502,11 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Save
         path = fs.join(self.maps_ionizing_solar_path, "MIPS 24mu.fits")
-        self.mips24.save(path)
+        self.mips24.saveto(path)
 
         # Save H alpha in solar units
         path = fs.join(self.maps_ionizing_solar_path, "Halpha.fits")
-        self.halpha.save(path)
+        self.halpha.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -527,7 +527,7 @@ class IonizingStellarMapMaker(MapsComponent):
             path = fs.join(self.maps_ionizing_24mu_path, str(factor) + ".fits")
 
             # Write
-            self.corrected_24mu_maps[factor].save(path)
+            self.corrected_24mu_maps[factor].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -542,7 +542,7 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Writing the distribution region ...")
 
         path = fs.join(self.maps_ionizing_24mu_path, "histogram.reg")
-        self.distribution_region.save(path)
+        self.distribution_region.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -596,8 +596,8 @@ class IonizingStellarMapMaker(MapsComponent):
         mips_24_path = fs.join(self.maps_ionizing_path, "MIPS24_term.fits")
 
         # Save the terms
-        term_halpha.save(halpha_path)
-        term_24mu.save(mips_24_path)
+        term_halpha.saveto(halpha_path)
+        term_24mu.saveto(mips_24_path)
 
         # Distributions
         halpha_distribution = Distribution.from_values(term_halpha.data.flatten())
@@ -625,7 +625,7 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Write the ionizing stars map ...")
 
         # Write
-        self.map.save(self.ionizing_stellar_map_path)
+        self.map.saveto(self.ionizing_stellar_map_path)
 
     # -----------------------------------------------------------------
 
@@ -640,6 +640,6 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Writing the significance masks ...")
 
         # Write
-        self.significance.save(self.ionizing_stellar_significance_path)
+        self.significance.saveto(self.ionizing_stellar_significance_path)
 
 # -----------------------------------------------------------------

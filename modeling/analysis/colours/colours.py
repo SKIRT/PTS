@@ -370,7 +370,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join(self.colours_observed_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
-            self.observed_colours[colour_name].save(path)
+            self.observed_colours[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -391,7 +391,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join(self.colours_simulated_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
-            self.simulated_colours[colour_name].save(path)
+            self.simulated_colours[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -412,7 +412,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join(self.colours_residuals_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
-            self.residual_colours[colour_name].save(path)
+            self.residual_colours[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -433,7 +433,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join()
 
             # Save the distribution data
-            self.residual_distributions[colour_name].save(path)
+            self.residual_distributions[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 

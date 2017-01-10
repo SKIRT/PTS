@@ -602,7 +602,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Writing the analysis run info to " + self.run_info_path + "...")
 
         # Write the analysis run info
-        self.analysis_run_info.save(self.run_info_path)
+        self.analysis_run_info.saveto(self.run_info_path)
 
     # -----------------------------------------------------------------
 
@@ -632,7 +632,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Writing the dust grid " + self.dust_grid_path + " ...")
 
         # Write the dust grid
-        self.dust_grid.save(self.dust_grid_path)
+        self.dust_grid.saveto(self.dust_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -653,7 +653,7 @@ class AnalysisLauncher(AnalysisComponent):
             path = fs.join(self.run_instruments_path, name + ".instr")
 
             # Save the instrument
-            self.instruments[name].save(path)
+            self.instruments[name].saveto(path)
 
     # -----------------------------------------------------------------
 

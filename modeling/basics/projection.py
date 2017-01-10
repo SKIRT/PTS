@@ -61,6 +61,9 @@ class GalaxyProjection(object):
         self.field_x_physical = field_x
         self.field_y_physical = field_y
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -125,11 +128,32 @@ class GalaxyProjection(object):
                 elif splitted[0] == "Field y": field_y = get_quantity(splitted[1])
 
         # Create and return a new class instance
-        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        projection = cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+        # Set the path
+        projection.path = path
+
+        # Return the projection
+        return projection
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -150,6 +174,9 @@ class GalaxyProjection(object):
             print("Center y:", str(self.center_y), file=projection_file)
             print("Field x:", str(self.field_x_physical), file=projection_file)
             print("Field y:", str(self.field_y_physical), file=projection_file)
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------
 

@@ -256,7 +256,7 @@ class FittingConfigurer(FittingComponent):
         self.fitting_config = combine_configs(self.parameters_config, self.ranges_config, self.filters_config)
 
         # Write the configuration
-        self.fitting_config.save(self.fitting_configuration_path)
+        self.fitting_config.saveto(self.fitting_configuration_path)
 
     # -----------------------------------------------------------------
 

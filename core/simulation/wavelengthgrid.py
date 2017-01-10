@@ -42,6 +42,9 @@ class WavelengthGrid(object):
 
         self.table = None
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -58,6 +61,9 @@ class WavelengthGrid(object):
 
         # Load the table
         grid.table = tables.from_file(path, format="ascii.ecsv")
+
+        # Set the path
+        grid.path = path
 
         # Return the new instance
         return grid
@@ -429,7 +435,22 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -439,5 +460,8 @@ class WavelengthGrid(object):
 
         # Write the table
         tables.write(self.table, path, format="ascii.ecsv")
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------

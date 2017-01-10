@@ -572,7 +572,7 @@ class DataPreparer(PreparationComponent):
             self.prepared_dataset.add_path(name, path)
 
             # Save the frame
-            self.frames[name].save(path)
+            self.frames[name].saveto(path)
 
     # -----------------------------------------------------------------
 

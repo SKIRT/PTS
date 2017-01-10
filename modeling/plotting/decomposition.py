@@ -100,7 +100,7 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
         self.frame *= conversion_factor
         self.frame.unit = "Jy"
 
-        # frame.save(fs.join(self.truncation_path, "i1_jy.fits"))
+        # frame.saveto(fs.join(self.truncation_path, "i1_jy.fits"))
 
         # Inform the user
         log.info("Loading the bulge image ...")

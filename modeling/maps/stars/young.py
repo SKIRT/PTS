@@ -397,7 +397,7 @@ class YoungStellarMapMaker(MapsComponent):
             path = fs.join(self.maps_young_fuv_path, str(factor) + ".fits")
 
             # Write
-            self.corrected_fuv_maps[factor].save(path)
+            self.corrected_fuv_maps[factor].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -412,7 +412,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Writing the distribution region ...")
 
         path = fs.join(self.maps_young_fuv_path, "histogram.reg")
-        self.distribution_region.save(path)
+        self.distribution_region.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -455,7 +455,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Writing the map of young stars ...")
 
         # Write
-        self.map.save(self.young_stellar_map_path)
+        self.map.saveto(self.young_stellar_map_path)
 
     # -----------------------------------------------------------------
 
@@ -470,7 +470,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Writing the significance masks ...")
 
         # Write
-        self.significance.save(self.young_stellar_significance_path)
+        self.significance.saveto(self.young_stellar_significance_path)
 
     # -----------------------------------------------------------------
 
@@ -485,6 +485,6 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Writing the cutoff mask ...")
 
         # Write
-        self.cutoff_mask.save(self.young_stellar_cutoff_path)
+        self.cutoff_mask.saveto(self.young_stellar_cutoff_path)
 
 # -----------------------------------------------------------------

@@ -151,13 +151,13 @@ log.info("Saving the result ...")
 
 # Save the result
 path = fs.join(output_path, arguments.image)
-new_frame.save(path, header=header)
+new_frame.saveto(path, header=header)
 
 # Write the mask
 if arguments.mask:
 
     path = fs.join(output_path, "mask.fits")
     new_frame[mask] = float('nan')
-    new_frame.save(path, header=header)
+    new_frame.saveto(path, header=header)
 
 # -----------------------------------------------------------------

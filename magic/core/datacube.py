@@ -450,11 +450,11 @@ class DataCube(Image):
 
             # Save the datacube
             temp_datacube_path = fs.join(temp_dir_path, "datacube.fits")
-            self.save(temp_datacube_path)
+            self.saveto(temp_datacube_path)
 
             # Save the wavelength grid
             temp_wavelengthgrid_path = fs.join(temp_dir_path, "wavelengthgrid.dat")
-            self.wavelength_grid.save(temp_wavelengthgrid_path)
+            self.wavelength_grid.saveto(temp_wavelengthgrid_path)
 
             # Create process pool
             pool = Pool(processes=nprocesses)
@@ -601,7 +601,7 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     log.info("[convolution with " + fltrname + " filter] Saving result to " + result_path + " ...")
 
     # Save the frame with the index as name
-    frame.save(result_path)
+    frame.saveto(result_path)
 
 # -----------------------------------------------------------------
 

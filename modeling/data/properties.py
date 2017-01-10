@@ -373,6 +373,6 @@ class PropertyFetcher(DataComponent):
         log.info("Writing the galaxy properties ...")
 
         # Write
-        self.properties.save(self.galaxy_properties_path)
+        self.properties.saveto(self.galaxy_properties_path)
 
 # -----------------------------------------------------------------

@@ -38,6 +38,78 @@ from ..tools import plotting
 from .list import StarList
 from ...core.basics.map import Map
 from ..basics.stretch import PixelStretch
+from ...core.basics.table import SmartTable
+
+# -----------------------------------------------------------------
+
+class PointSourceTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    column_info = [("Index", int, None, "index of the point source"),
+                   ("RA", float, "deg", "right ascension"),
+                   ("DEC", float, "deg", "declination"),
+                   ("Flux", float, "Jy", "flux for the point source"),
+                   ("Flux error", float, "Jy", "error on the flux value"),
+                   ("FWHM", float, "arcsec", "FWHM of the point source")]
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, index, point_source):
+
+        """
+        This function ...
+        :param index:
+        :param point_source:
+        :return:
+        """
+
+        # Values for the row
+        values = []
+
+        # Get point source properties
+
+
+        # Add a row
+        self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mean_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def median_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm_stddev(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 
@@ -680,7 +752,7 @@ class StarFinder(Configurable):
                 path = fs.join(directory_path, "saturation_" + str(star.index) + ".fits")
 
                 # Save the saturation source as a FITS file
-                star.saturation.save(path, origin=self.name)
+                star.saturation.saveto(path, origin=self.name)
 
             # -- PSF sources ---
 
@@ -698,7 +770,7 @@ class StarFinder(Configurable):
                 source.estimate_background(method, sigma_clip)
 
                 # Save the source as a FITS file
-                source.save(path, origin=self.name)
+                source.saveto(path, origin=self.name)
 
             # Check if a source was found for this star
             elif star.has_source:
@@ -714,7 +786,7 @@ class StarFinder(Configurable):
                 source.estimate_background(method, sigma_clip)
 
                 # Save the source as a FITS file
-                source.save(path, origin=self.name)
+                source.saveto(path, origin=self.name)
 
             # If no source was found for this star
             else:
@@ -730,7 +802,7 @@ class StarFinder(Configurable):
                 source.estimate_background(method, sigma_clip)
 
                 # Save the cutout as a FITS file
-                source.save(path, origin=self.name)
+                source.saveto(path, origin=self.name)
 
     # -----------------------------------------------------------------
 

@@ -229,6 +229,6 @@ class AttenuationMapAnalyser(AttenuationAnalysisComponent):
 
         # Determine the path and save
         path = fs.join(self.attenuation_map_path, "FUV attenuation.fits")
-        self.attenuation.save(path)
+        self.attenuation.saveto(path)
 
 # -----------------------------------------------------------------

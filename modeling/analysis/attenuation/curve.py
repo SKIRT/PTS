@@ -194,7 +194,7 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         a_v_mappings = 0.67 * average_column_density / 1e5
 
         # Creat the attenuation curve for the SFR dust
-        self.attenuation_sfr = MappingsAttenuationCurve(a_v_mappings, self.v_band_wavelength)
+        self.attenuation_sfr = MappingsAttenuationCurve.initialize(a_v_mappings, self.v_band_wavelength)
 
         # Find the V-band attenuation for the SFR dust component
         v_band_attenuation_sfr = self.attenuation_sfr.attenuation_at(self.v_band_wavelength)
@@ -272,10 +272,10 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         log.info("Loading the reference attenuation curves ...")
 
         # Load the Milky Way, SMC and Calzetti attenuation curves
-        self.references["Milky Way"] = MilkyWayAttenuationCurve()
-        self.references["SMC"] = SMCAttenuationCurve()
-        self.references["Calzetti"] = CalzettiAttenuationCurve()
-        self.references["Battisti"] = BattistiAttenuationCurve()
+        self.references["Milky Way"] = MilkyWayAttenuationCurve.initialize()
+        self.references["SMC"] = SMCAttenuationCurve.initialize()
+        self.references["Calzetti"] = CalzettiAttenuationCurve.initialize()
+        self.references["Battisti"] = BattistiAttenuationCurve.initialize()
 
     # -----------------------------------------------------------------
 
@@ -308,19 +308,19 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         diffuse_path = fs.join(self.attenuation_curve_path, "diffuse.dat")
 
         # Write the diffuse dust attenuations
-        self.attenuation_diffuse.save(diffuse_path)
+        self.attenuation_diffuse.saveto(diffuse_path)
 
         # Determine the path to the SFR attenuation file
         sfr_path = fs.join(self.attenuation_curve_path, "sfr.dat")
 
         # Write the SFR attenuation curve
-        self.attenuation_sfr.save(sfr_path)
+        self.attenuation_sfr.saveto(sfr_path)
 
         # Determine the path to the total dust attenuation file
         total_path = fs.join(self.attenuation_curve_path, "total.dat")
 
         # Write the total attenuation curve
-        self.attenuation_total.save(total_path)
+        self.attenuation_total.saveto(total_path)
 
     # -----------------------------------------------------------------
 

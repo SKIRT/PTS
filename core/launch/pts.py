@@ -141,7 +141,7 @@ class PTSRemoteLauncher(object):
         temp_conf_path = fs.join(temp_path, "config.cfg")
 
         # Save the configuration file to the temporary directory
-        config.save(temp_conf_path)
+        config.saveto(temp_conf_path)
 
         # Debugging
         log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
@@ -171,7 +171,7 @@ class PTSRemoteLauncher(object):
                 path = fs.join(temp_path, name + "." + input_dict[name].default_extension)
 
                 # Save
-                input_dict[name].save(path)
+                input_dict[name].saveto(path)
 
                 # Add the filepath
                 local_input_filepaths.append(path)

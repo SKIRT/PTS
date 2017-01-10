@@ -230,7 +230,7 @@ if galaxy_sky_region is not None:
 
     galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
     path = fs.join(output_path, "galaxies.reg")
-    galaxy_region.save(path)
+    galaxy_region.saveto(path)
 
 # Save the star region
 star_sky_region = finder.star_sky_region
@@ -238,7 +238,7 @@ if star_sky_region is not None:
 
     star_region = star_sky_region.to_pixel(image.wcs)
     path = fs.join(output_path, "stars.reg")
-    star_region.save(path)
+    star_region.saveto(path)
 
 # Save the saturation region
 saturation_sky_region = finder.saturation_sky_region
@@ -246,7 +246,7 @@ if saturation_sky_region is not None:
 
     saturation_region = saturation_sky_region.to_pixel(image.wcs)
     path = fs.join(output_path, "saturation.reg")
-    saturation_region.save(path)
+    saturation_region.saveto(path)
 
 # Save the region of other sources
 other_sky_region = finder.other_sky_region
@@ -254,7 +254,7 @@ if other_sky_region is not None:
 
     other_region = other_sky_region.to_pixel(image.wcs)
     path = fs.join(output_path, "other_sources.reg")
-    other_region.save(path)
+    other_region.saveto(path)
 
 # -----------------------------------------------------------------
 
@@ -272,7 +272,7 @@ segments.add_frame(finder.other_segments, "other_sources")
 
 # Save the FITS file with the segmentation maps
 path = fs.join(output_path, "segments.fits")
-segments.save(path)
+segments.saveto(path)
 
 # -----------------------------------------------------------------
 

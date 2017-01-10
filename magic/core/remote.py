@@ -215,6 +215,9 @@ class RemoteFrame(object):
         self.label = label
         self.session = session
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     def __str__(self):
@@ -506,6 +509,9 @@ class RemoteFrame(object):
         # Actually create the frame remotely
         session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_frame_path + "')")
 
+        # Set the path
+        remoteframe.path = path
+
         # Return the remoteframe instance
         return remoteframe
 
@@ -646,7 +652,7 @@ class RemoteFrame(object):
         local_path = fs.join(temp_path, "kernel.fits")
 
         # Save the kernel locally
-        kernel.save(local_path)
+        kernel.saveto(local_path)
 
         # UPLOAD KERNEL
 
@@ -916,7 +922,7 @@ class RemoteFrame(object):
         local_path = fs.join(temp_path, "newframe_fromlocal.fits")
 
         # Save the frame locally
-        frame.save(local_path)
+        frame.saveto(local_path)
 
         # Create the remoteframe from the locally saved frame
         remoteframe = cls.from_file(local_path, host_id)
@@ -943,7 +949,7 @@ class RemoteFrame(object):
         local_path = fs.join(temp_path, self.label + ".fits")
 
         # Save the remote frame locally to the temp path
-        self.save(local_path)
+        self.saveto(local_path)
 
         # Create the local frame
         frame = self.local_class().from_file(local_path)
@@ -956,7 +962,25 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the remote frame ...")
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -980,7 +1004,7 @@ class RemoteFrame(object):
         log.debug("Saving the frame remotely ...")
 
         # Save the frame remotely
-        self.session.send_line(self.label + ".save('" + remote_file_path + "')")
+        self.session.send_line(self.label + ".saveto('" + remote_file_path + "')")
 
         # Debugging
         log.debug("Downloading the frame ...")
@@ -990,6 +1014,9 @@ class RemoteFrame(object):
 
         # Remove the remote file
         self.session.remove_file(remote_file_path)
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------
 
@@ -1019,6 +1046,7 @@ class RemoteImage(object):
 
     @classmethod
     def local_classname(cls):
+
         """
         This function ...
         :return:
@@ -1039,6 +1067,9 @@ class RemoteImage(object):
         self.label = label
         self.session = session
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     def __str__(self):
@@ -1050,7 +1081,7 @@ class RemoteImage(object):
 
         return self.session.get_simple_property(self.label, "__str__()")
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def __repr__(self):
 
@@ -1163,6 +1194,9 @@ class RemoteImage(object):
 
         # Actually create the frame remotely
         session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_image_path + "')")
+
+        # Set the path
+        remoteimage.path = path
 
         # Return the remoteimage instance
         return remoteimage
@@ -1351,7 +1385,25 @@ class RemoteImage(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the remote image ...")
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -1379,7 +1431,7 @@ class RemoteImage(object):
         log.debug("Remote temporary path of image: " + remote_image_path)
 
         # Save the image remotely
-        self.session.send_line(self.label + ".save('" + remote_image_path + "')", show_output=True)
+        self.session.send_line(self.label + ".saveto('" + remote_image_path + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the image ...")
@@ -1389,6 +1441,9 @@ class RemoteImage(object):
 
         # Remove the remote file
         self.session.remove_file(remote_image_path)
+
+        # Update the path
+        self.path = path
 
     # -----------------------------------------------------------------
 
@@ -1409,13 +1464,16 @@ class RemoteImage(object):
         local_path = fs.join(temp_path, "newimage_fromlocal.fits")
 
         # Save the image locally
-        image.save(local_path)
+        image.saveto(local_path)
 
         # Create the remoteimage from the locally saved image
         remoteimage = cls.from_file(local_path, session)
 
         # Remove the local file
         fs.remove_file(local_path)
+
+        # Set the path
+        remoteimage.path = image.path
 
         # Return the new remoteimage
         return remoteimage
@@ -1436,13 +1494,16 @@ class RemoteImage(object):
         local_path = fs.join(temp_path, self.label + ".fits")
 
         # Save the remote image locally to the temp path
-        self.save(local_path)
+        self.saveto(local_path)
 
         # Create the image
         image = self.local_class().from_file(local_path)
 
         # Remove the local temporary file
         fs.remove_file(local_path)
+
+        # Set the path
+        image.path = self.path
 
         # Return the image
         return image
@@ -1471,7 +1532,7 @@ class RemoteImage(object):
         local_path = fs.join(temp_path, "kernel.fits")
 
         # Save the kernel locally
-        kernel.save(local_path)
+        kernel.saveto(local_path)
 
         # UPLOAD KERNEL
 
@@ -1557,7 +1618,7 @@ class RemoteDataCube(RemoteImage):
         log.debug("Saving the wavelength grid locally to '" + local_wavelength_grid_path + "' ...")
 
         # Save
-        wavelength_grid.save(local_wavelength_grid_path)
+        wavelength_grid.saveto(local_wavelength_grid_path)
 
         # Upload
         remote_wavelength_grid_path = fs.join(remote_temp_path, "wavelength_grid.dat")
@@ -1607,7 +1668,7 @@ class RemoteDataCube(RemoteImage):
         local_path = fs.join(temp_path, "newdatacube_fromlocal.fits")
 
         # Save the image locally
-        datacube.save(local_path)
+        datacube.saveto(local_path)
 
         # Create the remotedatacube from the locally saved FITS file
         remotedatacube = cls.from_file(local_path, datacube.wavelength_grid, session)

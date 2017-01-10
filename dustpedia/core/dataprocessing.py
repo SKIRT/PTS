@@ -936,15 +936,15 @@ class DustPediaDataProcessing(object):
 
         # Save mosaic as FITS file
         mosaic_output_path = fs.join(output_path, id_string + ".fits")
-        mosaic.save(mosaic_output_path)
+        mosaic.saveto(mosaic_output_path)
 
         # Save error map as FITS file
         errors_output_path = fs.join(output_path, id_string + "_errors.fits")
-        mosaic_errors.save(errors_output_path)
+        mosaic_errors.saveto(errors_output_path)
 
         # Save relative error map as FITS file
         relerrors_output_path = fs.join(output_path, id_string + "_relerrors.fits")
-        relerrors.save(relerrors_output_path)
+        relerrors.saveto(relerrors_output_path)
 
         ## END
 
@@ -969,7 +969,7 @@ class DustPediaDataProcessing(object):
         
             # Save the footprint
             footprint_path = fs.join(footprints_path, name + ".fits")
-            footprint.save(footprint_path)
+            footprint.saveto(footprint_path)
         
     # -----------------------------------------------------------------
 
@@ -1045,7 +1045,7 @@ class DustPediaDataProcessing(object):
 
             # SAVE the error map
             poisson_error_map_path = fs.join(poisson_path, name + ".fits")
-            error_map.save(poisson_error_map_path)
+            error_map.saveto(poisson_error_map_path)
 
     # -----------------------------------------------------------------
 
@@ -1115,11 +1115,11 @@ class DustPediaDataProcessing(object):
 
             # Determine path for the image
             image_path = fs.join(rebinned_path, name + ".fits")
-            image.save(image_path)
+            image.saveto(image_path)
 
             # SAVE THE FOOTPRINT
             footprint_path = fs.join(footprints_path, name + ".fits")
-            footprint.save(footprint_path)
+            footprint.saveto(footprint_path)
 
     # -----------------------------------------------------------------
 
@@ -1188,11 +1188,11 @@ class DustPediaDataProcessing(object):
 
         # SAVE THE MOSAIC IN NANOMAGGIES
         mosaic_path = fs.join(mosaics_path, "mosaic.fits")
-        mosaic_frame.save(mosaic_path)
+        mosaic_frame.saveto(mosaic_path)
 
         # SAVE THE MOSAIC ERROR MAP IN NANOMAGGIES
         mosaic_error_path = fs.join(mosaics_path, "mosaic_errors.fits")
-        mosaic_errormap.save(mosaic_error_path)
+        mosaic_errormap.saveto(mosaic_error_path)
 
     # -----------------------------------------------------------------
 
@@ -1239,7 +1239,7 @@ class DustPediaDataProcessing(object):
 
         # SAVE THE MOSAIC IMAGE (with error map) IN JANSKY
         result_path = fs.join(results_path, id_string + ".fits")
-        image.save(result_path)
+        image.saveto(result_path)
 
     # -----------------------------------------------------------------
 
@@ -1298,7 +1298,7 @@ class DustPediaDataProcessing(object):
         # Save the image
         filename = galaxy_name + "_SDSS_" + band + ".fits"
         path = fs.join(output_path, filename)
-        image.save(path)
+        image.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1443,7 +1443,7 @@ class DustPediaDataProcessing(object):
 
             name = fs.name(path)
             dn_path = fs.join(counts_path, name)
-            dn_frame.save(dn_path)
+            dn_frame.saveto(dn_path)
 
     # -----------------------------------------------------------------
 
@@ -1571,7 +1571,7 @@ class DustPediaDataProcessing(object):
             log.debug("Saving the image to " + new_path + " ...")
 
             # Save
-            image.save(new_path)
+            image.saveto(new_path)
 
         # Remove the temporary directory
         #fs.remove_directory(temp_path)

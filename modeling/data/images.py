@@ -255,7 +255,7 @@ class ImageFetcher(DataComponent):
             frame.unit = self.config.halpha_flux.unit
 
             # Save the image
-            frame.save(image_path)
+            frame.saveto(image_path)
 
     # -----------------------------------------------------------------
 

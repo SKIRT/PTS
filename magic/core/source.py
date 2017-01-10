@@ -70,6 +70,9 @@ class Source(object):
         # The elliptical contour
         self.contour = PixelEllipseRegion(self.center, self.radius, self.angle)
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -726,7 +729,22 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path, frame=None, origin=None):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path exists
+        if self.path is None: raise RuntimeError("Path is not defined for this source")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, frame=None, origin=None):
 
         """
         This function ...
@@ -776,6 +794,9 @@ class Source(object):
             image.metadata["peak_y"] = self.peak.y
 
         # Save the image
-        image.save(path, origin=origin)
+        image.saveto(path, origin=origin)
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------

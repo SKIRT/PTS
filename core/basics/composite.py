@@ -34,6 +34,17 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        # The path
+        self._path = None
+
+    # -----------------------------------------------------------------
+
     def __repr__(self):
 
         """
@@ -85,11 +96,32 @@ class SimplePropertyComposite(object):
                 else: properties[name] = getattr(parsing, dtype)(value)
 
         # Create the class instance
-        return cls(**properties)
+        composite = cls(**properties)
+
+        # Set the path
+        composite._path = path
+
+        # Return
+        return composite
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self._path is None: raise RuntimeError("The path is not defined")
+
+        # Save
+        self.saveto(self._path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -109,8 +141,14 @@ class SimplePropertyComposite(object):
             # Loop over the variables
             for name in vars(self):
 
+                # Skip internal variables
+                if name.startswith("_"): continue
+
                 dtype, value = stringify(getattr(self, name))
                 print(name + ":", value + " [" + dtype + "]", file=instrumentfile)
+
+        # Update the path
+        self._path = None
 
     # -----------------------------------------------------------------
 

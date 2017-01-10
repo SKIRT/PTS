@@ -370,7 +370,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         path = fs.join(self.maps_tirfuv_path, "TIR.fits")
 
         # Write
-        self.tir_si.save(path)
+        self.tir_si.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -388,7 +388,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         path = fs.join(self.maps_tirfuv_path, "FUV.fits")
 
         # Write
-        self.fuv_si.save(path)
+        self.fuv_si.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -406,7 +406,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         path = fs.join(self.maps_tirfuv_path, "TIR-FUV.fits")
 
         # Write
-        self.tir_to_fuv.save(path)
+        self.tir_to_fuv.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -424,7 +424,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         path = fs.join(self.maps_tirfuv_path, "logTIR-FUV.fits")
 
         # Write
-        self.log_tir_to_fuv.save(path)
+        self.log_tir_to_fuv.saveto(path)
 
 # -----------------------------------------------------------------
 

@@ -283,7 +283,7 @@ class ImagePreparer(Configurable):
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_sourceextraction") + ".gif")
 
             # Save the animation
-            source_extractor_animation.save(path)
+            source_extractor_animation.saveto(path)
 
             # ...
             animation.add_image(self.image.frames.primary)
@@ -292,7 +292,7 @@ class ImagePreparer(Configurable):
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_extractsources") + ".gif")
 
             # Save the animation
-            animation.save(path)
+            animation.saveto(path)
 
         # Add the sources mask to the image
         self.image.add_mask(self.extractor.mask, "sources")
@@ -398,7 +398,7 @@ class ImagePreparer(Configurable):
         # Save the kernel frame for manual inspection
         if self.config.write_steps:
             kernel_path = self.full_output_path("kernel.fits")
-            kernel.save(kernel_path)
+            kernel.saveto(kernel_path)
 
         # Check whether the convolution has to be performed remotely
         if self.config.convolution.remote is not None:
@@ -420,13 +420,14 @@ class ImagePreparer(Configurable):
 
         # Write the animation
         if self.visualisation_path is not None:
+
             animation.add_image(self.image.frames.primary)
 
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_convolve") + ".gif")
 
             # Save the animation
-            animation.save(path)
+            animation.saveto(path)
 
         # Inform the user
         log.success("Convolution finished")
@@ -528,19 +529,19 @@ class ImagePreparer(Configurable):
 
             # Write the sky region
             region_path = fs.join(self.config.sky_apertures_path, "annulus.reg")
-            self.sky_subtractor.region.save(region_path)
+            self.sky_subtractor.region.saveto(region_path)
 
             # Write the apertures frame
             apertures_frame_path = fs.join(self.config.sky_apertures_path, "apertures.fits")
-            self.sky_subtractor.apertures_frame.save(apertures_frame_path)
+            self.sky_subtractor.apertures_frame.saveto(apertures_frame_path)
 
             # Write the apertures mean frame
             apertures_mean_path = fs.join(self.config.sky_apertures_path, "apertures_mean.fits")
-            self.sky_subtractor.apertures_mean_frame.save(apertures_mean_path)
+            self.sky_subtractor.apertures_mean_frame.saveto(apertures_mean_path)
 
             # Write the apertures noise frame
             apertures_noise_path = fs.join(self.config.sky_apertures_path, "apertures_noise.fits")
-            self.sky_subtractor.apertures_noise_frame.save(apertures_noise_path)
+            self.sky_subtractor.apertures_noise_frame.saveto(apertures_noise_path)
 
         # Write the animation
         if self.visualisation_path is not None:
@@ -549,7 +550,7 @@ class ImagePreparer(Configurable):
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_skysubtraction") + ".gif")
 
             # Save the animation
-            skysubtractor_animation.save(path)
+            skysubtractor_animation.saveto(path)
 
             # ...
             animation.add_image(self.image.frames.primary)
@@ -558,7 +559,7 @@ class ImagePreparer(Configurable):
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_subtractsky") + ".gif")
 
             # Save the animation
-            animation.save(path)
+            animation.saveto(path)
 
         # Inform the user
         log.success("Sky subtracted")
@@ -729,7 +730,7 @@ class ImagePreparer(Configurable):
         log.info("Writing resulting image to " + path + " ...")
 
         # Write out the resulting image
-        self.image.save(path, origin=self.name)
+        self.image.saveto(path, origin=self.name)
 
     # -----------------------------------------------------------------
 
@@ -748,6 +749,6 @@ class ImagePreparer(Configurable):
         log.info("Writing intermediate result to " + path + " ...")
 
         # Write out the image
-        self.image.save(path, origin=self.name)
+        self.image.saveto(path, origin=self.name)
 
 # -----------------------------------------------------------------

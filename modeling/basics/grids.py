@@ -78,6 +78,9 @@ class BinaryTreeDustGrid(DustGrid):
         :param direction_method:
         """
 
+        # Call the constructor of the base class
+        super(BinaryTreeDustGrid, self).__init__()
+
         self.min_x = min_x
         self.max_x = max_x
         self.min_y = min_y
@@ -125,6 +128,9 @@ class OctTreeDustGrid(DustGrid):
         :param barycentric:
         """
 
+        # Call the constructor of the base class
+        super(OctTreeDustGrid, self).__init__()
+
         self.min_x = min_x
         self.max_x = max_x
         self.min_y = min_y
@@ -166,6 +172,9 @@ class CartesianDustGrid(DustGrid):
         :param ratio:
         :param write:
         """
+
+        # Call the constructor of the base class
+        super(CartesianDustGrid, self).__init__()
 
         self.min_x = min_x
         self.max_x = max_x

@@ -22,10 +22,7 @@ from ...magic.core.mask import Mask as newMask
 from .component import TruncationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-
-# -----------------------------------------------------------------
-
-# TODO: also crop the FITS files to the bounding box of the disk ellipse?
+from ...magic.dist_ellipse import distance_ellipse
 
 # -----------------------------------------------------------------
 
@@ -48,9 +45,13 @@ class Truncator(TruncationComponent):
 
         # --- Attributes ---
 
-        self.images = dict()
+        #self.images = dict()
         self.bad_masks = dict()
         self.padded_masks = dict()
+
+        # The frames and error maps
+        self.frames = dict()
+        self.error_maps = dict()
 
         # The truncated images (keys are the different scale factors)
         self.truncated_images = dict()
@@ -75,6 +76,9 @@ class Truncator(TruncationComponent):
 
         # 2. Load the images
         self.load_images()
+
+        # 3. Find the best radius for the truncation
+        self.find_radius()
 
         # 3. Truncate the images
         self.truncate()
@@ -139,6 +143,59 @@ class Truncator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    def find_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding the best truncation radius ...")
+
+        # Get the angle
+        center = self.disk_ellipse.center  # in sky coordinates
+        semimajor = self.disk_ellipse.semimajor
+        semiminor = self.disk_ellipse.semiminor
+        angle = self.disk_ellipse.angle
+
+        # Detemrine the ratio of semimajor and semiminor
+        ratio = semiminor / semimajor
+
+        # Loop over all images
+        for name in self.config.image_names:
+
+            # Convert center to pixel coordinates
+            center_pix = center.to_pixel(self.images[name].wcs)
+
+            # Create distance-ellipse
+            distance_frame = distance_ellipse(self.images[name].shape, center_pix, ratio, angle)
+
+            radius_list = []
+            signal_to_noise_list = []
+            nbad_list = []
+
+            # Loop over the radii
+            min_distance = np.min(distance_frame)
+            max_distance = np.max(distance_frame)
+            for radius in np.linspace(min_distance,max_distance,num=int(max_distance-min_distance+1),dtype=int,endpoint=True):
+
+                # Make a mask of the pixels corresponding to the current radius
+                mask = distance_frame == radius
+
+                # Calculate the mean signal to noise in the pixels
+                signal_to_noises = self.frames[name][mask] / self.error_maps[name][mask]
+
+                # Calcalute the mean signal to noise
+                signal_to_noise = np.mean(signal_to_noises)
+
+                # Add point
+                radius_list.append(radius)
+                signal_to_noise_list.append(radius)
+                nbad_list.append(radius)
+
+    # -----------------------------------------------------------------
+
     def truncate(self):
 
         """
@@ -152,7 +209,7 @@ class Truncator(TruncationComponent):
         # Loop over the different scale factors
         for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
 
-            # Calculate the corrected 24 micron image
+            # Truncate the images with this factor
             truncated = self.make_truncated_images(factor)
 
             # Add the truncated frame to the dictionary
@@ -300,6 +357,9 @@ class Truncator(TruncationComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write curves of the signal-to-noise and the number of bad pixels
+        self.write_curves()
+
         # Write the truncated images
         self.write_images()
 
@@ -311,6 +371,46 @@ class Truncator(TruncationComponent):
 
         # Write the reference truncation mask
         self.write_reference_mask()
+
+    # -----------------------------------------------------------------
+
+    def write_curves(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing curves ...")
+
+        self.write_signal_to_noise_curves()
+
+        self.write_bad_pixel_curves()
+
+    # -----------------------------------------------------------------
+
+    def write_signal_to_noise_curves(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing curves of the signal-to-noise ...")
+
+    # -----------------------------------------------------------------
+
+    def write_bad_pixel_curves(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing curves of the number of bad pixels ...")
 
     # -----------------------------------------------------------------
 
@@ -332,7 +432,7 @@ class Truncator(TruncationComponent):
             for name in self.truncated_images[factor]:
 
                 image_path = fs.join(path, name + ".fits")
-                self.truncated_images[factor][name].save(image_path)
+                self.truncated_images[factor][name].saveto(image_path)
 
     # -----------------------------------------------------------------
 
@@ -352,7 +452,7 @@ class Truncator(TruncationComponent):
         # Write the ellipse region
         region = SkyRegionList()
         region.append(self.ellipse)
-        region.save(path)
+        region.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -371,7 +471,7 @@ class Truncator(TruncationComponent):
 
             # Save the mask
             path = fs.join(self.truncation_masks_path, name + ".fits")
-            self.masks[name].save(path)
+            self.masks[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -386,6 +486,6 @@ class Truncator(TruncationComponent):
         log.info("Writing the reference truncation mask ...")
 
         # Save the mask created for the reference image as a seperate file ("reference.fits")
-        self.masks[self.reference_image].save(self.reference_mask_path)
+        self.masks[self.reference_image].saveto(self.reference_mask_path)
 
 # -----------------------------------------------------------------

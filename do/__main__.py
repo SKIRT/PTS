@@ -188,7 +188,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     ## SAVE THE CONFIG
     if config.write_config:
         config_file_path = fs.join(config.config_dir_path(), command_name + ".cfg")
-        config.save(config_file_path)
+        config.saveto(config_file_path)
     ##
 
     if not args.rerun:
@@ -197,7 +197,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
         # NEW: CACHE THE CONFIG
         config_cache_path = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
-        config.save(config_cache_path)
+        config.saveto(config_cache_path)
 
     ##
 

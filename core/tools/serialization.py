@@ -91,7 +91,8 @@ def write_dict_impl(dictfile, dct, indent=""):
     length = len(dct)
     for name in dct:
 
-        name_ptype, name_string = stringify.stringify_not_list(name)
+        #name_ptype, name_string = stringify.stringify_not_list(name)
+        name_ptype, name_string = stringify.stringify(name)
 
         value = dct[name]
 

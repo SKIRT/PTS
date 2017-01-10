@@ -23,6 +23,7 @@ from astropy.table import Table
 # Import the relevant PTS classes and modules
 from ...core.tools import tables, introspection
 from ...core.tools import filesystem as fs
+from ..basics.curve import Curve
 
 # -----------------------------------------------------------------
 
@@ -30,13 +31,14 @@ attenuation_data_path = fs.join(introspection.pts_dat_dir("core"), "attenuation"
 
 # -----------------------------------------------------------------
 
-class AttenuationCurve(object):
+class AttenuationCurve(Curve):
 
     """
     This class ...
     """
 
-    def __init__(self, wavelengths=None, attenuations=None):
+    @classmethod
+    def initialize(cls, wavelengths=None, attenuations=None):
 
         """
         This function ...
@@ -45,15 +47,25 @@ class AttenuationCurve(object):
         :return:
         """
 
-        # Column names
-        names = ["Wavelength", "Attenuation"]
+        # Units
+        x_unit = "micron"
 
-        # Create the table
-        if wavelengths is None or attenuations is None: self.table = Table(names=names, dtype=('f8', 'f8'))
-        else: self.table = tables.new([wavelengths, attenuations], names)
+        # Names
+        x_name = "Wavelength"
+        y_name = "Attenuation"
 
-        # Set column units
-        self.table["Wavelength"].unit = Unit("micron")
+        # Descriptions
+        x_description = "Wavelength"
+        y_description = "Attenuation"
+
+        # Create the curve
+        self = super(AttenuationCurve, cls).initialize(x_unit=x_unit, x_name=x_name, y_name=y_name, x_description=x_description, y_description=y_description)
+
+        # Set the data
+        if wavelengths is not None and attenuations is not None:
+
+            # Add the data points
+            for i in range(len(wavelengths)): self.add_entry(wavelengths[i], attenuations[i])
 
     # -----------------------------------------------------------------
 
@@ -82,45 +94,6 @@ class AttenuationCurve(object):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Create a new attenuation curve
-        attenuation_curve = cls()
-
-        names = ["Wavelength", "Attenuation", "Band", "Wavelength", "Flux", "Error-", "Error+"]
-        observatory_column, instrument_column, band_column, wavelength_column, flux_column, error_min_column, error_plus_column = np.loadtxt(path, unpack=True, dtype=str)
-        wavelength_column = wavelength_column.astype(float)
-        flux_column = flux_column.astype(float)
-        error_min_column = error_min_column.astype(float)
-        error_plus_column = error_plus_column.astype(float)
-        attenuation_curve.table = tables.new([observatory_column, instrument_column, band_column, wavelength_column, flux_column, error_min_column, error_plus_column], names)
-        attenuation_curve.table["Wavelength"].unit = "micron"
-
-        # Return the attenuation curve
-        return attenuation_curve
-
-    # -----------------------------------------------------------------
-
-    def add_entry(self, wavelength, attenuation):
-
-        """
-        This function ...
-        :param wavelength:
-        :param attenuation:
-        :return:
-        """
-
-        self.table.add_row([wavelength.to("micron").value, attenuation])
-
-    # -----------------------------------------------------------------
-
     def wavelengths(self, unit=None, asarray=False, add_unit=True):
 
         """
@@ -131,8 +104,8 @@ class AttenuationCurve(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
+        if asarray: return tables.column_as_array(self["Wavelength"], unit=unit)
+        else: return tables.column_as_list(self["Wavelength"], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -144,8 +117,8 @@ class AttenuationCurve(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Attenuation"])
-        else: return tables.column_as_list(self.table["Attenuation"])
+        if asarray: return tables.column_as_array(self["Attenuation"])
+        else: return tables.column_as_list(self["Attenuation"])
 
     # -----------------------------------------------------------------
 
@@ -172,23 +145,7 @@ class AttenuationCurve(object):
         """
 
         attenuation_wavelength = self.attenuation_at(wavelength)
-        self.table["Attenuation"] /= attenuation_wavelength * value
-
-    # -----------------------------------------------------------------
-
-    def save(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Sort the table by wavelength
-        self.table.sort("Wavelength")
-
-        # Write the attenuation data
-        tables.write(self.table, path, format="ascii.ecsv")
+        self["Attenuation"] /= attenuation_wavelength * value
 
 # -----------------------------------------------------------------
 
@@ -198,7 +155,9 @@ class MilkyWayAttenuationCurve(AttenuationCurve):
     This class ...
     """
 
-    def __init__(self, rv=None):
+    #def __init__(self, rv=None):
+    @classmethod
+    def initialize(cls):
 
         """
         This function ...
@@ -220,7 +179,7 @@ class MilkyWayAttenuationCurve(AttenuationCurve):
         wavelengths, attenuations = generate_milky_way_attenuations(0.1, 1000, 1000)
 
         # Call the constructor of the base class
-        super(MilkyWayAttenuationCurve, self).__init__(wavelengths, attenuations)
+        return super(MilkyWayAttenuationCurve, cls).initialize(wavelengths, attenuations)
 
 # -----------------------------------------------------------------
 
@@ -235,14 +194,16 @@ class SMCAttenuationCurve(AttenuationCurve):
 
     # -----------------------------------------------------------------
 
-    def __init__(self):
+    #def __init__(self):
+    @classmethod
+    def initialize(cls):
 
         """
         This function ...
         """
 
         # Load the attenuation data
-        wavelengths_angstrom, alambda_av = np.loadtxt(self.path, unpack=True)
+        wavelengths_angstrom, alambda_av = np.loadtxt(cls.path, unpack=True)
 
         # Convert wavelengths into micron
         wavelengths = wavelengths_angstrom * 0.0001
@@ -251,7 +212,7 @@ class SMCAttenuationCurve(AttenuationCurve):
         attenuations = alambda_av
 
         # Call the constructor of the base class
-        super(SMCAttenuationCurve, self).__init__(wavelengths, attenuations)
+        return super(SMCAttenuationCurve, cls).initialize(wavelengths, attenuations)
 
 # -----------------------------------------------------------------
 
@@ -266,14 +227,16 @@ class CalzettiAttenuationCurve(AttenuationCurve):
 
     # -----------------------------------------------------------------
 
-    def __init__(self):
+    #def __init__(self):
+    @classmethod
+    def initialize(cls):
 
         """
         This function ...
         """
 
         # Load the attenuation data
-        wavelengths_angstrom, alambda_av = np.loadtxt(self.path, unpack=True)
+        wavelengths_angstrom, alambda_av = np.loadtxt(cls.path, unpack=True)
 
         # Convert wavelengths into micron
         wavelengths = wavelengths_angstrom * 0.0001
@@ -282,7 +245,7 @@ class CalzettiAttenuationCurve(AttenuationCurve):
         attenuations = alambda_av
 
         # Call the constructor of the base class
-        super(CalzettiAttenuationCurve, self).__init__(wavelengths, attenuations)
+        return super(CalzettiAttenuationCurve, cls).initialize(wavelengths, attenuations)
 
 # -----------------------------------------------------------------
 
@@ -292,7 +255,9 @@ class BattistiAttenuationCurve(AttenuationCurve):
     This class ...
     """
 
-    def __init__(self):
+    #def __init__(self):
+    @classmethod
+    def initialize(cls):
 
         """
         This function ...
@@ -311,7 +276,7 @@ class BattistiAttenuationCurve(AttenuationCurve):
         attenuations = Qfit_B16 + 1. # TODO: understand this more ...
 
         # Call the constructor of the base class
-        super(BattistiAttenuationCurve, self).__init__(wavelengths, attenuations)
+        return super(BattistiAttenuationCurve, cls).initialize(wavelengths, attenuations)
 
 # -----------------------------------------------------------------
 
@@ -325,7 +290,9 @@ class MappingsAttenuationCurve(AttenuationCurve):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, attenuation, wavelength):
+    #def __init__(self, attenuation, wavelength):
+    @classmethod
+    def initialize(cls, attenuation, wavelength):
 
         """
         This function ...
@@ -334,7 +301,7 @@ class MappingsAttenuationCurve(AttenuationCurve):
         # Load the data
         # wl in micron from long to short wl.
         # ABS attenuations (see header of data file)
-        wavelengths, abs_attenuations = np.loadtxt(self.path, unpack=True)
+        wavelengths, abs_attenuations = np.loadtxt(cls.path, unpack=True)
 
         # CREATE A TABLE SO WE CAN EASILY SORT THE COLUMNS FOR INCREASING WAVELENGTH
         names = ["Wavelength", "ABS attenuation"]
@@ -355,7 +322,7 @@ class MappingsAttenuationCurve(AttenuationCurve):
         attenuations_mappings = abs_attenuations / abs_wavelength * attenuation
 
         # Call the constructor of the base class
-        super(MappingsAttenuationCurve, self).__init__(wavelengths, attenuations_mappings)
+        return super(MappingsAttenuationCurve, cls).initialize(wavelengths, attenuations_mappings)
 
 # -----------------------------------------------------------------
 

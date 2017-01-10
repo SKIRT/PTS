@@ -1211,7 +1211,7 @@ class Remote(object):
         temp_conf_path = fs.join(temp_path, unique_session_name + ".cfg")
 
         # Save the configuration file to the temporary directory
-        config.save(temp_conf_path)
+        config.saveto(temp_conf_path)
 
         # Debugging
         log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")

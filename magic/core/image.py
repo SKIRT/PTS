@@ -56,9 +56,8 @@ class Image(object):
         self.segments = Layers()
         self.regions = Layers()
 
-        # The image name and path
+        # The image name
         self.name = name
-        self.path = None
 
         # The original image header
         self.original_header = None
@@ -68,6 +67,9 @@ class Image(object):
 
         # Temporary fix because fwhm is sometimes not transferred to a new primary Frame and therefore fwhm information is lost on the complete image
         self._fwhm = None
+
+        # The image path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -558,7 +560,25 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path=None, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the image ...")
+
+        # Check whether the path is defined
+        if self.path is None: raise RuntimeError("Path is not defined for this image")
+
+        # Save the image
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
 
         """
         This function exports the image (frames and masks) as a datacube into FITS file.
@@ -570,8 +590,6 @@ class Image(object):
         :param add_regions:
         :return:
         """
-
-        if path is None: path = self.path
 
         # Create an array to contain the data cube
         datacube = []

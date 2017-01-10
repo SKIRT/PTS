@@ -504,19 +504,19 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         path = fs.join(self.projected_heating_path, "tir_total.fits")
 
         # Write the total TIR map
-        self.total_tir_map.save(path)
+        self.total_tir_map.saveto(path)
 
         # Determine the path to the unevolved TIR map
         path = fs.join(self.projected_heating_path, "tir_unevolved.fits")
 
         # Write the unevolved TIR map
-        self.unevolved_tir_map.save(path)
+        self.unevolved_tir_map.saveto(path)
 
         # Determine the path to the evolved TIR map
         path = fs.join(self.projected_heating_path, "tir_evolved.fits")
 
         # Write the evolved TIR map
-        self.evolved_tir_map.save(path)
+        self.evolved_tir_map.saveto(path)
 
     # -----------------------------------------------------------------
 

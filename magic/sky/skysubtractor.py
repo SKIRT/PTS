@@ -298,7 +298,7 @@ class SkySubtractor(Configurable):
         #frame[self.mask] = float(self.config.writing.mask_value)
 
         # Save the masked frame
-        #frame.save("masked_sky_frame_notclipped.fits")
+        #frame.saveto("masked_sky_frame_notclipped.fits")
 
         ###
 

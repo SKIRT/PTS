@@ -501,7 +501,7 @@ class BatchImagePreparer(Configurable):
             self.saturation_sky_regions[label] = saturation_sky_region
 
             # Save intermediate result if requested
-            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "extracted.fits"))
+            if self.config.write_steps: image.saveto(fs.join(self.output_paths[label], "extracted.fits"))
 
         # Inform the user
         log.success("Sources extracted")
@@ -567,7 +567,7 @@ class BatchImagePreparer(Configurable):
             image.corrected_for_extinction = True
 
             # Save intermediate result if requested
-            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "corrected_for_extinction.fits"))
+            if self.config.write_steps: image.saveto(fs.join(self.output_paths[label], "corrected_for_extinction.fits"))
 
         # Inform the user
         log.success("Corrected for extinction")
@@ -639,7 +639,7 @@ class BatchImagePreparer(Configurable):
             image.unit = self.config.unit_conversion.to_unit
 
             # Save intermediate result if requested
-            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "converted_unit.fits"))
+            if self.config.write_steps: image.saveto(fs.join(self.output_paths[label], "converted_unit.fits"))
 
         # Inform the user
         log.success("Units converted")
@@ -712,10 +712,10 @@ class BatchImagePreparer(Configurable):
 
                 # Save the kernel frame for manual inspection
                 kernel_path = fs.join(self.output_paths[label], "kernel.fit")
-                kernel.save(kernel_path)
+                kernel.saveto(kernel_path)
 
                 # Save the image
-                image.save(fs.join(self.output_paths[label], "convolved.fits"))
+                image.saveto(fs.join(self.output_paths[label], "convolved.fits"))
 
         # Inform the user
         log.success("Convolution finished")
@@ -776,7 +776,7 @@ class BatchImagePreparer(Configurable):
             _rebin(image, reference_wcs=self.rebinning_wcs, exact=self.config.rebinning.exact)
 
             # Save intermediate result if requested
-            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "rebinned.fits"))
+            if self.config.write_steps: image.saveto(fs.join(self.output_paths[label], "rebinned.fits"))
 
         # Inform the user
         log.success("Rebinning finished")
@@ -847,7 +847,7 @@ class BatchImagePreparer(Configurable):
             self.noise_maps[label] = noise_frame
 
             # Save intermediate result if requested
-            if self.config.write_steps: image.save(fs.join(self.output_paths[label], "sky_subtracted.fits"))
+            if self.config.write_steps: image.saveto(fs.join(self.output_paths[label], "sky_subtracted.fits"))
 
         # Inform the user
         log.success("Sky subtraction finished")
@@ -1109,7 +1109,7 @@ class BatchImagePreparer(Configurable):
             self.dataset.add_path(name, path)
 
             # Save the image
-            self.images[name].save(path)
+            self.images[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1139,7 +1139,7 @@ class BatchImagePreparer(Configurable):
         log.info("Writing the statistics to '" + self.config.writing.statistics_path + "' ...")
 
         # Write the statistics
-        self.statistics.save(self.config.writing.statistics_path)
+        self.statistics.saveto(self.config.writing.statistics_path)
 
 # -----------------------------------------------------------------
 
@@ -1193,7 +1193,7 @@ def _extract_sources(image, config, sources_path, visualisation_path=None):
         path = fs.join(visualisation_path, time.unique_name(image.name + "_sourceextraction") + ".gif")
 
         # Save the animation
-        source_extractor_animation.save(path)
+        source_extractor_animation.saveto(path)
 
         # ...
         animation.add_image(image.frames.primary)
@@ -1202,7 +1202,7 @@ def _extract_sources(image, config, sources_path, visualisation_path=None):
         path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_extractsources") + ".gif")
 
         # Save the animation
-        animation.save(path)
+        animation.saveto(path)
 
     # Add the sources mask to the image
     image.add_mask(extractor.mask, "sources")
@@ -1273,7 +1273,7 @@ def _convolve(image, kernel_path, kernel_fwhm, visualisation_path=None, host_id=
         path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_convolve") + ".gif")
 
         # Save the animation
-        animation.save(path)
+        animation.saveto(path)
 
     # Return the kernel
     return kernel
@@ -1376,19 +1376,19 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
 
         # Write the sky region
         region_path = fs.join(sky_apertures_path, "annulus.reg")
-        sky_subtractor.region.save(region_path)
+        sky_subtractor.region.saveto(region_path)
 
         # Write the apertures frame
         apertures_frame_path = fs.join(sky_apertures_path, "apertures.fits")
-        sky_subtractor.apertures_frame.save(apertures_frame_path)
+        sky_subtractor.apertures_frame.saveto(apertures_frame_path)
 
         # Write the apertures mean frame
         apertures_mean_path = fs.join(sky_apertures_path, "apertures_mean.fits")
-        sky_subtractor.apertures_mean_frame.save(apertures_mean_path)
+        sky_subtractor.apertures_mean_frame.saveto(apertures_mean_path)
 
         # Write the apertures noise frame
         apertures_noise_path = fs.join(sky_apertures_path, "apertures_noise.fits")
-        sky_subtractor.apertures_noise_frame.save(apertures_noise_path)
+        sky_subtractor.apertures_noise_frame.saveto(apertures_noise_path)
 
     # Write the animation
     if visualisation_path is not None:
@@ -1397,7 +1397,7 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
         path = fs.join(visualisation_path, time.unique_name(image.name + "_skysubtraction") + ".gif")
 
         # Save the animation
-        skysubtractor_animation.save(path)
+        skysubtractor_animation.saveto(path)
 
         # ...
         animation.add_image(image.frames.primary)
@@ -1406,7 +1406,7 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
         path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_subtractsky") + ".gif")
 
         # Save the animation
-        animation.save(path)
+        animation.saveto(path)
 
     # IMPORTANT: SET FLAG
     image.sky_subtracted = True

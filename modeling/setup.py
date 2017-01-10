@@ -185,6 +185,6 @@ class ModelingSetupTool(Configurable):
         path = get_config_file_path(self.modeling_path)
 
         # Save the config
-        self.modeling_config.save(path)
+        self.modeling_config.saveto(path)
 
 # -----------------------------------------------------------------

@@ -163,6 +163,9 @@ class ObservedSED(object):
         self.table["Error-"].unit = Unit("Jy")
         self.table["Error+"].unit = Unit("Jy")
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     def __len__(self):
@@ -203,6 +206,9 @@ class ObservedSED(object):
 
         # New
         sed.table = tables.from_file(path, format="ascii.ecsv")
+
+        # Set the path
+        sed.path = path
 
         # Return the observed SED
         return sed
@@ -585,7 +591,22 @@ class ObservedSED(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -598,6 +619,9 @@ class ObservedSED(object):
 
         # Write the observed SED
         tables.write(self.table, path, format="ascii.ecsv")
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------
 
@@ -625,6 +649,9 @@ class SED(object):
         self.table["Flux"].unit = Unit(flux_unit)
         self.table["Error-"].unit = Unit(flux_unit)
         self.table["Error+"].unit = Unit(flux_unit)
+
+        # The path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -754,6 +781,9 @@ class SED(object):
         # New
         sed.table = tables.from_file(path, format="ascii.ecsv")
 
+        # Set the path
+        sed.path = path
+
         # Return the SED
         return sed
 
@@ -831,7 +861,22 @@ class SED(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("The path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -841,6 +886,9 @@ class SED(object):
 
         # Write the SED table to file
         tables.write(self.table, path, format="ascii.ecsv")
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------
 

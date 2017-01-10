@@ -142,6 +142,6 @@ for path in paths:
     # SAVE
     prep_path_band = fs.join(prep_path, instrument + " " + band)
     result_path = fs.join(prep_path_band, "poisson.fits")
-    remote_frame.save(result_path)
+    remote_frame.saveto(result_path)
 
 # -----------------------------------------------------------------

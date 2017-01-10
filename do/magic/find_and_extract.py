@@ -180,22 +180,22 @@ finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_impo
 # Save the galaxy region
 galaxy_region = finder.galaxy_region
 galaxy_region_path = fs.join(output_path, "galaxies.reg")
-galaxy_region.save(galaxy_region_path)
+galaxy_region.saveto(galaxy_region_path)
 
 # Save the star region
 star_region = finder.star_region
 star_region_path = fs.join(output_path, "stars.reg")
-star_region.save(star_region_path)
+star_region.saveto(star_region_path)
 
 # Save the saturation region
 saturation_region = finder.saturation_region
 saturation_region_path = fs.join(output_path, "saturation.reg")
-saturation_region.save(saturation_region_path)
+saturation_region.saveto(saturation_region_path)
 
 # Save the other sources region
 other_region = finder.other_region
 other_region_path = fs.join(output_path, "other_sources.reg")
-other_region.save(other_region_path)
+other_region.saveto(other_region_path)
 
 # -----------------------------------------------------------------
 
@@ -213,7 +213,7 @@ segments.add_frame(finder.other_segments, "other_sources")
 
 # Save the FITS file with the segmentation maps
 path = fs.join(output_path, "segments.fits")
-segments.save(path)
+segments.saveto(path)
 
 # -----------------------------------------------------------------
 
@@ -250,6 +250,6 @@ extractor.run(image.frames.primary, star_region, saturation_region, galaxy_segme
 result_path = fs.join(output_path, image.name + ".fits")
 
 # Save the resulting image as a FITS file
-image.save(result_path)
+image.saveto(result_path)
 
 # -----------------------------------------------------------------

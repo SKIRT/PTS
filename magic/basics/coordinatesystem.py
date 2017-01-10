@@ -70,6 +70,9 @@ class CoordinateSystem(wcs.WCS):
                 try: self.naxis2 = header["NAXIS2"]
                 except TypeError: self.naxis2 = self._naxis2
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -88,7 +91,13 @@ class CoordinateSystem(wcs.WCS):
         for key in header:
             if "PLANE" in key: del header[key]
 
-        return cls(header)
+        self = cls(header)
+
+        # Set the path
+        self.path = path
+
+        # Return
+        return self
 
     # -----------------------------------------------------------------
 

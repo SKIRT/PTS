@@ -221,7 +221,7 @@ class AnianoKernels(object):
             # Set the FWHM of the kernel
             kernel = ConvolutionKernel.from_file(kernel_file_path, fwhm=fwhm)
             #kernel.fwhm = fwhm
-            kernel.save(kernel_file_path)
+            kernel.saveto(kernel_file_path)
 
         # Return
         if return_name: return kernel_file_path, to_psf_name
@@ -285,7 +285,7 @@ class AnianoKernels(object):
 
             # Set the FWHM of the PSF
             psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm)
-            psf.save(psf_file_path)
+            psf.saveto(psf_file_path)
 
         if return_name: return psf_file_path, psf_name
         else: return psf_file_path # Return the local PSF path

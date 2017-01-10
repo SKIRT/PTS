@@ -242,7 +242,7 @@ class PreparationInitializer(PreparationComponent):
                 image.add_frame(error_map, "errors")
 
             # Save the image
-            image.save(initialized_path)
+            image.saveto(initialized_path)
 
     # -----------------------------------------------------------------
 
@@ -372,7 +372,7 @@ class PreparationInitializer(PreparationComponent):
 
                 image = self.set.get_image(prep_name)
                 image.fwhm = self.statistics[prep_name].fwhm
-                image.save(self.set.paths[prep_name])
+                image.saveto(self.set.paths[prep_name])
 
     # -----------------------------------------------------------------
 

@@ -224,7 +224,7 @@ for filter_name in images:
     frame_path = fs.join(new_path, filter_name + ".fits")
 
     # Save the frame
-    frame.save(frame_path)
+    frame.saveto(frame_path)
 
 # Plotting difference in total flux
 plt.plot(x, y)

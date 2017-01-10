@@ -562,10 +562,10 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Writing the models ...")
 
         # Write the disk model
-        self.disk.save(self.disk_model_path)
+        self.disk.saveto(self.disk_model_path)
 
         # Write the bulge model
-        self.bulge.save(self.bulge_model_path)
+        self.bulge.saveto(self.bulge_model_path)
 
     # -----------------------------------------------------------------
 
@@ -581,16 +581,16 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Determine the path to the bulge 2D image and save it
         bulge_2d_path = fs.join(self.components_images_path, "bulge2D.fits")
-        self.bulge2d_image.save(bulge_2d_path)
+        self.bulge2d_image.saveto(bulge_2d_path)
 
         # Determine the path to the bulge image and save it
-        self.bulge_image.save(self.bulge_image_path)
+        self.bulge_image.saveto(self.bulge_image_path)
 
         # Determine the path to the disk image and save it
-        self.disk_image.save(self.disk_image_path)
+        self.disk_image.saveto(self.disk_image_path)
 
         # Determine the path to the model image and save it
-        self.model_image.save(self.model_image_path)
+        self.model_image.saveto(self.model_image_path)
 
     # -----------------------------------------------------------------
 
@@ -605,13 +605,13 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Writing the projection systems ...")
 
         # Write the earth projection system
-        self.projections["earth"].save(self.earth_projection_path)
+        self.projections["earth"].saveto(self.earth_projection_path)
 
         # Write the edgeon projection system
-        self.projections["edgeon"].save(self.edgeon_projection_path)
+        self.projections["edgeon"].saveto(self.edgeon_projection_path)
 
         # Write the faceon projection system
-        self.projections["faceon"].save(self.faceon_projection_path)
+        self.projections["faceon"].saveto(self.faceon_projection_path)
 
     # -----------------------------------------------------------------
 
@@ -636,7 +636,7 @@ class GalaxyDecomposer(DecompositionComponent):
         # Create region
         region = SkyRegionList()
         region.append(sky_ellipse)
-        region.save(self.disk_region_path)
+        region.saveto(self.disk_region_path)
 
 # -----------------------------------------------------------------
 

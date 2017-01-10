@@ -432,7 +432,7 @@ class ObservedImageMaker(object):
                 path = fs.join(self.output_path, datacube_name + "__" + filter_name + ".fits")
 
                 # Save the image
-                self.images[datacube_name][filter_name].save(path)
+                self.images[datacube_name][filter_name].saveto(path)
 
 # -----------------------------------------------------------------
 

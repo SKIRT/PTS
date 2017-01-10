@@ -117,7 +117,7 @@ log.info("Plotting the single-node scaling ...")
 command = pts_path + " plot_scaling speedup total --debug --output '" + single_node_path + "' --plot/not_add_border --plot/not_add_legend_border --not_fit --plot/figsize " + figsize
 #command = split_string_except_within_single_quotes(command)
 #print(command) # DOESN'T WORK??
-#call(command, shell=True, stdout=FNULL, stderr=STDOUT)
+call(command, shell=True, stdout=FNULL, stderr=STDOUT)
 
 # -----------------------------------------------------------------
 
@@ -131,17 +131,17 @@ log.info("Plotting the multi-node scaling and timelines ...")
 # Make plots of multi node scaling
 command = pts_path + " plot_scaling efficiency,speedup,runtime total --debug --output '" + multi_node_path + "' --plot/not_add_border --plot/not_add_legend_border --not_fit --plot/figsize " + figsize
 #call(split_string_except_within_single_quotes(command)) # DOESN'T WORK??
-#call(command, shell=True, stdout=FNULL, stderr=STDOUT)
+call(command, shell=True, stdout=FNULL, stderr=STDOUT)
 
 # Make timeline plots
 command = pts_path + " plot_timelines --debug --output '" + multi_node_path + "' --figsize " + figsize_timelines
 #call(split_string_except_within_single_quotes(command))
-#call(command, shell=True, stdout=FNULL, stderr=STDOUT)
+call(command, shell=True, stdout=FNULL, stderr=STDOUT)
 
 # -----------------------------------------------------------------
 
 # Navigate to the communication directory
-path = fs.join(suite_path, "2.communication")
+path = fs.join(suite_path, "2.communication", "vsStandard")
 fs.change_cwd(path)
 
 # Inform the user
@@ -153,8 +153,6 @@ command = pts_path + " plot_scaling runtime communication --debug --output '" + 
           "--plot/not_add_border --plot/not_add_legend_border --plot/legend_below --plot/figsize " + figsize
 #call(split_string_except_within_single_quotes(command)) # DOESN'T WORK??
 call(command, shell=True, stdout=FNULL, stderr=STDOUT)
-
-exit()
 
 # -----------------------------------------------------------------
 

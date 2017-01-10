@@ -671,7 +671,7 @@ class BestModelLauncher(FittingComponent):
         log.info("Writing the dust grid ...")
 
         # Write the dust grid
-        self.dust_grid.save(self.dust_grid_path)
+        self.dust_grid.saveto(self.dust_grid_path)
 
     # -----------------------------------------------------------------
 

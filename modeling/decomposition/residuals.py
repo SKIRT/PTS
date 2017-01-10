@@ -256,19 +256,19 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
         # Bulge residual
         path = fs.join(self.components_residuals_path, "bulge.fits")
-        self.bulge_residual.save(path)
+        self.bulge_residual.saveto(path)
 
         # Bulge2D residual
         path = fs.join(self.components_residuals_path, "bulge2D.fits")
-        self.bulge2d_residual.save(path)
+        self.bulge2d_residual.saveto(path)
 
         # Disk residual
         path = fs.join(self.components_residuals_path, "disk.fits")
-        self.disk_residual.save(path)
+        self.disk_residual.saveto(path)
 
         # Calculate the model residual frame
         path = fs.join(self.components_residuals_path, "model.fits")
-        self.model_residual.save(path)
+        self.model_residual.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -315,7 +315,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
         all_residual = Frame(np.copy(model_residual))
         all_residual[source.y_slice, source.x_slice] -= evaluated_model
-        all_residual.save(fs.join(residuals_path, "all_residual.fits"))
+        all_residual.saveto(fs.join(residuals_path, "all_residual.fits"))
 
         model = Gaussian2D(amplitude=0.0087509425805, x_mean=center.x, y_mean=center.y, x_stddev=sigma, y_stddev=sigma)
         rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
@@ -325,6 +325,6 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
         all_residual2 = Frame(np.copy(model_residual))
         all_residual2[source.y_slice, source.x_slice] -= evaluated_model
-        all_residual2.save(fs.join(residuals_path, "all_residual2.fits"))
+        all_residual2.saveto(fs.join(residuals_path, "all_residual2.fits"))
 
 # -----------------------------------------------------------------

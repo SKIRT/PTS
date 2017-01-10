@@ -57,6 +57,9 @@ class Distribution(object):
 
         self._cum_smooth = None # Not a good solution to cache this, function can be called with different x_min and x_max ...
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -152,11 +155,32 @@ class Distribution(object):
         percentile_16 = table.meta["percentile16"]
         percentile_84 = table.meta["percentile84"]
 
-        return cls(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
+        distribution = cls(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
+
+        # Set the path
+        distribution.path = path
+
+        # Return the distribution
+        return distribution
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -177,6 +201,9 @@ class Distribution(object):
 
         # Save the table
         table.write(path, format="ascii.ecsv")
+
+        # Update the path
+        self.path = path
 
     # -----------------------------------------------------------------
 
@@ -1092,6 +1119,9 @@ class Distribution2D(object):
         self.x_name = x_name
         self.y_name = y_name
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -1131,14 +1161,33 @@ class Distribution2D(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        print("Saving Distribution2D not implemented yet!")
+
+        # Update the path
+        #self.path = path
 
     # -----------------------------------------------------------------
 

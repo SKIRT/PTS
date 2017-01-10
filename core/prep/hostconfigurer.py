@@ -142,6 +142,6 @@ class HostConfigurer(Configurable):
         path = fs.join(hosts_directory, self.config.name + ".cfg")
 
         # Write the host configuration
-        self.host_config.save(path)
+        self.host_config.saveto(path)
 
 # -----------------------------------------------------------------

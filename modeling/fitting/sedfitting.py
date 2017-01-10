@@ -408,7 +408,7 @@ class SEDFitter(FittingComponent):
             log.debug("Writing the probability distribution of the " + self.parameter_descriptions[label] + " parameter ...")
 
             # Write the table of probabilities for this parameter
-            self.distributions[label].save(self.get_parameter_distribution_path(label))
+            self.distributions[label].saveto(self.get_parameter_distribution_path(label))
 
     # -----------------------------------------------------------------
 
@@ -452,7 +452,7 @@ class SEDFitter(FittingComponent):
         path = fs.join(self.visualisation_path, time.unique_name("sedfitter") + ".gif")
 
         # Write the animation
-        self.animation.save(path)
+        self.animation.saveto(path)
 
 # -----------------------------------------------------------------
 

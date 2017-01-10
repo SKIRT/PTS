@@ -68,6 +68,9 @@ class SEDInstrument(Instrument):
         :return:
         """
 
+        # Call the constructor of the base class
+        super(SEDInstrument, self).__init__()
+
         self.distance = distance
         self.inclination = inclination
         self.azimuth = azimuth
@@ -109,6 +112,9 @@ class FrameInstrument(Instrument):
         :param center_x:
         :param center_y:
         """
+
+        # Call the constructor of the base class
+        super(FrameInstrument, self).__init__()
 
         self.distance = distance
         self.inclination = inclination
@@ -161,6 +167,9 @@ class SimpleInstrument(Instrument):
         :return:
         """
 
+        # Call the constructor of the base class
+        super(SimpleInstrument, self).__init__()
+
         self.distance = distance
         self.inclination = inclination
         self.azimuth = azimuth
@@ -210,6 +219,9 @@ class FullInstrument(Instrument):
         :param center_y:
         :return:
         """
+
+        # Call the constructor of the base class
+        super(FullInstrument, self).__init__()
 
         self.distance = distance
         self.inclination = inclination

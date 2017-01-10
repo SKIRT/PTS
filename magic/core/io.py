@@ -427,6 +427,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Check whether the image is extinction-corrected
     extinction_corrected = headers.is_extinction_corrected(header)
 
+    # Multiplane
     if nframes > 1:
 
         if plane is not None:
@@ -509,7 +510,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    sky_subtracted=sky_subtracted,
                    fwhm=fwhm,
                    pixelscale=pixelscale,
-                   meta=metadata)
+                   meta=metadata,
+                   path=path,
+                   from_multiplane=True)
 
     else:
 
@@ -532,7 +535,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    sky_subtracted=sky_subtracted,
                    fwhm=fwhm,
                    pixelscale=pixelscale,
-                   meta=metadata)
+                   meta=metadata,
+                   path=path,
+                   from_multiplane=False)
 
 # -----------------------------------------------------------------
 

@@ -245,7 +245,7 @@ class Collector(OldConfigurable):
 
         # Inform the user and save the source object
         self.log.info("Saving the " + self.description + " to " + path)
-        self.current_source.save(path)
+        self.current_source.saveto(path)
 
         self.last_path = path
 
@@ -270,7 +270,7 @@ class Collector(OldConfigurable):
 
         # Inform the user and save the source object
         self.log.info("Saving the source to " + path)
-        self.current_source.save(path)
+        self.current_source.saveto(path)
 
         self.last_path = path
 

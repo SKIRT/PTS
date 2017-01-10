@@ -202,13 +202,13 @@ class ScalingTest(Configurable):
         self.timing_table_path = fs.join(self.base_path, "timing.dat")
         if not fs.is_file(self.timing_table_path):
             timing_table = TimingTable.initialize()
-            timing_table.save(self.timing_table_path)
+            timing_table.saveto(self.timing_table_path)
 
         # Set the path to the memory table and initialize it if necessary
         self.memory_table_path = fs.join(self.base_path, "memory.dat")
         if not fs.is_file(self.memory_table_path):
             memory_table = MemoryTable.initialize()
-            memory_table.save(self.memory_table_path)
+            memory_table.saveto(self.memory_table_path)
 
     # -----------------------------------------------------------------
 

@@ -144,6 +144,6 @@ class S4GDecomposer(DecompositionComponent):
             path = fs.join(self.components_2d_s4g_path, name + ".mod")
 
             # Save the model
-            self.components[name].save(path)
+            self.components[name].saveto(path)
 
 # -----------------------------------------------------------------

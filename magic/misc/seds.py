@@ -1456,6 +1456,6 @@ class SEDFetcher(Configurable):
             sed_path = fs.join(self.config.path, label + ".dat")
 
             # Save the SED at the specified location
-            self.seds[label].save(sed_path)
+            self.seds[label].saveto(sed_path)
 
 # -----------------------------------------------------------------

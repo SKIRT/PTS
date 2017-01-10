@@ -336,7 +336,7 @@ class DustMapMaker(MapsComponent):
             path = fs.join(self.maps_dust_path, label + ".fits")
 
             # Save the dust map
-            self.maps[label].save(path)
+            self.maps[label].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -357,7 +357,7 @@ class DustMapMaker(MapsComponent):
             path = fs.join(self.maps_dust_path, label + "_error.fits")
 
             # Save the error map
-            self.error_maps[label].save(path)
+            self.error_maps[label].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -372,7 +372,7 @@ class DustMapMaker(MapsComponent):
         log.info("Writing the final dust map ...")
 
         # Write the final dust map
-        self.map.save(self.dust_map_path)
+        self.map.saveto(self.dust_map_path)
 
     # -----------------------------------------------------------------
 
@@ -387,7 +387,7 @@ class DustMapMaker(MapsComponent):
         log.info("Writing the significance masks ...")
 
         # Write
-        self.significance.save(self.dust_significance_path)
+        self.significance.saveto(self.dust_significance_path)
 
     # -----------------------------------------------------------------
 
@@ -402,6 +402,6 @@ class DustMapMaker(MapsComponent):
         log.info("Writing the cutoff mask ...")
 
         # Write
-        self.cutoff_mask.save(self.dust_cutoff_path)
+        self.cutoff_mask.saveto(self.dust_cutoff_path)
 
 # -----------------------------------------------------------------

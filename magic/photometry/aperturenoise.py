@@ -690,7 +690,7 @@ class ExactApertureNoiseCalculator(Configurable):
         distance_ell = Frame(distance_ellipse(self.cutout.shape, center, ratio, angle))
 
         path = fs.join(self.config.plot_path, "distance_ellipse.fits")
-        distance_ell.save(path)
+        distance_ell.saveto(path)
 
         # The maximum "major-relative" radius
         max_maj_distance = np.max(distance_ell)
@@ -1276,7 +1276,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_frame_path = fs.join(self.config.plot_path, "apertures.fits")
-        self.apertures_frame.save(apertures_frame_path)
+        self.apertures_frame.saveto(apertures_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1292,7 +1292,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_sum_frame_path = fs.join(self.config.plot_path, "apertures_sum.fits")
-        self.apertures_sum_frame.save(apertures_sum_frame_path)
+        self.apertures_sum_frame.saveto(apertures_sum_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1308,7 +1308,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_mean_frame_path = fs.join(self.config.plot_path, "apertures_mean.fits")
-        self.apertures_mean_frame.save(apertures_mean_frame_path)
+        self.apertures_mean_frame.saveto(apertures_mean_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1324,7 +1324,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_noise_frame_path = fs.join(self.config.plot_path, "apertures_noise.fits")
-        self.apertures_noise_frame.save(apertures_noise_frame_path)
+        self.apertures_noise_frame.saveto(apertures_noise_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1340,7 +1340,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save region
         region_path = fs.join(self.config.plot_path, "apertures.reg")
-        self.aperture_region.save(region_path)
+        self.aperture_region.saveto(region_path)
 
     # -----------------------------------------------------------------
 
@@ -1356,7 +1356,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save covering map
         covering_path = fs.join(self.config.plot_path, "covering.fits")
-        self.covering_apertures.save(covering_path)
+        self.covering_apertures.saveto(covering_path)
 
     # -----------------------------------------------------------------
 
@@ -1372,7 +1372,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save aperture mask
         apertures_mask_path = fs.join(self.config.plot_path, "apertures_mask.fits")
-        self.apertures_mask.save(apertures_mask_path)
+        self.apertures_mask.saveto(apertures_mask_path)
 
     # -----------------------------------------------------------------
 
@@ -1388,7 +1388,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save prior mask
         prior_mask_path = fs.join(self.config.plot_path, "prior_mask.fits")
-        self.prior_mask.save(prior_mask_path)
+        self.prior_mask.saveto(prior_mask_path)
 
     # -----------------------------------------------------------------
 
@@ -1404,7 +1404,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save flag mask
         flag_mask_path = fs.join(self.config.plot_path, "flag_mask.fits")
-        self.flag_mask.save(flag_mask_path)
+        self.flag_mask.saveto(flag_mask_path)
 
 # -----------------------------------------------------------------
 

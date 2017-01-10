@@ -75,6 +75,9 @@ class CatalogImporter(Configurable):
         # 3. Import the stellar catalog
         self.import_stellar_catalog()
 
+        # 4. Write
+        if self.config.write: self.write()
+
     # -----------------------------------------------------------------
 
     def clear(self):
@@ -300,6 +303,21 @@ class CatalogImporter(Configurable):
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.stellar_catalog)))
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write galactic catalog
+        self.write_galactic_catalog()
+
+        # Write stellar catalog
+        self.write_stellar_catalog()
 
     # -----------------------------------------------------------------
 

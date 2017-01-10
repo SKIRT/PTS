@@ -116,7 +116,7 @@ class SExtractor(object):
 
         # Save the input frame to the temporary directory
         image_path = os.path.join(directory, "input.fits")
-        frame.save(image_path)
+        frame.saveto(image_path)
 
     # -----------------------------------------------------------------
 

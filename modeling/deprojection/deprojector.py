@@ -366,6 +366,6 @@ class Deprojector(DeprojectionComponent):
             frame.wcs = self.reference_wcs
 
             # Save frame
-            frame.save(frame_path)
+            frame.saveto(frame_path)
 
 # -----------------------------------------------------------------

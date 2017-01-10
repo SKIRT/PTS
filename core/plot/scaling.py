@@ -2923,8 +2923,8 @@ class ScalingPlotter(Configurable):
                     ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads) and the y axis (time)
-        if self.config.plot.xlog: plt.xscale('log')
-        if self.config.plot.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale('log')
+        if self.config.xlog: plt.xscale('log')
+        if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale('log')
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
@@ -3163,8 +3163,8 @@ class ScalingPlotter(Configurable):
                     ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for both axes
-        if self.config.plot.xlog: plt.xscale('log')
-        if self.config.plot.ylog: plt.yscale('log')
+        if self.config.xlog: plt.xscale('log')
+        if self.config.ylog: plt.yscale('log')
 
         # No data points
         if len(ticks) == 0:
@@ -3371,8 +3371,8 @@ class ScalingPlotter(Configurable):
                     ticks_ncores |= set(processor_counts)
 
         # Use a logaritmic scale for the x axis (nthreads)
-        if self.config.plot.xlog: plt.xscale('log')
-        if self.config.plot.ylog: log.warning("Not using y log scale for efficieny plots")
+        if self.config.xlog: plt.xscale('log')
+        if self.config.ylog: log.warning("Not using y log scale for efficieny plots")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)
@@ -3555,8 +3555,8 @@ class ScalingPlotter(Configurable):
                     ticks_ncores |= set(processor_counts)
 
         # Use a logarithmic scale for the x axis (nthreads)
-        if self.config.plot.xlog: plt.xscale("log")
-        if self.config.plot.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale("log")
+        if self.config.xlog: plt.xscale("log")
+        if self.config.ylog and phase not in phases_not_logaritmic_runtimes: plt.yscale("log")
 
         # Add one more tick for esthetic reasons
         ticks = sorted(ticks)

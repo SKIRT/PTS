@@ -80,6 +80,8 @@ class Map(dict):
 
         for label in self:
 
+            if label.startswith("_"): continue
+
             value = self[label]
             other_value = other[label]
 
@@ -122,6 +124,8 @@ class Map(dict):
 
         # Loop over all the items in the 'items' dictionary
         for key in items:
+
+            if key.startswith("_"): continue
 
             # Check whether an item with this key exists in this Map
             if key in self:

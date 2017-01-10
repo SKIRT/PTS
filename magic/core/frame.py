@@ -81,6 +81,10 @@ class Frame(NDDataArray):
         self.wcs = wcs # go through the setter
         self.unit = unit # go through the setter
 
+        # The path
+        self.path = kwargs.pop("path", None)
+        self._from_multiplane = kwargs.pop("from_multiplane", False)
+
     # -----------------------------------------------------------------
 
     @property
@@ -1488,7 +1492,31 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def save(self, path, header=None, origin=None, extra_header_info=None):
+    def save(self, header=None, origin=None, extra_header_info=None):
+
+        """
+        This function ...
+        :param header:
+        :param origin:
+        :param extra_header_info:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the frame ...")
+
+        # Check if path is defined
+        if self.path is None: raise RuntimeError("Path for the frame is not defined")
+
+        # Check if original file was not multiplane
+        if self._from_multiplane: raise RuntimeError("Cannot save frame into a multiplane image")
+
+        # Save
+        self.saveto(self.path, header, origin, extra_header_info)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, header=None, origin=None, extra_header_info=None):
 
         """
         This function ...
@@ -1519,6 +1547,9 @@ class Frame(NDDataArray):
         # Write
         from . import io
         io.write_frame(self._data, header, path)
+
+        # Replace the path
+        self.path = path
 
 # -----------------------------------------------------------------
 

@@ -572,7 +572,7 @@ class GalaxyFinder(Configurable):
 
                 # Save the cutout as a FITS file
                 path = fs.join(directory_path, "galaxy_principal_" + str(principals) + ".fits")
-                galaxy.source.save(path, origin=self.name)
+                galaxy.source.saveto(path, origin=self.name)
 
                 # Increment the counter of the number of principal galaxies (there should only be one, really...)
                 principals += 1
@@ -582,7 +582,7 @@ class GalaxyFinder(Configurable):
 
                 # Save the cutout as a FITS file
                 path = fs.join(directory_path, "galaxy_companion_" + str(companions) + ".fits")
-                galaxy.source.save(path, origin=self.name)
+                galaxy.source.saveto(path, origin=self.name)
 
                 # Increment the counter of the number of companion galaxies
                 companions += 1
@@ -592,7 +592,7 @@ class GalaxyFinder(Configurable):
 
                 # Save the cutout as a FITS file
                 path = fs.join(directory_path, "galaxy_source_" + str(principals) + ".fits")
-                galaxy.source.save(path, origin=self.name)
+                galaxy.source.saveto(path, origin=self.name)
 
                 # Increment the counter of the number of galaxies with a source
                 with_source += 1

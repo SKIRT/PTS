@@ -60,6 +60,6 @@ if arguments.data:
 else: new_frame = Frame(mask.astype(int))
 
 # Write out the new frame
-new_frame.save(region_name + ".fits")
+new_frame.saveti(region_name + ".fits")
 
 # -----------------------------------------------------------------

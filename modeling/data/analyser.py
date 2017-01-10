@@ -260,7 +260,7 @@ class MosaicAnalyser(DataComponent):
             path = fs.join(self.check_paths[band_id], self.ngc_name_nospaces + "_" + band_id + ".fits")
 
             # Save the mosaic frame
-            self.mosaics[band_id].save(path)
+            self.mosaics[band_id].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -288,13 +288,13 @@ class MosaicAnalyser(DataComponent):
                 poisson_frame_jy.unit = "Jy/pix"
 
                 # Save the poisson error frame
-                poisson_frame_jy.save(path)
+                poisson_frame_jy.saveto(path)
 
             # For SDSS
             else:
 
                 # Save the poisson error frame
-                self.poisson_frames[band_id].save(path)
+                self.poisson_frames[band_id].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -315,7 +315,7 @@ class MosaicAnalyser(DataComponent):
             path = fs.join(self.check_paths[band_id], self.ngc_name_nospaces + "_" + band_id + "_relpoisson.fits")
 
             # Save the relative poisson error frame
-            self.relative_poisson_frames[band_id].save(path)
+            self.relative_poisson_frames[band_id].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -339,7 +339,7 @@ class MosaicAnalyser(DataComponent):
             difference = self.references[band_id] - self.mosaics[band_id]
 
             # Write
-            difference.save(path)
+            difference.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -363,6 +363,6 @@ class MosaicAnalyser(DataComponent):
             reldifference = self.references[band_id] / self.mosaics[band_id]
 
             # Write
-            reldifference.save(path)
+            reldifference.saveto(path)
 
 # -----------------------------------------------------------------

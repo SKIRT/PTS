@@ -258,7 +258,7 @@ class ResidualAnalyser(AnalysisComponent):
             log.debug("Writing the residual frame for the " + filter_name + " band to '" + path + "' ...")
 
             # Write the image
-            self.residuals[filter_name].save(path)
+            self.residuals[filter_name].saveto(path)
 
     # -----------------------------------------------------------------
 

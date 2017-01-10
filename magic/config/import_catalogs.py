@@ -24,6 +24,7 @@ definition.sections["stars"].add_optional("catalog_path", "file_path", "catalog 
 definition.sections["stars"].add_section("fetching", "fetching stellar catalogs")
 definition.sections["stars"].sections["fetching"].add_optional("catalogs", "string_list", "catalogs to use", default=["II/246"], choices=["UCAC4", "NOMAD", "PPMXL", "II/246"])
 
+definition.add_flag("write", "write the catalogs")
 definition.add_section("writing", "writing options")
 definition.sections["writing"].add_optional("galactic_catalog_path", "string", "write galactic catalog file")
 definition.sections["writing"].add_optional("stellar_catalog_path", "string", "write stellar catalog file")

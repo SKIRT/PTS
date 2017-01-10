@@ -448,7 +448,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Writing SED to a data file ...")
 
         # Save the SED
-        self.sed.save(self.observed_sed_path)
+        self.sed.saveto(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 
@@ -793,7 +793,7 @@ class PhotoMeter(PhotometryComponent):
         # PREPARE THE CONVOLUTION KERNEL
         psf.prepare_for(frame)
 
-        psf.save(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
+        psf.saveto(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
 
         # SET INPUT DICT
 

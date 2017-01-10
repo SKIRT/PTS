@@ -1105,7 +1105,7 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         path = fs.join(self.plot_fitting_path, "fitting.gif")
 
         # Save the animation as a GIF file
-        self.animation.save(path)
+        self.animation.saveto(path)
 
     # -----------------------------------------------------------------
 

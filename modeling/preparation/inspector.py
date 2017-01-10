@@ -140,6 +140,6 @@ class PreparationInspector(PreparationComponent):
             path = fs.join(self.inspect_path, name + "_significance.fits")
 
             # Save the error level map
-            self.significance_maps[name].save(path)
+            self.significance_maps[name].saveto(path)
 
 # -----------------------------------------------------------------

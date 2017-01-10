@@ -229,7 +229,7 @@ class MapMaker(MapsComponent):
             path = fs.join(self.maps_cutoff_path, name + ".fits")
 
             # Save the mask as a FITS file
-            Frame(mask.astype(float)).save(path)
+            Frame(mask.astype(float)).saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -257,13 +257,13 @@ class MapMaker(MapsComponent):
             if self.config.cutoff.remove_holes:
 
                 # Save the mask as a FITS file
-                Frame(self.mask.astype(float)).save(self.config.saving.cutoff_mask_with_holes_path)
+                Frame(self.mask.astype(float)).saveto(self.config.saving.cutoff_mask_with_holes_path)
 
                 # Perform the segmentation
                 segments = detect_sources(self.mask.astype(float), 0.5, 1).data
 
                 # Save segments
-                Frame(segments.astype(float)).save(self.config.saving.cutoff_mask_segments_path)
+                Frame(segments.astype(float)).saveto(self.config.saving.cutoff_mask_segments_path)
 
                 # Find the label of the largest segment (=the background)
                 label_counts = np.bincount(segments.flatten())
@@ -274,13 +274,13 @@ class MapMaker(MapsComponent):
                 holes[segments == background_label] = False
 
                 # Save holes mask
-                Frame(holes.astype(float)).save(self.config.saving.cutoff_mask_holes_path)
+                Frame(holes.astype(float)).saveto(self.config.saving.cutoff_mask_holes_path)
 
                 # Remove holes from the mask
                 self.mask[holes] = False
 
             # Save the mask as a FITS file
-            Frame(self.mask.astype(float)).save(self.config.saving.cutoff_mask_path)
+            Frame(self.mask.astype(float)).saveto(self.config.saving.cutoff_mask_path)
 
         # If not, raise an error
         else: raise IOError("The prepared reference image could not be found")
@@ -472,24 +472,24 @@ class MapMaker(MapsComponent):
         dust_path = fs.join(self.maps_path, "dust.fits")
 
         # Save the dust map
-        self.dust.save(dust_path)
+        self.dust.saveto(dust_path)
 
         # Determine the path to the old stars map
         old_stars_path = fs.join(self.maps_path, "old_stars.fits")
 
         # Save the old stars map
-        self.old_stars.save(old_stars_path)
+        self.old_stars.saveto(old_stars_path)
 
         # Determine the path to the young stars map
         young_stars_path = fs.join(self.maps_path, "young_stars.fits")
 
         # Save the young stars map
-        self.young_stars.save(young_stars_path)
+        self.young_stars.saveto(young_stars_path)
 
         # Determine the path to the ionizing stars map
         ionizing_stars_path = fs.join(self.maps_path, "ionizing_stars.fits")
 
         # Save the ionizing stars map
-        self.ionizing_stars.save(ionizing_stars_path)
+        self.ionizing_stars.saveto(ionizing_stars_path)
 
 # -----------------------------------------------------------------

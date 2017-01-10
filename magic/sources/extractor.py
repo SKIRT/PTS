@@ -657,7 +657,7 @@ class SourceExtractor(Configurable):
 
         # Save the animation
         path = fs.join(output_path, "animation.gif")
-        self.animation.save(path)
+        self.animation.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -675,7 +675,7 @@ class SourceExtractor(Configurable):
         path = self.output_path_file(self.frame.name + ".fits")
 
         # Save the resulting image as a FITS file
-        self.frame.save(path)
+        self.frame.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -693,7 +693,7 @@ class SourceExtractor(Configurable):
         path = self.output_path_file("mask.fits")
 
         # Save the total mask as a FITS file
-        Frame(self.mask.astype(float)).save(path)
+        Frame(self.mask.astype(float)).saveto(path)
 
     # -----------------------------------------------------------------
 

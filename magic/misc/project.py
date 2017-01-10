@@ -184,6 +184,6 @@ class Projector(Configurable):
             path = self.output_path_file(name + ".proj")
 
             # Save the projection
-            self.projections[name].save(path)
+            self.projections[name].saveto(path)
 
 # -----------------------------------------------------------------

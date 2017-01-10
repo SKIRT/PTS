@@ -522,6 +522,6 @@ class ConvolutionKernel(Frame):
         """
 
         # Call the save function of the base class
-        super(ConvolutionKernel, self).save(path, extra_header_info={"PREPARED": self.prepared})
+        super(ConvolutionKernel, self).saveto(path, extra_header_info={"PREPARED": self.prepared})
 
 # -----------------------------------------------------------------

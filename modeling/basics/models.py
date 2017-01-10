@@ -72,6 +72,9 @@ class SersicModel3D(Model):
         :return:
         """
 
+        # Call the constructor of the base class
+        super(SersicModel3D, self).__init__()
+
         self.effective_radius = effective_radius
         self.index = index
         self.y_flattening = y_flattening
@@ -148,6 +151,9 @@ class ExponentialDiskModel3D(Model):
         :return:
         """
 
+        # Call the constructor of the base class
+        super(ExponentialDiskModel3D, self).__init__()
+
         # Set the properties
         self.radial_scale = radial_scale
         self.axial_scale = axial_scale
@@ -200,6 +206,9 @@ class DeprojectionModel3D(Model):
         This function ...
         :return:
         """
+
+        # Call the constructor of the base class
+        super(DeprojectionModel3D, self).__init__()
 
         # position angle: -360 deg to 360 deg
         # inclination: 0 deg to 90 deg
@@ -422,6 +431,9 @@ class SersicModel2D(Model):
         :param kwargs:
         """
 
+        # Call the constructor of the base class
+        super(SersicModel2D, self).__init__()
+
         self.rel_contribution = kwargs.pop("rel_contribution", None)
         self.fluxdensity = kwargs.pop("fluxdensity", None)
         self.axial_ratio = kwargs.pop("axial_ratio", None)
@@ -442,6 +454,9 @@ class ExponentialDiskModel2D(Model):
         """
         The constructor ...
         """
+
+        # Call the constructor of the base class
+        super(ExponentialDiskModel2D, self).__init__()
 
         self.rel_contribution = kwargs.pop("relative_contribution", None)
         self.fluxdensity = kwargs.pop("fluxdensity", None)

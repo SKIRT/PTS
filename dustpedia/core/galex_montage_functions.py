@@ -485,7 +485,7 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
 
     # Write the swarped image
     swarp_output_path = fs.join(output_path, id_string + "_swarp.fits")
-    out_image.save(swarp_output_path)
+    out_image.saveto(swarp_output_path)
 
     ### WRITE THE MOSAIC, ERROR MAP AND RELATIVE ERROR MAP IN COUNTS/S
 
@@ -501,15 +501,15 @@ def mosaic_galex(galaxy_name, ra, dec, width, band_dict, working_path, temp_path
 
     # Save mosaic as FITS file
     mosaic_output_path = fs.join(output_path, id_string + ".fits")
-    mosaic.save(mosaic_output_path)
+    mosaic.saveto(mosaic_output_path)
 
     # Save error map as FITS file
     errors_output_path = fs.join(output_path, id_string + "_errors.fits")
-    errors.save(errors_output_path)
+    errors.saveto(errors_output_path)
 
     # Save relative error map as FITS file
     relerrors_output_path = fs.join(output_path, id_string + "_relerrors.fits")
-    relerrors.save(relerrors_output_path)
+    relerrors.saveto(relerrors_output_path)
     
 # -----------------------------------------------------------------
 
@@ -705,14 +705,14 @@ def old_end_of_mosaic_galex_function():
         frame.unit = "count" # set the unit to count
 
         # Save the frame to the count path
-        frame.save(fs.join(temp_poisson_count_path, image_name + ".fits"))
+        frame.saveto(fs.join(temp_poisson_count_path, image_name + ".fits"))
 
         # CONVERT THE FRAME FROM COUNT TO COUNT/SR
         frame /= frame.pixelarea.to("sr").value
         frame.unit = "count/sr"
 
         # Save the frame to the countsr path
-        frame.save(fs.join(temp_poisson_countsr_path, image_name + ".fits"))
+        frame.saveto(fs.join(temp_poisson_countsr_path, image_name + ".fits"))
 
         # REBIN THE FRAME TO THE COMMON PIXEL GRID
         footprint = frame.rebin(rebin_wcs)
@@ -729,13 +729,13 @@ def old_end_of_mosaic_galex_function():
         frame[weight_map.nans()] = np.NaN
 
         # Save the rebinned frame
-        frame.save(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
+        frame.saveto(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
 
         # SET NANS IN THE FOOTPRINT WHERE THE WEIGHT MAP IN THE TEMP SWARP PATH IS ALSO NAN
         footprint[weight_map.nans()] = np.NaN
 
         # Save the (rebinned) footprint
-        footprint.save(fs.join(temp_poisson_footprint_path, image_name + ".fits"))
+        footprint.saveto(fs.join(temp_poisson_footprint_path, image_name + ".fits"))
 
     # Initialize a list to contain the frames to be summed
     a_frames = [] # the rebinned maps in counts
@@ -768,7 +768,7 @@ def old_end_of_mosaic_galex_function():
         weight_frames.append(weight_frame)
 
         # Save weight frame
-        weight_frame.save(fs.join(temp_poisson_weights_path, name + ".fits"))
+        weight_frame.saveto(fs.join(temp_poisson_weights_path, name + ".fits"))
 
     # Take the sums
     ab_sum = sum_frames(*ab_frames)
@@ -776,7 +776,7 @@ def old_end_of_mosaic_galex_function():
     # AB SUM SHOULD ACTUALLY BE THE SAME AS A SUM
     a_sum = sum_frames(*a_frames) # SUM ALL THE COUNT MAPS
     # Save the total count map (a_sum)
-    a_sum.save(fs.join(temp_poisson_result_path, "total_counts.fits"))
+    a_sum.saveto(fs.join(temp_poisson_result_path, "total_counts.fits"))
 
     # Calculate the relative poisson errors
     rel_poisson_frame = ab_sum ** (-0.5)
@@ -785,12 +785,12 @@ def old_end_of_mosaic_galex_function():
     total_weight_map = sum_frames(*weight_frames)
 
     # Save rel poisson frame and total weight map
-    rel_poisson_frame.save(fs.join(temp_poisson_result_path, "rel_poisson.fits"))
-    total_weight_map.save(fs.join(temp_poisson_result_path, "weights.fits"))
+    rel_poisson_frame.saveto(fs.join(temp_poisson_result_path, "rel_poisson.fits"))
+    total_weight_map.saveto(fs.join(temp_poisson_result_path, "weights.fits"))
 
     # Write the Poisson error frame also to the output directory
     #poisson_path = fs.join(output_path, id_string + "_relpoisson.fits")
-    #rel_poisson_frame.save(poisson_path)
+    #rel_poisson_frame.saveto(poisson_path)
 
     ################ WRITE RESULT
 
@@ -802,7 +802,7 @@ def old_end_of_mosaic_galex_function():
     image.add_frame(rel_poisson_frame, "rel_poisson") # has no unit, but Image will be saved with unit. Problem?
 
     # Save the image
-    image.save(out_image_path)
+    image.saveto(out_image_path)
 
     ################
 
@@ -854,7 +854,7 @@ def make_noise_maps_in_cps(band_dict, image_names_for_mosaic, counts_path_band, 
         new_path = fs.join(temp_noise_path, image_name + ".fits")
 
         # Save the poisson noise map in counts per second
-        poisson.save(new_path)
+        poisson.saveto(new_path)
 
 # -----------------------------------------------------------------
 
@@ -915,11 +915,11 @@ def convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_
 
         # SAVE THE TILE IN COUNTS/S/SR
         frame_path = fs.join(temp_converted_path, image_name + ".fits")
-        frame.save(frame_path)
+        frame.saveto(frame_path)
 
         # SAVE THE ERROR MAP OF THE TILE IN COUNTS/S/SR
         errors_path = fs.join(temp_converted_path, image_name + "_error.fits")
-        poisson.save(errors_path)
+        poisson.saveto(errors_path)
 
 # -----------------------------------------------------------------
 
@@ -958,7 +958,7 @@ def rebin_frames_and_error_maps(temp_converted_path, temp_rebinned_path, header_
         new_path = fs.join(temp_rebinned_path, name + ".fits")
 
         # Save
-        frame.save(new_path)
+        frame.saveto(new_path)
 
 # -----------------------------------------------------------------
 
@@ -1001,7 +1001,7 @@ def rebin_weight_maps(band_dict, image_names_for_mosaic, temp_reproject_path, te
         new_path = fs.join(temp_rebinned_path, image_name + "_weight.fits")
 
         # Save
-        weights.save(new_path)
+        weights.saveto(new_path)
 
 # -----------------------------------------------------------------
 
@@ -1069,11 +1069,11 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
 
     # SAVE THE MOSAIC IN COUNTS/S
     mosaic_path = fs.join(temp_mosaic_path, "mosaic.fits")
-    mosaic_frame.save(mosaic_path)
+    mosaic_frame.saveto(mosaic_path)
 
     # SAVE THE MOSAIC ERROR MAP IN COUNTS/S
     mosaic_error_path = fs.join(temp_mosaic_path, "mosaic_errors.fits")
-    mosaic_errormap.save(mosaic_error_path)
+    mosaic_errormap.saveto(mosaic_error_path)
 
     # Return the mosaic and the mosaic error map in counts/s
     return mosaic_frame, mosaic_errormap
@@ -1125,15 +1125,15 @@ def convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output
 
     # Save mosaic as FITS file
     mosaic_output_path = fs.join(output_path, id_string + ".fits")
-    mosaic.save(mosaic_output_path)
+    mosaic.saveto(mosaic_output_path)
 
     # Save error map as FITS file
     errors_output_path = fs.join(output_path, id_string + "_errors.fits")
-    errors.save(errors_output_path)
+    errors.saveto(errors_output_path)
 
     # Save relative error map as FITS file
     relerrors_output_path = fs.join(output_path, id_string + "_relerrors.fits")
-    relerrors.save(relerrors_output_path)
+    relerrors.saveto(relerrors_output_path)
 
     ###
 

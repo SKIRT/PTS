@@ -684,13 +684,13 @@ class FittingInitializer(FittingComponent):
         log.info("Writing the SED, frame and simple instruments ...")
 
         # Write the SED instrument
-        self.instruments["SED"].save(self.sed_instrument_path)
+        self.instruments["SED"].saveto(self.sed_instrument_path)
 
         # Write the frame instrument
-        self.instruments["frame"].save(self.frame_instrument_path)
+        self.instruments["frame"].saveto(self.frame_instrument_path)
 
         # Write the simple instrument
-        self.instruments["simple"].save(self.simple_instrument_path)
+        self.instruments["simple"].saveto(self.simple_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -754,7 +754,7 @@ class FittingInitializer(FittingComponent):
 
             # Save the deprojection model
             path = fs.join(self.fit_geometries_path, label + ".mod")
-            self.deprojections[label].save(path)
+            self.deprojections[label].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -804,7 +804,7 @@ class FittingInitializer(FittingComponent):
             path = fs.join(self.fit_dust_grids_path, str(index) + ".dg")
 
             # Save the dust grid
-            grid.save(path)
+            grid.saveto(path)
 
             # Increment the index
             index += 1

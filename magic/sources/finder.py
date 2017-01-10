@@ -40,7 +40,26 @@ from ...core.basics.table import SmartTable
 
 class StatisticsTable(SmartTable):
 
-    column_info = [("Star index", int, None, "index of the star")]
+    """
+    This function ...
+    """
+
+    column_info = [("Star index", int, None, "index of the star"),
+                   ("FWHM", float, "arcsec", "FWHM of the PSF")]
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, index, fwhm):
+
+        """
+        This function ...
+        :param index:
+        :param fwhm:
+        :return:
+        """
+
+        values = [index, fwhm]
+        self.add_row(values)
 
 # -----------------------------------------------------------------
 
@@ -97,6 +116,92 @@ class PhotometryTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+# FROM HELGA
+# [A nearby galaxy] It is consequently contaminated by the light of thousands
+# of foreground stars, especially in the UV and optical part
+# of the spectrum. At longer wavelengths, the infrared emission of
+# background galaxies becomes the main source of contaminating
+# sources. At Herschel wavelengths, however, most of the emission
+# from non-[the galaxy] point sources is negligible even at scales
+# of the SPIRE 500 µm beam.
+#
+# The extended emission of the Milky Way Galactic Cirrus is prominently visible
+# here. This dust emission can fortunately be associated with
+# HI emission. Using the velocity information of HI maps, the
+# Galactic cirrus can partly be disentangled from the emission of
+# [the galaxy]. Paper I [of HELGA] goes into more detail about this technique.
+#
+# We made use of SExtractor v2.8.6 (Bertin & Arnouts 1996)
+# to list the location of all point sources above a certain threshold
+# (5 times the background noise level). The program simultaneously
+# produces background maps that can be tweaked to represent
+# the diffuse emission from M 31. In this way, we could
+# replace the non-M 31 point sources with the local M 31 background
+# value obtained from these maps.
+#
+# For each source an optimal radius was derived by comparing
+# the pixel flux with the local background at increasing distance
+# from the peak location. Once the pixel-to-background flux
+# ratio dropped below 2, the radius was cut off at that distance.
+# Based on this radius, a total flux was extracted in order to make
+# colour evaluations. We constructed point source masks for the
+# GALEX, SDSS, WISE, and Spitzer subsets based on different
+# colour criteria.
+
+# The GALEX and SDSS point sources were evaluated based
+# on their UV colour. This technique was applied by Gil de Paz
+# et al. (2007) for over 1000 galaxies and proved successful. In
+# practice, we mask all sources with
+
+# |FUV-NUV| > 0.75
+
+# if they are detected at the 1σ level in their particular wavelength
+# band. SExtractor identified 58 330 point sources in the UV fields,
+# of which over 51 000 were masked in the FUV and NUV. Many
+# point sources from the UV catalogue were not detected at optical
+# bands, hence only 25 000 sources were masked in the SDSS
+# bands. Around 7000 sources were identified as extragalactic.
+# They were therefore assumed to belong to M 31 and were not
+# masked.
+
+# As an example, Fig. A.1 shows the u-band image of M 31
+# before and after the mask was applied. The contamination of the
+# image has been significantly reduced using the above technique.
+# The point sources in the WISE and the Spitzer IRAC
+# and MIPS frames were masked analogously, based on their
+
+# IRAC colours (see below). At these wavelengths, however, the
+# non-M 31 point sources are a mix of foreground stars and background
+# galaxies. Furthermore, some bright sources may be associated
+# with HII regions in M 31 and must not be masked. We designed
+# a scheme based on the technique by Muñoz-Mateos et al.
+# (2009b), which was successfully applied to the SINGS galaxies.
+# Foreground stars have almost no PAH emission, while the diffuse
+# ISM in galaxies shows a roughly constant F5.8/F8 ratio (Draine
+# & Li 2007). Background galaxies are redshifted spirals or ellipticals
+# and can consequently have a wide range in F5.8/F8. It is
+# thus possible to construct a rough filter relying on the difference
+# in MIR flux ratios. First, it was checked which point source extracted
+# from the IRAC 3.6 µm had a non-detection at 8 µm. This
+# riterion proved to be sufficient to select the foreground stars
+# in the field. A second, colour-based, criterion disentangled the
+# background galaxies from the HII regions:
+
+# 0.29 < F5.8 / F8 < 0.85
+# F3.6 / F5.8 < 1.58
+
+# Figure A.2 shows the colour−colour diagram for these sources.
+# The HII regions follow a more or less horizontal track at the
+# lower-left part of the plot. The colour criteria for filtering out
+# these HII regions were obtained empirically to ensure effective
+# identification. Once identified, these star forming regions were
+# consequently not masked. The resulting mask was applied to all
+# IRAC and MIPS bands. Sources that were not detected at longer
+# wavelengths were obviously not masked. Figure A.1 shows the
+# IRAC 3.6 µm image of M 31 before and after the mask was applied.
+
+# -----------------------------------------------------------------
+
 class SourceFinder(Configurable):
 
     """
@@ -130,9 +235,9 @@ class SourceFinder(Configurable):
         self.downsampled = None
         self.original_wcs = None
 
-        # The galactic and stellar catalog
-        self.galactic_catalog = None
-        self.stellar_catalog = None
+        # The catalog of extended sources and the catalog of point sources
+        self.extended_source_catalog = None
+        self.point_source_catalog = None
 
         # Ignore images
         self.ignore = []
@@ -158,15 +263,24 @@ class SourceFinder(Configurable):
         # Settings for the star finder for different bands
         self.star_finder_settings = dict()
 
+        # Extended sources and point source
+        self.extended_sources = dict()
+        self.point_sources = dict()
+
         # Galaxy and star lists
-        self.galaxies = dict()
-        self.stars = dict()
+        #self.galaxies = dict()
+        #self.stars = dict()
+        self.galaxies = []
+        self.stars = []
 
         # The PSFs
         self.psfs = dict()
 
         # The statistics
-        self.statistics = dict()
+        #self.statistics = dict()
+
+        # The statistics table
+        self.statistics = None
 
         # The photometry table
         self.photometry = None
@@ -258,6 +372,9 @@ class SourceFinder(Configurable):
 
         # 5. Perform the photometry
         self.do_photometry()
+
+        # Correlate between the different frames
+        self.correlate_sources()
 
         # 5. Build and update catalog
         #self.build_and_synchronize_catalog()
@@ -422,18 +539,23 @@ class SourceFinder(Configurable):
         coordinate_box = self.bounding_box
         min_pixelscale = self.min_pixelscale
 
+        galactic_catalog_path = self.output_path_file("galaxies.cat")
+        stellar_catalog_path = self.output_path_file("stars.cat")
+
+        # Set write
+        catalog_importer.config.write = True
+        catalog_importer.config.writing.galactic_catalog_path = galactic_catalog_path
+        catalog_importer.config.writing.stellar_catalog_path = stellar_catalog_path
+
         # Run the catalog importer
         catalog_importer.run(coordinate_box=coordinate_box, pixelscale=min_pixelscale)  # work with coordinate box instead ? image.coordinate_box ?
 
         # Set the catalogs
-        self.galactic_catalog = catalog_importer.galactic_catalog
-        self.stellar_catalog = catalog_importer.stellar_catalog
+        self.extended_source_catalog = catalog_importer.galactic_catalog
+        self.point_source_catalog = catalog_importer.stellar_catalog
 
-        galactic_catalog_path = self.output_path_file("galaxies.cat")
-        stellar_catalog_path = self.output_path_file("stars.cat")
-
-        tables.write(self.galactic_catalog, galactic_catalog_path)
-        tables.write(self.stellar_catalog, stellar_catalog_path)
+        #tables.write(self.galactic_catalog, galactic_catalog_path)
+        #tables.write(self.stellar_catalog, stellar_catalog_path)
 
     # -----------------------------------------------------------------
 
@@ -445,6 +567,24 @@ class SourceFinder(Configurable):
 
         # Inform the user
         log.info("Finding the galaxies ...")
+
+        # Find extended sources
+        self.find_extended_sources()
+
+        # Make list of galaxies
+        self.collect_galaxies()
+
+    # -----------------------------------------------------------------
+
+    def find_extended_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Finding extended sources ...")
 
         # Dictionary to keep result handles
         results = dict()
@@ -467,7 +607,7 @@ class SourceFinder(Configurable):
             config = self.config.galaxies.copy()
 
             # Do the detection
-            result = self.pool.apply_async(detect_galaxies, args=(frame, self.galactic_catalog, config, special_mask, ignore_mask, bad_mask,))
+            result = self.pool.apply_async(detect_galaxies, args=(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask,))
             results[name] = result
 
         # Process results
@@ -477,7 +617,7 @@ class SourceFinder(Configurable):
             galaxies, region_list, segments = results[name].get()
 
             # Set galaxies
-            self.galaxies[name] = galaxies
+            self.extended_sources[name] = galaxies
 
             # Set region list
             self.galaxy_regions[name] = region_list
@@ -491,7 +631,19 @@ class SourceFinder(Configurable):
         #self.pool.join()
 
     # -----------------------------------------------------------------
-    
+
+    def collect_galaxies(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Collecting galaxies ...")
+
+    # -----------------------------------------------------------------
+
     def find_stars(self):
         
         """
@@ -534,7 +686,7 @@ class SourceFinder(Configurable):
             if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
 
             # Do the detection
-            result = self.pool.apply_async(detect_stars, args=(frame, self.galaxies[name], self.stellar_catalog, config, special_mask, ignore_mask, bad_mask,))
+            result = self.pool.apply_async(detect_stars, args=(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask,))
             results[name] = result
 
         # Process results
@@ -545,7 +697,10 @@ class SourceFinder(Configurable):
             stars, star_region_list, saturation_region_list, star_segments, kernel, statistics = results[name].get()
 
             # Set stars
-            self.stars[name] = stars
+            #self.stars[name] = stars
+
+            # Set point sources
+            self.point_sources[name] = point_sources
 
             # Set star region list
             self.star_regions[name] = star_region_list
@@ -561,10 +716,10 @@ class SourceFinder(Configurable):
             self.psfs[name] = kernel
 
             # Get the statistics
-            self.statistics[name] = statistics
+            #self.statistics[name] = statistics
 
             # Show the FWHM
-            log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
+            #log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
 
         # Close and join the process pool
         self.pool.close()
@@ -607,8 +762,10 @@ class SourceFinder(Configurable):
             # Create the configuration
             config = self.config.other_sources.copy()
 
+            galaxies = self.galaxies
+
             # Get other input
-            galaxies = self.galaxies[name]
+            #galaxies = self.galaxies[name]
             stars = self.stars[name]
             galaxy_segments = self.segments[name].frames.galaxies
             star_segments = self.segments[name].frames.stars
@@ -704,7 +861,35 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Performing photometry on the stars ...")
 
-        # TODO: this requires matching the star list from one image to the star list of the other images
+        # Loop over the stars
+        for index in range(len(self.stellar_catalog)):
+
+            # Create dictionary to contain the fluxes
+            fluxes = dict()
+
+            # Loop over the bands
+            for name in self.frames:
+
+                # Search for the star with the current index
+                star = find_star_in_list(self.stars[name], index)
+
+                # Get the flux
+                flux = star.flux
+
+                # Add to the dictionary
+                fluxes[self.frames[name].filter] = flux
+
+            # Add entry to the photometry table
+            self.photometry.add_entry(index, fluxes)
+
+    # -----------------------------------------------------------------
+
+    def correlate_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -715,22 +900,19 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        # Write regions
+        # Inform the user
+        log.info("Writing ...")
+
+        # 1. Write region lists
         self.write_regions()
 
-        # Write segmentation maps
+        # 2. Write segmentation maps
         self.write_segments()
 
-        # 1. Write
-        #self.write_galactic_catalogs()
-
-        # 2. Write
-        #self.write_stellar_catalogs()
-
-        # 3. Write ...
+        # 3. Write statistics table
         self.write_statistics()
 
-        # Write the photometry table
+        # 4. Write the photometry table
         self.write_photometry()
 
     # -----------------------------------------------------------------
@@ -745,49 +927,89 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing the regions ...")
 
+
+
+
+    # -----------------------------------------------------------------
+
+    def write_galaxy_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Loop over the regions
         for name in self.galaxy_regions:
 
-            #galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+            # galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
 
             # Determine the path
             path = self.output_path_file("galaxies_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("galaxies.reg")
 
             # Save
-            self.galaxy_regions[name].to_pixel(self.frames[name].wcs).save(path)
+            self.galaxy_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_star_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Loop over the star regions
         for name in self.star_regions:
 
-            #star_region = star_sky_region.to_pixel(image.wcs)
+            # star_region = star_sky_region.to_pixel(image.wcs)
 
             # Determine the path
             path = self.output_path_file("stars_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("stars.reg")
 
             # Save
-            self.star_regions[name].to_pixel(self.frames[name].wcs).save(path)
+            self.star_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_saturation_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Loop over the saturation regions
         for name in self.saturation_regions:
 
-            #saturation_region = saturation_sky_region.to_pixel(image.wcs)
+            # saturation_region = saturation_sky_region.to_pixel(image.wcs)
 
             # Determine the path
-            path = self.output_path_file("saturation_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("saturation.reg")
+            path = self.output_path_file("saturation_" + name + ".reg") if len(
+                self.frames) > 1 else self.output_path_file("saturation.reg")
 
             # Save
-            self.saturation_regions[name].to_pixel(self.frames[name].wcs).save(path)
+            self.saturation_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_other_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Loop over the other regions
         for name in self.other_regions:
 
-            #other_region = other_sky_region.to_pixel(image.wcs)
+            # other_region = other_sky_region.to_pixel(image.wcs)
 
             # Determine the path
             path = self.output_path_file("other_sources_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("other_sources.reg")
 
             # Save
-            self.other_regions[name].to_pixel(self.frames[name].wcs).save(path)
+            self.other_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -801,55 +1023,14 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing the segmentation maps ...")
 
+        # Loop over the different segmentation maps
         for name in self.segments:
 
             # Save the FITS file with the segmentation maps
             path = self.output_path_file("segments_" + name + ".fits") if len(self.frames) > 1 else self.output_path_file("segments.fits")
 
             # Save
-            self.segments[name].save(path)
-
-    # -----------------------------------------------------------------
-
-    def write_galactic_catalogs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the catalog file
-        path = self.full_output_path(self.config.writing.galactic_catalog_path)
-        if path is None:
-            log.error("Galactic catalog path is not defined, skipping writing galactic catalog ...")
-            return
-
-        # Inform the user
-        log.info("Writing galactic catalog to " + path + " ...")
-
-        # Write the catalog to file
-        tables.write(self.catalog_builder.galactic_catalog, path)
-
-    # -----------------------------------------------------------------
-
-    def write_stellar_catalogs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Determine the full path to the catalog file
-        path = self.full_output_path(self.config.writing.stellar_catalog_path)
-        if path is None:
-            log.error("Stellar catalog path is not defined, skipping writing stellar catalog ...")
-            return
-
-        # Inform the user
-        log.info("Writing stellar catalog to " + path + " ...")
-
-        # Write the catalog to file
-        tables.write(self.catalog_builder.stellar_catalog, path)
+            self.segments[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -864,14 +1045,20 @@ class SourceFinder(Configurable):
         log.info("Writing statistics ...")
 
         # Loop over the image names
-        for name in self.statistics:
+        #for name in self.statistics:
 
             # Determine the path to the statistics file
-            path = self.output_path_file("statistics" + name + ".dat") if len(self.frames) > 1 else self.output_path_file("statistics.dat")
+            #path = self.output_path_file("statistics" + name + ".dat") if len(self.frames) > 1 else self.output_path_file("statistics.dat")
 
             # Open the file, write the info
-            with open(path, 'w') as statistics_file:
-                statistics_file.write("FWHM: " + str(self.statistics[name].fwhm) + "\n")
+            #with open(path, 'w') as statistics_file:
+            #    statistics_file.write("FWHM: " + str(self.statistics[name].fwhm) + "\n")
+
+        # Determine path
+        path = self.output_path_file("statistics.dat")
+
+        # Save the statistics table
+        self.statistics.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -884,6 +1071,12 @@ class SourceFinder(Configurable):
 
         # Inform the user
         log.info("Writing the photometry table ...")
+
+        # Determine path
+        path = self.output_path_file("photometry.dat")
+
+        # Save the photometry table
+        self.photometry.saveto(path)
 
 # -----------------------------------------------------------------
 
@@ -1355,5 +1548,22 @@ def calibrate_photometry_by_frame(instr_mag, instr_color, airmass,
             joint_tbl['k2'], joint_tbl['zero'],
             joint_tbl['extinct'], joint_tbl['color'])
     return mag
+
+# -----------------------------------------------------------------
+
+def find_star_in_list(stars, index):
+
+    """
+    This function ...
+    :param stars:
+    :param index:
+    :return:
+    """
+
+    for star in stars:
+
+        if star.index == index: return star
+
+    return None
 
 # -----------------------------------------------------------------

@@ -702,7 +702,7 @@ class S4G(Configurable):
 
         # Determine the path and save
         path = self.output_path_file("properties.dat")
-        self.properties.save(path)
+        self.properties.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -720,7 +720,7 @@ class S4G(Configurable):
             path = self.output_path_file(name + ".mod")
 
             # Save the model
-            self.components[name].save(path)
+            self.components[name].saveto(path)
 
 # -----------------------------------------------------------------
 

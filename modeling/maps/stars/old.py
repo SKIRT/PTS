@@ -282,7 +282,7 @@ class OldStellarMapMaker(MapsComponent):
         path = fs.join(self.maps_old_path, "IRAC I1 min bulge.fits")
 
         # Write
-        self.i1_jy_minus_bulge.save(path)
+        self.i1_jy_minus_bulge.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -297,7 +297,7 @@ class OldStellarMapMaker(MapsComponent):
         log.info("Writing the map of old stars ...")
 
         # Write
-        self.map.save(self.old_stellar_map_path)
+        self.map.saveto(self.old_stellar_map_path)
 
     # -----------------------------------------------------------------
 
@@ -312,6 +312,6 @@ class OldStellarMapMaker(MapsComponent):
         log.info("Writing the significance masks ...")
 
         # Write
-        self.significance.save(self.old_stellar_significance_path)
+        self.significance.saveto(self.old_stellar_significance_path)
 
 # -----------------------------------------------------------------

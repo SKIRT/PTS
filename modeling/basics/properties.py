@@ -29,6 +29,9 @@ class GalaxyProperties(SimplePropertyComposite):
         The constructor ...
         """
 
+        # Call the constructor of the base class
+        super(GalaxyProperties, self).__init__()
+
         self.name = kwargs.pop("name", None)
         self.ngc_name = kwargs.pop("ngc_name", None)
         self.hyperleda_name = kwargs.pop("hyperleda_name", None)
