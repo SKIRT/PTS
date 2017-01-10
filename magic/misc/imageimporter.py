@@ -18,7 +18,7 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from ..core.image import Image
 from ..core.frame import Frame
-from ..core.box import Box
+from ..core.cutout import Cutout
 from ..basics.mask import Mask
 from ..region.list import PixelRegionList
 from ...core.basics.configurable import Configurable
@@ -267,7 +267,7 @@ class ImageImporter(Configurable):
             #source = Source.from_ellipse(self.image.frames.primary, contour, 1.5)
             #source.plot()
 
-            cutout = Box.from_ellipse(self.image.frames.primary, contour)
+            cutout = Cutout.from_ellipse(self.image.frames.primary, contour)
 
             #cutout.plot()
 

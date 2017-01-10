@@ -27,7 +27,7 @@ from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 
 # Import the relevant PTS classes and modules
-from .box import Box
+from .cutout import Cutout
 from ..basics.vector import Position
 from ..region.rectangle import PixelRectangleRegion, SkyRectangleRegion
 from ..basics.coordinate import SkyCoordinate
@@ -430,6 +430,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __abs__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new = self.copy()
+        new._data = abs(self._data)
+        return new
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_url(cls, url, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
                   fwhm=None, add_meta=True):
@@ -500,10 +513,10 @@ class Frame(NDDataArray):
         # Show which image we are importing
         log.info("Reading in file " + path + " ...")
 
-        from . import io
+        from . import fits as pts_fits
 
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        return pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
 
     # -----------------------------------------------------------------
 
@@ -760,7 +773,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return Box.cutout(self, position, radius)
+        return Cutout.cutout(self, position, radius)
 
     # -----------------------------------------------------------------
 
@@ -1488,7 +1501,7 @@ class Frame(NDDataArray):
         data = self._data[box.y_min:box.y_max, box.x_min:box.x_max]
 
         # Create the new box and return it
-        return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
+        return Cutout(data, box.x_min, box.x_max, box.y_min, box.y_max)
 
     # -----------------------------------------------------------------
 
@@ -1544,9 +1557,34 @@ class Frame(NDDataArray):
         if extra_header_info is not None:
             for key in extra_header_info: header[key] = extra_header_info[key]
 
-        # Write
-        from . import io
-        io.write_frame(self._data, header, path)
+        # FITS format
+        if path.endswith(".fits"):
+
+            # Write
+            from . import fits as pts_fits
+            pts_fits.write_frame(self._data, header, path)
+
+        # ASDF format
+        elif path.endswith(".asdf"):
+
+            # Import
+            from asdf import AsdfFile
+
+            # Create the tree
+            tree = dict()
+
+            # Add data and header
+            tree["data"] = self._data
+            tree["header"] = header
+
+            # Create the asdf file
+            ff = AsdfFile(tree)
+
+            # Write
+            ff.write_to(path)
+
+        # Not allowed
+        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
 
         # Replace the path
         self.path = path

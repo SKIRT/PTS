@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.core.io Tools for IO...
+## \package pts.magic.core.fits Tools for IO of the FITS file format.
 
 # -----------------------------------------------------------------
 
@@ -547,6 +547,7 @@ def write_frame(data, header, path):
     This function ...
     :param data:
     :param header:
+    :param path:
     :return:
     """
 
@@ -555,6 +556,9 @@ def write_frame(data, header, path):
 
     # Write the HDU to a FITS file
     hdu.writeto(path, clobber=True)
+
+    # Inform the user that the file has been created
+    log.debug("File " + path + " created")
 
 # -----------------------------------------------------------------
 

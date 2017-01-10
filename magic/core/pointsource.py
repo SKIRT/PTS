@@ -12,48 +12,91 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-import copy
-from skimage import morphology
-
-# Import astronomical modules
-from astropy.table import Table
-from photutils import find_peaks
-from photutils import detect_sources
-from photutils import detect_threshold
-from astropy.coordinates import Angle
-from astropy import units as u
-from astropy.convolution import convolve, convolve_fft
-
 # Import the relevant PTS classes and modules
-from .image import Image
-from .frame import Frame
-from .box import Box
-from ..basics.mask import Mask
-from ..region.ellipse import PixelEllipseRegion
-from ..region.rectangle import PixelRectangleRegion
-from ..region.circle import PixelCircleRegion
-from ..tools import plotting, statistics
-from ..basics.stretch import PixelStretch
-from ..basics.coordinate import PixelCoordinate
+from .source import Source
 
 # -----------------------------------------------------------------
 
-class PointSource(object):
+class PointSource(Source):
 
     """
     This class...
     """
 
-    def __init__(self, position):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
-        :param position:
+        :param kwargs:
         """
 
-        # Set attributes
-        self.position = None
+        # Call the constructor of the base class
+        super(PointSource, self).__init__(**kwargs)
+
+        # Set other properties
+        self.catalog = kwargs.pop("catalog", None)
+        self.id = kwargs.pop("id", None)
+        self.ra_error = kwargs.pop("ra_error", None)
+        self.dec_error = kwargs.pop("dec_error", None)
+        self.confidence = kwargs.pop("confidence", None)
+        self.magnitudes = kwargs.pop("magnitudes", dict())
+        self.magnitude_errors = kwargs.pop("magnitude_errors", dict())
+
+        # PSF model
+        self.psf_model = None
+
+        # FWHM
+        self.fwhm = None
+
+        # Saturation detection
+        self.saturation = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.psf_model is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_saturation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.saturation is not None
+
+    # -----------------------------------------------------------------
+
+    def find_contour(self, frame, config, saturation=False):
+
+        """
+        This function ...
+        :param frame:
+        :param config:
+        :param saturation:
+        :return:
+        """
+
+        # Determine which box and mask
+        if saturation:
+
+            box = self.saturation.cutout
+            mask = self.saturation.mask
+
+            # Implementation
+            self._find_contour_impl(frame.wcs, box, mask, config)
+
+        # Call the base class implementation
+        else: super(PointSource, self).find_contour(frame, config)
 
 # -----------------------------------------------------------------

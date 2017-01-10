@@ -372,11 +372,11 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        from .box import Box
+        from .cutout import Cutout
         from ..basics.vector import Position
 
         # Box
-        box = Box(self._data, 0, self.xsize, 0, self.ysize)
+        box = Cutout(self._data, 0, self.xsize, 0, self.ysize)
 
         # Fit model
         model = box.fit_model(Position(0.5*(self.xsize-1), 0.5*(self.ysize-1)), "Gaussian")

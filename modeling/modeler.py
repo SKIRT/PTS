@@ -237,6 +237,7 @@ class GalaxyModeler(Configurable):
         # Find first available host
         for host_id in self.modeling_config.host_ids:
             if is_available(host_id): self.host_id = host_id
+            if self.host_id is not None: break # found an available host
 
         # No available host in the list of preferred host ids
         if self.host_id is None: raise RuntimeError("None of the preferred hosts are available at this moment")

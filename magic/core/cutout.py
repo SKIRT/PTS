@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.core.box Contains the Box class.
+## \package pts.magic.core.cutout Contains the Cutout and CutoutMask classes.
 
 # -----------------------------------------------------------------
 
@@ -143,7 +143,7 @@ class CutoutMask(np.ndarray):
 
 # -----------------------------------------------------------------
 
-class Box(np.ndarray):
+class Cutout(np.ndarray):
 
     """
     This class ...
@@ -308,7 +308,7 @@ class Box(np.ndarray):
         data = self[rel_y_min:rel_y_max, rel_x_min:rel_x_max]
 
         # Create the new box and return it
-        return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
+        return Cutout(data, box.x_min, box.x_max, box.y_min, box.y_max)
 
     # -----------------------------------------------------------------
 
@@ -332,7 +332,7 @@ class Box(np.ndarray):
         data, rel_x_min, rel_x_max, rel_y_min, rel_y_max = cropping.crop(self, rel_center.x, rel_center.y, new_xsize, new_ysize)
 
         # Create the new box
-        return Box(data, rel_x_min+self.x_min, rel_x_max+self.x_min, rel_y_min+self.y_min, rel_y_max+self.y_min)
+        return Cutout(data, rel_x_min+self.x_min, rel_x_max+self.x_min, rel_y_min+self.y_min, rel_y_max+self.y_min)
 
     # -----------------------------------------------------------------
 
@@ -458,7 +458,7 @@ class Box(np.ndarray):
         data = fitting.evaluate_model(polynomial, 0, self.xsize, 0, self.ysize)
 
         # Return a new box
-        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+        return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
     # -----------------------------------------------------------------
 
@@ -474,7 +474,7 @@ class Box(np.ndarray):
         data = ndimage.filters.gaussian_filter(self, sigma=sigma)
 
         # Return a new box
-        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+        return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
     # -----------------------------------------------------------------
 
@@ -546,7 +546,7 @@ class Box(np.ndarray):
         data = rel_model(x_values, y_values)
 
         # Return a new box
-        return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+        return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
     # -----------------------------------------------------------------
 
@@ -589,7 +589,7 @@ class Box(np.ndarray):
                 data = np.zeros((self.ysize, self.xsize))
 
             # Create and return a new box
-            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+            return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Interpolate using inverse distance weighing
         elif method == "idw":
@@ -598,7 +598,7 @@ class Box(np.ndarray):
             data = interpolation.in_paint(self, mask, method="idw")
 
             # Create and return a new box
-            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+            return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Calculate the mean value of the data
         elif method == "mean":
@@ -629,7 +629,7 @@ class Box(np.ndarray):
                 # Interpolate by local_mean, this does not leave nans
                 data = interpolation.in_paint(data, mask)
 
-            return Box(data, self.x_min, self.x_max, self.y_min, self.y_max)
+            return Cutout(data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Use the 'PTS' method
         elif method == "pts":
@@ -738,7 +738,7 @@ class Box(np.ndarray):
 
                 if plot: plotting.plot_difference(self, poly_data, title="polynomial with sigma-clipping")
 
-            return Box(random + poly_data, self.x_min, self.x_max, self.y_min, self.y_max)
+            return Cutout(random + poly_data, self.x_min, self.x_max, self.y_min, self.y_max)
 
         # Invalid option
         else: raise ValueError("Unknown interpolation method")

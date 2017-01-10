@@ -48,8 +48,7 @@ class PointSourceTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Index", int, None, "index of the point source"),
-                   ("RA", float, "deg", "right ascension"),
+    column_info = [("RA", float, "deg", "right ascension"),
                    ("DEC", float, "deg", "declination"),
                    ("Flux", float, "Jy", "flux for the point source"),
                    ("Flux error", float, "Jy", "error on the flux value"),
@@ -57,11 +56,10 @@ class PointSourceTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_source(self, index, source):
+    def add_source(self, source):
 
         """
         This function ...
-        :param index:
         :param source:
         :return:
         """
@@ -129,8 +127,8 @@ class PointSourceFinder(Configurable):
 
         # -- Attributes --
 
-        # Initialize the star list
-        self.stars = StarList()
+        # Initialize the list of sources
+        self.sources = []
 
         # The image frame
         self.frame = None
@@ -156,9 +154,12 @@ class PointSourceFinder(Configurable):
         # The segmentation map of stars
         self.segments = None
 
-        # The regions of stars and saturation sources
-        self.star_region = None
-        self.saturation_region = None
+        # The regions
+        self.regions = None
+        self.saturation_regions = None
+
+        # The point source table
+        self.table = None
 
     # -----------------------------------------------------------------
 
@@ -172,23 +173,35 @@ class PointSourceFinder(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Find the stars
-        self.find_stars()
+        # 2. Load the sources from the catalog
+        self.load_sources()
 
-        # 3. Create the star region
-        self.create_star_region()
+        # 3. For each star, find a corresponding source in the image
+        self.detect_sources()
 
-        # 3. If requested, find and remove saturated stars
-        if self.config.find_saturation:
+        # 4. Fit analytical models to the stars
+        if not self.config.use_frame_fwhm or self.frame.fwhm is None: self.fit_psf()
 
-            self.find_saturation()
-            self.create_saturation_region()
+        # 5. Set the final sources
+        self.adjust_sources()
 
-        # 4. Set the statistics
-        self.set_statistics()
+        # 6. Create the region list
+        self.create_regions()
 
-        # 5. Create the segmentation map
+        # 7. If requested, find saturated and diffracted point sources
+        if self.config.find_saturation: self.detect_saturation()
+
+        # 8. Create region list of saturated sources
+        if self.config.find_saturation: self.create_saturation_region()
+
+        # 9. Create the segmentation map
         self.create_segments()
+
+        # 10. Create the table
+        self.create_table()
+
+        # 11. Write
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -231,47 +244,26 @@ class PointSourceFinder(Configurable):
         # Inform the user
         log.info("Clearing the point source finder ...")
 
-        # Create a new list of stars
-        self.stars = StarList()
+        # Create a new list of sources
+        self.sources = []
 
         # Clear the image frame
         self.frame = None
 
     # -----------------------------------------------------------------
 
-    def find_stars(self):
+    def load_sources(self):
 
         """
-        This function ...
-        :return:
-        """
-
-        # Load the stars from the stellar catalog
-        self.load_stars()
-
-        # For each star, find a corresponding source in the image
-        self.find_sources()
-
-        # Fit analytical models to the stars
-        if not self.config.use_frame_fwhm or self.frame.fwhm is None: self.fit_stars()
-
-        # Set the final soruces
-        self.adjust_sources()
-
-    # -----------------------------------------------------------------
-
-    def load_stars(self):
-
-        """
-        This function creates the star list from the star catalog.
+        This function creates the source list from the catalog
         :return:
         """
 
         # Inform the user
-        log.info("Loading the stars from the catalog ...")
+        log.info("Loading the sources from the catalog ...")
 
-        # Copy the list of galaxies, so that we can removed already encounted galaxies (TODO: change this to use
-        # an 'encountered' list as well
+        # Copy the list of galaxies, so that we can removed already encounted galaxies
+        # (TODO: change this to use an 'encountered' list as well
         encountered_galaxies = [False] * len(self.galaxies)
 
         galaxy_pixel_position_list = []
@@ -288,106 +280,91 @@ class PointSourceFinder(Configurable):
 
         on_galaxy_column = [False] * len(self.catalog)
 
-        # Create the list of stars
-        for i in range(len(self.catalog)):
+        # Loop over the sources in the catalog
+        for index in range(len(self.catalog)):
 
-            # Get the star properties
-            catalog = self.catalog["Catalog"][i]
-            star_id = self.catalog["Id"][i]
-            ra = self.catalog["Right ascension"][i]
-            dec = self.catalog["Declination"][i]
-            ra_error = self.catalog["Right ascension error"][i] * Unit("mas")
-            dec_error = self.catalog["Declination error"][i] * Unit("mas")
-            confidence_level = self.catalog["Confidence level"][i]
+            # Get position
+            position = self.catalog.get_position(index)
 
-            # Check for which bands magnitudes are defined
-            magnitudes = {}
-            magnitude_errors = {}
-            for name in self.catalog.colnames:
-                if "magnitude" in name:
-                    band = name.split(" magnitude")[0]
-                    magnitudes[band] = self.catalog[name][i] * Unit("mag")
-                    magnitude_errors[band] = self.catalog[name + " error"][i] * Unit("mag")
+            # If the stars falls outside of the frame, take None for the source
+            if not self.frame.contains(position): source = None
 
-            # Create a sky coordinate for the star position
-            position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
-
-            # If the stars falls outside of the frame, skip it
-            if not self.frame.contains(position): continue
-
-            # Create a star object
-            star = Star(i, catalog=catalog, id=star_id, position=position, ra_error=ra_error,
-                        dec_error=dec_error, magnitudes=magnitudes, magnitude_errors=magnitude_errors)
-
-            # Get the position of the star in pixel coordinates
-            pixel_position = star.pixel_position(self.frame.wcs)
-
-            # Check whether 'special'
-            special = self.special_mask.masks(pixel_position) if self.special_mask is not None else False
-            cutout = self.frame.cutout_around(pixel_position, 15) if special else None
-
-            # Check whether 'ignore'
-            ignore = self.ignore_mask.masks(pixel_position) if self.ignore_mask is not None else False
-
-            # Set attributes based on masks (special and ignore)
-            star.special = special
-            star.ignore = ignore
-
-            special = False
-
-            # -- Checking for foreground or surroudings of galaxy --
-
-            if "On galaxy" in self.catalog.colnames: star_on_galaxy = self.catalog["On galaxy"][i]
             else:
 
-                # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                if self.galaxies is not None: star_on_galaxy = self.galaxies.principal.contains(pixel_position)
-                else: star_on_galaxy = False
-                on_galaxy_column[i] = star_on_galaxy
+                # Calculate the pixel position of the galaxy in the frame
+                pixel_position = position.to_pixel(self.frame.wcs)
 
-                if special: plotting.plot_box(cutout, title="On galaxy" if star_on_galaxy else "Not on galaxy")
+                # Create a source
+                source = self.catalog.create_source(index)
 
-            # -- Cross-referencing with the galaxies in the frame --
+                # Check whether 'special'
+                special = self.special_mask.masks(pixel_position) if self.special_mask is not None else False
+                cutout = self.frame.cutout_around(pixel_position, 15) if special else None
 
-            # Loop over all galaxies to cross-referenc
-            if self.config.fetching.cross_reference_with_galaxies and star_on_galaxy:
+                # Check whether 'ignore'
+                ignore = self.ignore_mask.masks(pixel_position) if self.ignore_mask is not None else False
 
-                # If a match is found with one of the galaxies, skip this star
-                if matches_galaxy_position(pixel_position, galaxy_pixel_position_list, galaxy_type_list, encountered_galaxies, self.config.fetching.min_distance_from_galaxy, distances):
+                # Set attributes based on masks (special and ignore)
+                source.special = special
+                source.ignore = ignore
 
-                    if special: plotting.plot_box(cutout, "Matches galaxy position (distance < " + str(self.config.fetching.min_distance_from_galaxy) + ")")
-                    continue
+                special = False
 
-            # Set other attributes
-            star.on_galaxy = star_on_galaxy
-            star.confidence_level = confidence_level
+                # -- Checking for foreground or surroudings of galaxy --
 
-            # Enable track record if requested
-            if self.config.track_record: star.enable_track_record()
+                if "On galaxy" in self.catalog.colnames: star_on_galaxy = self.catalog["On galaxy"][index]
+                else:
 
-            # If the input mask masks this star's position, skip it (don't add it to the list of stars)
-            #if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
-            if self.bad_mask is not None and self.bad_mask.masks(pixel_position):
-                if special: plotting.plot_box(cutout, "Covered by bad mask")
-                continue
+                    # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
+                    if self.galaxies is not None: star_on_galaxy = self.galaxies.principal.contains(pixel_position)
+                    else: star_on_galaxy = False
+                    on_galaxy_column[index] = star_on_galaxy
 
-            # Don't add stars which are indicated as 'not stars'
-            #if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars:
-            #    if special: plotting.plot_box(cutout, "Indicated as 'not a star'")
-            #    continue
+                    if special: plotting.plot_box(cutout, title="On galaxy" if star_on_galaxy else "Not on galaxy")
 
-            # Add the star to the list
-            self.stars.append(star)
+                # -- Cross-referencing with the galaxies in the frame --
+
+                # Loop over all galaxies to cross-referenc
+                if self.config.fetching.cross_reference_with_galaxies and star_on_galaxy:
+
+                    # If a match is found with one of the galaxies, skip this star
+                    if matches_galaxy_position(pixel_position, galaxy_pixel_position_list, galaxy_type_list, encountered_galaxies, self.config.fetching.min_distance_from_galaxy, distances):
+
+                        if special: plotting.plot_box(cutout, "Matches galaxy position (distance < " + str(self.config.fetching.min_distance_from_galaxy) + ")")
+                        source = None
+
+                if source is not None:
+
+                    # Set other attributes
+                    source.on_galaxy = star_on_galaxy
+
+                    # Enable track record if requested
+                    #if self.config.track_record: star.enable_track_record()
+
+                    # If the input mask masks this star's position, skip it (don't add it to the list of stars)
+                    #if "bad" in self.image.masks and self.image.masks.bad.masks(pixel_position): continue
+                    if self.bad_mask is not None and self.bad_mask.masks(pixel_position):
+
+                        if special: plotting.plot_box(cutout, "Covered by bad mask")
+                        source = None
+
+                    # Don't add stars which are indicated as 'not stars'
+                    #if self.config.manual_indices.not_stars is not None and i in self.config.manual_indices.not_stars:
+                    #    if special: plotting.plot_box(cutout, "Indicated as 'not a star'")
+                    #    continue
+
+            # Add the source to the list
+            self.sources.append(source)
 
         # Add the 'on_galaxy' column to the catalog if necessary
-        if "On galaxy" not in self.catalog.colnames: self.catalog["On galaxy"] = on_galaxy_column
+        #if "On galaxy" not in self.catalog.colnames: self.catalog["On galaxy"] = on_galaxy_column
 
         # Inform the user
-        if self.config.fetching.cross_reference_with_galaxies: log.debug("10 smallest distances 'star - galaxy': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
+        if self.config.fetching.cross_reference_with_galaxies: log.debug("10 smallest distances 'point source - extended source': " + ', '.join("{0:.2f}".format(distance) for distance in sorted(distances)[:10]))
 
     # -----------------------------------------------------------------
 
-    def find_sources(self):
+    def detect_sources(self):
 
         """
         This function ...
@@ -395,16 +372,19 @@ class PointSourceFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Looking for sources near the star positions ...")
+        log.info("Detecting the sources ...")
 
-        # Loop over all stars in the list
-        for star in self.stars:
+        # Loop over all sources
+        for source in self.sources:
+
+            # Skip None
+            if source is None: continue
 
             # If this sky object should be ignored, skip it
-            if star.ignore: continue
+            if source.ignore: continue
 
             # Find a source
-            try: star.find_source(self.frame, self.config.detection)
+            try: source.detect(self.frame, self.config.detection)
             except Exception as e:
 
                 import traceback
@@ -413,29 +393,31 @@ class PointSourceFinder(Configurable):
                 print(e)
                 traceback.print_exc()
 
-                if self.config.plot_track_record_if_exception:
-
-                    if star.has_track_record: star.track_record.plot()
-                    else: log.warning("Track record is not enabled")
+                #if self.config.plot_track_record_if_exception:
+                    #if source.has_track_record: star.track_record.plot()
+                    #else: log.warning("Track record is not enabled")
 
                 log.error("Continuing with next source ...")
 
         # Inform the user
-        log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_source, len(self.stars), self.have_source / len(self.stars) * 100.0))
+        log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_detection, len(self.sources), self.have_detection / len(self.sources) * 100.0))
 
     # -----------------------------------------------------------------
 
-    def fit_stars(self):
+    def fit_psf(self):
 
         """
         This function ...
         """
 
         # Inform the user
-        log.info("Fitting analytical profiles to the sources ...")
+        log.info("Fitting PSF profiles to the point sources ...")
 
-        # Loop over all stars in the list
-        for star in self.stars:
+        # Loop over all sources in the list
+        for source in self.sources:
+
+            # Skip None
+            if source is None: continue
 
             # If this star should be ignored, skip it
             if star.ignore: continue
@@ -483,13 +465,13 @@ class PointSourceFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Adjusting the star sources to the same sigma level ...")
+        log.info("Adjusting the source detections to the same sigma level ...")
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm_pix
 
-        # Loop over all stars
-        for star in self.stars:
+        # Loop over all sources
+        for star in self.sources:
 
             # If this star should be ignored, skip it
             if star.ignore: continue
@@ -502,7 +484,62 @@ class PointSourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def find_saturation(self):
+    def create_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating point source regions ...")
+
+        # Initialize the region
+        self.regions = PixelRegionList()
+
+        # Calculate the default FWHM (calculated based on fitted stars)
+        default_fwhm = self.fwhm_pix
+
+        # Loop over all sources
+        for source in self.sources:
+
+            # Get the center in pixel coordinates
+            center = star.pixel_position(self.frame.wcs)
+
+            # Determine the color, based on the detection level
+            if star.has_model: color = "blue"
+            elif star.has_source: color = "green"
+            else: color = "red"
+
+            # Determine the FWHM
+            fwhm = default_fwhm if not star.has_model else star.fwhm
+
+            # Calculate the radius in pixels
+            radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
+
+            # Convert the star index to a string
+            text = str(star.index)
+
+            # Create meta information
+            meta = {"color": color, "text": text}
+
+            # Create the shape and add it to the region
+            shape = PixelCircleRegion(center, radius, meta=meta)
+            self.regions.append(shape)
+
+            # Add a position for the peak position
+            if star.has_source and star.source.has_peak:
+
+                # Create meta information for the position
+                meta = {"point": "x"}
+
+                # Create the position and add it to the region
+                position = PixelPointRegion(star.source.peak.x, star.source.peak.y, meta=meta)
+                self.regions.append(position)
+
+    # -----------------------------------------------------------------
+
+    def detect_saturation(self):
 
         """
         This function ...
@@ -525,8 +562,10 @@ class PointSourceFinder(Configurable):
         # Set the number of stars where saturation was removed to zero initially
         success = 0
 
-        star_mask = self.star_region.to_mask(self.frame.xsize, self.frame.ysize)
+        # Create star mask
+        star_mask = self.regions.to_mask(self.frame.xsize, self.frame.ysize)
 
+        # Only brightest method
         if self.config.saturation.only_brightest:
 
             fluxes = sorted(self.get_fluxes(without_background=True))
@@ -554,29 +593,33 @@ class PointSourceFinder(Configurable):
             # Invalid option
             else: raise ValueError("Brightest method should be 'percentage' or 'sigma clipping'")
 
+        # Otherwise, no flux threshold
         else: flux_threshold = None
 
-        # Loop over all stars
-        for star in self.stars:
+        # Loop over all sources
+        for source in self.sources:
+
+            # Skip None
+            if source is None: continue
 
             # If this star should be ignored, skip it
-            if star.ignore: continue
+            if source.ignore: continue
 
             # If a flux threshold is defined
             if flux_threshold is not None:
 
                 # No source, skip right away
-                if not star.has_source: continue
+                if not source.has_detection: continue
 
                 # Determine the flux of this star
-                if not star.source.has_background: star.source.estimate_background()
-                flux = star.get_flux(without_background=True)
+                if not source.detection.has_background: source.detection.estimate_background()
+                flux = source.detection.get_flux(without_background=True)
 
                 # Skip this star if its flux is lower than the threshold
                 if flux < flux_threshold: continue
 
             # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
-            if not star.has_model and not self.config.saturation.remove_if_not_fitted: continue
+            if not source.has_model and not self.config.saturation.remove_if_not_fitted: continue
             if star.has_model: assert star.has_source
 
             # Note: DustPedia stars will always get a 'source' during removal (with star.source_at_sigma_level) so star.has_source will already pass
@@ -589,62 +632,7 @@ class PointSourceFinder(Configurable):
             success += star.has_saturation
 
         # Inform the user
-        log.debug("Found saturation in " + str(success) + " out of " + str(self.have_source) + " stars with source ({0:.2f}%)".format(success / self.have_source * 100.0))
-
-    # -----------------------------------------------------------------
-
-    def create_star_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating star region ...")
-
-        # Initialize the region
-        self.star_region = PixelRegionList()
-
-        # Calculate the default FWHM (calculated based on fitted stars)
-        default_fwhm = self.fwhm_pix
-
-        # Loop over all galaxies
-        for star in self.stars:
-
-            # Get the center in pixel coordinates
-            center = star.pixel_position(self.frame.wcs)
-
-            # Determine the color, based on the detection level
-            if star.has_model: color = "blue"
-            elif star.has_source: color = "green"
-            else: color = "red"
-
-            # Determine the FWHM
-            fwhm = default_fwhm if not star.has_model else star.fwhm
-
-            # Calculate the radius in pixels
-            radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
-
-            # Convert the star index to a string
-            text = str(star.index)
-
-            # Create meta information
-            meta = {"color": color, "text": text}
-
-            # Create the shape and add it to the region
-            shape = PixelCircleRegion(center, radius, meta=meta)
-            self.star_region.append(shape)
-
-            # Add a position for the peak position
-            if star.has_source and star.source.has_peak:
-
-                # Create meta information for the position
-                meta = {"point": "x"}
-
-                # Create the position and add it to the region
-                position = PixelPointRegion(star.source.peak.x, star.source.peak.y, meta=meta)
-                self.star_region.append(position)
+        log.debug("Found saturation in " + str(success) + " out of " + str(self.have_source) + " sources with detection ({0:.2f}%)".format(success / self.have_source * 100.0))
 
     # -----------------------------------------------------------------
 
@@ -659,10 +647,10 @@ class PointSourceFinder(Configurable):
         log.info("Creating saturation region ...")
 
         # Initialize the region
-        self.saturation_region = PixelRegionList()
+        self.saturation_regions = PixelRegionList()
 
-        # Loop over all stars
-        for star in self.stars:
+        # Loop over all sources
+        for source in self.sources:
 
             # Skip stars without saturation
             if not star.has_saturation: continue
@@ -683,7 +671,7 @@ class PointSourceFinder(Configurable):
 
             # Create the ellipse and add it to the region
             ellipse = PixelEllipseRegion(center, radius, angle, meta=meta)
-            self.saturation_region.append(ellipse)
+            self.saturation_regions.append(ellipse)
 
     # -----------------------------------------------------------------
 
@@ -695,13 +683,13 @@ class PointSourceFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the segmentation map for the stars ...")
+        log.info("Creating the segmentation map ...")
 
-        # Loop over all stars
-        for star in self.stars:
+        # Loop over all sources
+        for source in self.sources:
 
             # Stars with saturation
-            if star.has_saturation:
+            if source.has_saturation:
 
                 # Add the saturation segment to the segmentation map
                 self.segments[star.saturation.y_slice, star.saturation.x_slice][star.saturation.mask] = star.index
@@ -714,6 +702,71 @@ class PointSourceFinder(Configurable):
 
                 # Add the star segment to the segmentation map
                 self.segments[star.source.y_slice, star.source.x_slice][star.source.mask] = star.index
+
+    # -----------------------------------------------------------------
+
+    def create_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the table
+        self.write_table()
+
+        # Write the region lists
+        self.write_regions()
+
+        # Write the segmentation maps
+        self.write_segments()
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write_regions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write_segments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

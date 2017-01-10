@@ -30,7 +30,7 @@ from photutils import source_properties, properties_table
 
 # Import the relevant PTS classes and modules
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks
-from ..core.source import Source
+from ..core.detection import Detection
 from ..region.ellipse import PixelEllipseRegion
 from ...core.tools.logging import log
 from ..region import tools as regions
@@ -408,7 +408,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     sigma_level = config.sigma_level if sigma_level is None else sigma_level
 
     # Create a source object
-    source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
+    source = Detection.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the source cutout is zero or nan everywhere, return None (no source can be found here)
     if np.all(np.isnan(source.cutout)) or not np.any(source.cutout):
@@ -646,11 +646,11 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
     """
     This function ...
     :param frame:
-    :param center:
-    :param radius:
-    :param angle:
+    :param ellipse:
     :param config:
+    :param track_record:
     :param level:
+    :param special:
     :return:
     """
 
@@ -658,7 +658,7 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
     if level < config.min_level or level > config.max_level: return None
 
     # Create a source object
-    source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
+    source = Detection.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the frame is zero in this box, continue to the next object
     if not np.any(source.cutout): return None

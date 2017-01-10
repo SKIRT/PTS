@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import numpy as np
+from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.table import Table
@@ -180,6 +180,63 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def _convert_lists(self, values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        converted_values = []
+
+        for i, value in enumerate(values):
+
+            if isinstance(value, list):
+
+                column_type = self.column_info[i][1]
+
+                if len(value) == 0: converted_value = None
+                elif column_type == str: converted_value = ",".join(map(str, value))
+                else: raise ValueError("Cannot have a list element in the row at the column that is not of string type")
+
+            else: converted_value = value
+
+            converted_values.append(converted_value)
+
+        # Return the converted values
+        return converted_values
+
+    # -----------------------------------------------------------------
+
+    def get_row(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        row = OrderedDict()
+
+        for name in self.colnames:
+
+            value = self[name][index]
+
+            if self[name].mask[index]: value = None
+            elif self[name].unit is not None:
+
+                # Add unit
+                value = value * self[name].unit
+
+            # Add the value
+            row[name] = value
+
+        # Return the row
+        return row
+
+    # -----------------------------------------------------------------
+
     def add_row(self, values):
 
         """
@@ -193,6 +250,9 @@ class SmartTable(Table):
 
         # Strip units
         values = self._strip_units(values)
+
+        # Convert lists to string
+        values = self._convert_lists(values)
 
         # Create mask
         mask = [value is None for value in values]

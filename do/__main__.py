@@ -155,14 +155,16 @@ elif len(table_matches) == 1 and len(matches) == 0:
     if configuration_name == "--": configuration_name = command_name
     configuration_module_path = "pts." + subproject + ".config." + configuration_name
 
-    try:
-        configuration_module = importlib.import_module(configuration_module_path)
-        #has_configuration = True
-        definition = getattr(configuration_module, "definition")
-    except ImportError:
-        logging.log.warning("No configuration definition found for the " + class_name + " class")
-        #has_configuration = False
-        definition = ConfigurationDefinition() # Create new configuration definition
+    #print(configuration_module_path)
+
+    #try:
+    configuration_module = importlib.import_module(configuration_module_path)
+    #has_configuration = True
+    definition = getattr(configuration_module, "definition")
+    #except ImportError:
+    #    logging.log.warning("No configuration definition found for the " + class_name + " class")
+    #    #has_configuration = False
+    #    definition = ConfigurationDefinition() # Create new configuration definition
 
     ## CREATE THE CONFIGURATION
 

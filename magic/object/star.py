@@ -18,7 +18,7 @@ from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from .skyobject import SkyObject
-from ..core.box import CutoutMask, Box
+from ..core.cutout import CutoutMask, Cutout
 from ..core.source import Source
 from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
@@ -438,7 +438,7 @@ class Star(SkyObject):
             x_max = saturation_source.x_max
             y_min = saturation_source.y_min
             y_max = saturation_source.y_max
-            contour = sources.find_contour(Box(saturation_source.mask.astype(int), x_min, x_max, y_min, y_max), saturation_source.mask, config.apertures.sigma_level) # determine the segment properties of the actual mask segment
+            contour = sources.find_contour(Cutout(saturation_source.mask.astype(int), x_min, x_max, y_min, y_max), saturation_source.mask, config.apertures.sigma_level) # determine the segment properties of the actual mask segment
 
             # Check whether the source centroid matches the star position
             if config.check_centroid:

@@ -56,13 +56,17 @@ def get_hyperleda_name(galaxy_name):
     tables = [e for e in tree.iter() if e.tag == 'table']
 
     table = tables[1]
+    #table = tables[1]
 
-    table_rows = [e for e in table.iter() if e.tag == 'tr']
-    column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
+    #print(table.text_content())
+    objname = table.text_content().split(" (")[0]
+
+    #table_rows = [e for e in table.iter() if e.tag == 'tr']
+    #column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
 
     # return table_rows, column_headings
 
-    objname = str(table_rows[1].text_content().split("\n")[1]).strip()
+    #objname = str(table_rows[0].text_content().split("\n")[1]).strip()
 
     # Return the HYPERLEDA name
     return objname
@@ -445,7 +449,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
                 # be one match of a star of one catalog with the star of another catalog, within the radius of 3 pixels)
                 if encountered[index]: continue
 
-                saved_star_position = SkyCoordinate(ra=ra_column[index], dec=dec_column[index], unit="deg", frame="fk5")
+                saved_star_position = SkyCoordinate(ra=ra_column[index].value, dec=dec_column[index].value, unit="deg", frame="fk5")
                 #saved_star_pixel_position = saved_star_position.to_pixel(frame.wcs)
 
                 # Calculate the distance between the star already in the list and the new star
@@ -482,8 +486,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
                 # Fill in the column lists
                 catalog_column.append(catalog)
                 id_column.append(star_id)
-                ra_column.append(star_ra)
-                dec_column.append(star_dec)
+                ra_column.append(star_ra) * Unit("deg")
+                dec_column.append(star_dec) * Unit("deg")
                 ra_error_column.append(ra_error.value)
                 dec_error_column.append(dec_error.value)
                 confidence_level_column.append(1)
@@ -494,8 +498,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         log.debug("Number of stars that were only present in this catalog: " + str(number_of_new_stars))
 
     # Create and return the table
-    data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column]
-    names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'Confidence level']
+    #data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column]
+    #names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'Confidence level']
 
     # TODO: add magnitudes to the table ?
 
@@ -519,19 +523,21 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         #magnitude_column_names.append(column_name)
 
     # Create the catalog
-    meta = {'name': 'stars'}
-    catalog = tables.new(data, names, meta)
+    #meta = {'name': 'stars'}
+    #catalog = tables.new(data, names, meta)
 
     # Set units
-    catalog["Right ascension"].unit = "deg"
-    catalog["Declination"].unit = "deg"
-    catalog["Right ascension error"].unit = "mas"
-    catalog["Declination error"].unit = "mas"
+    #catalog["Right ascension"].unit = "deg"
+    #catalog["Declination"].unit = "deg"
+    #catalog["Right ascension error"].unit = "mas"
+    #catalog["Declination error"].unit = "mas"
     #for name in magnitude_column_names:
     #    self.catalog[name].unit = "mag"
 
     # Return the catalog
-    return catalog
+    #return catalog
+
+    return catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column
 
 # -----------------------------------------------------------------
 
@@ -581,17 +587,26 @@ def create_galaxy_catalog(coordinate_box):
 
         # Fill the columns
         name_column.append(gal_name)
-        ra_column.append(position.ra.value)
-        dec_column.append(position.dec.value)
+        #ra_column.append(position.ra.value)
+        ra_column.append(position.ra)
+        #dec_column.append(position.dec.value)
+        dec_column.append(position.dec)
         redshift_column.append(gal_redshift)
         type_column.append(gal_type)
-        alternative_names_column.append(", ".join(gal_names) if len(gal_names) > 0 else None)
-        distance_column.append(gal_distance.value if gal_distance is not None else None)
-        inclination_column.append(gal_inclination.degree if gal_inclination is not None else None)
-        d25_column.append(gal_d25.value if gal_d25 is not None else None)
-        major_column.append(gal_major.value if gal_major is not None else None)
-        minor_column.append(gal_minor.value if gal_minor is not None else None)
-        pa_column.append(gal_pa.degree if gal_pa is not None else None)
+        #alternative_names_column.append(", ".join(gal_names) if len(gal_names) > 0 else None)
+        alternative_names_column.append(gal_names)
+        #distance_column.append(gal_distance.value if gal_distance is not None else None)
+        distance_column.append(gal_distance)
+        #inclination_column.append(gal_inclination.degree if gal_inclination is not None else None)
+        inclination_column.append(gal_inclination)
+        #d25_column.append(gal_d25.value if gal_d25 is not None else None)
+        d25_column.append(gal_d25)
+        #major_column.append(gal_major.value if gal_major is not None else None)
+        major_column.append(gal_major)
+        #minor_column.append(gal_minor.value if gal_minor is not None else None)
+        minor_column.append(gal_minor)
+        #pa_column.append(gal_pa.degree if gal_pa is not None else None)
+        pa_column.append(gal_pa)
 
     # Determine the number of galaxies in the lists
     number_of_galaxies = len(name_column)
@@ -630,29 +645,33 @@ def create_galaxy_catalog(coordinate_box):
         else: companions_column.append(", ".join(companion_list))
 
     # Create the data structure and names list
-    data = [name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column,
-            inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column,
-            parent_column]
-    names = ["Name", "Right ascension", "Declination", "Redshift", "Type", "Alternative names", "Distance",
-             "Inclination", "D25", "Major axis length", "Minor axis length", "Position angle", "Principal",
-             "Companion galaxies", "Parent galaxy"]
-    meta = {'name': 'stars'}
+    #data = [name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column,
+    #        inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column,
+    #        parent_column]
+    #names = ["Name", "Right ascension", "Declination", "Redshift", "Type", "Alternative names", "Distance",
+    #         "Inclination", "D25", "Major axis length", "Minor axis length", "Position angle", "Principal",
+    #         "Companion galaxies", "Parent galaxy"]
+    #meta = {'name': 'galaxies'}
 
     # Create the catalog table
-    catalog = tables.new(data, names, meta)
+    #catalog = tables.new(data, names, meta)
 
     # Set the column units
-    catalog["Distance"].unit = "Mpc"
-    catalog["Inclination"].unit = "deg"
-    catalog["D25"].unit = "arcmin"
-    catalog["Major axis length"].unit = "arcmin"
-    catalog["Minor axis length"].unit = "arcmin"
-    catalog["Position angle"].unit = "deg"
-    catalog["Right ascension"].unit = "deg"
-    catalog["Declination"].unit = "deg"
+    #catalog["Distance"].unit = "Mpc"
+    #catalog["Inclination"].unit = "deg"
+    #catalog["D25"].unit = "arcmin"
+    #catalog["Major axis length"].unit = "arcmin"
+    #catalog["Minor axis length"].unit = "arcmin"
+    #catalog["Position angle"].unit = "deg"
+    #catalog["Right ascension"].unit = "deg"
+    #catalog["Declination"].unit = "deg"
 
     # Return the catalog
-    return catalog
+    #return catalog
+
+    return name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column, \
+           inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column, \
+           parent_column
 
 # -----------------------------------------------------------------
 

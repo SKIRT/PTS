@@ -35,6 +35,7 @@ from ...core.basics.table import SmartTable
 from ..catalog.extended import ExtendedSourceCatalog
 from ..catalog.point import PointSourceCatalog
 from ..catalog.fetcher import CatalogFetcher
+from .list import GalaxyList, StarList
 
 # -----------------------------------------------------------------
 
@@ -257,6 +258,20 @@ class SourceFinder(Configurable):
         # The name of the principal galaxy
         self.galaxy_name = None
 
+        ### from the extended/point source finders
+
+        # The tables
+        self.extended_tables = dict()
+        self.point_tables = dict()
+
+        # The regions
+        self.extended_regions = dict()
+        self.point_regions = dict()
+        self.saturation_regions = dict()
+        self.other_regions = dict()
+
+        ###
+
         # The regions
         self.galaxy_regions = dict()
         self.star_regions = dict()
@@ -274,8 +289,10 @@ class SourceFinder(Configurable):
         self.point_sources = dict()
 
         # Galaxy and star lists
-        self.galaxies = []
-        self.stars = []
+        #self.galaxies = []
+        #self.stars = []
+        self.galaxies = GalaxyList()
+        self.stars = StarList()
 
         # The PSFs
         self.psfs = dict()
@@ -613,17 +630,17 @@ class SourceFinder(Configurable):
         for name in results:
 
             # Get result
-            galaxies, region_list, segments = results[name].get()
+            table, regions, segments = results[name].get()
 
             # Set galaxies
-            self.extended_sources[name] = galaxies
+            self.extended_tables[name] = table
 
             # Set region list
-            self.galaxy_regions[name] = region_list
+            self.extended_regions[name] = regions
 
             # Set segmentation map
             # Add the segmentation map of the galaxies
-            self.segments[name].add_frame(segments, "galaxies")
+            self.segments[name].add_frame(segments, "extended")
 
         # Close and join the process pool
         #self.pool.close()
@@ -640,6 +657,11 @@ class SourceFinder(Configurable):
 
         # Inform the user
         log.info("Collecting galaxies ...")
+
+        # Loop over the extended sources
+        for index in range(len(self.extended_source_catalog)):
+
+            galaxy = Galaxy()
 
     # -----------------------------------------------------------------
 
@@ -731,26 +753,22 @@ class SourceFinder(Configurable):
 
             # Get result
             # stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
-            stars, star_region_list, saturation_region_list, star_segments, kernel, statistics = results[name].get()
+            #stars, star_region_list, saturation_region_list, star_segments, kernel, statistics = results[name].get()
+            table, regions, saturation_regions, segments = results[name].get()
 
-            # Set stars
-            #self.stars[name] = stars
+            # Set table
+            self.point_tables[name] = table
 
-            # Set point sources
-            self.point_sources[name] = point_sources
-
-            # Set star region list
-            self.star_regions[name] = star_region_list
-
-            # Set saturation region list
-            self.saturation_regions[name] = saturation_region_list
+            # Set regions
+            self.point_regions[name] = regions
+            self.saturation_regions[name] = saturation_regions
 
             # Set segmentation map
             # Add the segmentation map of the galaxies
-            self.segments[name].add_frame(star_segments, "stars")
+            self.segments[name].add_frame(star_segments, "point")
 
             # Set the PSF
-            self.psfs[name] = kernel
+            #self.psfs[name] = kernel
 
             # Get the statistics
             #self.statistics[name] = statistics
@@ -771,7 +789,8 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Collecting stars ...")
 
     # -----------------------------------------------------------------
 
@@ -834,7 +853,7 @@ class SourceFinder(Configurable):
             self.other_regions[name] = region_list
 
             # Add the segmentation map of the other sources
-            self.segments[name].add_frame(segments, "other_sources")
+            self.segments[name].add_frame(segments, "other")
 
         # Close and join the process pool
         self.pool.close()
@@ -927,8 +946,11 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        path = self.output_path_file("extended_sources.cat")
+        # Inform the user
+        log.info("Writing the catalog of extended sources ...")
 
+        # Write
+        path = self.output_path_file("extended_sources.cat")
         self.extended_source_catalog.saveto(path)
 
     # -----------------------------------------------------------------
@@ -940,8 +962,11 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        path = self.output_path_file("point_sources.cat")
+        # Inform the user
+        log.info("Writing the catalog of point sources ...")
 
+        # Write
+        path = self.output_path_file("point_sources.cat")
         self.point_source_catalog.saveto(path)
 
     # -----------------------------------------------------------------
@@ -1133,9 +1158,9 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
     # if galaxy_sky_region is not None:
     #    galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
 
-    if finder.region is not None:
+    if finder.regions is not None:
 
-        galaxy_sky_region = finder.region.to_sky(frame.wcs)
+        galaxy_sky_regions = finder.regions.to_sky(frame.wcs)
 
         # if self.downsampled:
         #    sky_region = self.galaxy_sky_region
@@ -1143,9 +1168,9 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
         # ele: return self.galaxy_finder.region
 
         # Get region list
-        region_list = galaxy_sky_region
+        regions = galaxy_sky_regions
 
-    else: region_list = None
+    else: regions = None
 
     if finder.segments is not None:
 
@@ -1164,14 +1189,17 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
 
     else: segments = None
 
-    # Get the galaxies
-    galaxies = finder.galaxies
+    # Get the source table
+    table = finder.table
 
     # Inform the user
     log.success("Finished finding the extended sources for '" + frame.name + "' ...")
 
     # Return the output
-    return galaxies, region_list, segments
+    #return galaxies, region_list, segments
+
+    # Return the source table, regions and segments
+    return table, regions, segments
 
 # -----------------------------------------------------------------
 
@@ -1195,31 +1223,31 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
     # Run the finder
     finder.run(frame=frame, galaxies=galaxies, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
 
-    if finder.star_region is not None:
+    if finder.regions is not None:
 
-        star_sky_region = finder.star_region.to_sky(frame.wcs)
+        star_sky_region = finder.regions.to_sky(frame.wcs)
 
         # if self.downsampled:
         #    sky_region = self.star_sky_region
         #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
         # else: return self.star_finder.star_region
 
-        star_region_list = star_sky_region
+        regions = star_sky_region
 
-    else: star_region_list = None
+    else: regions = None
 
-    if finder.saturation_region is not None:
+    if finder.saturation_regions is not None:
 
-        saturation_sky_region = finder.saturation_region.to_sky(frame.wcs)
+        saturation_sky_region = finder.saturation_regions.to_sky(frame.wcs)
 
         # if self.downsampled:
         #    sky_region = self.saturation_sky_region
         #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
         # else: return self.star_finder.saturation_region
 
-        saturation_region_list = saturation_sky_region
+        saturation_regions = saturation_sky_region
 
-    else: saturation_region_list = None
+    else: saturation_regions = None
 
     if finder.segments is not None:
 
@@ -1231,28 +1259,32 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
         #    return upsampled
         # else: return self.star_finder.segments
 
-        star_segments = finder.segments
+        segments = finder.segments
 
-    else: star_segments = None
+    else: segments = None
 
     # Set the stars
-    stars = finder.stars
+    #stars = finder.stars
+
+    # Get the table
+    table = finder.table
 
     # kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
     # Set the kernel (PSF)
-    if finder.config.use_frame_fwhm and frame.fwhm is not None:
-
-        fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec/pix").value
-        sigma = fwhm * statistics.fwhm_to_sigma
-        kernel = Gaussian2DKernel(sigma)
-
-    else: kernel = finder.kernel
+    #if finder.config.use_frame_fwhm and frame.fwhm is not None:
+    #    fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec/pix").value
+    #    sigma = fwhm * statistics.fwhm_to_sigma
+    #    kernel = Gaussian2DKernel(sigma)
+    #else: kernel = finder.kernel
 
     # Inform the user
     log.success("Finished finding the point sources for '" + frame.name + "' ...")
 
     # Return the output
-    return stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
+    #return stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
+
+    # Return the source table, regions, saturation regions, and segments
+    return table, regions, saturation_regions, segments
 
 # -----------------------------------------------------------------
 
@@ -1273,10 +1305,10 @@ def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments,
     :return:
     """
 
-    # Create the trained finder
-    finder = TrainedFinder(config)
+    # Create the other source finder
+    finder = OtherSourceFinder(config)
 
-    # Run the trained finder just to find sources
+    # Run the finder just to find sources
     finder.run(frame=frame, galaxies=galaxies, stars=stars, special_mask=special_mask,
                             ignore_mask=ignore_mask, bad_mask=bad_mask,
                             galaxy_segments=galaxy_segments,
@@ -1291,6 +1323,8 @@ def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments,
         #    return sky_region.to_pixel(self.original_wcs) if sky_region is not None else None
         # else: return self.trained_finder.region
 
+    else: other_sky_region = None
+
     if finder.segments is not None:
 
         # if self.trained_finder.segments is None: return None
@@ -1302,6 +1336,8 @@ def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments,
         # else: return self.trained_finder.segments
 
         other_segments = finder.segments
+
+    else: other_segments = None
 
     # Inform the user
     log.success("Finished finding other sources for '" + frame.name + "' ...")
@@ -1373,19 +1409,23 @@ def clip_color_outliers(color, ref_color, dbscan_kwargs={}, show_plots=True):
 # -----------------------------------------------------------------
 
 def calibrate_color(instr_color, airmass, a, b, k1, k2):
+
     """
     Transform colors to a different photometric system.
     See Landolt 2007 for more.
     """
+
     return a + b * (1 / (1 + k2 * airmass)) * (instr_color - k1 * airmass)
 
 # -----------------------------------------------------------------
 
 def calculate_color_coeffs(instr_color, ref_color, airmass, init_params):
+
     """
     Using the procedure in Landolt 2007 we adjust the colors to a set
     of reference colors.
     """
+
     from scipy.optimize import curve_fit
 
     def get_color(measurements, a, b, k1, k2):

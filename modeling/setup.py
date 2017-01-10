@@ -151,7 +151,7 @@ class ModelingSetupTool(Configurable):
         self.modeling_config.ngc_name = self.ngc_name
         self.modeling_config.hyperleda_name = self.hyperleda_name
         self.modeling_config.method = self.config.method
-        self.modeling_config.host_id = self.config.host_id
+        self.modeling_config.host_ids = self.config.host_ids
         self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
 
     # -----------------------------------------------------------------

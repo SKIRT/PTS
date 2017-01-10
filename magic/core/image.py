@@ -26,7 +26,6 @@ from ..basics.mask import Mask
 from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from . import io
 from .frame import Frame, sum_frames
 
 # -----------------------------------------------------------------
@@ -644,6 +643,9 @@ class Image(object):
         # Create an array to contain the data cube
         datacube = []
 
+        # Names of the planes
+        plane_names = []
+
         plane_index = 0
 
         # Create a header from the wcs
@@ -665,9 +667,11 @@ class Image(object):
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
             datacube.append(self.frames[frame_name]._data)
-            
+            plane_name = frame_name + " [frame]"
+            plane_names.append(plane_name)
+
             # Add the name of the frame to the header
-            header["PLANE" + str(plane_index)] = frame_name + " [frame]"
+            header["PLANE" + str(plane_index)] = plane_name
 
             # Increment the plane index
             plane_index += 1
@@ -685,9 +689,11 @@ class Image(object):
 
                 # Add this mask to the data cube
                 datacube.append(self.masks[mask_name].astype(int))
+                plane_name = mask_name + " [mask]"
+                plane_names.append(plane_name)
 
                 # Add the name of the mask to the header
-                header["PLANE" + str(plane_index)] = mask_name + " [mask]"
+                header["PLANE" + str(plane_index)] = plane_name
 
                 # Increment the plane index
                 plane_index += 1
@@ -705,9 +711,11 @@ class Image(object):
 
                 # Add this segmentation map to the data cube
                 datacube.append(self.segments[segments_name].data)
+                plane_names = segments_name + " [segments]"
+                plane_names.append(plane_name)
 
                 # Add the name of the segmentation map to the header
-                header["PLANE" + str(plane_index)] = segments_name + " [segments]"
+                header["PLANE" + str(plane_index)] = plane_name
 
                 # Increment the plane index
                 plane_index += 1
@@ -729,10 +737,9 @@ class Image(object):
         if plane_index > 1:
             header["NAXIS"] = 3
             header["NAXIS3"] = plane_index
-        else: # only one plane
-            datacube = datacube[0]
+        else:
             header.remove("PLANE0")
-            header["PTSCLS"] = last_addition # if only one Frame or Mask or SegmentationMap has been added
+            header["PTSCLS"] = last_addition  # if only one Frame or Mask or SegmentationMap has been added
 
         # Set unit, FWHM and filter description
         if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
@@ -746,8 +753,48 @@ class Image(object):
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Image class of PTS package"
 
-        # Write
-        io.write_datacube(datacube, header, path)
+        # FITS format
+        if path.endswith(".fits"):
+
+            # Import
+            from . import fits as pts_fits
+
+            if len(datacube) == 1: datacube = datacube[0]
+
+            # Write
+            pts_fits.write_datacube(datacube, header, path)
+
+        # ASDF format
+        elif path.endswith(".asdf"):
+
+            # Import
+            from asdf import AsdfFile
+
+            # Create the tree
+            tree = dict()
+
+            if len(datacube) == 1:
+
+                plane = datacube[0]
+                name = plane_names[0].split(" [")[0]
+
+                # Set the plane
+                tree[name] = plane
+
+            else:
+
+                for i in range(len(datacube)):
+                    tree[plane_names[i]] = datacube[i]
+                tree["header"] = header
+
+            # Create the asdf file
+            ff = AsdfFile(tree)
+
+            # Write
+            ff.write_to(path)
+
+        # Only FITS or ASDF format is allowed
+        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
 
         # Update the path
         self.path = path
@@ -1247,6 +1294,26 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def __abs__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new = self.copy()
+
+        # Loop over all frames
+        for frame_name in self.frames:
+
+            # Get absolute values of frame
+            new.frames[frame_name] = abs(self.frames[frame_name])
+
+        # Return the new image
+        return new
+
+    # -----------------------------------------------------------------
+
     def __setitem__(self, item, value):
 
         """
@@ -1359,7 +1426,8 @@ class Image(object):
         log.debug("Reading in file '" + path + "' ...")
 
         # Load frames
-        frames, masks, segments, meta = io.load_frames(path, index, name, description, always_call_first_primary,
+        from . import fits as pts_fits
+        frames, masks, segments, meta = pts_fits.load_frames(path, index, name, description, always_call_first_primary,
                                                        rebin_to_wcs, hdulist_index, no_filter)
 
         # Set frames, masks and meta information

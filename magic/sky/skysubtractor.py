@@ -36,8 +36,8 @@ from astropy import stats
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
 from ..basics.mask import Mask
-from ..core.source import Source
-from ..basics.coordinate import PixelCoordinate
+from ..core.detection import Detection
+from ..basics.coordinate import PixelCoordinate, SkyCoordinate
 from ..region.circle import PixelCircleRegion
 from ..region.composite import PixelCompositeRegion
 from ..region.list import PixelRegionList, SkyRegionList
@@ -597,13 +597,13 @@ class SkySubtractor(Configurable):
             y = pixels_y[index]
 
             # Create a coordinate for the center of the aperture
-            center = Coordinate(x, y)
+            center = PixelCoordinate(x, y)
 
             # Create a circular aperture
-            circle = Circle(center, radius)
+            circle = PixelCircleRegion(center, radius)
 
             # Create a Source from the frame
-            source = Source.from_shape(self.frame, circle, 1.3)
+            source = Detection.from_shape(self.frame, circle, 1.3)
 
             # Get a mask of the pixels that overlap with the sky mask
             sky_mask_cutout = self.mask[source.y_slice, source.x_slice]
