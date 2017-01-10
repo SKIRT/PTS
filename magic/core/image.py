@@ -156,6 +156,56 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.errors_name is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def errors_name(self):
+
+        """
+        This function returns the name of the error map frame
+        :return:
+        """
+
+        frame_names = self.frames.keys()
+
+        possible_error_map_names = ["errors", "error", "uncertainties"]
+
+        if contains_two_or_more(frame_names, possible_error_map_names): raise RuntimeError("Image contains multiple error maps, don't know which to choose")
+
+        # Loop over possible names, return frame if present
+        for name in possible_error_map_names:
+            if name in frame_names: return name
+
+        # No error map found
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        frame_name = self.errors_name
+        if frame_name is None: return None
+
+        return self.frames[frame_name]
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_frames(self):
 
         """
@@ -1727,5 +1777,26 @@ def ordered_dict_prepend(dct, key, value, dict_setitem=dict.__setitem__):
     else:
         root[1] = first[0] = dct._OrderedDict__map[key] = [root, first, key]
         dict_setitem(dct, key, value)
+
+# -----------------------------------------------------------------
+
+def contains_two_or_more(in_list, from_list):
+
+    """
+    This function ...
+    :param in_list:
+    :param from_list:
+    :return:
+    """
+
+    counter = 0
+
+    for item in in_list:
+
+        if item in from_list: counter += 1
+
+        if counter == 2: return True
+
+    return False
 
 # -----------------------------------------------------------------

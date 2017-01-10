@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.sources.starfinder Contains the StarFinder class.
+## \package pts.magic.sources.point Contains the PointSourceFinder class.
 
 # -----------------------------------------------------------------
 
@@ -57,12 +57,12 @@ class PointSourceTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, index, point_source):
+    def add_source(self, index, source):
 
         """
         This function ...
         :param index:
-        :param point_source:
+        :param source:
         :return:
         """
 
@@ -70,7 +70,6 @@ class PointSourceTable(SmartTable):
         values = []
 
         # Get point source properties
-
 
         # Add a row
         self.add_row(values)
@@ -113,7 +112,7 @@ class PointSourceTable(SmartTable):
 
 # -----------------------------------------------------------------
 
-class StarFinder(Configurable):
+class PointSourceFinder(Configurable):
 
     """
     This class ...
@@ -126,7 +125,7 @@ class StarFinder(Configurable):
         """
 
         # Call the constructor of the base class
-        super(StarFinder, self).__init__(config)
+        super(PointSourceFinder, self).__init__(config)
 
         # -- Attributes --
 
@@ -201,7 +200,7 @@ class StarFinder(Configurable):
         """
 
         # Call the setup function of the base class
-        super(StarFinder, self).setup()
+        super(PointSourceFinder, self).setup()
 
         # Make a local reference to the frame
         self.frame = kwargs.pop("frame")
@@ -230,7 +229,7 @@ class StarFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Clearing the star finder ...")
+        log.info("Clearing the point source finder ...")
 
         # Create a new list of stars
         self.stars = StarList()

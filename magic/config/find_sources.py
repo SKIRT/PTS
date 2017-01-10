@@ -7,8 +7,8 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from .find_stars import definition as stars_definition
-from .find_galaxies import definition as galaxies_definition
+from .find_point import definition as point_definition
+from .find_extended import definition as extended_definition
 from .find_other import definition as other_definition
 
 # -----------------------------------------------------------------
@@ -29,8 +29,8 @@ definition.add_flag("find_stars", "find stars in the images", True)
 definition.add_flag("find_other_sources", "find other contaminating sources", True)
 
 # Optional settings
-definition.add_optional("galactic_catalog_file", "file_path", "galactic catalog file")
-definition.add_optional("stellar_catalog_file", "file_path", "stellar catalog file")
+definition.add_optional("extended_sources_catalog", "file_path", "catalog file for extended sources")
+definition.add_optional("point_sources_catalog", "file_path", "catalog file for point sources")
 
 # Regions
 definition.add_optional("special_region", "file_path", "region indicating areas that require special attention")
@@ -41,8 +41,8 @@ definition.add_optional("output", "directory_path", "output directory", letter="
 definition.add_optional("input", "directory_path", "input directory", letter="i")
 
 # Sections
-definition.import_section("galaxies", "options for galaxy finder", galaxies_definition)
-definition.import_section("stars", "options for star finder", stars_definition)
-definition.import_section("other_sources", "options for finding other contaminating sources", other_definition)
+definition.import_section("extended", "options for extended source finder", extended_definition)
+definition.import_section("point", "options for point source finder", point_definition)
+definition.import_section("other", "options for finding other contaminating sources", other_definition)
 
 # -----------------------------------------------------------------

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.sources.galaxyfinder Contains the GalaxyFinder class.
+## \package pts.magic.sources.extended Contains the ExtendedSourceFinder class.
 
 # -----------------------------------------------------------------
 
@@ -29,10 +29,44 @@ from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .list import GalaxyList
+from ...core.basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
-class GalaxyFinder(Configurable):
+class PointSourceTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    column_info = [("Index", int, None, "index of the point source"),
+                   ("RA", float, "deg", "right ascension"),
+                   ("DEC", float, "deg", "declination"),
+                   ("Flux", float, "Jy", "flux for the point source"),
+                   ("Flux error", float, "Jy", "error on the flux value")]
+
+    # -----------------------------------------------------------------
+
+    def add_source(self, index, source):
+
+        """
+        This function ...
+        :param index:
+        :param source:
+        :return:
+        """
+
+        # Values for the row
+        values = []
+
+        # Get extended source properties
+
+        # Add a row
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
+class ExtendedSourceFinder(Configurable):
 
     """
     This class ...
@@ -45,7 +79,7 @@ class GalaxyFinder(Configurable):
         """
 
         # Call the constructor of the base class
-        super(GalaxyFinder, self).__init__(config)
+        super(ExtendedSourceFinder, self).__init__(config)
 
         # -- Attributes --
 
@@ -109,10 +143,10 @@ class GalaxyFinder(Configurable):
         """
 
         # Call the setup function of the base class
-        super(GalaxyFinder, self).setup()
+        super(ExtendedSourceFinder, self).setup()
 
         # Inform the user
-        log.info("Setting up the galaxy extractor ...")
+        log.info("Setting up the extended source finder ...")
 
         # Make a local reference to the image frame and catalog
         self.frame = kwargs.pop("frame")
@@ -136,7 +170,7 @@ class GalaxyFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Clearing the galaxy extractor ...")
+        log.info("Clearing the extended source finder ...")
 
         # Create a new galaxy list
         self.galaxies = GalaxyList()

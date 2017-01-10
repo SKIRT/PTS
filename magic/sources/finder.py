@@ -19,22 +19,22 @@ from multiprocessing import Pool
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
-from .galaxyfinder import GalaxyFinder
-from .starfinder import StarFinder
-from .trainedfinder import TrainedFinder
+from .extended import ExtendedSourceFinder
+from .point import PointSourceFinder
+from .other import OtherSourceFinder
 from ..basics.mask import Mask
 from ..tools import wavelengths
-from ...core.tools import tables
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ..core.dataset import DataSet
-from ..catalog.importer import CatalogImporter
 from ...core.tools import filesystem as fs
 from ..region.list import SkyRegionList
 from ..core.image import Image
-from ..core.frame import Frame
 from ..tools import statistics
 from ...core.basics.table import SmartTable
+from ..catalog.extended import ExtendedSourceCatalog
+from ..catalog.point import PointSourceCatalog
+from ..catalog.fetcher import CatalogFetcher
 
 # -----------------------------------------------------------------
 
@@ -227,6 +227,9 @@ class SourceFinder(Configurable):
         # The frames
         self.frames = dict()
 
+        # The error maps
+        self.error_maps = dict()
+
         # The masks
         self.special_masks = dict()
         self.ignore_masks = dict()
@@ -234,6 +237,9 @@ class SourceFinder(Configurable):
         # Downsampled images
         self.downsampled = None
         self.original_wcs = None
+
+        # The catalog fetcher
+        self.fetcher = CatalogFetcher()
 
         # The catalog of extended sources and the catalog of point sources
         self.extended_source_catalog = None
@@ -268,16 +274,11 @@ class SourceFinder(Configurable):
         self.point_sources = dict()
 
         # Galaxy and star lists
-        #self.galaxies = dict()
-        #self.stars = dict()
         self.galaxies = []
         self.stars = []
 
         # The PSFs
         self.psfs = dict()
-
-        # The statistics
-        #self.statistics = dict()
 
         # The statistics table
         self.statistics = None
@@ -287,13 +288,14 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_frame(self, name, frame, star_finder_settings=None):
+    def add_frame(self, name, frame, star_finder_settings=None, error_map=None):
 
         """
         This function ...
         :param name:
         :param frame:
         :param star_finder_settings:
+        :param error_map:
         :return:
         """
 
@@ -303,8 +305,28 @@ class SourceFinder(Configurable):
         # Set the frame
         self.frames[name] = frame
 
+        # If error map is given
+        if error_map is not None: self.error_maps[name] = error_map
+
         # Set the settings
         if star_finder_settings is not None: self.star_finder_settings[name] = star_finder_settings
+
+    # -----------------------------------------------------------------
+
+    def add_error_map(self, name, error_map):
+
+        """
+        This function ...
+        :param name:
+        :param error_map:
+        :return:
+        """
+
+        # Check if name in frames
+        if name not in self.frames: raise ValueError("Frame with the name '" + name + "' has not been added")
+
+        # Set the error map
+        self.error_maps[name] = error_map
 
     # -----------------------------------------------------------------
 
@@ -358,9 +380,6 @@ class SourceFinder(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Get catalogs
-        self.get_catalogs()
-
         # 3. Find the galaxies
         self.find_galaxies()
         
@@ -371,13 +390,7 @@ class SourceFinder(Configurable):
         if self.config.find_other_sources: self.find_other_sources()
 
         # 5. Perform the photometry
-        self.do_photometry()
-
-        # Correlate between the different frames
-        self.correlate_sources()
-
-        # 5. Build and update catalog
-        #self.build_and_synchronize_catalog()
+        #self.do_photometry()
 
         # Writing
         self.write()
@@ -398,10 +411,13 @@ class SourceFinder(Configurable):
         self.pool = Pool(processes=self.config.nprocesses)
 
         # Load the images (from config or input kwargs)
-        if "frames" in kwargs: self.frames = kwargs.pop("frames")
+        if "frames" in kwargs:
+            self.frames = kwargs.pop("frames")
+            if "error_maps" in kwargs: self.error_maps = kwargs.pop("error_maps")
         elif "dataset" in kwargs:
             dataset = kwargs.pop("dataset")
             self.frames = dataset.get_frames()
+            self.error_maps = dataset.get_errormaps()
         else: self.load_frames()
 
         # Get the settings
@@ -460,14 +476,17 @@ class SourceFinder(Configurable):
         # Create new dataset
         if self.config.dataset.endswith(".fits"):
 
-            # Load the frame
-            frame = Frame.from_file(self.config.dataset)
+            # Load the image
+            image = Image.from_file(self.config.dataset)
 
             # Determine the name for this image
-            name = str(frame.filter)
+            name = str(image.filter)
 
-            # Add the frame
-            self.add_frame(name, frame)
+            # Add the primary frame
+            self.add_frame(name, image.primary)
+
+            # Add the error map
+            if image.has_errors: self.add_error_map(name, image.errors)
 
         # Load dataset from file
         elif self.config.dataset.endswith(".dat"):
@@ -477,6 +496,9 @@ class SourceFinder(Configurable):
 
             # Get the frames
             self.frames = dataset.get_frames()
+
+            # Get the error maps
+            self.error_maps = dataset.get_errormaps()
 
         # Invalid value for 'dataset'
         else: raise ValueError("Parameter 'dataset' must be filename of a dataset file (.dat) or a FITS file (.fits)")
@@ -493,8 +515,10 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Creating the masks ...")
 
+        # Special mask
         if self.special_region is not None:
 
+            # Loop over the frames
             for name in self.frames:
 
                 # Create the mask
@@ -502,60 +526,16 @@ class SourceFinder(Configurable):
 
                 self.special_masks[name] = special_mask
 
+        # Ignore mask
         if self.ignore_region is not None:
 
+            # Loop over the frames
             for name in self.frames:
 
                 # Create the mask
                 ignore_mask = Mask.from_region(self.ignore_region, self.frames[name].xsize, self.frames[name].ysize)
 
                 self.ignore_masks[name] = ignore_mask
-
-    # -----------------------------------------------------------------
-
-    def get_catalogs(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting galactic and stellar catalogs ...")
-
-        # Create a CatalogImporter instance
-        catalog_importer = CatalogImporter()
-
-        # Set configuration
-        if self.config.galactic_catalog_file is not None:
-            catalog_importer.config.galaxies.use_catalog_file = True
-            catalog_importer.config.galaxies.catalog_path = self.config.galactic_catalog_file
-
-        if self.config.stellar_catalog_file is not None:
-            catalog_importer.config.stars.use_catalog_file = True
-            catalog_importer.config.stars.catalog_path = self.config.stellar_catalog_file
-
-        # Get the coordinate box and minimum pixelscale
-        coordinate_box = self.bounding_box
-        min_pixelscale = self.min_pixelscale
-
-        galactic_catalog_path = self.output_path_file("galaxies.cat")
-        stellar_catalog_path = self.output_path_file("stars.cat")
-
-        # Set write
-        catalog_importer.config.write = True
-        catalog_importer.config.writing.galactic_catalog_path = galactic_catalog_path
-        catalog_importer.config.writing.stellar_catalog_path = stellar_catalog_path
-
-        # Run the catalog importer
-        catalog_importer.run(coordinate_box=coordinate_box, pixelscale=min_pixelscale)  # work with coordinate box instead ? image.coordinate_box ?
-
-        # Set the catalogs
-        self.extended_source_catalog = catalog_importer.galactic_catalog
-        self.point_source_catalog = catalog_importer.stellar_catalog
-
-        #tables.write(self.galactic_catalog, galactic_catalog_path)
-        #tables.write(self.stellar_catalog, stellar_catalog_path)
 
     # -----------------------------------------------------------------
 
@@ -568,11 +548,30 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Finding the galaxies ...")
 
+        # Fetch catalog of extended sources
+        if self.config.extended_sources_catalog is not None: self.extended_source_catalog = ExtendedSourceCatalog.from_file(self.config.extended_sources_catalog)
+        else: self.fetch_extended_sources_catalog()
+
         # Find extended sources
         self.find_extended_sources()
 
         # Make list of galaxies
         self.collect_galaxies()
+
+    # -----------------------------------------------------------------
+
+    def fetch_extended_sources_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fetching catalog of extended sources ...")
+
+        # Fetch the catalog
+        self.extended_source_catalog = self.fetcher.get_extended_source_catalog(self.bounding_box)
 
     # -----------------------------------------------------------------
 
@@ -607,7 +606,7 @@ class SourceFinder(Configurable):
             config = self.config.galaxies.copy()
 
             # Do the detection
-            result = self.pool.apply_async(detect_galaxies, args=(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask,))
+            result = self.pool.apply_async(detect_extended_sources, args=(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask,))
             results[name] = result
 
         # Process results
@@ -653,6 +652,44 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Finding the stars ...")
 
+        # Get catalog
+        if self.config.point_sources_catalog is not None: self.point_source_catalog = PointSourceCatalog.from_file(self.config.point_sources_catalog)
+        else: self.fetch_point_sources_catalog()
+
+        # Find point sources
+        self.find_point_sources()
+
+        # Collect stars
+        self.collect_stars()
+
+    # -----------------------------------------------------------------
+
+    def fetch_point_sources_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fetching catalog of point sources ...")
+
+        # Get the coordinate box and minimum pixelscale
+        coordinate_box = self.bounding_box
+        min_pixelscale = self.min_pixelscale
+
+        # Fetch
+        self.point_source_catalog = self.fetcher.get_point_source_catalog(coordinate_box, min_pixelscale, self.config.stars.fetching.catalogs)
+
+    # -----------------------------------------------------------------
+
+    def find_point_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Dictionary to keep result handles
         results = dict()
 
@@ -686,7 +723,7 @@ class SourceFinder(Configurable):
             if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
 
             # Do the detection
-            result = self.pool.apply_async(detect_stars, args=(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask,))
+            result = self.pool.apply_async(detect_point_sources, args=(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask,))
             results[name] = result
 
         # Process results
@@ -727,6 +764,17 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
+    def collect_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def find_other_sources(self):
 
         """
@@ -751,8 +799,8 @@ class SourceFinder(Configurable):
             frame = self.frames[name]
 
             # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
-            if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
-            else: self.trained_finder.config.classify = True
+            #if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
+            #else: self.trained_finder.config.classify = True
 
             # Get masks
             special_mask = self.special_masks[name] if name in self.special_masks else None
@@ -794,63 +842,6 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def build_and_synchronize_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Build the catalog
-        if self.config.build_catalogs: self.build_catalog()
-
-        # Synchronize the catalog
-        if self.config.build_catalogs and self.config.synchronize_catalogs: self.synchronize_catalog()
-
-    # -----------------------------------------------------------------
-
-    def build_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Build the stellar catalog if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
-        if self.frame.wavelength is None or self.frame.wavelength < wavelengths.ranges.ir.mir.max:
-
-            # Inform the user
-            log.info("Building the stellar catalog ...")
-
-            # Run the catalog builder
-            self.catalog_builder.run(self.frame, self.galaxy_finder, self.star_finder, self.trained_finder)
-
-            # Inform the user
-            log.success("Stellar catalog built")
-
-    # -----------------------------------------------------------------
-
-    def synchronize_catalog(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Synchronize the catalog if the wavelength of this image is smaller than 25 micron (or the wavelength is unknown)
-        if self.frame.wavelength is None or self.frame.wavelength < wavelengths.ranges.ir.mir.max:
-
-            # Inform the user
-            log.info("Synchronizing with the DustPedia catalog ...")
-
-            # Run the catalog synchronizer
-            self.catalog_synchronizer.run(self.frame.frames.primary, self.galaxy_name, self.catalog_builder.galactic_catalog, self.catalog_builder.stellar_catalog)
-
-            # Inform the user
-            log.success("Catalog synchronization done")
-
-    # -----------------------------------------------------------------
-
     def do_photometry(self):
 
         """
@@ -884,15 +875,6 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def correlate_sources(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -903,17 +885,64 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing ...")
 
-        # 1. Write region lists
+        # 1. Write the catalogs
+        self.write_catalogs()
+
+        # 2. Write region lists
         self.write_regions()
 
-        # 2. Write segmentation maps
+        # 3. Write segmentation maps
         self.write_segments()
 
-        # 3. Write statistics table
+        # 4. Write statistics table
         self.write_statistics()
 
-        # 4. Write the photometry table
+        # 5. Write the photometry table
         self.write_photometry()
+
+    # -----------------------------------------------------------------
+
+    def write_catalogs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing catalogs ...")
+
+        # Write extended sources catalog
+        self.write_extended_source_catalog()
+
+        # Write point sources catalog
+        self.write_point_source_catalog()
+
+    # -----------------------------------------------------------------
+
+    def write_extended_source_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = self.output_path_file("extended_sources.cat")
+
+        self.extended_source_catalog.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_point_source_catalog(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = self.output_path_file("point_sources.cat")
+
+        self.point_source_catalog.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -926,9 +955,6 @@ class SourceFinder(Configurable):
 
         # Inform the user
         log.info("Writing the regions ...")
-
-
-
 
     # -----------------------------------------------------------------
 
@@ -1080,7 +1106,7 @@ class SourceFinder(Configurable):
 
 # -----------------------------------------------------------------
 
-def detect_galaxies(frame, catalog, config, special_mask, ignore_mask, bad_mask):
+def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, bad_mask):
 
     """
     This function ...
@@ -1094,10 +1120,10 @@ def detect_galaxies(frame, catalog, config, special_mask, ignore_mask, bad_mask)
     """
 
     # Create the galaxy finder
-    galaxy_finder = GalaxyFinder(config)
+    finder = ExtendedSourceFinder(config)
 
-    # Run the galaxy finder
-    galaxy_finder.run(frame=frame, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+    # Run the finder
+    finder.run(frame=frame, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
 
     # Set the name of the principal galaxy
     # self.galaxy_name = self.galaxy_finder.principal.name
@@ -1107,9 +1133,9 @@ def detect_galaxies(frame, catalog, config, special_mask, ignore_mask, bad_mask)
     # if galaxy_sky_region is not None:
     #    galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
 
-    if galaxy_finder.region is not None:
+    if finder.region is not None:
 
-        galaxy_sky_region = galaxy_finder.region.to_sky(frame.wcs)
+        galaxy_sky_region = finder.region.to_sky(frame.wcs)
 
         # if self.downsampled:
         #    sky_region = self.galaxy_sky_region
@@ -1119,7 +1145,9 @@ def detect_galaxies(frame, catalog, config, special_mask, ignore_mask, bad_mask)
         # Get region list
         region_list = galaxy_sky_region
 
-    if galaxy_finder.segments is not None:
+    else: region_list = None
+
+    if finder.segments is not None:
 
         # if self.galaxy_finder.segments is None: return None
         # if self.downsampled:
@@ -1132,20 +1160,22 @@ def detect_galaxies(frame, catalog, config, special_mask, ignore_mask, bad_mask)
         # else: return self.galaxy_finder.segments
 
         # Get the segments
-        segments = galaxy_finder.segments
+        segments = finder.segments
+
+    else: segments = None
 
     # Get the galaxies
-    galaxies = galaxy_finder.galaxies
+    galaxies = finder.galaxies
 
     # Inform the user
-    log.success("Finished finding the galaxies for '" + frame.name + "' ...")
+    log.success("Finished finding the extended sources for '" + frame.name + "' ...")
 
     # Return the output
     return galaxies, region_list, segments
 
 # -----------------------------------------------------------------
 
-def detect_stars(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask):
+def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask):
 
     """
     This function ...
@@ -1160,9 +1190,9 @@ def detect_stars(frame, galaxies, catalog, config, special_mask, ignore_mask, ba
     """
 
     # Create the star finder
-    finder = StarFinder(config)
+    finder = PointSourceFinder(config)
 
-    # Run the star finder
+    # Run the finder
     finder.run(frame=frame, galaxies=galaxies, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
 
     if finder.star_region is not None:
@@ -1176,6 +1206,8 @@ def detect_stars(frame, galaxies, catalog, config, special_mask, ignore_mask, ba
 
         star_region_list = star_sky_region
 
+    else: star_region_list = None
+
     if finder.saturation_region is not None:
 
         saturation_sky_region = finder.saturation_region.to_sky(frame.wcs)
@@ -1186,6 +1218,8 @@ def detect_stars(frame, galaxies, catalog, config, special_mask, ignore_mask, ba
         # else: return self.star_finder.saturation_region
 
         saturation_region_list = saturation_sky_region
+
+    else: saturation_region_list = None
 
     if finder.segments is not None:
 
@@ -1198,6 +1232,8 @@ def detect_stars(frame, galaxies, catalog, config, special_mask, ignore_mask, ba
         # else: return self.star_finder.segments
 
         star_segments = finder.segments
+
+    else: star_segments = None
 
     # Set the stars
     stars = finder.stars
@@ -1213,7 +1249,7 @@ def detect_stars(frame, galaxies, catalog, config, special_mask, ignore_mask, ba
     else: kernel = finder.kernel
 
     # Inform the user
-    log.success("Finished finding the stars for '" + frame.name + "' ...")
+    log.success("Finished finding the point sources for '" + frame.name + "' ...")
 
     # Return the output
     return stars, star_region_list, saturation_region_list, star_segments, kernel, statistics

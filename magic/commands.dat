@@ -9,8 +9,8 @@ get_projections | -- | misc.project.Projector | arguments | Create projections f
 get_seds | -- | misc.seds.SEDFetcher | arguments | Fetch reference SEDs for a certain galaxy
 find_sources | -- | sources.finder.SourceFinder | arguments | Find sources for the images in a dataset or a single image
 import_catalogs | -- | catalog.importer.CatalogImporter | arguments | Import galactic and stellar catalogs
-find_galaxies | -- | sources.galaxyfinder.GalaxyFinder | arguments | Find galaxies
-find_stars | -- | sources.starfinder.StarFinder | arguments | Find stars
+find_extended | -- | sources.extended.ExtendedSourceFinder | arguments | Find extended sources in an image
+find_point | -- | sources.point.PointSourceFinder | arguments | Find point sources in an image
 find_other | -- | sources.trainedfinder.TrainedFinder | arguments | Find other contaminating sources (not in catalogs)
 extract | -- | sources.extractor.SourceExtractor | arguments | Extract the sources from an image (based on the results of find_sources)
 subtract_sky | -- | sky.skysubtractor.SkySubtractor | arguments | Run automatic sky subtraction on an astronmical image

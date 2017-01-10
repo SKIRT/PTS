@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.trainedextractor Contains the TrainedExtractor class.
+## \package pts.magic.sources.other Contains the OtherSourceFinder class.
 
 # -----------------------------------------------------------------
 
@@ -36,7 +36,7 @@ from ..basics.coordinate import PixelCoordinate
 
 # -----------------------------------------------------------------
 
-class TrainedFinder(Configurable):
+class OtherSourceFinder(Configurable):
 
     """
     This class ...
@@ -51,7 +51,7 @@ class TrainedFinder(Configurable):
         """
 
         # Call the constructor of the base class
-        super(TrainedFinder, self).__init__(config)
+        super(OtherSourceFinder, self).__init__(config)
 
         # -- Attributes --
 
@@ -129,7 +129,7 @@ class TrainedFinder(Configurable):
         """
 
         # Call the setup function of the base class
-        super(TrainedFinder, self).setup()
+        super(OtherSourceFinder, self).setup()
 
         # Make a local reference to the image frame
         self.frame = kwargs.pop("frame")

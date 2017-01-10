@@ -5,19 +5,31 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
+## \package pts.magic.catalog.point Contains the PointSourceCatalog class.
 
 # -----------------------------------------------------------------
 
-# Create the configuration definition
-definition = ConfigurationDefinition()
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
 
-# Flags
-definition.add_flag("recursive", "look for images in directories recursively", True)
-definition.add_flag("list", "list the found images", True)
+# Import the relevant PTS classes and modules
+from ...core.basics.table import SmartTable
 
-definition.add_flag("pixelscale", "arrange by increasing pixelscale")
-definition.add_flag("fwhm", "arrange by increasing FWHM")
+# -----------------------------------------------------------------
+
+class PointSourceCatalog(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def add_source(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------

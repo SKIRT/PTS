@@ -22,6 +22,10 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+# DEPRECATED CLASS
+
+# -----------------------------------------------------------------
+
 class CatalogImporter(Configurable):
 
     """
