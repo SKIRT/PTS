@@ -209,6 +209,27 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def get_quantity(self, colname, index):
+
+        """
+        This function ...
+        :param colname:
+        :param index:
+        :return:
+        """
+
+        value = self[colname][index]
+
+        if self[colname].mask[index]: return None
+        elif self[colname].unit is not None:
+            quantity = value * self[colname].unit
+        else: quantity = value
+
+        # Return the quantity
+        return quantity
+
+    # -----------------------------------------------------------------
+
     def get_row(self, index):
 
         """

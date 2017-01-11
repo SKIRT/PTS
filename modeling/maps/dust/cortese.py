@@ -25,6 +25,7 @@ from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
+from ....magic.tools.colours import make_colour_map
 
 # -----------------------------------------------------------------
 
@@ -199,7 +200,7 @@ class CorteseDustMapMaker(MapsComponent):
             # Calculate the colour map
             first_band = colour_combinations[ssfr_colour][0]
             second_band = colour_combinations[ssfr_colour][1]
-            colour = Frame(-2.5 * np.log10(self.frames[first_band] / self.frames[second_band]))
+            colour = make_colour_map(self.frames[first_band], self.frames[second_band])
 
             # Replace NaNs by zeros
             colour.replace_nans(0.0)

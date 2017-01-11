@@ -65,7 +65,7 @@ class AttenuationCurve(Curve):
         if wavelengths is not None and attenuations is not None:
 
             # Add the data points
-            for i in range(len(wavelengths)): self.add_entry(wavelengths[i], attenuations[i])
+            for i in range(len(wavelengths)): self.add_point(wavelengths[i], attenuations[i])
 
     # -----------------------------------------------------------------
 

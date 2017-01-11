@@ -27,6 +27,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.errorbar import ErrorBar
 from ...core.basics.filter import Filter
 from ...core.basics.table import SmartTable
+from ...magic.tools.colours import calculate_colour
 
 # -----------------------------------------------------------------
 
@@ -588,6 +589,19 @@ class ObservedSED(object):
 
         # If no match is found, return None
         return None
+
+    # -----------------------------------------------------------------
+
+    def colour(self, filter_a, filter_b):
+
+        """
+        This function ...
+        :param filter_a:
+        :param filter_b:
+        :return:
+        """
+
+        return calculate_colour(self.flux_for_filter(filter_a), self.flux_for_filter(filter_b))
 
     # -----------------------------------------------------------------
 

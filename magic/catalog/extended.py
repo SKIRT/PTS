@@ -85,6 +85,165 @@ class ExtendedSourceCatalog(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_name(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Name", index)
+
+    # -----------------------------------------------------------------
+
+    def get_redshift(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Redshift", index)
+
+    # -----------------------------------------------------------------
+
+    def get_type(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Type", index)
+
+    # -----------------------------------------------------------------
+
+    def get_names(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        names = self.get_quantity("Names", index)
+        if names is not None: names = names.split(",")
+        return names
+
+    # -----------------------------------------------------------------
+
+    def get_distance(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Distance", index)
+
+    # -----------------------------------------------------------------
+
+    def get_inclination(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Incl", index)
+
+    # -----------------------------------------------------------------
+
+    def get_d25(self, index):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_quantity("D25", index)
+
+    # -----------------------------------------------------------------
+
+    def get_major(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Major", index)
+
+    # -----------------------------------------------------------------
+
+    def get_minor(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Minor", index)
+
+    # -----------------------------------------------------------------
+
+    def get_position_angle(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Posangle", index)
+
+    # -----------------------------------------------------------------
+
+    def is_principal(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Principal", index)
+
+    # -----------------------------------------------------------------
+
+    def get_companions(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        companions = self.get_quantity("Companions", index)
+        if companions is not None: companions = companions.split(",")
+        return companions
+
+    # -----------------------------------------------------------------
+
+    def get_parent(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Parent", index)
+
+    # -----------------------------------------------------------------
+
     def create_source(self, index):
 
         """

@@ -31,49 +31,43 @@ class Galaxy(SkyObject):
     This class ...
     """
 
-    def __init__(self, index, name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, position_angle):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
-        :param position:
-        :param name:
-        :param position:
-        :param redshift:
-        :param galaxy_type:
-        :param names:
-        :param distance:
-        :param inclination:
-        :param d25:
-        :param major:
-        :param minor:
-        :param position_angle:
+        :param kwargs:
         :return:
         """
 
-        self.index = index
-
-        # Set attributes
-        self.name = name
-        self.redshift = redshift
-        self.type = galaxy_type
-        self.names = names
-        self.distance = distance
-        self.inclination = inclination
-        self.d25 = d25
-        self.major = major
-        self.minor = minor
-        self.pa = position_angle
-
-        # Set the principal and companion flags to False initially
-        self.principal = False
-        self.companion = False
-
-        # Initialize a list for the names of companion galaxies
-        self.companions = []
-        self.parent = None
-
         # Call the constructor of the base class
-        super(Galaxy, self).__init__(position)
+        super(Galaxy, self).__init__(**kwargs)
+
+        # Set properties
+        self.name = kwargs.pop("name", None)
+        self.redshift = kwargs.pop("redshift", None)
+        self.type = kwargs.pop("galaxy_type", None)
+        self.names = kwargs.pop("names", None)
+        self.distance = kwargs.pop("distance", None)
+        self.inclination = kwargs.pop("inclination", None)
+        self.d25 = kwargs.pop("d25", None)
+        self.major = kwargs.pop("major", None)
+        self.minor = kwargs.pop("minor", None)
+        self.pa = kwargs.pop("position_angle", None)
+        self.principal = kwargs.pop("principal", False)
+        self.companions = kwargs.pop("companions", [])
+        self.parent = kwargs.pop("parent", None)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def companion(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parent is not None
 
     # -----------------------------------------------------------------
 
@@ -236,19 +230,6 @@ class Galaxy(SkyObject):
         # Create a source object
         ellipse *= expansion_factor
         self.source = Source.from_ellipse(frame, ellipse, outer_factor)
-
-    # -----------------------------------------------------------------
-
-    def fit_model(self, config):
-
-        """
-        This function ...
-        :param frame:
-        :param config:
-        :return:
-        """
-
-        pass
 
     # -----------------------------------------------------------------
 

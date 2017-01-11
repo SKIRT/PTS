@@ -50,6 +50,7 @@ class PointSourceTable(SmartTable):
 
     column_info = [("RA", float, "deg", "right ascension"),
                    ("DEC", float, "deg", "declination"),
+                   ("Detected", bool, None, "Has source detected"),
                    ("Flux", float, "Jy", "flux for the point source"),
                    ("Flux error", float, "Jy", "error on the flux value"),
                    ("FWHM", float, "arcsec", "FWHM of the point source")]
@@ -74,6 +75,79 @@ class PointSourceTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_position(self, index):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SkyCoordinate(ra=self["RA"][index] * self["RA"].unit, dec=self["DEC"][index] * self["DEC"].unit, unit="deg", frame="fk5")
+
+    # -----------------------------------------------------------------
+
+    def is_detected(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Detected"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_flux(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Flux", index)
+
+    # -----------------------------------------------------------------
+
+    def get_flux_error(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Flux error", index)
+
+    # -----------------------------------------------------------------
+
+    def get_fwhm(self, index):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_quantity("FWHM", index)
+
+    # -----------------------------------------------------------------
+
+    def fwhms(self, unit=None, asarray=False, add_unit=True):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray:
+        :param add_unit:
+        :return:
+        """
+
+        if asarray: return tables.column_as_array(self["FWHM"], unit=unit)
+        else: return tables.column_as_list(self["FWHM"], unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
     @property
     def mean_fwhm(self):
 
@@ -82,7 +156,9 @@ class PointSourceTable(SmartTable):
         :return:
         """
 
-        pass
+        fwhms = self.fwhms(asarray=True)
+        not_nan = np.logical_not(np.isnan(fwhms))
+        return np.mean(fwhms[not_nan])
 
     # -----------------------------------------------------------------
 
@@ -94,7 +170,9 @@ class PointSourceTable(SmartTable):
         :return:
         """
 
-        pass
+        fwhms = self.fwhms(asarray=True)
+        not_nan = np.logical_not(np.isnan(fwhms))
+        return np.median(fwhms[not_nan])
 
     # -----------------------------------------------------------------
 
@@ -106,7 +184,9 @@ class PointSourceTable(SmartTable):
         :return:
         """
 
-        pass
+        fwhms = self.fwhms(asarray=True)
+        not_nan = np.logical_not(np.isnan(fwhms))
+        return np.std(fwhms[not_nan])
 
 # -----------------------------------------------------------------
 

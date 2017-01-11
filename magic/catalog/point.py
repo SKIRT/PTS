@@ -68,6 +68,66 @@ class PointSourceCatalog(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_catalog(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Catalog", index)
+
+    # -----------------------------------------------------------------
+
+    def get_id(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("ID", index)
+
+    # -----------------------------------------------------------------
+
+    def get_ra_error(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("RA error", index)
+
+    # -----------------------------------------------------------------
+
+    def get_dec_error(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("DEC error", index)
+
+    # -----------------------------------------------------------------
+
+    def get_confidence(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Confidence", index)
+
+    # -----------------------------------------------------------------
+
     def create_source(self, index):
 
         """

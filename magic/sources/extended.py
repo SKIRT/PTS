@@ -23,6 +23,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.table import SmartTable
 from ..core.mask import Mask
+from ..basics.coordinate import SkyCoordinate
 
 # -----------------------------------------------------------------
 
@@ -58,6 +59,54 @@ class ExtendedSourceTable(SmartTable):
 
         # Add a row
         self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def get_position(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return SkyCoordinate(ra=self["RA"][index] * self["RA"].unit, dec=self["DEC"][index] * self["DEC"].unit, unit="deg", frame="fk5")
+
+    # -----------------------------------------------------------------
+
+    def is_detected(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Detected"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_flux(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Flux", index)
+
+    # -----------------------------------------------------------------
+
+    def get_flux_error(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_quantity("Flux error", index)
 
 # -----------------------------------------------------------------
 

@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from multiprocessing import Pool
 
-# Import astronomical modules
-from astropy.convolution import Gaussian2DKernel
-
 # Import the relevant PTS classes and modules
 from .extended import ExtendedSourceFinder
 from .point import PointSourceFinder
@@ -30,47 +27,71 @@ from ..core.dataset import DataSet
 from ...core.tools import filesystem as fs
 from ..region.list import SkyRegionList
 from ..core.image import Image
-from ..tools import statistics
 from ...core.basics.table import SmartTable
 from ..catalog.extended import ExtendedSourceCatalog
 from ..catalog.point import PointSourceCatalog
 from ..catalog.fetcher import CatalogFetcher
 from .list import GalaxyList, StarList
+from ..object.galaxy import Galaxy
+from ..object.star import Star
+from ...core.data.sed import ObservedSED
+from ...core.basics.filter import Filter
+from ...core.basics.curve import FilterCurve
 
 # -----------------------------------------------------------------
 
-class StatisticsTable(SmartTable):
+class FWHMTable(FilterCurve):
 
     """
     This function ...
     """
 
-    column_info = [("Star index", int, None, "index of the star"),
-                   ("FWHM", float, "arcsec", "FWHM of the PSF")]
-
-    # -----------------------------------------------------------------
-
-    def add_entry(self, index, fwhm):
+    @classmethod
+    def initialize(cls):
 
         """
         This function ...
-        :param index:
+        :return:
+        """
+
+        # Call the initialize function of the base class
+        return super(FWHMTable, cls).initialize("FWHM", "FWHM of the PSF", "arcsec")
+
+    # -----------------------------------------------------------------
+
+    def add_fwhm(self, fltr, fwhm):
+
+        """
+        This function ...
+        :param fltr:
         :param fwhm:
         :return:
         """
 
-        values = [index, fwhm]
-        self.add_row(values)
+        self.add_point(fltr, fwhm)
+
+    # -----------------------------------------------------------------
+
+    def fwhm_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.value_for_filter(fltr)
 
 # -----------------------------------------------------------------
 
-class PhotometryTable(SmartTable):
+class GalaxyTable(SmartTable):
 
     """
     This class ...
     """
 
-    column_info = [("Star index", int, None, "index of the star")]
+    column_info = [("Index", int, None, "index of the extended source in the catalog"),
+                   ("Name", str, None, "name of the galaxy")]
 
     # -----------------------------------------------------------------
 
@@ -83,36 +104,133 @@ class PhotometryTable(SmartTable):
         :return:
         """
 
-        # Add columns for the parameter values
+        # Loop over the filters
         for fltr in filters:
 
-            fltr_string = str(fltr)
-            cls.column_info.append((fltr_string, float, "Jy", fltr_string + " flux density"))
+            column_name = str(fltr) + " flux"
+            cls.column_info.append((column_name, float, "Jy", str(fltr) + " flux density"))
 
-        # Call the initialize function of the SmartTable table function
-        return super(PhotometryTable, cls).initialize()
+        # Call the initialize function of the base class
+        return super(GalaxyTable, cls).initialize()
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, index, fluxes):
+    def add_galaxy(self, galaxy):
 
         """
         This function ...
-        :param index:
-        :param fluxes:
+        :param galaxy:
         :return:
         """
 
-        values = [None] * len(self.colnames)
+        values = []
 
-        values[0] = index
+        index = galaxy.index
+        name = galaxy.name
 
-        for fltr in fluxes:
+        values.append(index)
+        values.append(name)
 
-            index = self.colnames.index(str(fltr))
-            values[index] = fluxes[fltr]
+        # Loop over the filters for which we need a flux
+        for name in self.colnames:
 
-        # Add a row
+            # Skip
+            if not name.endswith("flux"): continue
+
+            # Filter
+            fltr = Filter.from_string(name.split(" flux")[0])
+
+            # Get flux
+            flux = galaxy.sed.flux_for_filter(fltr)
+
+            # Add the flux to the values
+            values.append(flux)
+
+        # Add a row to the table
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
+class StarTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    column_info = [("Index", int, None, "index of the point source in the catalog"),
+                   ("Catalog", str, None, "original catalog"),
+                   ("ID", str, None, "ID of the point source in the original catalog")]
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def initialize(cls, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        # Loop over the filters
+        for fltr in filters:
+
+            column_name = str(fltr) + " FWHM"
+            cls.column_info.append((column_name, float, "arcsec", str(fltr) + " FWHM"))
+
+        # Loop over the filters
+        for fltr in filters:
+
+            column_name = str(fltr) + " flux"
+            cls.column_info.append((column_name, float, "Jy", str(fltr) + " flux density"))
+
+        # Call the initialize function of the base class
+        return super(StarTable, cls).initialize()
+
+    # -----------------------------------------------------------------
+
+    def add_star(self, star):
+
+        """
+        This function ...
+        :param star:
+        :return:
+        """
+
+        values = []
+
+        catalog = star.catalog
+        id = star.id
+
+        values.append(catalog)
+        values.append(id)
+
+        # Loop over the filters for which we need a FWHM
+        for name in self.colnames:
+
+            # FWHM
+            if name.endswith("FWHM"):
+
+                # Filter
+                fltr = Filter.from_string(name.split(" FWHM")[0])
+
+                fwhm = star.fwhms[name]
+
+
+            # Flux
+            elif name.endswith("flux"):
+
+                # Filter
+                fltr = Filter.from_string(name.split(" flux")[0])
+
+                # Get flux
+                flux = star.sed.flux_for_filter(fltr)
+
+                # Add the flux to the values
+                values.append(flux)
+
+            else: continue
+
         self.add_row(values)
 
 # -----------------------------------------------------------------
@@ -270,16 +388,27 @@ class SourceFinder(Configurable):
         self.saturation_regions = dict()
         self.other_regions = dict()
 
-        ###
-
-        # The regions
-        self.galaxy_regions = dict()
-        self.star_regions = dict()
-        self.saturation_regions = dict()
-        self.other_regions = dict()
-
         # The segmentation maps
         self.segments = dict()
+
+        ###
+
+        ### The finished products:
+
+        # The tables
+        self.galaxy_table = None
+        self.star_table = None
+
+        # The regions
+        self.galaxy_regions = None
+        self.star_regions = None
+        self.saturation_regions = None
+
+        # The segmentation maps
+        self.galaxy_segments = None
+        self.star_segments = None
+
+        ###
 
         # Settings for the star finder for different bands
         self.star_finder_settings = dict()
@@ -289,8 +418,6 @@ class SourceFinder(Configurable):
         self.point_sources = dict()
 
         # Galaxy and star lists
-        #self.galaxies = []
-        #self.stars = []
         self.galaxies = GalaxyList()
         self.stars = StarList()
 
@@ -387,6 +514,18 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [frame.filter for frame in self.frames.values()]
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -461,22 +600,19 @@ class SourceFinder(Configurable):
         # Initialize images for the segmentation maps
         for name in self.frames: self.segments[name] = Image("segments")
 
-        # Initialize the photometry table
-        self.photometry = PhotometryTable.initialize(self.filters)
-
         # DOWNSAMPLE ??
 
-    # -----------------------------------------------------------------
+        # Initialize the galaxy segments
+        self.galaxy_segments = Image("galaxies")
 
-    @property
-    def filters(self):
+        # Initialize the star segments
+        self.star_segments = Image("stars")
 
-        """
-        This function ...
-        :return:
-        """
+        # Initialize the galaxy table
+        self.galaxy_table = GalaxyTable.initialize(self.filters)
 
-        return [frame.filter for frame in self.frames.values()]
+        # Initialiee the star table
+        self.star_table = StarTable.initialize(self.filters)
 
     # -----------------------------------------------------------------
 
@@ -575,6 +711,9 @@ class SourceFinder(Configurable):
         # Make list of galaxies
         self.collect_galaxies()
 
+        # Create galaxy table
+        self.create_galaxy_table()
+
     # -----------------------------------------------------------------
 
     def fetch_extended_sources_catalog(self):
@@ -661,7 +800,58 @@ class SourceFinder(Configurable):
         # Loop over the extended sources
         for index in range(len(self.extended_source_catalog)):
 
-            galaxy = Galaxy()
+            # Get the galaxy position
+            position = self.extended_source_catalog.get_position(index)
+
+            # Create SED
+            sed = ObservedSED()
+
+            # Loop over the frames
+            for name in self.frames:
+
+                # Get the flux for this frame
+                flux = self.extended_tables[name].get_flux(index)
+
+                # Add the flux to the SED
+                if flux is not None: sed.add_entry(self.frames[name].filter, flux)
+
+            # Get other properties
+            name = self.extended_source_catalog.get_name(index)
+            redshift = self.extended_source_catalog.get_redshift(index)
+            galaxy_type = self.extended_source_catalog.get_type(index)
+            names = self.extended_source_catalog.get_names(index)
+            distance = self.extended_source_catalog.get_distance(index)
+            inclination = self.extended_source_catalog.get_inclination(index)
+            d25 = self.extended_source_catalog.get_d25(index)
+            major = self.extended_source_catalog.get_major(index)
+            minor = self.extended_source_catalog.get_minor(index)
+            posangle = self.extended_source_catalog.get_position_angle(index)
+            principal = self.extended_source_catalog.is_principal(index)
+            companions = self.extended_source_catalog.get_companions(index)
+            parent = self.extended_source_catalog.get_parent(index)
+
+            # Create the galaxy
+            galaxy = Galaxy(index=index, position=position, sed=sed, name=name, redshift=redshift, galaxy_type=galaxy_type,
+                            names=names, distance=distance, inclination=inclination, d25=d25, major=major, minor=minor,
+                            position_angle=posangle, principal=principal, companions=companions, parent=parent)
+
+            # Add the galaxy to the list
+            self.galaxies.append(galaxy)
+
+    # -----------------------------------------------------------------
+
+    def create_galaxy_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the galaxy table ...")
+
+        # Add the galaxies
+        for galaxy in self.galaxies: self.galaxy_table.add_galaxy(galaxy)
 
     # -----------------------------------------------------------------
 
@@ -683,6 +873,9 @@ class SourceFinder(Configurable):
 
         # Collect stars
         self.collect_stars()
+
+        # Create the star table
+        self.create_star_table()
 
     # -----------------------------------------------------------------
 
@@ -729,11 +922,11 @@ class SourceFinder(Configurable):
             if frame.wavelength is not None or frame.wavelength > wavelengths.ranges.ir.mir.max:
 
                 # No star subtraction for this image
-                log.info("Finding stars will not be performed on this frame")
+                log.info("Finding point sources will not be performed for the '" + name "' image")
                 continue
 
             # Inform the user
-            log.info("Finding the stars ...")
+            log.info("Finding the point sources ...")
 
             # Get masks
             special_mask = self.special_masks[name] if name in self.special_masks else None
@@ -765,7 +958,7 @@ class SourceFinder(Configurable):
 
             # Set segmentation map
             # Add the segmentation map of the galaxies
-            self.segments[name].add_frame(star_segments, "point")
+            self.segments[name].add_frame(segments, "point")
 
             # Set the PSF
             #self.psfs[name] = kernel
@@ -791,6 +984,111 @@ class SourceFinder(Configurable):
 
         # Inform the user
         log.info("Collecting stars ...")
+
+        # Loop over the point sources
+        for index in range(len(self.point_source_catalog)):
+
+            # Get the position of the point source
+            position = self.point_source_catalog.get_position(index)
+
+            # Create SED
+            sed = ObservedSED()
+
+            # Loop over the frames
+            for name in self.frames:
+
+                # Get the flux for this frame
+                flux = self.point_tables[name].get_flux(index)
+
+                # Add the flux to the SED
+                if flux is not None: sed.add_entry(self.frames[name].filter, flux)
+
+            # Check whether it can be identified as a star
+
+            fuv = Filter.from_string("FUV")
+            nuv = Filter.from_string("NUV")
+
+            # Check the FUV-NUV colour
+            fuv_nuv_colour = sed.colour(fuv, nuv)
+
+            if abs(fuv_nuv_colour) < 0.75: continue # not a star
+
+            #| FUV - NUV | > 0.75
+            # if they are detected at the 1σ level in their particular wavelength
+            # band.
+
+            # IRAC colours (see below). At these wavelengths, however, the
+            # non-M 31 point sources are a mix of foreground stars and background
+            # galaxies. Furthermore, some bright sources may be associated
+            # with HII regions in M 31 and must not be masked. We designed
+            # a scheme based on the technique by Muñoz-Mateos et al.
+            # (2009b), which was successfully applied to the SINGS galaxies.
+            # Foreground stars have almost no PAH emission, while the diffuse
+            # ISM in galaxies shows a roughly constant F5.8/F8 ratio (Draine
+            # & Li 2007). Background galaxies are redshifted spirals or ellipticals
+            # and can consequently have a wide range in F5.8/F8. It is
+            # thus possible to construct a rough filter relying on the difference
+            # in MIR flux ratios. First, it was checked which point source extracted
+            # from the IRAC 3.6 µm had a non-detection at 8 µm. This
+            # criterion proved to be sufficient to select the foreground stars
+            # in the field. A second, colour-based, criterion disentangled the
+            # background galaxies from the HII regions:
+
+            irac_i1 = Filter.from_string("IRAC I1")
+            irac_i3 = Filter.from_string("IRAC I3")
+            irac_i4 = Filter.from_string("IRAC I4")
+
+            # 0.29 < F5.8 / F8 < 0.85
+            # F3.6 / F5.8 < 1.58
+
+            i3_i4_colour = sed.colour(irac_i3, irac_i4)
+            i1_i3_colour = sed.colour(irac_i1, irac_i3)
+
+            if i3_i4_colour < 0.29: continue
+            if i3_i4_colour > 0.85: continue
+
+            if i1_i3_colour > 1.58: continue
+
+            ###
+
+            # Get other properties
+            catalog = self.point_source_catalog.get_catalog(index)
+            id = self.point_source_catalog.get_id(index)
+            ra_error = self.point_source_catalog.get_ra_error(index)
+            dec_error = self.point_source_catalog.get_dec_error(index)
+
+            # Create FWHM table
+            fwhms = FWHMTable.initialize()
+
+            # Loop over the frames
+            for name in self.frames:
+
+                # Get the FWHM
+                fwhm = self.point_tables[name].get_fwhm(index)
+
+                # Add an entry to the FWHM table
+                if fwhm is not None: fwhms.add_fwhm(self.frames[name].filter, fwhm)
+
+            # Create the star object
+            star = Star(index=index, position=position, sed=sed, catalog=catalog, id=id, ra_error=ra_error, dec_error=dec_error, fwhms=fwhms)
+
+            # Add the star to the list
+            self.stars.append(star)
+
+    # -----------------------------------------------------------------
+
+    def create_star_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the star table ...")
+
+        # Loop over the stars
+        for star in self.stars: self.star_table.add_star(star)
 
     # -----------------------------------------------------------------
 
@@ -861,39 +1159,6 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def do_photometry(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Performing photometry on the stars ...")
-
-        # Loop over the stars
-        for index in range(len(self.stellar_catalog)):
-
-            # Create dictionary to contain the fluxes
-            fluxes = dict()
-
-            # Loop over the bands
-            for name in self.frames:
-
-                # Search for the star with the current index
-                star = find_star_in_list(self.stars[name], index)
-
-                # Get the flux
-                flux = star.flux
-
-                # Add to the dictionary
-                fluxes[self.frames[name].filter] = flux
-
-            # Add entry to the photometry table
-            self.photometry.add_entry(index, fluxes)
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -907,17 +1172,14 @@ class SourceFinder(Configurable):
         # 1. Write the catalogs
         self.write_catalogs()
 
-        # 2. Write region lists
+        # 2. Write the tables
+        self.write_tables()
+
+        # 3. Write region lists
         self.write_regions()
 
-        # 3. Write segmentation maps
+        # 4. Write segmentation maps
         self.write_segments()
-
-        # 4. Write statistics table
-        self.write_statistics()
-
-        # 5. Write the photometry table
-        self.write_photometry()
 
     # -----------------------------------------------------------------
 
@@ -971,6 +1233,56 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
+    def write_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing tables ...")
+
+        # Write galaxy table
+        self.write_galaxy_table()
+
+        # Write star table
+        self.write_star_table()
+
+    # -----------------------------------------------------------------
+
+    def write_galaxy_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing galaxy table ...")
+
+        # Write
+        path = self.output_path_file("galaxies.dat")
+        self.galaxy_table.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_star_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing star table ...")
+
+        # Write
+        path = self.output_path_file("stars.dat")
+        self.star_table.saveto(path)
+
+    # -----------------------------------------------------------------
+
     def write_regions(self):
 
         """
@@ -981,6 +1293,12 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing the regions ...")
 
+        # Write galaxy regions
+        self.write_galaxy_regions()
+
+        # Write star regions
+        self.write_star_regions()
+
     # -----------------------------------------------------------------
 
     def write_galaxy_regions(self):
@@ -990,16 +1308,14 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        # Loop over the regions
-        for name in self.galaxy_regions:
+        # Inform the user
+        log.info("Writing the galaxy regions ...")
 
-            # galaxy_region = galaxy_sky_region.to_pixel(image.wcs)
+        # Determine the path
+        path = self.output_path_file("galaxies.reg")
 
-            # Determine the path
-            path = self.output_path_file("galaxies_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("galaxies.reg")
-
-            # Save
-            self.galaxy_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+        # Save
+        self.galaxy_regions.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1010,16 +1326,14 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        # Loop over the star regions
-        for name in self.star_regions:
+        # Inform the user
+        log.info("Writing the star regions ...")
 
-            # star_region = star_sky_region.to_pixel(image.wcs)
+        # Determine the path
+        path = self.output_path_file("stars.reg")
 
-            # Determine the path
-            path = self.output_path_file("stars_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("stars.reg")
-
-            # Save
-            self.star_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+        # Save
+        self.star_regions.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1030,37 +1344,14 @@ class SourceFinder(Configurable):
         :return:
         """
 
-        # Loop over the saturation regions
-        for name in self.saturation_regions:
+        # Inform the user
+        log.info("Writing the saturation regions ...")
 
-            # saturation_region = saturation_sky_region.to_pixel(image.wcs)
+        # Determine the path
+        path = self.output_path_file("saturation_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("saturation.reg")
 
-            # Determine the path
-            path = self.output_path_file("saturation_" + name + ".reg") if len(
-                self.frames) > 1 else self.output_path_file("saturation.reg")
-
-            # Save
-            self.saturation_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_other_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Loop over the other regions
-        for name in self.other_regions:
-
-            # other_region = other_sky_region.to_pixel(image.wcs)
-
-            # Determine the path
-            path = self.output_path_file("other_sources_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("other_sources.reg")
-
-            # Save
-            self.other_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+        # Save
+        self.saturation_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1074,18 +1365,15 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing the segmentation maps ...")
 
-        # Loop over the different segmentation maps
-        for name in self.segments:
+        # Galaxy segments
+        self.write_galaxy_segments()
 
-            # Save the FITS file with the segmentation maps
-            path = self.output_path_file("segments_" + name + ".fits") if len(self.frames) > 1 else self.output_path_file("segments.fits")
-
-            # Save
-            self.segments[name].saveto(path)
+        # Star segments
+        self.write_star_segments()
 
     # -----------------------------------------------------------------
 
-    def write_statistics(self):
+    def write_galaxy_segments(self):
 
         """
         This function ...
@@ -1093,27 +1381,11 @@ class SourceFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Writing statistics ...")
-
-        # Loop over the image names
-        #for name in self.statistics:
-
-            # Determine the path to the statistics file
-            #path = self.output_path_file("statistics" + name + ".dat") if len(self.frames) > 1 else self.output_path_file("statistics.dat")
-
-            # Open the file, write the info
-            #with open(path, 'w') as statistics_file:
-            #    statistics_file.write("FWHM: " + str(self.statistics[name].fwhm) + "\n")
-
-        # Determine path
-        path = self.output_path_file("statistics.dat")
-
-        # Save the statistics table
-        self.statistics.saveto(path)
+        log.info("Writing the galaxy segments ...")
 
     # -----------------------------------------------------------------
 
-    def write_photometry(self):
+    def write_star_segments(self):
 
         """
         This function ...
@@ -1121,13 +1393,7 @@ class SourceFinder(Configurable):
         """
 
         # Inform the user
-        log.info("Writing the photometry table ...")
-
-        # Determine path
-        path = self.output_path_file("photometry.dat")
-
-        # Save the photometry table
-        self.photometry.saveto(path)
+        log.info("Writing the star segments ...")
 
 # -----------------------------------------------------------------
 

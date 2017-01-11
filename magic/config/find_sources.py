@@ -10,6 +10,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 from .find_point import definition as point_definition
 from .find_extended import definition as extended_definition
 from .find_other import definition as other_definition
+from pts.core.tools.parallelization import ncores
 
 # -----------------------------------------------------------------
 
@@ -20,7 +21,7 @@ definition = ConfigurationDefinition()
 definition.add_required("dataset", "file_path", "name of the dataset file or image file")
 
 # Number of parallel processes
-definition.add_optional("nprocesses", "integer", "number of parallel processes for the preparation", 8)
+definition.add_optional("nprocesses", "integer", "number of parallel processes", max(8, ncores()))
 
 # Flags
 definition.add_flag("find_stars", "find stars in the images", True)

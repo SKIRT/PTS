@@ -5,51 +5,43 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.tools.parallelization Functions related to parallelization.
+## \package pts.magic.tools.colours Provides functions related to colours.
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
+# Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import psutil
-import multiprocessing
+import numpy as np
 
-# Import astronomical modules
-from astropy.units import Unit
-
-# -----------------------------------------------------------------
-
-def ncores():
-
-    """
-    This function ...
-    :return:
-    """
-
-    return psutil.cpu_count(logical=False)
+# Import the relevant PTS classes and modules
+from ..core.frame import Frame
 
 # -----------------------------------------------------------------
 
-def nthreads_per_core():
+def calculate_colour(flux_a, flux_b):
 
     """
     This function ...
+    :param flux_a:
+    :param flux_b:
     :return:
     """
 
-    return psutil.cpu_count() / ncores()
+    return -2.5 * np.log10(flux_a / flux_b)
 
 # -----------------------------------------------------------------
 
-def virtual_memory():
+def make_colour_map(frame_a, frame_b):
 
     """
     This function ...
+    :param frame_a:
+    :param frame_b:
     :return:
     """
 
-    return float(psutil.virtual_memory().total) * Unit("byte")
+    return Frame(-2.5 * np.log10(frame_a / frame_b), wcs=frame_a.wcs)
 
 # -----------------------------------------------------------------

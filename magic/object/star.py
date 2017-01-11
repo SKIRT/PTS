@@ -34,66 +34,30 @@ class Star(SkyObject):
     This class ...
     """
 
-    def __init__(self, index, catalog=None, id=None, position=None, ra_error=None, dec_error=None, magnitudes=None, magnitude_errors=None, on_galaxy=False):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
-        :param index:
-        :param catalog:
-        :param id:
-        :param position:
-        :param ra_error:
-        :param dec_error:
-        :param magnitudes:
-        :param magnitude_errors:
-        :param on_galaxy:
+        :param kwargs:
         :return:
         """
-
-        # Set the attributes
-        self.index = index
-        self.catalog = catalog
-        self.id = id
-        self.ra_error = ra_error
-        self.dec_error = dec_error
-        self.magnitudes = magnitudes
-        self.magnitude_errors = magnitude_errors
-        self.on_galaxy = on_galaxy
-
-        self.confidence_level = 1
-
-        # Set the model attribute to None initially
-        self.model = None
-
-        # The saturation source
-        self.saturation = None
 
         # Call the constructor of the base class
-        super(Star, self).__init__(position)
+        super(Star, self).__init__(**kwargs)
 
-    # -----------------------------------------------------------------
+        # Set the attributes
+        self.catalog = kwargs.pop("catalog", None)
+        self.id = kwargs.pop("id", None)
+        self.ra_error = kwargs.pop("ra_error", None)
+        self.dec_error = kwargs.pop("dec_error", None)
 
-    @property
-    def has_model(self):
+        # The FWHM table
+        self.fwhms = kwargs.pop("fwhms", None)
 
-        """
-        This function ...
-        :return:
-        """
+        #self.magnitudes = magnitudes
+        #self.magnitude_errors = magnitude_errors
 
-        return self.model is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_saturation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.saturation is not None
+        #self.on_galaxy = on_galaxy
 
     # -----------------------------------------------------------------
 
