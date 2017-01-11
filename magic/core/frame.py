@@ -38,7 +38,7 @@ from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
 from ..basics.vector import Pixel
-from ..units.unit import ImageUnit
+from ...core.basics.unit import PhotometricUnit
 
 # -----------------------------------------------------------------
 
@@ -121,8 +121,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Convert string units to ImageUnit object
-        if isinstance(unit, basestring): unit = ImageUnit(unit)
+        # Convert string units to PhotometricUnit object
+        if isinstance(unit, basestring): unit = PhotometricUnit(unit)
 
         # Set the unit
         self._unit = unit
@@ -513,10 +513,11 @@ class Frame(NDDataArray):
         # Show which image we are importing
         log.info("Reading in file " + path + " ...")
 
-        from . import fits as pts_fits
+        #from . import fits as pts_fits
+        from ..core.fits import load_frame
 
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
 
     # -----------------------------------------------------------------
 
@@ -1561,8 +1562,8 @@ class Frame(NDDataArray):
         if path.endswith(".fits"):
 
             # Write
-            from . import fits as pts_fits
-            pts_fits.write_frame(self._data, header, path)
+            from .fits import write_frame
+            write_frame(self._data, header, path)
 
         # ASDF format
         elif path.endswith(".asdf"):

@@ -441,10 +441,10 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
         for label in self.seds:
 
             # Add the simulated SED to the plotter
-            plotter.add_modeled_sed(self.seds[label], label)
+            plotter.add_sed(self.seds[label], label)
 
         # Add the observed SED to the plotter
-        plotter.add_observed_sed(self.observed_sed, "observation")
+        plotter.add_sed(self.observed_sed, "observation")
 
         # Determine the path to the SED plot file
         path = fs.join(self.plot_analysis_path, "sed_contributions.pdf")

@@ -20,7 +20,7 @@ from astropy.units import Unit
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ...core.data.sed import IntrinsicSED
+from ...core.data.sed import SED
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 
@@ -259,10 +259,13 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
     luminosity_column = jv * sfr
 
     # Create the SED
-    sed = IntrinsicSED()
-    sed.table = tables.new([wavelength_column, luminosity_column], ["Wavelength", "Luminosity"])
-    sed.table["Wavelength"].unit = Unit("micron")
-    sed.table["Luminosity"].unit = Unit("W/micron")
+    #sed = IntrinsicSED()
+    #sed.table = tables.new([wavelength_column, luminosity_column], ["Wavelength", "Luminosity"])
+    #sed.table["Wavelength"].unit = Unit("micron")
+    #sed.table["Luminosity"].unit = Unit("W/micron")
+
+    # Create the SED
+    sed = SED.from_arrays()
 
     # Return the SED
     return sed

@@ -25,7 +25,7 @@ from textwrap import wrap
 from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
-from ..data.sed import ObservedSED
+from ..data.sed import ObservedSED, SED
 
 # -----------------------------------------------------------------
 
@@ -113,6 +113,24 @@ class SEDPlotter(Configurable):
         """
 
         return len(self.models) + len(self.observations)
+
+    # -----------------------------------------------------------------
+
+    def add_sed(self, sed, label, residuals=True, ghost=False):
+
+        """
+        This function ...
+        :param sed:
+        :param label:
+        :param residuals:
+        :param ghost:
+        :return:
+        """
+
+        # Add observed or modeled SED
+        if isinstance(sed, ObservedSED): self.add_observed_sed(sed, label)
+        elif isinstance(sed, SED): self.add_modeled_sed(sed, label, residuals=residuals, ghost=ghost)
+        else: raise ValueError("The SED must be an SED or ObservedSED instance")
 
     # -----------------------------------------------------------------
 
@@ -216,7 +234,7 @@ class SEDPlotter(Configurable):
             label = name
 
             # Add the definition to the queue
-            self.add_observed_sed(sed, label)
+            self.add_sed(sed, label)
 
     # -----------------------------------------------------------------
 

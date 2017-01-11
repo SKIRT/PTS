@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.units.unit Contains the ImageUnit class and derived classes.
+## \package pts.core.basics.unit Contains the PhotometricUnit class.
 
 # -----------------------------------------------------------------
 
@@ -14,11 +14,9 @@ import math
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, CompositeUnit, spectral_density, spectral
+from astropy.units import Unit, CompositeUnit, spectral
 from astropy import constants
-
-# Import the relevant PTS classes and modules
-from ...core.tools import tables
+from astropy.table import Table
 
 # -----------------------------------------------------------------
 
@@ -43,8 +41,17 @@ _arcsec2 = 2.350443053909789e-11  # solid angle of 1 square arc second in sterad
 
 # INTENSITY: W/sr
 # WAVELENGTH INTENSITY DENSITY: W/sr/micron
-# FREQUENCY
+# FREQUENCY INTENSITY DENSITY: W/sr/Hz
+# NEUTRAL INTENSITY DENSITY: W/m2
 
+# SURFACE BRIGHTNESS: W/m2/sr
+# WAVELENGTH SURFACE BRIGHTNESS DENSITY: W/m2/sr/micron
+# FREQUENCY SURFACE BRIGHTNESS DENSITY: W/m2/sr/micron
+# NEUTRAL SURFACE BRIGHTNESS DENSITY: W/m2/sr
+
+# -----------------------------------------------------------------
+
+# SKIRT:
 # 'W/m': 'wavelengthluminositydensity',
 #'W/micron': 'wavelengthluminositydensity',
 #'Lsun/micron': 'wavelengthluminositydensity',
@@ -169,6 +176,9 @@ names = ["Band", "Effective wavelength", "mAB - mVega", "MSun(AB)", "MSun(Vega"]
 # Create the table
 #ab_vega_conversion_table = tables.new(data, names)
 
+# Create a new table from the data
+ab_vega_conversion_table = Table(data=data, names=names, masked=True)
+
 # -----------------------------------------------------------------
 
 def vega_to_ab(vega_magnitude, band):
@@ -179,6 +189,8 @@ def vega_to_ab(vega_magnitude, band):
     :param band:
     :return:
     """
+
+    from ...core.tools import tables
 
     # Get the index of the row corresponding to the specified band
     band_index = tables.find_index(ab_vega_conversion_table, band)
@@ -196,6 +208,8 @@ def ab_to_vega(ab_magnitude, band):
     :param band:
     :return:
     """
+
+    from ...core.tools import tables
 
     # Get the index of the row corresponding to the specified band
     band_index = tables.find_index(ab_vega_conversion_table, band)
@@ -349,7 +363,7 @@ replacements["nanomaggies"] = nanomaggy_string
 
 # -----------------------------------------------------------------
 
-class ImageUnit(CompositeUnit):
+class PhotometricUnit(CompositeUnit):
 
     """
     This function ...
@@ -363,26 +377,39 @@ class ImageUnit(CompositeUnit):
 
         """
         The constructor ...
+        :param unit:
+        :param density:
         """
 
-        if isinstance(unit, basestring):
-            for key in replacements: unit = unit.replace(key, replacements[key])
+        # Already a photometric unit
+        if isinstance(unit, PhotometricUnit):
 
-        # Parse the unit
-        try: unit = Unit(unit)
-        except ValueError: raise ValueError("Unit is not recognized")
+            self.density = unit.density
+            self.scale_factor = unit.scale_factor
+            self.base_unit = unit.base_unit
+            self.wavelength_unit = unit.wavelength_unit
 
-        # Remove 'per pixel' from the unit
-        if "pix" in str(unit): unit *= "pix"
+        # Regular unit
+        else:
 
-        # Set whether it represents a density
-        self.density = density
+            if isinstance(unit, basestring):
+                for key in replacements: unit = unit.replace(key, replacements[key])
 
-        # Analyse the unit
-        self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, self.distance_unit, self.solid_angle_unit = analyse_unit(unit)
+            # Parse the unit
+            try: unit = Unit(unit)
+            except ValueError: raise ValueError("Unit is not recognized")
+
+            # Remove 'per pixel' from the unit
+            if "pix" in str(unit): unit *= "pix"
+
+            # Set whether it represents a density
+            self.density = density
+
+            # Analyse the unit
+            self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, self.distance_unit, self.solid_angle_unit = analyse_unit(unit)
 
         # Call the constructor of the base class
-        super(ImageUnit, self).__init__(self.scale_factor, unit.bases, unit.powers)
+        super(PhotometricUnit, self).__init__(self.scale_factor, unit.bases, unit.powers)
 
     # -----------------------------------------------------------------
 
@@ -578,7 +605,7 @@ class ImageUnit(CompositeUnit):
         """
 
         # Parse "to unit"
-        to_unit = ImageUnit(to_unit, density=density)
+        to_unit = PhotometricUnit(to_unit, density=density)
 
         # Determine wavelength and frequency
         if wavelength is not None:
@@ -591,10 +618,10 @@ class ImageUnit(CompositeUnit):
             frequency = frequency.to("Hz", equivalencies=spectral())
 
         # Same type
-        if self.physical_type == self.to_unit.physical_type:
+        if self.physical_type == to_unit.physical_type:
             #factor = self.scale_factor * self / self.to_unit
-            factor = self / self.to_unit
-            return factor
+            factor = self / to_unit
+            return factor.scale
 
         # If solid angle is None, convert pixelscale to solid angle (of one pixel)
         if solid_angle is None and pixelscale is not None:
@@ -644,28 +671,36 @@ class ImageUnit(CompositeUnit):
 
             if to_unit.base_physical_type == "flux":
 
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
                 # Divide by 4 pi distance**2
                 new_unit /= (4.0 * math.pi * distance**2)
 
                 # Determine factor
-                factor = new_unit.to(to_unit)
+                factor = new_unit.to(to_unit).value
 
             elif to_unit.base_physical_type == "intensity":
+
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Divide by solid angle
                 new_unit /= solid_angle
 
                 # Determine factor
-                factor = new_unit.to(to_unit)
+                factor = new_unit.to(to_unit).value
 
             elif to_unit.base_physical_type == "surface brightness":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Divide by 4 pi distance**2 and solid angle
                 new_unit /= (4.0 * math.pi * distance**2 * solid_angle)
 
                 # Determine factor
-                factor = new_unit.to(to_unit)
+                factor = new_unit.to(to_unit).value
 
+            # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
             # Return the conversion factor
@@ -676,46 +711,121 @@ class ImageUnit(CompositeUnit):
 
             if to_unit.base_physical_type == "luminosity":
 
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
                 # Multiply by 4 pi distance**2
                 new_unit *= (4.0 * math.pi * distance ** 2)
 
                 # Determine factor
-                factor = new_unit.to(to_unit)
+                factor = new_unit.to(to_unit).value
 
             elif to_unit.base_physical_type == "surface brightness":
+
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Divide by solid angle
                 new_unit /= solid_angle
 
                 # Determine factor
-                factor = new_unit.to(to_unit)
+                factor = new_unit.to(to_unit).value
 
             elif to_unit.base_physical_type == "intensity":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
                 # Divide by solid angle
                 # Multiply by 4 pi distance**2
                 new_unit /= solid_angle * (4.0 * math.pi * distance ** 2)
 
                 # Determine factor
-                factor = new_unit.to(to_unit)
+                factor = new_unit.to(to_unit).value
 
-            #
+            # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
             # Return the conversion factor
             return factor
 
+        # Different base type, intensity
         elif self.base_physical_type == "intensity":
 
-            if to_unit.base_physical_type == "luminosity": pass
+            if to_unit.base_physical_type == "luminosity":
 
-            elif to_unit.base_physical_type == "flux": pass
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
 
-            elif to_unit.base_physical_type == "surface brightness": pass
+                # Multiply by solid angle
+                new_unit *= solid_angle
 
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            elif to_unit.base_physical_type == "flux":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by solid angle
+                # Divide by 4 pi distance**2
+                new_unit *= solid_angle / (4.0 * math.pi * distance ** 2)
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            elif to_unit.base_physical_type == "surface brightness":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Divide by 4 pi distance**2
+                new_unit /= (4.0 * math.pi * distance ** 2)
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
-        else: # surface brightness
-            pass
+            # Return the conversion factor
+            return factor
+
+        # Different base type, surface brightness
+        else:
+
+            if to_unit.base_physical_type == "luminosity":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by 4 pi distance**2 and solid angle
+                new_unit *= (4.0 * math.pi * distance ** 2 * solid_angle)
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            elif to_unit.base_physical_type == "flux":
+
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by solid angle
+                new_unit *= solid_angle
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            elif to_unit.base_physical_type == "intensity":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by 4 pi distance**2
+                new_unit *= (4.0 * math.pi * distance ** 2)
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            # Invalid
+            else: raise RuntimeError("We shouldn't reach this part")
+
+            # Return the conversion factor
+            return factor
 
 # -----------------------------------------------------------------

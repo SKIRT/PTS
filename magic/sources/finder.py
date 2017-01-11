@@ -803,7 +803,7 @@ class SourceFinder(Configurable):
             position = self.extended_source_catalog.get_position(index)
 
             # Create SED
-            sed = ObservedSED()
+            sed = ObservedSED.initialize("Jy")
 
             # Loop over the frames
             for name in self.frames:
@@ -812,7 +812,7 @@ class SourceFinder(Configurable):
                 flux = self.extended_tables[name].get_flux(index)
 
                 # Add the flux to the SED
-                if flux is not None: sed.add_entry(self.frames[name].filter, flux)
+                if flux is not None: sed.add_point(self.frames[name].filter, flux)
 
             # Get other properties
             name = self.extended_source_catalog.get_name(index)
@@ -991,7 +991,7 @@ class SourceFinder(Configurable):
             position = self.point_source_catalog.get_position(index)
 
             # Create SED
-            sed = ObservedSED()
+            sed = ObservedSED.initialize("Jy")
 
             # Loop over the frames
             for name in self.frames:
@@ -1000,7 +1000,7 @@ class SourceFinder(Configurable):
                 flux = self.point_tables[name].get_flux(index)
 
                 # Add the flux to the SED
-                if flux is not None: sed.add_entry(self.frames[name].filter, flux)
+                if flux is not None: sed.add_point(self.frames[name].filter, flux)
 
             # Check whether it can be identified as a star
 

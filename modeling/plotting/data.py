@@ -164,7 +164,7 @@ class DataPlotter(PlottingComponent, DataComponent):
         plotter.transparent = True
 
         # Add the observed SED
-        plotter.add_observed_sed(self.sed, "DustPedia")
+        plotter.add_sed(self.sed, "DustPedia")
 
         # Determine the path to the plot file
         path = fs.join(self.plot_data_path, "sed.pdf")

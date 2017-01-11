@@ -272,7 +272,7 @@ class DataCube(Image):
         """
 
         # Initialize the SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize(self.unit)
 
         # Create a mask from the region (or shape)
         mask = region.to_mask(self.xsize, self.ysize)
@@ -294,10 +294,10 @@ class DataCube(Image):
                 errorbar = ErrorBar(error)
 
                 # Add an entry to the SED
-                sed.add_entry(self.frames[frame_name].filter, flux, errorbar)
+                sed.add_point(self.frames[frame_name].filter, flux, errorbar)
 
             # Add an entry to the SED
-            else: sed.add_entry(self.frames[frame_name].filter, flux)
+            else: sed.add_point(self.frames[frame_name].filter, flux)
 
             # Increment the index
             index += 1
@@ -320,7 +320,7 @@ class DataCube(Image):
         """
 
         # Initialize the SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize(self.unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
@@ -339,10 +339,10 @@ class DataCube(Image):
                 errorbar = ErrorBar(error)
 
                 # Add an entry to the SED
-                sed.add_entry(self.frames[frame_name].filter, flux, errorbar)
+                sed.add_point(self.frames[frame_name].filter, flux, errorbar)
 
             # Add an entry to the SED
-            else: sed.add_entry(self.frames[frame_name].filter, flux)
+            else: sed.add_point(self.frames[frame_name].filter, flux)
 
             # Increment the index
             index += 1
@@ -369,7 +369,7 @@ class DataCube(Image):
         else: raise ValueError("Mask must be string or Mask (or None) instead of " + str(type(mask)))
 
         # Initialize the SED
-        sed = SED()
+        sed = SED.initialize(self.unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
@@ -385,7 +385,7 @@ class DataCube(Image):
             else: total_flux = np.sum(self.frames[frame_name][inverse_mask]) * self.unit
 
             # Add an entry to the SED
-            sed.add_entry(wavelength, total_flux)
+            sed.add_point(wavelength, total_flux)
 
             # Increment the index
             index += 1

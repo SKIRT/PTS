@@ -29,6 +29,10 @@ def calculate_colour(flux_a, flux_b):
     :return:
     """
 
+    # Check units
+    flux_a = flux_a.to("Jy")
+    flux_b = flux_b.to("Jy")
+
     return -2.5 * np.log10(flux_a / flux_b)
 
 # -----------------------------------------------------------------
@@ -41,6 +45,12 @@ def make_colour_map(frame_a, frame_b):
     :param frame_b:
     :return:
     """
+
+    # Check units
+    frame_a = frame_a.copy()
+    frame_a.convert_to("Jy")
+    frame_b = frame_b.copy()
+    frame_b.convert_to("Jy")
 
     return Frame(-2.5 * np.log10(frame_a / frame_b), wcs=frame_a.wcs)
 

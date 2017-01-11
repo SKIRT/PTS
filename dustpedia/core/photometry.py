@@ -208,10 +208,10 @@ class DustPediaPhotometry(object):
                     errors.append(self.planck[colname + "_err"][index])
                 else: errors.append(None)
 
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         for i in range(len(filters)):
-            sed.add_entry(filters[i], fluxes[i], errors[i])
+            sed.add_point(filters[i], fluxes[i], errors[i])
 
         return sed
 

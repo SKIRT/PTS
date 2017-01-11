@@ -298,7 +298,7 @@ class BasicAnalyser(Configurable):
                 sed = SED.from_skirt(sed_path)
 
                 # Add the simulated SED to the plotter
-                plotter.add_modeled_sed(sed, instr_name)
+                plotter.add_sed(sed, instr_name)
 
             # Add the reference SEDs
             for reference_sed_path in self.plotting_options.reference_seds:
@@ -308,7 +308,7 @@ class BasicAnalyser(Configurable):
 
                 # Add the reference SED
                 reference_sed = ObservedSED.from_file(reference_sed_path)
-                plotter.add_observed_sed(reference_sed, reference_sed_name)
+                plotter.add_sed(reference_sed, reference_sed_name)
 
             # Determine the path to the plot file
             path = fs.join(self.plotting_options.path, "sed." + self.plotting_options.format)
@@ -341,7 +341,7 @@ class BasicAnalyser(Configurable):
                     sed = SED.from_skirt(sed_path, contribution=contribution)
 
                     # Add the SED to the plotter
-                    plotter.add_modeled_sed(sed, contribution, residuals=(contribution == "total"))
+                    plotter.add_sed(sed, contribution, residuals=(contribution == "total"))
 
                 # Add the reference SEDs
                 for reference_sed_path in self.plotting_options.reference_seds:
@@ -351,7 +351,7 @@ class BasicAnalyser(Configurable):
 
                     # Add the reference SED
                     reference_sed = ObservedSED.from_file(reference_sed_path)
-                    plotter.add_observed_sed(reference_sed, reference_sed_name)
+                    plotter.add_sed(reference_sed, reference_sed_name)
 
                 # Determine the path to the plot file
                 path = fs.join(self.plotting_options.path, "sed_" + instr_name + "." + self.plotting_options.format)

@@ -31,7 +31,7 @@ from ...core.plot.grids import plotgrids
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.logfile import LogFile
 from ..core.emissionlines import EmissionLines
-from ...core.data.sed import load_example_mappings_sed, load_example_bruzualcharlot_sed, load_example_zubko_sed
+from ...core.data.seds import load_example_mappings_sed, load_example_bruzualcharlot_sed, load_example_zubko_sed
 from ...core.data.sed import SED, ObservedSED
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.core.frame import Frame
@@ -954,14 +954,14 @@ class FittingPlotter(PlottingComponent, FittingComponent):
             for sed in self.seds[generation_name]:
 
                 # Add the model SEDs
-                plotter.add_modeled_sed(sed, str(counter), ghost=True)
+                plotter.add_sed(sed, str(counter), ghost=True)
                 counter += 1
 
             # Add the 'best' model total SED
-            if generation_name in self.sed_contributions: plotter.add_modeled_sed(self.sed_contributions[generation_name]["total"], "best") # this SED has to be plotted in black
+            if generation_name in self.sed_contributions: plotter.add_sed(self.sed_contributions[generation_name]["total"], "best") # this SED has to be plotted in black
 
             # Add the observed SED to the plotter
-            plotter.add_observed_sed(self.observed_sed, "observation")
+            plotter.add_sed(self.observed_sed, "observation")
 
             # Determine the path to the SED plot file
             path = fs.join(self.plot_fitting_path, "model_seds_" + generation_name + ".pdf")
@@ -985,22 +985,22 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         for generation_name in self.sed_contributions:
 
             # Create the SEDPlotter object
-            plotter = SEDPlotter(self.galaxy_name)
+            plotter = SEDPlotter()
 
             # Loop over the contributions
             for contribution in self.sed_contributions[generation_name]:
 
                 # Add the simulated SED to the plotter
-                plotter.add_modeled_sed(self.sed_contributions[generation_name][contribution], contribution, residuals=(contribution=="total"))
+                plotter.add_sed(self.sed_contributions[generation_name][contribution], contribution, residuals=(contribution=="total"))
 
             # Add the observed SED to the plotter
-            plotter.add_observed_sed(self.observed_sed, "observation")
+            plotter.add_sed(self.observed_sed, "observation")
 
             # Determine the path to the SED plot file
             path = fs.join(self.plot_fitting_path, "sed_contributions_" + generation_name + ".pdf")
 
             # Run the plotter
-            plotter.run(path)
+            plotter.run(output=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------
 

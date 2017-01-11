@@ -171,7 +171,7 @@ class PhotoMeter(PhotometryComponent):
         super(PhotoMeter, self).setup()
 
         # Create an observed SED
-        self.sed = ObservedSED()
+        self.sed = ObservedSED.initialize("Jy")
 
         # Setup the remote PTS launcher
         self.launcher.setup(self.config.remote)
@@ -325,7 +325,7 @@ class PhotoMeter(PhotometryComponent):
             errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
 
             # Add this entry to the SED
-            self.sed.add_entry(self.frames[name].filter, flux, errorbar)
+            self.sed.add_point(self.frames[name].filter, flux, errorbar)
 
     # -----------------------------------------------------------------
 
@@ -493,14 +493,14 @@ class PhotoMeter(PhotometryComponent):
         log.info("Plotting the SED ...")
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter(self.galaxy_name)
+        plotter = SEDPlotter()
 
         # Add the SED
-        plotter.add_observed_sed(self.sed, "PTS")
+        plotter.add_sed(self.sed, "PTS")
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed.pdf")
-        plotter.run(output=path)
+        plotter.run(output=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -515,17 +515,17 @@ class PhotoMeter(PhotometryComponent):
         log.info("Plotting the SED with reference fluxes ...")
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter(self.galaxy_name)
+        plotter = SEDPlotter()
 
         # Add the SED
-        plotter.add_observed_sed(self.sed, "PTS")
+        plotter.add_sed(self.sed, "PTS")
 
         # Add the reference SEDs
-        for label in self.reference_seds: plotter.add_observed_sed(self.reference_seds[label], label)
+        for label in self.reference_seds: plotter.add_sed(self.reference_seds[label], label)
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_references.pdf")
-        plotter.run(ouput=path)
+        plotter.run(ouput=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------
 

@@ -25,7 +25,7 @@ from ...core.basics.filter import Filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
-from ..units.unit import ImageUnit
+from ...core.basics.unit import PhotometricUnit
 
 # -----------------------------------------------------------------
 
@@ -416,7 +416,7 @@ def get_unit(header):
             value = header[keyword].split("   / ")[0].rstrip()
 
             try:
-                unit = ImageUnit(value)
+                unit = PhotometricUnit(value)
                 break
             except ValueError: continue
 

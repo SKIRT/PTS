@@ -263,7 +263,7 @@ class SEDFetcher(Configurable):
         # Result is a list of tables, we only have one table with one entry
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         # All AB magnitudes
 
@@ -281,7 +281,7 @@ class SEDFetcher(Configurable):
             fuv_lower = unitconversion.ab_to_jansky(fuv_mag_upper)
             fuv_upper = unitconversion.ab_to_jansky(fuv_mag_lower)
             fuv_error = ErrorBar(fuv_lower, fuv_upper, at=fuv)
-            sed.add_entry(self.filters["FUV"], fuv, fuv_error)
+            sed.add_point(self.filters["FUV"], fuv, fuv_error)
 
         # NUV --
 
@@ -297,7 +297,7 @@ class SEDFetcher(Configurable):
             nuv_lower = unitconversion.ab_to_jansky(nuv_mag_upper)
             nuv_upper = unitconversion.ab_to_jansky(nuv_mag_lower)
             nuv_error = ErrorBar(nuv_lower, nuv_upper, at=nuv)
-            sed.add_entry(self.filters["NUV"], nuv, nuv_error)
+            sed.add_point(self.filters["NUV"], nuv, nuv_error)
 
         # U band --
 
@@ -314,7 +314,7 @@ class SEDFetcher(Configurable):
             u_lower = unitconversion.ab_to_jansky(u_mag_upper)
             u_upper = unitconversion.ab_to_jansky(u_mag_lower)
             u_error = ErrorBar(u_lower, u_upper, at=u)
-            sed.add_entry(self.filters["U"], u, u_error)
+            sed.add_point(self.filters["U"], u, u_error)
 
         # B band --
 
@@ -335,7 +335,7 @@ class SEDFetcher(Configurable):
             b_lower = unitconversion.ab_to_jansky(b_mag_upper)
             b_upper = unitconversion.ab_to_jansky(b_mag_lower)
             b_error = ErrorBar(b_lower, b_upper, at=b)
-            sed.add_entry(self.filters["B"], b, b_error)
+            sed.add_point(self.filters["B"], b, b_error)
 
         # V band --
 
@@ -351,8 +351,7 @@ class SEDFetcher(Configurable):
             v_lower = unitconversion.ab_to_jansky(v_mag_upper)
             v_upper = unitconversion.ab_to_jansky(v_mag_lower)
             v_error = ErrorBar(v_lower, v_upper, at=v)
-            sed.add_entry(self.filters["V"], v, v_error)
-
+            sed.add_point(self.filters["V"], v, v_error)
 
         # In 2MASS magnitude system -> can be converted directly into Jy (see below)
 
@@ -370,7 +369,7 @@ class SEDFetcher(Configurable):
             j_lower = unitconversion.photometry_2mass_mag_to_jy(j_mag_upper, "J")
             j_upper = unitconversion.photometry_2mass_mag_to_jy(j_mag_lower, "J")
             j_error = ErrorBar(j_lower, j_upper, at=j)
-            sed.add_entry(self.filters["J"], j, j_error)
+            sed.add_point(self.filters["J"], j, j_error)
 
         # H band --
 
@@ -386,7 +385,7 @@ class SEDFetcher(Configurable):
             h_lower = unitconversion.photometry_2mass_mag_to_jy(h_mag_upper, "H")
             h_upper = unitconversion.photometry_2mass_mag_to_jy(h_mag_lower, "H")
             h_error = ErrorBar(h_lower, h_upper, at=h)
-            sed.add_entry(self.filters["H"], h, h_error)
+            sed.add_point(self.filters["H"], h, h_error)
 
         # K band --
 
@@ -402,7 +401,7 @@ class SEDFetcher(Configurable):
             k_lower = unitconversion.photometry_2mass_mag_to_jy(k_mag_upper, "Ks")
             k_upper = unitconversion.photometry_2mass_mag_to_jy(k_mag_lower, "Ks")
             k_error = ErrorBar(k_lower, k_upper, at=k)
-            sed.add_entry(self.filters["K"], k, k_error)
+            sed.add_point(self.filters["K"], k, k_error)
 
 
         # F12 band flux
@@ -411,7 +410,7 @@ class SEDFetcher(Configurable):
 
             f12 = result[0][0]["F12um"]
             f12_error = ErrorBar(result[0][0]["e_F12um"])
-            sed.add_entry(self.filters["IRAS 12"], f12, f12_error)
+            sed.add_point(self.filters["IRAS 12"], f12, f12_error)
 
         # F25 band flux
 
@@ -419,7 +418,7 @@ class SEDFetcher(Configurable):
 
             f25 = result[0][0]["F25um"]
             f25_error = ErrorBar(result[0][0]["e_F25um"])
-            sed.add_entry(self.filters["IRAS 25"], f25, f25_error)
+            sed.add_point(self.filters["IRAS 25"], f25, f25_error)
 
         # F60 band flux
 
@@ -427,7 +426,7 @@ class SEDFetcher(Configurable):
 
             f60 = result[0][0]["F60um"]
             f60_error = ErrorBar(result[0][0]["e_F60um"])
-            sed.add_entry(self.filters["IRAS 60"], f60, f60_error)
+            sed.add_point(self.filters["IRAS 60"], f60, f60_error)
 
         # F100 band flux
 
@@ -435,7 +434,7 @@ class SEDFetcher(Configurable):
 
             f100 = result[0][0]["F100um"]
             f100_error = ErrorBar(result[0][0]["e_F100um"])
-            sed.add_entry(self.filters["IRAS 100"], f100, f100_error)
+            sed.add_point(self.filters["IRAS 100"], f100, f100_error)
 
         # Add the SED to the dictionary
         self.seds["GALEX"] = sed
@@ -464,7 +463,7 @@ class SEDFetcher(Configurable):
         result = self.vizier.query_object(self.config.galaxy_name, catalog="VII/233/xsc")
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         # In 2MASS magnitude system -> can be converted directly into Jy (see below)
         j_mag = result[0][0]["J.ext"]
@@ -487,21 +486,21 @@ class SEDFetcher(Configurable):
         j_lower = unitconversion.photometry_2mass_mag_to_jy(j_mag_upper, "J")
         j_upper = unitconversion.photometry_2mass_mag_to_jy(j_mag_lower, "J")
         j_error = ErrorBar(j_lower, j_upper, at=j)
-        sed.add_entry(self.filters["J"], j, j_error)
+        sed.add_point(self.filters["J"], j, j_error)
 
         # H band flux
         h = unitconversion.photometry_2mass_mag_to_jy(h_mag, "H")
         h_lower = unitconversion.photometry_2mass_mag_to_jy(h_mag_upper, "H")
         h_upper = unitconversion.photometry_2mass_mag_to_jy(h_mag_lower, "H")
         h_error = ErrorBar(h_lower, h_upper, at=h)
-        sed.add_entry(self.filters["H"], h, h_error)
+        sed.add_point(self.filters["H"], h, h_error)
 
         # K band flux
         k = unitconversion.photometry_2mass_mag_to_jy(k_mag, "Ks")
         k_lower = unitconversion.photometry_2mass_mag_to_jy(k_mag_upper, "Ks")
         k_upper = unitconversion.photometry_2mass_mag_to_jy(k_mag_lower, "Ks")
         k_error = ErrorBar(k_lower, k_upper, at=k)
-        sed.add_entry(self.filters["K"], k, k_error)
+        sed.add_point(self.filters["K"], k, k_error)
 
         # Add the SED to the dictionary
         self.seds["2MASS"] = sed
@@ -565,7 +564,7 @@ class SEDFetcher(Configurable):
         #print(self.ngc_name)
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         galaxy_index = tables.find_index(result[5], self.ngc_name)
 
@@ -636,78 +635,75 @@ class SEDFetcher(Configurable):
             k_mag_lower = k_mag - k_mag_error
             k_mag_upper = k_mag + k_mag_error
 
-
-
-
             # FUV
             fuv = unitconversion.ab_to_jansky(fuv_mag)
             fuv_lower = unitconversion.ab_to_jansky(fuv_mag_upper)
             fuv_upper = unitconversion.ab_to_jansky(fuv_mag_lower)
             fuv_error = ErrorBar(fuv_lower, fuv_upper, at=fuv)
-            sed.add_entry(self.filters["FUV"], fuv, fuv_error)
+            sed.add_point(self.filters["FUV"], fuv, fuv_error)
 
             # NUV
             nuv = unitconversion.ab_to_jansky(nuv_mag)
             nuv_lower = unitconversion.ab_to_jansky(nuv_mag_upper)
             nuv_upper = unitconversion.ab_to_jansky(nuv_mag_lower)
             nuv_error = ErrorBar(nuv_lower, nuv_upper, at=nuv)
-            sed.add_entry(self.filters["NUV"], nuv, nuv_error)
+            sed.add_point(self.filters["NUV"], nuv, nuv_error)
 
             # u
             u = unitconversion.ab_to_jansky(u_mag)
             u_lower = unitconversion.ab_to_jansky(u_mag_upper)
             u_upper = unitconversion.ab_to_jansky(u_mag_lower)
             u_error = ErrorBar(u_lower, u_upper, at=u)
-            sed.add_entry(self.filters["SDSS u"], u, u_error)
+            sed.add_point(self.filters["SDSS u"], u, u_error)
 
             # g
             g = unitconversion.ab_to_jansky(g_mag)
             g_lower = unitconversion.ab_to_jansky(g_mag_upper)
             g_upper = unitconversion.ab_to_jansky(g_mag_lower)
             g_error = ErrorBar(g_lower, g_upper, at=g)
-            sed.add_entry(self.filters["SDSS g"], g, g_error)
+            sed.add_point(self.filters["SDSS g"], g, g_error)
 
             # r
             r = unitconversion.ab_to_jansky(r_mag)
             r_lower = unitconversion.ab_to_jansky(r_mag_upper)
             r_upper = unitconversion.ab_to_jansky(r_mag_lower)
             r_error = ErrorBar(r_lower, r_upper, at=r)
-            sed.add_entry(self.filters["SDSS r"], r, r_error)
+            sed.add_point(self.filters["SDSS r"], r, r_error)
 
             # i
             i = unitconversion.ab_to_jansky(i_mag)
             i_lower = unitconversion.ab_to_jansky(i_mag_upper)
             i_upper = unitconversion.ab_to_jansky(i_mag_lower)
             i_error = ErrorBar(i_lower, i_upper, at=i)
-            sed.add_entry(self.filters["SDSS i"], i, i_error)
+            sed.add_point(self.filters["SDSS i"], i, i_error)
 
             # z
             z = unitconversion.ab_to_jansky(z_mag)
             z_lower = unitconversion.ab_to_jansky(z_mag_upper)
             z_upper = unitconversion.ab_to_jansky(z_mag_lower)
             z_error = ErrorBar(z_lower, z_upper, at=z)
-            sed.add_entry(self.filters["SDSS z"], z, z_error)
+            sed.add_point(self.filters["SDSS z"], z, z_error)
 
             # J
             j = unitconversion.ab_to_jansky(j_mag)
             j_lower = unitconversion.ab_to_jansky(j_mag_upper)
             j_upper = unitconversion.ab_to_jansky(j_mag_lower)
             j_error = ErrorBar(j_lower, j_upper, at=j)
-            sed.add_entry(self.filters["J"], j, j_error)
+            sed.add_point(self.filters["J"], j, j_error)
 
             # H
             h = unitconversion.ab_to_jansky(h_mag)
             h_lower = unitconversion.ab_to_jansky(h_mag_upper)
             h_upper = unitconversion.ab_to_jansky(h_mag_lower)
             h_error = ErrorBar(h_lower, h_upper, at=h)
-            sed.add_entry(self.filters["H"], h, h_error)
+            sed.add_point(self.filters["H"], h, h_error)
 
             # Ks
             k = unitconversion.ab_to_jansky(k_mag)
             k_lower = unitconversion.ab_to_jansky(k_mag_upper)
             k_upper = unitconversion.ab_to_jansky(k_mag_lower)
             k_error = ErrorBar(k_lower, k_upper, at=k)
-            sed.add_entry(self.filters["K"], k, k_error)
+            sed.add_point(self.filters["K"], k, k_error)
 
         # Table7: IRAC and MIPS asymptotic magnitudes
         # - "logF3.6": Spitzer/IRAC 3.6um flux density [logJy]
@@ -785,49 +781,49 @@ class SEDFetcher(Configurable):
             i1_lower = 10.**i1_log_lower
             i1_upper = 10.**i1_log_upper
             i1_error = ErrorBar(i1_lower, i1_upper, at=i1)
-            sed.add_entry(self.filters["I1"], i1, i1_error)
+            sed.add_point(self.filters["I1"], i1, i1_error)
 
             # 4.5 micron
             i2 = 10.**i2_log
             i2_lower = 10.**i2_log_lower
             i2_upper = 10.**i2_log_upper
             i2_error = ErrorBar(i2_lower, i2_upper, at=i2)
-            sed.add_entry(self.filters["I2"], i2, i2_error)
+            sed.add_point(self.filters["I2"], i2, i2_error)
 
             # 5.8 micron
             i3 = 10.**i3_log
             i3_lower = 10.**i3_log_lower
             i3_upper = 10.**i3_log_upper
             i3_error = ErrorBar(i3_lower, i3_upper, at=i3)
-            sed.add_entry(self.filters["I3"], i3, i3_error)
+            sed.add_point(self.filters["I3"], i3, i3_error)
 
             # 8.0 micron
             i4 = 10.**i4_log
             i4_lower = 10.**i4_log_lower
             i4_upper = 10.**i4_log_upper
             i4_error = ErrorBar(i4_lower, i4_upper, at=i4)
-            sed.add_entry(self.filters["I4"], i4, i4_error)
+            sed.add_point(self.filters["I4"], i4, i4_error)
 
             # 24 micron
             mips24 = 10.**mips24_log
             mips24_lower = 10.**mips24_log_lower
             mips24_upper = 10.**mips24_log_upper
             mips24_error = ErrorBar(mips24_lower, mips24_upper, at=mips24)
-            sed.add_entry(self.filters["MIPS 24"], mips24, mips24_error)
+            sed.add_point(self.filters["MIPS 24"], mips24, mips24_error)
 
             # 70 micron
             mips70 = 10.**mips70_log
             mips70_lower = 10.**mips70_log_lower
             mips70_upper = 10.**mips70_log_upper
             mips70_error = ErrorBar(mips70_lower, mips70_upper, at=mips70)
-            sed.add_entry(self.filters["MIPS 70"], mips70, mips70_error)
+            sed.add_point(self.filters["MIPS 70"], mips70, mips70_error)
 
             # 160 micron
             mips160 = 10.**mips160_log
             mips160_lower = 10.**mips160_log_lower
             mips160_upper = 10.**mips160_log_upper
             mips160_error = ErrorBar(mips160_lower, mips160_upper, at=mips160)
-            sed.add_entry(self.filters["MIPS 160"], mips160, mips160_error)
+            sed.add_point(self.filters["MIPS 160"], mips160, mips160_error)
 
         if len(sed) == 0: return
 
@@ -847,7 +843,7 @@ class SEDFetcher(Configurable):
         log.info("Getting fluxes from the LVL catalog ...")
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         # "J/MNRAS/445/881": LVL global optical photometry (Cook+, 2014)
         #  - "J/MNRAS/445/881/sample": Galaxies of the Spitzer Local Volume Legacy (LVL): properties (table1) and R25 photometry
@@ -891,7 +887,7 @@ class SEDFetcher(Configurable):
             fluxdensity_error = ErrorBar(fluxdensity_lower, fluxdensity_upper, at=fluxdensity)
 
             # Add data point to SED
-            sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+            sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
         # Add the SED to the dictionary
         self.seds["LVL"] = sed
@@ -912,7 +908,7 @@ class SEDFetcher(Configurable):
         # "J/ApJ/703/517/sample": Galaxy sample (table 1) and infrared flux densities (table 2) (258 rows)
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/703/517/sample")
 
@@ -953,7 +949,7 @@ class SEDFetcher(Configurable):
             fluxdensity_error = ErrorBar(table[0][error_column_name]) if not table[error_column_name].mask[0] else None
 
             # Add data point to SED
-            sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+            sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
         # Add the SED to the dictionary
         self.seds["Spitzer"] = sed
@@ -985,7 +981,7 @@ class SEDFetcher(Configurable):
         # e_F(70): rms uncertainty on F(70) [Jy]
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/414/500/catalog")
 
@@ -1005,7 +1001,7 @@ class SEDFetcher(Configurable):
             fluxdensity_error = ErrorBar(table[0][error_column_name]) if not table[error_column_name].mask[0] else None
 
             # Add data point to SED
-            sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+            sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
         # Add the SED to the dictionary
         self.seds["Spitzer-IRS"] = sed
@@ -1033,7 +1029,7 @@ class SEDFetcher(Configurable):
         # No errors ...
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/178/280/table1")
 
@@ -1052,7 +1048,7 @@ class SEDFetcher(Configurable):
                 fluxdensity_error = ErrorBar(0.0)
 
                 # Add data point to SED
-                sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+                sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
         result = self.vizier.get_catalogs("J/ApJS/178/280/table2")
         table = result[0]
@@ -1142,7 +1138,7 @@ class SEDFetcher(Configurable):
         # e_Kmag rms uncertainty on Kmag [mag]
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/398/109/iifsczv4")
 
@@ -1156,7 +1152,7 @@ class SEDFetcher(Configurable):
             fluxdensity_error = ErrorBar(0.0)
 
             # Add data point to SED
-            sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+            sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
         # Add the SED to the dictionary
         self.seds["IRAS-FSC"] = sed
@@ -1170,8 +1166,11 @@ class SEDFetcher(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting fluxes from the S4G catalog ...")
+
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         # Get parameters from S4G catalog
         result = self.vizier.query_object(self.config.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
@@ -1189,7 +1188,7 @@ class SEDFetcher(Configurable):
         i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=i1_fluxdensity)
 
         # Add data point to SED
-        sed.add_entry(self.filters["I1"], i1_fluxdensity, i1_error)
+        sed.add_point(self.filters["I1"], i1_fluxdensity, i1_error)
 
         i2_fluxdensity = unitconversion.ab_to_jansky(i2_mag)
         i2_fluxdensity_lower = unitconversion.ab_to_jansky(i2_mag + i2_mag_error)
@@ -1197,7 +1196,7 @@ class SEDFetcher(Configurable):
         i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=i2_fluxdensity)
 
         # Add data point to SED
-        sed.add_entry(self.filters["I2"], i2_fluxdensity, i2_error)
+        sed.add_point(self.filters["I2"], i2_fluxdensity, i2_error)
 
         # Add the SED to the dictionary
         self.seds["S4G"] = sed
@@ -1215,7 +1214,7 @@ class SEDFetcher(Configurable):
         # AB magnitudes for the sample with neither foreground nor intrinsic dust extinction corrections, and modeled Milky Way foreground dust extinction
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         # FUV: [12.5/22.9] GALEX FUV AB band magnitude
         # e_FUV:
@@ -1280,7 +1279,7 @@ class SEDFetcher(Configurable):
         """
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         # The second release is not yet available ... ??
 
@@ -1294,7 +1293,7 @@ class SEDFetcher(Configurable):
         """
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         # J/ApJS/190/233/Opt
 
@@ -1327,7 +1326,7 @@ class SEDFetcher(Configurable):
         ha_errorbar = ErrorBar(ha_fluxdensity_error)
 
         # Add entry
-        sed.add_entry(ha_filter, ha_fluxdensity, ha_errorbar)
+        sed.add_point(ha_filter, ha_fluxdensity, ha_errorbar)
 
         # Add the SED to the dictionary
         self.seds["Lines"] = sed
@@ -1372,7 +1371,7 @@ class SEDFetcher(Configurable):
         galaxy_index = tables.find_index(result[0], self.config.galaxy_name)
 
         # Create an SED
-        sed = ObservedSED()
+        sed = ObservedSED.initialize("Jy")
 
         relevant_bands = [("FUV", "FUV"), ("NUV", "NUV"), ("Ha", "Ha"), ("8", "I4"), ("24", "MIPS 24")]
         for band_prefix_catalog, filter_name in relevant_bands:
@@ -1389,7 +1388,7 @@ class SEDFetcher(Configurable):
             fluxdensity_error = ErrorBar(0.0)
 
             # Add data point to SED
-            sed.add_entry(self.filters[filter_name], fluxdensity, fluxdensity_error)
+            sed.add_point(self.filters[filter_name], fluxdensity, fluxdensity_error)
 
         # Add the SED to the dictionary
         self.seds["IRAS-FSC"] = sed

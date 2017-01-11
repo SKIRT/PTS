@@ -456,9 +456,9 @@ class BlackBodyDustMapMaker(MapsComponent):
 
             #from ....core.plot.sed import SEDPlotter
             #plotter = SEDPlotter()
-            # plotter.add_observed_sed(sed, "pixel")
-            #plotter.add_modeled_sed(sed, "pixel")
-            #plotter.add_observed_sed(sed, "pixel")
+            # plotter.add_sed(sed, "pixel")
+            #plotter.add_sed(sed, "pixel")
+            #plotter.add_sed(sed, "pixel")
             #plotter.run()
 
             #continue

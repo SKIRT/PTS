@@ -26,7 +26,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.basics.filter import Filter
 from pts.core.simulation.execute import SkirtExec
 from pts.modeling.core.mappings import Mappings
-from pts.core.data.sed import IntrinsicSED, SED
+from pts.core.data.sed import SED
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.map import Map
 from pts.core.basics.configuration import load_mapping
@@ -162,15 +162,15 @@ for i in range(len(wavelengths)):
     fluxes.append(flux)
 
 # Create an SED
-flux_sed = SED()
+flux_sed = SED.initialize("Jy")
 
 for i in range(len(wavelengths)):
 
-    flux_sed.add_entry(wavelengths[i], fluxes[i])
+    flux_sed.add_point(wavelengths[i], fluxes[i])
 
 #plotter = SEDPlotter()
 
-#plotter.add_modeled_sed(flux_sed, "mappings", residuals=False)
+#plotter.add_sed(flux_sed, "mappings", residuals=False)
 
 min_wavelength = 0.1 #* Unit("micron")
 max_wavelength = 1000. #* Unit("micron")
@@ -279,13 +279,13 @@ for i in range(len(flambda)):
     fnus.append(fnu)
 
 # Create the SED
-sed = SED()
+sed = SED.initialize("Jy")
 
 for i in range(len(lambdas)):
-    sed.add_entry(lambdas[i] * Unit("micron"), fnus[i] * Unit("Jy"))
+    sed.add_point(lambdas[i] * Unit("micron"), fnus[i] * Unit("Jy"))
 
 plotter = SEDPlotter()
-plotter.add_modeled_sed(sed, "...", residuals=False)
+plotter.add_sed(sed, "...", residuals=False)
 
 #min_wavelength = None
 #max_wavelength = None

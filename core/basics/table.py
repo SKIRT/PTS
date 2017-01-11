@@ -28,6 +28,11 @@ class SmartTable(Table):
 
     # column_info defined in the sublasses
 
+    # default extension
+    default_extension = "dat"
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def initialize(cls):
 

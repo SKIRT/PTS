@@ -140,7 +140,7 @@ class PhotometryPlotter(PlottingComponent, PhotometryComponent):
         plotter = SEDPlotter()
 
         # Add the SEDs
-        for label in self.seds: plotter.add_observed_sed(self.seds[label], label)
+        for label in self.seds: plotter.add_sed(self.seds[label], label)
 
         # Determine the path to the plot file
         path = fs.join(self.plot_photometry_path, "seds.pdf")

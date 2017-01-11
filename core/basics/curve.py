@@ -89,6 +89,18 @@ class Curve(SmartTable):
         # Call the saveto function of the base class
         super(Curve, self).saveto(path)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def has_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "Error-" in self.colnames and "Error+" in self.colnames
+
 # -----------------------------------------------------------------
 
 class WavelengthCurve(Curve):
@@ -152,16 +164,18 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def values(self, asarray=False):
+    def values(self, unit=None, asarray=False, add_unit=True):
 
         """
         This function ...
+        :param unit:
         :param asarray:
+        :param add_unit:
         :return:
         """
 
-        if asarray: return tables.column_as_array(self[self.value_name])
-        else: return tables.column_as_list(self[self.value_name])
+        if asarray: return tables.column_as_array(self[self.value_name], unit=unit)
+        else: return tables.column_as_list(self[self.value_name], unit=unit, add_unit=add_unit)
 
 # -----------------------------------------------------------------
 
