@@ -691,6 +691,11 @@ class Detection(object):
 
         """
         This function ...
+        :param title:
+        :param peaks:
+        :param show:
+        :param scale:
+        :param frame:
         :return:
         """
 

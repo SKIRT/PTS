@@ -213,6 +213,9 @@ class ExtendedSourceFinder(Configurable):
         # Create an empty frame for the segments
         self.segments = Frame.zeros_like(self.frame)
 
+        # Initialize the table
+        self.table = ExtendedSourceTable.initialize()
+
     # -----------------------------------------------------------------
 
     def clear(self):
@@ -464,7 +467,7 @@ class ExtendedSourceFinder(Configurable):
         mask = Mask.empty_like(self.frame)
 
         # Add the principal galaxy's mask to the total mask
-        mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
+        mask[self.principal.detection.cutout.y_slice, self.principal.detection.cutout.x_slice] = self.principal.detection.mask
 
         # Return the mask
         return mask
@@ -488,7 +491,7 @@ class ExtendedSourceFinder(Configurable):
         for galaxy in self.companions:
 
             # Check if the galaxy has a source and add its mask to the total mask
-            if galaxy.has_source: mask[galaxy.source.cutout.y_slice, galaxy.source.cutout.x_slice] = galaxy.source.mask
+            if galaxy.has_source: mask[galaxy.detection.cutout.y_slice, galaxy.detection.cutout.x_slice] = galaxy.detection.mask
 
         # Return the mask
         return mask
@@ -598,9 +601,6 @@ class ExtendedSourceFinder(Configurable):
         # Inform the user
         log.info("Creating the table of extended sources ...")
 
-        # Create an extended source table
-        self.table = ExtendedSourceTable()
-
         # Loop over the sources
         for source in self.sources: self.table.add_source(source)
 
@@ -634,7 +634,14 @@ class ExtendedSourceFinder(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the table ...")
+
+        # Determine the path
+        path = self.output_path_file("extended_sources.dat")
+
+        # Write
+        self.table.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -680,35 +687,35 @@ class ExtendedSourceFinder(Configurable):
         companions = 0
         with_source = 0
 
-        # Loop over all galaxies
-        for galaxy in self.galaxies:
+        # Loop over all sources
+        for source in self.sources:
 
-            # Check if this is the principal galaxy
-            if galaxy.principal:
+            # Check if this is the principal galaxy source
+            if source.principal:
 
                 # Save the cutout as a FITS file
                 path = fs.join(directory_path, "galaxy_principal_" + str(principals) + ".fits")
-                galaxy.source.saveto(path, origin=self.name)
+                source.detection.saveto(path, origin=self.name)
 
                 # Increment the counter of the number of principal galaxies (there should only be one, really...)
                 principals += 1
 
             # Check if this is a companion galaxy
-            elif galaxy.companion:
+            elif source.companion:
 
                 # Save the cutout as a FITS file
                 path = fs.join(directory_path, "galaxy_companion_" + str(companions) + ".fits")
-                galaxy.source.saveto(path, origin=self.name)
+                source.detection.saveto(path, origin=self.name)
 
                 # Increment the counter of the number of companion galaxies
                 companions += 1
 
             # Check if this galaxy has a source
-            elif galaxy.has_source:
+            elif source.has_detection:
 
                 # Save the cutout as a FITS file
                 path = fs.join(directory_path, "galaxy_source_" + str(principals) + ".fits")
-                galaxy.source.saveto(path, origin=self.name)
+                source.detection.saveto(path, origin=self.name)
 
                 # Increment the counter of the number of galaxies with a source
                 with_source += 1

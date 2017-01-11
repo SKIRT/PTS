@@ -22,20 +22,18 @@ from astropy.convolution import Gaussian2DKernel
 # Import the relevant PTS classes and modules
 from ..basics.vector import Extent
 from ..region.list import PixelRegionList
-from ..basics.coordinate import PixelCoordinate, SkyCoordinate
+from ..basics.coordinate import SkyCoordinate
 from ..region.point import PixelPointRegion
 from ..region.circle import PixelCircleRegion
 from ..region.ellipse import PixelEllipseRegion
 from ..core.frame import Frame
-from ..core.source import Source
-from ..object.star import Star
+from ..core.detection import Detection
 from ..tools import statistics, fitting
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..tools import plotting
-from .list import StarList
 from ...core.basics.map import Map
 from ..basics.stretch import PixelStretch
 from ...core.basics.table import SmartTable
@@ -312,6 +310,9 @@ class PointSourceFinder(Configurable):
         # Create an empty frame for the segments
         self.segments = Frame.zeros_like(self.frame)
 
+        # Initialize the table
+        self.table = PointSourceTable.initialize()
+
     # -----------------------------------------------------------------
 
     def clear(self):
@@ -500,21 +501,21 @@ class PointSourceFinder(Configurable):
             if source is None: continue
 
             # If this star should be ignored, skip it
-            if star.ignore: continue
+            if source.ignore: continue
 
-            # Check if the star has a source (has been detected)
-            if not star.has_source and self.config.fitting.fit_if_undetected:
+            # Check if the star has been detected
+            if not source.has_detection and self.config.fitting.fit_if_undetected:
 
                 # Get the parameters of the circle
-                ellipse = star.ellipse(self.frame.wcs, self.frame.average_pixelscale, self.config.fitting.initial_radius)
+                ellipse = source.ellipse(self.frame.wcs, self.frame.average_pixelscale, self.config.fitting.initial_radius)
 
-                # Create a source object
-                source = Source.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
+                # Create a detection object
+                detection = Detection.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
 
-            else: source = None
+            else: detection = None
 
             # Find a model
-            if star.has_source or source is not None: star.fit_model(self.config.fitting, source)
+            if source.has_detection or detection is not None: source.fit_model(self.config.fitting, detection)
 
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
         if self.config.fitting.sigma_clip_fwhms:
@@ -523,17 +524,17 @@ class PointSourceFinder(Configurable):
             lower = median - self.config.fitting.fwhm_sigma_level * stddev
             upper = median + self.config.fitting.fwhm_sigma_level * stddev
 
-            # Loop over all stars for which a model was found
-            for star in self.stars:
+            # Loop over all sources for which a model was found
+            for source in self.sources:
 
-                # Ignore stars without model
-                if not star.has_model: continue
+                # Ignore sources without model
+                if not source.has_model: continue
 
                 # Remove the model if its FWHM is clipped out
-                if star.fwhm > upper or star.fwhm < lower: star.model = None
+                if source.fwhm > upper or source.fwhm < lower: source.model = None
 
         # Inform the user
-        log.debug("Found a model for {0} out of {1} stars with source ({2:.2f}%)".format(self.have_model, self.have_source, self.have_model/self.have_source*100.0))
+        log.debug("Found a model for {0} out of {1} stars with a detection ({2:.2f}%)".format(self.have_model, self.have_detection, self.have_model/self.have_detection*100.0))
 
     # -----------------------------------------------------------------
 
@@ -551,16 +552,16 @@ class PointSourceFinder(Configurable):
         default_fwhm = self.fwhm_pix
 
         # Loop over all sources
-        for star in self.sources:
+        for source in self.sources:
 
-            # If this star should be ignored, skip it
-            if star.ignore: continue
+            # If this source should be ignored, skip it
+            if source.ignore: continue
 
-            # If this star does not have a source, skip it
-            if not star.has_source: continue
+            # If this source does not have a source, skip it
+            if not source.has_detection: continue
 
-            # Create a source for the desired sigma level and outer factor
-            star.source = star.source_at_sigma_level(self.frame, default_fwhm, self.config.source_psf_sigma_level, self.config.source_outer_factor)
+            # Create a detection for the desired sigma level and outer factor
+            source.detection = source.detection_at_sigma_level(self.frame, default_fwhm, self.config.source_psf_sigma_level, self.config.source_outer_factor)
 
     # -----------------------------------------------------------------
 
@@ -584,21 +585,21 @@ class PointSourceFinder(Configurable):
         for source in self.sources:
 
             # Get the center in pixel coordinates
-            center = star.pixel_position(self.frame.wcs)
+            center = source.pixel_position(self.frame.wcs)
 
             # Determine the color, based on the detection level
-            if star.has_model: color = "blue"
-            elif star.has_source: color = "green"
+            if source.has_model: color = "blue"
+            elif source.has_detection: color = "green"
             else: color = "red"
 
             # Determine the FWHM
-            fwhm = default_fwhm if not star.has_model else star.fwhm
+            fwhm = default_fwhm if not source.has_model else source.fwhm
 
             # Calculate the radius in pixels
             radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
 
-            # Convert the star index to a string
-            text = str(star.index)
+            # Convert the source index to a string
+            text = str(source.index)
 
             # Create meta information
             meta = {"color": color, "text": text}
@@ -608,13 +609,13 @@ class PointSourceFinder(Configurable):
             self.regions.append(shape)
 
             # Add a position for the peak position
-            if star.has_source and star.source.has_peak:
+            if source.has_detection and source.detection.has_peak:
 
                 # Create meta information for the position
                 meta = {"point": "x"}
 
                 # Create the position and add it to the region
-                position = PixelPointRegion(star.source.peak.x, star.source.peak.y, meta=meta)
+                position = PixelPointRegion(source.detection.peak.x, source.detection.peak.y, meta=meta)
                 self.regions.append(position)
 
     # -----------------------------------------------------------------
@@ -629,12 +630,12 @@ class PointSourceFinder(Configurable):
         # Inform the user
         log.info("Looking for saturated stars ...")
 
-        # Check whether sources are found
-        with_source = self.have_source
-        if with_source == 0: raise RuntimeError("Not a single source was found")
+        # Check whether detections are found
+        with_detection = self.have_detection
+        if with_detection == 0: raise RuntimeError("Not a single source was found")
 
-        # Inform the user on the number of stars that have a source
-        log.debug("Number of stars with source = " + str(with_source))
+        # Inform the user on the number of stars that have a detection
+        log.debug("Number of stars with detection = " + str(with_detection))
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm_pix
@@ -642,7 +643,7 @@ class PointSourceFinder(Configurable):
         # Set the number of stars where saturation was removed to zero initially
         success = 0
 
-        # Create star mask
+        # Create point source mask
         star_mask = self.regions.to_mask(self.frame.xsize, self.frame.ysize)
 
         # Only brightest method
@@ -712,7 +713,7 @@ class PointSourceFinder(Configurable):
             success += star.has_saturation
 
         # Inform the user
-        log.debug("Found saturation in " + str(success) + " out of " + str(self.have_source) + " sources with detection ({0:.2f}%)".format(success / self.have_source * 100.0))
+        log.debug("Found saturation in " + str(success) + " out of " + str(self.have_detection) + " sources with detection ({0:.2f}%)".format(success / self.have_detection * 100.0))
 
     # -----------------------------------------------------------------
 
@@ -733,16 +734,16 @@ class PointSourceFinder(Configurable):
         for source in self.sources:
 
             # Skip stars without saturation
-            if not star.has_saturation: continue
+            if not source.has_saturation: continue
 
             # Convert the star index to a string
-            text = str(star.index)
+            text = str(source.index)
 
             # Get aperture properties
-            center = star.contour.center
-            semimajor = star.contour.semimajor
-            semiminor = star.contour.semiminor
-            angle = star.contour.angle
+            center = source.contour.center
+            semimajor = source.contour.semimajor
+            semiminor = source.contour.semiminor
+            angle = source.contour.angle
 
             radius = PixelStretch(semimajor, semiminor)
 
@@ -772,16 +773,16 @@ class PointSourceFinder(Configurable):
             if source.has_saturation:
 
                 # Add the saturation segment to the segmentation map
-                self.segments[star.saturation.y_slice, star.saturation.x_slice][star.saturation.mask] = star.index
+                self.segments[source.saturation.y_slice, source.saturation.x_slice][source.saturation.mask] = source.index
 
             # Stars without saturation
             else:
 
-                # Skip stars without a source
-                if not star.has_source: continue
+                # Skip stars without a detection
+                if not source.has_detection: continue
 
                 # Add the star segment to the segmentation map
-                self.segments[star.source.y_slice, star.source.x_slice][star.source.mask] = star.index
+                self.segments[source.detection.y_slice, source.detection.x_slice][source.detection.mask] = source.index
 
     # -----------------------------------------------------------------
 
@@ -792,7 +793,11 @@ class PointSourceFinder(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Creating the table of point sources ...")
+
+        # Loop over the sources
+        for source in self.sources: self.table.add_source(source)
 
     # -----------------------------------------------------------------
 
@@ -824,7 +829,14 @@ class PointSourceFinder(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing the table ...")
+
+        # Determine path
+        path = self.output_path_file("point_sources.dat")
+
+        # Write
+        self.table.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -946,12 +958,25 @@ class PointSourceFinder(Configurable):
         :return:
         """
 
-        return self.stars.get_positions(self.frame.wcs)
+        # Initialize a list to contain the object positions
+        positions = []
+
+        # Loop over the sources
+        for source in self.sources:
+
+            # Skip None
+            if source is None: positions.append(None)
+
+            # Calculate the pixel coordinate in the frame and add it to the list
+            positions.append(source.pixel_position(self.frame.wcs))
+
+        # Return the list
+        return positions
 
     # -----------------------------------------------------------------
 
     @property
-    def have_source(self):
+    def have_detection(self):
 
         """
         This function ...
@@ -959,7 +984,9 @@ class PointSourceFinder(Configurable):
         """
 
         count = 0
-        for star in self.stars: count += star.has_source
+        for source in self.sources:
+            if source is None: continue
+            count += source.has_detection
         return count
 
     # -----------------------------------------------------------------
@@ -973,7 +1000,9 @@ class PointSourceFinder(Configurable):
         """
 
         count = 0
-        for star in self.stars: count += star.has_model
+        for source in self.sources:
+            if source is None: continue
+            count += source.has_model
         return count
 
     # -----------------------------------------------------------------
@@ -987,7 +1016,9 @@ class PointSourceFinder(Configurable):
         """
 
         count = 0
-        for star in self.stars: count += star.has_saturation
+        for source in self.sources:
+            if source is None: continue
+            count += source.has_saturation
         return count
 
     # -----------------------------------------------------------------
@@ -1001,7 +1032,9 @@ class PointSourceFinder(Configurable):
         """
 
         count = 0
-        for star in self.stars: count += star.has_contour
+        for source in self.sources:
+            if source is None: continue
+            count += source.has_contour
         return count
 
     # -----------------------------------------------------------------
@@ -1017,15 +1050,19 @@ class PointSourceFinder(Configurable):
         # Initialize a list to contain the fwhm of the fitted stars
         fwhms = []
 
-        # Loop over all stars
-        for star in self.stars:
+        # Loop over all sources
+        for source in self.sources:
+
+            if source is None: fwhms.append(None)
 
             # If the star contains a model, add the fwhm of that model to the list
-            if star.has_model:
+            elif source.has_model:
 
-                fwhm_pix = star.fwhm * Unit("pix")
+                fwhm_pix = source.fwhm * Unit("pix")
                 fwhm_arcsec = fwhm_pix * self.frame.average_pixelscale.to("arcsec/pix")
                 fwhms.append(fwhm_arcsec)
+
+            else: fwhms.append(None)
 
         # Return the list
         return fwhms
@@ -1040,7 +1077,7 @@ class PointSourceFinder(Configurable):
         :return:
         """
 
-        return [(fwhm / self.frame.average_pixelscale.to("arcsec/pix")).to("pix").value for fwhm in self.fwhms]
+        return [(fwhm / self.frame.average_pixelscale.to("arcsec/pix")).to("pix").value if fwhm is not None else None for fwhm in self.fwhms]
 
     # -----------------------------------------------------------------
 
@@ -1052,17 +1089,21 @@ class PointSourceFinder(Configurable):
         :return:
         """
 
-        # Initialize a list to contain the fluxes of the stars
+        # Initialize a list to contain the fluxes of the sources
         fluxes = []
 
-        # Loop over all stars
-        for star in self.stars:
+        # Loop over all sources
+        for source in self.sources:
+
+            if source is None: fluxes.append(None)
 
             # If the star contains a source and the background of this source has been subtracted, calculate the flux
-            if star.has_source and star.source.has_background:
+            elif source.has_detection and source.detection.has_background:
 
                 # Add the flux to the list
-                fluxes.append(star.flux)
+                fluxes.append(source.flux)
+
+            else: fluxes.append(None)
 
         # Return the list
         return fluxes
@@ -1105,22 +1146,22 @@ class PointSourceFinder(Configurable):
         # Initialize
         differences = []
 
-        # Loop over all stars
-        for star in self.stars:
+        # Loop over all sources
+        for source in self.sources:
 
-            # If the star was not fitted, skip it
-            if not star.has_model: continue
+            # If the source was not fitted, skip it
+            if not source.has_model: continue
 
             # Determine the amplitude and the position of the center of the model
-            amplitude_model = star.model.amplitude
-            center = star.source.cutout.rel_position(fitting.center(star.model))
+            amplitude_model = source.model.amplitude
+            center = source.detection.cutout.rel_position(fitting.center(source.model))
 
             # Convert into integers
             x = int(round(center.x))
             y = int(round(center.y))
 
             # Calculate the value of the source at the model's center position
-            amplitude_source = star.source.subtracted[y, x]
+            amplitude_source = source.detection.subtracted[y, x]
 
             # Calculate the difference of the amplitudes
             difference = abs(amplitude_model - amplitude_source)
@@ -1185,20 +1226,6 @@ class PointSourceFinder(Configurable):
         # Create a Gaussian convolution kernel and return it
         sigma = self.fwhm_pix * statistics.fwhm_to_sigma
         return Gaussian2DKernel(sigma)
-
-    # -----------------------------------------------------------------
-
-    def get_statistics(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the statistics
-        statistics = Map()
-        statistics.fwhm = self.fwhm
-        return statistics
 
     # -----------------------------------------------------------------
 

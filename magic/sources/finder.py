@@ -24,7 +24,6 @@ from ..tools import wavelengths
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ..core.dataset import DataSet
-from ...core.tools import filesystem as fs
 from ..region.list import SkyRegionList
 from ..core.image import Image
 from ...core.basics.table import SmartTable
@@ -922,7 +921,7 @@ class SourceFinder(Configurable):
             if frame.wavelength is not None or frame.wavelength > wavelengths.ranges.ir.mir.max:
 
                 # No star subtraction for this image
-                log.info("Finding point sources will not be performed for the '" + name "' image")
+                log.info("Finding point sources will not be performed for the '" + name + "' image")
                 continue
 
             # Inform the user
@@ -1337,21 +1336,21 @@ class SourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write_saturation_regions(self):
+    #def write_saturation_regions(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Inform the user
-        log.info("Writing the saturation regions ...")
+        #log.info("Writing the saturation regions ...")
 
         # Determine the path
-        path = self.output_path_file("saturation_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("saturation.reg")
+        #path = self.output_path_file("saturation_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("saturation.reg")
 
         # Save
-        self.saturation_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+        #self.saturation_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
 
     # -----------------------------------------------------------------
 
