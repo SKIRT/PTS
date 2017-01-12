@@ -17,3 +17,4 @@ plot_scaling | -- | plot.scaling.ScalingPlotter | arguments | Plot the performan
 plot_timelines | -- | plot.timeline.TimeLinePlotter | arguments | Plot timelines of a (batch of) simulation(s)
 discover | -- | simulation.discover.SimulationDiscoverer | arguments | Discover simulations in current working directory (and subdirectories)
 fill_ski | -- | simulation.fill.SkiFiller | arguments | Fill a ski file with the default and hidden settings for SKIRT
+versions | -- | remote.versionchecker.VersionChecker | arguments | Check versions of compiler, python, qmake, SKIRT and PTS on remote hosts

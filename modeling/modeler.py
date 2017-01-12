@@ -44,6 +44,7 @@ from ..core.prep.update import SKIRTUpdater, PTSUpdater
 from ..core.prep.installation import SKIRTInstaller
 from ..core.remote.remote import Remote
 from ..core.tools import introspection
+from ..core.remote.versionchecker import VersionChecker
 
 # -----------------------------------------------------------------
 
@@ -228,6 +229,9 @@ class GalaxyModeler(Configurable):
         # Update PTS
         self.update_pts()
 
+        # Check versions
+        self.check_versions()
+
     # -----------------------------------------------------------------
 
     def find_available_host(self):
@@ -371,6 +375,54 @@ class GalaxyModeler(Configurable):
 
             # Run the updater
             updater.run()
+
+    # -----------------------------------------------------------------
+
+    def check_versions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize the version checker
+        checker = VersionChecker()
+        checker.config.host_ids = self.used_host_ids
+        checker.config.show = False
+
+        # Run the checker
+        checker.run()
+
+        # C++ compiler
+        log.info("Local C++ compiler version: " + introspection.cpp_compiler_version())
+        log.info("Remote C++ compiler versions:")
+        for host_id in checker.cpp_versions: log.info(" - " + host_id + ": " + checker.cpp_versions[host_id])
+
+        # MPI compiler
+        if introspection.has_mpi_compiler():
+            log.info("Local MPI compiler version: " + introspection.mpi_compiler_version())
+            log.info("Remote MPI compiler versions:")
+            for host_id in checker.mpi_versions: log.info(" - " + host_id + ": " + checker.mpi_versions[host_id])
+
+        # Qt version
+        log.info("Local Qt version: " + introspection.qmake_version())
+        log.info("Remote Qt versions:")
+        for host_id in checker.qt_versions: log.info(" - " + host_id + ": " + checker.qt_versions[host_id])
+
+        # Python
+        log.info("Local Python version: " + introspection.python_version())
+        log.info("Remote Python versions:")
+        for host_id in checker.python_versions: log.info(" - " + host_id + ": " + checker.python_versions[host_id])
+
+        # SKIRT
+        log.info("Local SKIRT version: " + introspection.skirt_version())
+        log.info("Remote SKIRT versions:")
+        for host_id in checker.skirt_versions: log.info(" - " + host_id + ": " + checker.skirt_versions[host_id])
+
+        # PTS
+        log.info("Local PTS version: " + introspection.pts_version())
+        log.info("Remote PTS versions:")
+        for host_id in checker.pts_versions: log.info(" - " + host_id + ": " + checker.pts_versions[host_id])
 
     # -----------------------------------------------------------------
 

@@ -459,6 +459,10 @@ class SKIRTInstaller(Installer):
         # Install
         subprocess.call(install_command, shell=True, cwd=decompress_path)
 
+        # Remove the tar.gz file and the temporary directory
+        fs.remove_file(path)
+        fs.remove_directory(decompress_path)
+
     # -----------------------------------------------------------------
 
     def get_skirt_local(self):
@@ -643,14 +647,18 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing Qt ...")
 
+        # Detemrine location
+        if self.remote.host.scratch_path is not None: temp_path = self.remote.host.scratch_path
+        else: temp_path = self.remote.home_directory
+
         # Determine the path for the Qt source code
-        path = fs.join(self.remote.home_directory, "qt.tar.gz")
+        path = fs.join(temp_path, "qt.tar.gz")
 
         # Download Qt
         self.remote.download_from_url_to(qt_url, path)
 
         # Unarchive
-        decompress_path = self.remote.create_directory_in(self.remote.home_directory, "Qt-install")
+        decompress_path = self.remote.create_directory_in(temp_path, "Qt-install")
         self.remote.decompress_file(path, decompress_path)
 
         # Determine commands
@@ -659,7 +667,11 @@ class SKIRTInstaller(Installer):
         install_command = "make install"
 
         # Execute the commands
-        self.remote.execute_lines(configure_command, make_command, install_command, show_output=True, cwd=decompress_path)
+        self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=decompress_path)
+
+        # Remove decompressed folder and the tar.gz file
+        self.remote.remove_file(path)
+        self.remote.remove_directory(decompress_path)
 
     # -----------------------------------------------------------------
 
@@ -782,7 +794,15 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Testing the SKIRT installation ...")
+
+        output = subprocess.check_output(["skirt", "-h"]).split("\n")
+        for line in output:
+            if "Welcome to SKIRT" in line: break
+        else:
+            log.error("Something is wrong with the SKIRT installation:")
+            for line in output: log.error("   " + line)
 
     # -----------------------------------------------------------------
 
@@ -793,7 +813,15 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Testing the SKIRT installation ...")
+
+        output = self.remote.execute("skirt -h")
+        for line in output:
+            if "Welcome to SKIRT" in line: break
+        else:
+            log.error("Something is wrong with the SKIRT installation:")
+            for line in output: log.error("   " + line)
 
 # -----------------------------------------------------------------
 

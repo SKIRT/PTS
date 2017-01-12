@@ -5,9 +5,12 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.remote Contains the Remote class.
+## \package pts.core.remote.remote Contains the Remote class.
 
 # -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re

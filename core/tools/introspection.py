@@ -426,6 +426,19 @@ def qmake_is_present():
 
 # -----------------------------------------------------------------
 
+def qmake_version():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Execute
+    output = subprocess.check_output(qmake_path() + " --version", shell=True)
+    return output
+
+# -----------------------------------------------------------------
+
 def pts_installation_is_conform():
 
     """
@@ -536,6 +549,19 @@ def cpp_compiler_path():
 
 # -----------------------------------------------------------------
 
+def cpp_compiler_version():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Execute
+    output = subprocess.check_output(cpp_compiler_path() + " --version", shell=True)
+    return output
+
+# -----------------------------------------------------------------
+
 def has_mpi():
 
     """
@@ -573,6 +599,19 @@ def mpi_compiler_path():
         path = find_executable(name)
         if path is not None: return path
     return None
+
+# -----------------------------------------------------------------
+
+def mpi_compiler_version():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Execute
+    output = subprocess.check_output(mpi_compiler_path() + " --version", shell=True)
+    return output
 
 # -----------------------------------------------------------------
 
