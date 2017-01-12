@@ -864,3 +864,30 @@ def read_lines_reversed(path, buf_size=8192):
         yield segment
 
 # -----------------------------------------------------------------
+
+def append_line(filepath, line):
+
+    """
+    This function ...
+    :param filepath:
+    :param line:
+    :return:
+    """
+
+    with open(filepath, 'a') as fh: fh.write(line)
+
+# -----------------------------------------------------------------
+
+def append_lines(filepath, lines):
+
+    """
+    This function ...
+    :param filepath:
+    :param lines:
+    :return:
+    """
+
+    with open(filepath, 'a') as fh:
+        for line in lines: fh.write(line)
+
+# -----------------------------------------------------------------

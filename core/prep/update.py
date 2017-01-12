@@ -21,7 +21,7 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, get_skirt_hpc, get_pts_hpc
+from .installation import get_installation_commands, get_skirt_hpc, get_pts_hpc, find_qmake
 from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -179,7 +179,14 @@ class SKIRTUpdater(Updater):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Checking the presence of C++ and MPI compilers locally ...")
+
+        # Set C++ compiler path
+        if self.remote.has_cpp_compiler: self.compiler_path = self.remote.cpp_compiler_path
+
+        # Set MPI compiler path
+        if self.remote.has_mpi_compiler: self.mpi_compiler_path = self.remote.mpi_compiler_path
 
     # -----------------------------------------------------------------
 
@@ -190,7 +197,11 @@ class SKIRTUpdater(Updater):
         :return:
         """
 
-        pass
+        # Find qmake path
+        self.qmake_path = find_qmake()
+
+        # Check
+        if self.qmake_path is None: raise RuntimeError("qmake was not found")
 
     # -----------------------------------------------------------------
 
@@ -201,14 +212,11 @@ class SKIRTUpdater(Updater):
         :return:
         """
 
-        # Get the SKIRT repo directory
-        skirt_repo_path = introspection.skirt_repo_dir
-
         # Debugging
         log.debug("Getting latest version ...")
 
         # Call the appropriate git command at the SKIRT repository directory
-        subprocess.call(["git", "pull", "origin", "master"], cwd=skirt_repo_path)
+        subprocess.call(["git", "pull", "origin", "master"], cwd=introspection.skirt_repo_dir)
 
     # -----------------------------------------------------------------
 
@@ -223,7 +231,7 @@ class SKIRTUpdater(Updater):
         log.debug("Compiling latest version ...")
 
         # Recompile SKIRT
-        subprocess.call(["sh", "makeSKIRT.sh"], cwd=skirt_repo_path)
+        subprocess.call(["sh", "makeSKIRT.sh"], cwd=introspection.skirt_repo_dir)
 
     # -----------------------------------------------------------------
 
@@ -259,7 +267,7 @@ class SKIRTUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Checking the presence of C++ and MPI compilers ...")
+        log.info("Checking the presence of C++ and MPI compilers on the remote host ...")
 
         # Get the compiler paths
         self.compiler_path = self.remote.find_and_load_cpp_compiler()
@@ -280,6 +288,9 @@ class SKIRTUpdater(Updater):
         # Load Qt module, find the qmake path
         self.qmake_path = self.remote.find_and_load_qmake()
 
+        # Check
+        if self.qmake_path is None: raise RuntimeError("qmake was not found")
+
     # -----------------------------------------------------------------
 
     def pull_remote(self):
@@ -296,22 +307,33 @@ class SKIRTUpdater(Updater):
         # because of the private/public key thingy, so use a trick
         if self.remote.host.name == "login.hpc.ugent.be":
 
-            # Get the repo URL
+            # Get path to the origin.txt file
             origin_path = fs.join(self.remote.skirt_repo_path, "origin.txt")
-            url = self.remote.read_lines(origin_path)[0]
 
-            # Remove the previous SKIRT/git directory
-            self.remote.remove_directory(self.remote.skirt_repo_path)
+            # Installed with PTS
+            if fs.is_file(origin_path):
 
-            # Get the new code
-            get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
+                for line in self.remote.read_lines(origin_path):
+                    url = line
+                    break
+
+                # Remove the previous SKIRT/git directory
+                self.remote.remove_directory(self.remote.skirt_repo_path)
+
+                # Get the new code
+                get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
+
+            # Not installed with PTS
+            else:
+
+                # The repository can only be installed through SSH, thus no password is required
+                command = "git pull origin master"
+
+                # Execute the command
+                self.remote.execute(command, cwd=self.remote.skirt_repo_path, show_output=True)
 
         # Else
         else:
-
-            # Change working directory to repository directory
-            skirt_git_path = self.remote.skirt_repo_path
-            self.remote.change_cwd(skirt_git_path)
 
             # FOR SSH:
             # Git pull
@@ -327,7 +349,7 @@ class SKIRTUpdater(Updater):
 
             # Get the url of the repo from which cloned
             args = ["git", "remote", "show", "origin"]
-            output = self.remote.execute(args)
+            output = self.remote.execute(args, cwd=self.remote.skirt_repo_path)
             url = None
             for line in output:
                 if "Fetch URL" in line: url = line.split(": ")[1]
@@ -344,7 +366,7 @@ class SKIRTUpdater(Updater):
             lines.append(("':", password))
 
             # Clone the repository
-            self.remote.execute_lines(*lines, show_output=True)
+            self.remote.execute_lines(*lines, show_output=True, cwd=self.remote.skirt_repo_path)
 
         # Success
         log.success("SKIRT was successfully updated")
@@ -450,7 +472,9 @@ class PTSUpdater(Updater):
 
             # Get the repo URL
             origin_path = fs.join(self.remote.pts_package_path, "origin.txt")
-            url = self.remote.read_lines(origin_path)[0]
+            for line in self.remote.read_lines(origin_path)[0]:
+                url = line
+                break
 
             # Remove the previous PTS/pts directory
             self.remote.remove_directory(self.remote.pts_package_path)

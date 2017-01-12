@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ...core.data.sed import IntrinsicSED
+from ...core.data.sed import SED
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 
@@ -67,7 +67,7 @@ class Sun(object):
         """
 
         # Load the intrinsic SED of the sun
-        self.sed = IntrinsicSED.from_file(sun_sed_path, skiprows=4) # wavelength in micron, luminosity in W/micron
+        self.sed = SED.from_text_file(sun_sed_path, wavelength_unit="micron", photometry_unit="W/micron", skiprows=4) # wavelength in micron, luminosity in W/micron
 
         # The total luminosity
         self.luminosity = Lsun

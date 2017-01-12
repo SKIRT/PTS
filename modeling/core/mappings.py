@@ -259,13 +259,7 @@ def create_mappings_sed(metallicity, pressure, compactness, covering_factor, sfr
     luminosity_column = jv * sfr
 
     # Create the SED
-    #sed = IntrinsicSED()
-    #sed.table = tables.new([wavelength_column, luminosity_column], ["Wavelength", "Luminosity"])
-    #sed.table["Wavelength"].unit = Unit("micron")
-    #sed.table["Luminosity"].unit = Unit("W/micron")
-
-    # Create the SED
-    sed = SED.from_arrays()
+    sed = SED.from_arrays(wavelength_column, luminosity_column, wavelength_unit="micron", photometry_unit="W/micron")
 
     # Return the SED
     return sed

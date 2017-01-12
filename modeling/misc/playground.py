@@ -22,7 +22,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.simulation import SkirtSimulation
-from ...core.data.sed import IntrinsicSED
+from ...core.data.sed import SED
 from ...core.simulation.skifile import SkiFile
 from ..core.mappings import Mappings
 
@@ -273,7 +273,7 @@ class MappingsPlayground(object):
                                                       wavelength=lambdav) * lambdav * 1e7
 
         # Create the SED
-        sed = IntrinsicSED.from_luminosities(lambdav, lambdaLlambdav, luminosity_unit="erg/s")
+        sed = SED.from_arrays(lambdav, lambdaLlambdav, wavelength_unit="micron", photometry_unit="erg/s")
 
         # Return the SED
         return sed

@@ -41,6 +41,9 @@ from .fitting.component import get_generations_table
 from ..core.launch.synchronizer import RemoteSynchronizer
 from ..core.remote.remote import is_available
 from ..core.prep.update import SKIRTUpdater, PTSUpdater
+from ..core.prep.installation import SKIRTInstaller
+from ..core.remote.remote import Remote
+from ..core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -153,7 +156,7 @@ class GalaxyModeler(Configurable):
         host_ids.add(self.host_id)
 
         # Add fitting host ids
-        for host_id in self.config.fitting_host_ids: host_ids.add(host_id)
+        for host_id in self.modeling_config.fitting_host_ids: host_ids.add(host_id)
 
         # Return the list of host IDs
         return list(host_ids)
@@ -220,7 +223,7 @@ class GalaxyModeler(Configurable):
         self.history = load_modeling_history(self.modeling_path)
 
         # Update SKIRT
-        self.update_skirt()
+        self.install_or_update_skirt()
 
         # Update PTS
         self.update_pts()
@@ -244,7 +247,7 @@ class GalaxyModeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def update_skirt(self):
+    def install_or_update_skirt(self):
 
         """
         This function ...
@@ -252,19 +255,98 @@ class GalaxyModeler(Configurable):
         """
 
         # Inform the user
-        log.info("Updating SKIRT (locally and remotely) ...")
+        log.info("Installing or updating SKIRT ...")
+
+        # Locally
+        self.install_or_update_locally()
+
+        # Remotely
+        self.install_or_update_remotely()
+
+    # -----------------------------------------------------------------
+
+    def install_or_update_locally(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Installing or updating SKIRT locally ...")
+
+        # Check whether installed
+        installed = introspection.skirt_is_present()
+
+        # Not installed: install
+        if not installed:
+
+            # Create installer and run it
+            installer = SKIRTInstaller()
+            installer.run()
+
+        # Installed and not SKIRT developer: update
+        elif not introspection.is_skirt_developer():
+
+            # Create updater and run it
+            updater = SKIRTUpdater()
+            updater.run()
+
+    # -----------------------------------------------------------------
+
+    def install_or_update_remotely(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Installing or updating SKIRT remotely ...")
 
         # Loop over the used host IDs
         for host_id in self.used_host_ids:
 
-            # Create the updater
-            updater = SKIRTUpdater()
+            # Debugging
+            log.debug("Connecting to remote host " + host_id + " ...")
 
-            # Set remote host ID
-            updater.config.remote = host_id
+            # Connect to the remote
+            remote = Remote()
+            remote.setup(host_id)
 
-            # Run the updater
-            updater.run()
+            # Check if SKIRT is present
+            installed = remote.has_skirt
+
+            # If installed, update
+            if installed:
+
+                # Debugging
+                log.debug("SKIRT is present, updating ...")
+
+                # Create the updater
+                updater = SKIRTUpdater()
+
+                # Set remote host ID
+                updater.config.remote = host_id
+
+                # Run the updater
+                updater.run()
+
+            # If not installed, install
+            else:
+
+                # Debugging
+                log.debug("SKIRT is not present, installing ...")
+
+                # Create the installer
+                installer = SKIRTInstaller()
+
+                # Set the remote host ID
+                installer.config.remote = host_id
+                installer.config.force = True # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
+
+                # Run the installer
+                installer.run()
 
     # -----------------------------------------------------------------
 

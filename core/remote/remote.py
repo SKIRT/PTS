@@ -87,11 +87,19 @@ def add_key(name):
     """
 
     # Check if the key exists
-    key_path = fs.join("~/.ssh", name)
+    key_path = fs.absolute_path(fs.join("~/.ssh", name))
     if not fs.is_file(key_path): raise ValueError("The key '" + name + "' does not exist in the .ssh directory")
 
     # Add the key
     subprocess.call(["ssh-add", key_path])
+
+    # password is asked:
+    # Create the pexpect child instance
+    #child = pexpect.spawn("ssh-add " + key_path, timeout=30)
+    #password = "tokiotokio"
+    #if password is not None:
+    #    child.expect([': '])
+    #    child.sendline(password)
 
 # -----------------------------------------------------------------
 
@@ -181,7 +189,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def load_module(self, module_name):
+    def load_module(self, module_name, show_output=False):
 
         """
         This function ...
@@ -189,30 +197,32 @@ class Remote(object):
         :return:
         """
 
-        self.execute("module load " + module_name, show_output=True)
+        self.execute("module load " + module_name, show_output=show_output)
 
     # -----------------------------------------------------------------
 
-    def unload_module(self, module_name):
+    def unload_module(self, module_name, show_output=False):
 
         """
         This function ...
         :param module_name:
+        :param show_output:
         :return:
         """
 
-        self.execute("module del " + module_name, show_output=True)
+        self.execute("module del " + module_name, show_output=show_output)
 
     # -----------------------------------------------------------------
 
-    def reload_all_modules(self):
+    def reload_all_modules(self, show_output=False):
 
         """
         This function ...
+        :param show_output:
         :return:
         """
 
-        self.execute("module update", show_output=True)
+        self.execute("module update", show_output=show_output)
 
     # -----------------------------------------------------------------
 
@@ -435,6 +445,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
     def has_cpp_compiler(self):
 
         """
@@ -463,6 +474,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
     def has_mpi(self):
 
         """
@@ -476,6 +488,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
     def has_mpi_compiler(self):
 
         """
@@ -913,27 +926,14 @@ class Remote(object):
         # Record the screen output: 'script' command
         #if screen_output_path is not None: self.execute("script " + screen_output_path)
 
-        # If the output directory is given for the screen output
-        cwd = None
-        if screen_output_path is not None:
-
-            # Get the path to the current working directory
-            cwd = self.working_directory
-
-            # Now change the working directory to the screen_output_path
-            self.change_cwd(screen_output_path)
-
         # Create the screen session and execute the batch script
         if attached:
             #self.execute("screen -S " + name + " -L -m " + remote_script_path, output=False, show_output=True)
             self.execute("sh " + remote_script_path, output=False, show_output=True)
-        else: self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False, timeout=None)
+        else: self.execute("screen -S " + name + " -L -d -m " + remote_script_path, output=False, timeout=None, cwd=screen_output_path)
 
         # Remove the remote shell script
         if not keep_remote_script: self.execute("rm " + remote_script_path, output=False)
-
-        # Navigate back to the previous working directory after changing for the screen output
-        if screen_output_path is not None: self.change_cwd(cwd)
 
     # -----------------------------------------------------------------
 
@@ -1307,7 +1307,8 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None, expect=None):
+    def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None,
+                expect=None, cwd=None):
 
         """
         This function ...
@@ -1317,8 +1318,14 @@ class Remote(object):
         :param contains_extra_eof:
         :param show_output:
         :param timeout:
+        :param expect:
+        :param cwd:
         :return:
         """
+
+        # Change the working directory if necessary
+        if cwd is not None: original_cwd = self.change_cwd(cwd)
+        else: original_cwd = None
 
         # Send the command
         self.ssh.sendline(command)
@@ -1341,6 +1348,9 @@ class Remote(object):
         # Set the log file back to 'None'
         self.ssh.logfile = None
 
+        # Set the working directory back to the original
+        if original_cwd is not None: self.change_cwd(original_cwd)
+
         # Ignore the first and the last line (the first is the command itself, the last is always empty)
         if output:
             # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
@@ -1358,9 +1368,15 @@ class Remote(object):
         :return:
         """
 
+        # Get arguments
         output = kwargs.pop("output", True)
         show_output = kwargs.pop("show_output", False)
         timeout = kwargs.pop("timeout", None)
+        cwd = kwargs.pop("cwd", None)
+
+        # Change the working directory if necessary
+        if cwd is not None: original_cwd = self.change_cwd(cwd)
+        else: original_cwd = None
 
         # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
         # Otherwise, assure that the logfile is set to 'None'
@@ -1398,6 +1414,9 @@ class Remote(object):
 
         # Set the log file back to 'None'
         self.ssh.logfile = None
+
+        # Change the working directory back to the original
+        if original_cwd is not None: self.change_cwd(original_cwd)
 
         # Return the output
         if output: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
@@ -1531,9 +1550,13 @@ class Remote(object):
         :return:
         """
 
+        original_cwd = self.working_directory
+
         # Try to change the directory, give an error if this fails
         output = self.execute("cd " + path)
         if len(output) > 0 and "No such file or directory" in output[0]: raise RuntimeError("The directory does not exist")
+
+        return original_cwd
 
     # -----------------------------------------------------------------
 
@@ -1587,27 +1610,18 @@ class Remote(object):
         :return:
         """
 
-        # Get the path to the current working directory
-        working_directory = self.working_directory
-
-        # Change the working directory to the provided path
-        self.change_cwd(path)
-
         # List the directories in the provided path
         if recursive:
             command = "ls -R -d */ | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
             command += '"");s=$0;f=1;next}\nNF&&f{ print '
             command += 's"/"$0 }'
             command += "'"
-            output = self.execute(command)
+            output = self.execute(command, cwd=path)
             paths = [dirpath for dirpath in output if self.is_directory(dirpath)]
         else:
-            output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done")
+            output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done", cwd=path)
             if "cannot access */" in output[0]: return []
             paths = [fs.join(path, name) for name in output]
-
-        # Change the working directory back to the original working directory
-        self.change_cwd(working_directory)
 
         # Filter
         filtered_paths = []
@@ -1631,33 +1645,17 @@ class Remote(object):
         :return:
         """
 
-        # Get the path to the current working directory
-        working_directory = self.working_directory
-
-        # Change the working directory to the provided path
-        self.change_cwd(path)
-
         # List the files in the provided path
         if recursive:
             command = "ls -R " + path + " | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
             command += '"");s=$0;f=1;next}\nNF&&f{ print '
             command += 's"/"$0 }'
             command += "'"
-            output = self.execute(command)
+            output = self.execute(command, cwd=path)
             paths = [filepath for filepath in output if self.is_file(filepath)]
         else:
-            output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+            output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
             paths = [fs.join(path, name) for name in output]
-
-        # Change the working directory back to the original working directory
-        self.change_cwd(working_directory)
-
-        # Recursive mode: SLOW IMPLEMENTATION
-        #if recursive:
-            # Loop over directories in the directory
-            #for directory_path in self.directories_in_path(path):
-                # Get the file paths in this directory
-                #paths += self.files_in_path(directory_path, recursive=True)
 
         # Return the list of files
         return paths
@@ -1700,6 +1698,21 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def create_directory_in(self, base_path, name):
+
+        """
+        This function ...
+        :param base_path:
+        :param name:
+        :return:
+        """
+
+        directory_path = fs.join(base_path, name)
+        self.create_directory(directory_path)
+        return directory_path
+
+    # -----------------------------------------------------------------
+
     def decompress_file(self, path, new_path):
 
         """
@@ -1735,7 +1748,8 @@ class Remote(object):
         :return:
         """
 
-        raise NotImplementedError()
+        command = "tar -xvzf " + path + " -C " + new_path
+        self.execute(command, show_output=True)
 
     # -----------------------------------------------------------------
 
@@ -2237,9 +2251,12 @@ class Remote(object):
         output = self.execute("which " + name)
 
         if len(output) == 0: return None
+        else:
 
-        # Only one line is expected
-        return output[0]
+            first_line = output[0]
+
+            if "no " + name + " in" in first_line: return None
+            else: return first_line
 
     # -----------------------------------------------------------------
 

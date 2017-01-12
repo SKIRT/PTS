@@ -262,7 +262,7 @@ lambdas, lambda_flambda = np.loadtxt(sedpath, usecols=(0, 1), unpack=True)
 #lambdaLlambdav = simulation.luminosityforflux(fv, simulation.instrumentdistance(unit='m'), distance_unit='m', luminositydensity_unit='W/micron', wavelength=lambdav) * lambdav * 1e7
 
 # Create the SED
-#sed = IntrinsicSED.from_luminosities(lambdav, lambdaLlambdav, luminosity_unit="erg/s")
+#sed = SED.from_arrays(lambdav, lambdaLlambdav, wavelength_unit="micron", photometry_unit="erg/s")
 
 # Divide by wavelength in micron
 flambda = lambda_flambda / lambdas

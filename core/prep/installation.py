@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import requests
 import subprocess
+import pexpect
 from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
@@ -25,8 +26,8 @@ from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..tools import google
-from ..tools import network
-from ..tools import archive
+from ..tools import network, archive
+from ..tools.parallelization import ncores
 
 # -----------------------------------------------------------------
 
@@ -38,6 +39,13 @@ from ..tools import archive
 
 skirt_directories = ["git", "run", "doc", "release", "debug"]
 pts_directories = ["pts", "run", "doc", "temp", "remotes", "user", "ext"]
+
+# -----------------------------------------------------------------
+
+# Qt URL
+# link = "http://download.qt.io/official_releases/qt/5.5/5.5.1/single/qt-everywhere-opensource-src-5.5.1.tar.gz"
+#url = "http://download.qt.io/official_releases/qt/5.7/5.7.0/single/qt-everywhere-opensource-src-5.7.0.tar.gz"
+qt_url = "http://download.qt.io/official_releases/qt/5.7/5.7.1/single/qt-everywhere-opensource-src-5.7.1.tar.gz" # latest
 
 # -----------------------------------------------------------------
 
@@ -220,7 +228,7 @@ class Installer(Configurable):
 
 # Determine Qt configure options
 qt_configure_options = []
-qt_configure_options.append("-prefix '$HOME/Qt/Desktop/5.2.1'")
+qt_configure_options.append("-prefix '$HOME/Qt'")
 qt_configure_options.append("-opensource")
 qt_configure_options.append("-confirm-license")
 qt_configure_options.append("-c++11")
@@ -298,7 +306,30 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Creating the directory structure ...")
+
+        # Set paths
+        self.skirt_root_path = fs.join(fs.home(), "SKIRT")
+        self.skirt_repo_path = fs.join(self.skirt_root_path, "git")
+        self.skirt_release_path = fs.join(self.skirt_root_path, "release")
+
+        # Check if already present
+        if fs.is_directory(self.skirt_root_path):
+            if self.config.force: fs.remove_directory(self.skirt_root_path)
+            else: raise RuntimeError("SKIRT is already installed (or partly present)")
+
+        # Make the root directory
+        fs.create_directory(self.skirt_root_path)
+
+        # Create the other directories
+        for name in skirt_directories:
+
+            # Determine path
+            path = fs.join(self.skirt_root_path, name)
+
+            # Create the directory
+            fs.create_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -308,6 +339,9 @@ class SKIRTInstaller(Installer):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the directory structure ...")
 
         # Set root path and pacakge path
         self.skirt_root_path = fs.join(self.remote.home_directory, "SKIRT")
@@ -350,7 +384,7 @@ class SKIRTInstaller(Installer):
         self.check_qt_local()
 
         # Install Qt
-        self.install_qt_local()
+        if not self.has_qt: self.install_qt_local()
 
         # Get the SKIRT code
         self.get_skirt_local()
@@ -367,7 +401,15 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Checking the presence of C++ and MPI compilers locally ...")
+
+        # Look for C++ compiler
+        if introspection.has_cpp_compiler(): self.compiler_path = introspection.cpp_compiler_path()
+        else: raise RuntimeError("C++ compilers not present on this system")
+
+        # Look for MPI compiler, not necessary
+        if introspection.has_mpi_compiler(): self.mpi_compiler_path = introspection.mpi_compiler_path()
 
     # -----------------------------------------------------------------
 
@@ -378,7 +420,8 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        pass
+        # Find qmake path
+        self.qmake_path = find_qmake()
 
     # -----------------------------------------------------------------
 
@@ -389,24 +432,32 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        # Translated from ./makeSKIRT.sh
+        # Inform the user
+        log.info("Installing Qt ...")
 
-        # Get a list of qmake paths installed on this system
-        qmake_paths = []
+        # Determine the path for the Qt source code
+        path = fs.join(fs.home(), "qt.tar.gz")
 
-        for qt_dir in fs.directories_in_path(fs.home(), startswith="Qt"):
-            qmake_paths = fs.files_in_path(qt_dir, recursive=True, exact_name="qmake", extension="")
+        # Download tar.gz file
+        network.download_file(qt_url, path)
 
-        for qt_dir in fs.directories_in_path("/usr/local", startswith="Qt"):
-            qmake_paths += fs.files_in_path(qt_dir, recursive=True, exact_name="qmake", extension="")
+        # Decompress tar.gz file
+        decompress_path = fs.join(fs.home(), "Qt-install")
+        archive.decompress_file(path, decompress_path)
 
-        qmake_path = introspection.qmake_path()
-        qmake_paths += [qmake_path] if qmake_path is not None else []
+        # Determine commands
+        configure_command = "./configure " + " ".join(qt_configure_options)
+        make_command = "make"
+        install_command = "make install"
 
-        # Get the most recent installation
+        # Configure
+        subprocess.call(configure_command, shell=True, cwd=decompress_path)
 
-        # Check whether the Qt version is supported
-        # if [[ $VERSION > '5.2.0' ]]
+        # Make
+        subprocess.call(make_command, shell=True, cwd=decompress_path)
+
+        # Install
+        subprocess.call(install_command, shell=True, cwd=decompress_path)
 
     # -----------------------------------------------------------------
 
@@ -417,7 +468,61 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        pass
+        # Get repository link
+        if self.config.repository is not None: raise ValueError("Repository cannot be specified for local installation")
+        elif self.config.private: url = introspection.private_skirt_https_link
+        else: url = introspection.public_skirt_https_link
+
+        # Get host (github.ugent.be)
+        host = url.split("//")[1].split("/")[0]
+
+        # Set the clone command
+        command = "git clone " + url + " " + self.skirt_repo_path
+
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        username, password = introspection.get_account(host)
+
+        # Set the command lines
+        #lines = []
+        #lines.append(command)
+        #lines.append(("':", username))
+        #lines.append(("':", password))
+        # Clone the repository
+        #self.remote.execute_lines(*lines, show_output=True)
+
+        # Clone
+        child = pexpect.spawn(command, timeout=30)
+        child.expect([':'])
+        child.sendline(username)
+        child.expect([':'])
+        child.sendline(password)
+
+        # Get the git version
+        first_part_command = "git rev-list --count HEAD"
+        second_part_command = "git describe --dirty --always"
+        first_part = subprocess.check_output(first_part_command).split("\n")[0].strip()
+        second_part = subprocess.check_output(second_part_command).split("\n")[0].strip()
+        self.git_version = first_part + "-" + second_part
+
+        # Show the git version
+        log.info("The git version to be installed is '" + self.git_version + "'")
+
+        # Set PYTHONPATH
+        bashrc_path = fs.join(fs.home(), ".bashrc")
+
+        lines = []
+        export_command = "export PATH=" + fs.join(self.skirt_release_path, "SKIRTmain") + ":" + fs.join(self.skirt_release_path, "FitSKIRTmain") + ":$PATH"
+        lines.append("")
+        lines.append("# For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)")
+        lines.append(export_command)
+        lines.append("")
+        fs.append_lines(bashrc_path, lines)
+
+        # Set the path to the main SKIRT executable
+        self.skirt_path = fs.join(self.skirt_release_path, "SKIRTmain", "skirt")
+
+        # Run export path in the current shell to make SKIRT command visible
+        subprocess.call(export_command, shell=True)
 
     # -----------------------------------------------------------------
 
@@ -428,7 +533,33 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Building SKIRT ...")
+
+        # Create command strings
+        make_make_command = self.qmake_path + " BuildSKIRT.pro -o ../release/Makefile CONFIG+=release"
+        nthreads = ncores()
+        make_command = "make -j " + str(nthreads) + " -w -C ../release"
+
+        # Debugging
+        log.debug("Make commands:")
+        log.debug(" 1) " + make_make_command)
+        log.debug(" 2) " + make_command)
+
+        # Make make
+        subprocess.call(make_make_command, cwd=self.skirt_repo_path, shell=True)
+
+        # Overwrite the git version
+        git_version_content = 'const char* git_version = " ' + self.git_version + ' " ;'
+        git_version_path = fs.join(self.skirt_repo_path, "SKIRTmain", "git_version.h")
+        write_command = 'echo "' + git_version_content + '" > ' + git_version_path
+        subprocess.call(write_command, shell=True)
+
+        # Make
+        subprocess.call(make_command, cwd=self.skirt_repo_path, shell=True)
+
+        # Success
+        log.success("SKIRT was successfully built")
 
     # -----------------------------------------------------------------
 
@@ -512,16 +643,15 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing Qt ...")
 
-        #link = "http://download.qt.io/official_releases/qt/5.5/5.5.1/single/qt-everywhere-opensource-src-5.5.1.tar.gz"
-
-        # Qt URL
-        url = "http://download.qt.io/official_releases/qt/5.7/5.7.0/single/qt-everywhere-opensource-src-5.7.0.tar.gz"
-
         # Determine the path for the Qt source code
         path = fs.join(self.remote.home_directory, "qt.tar.gz")
 
         # Download Qt
-        self.remote.download_from_url_to(url, path)
+        self.remote.download_from_url_to(qt_url, path)
+
+        # Unarchive
+        decompress_path = self.remote.create_directory_in(self.remote.home_directory, "Qt-install")
+        self.remote.decompress_file(path, decompress_path)
 
         # Determine commands
         configure_command = "./configure " + " ".join(qt_configure_options)
@@ -529,7 +659,7 @@ class SKIRTInstaller(Installer):
         install_command = "make install"
 
         # Execute the commands
-        self.remote.execute_lines(configure_command, make_command, install_command, show_output=True)
+        self.remote.execute_lines(configure_command, make_command, install_command, show_output=True, cwd=decompress_path)
 
     # -----------------------------------------------------------------
 
@@ -599,9 +729,6 @@ class SKIRTInstaller(Installer):
 
         # Run export path in the current shell to make SKIRT command visible
         self.remote.execute(export_command)
-
-        # Load bashrc file
-        #self.remote.execute("source " + bashrc_path)
 
         # Success
         log.success("SKIRT was successfully downloaded")
@@ -1340,5 +1467,53 @@ def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
 
     # Return the git version
     return git_version
+
+# -----------------------------------------------------------------
+
+def find_qmake():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Translated from ./makeSKIRT.sh
+
+    # Get a list of qmake paths installed on this system
+    qmake_paths = []
+
+    for qt_dir in fs.directories_in_path(fs.home(), startswith="Qt"):
+        qmake_paths = fs.files_in_path(qt_dir, recursive=True, exact_name="qmake", extension="")
+
+    for qt_dir in fs.directories_in_path("/usr/local", startswith="Qt"):
+        qmake_paths += fs.files_in_path(qt_dir, recursive=True, exact_name="qmake", extension="")
+
+    qmake_path = introspection.qmake_path()
+    qmake_paths += [qmake_path] if qmake_path is not None else []
+
+    # Get the most recent installation
+
+    latest_qmake_path = None
+
+    # Loop over the qmake paths: SAME IMPLEMENTATION AS IN Remote class -> _check_qt_remote_no_lmod
+    for qmake_path in qmake_paths:
+
+        # Get the version
+        output = subprocess.check_output([qmake_path, "-v"]).split("\n")[:-1]
+
+        qt_version = output[1].split("Qt version ")[1].split(" in")[0]
+
+        if qt_version < "5.2.0": continue  # oldest supported version
+        if "conda" in qmake_path: continue
+        if "canopy" in qmake_path: continue
+        if "epd" in qmake_path: continue
+        if "enthought" in qmake_path: continue
+
+        if latest_version is None or qt_version > latest_version:
+            latest_version = qt_version
+            latest_qmake_path = qmake_path
+
+    # Return the path
+    return latest_qmake_path
 
 # -----------------------------------------------------------------

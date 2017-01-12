@@ -50,6 +50,27 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_text_file(cls, path, wavelength_unit, photometry_unit, skiprows=None, density=False):
+
+        """
+        This function ...
+        :param path:
+        :param wavelength_unit:
+        :param photometry_unit:
+        :param skiprows:
+        :param density:
+        :return:
+        """
+
+        # Load the data
+        wavelength_column, luminosity_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows)
+
+        # Create the SED
+        return cls.from_arrays(wavelength_column, luminosity_column, wavelength_unit, photometry_unit, density=density)
+
+    # -----------------------------------------------------------------
+
     def photometry(self, unit=None, asarray=False, add_unit=True):
 
         """

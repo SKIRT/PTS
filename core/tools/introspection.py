@@ -509,6 +509,33 @@ def is_existing_executable(name):
 
 # -----------------------------------------------------------------
 
+def has_cpp_compiler():
+
+    """
+    This function ...
+    :return:
+    """
+
+    for name in possible_cpp_compilers:
+        if is_existing_executable(name): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def cpp_compiler_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    for name in possible_cpp_compilers:
+        path = find_executable(name)
+        if path is not None: return path
+    return None
+
+# -----------------------------------------------------------------
+
 def has_mpi():
 
     """
@@ -532,6 +559,20 @@ def has_mpi_compiler():
     for name in possible_mpi_compilers:
         if is_existing_executable(name): return True
     return False
+
+# -----------------------------------------------------------------
+
+def mpi_compiler_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    for name in possible_mpi_compilers:
+        path = find_executable(name)
+        if path is not None: return path
+    return None
 
 # -----------------------------------------------------------------
 
