@@ -302,7 +302,7 @@ class ObservedSED(FilterCurve):
         :return:
         """
 
-        return self.value_for_filter(fltr, unit=None, add_unit=True)
+        return self.value_for_filter(fltr, unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 

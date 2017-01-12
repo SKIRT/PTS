@@ -1751,7 +1751,7 @@ class Remote(object):
         :return:
         """
 
-        command = "tar -xvzf " + path + " -C " + new_path
+        command = "tar -zxvf " + path + " -C " + new_path
         self.execute(command, show_output=True)
 
     # -----------------------------------------------------------------
@@ -2915,6 +2915,18 @@ class Remote(object):
         path = self.absolute_path(path)
         parent_path = self.absolute_path(parent_path)
         return path.startswith(parent_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def username(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.execute("echo $USER")[0]
 
     # -----------------------------------------------------------------
 

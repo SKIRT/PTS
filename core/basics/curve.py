@@ -54,7 +54,35 @@ class Curve(SmartTable):
         cls.column_info.append((y_name, float, str(y_unit), y_description))
 
         # Call the initialize function of the SmartTable table function
-        return super(Curve, cls).initialize()
+        curve = super(Curve, cls).initialize()
+
+        # Set x name and y name
+        curve.x_name = x_name
+        curve.y_name = y_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[self.x_name].unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[self.y_name].unit
 
     # -----------------------------------------------------------------
 
@@ -121,6 +149,30 @@ class WavelengthCurve(Curve):
         """
 
         return self.colnames[-1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y_unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x_unit
 
     # -----------------------------------------------------------------
 

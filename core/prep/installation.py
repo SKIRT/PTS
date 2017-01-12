@@ -654,15 +654,14 @@ class SKIRTInstaller(Installer):
         # Determine the path for the Qt source code
         path = fs.join(temp_path, "qt.tar.gz")
 
-        print(path)
-        exit()
-
         # Download Qt
-        self.remote.download_from_url_to(qt_url, path)
+        #self.remote.download_from_url_to(qt_url, path)
 
         # Unarchive
         decompress_path = self.remote.create_directory_in(temp_path, "Qt-install")
-        self.remote.decompress_file(path, decompress_path)
+        #self.remote.decompress_file(path, decompress_path)
+
+        qt_everywhere_opensource_path = self.remote.directories_in_path(decompress_path)[0]
 
         # Determine commands
         configure_command = "./configure " + " ".join(qt_configure_options)
@@ -670,7 +669,7 @@ class SKIRTInstaller(Installer):
         install_command = "make install"
 
         # Execute the commands
-        self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=decompress_path)
+        self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=qt_everywhere_opensource_path)
 
         # Remove decompressed folder and the tar.gz file
         self.remote.remove_file(path)
@@ -974,7 +973,29 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Creating the directory structure ...")
+
+        # Set paths
+        self.pts_root_path = fs.join(fs.home(), "PTS")
+        self.pts_package_path = fs.join(self.pts_root_path, "pts")
+
+        # Check if already present
+        if fs.is_directory(self.pts_root_path):
+            if self.config.force: fs.remove_directory(self.pts_root_path)
+            else: raise RuntimeError("PTS is already installed (or partly present)")
+
+        # Make the root directory
+        fs.create_directory(self.pts_root_path)
+
+        # Create the other directories
+        for name in pts_directories:
+
+            # Determine path
+            path = fs.join(self.pts_root_path, name)
+
+            # Create the directory
+            fs.create_directory(path)
 
     # -----------------------------------------------------------------
 
@@ -985,7 +1006,8 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        return
+        # Inform the user
+        log.info("Creating the directory structure ...")
 
         # Set root path and pacakge path
         self.pts_root_path = fs.join(self.remote.home_directory, "PTS")
@@ -1078,6 +1100,9 @@ class PTSInstaller(Installer):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting a Python distribution on the remote host ...")
+
         if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
         else:
 
@@ -1145,6 +1170,9 @@ class PTSInstaller(Installer):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Downloading PTS on the remote host ...")
 
         if self.config.repository is not None: url = introspection.pts_git_remote_url(self.config.repository)
         elif self.config.private: url = introspection.private_pts_https_link
@@ -1222,6 +1250,9 @@ class PTSInstaller(Installer):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the PTS dependencies on the remote host ...")
+
         # Get available conda packages
         output = self.remote.execute("conda search")
         available_packages = []
@@ -1282,7 +1313,15 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Testing the PTS installation ...")
+
+        output = subprocess.check_output(["pts", "-h"]).split("\n")
+        for line in output:
+            if "usage: pts" in line: break
+        else:
+            log.error("Something is wrong with the PTS installation:")
+            for line in output: log.error("   " + line)
 
     # -----------------------------------------------------------------
 
@@ -1293,7 +1332,15 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Testing the PTS installation ...")
+
+        output = self.remote.execute("pts -h")
+        for line in output:
+            if "usage: pts" in line: break
+        else:
+            log.error("Something is wrong with the PTS installation:")
+            for line in output: log.error("   " + line)
 
 # -----------------------------------------------------------------
 

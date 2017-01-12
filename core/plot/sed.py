@@ -105,7 +105,7 @@ class SEDPlotter(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def added_seds(self):
+    def nseds(self):
 
         """
         This function ...
@@ -122,49 +122,16 @@ class SEDPlotter(Configurable):
         This function ...
         :param sed:
         :param label:
-        :param residuals:
-        :param ghost:
-        :return:
-        """
-
-        # Add observed or modeled SED
-        if isinstance(sed, ObservedSED): self.add_observed_sed(sed, label)
-        elif isinstance(sed, SED): self.add_modeled_sed(sed, label, residuals=residuals, ghost=ghost)
-        else: raise ValueError("The SED must be an SED or ObservedSED instance")
-
-    # -----------------------------------------------------------------
-
-    def add_modeled_sed(self, sed, label, residuals=True, ghost=False):
-
-        """
-        This function ...
-        :param sed:
-        :param label:
         :param residuals: whether plotting the residual curve makes sense for this SED
         (it does not when the SED is only for one component, or a contribution to the total SED)
         :param ghost:
         :return:
         """
 
-        # Add the SED to the appropriate dictionary
-        #if residuals: self.models[label] = sed
-        #el: self.models_no_residuals[label] = sed
-
-        self.models.append((label, sed, residuals, ghost))
-
-    # -----------------------------------------------------------------
-
-    def add_observed_sed(self, sed, label):
-
-        """
-        This function ...
-        :param sed:
-        :param label:
-        :return:
-        """
-
-        # Add the SED to the list
-        self.observations[label] = sed
+        # Add observed or modeled SED
+        if isinstance(sed, ObservedSED): self.observations[label] = sed
+        elif isinstance(sed, SED): self.models.append((label, sed, residuals, ghost))
+        else: raise ValueError("The SED must be an SED or ObservedSED instance")
 
     # -----------------------------------------------------------------
 
@@ -208,7 +175,7 @@ class SEDPlotter(Configurable):
         self.out_path = kwargs.pop("output", self.config.path)
 
         # Add SED files present in the current working directory (if nothing is added manually)
-        if self.added_seds == 0: self.load_seds()
+        if self.nseds == 0: self.load_seds()
 
     # -----------------------------------------------------------------
 
@@ -308,10 +275,10 @@ class SEDPlotter(Configurable):
         colormap = plt.get_cmap("rainbow")
 
         # The size of the figure
-        figsize = (10,6)
+        #figsize = (10,6)
 
         # Setup the figure
-        self._figure = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=self.config.plot.figsize)
         self._main_axis = self._figure.gca()
 
         # Get the first (only) observation
@@ -344,7 +311,7 @@ class SEDPlotter(Configurable):
         """
 
         # The size of the figure
-        figsize = (10,6)
+        #figsize = (10,6)
 
         # http://matplotlib.org/examples/color/colormaps_reference.html
         #gradient = np.linspace(0, 1, 256)
@@ -359,7 +326,7 @@ class SEDPlotter(Configurable):
         #ax_number = add_subplot_axes(ax,rect)
 
         # Setup the figure
-        self._figure = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=self.config.plot.figsize)
         gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
         self._main_axis = plt.subplot(gs[0])
         ax2 = plt.subplot(gs[1], sharex=self._main_axis)
@@ -504,10 +471,10 @@ class SEDPlotter(Configurable):
         """
 
         # The size of the figure
-        figsize = (10, 6)
+        #figsize = (10, 6)
 
         # Setup the figure
-        self._figure = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=self.config.plot.figsize)
         self._main_axis = self._figure.gca()
 
         # Add model SEDs
@@ -567,10 +534,10 @@ class SEDPlotter(Configurable):
         """
 
         # The size of the figure
-        figsize = (10,6)
+        #figsize = (10,6)
 
         # Setup the figure
-        self._figure = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=self.config.plot.figsize)
         gs = gridspec.GridSpec(2, 1, height_ratios=[4,1])
         self._main_axis = plt.subplot(gs[0])
         ax2 = plt.subplot(gs[1], sharex=self._main_axis)
@@ -738,8 +705,8 @@ class SEDPlotter(Configurable):
         # Count the number of observed SEDs
         number_of_observations = len(self.observations)
 
-        figsize = [10,6]
-        figsize[1] += (number_of_observations - 1) * 1.1
+        #figsize = [10,6]
+        figsize = (self.config.plot.figsize[0],self.config.plot.figsize[1] + (number_of_observations - 1) * 1.1)
 
         height_ratios = [4]
         for _ in range(number_of_observations): height_ratios.append(1)
@@ -1047,7 +1014,9 @@ class SEDPlotter(Configurable):
 
         """
         This function ...
-        :param path:
+        :param for_legend_patches:
+        :param for_legend_parameters:
+        :param extra_legend:
         :return:
         """
 
@@ -1079,8 +1048,11 @@ class SEDPlotter(Configurable):
         self._main_axis.set_xscale('log')
         self._main_axis.set_ylabel(r"Log $F_\nu$$[Jy]$", fontsize='large')
 
-        # Enable grid
-        self._main_axis.grid('on')
+        # Set grid
+        set_grid(self._main_axis, self.config.plot)
+
+        # Set borders
+        set_borders(self._main_axis, self.config.plot)
 
         # Set flux axis limits
         plot_min, plot_max = get_plot_flux_limits(self.min_flux, self.max_flux)
@@ -1266,5 +1238,38 @@ def get_plot_wavelength_limits(min_wavelength, max_wavelength):
     plot_max_wavelength = 10.**plot_max_log_wavelength
 
     return plot_min_wavelength, plot_max_wavelength
+
+# -----------------------------------------------------------------
+
+def set_grid(ax, config):
+
+    """
+    This function ...
+    :return:
+    """
+
+    if config.add_grid: plt.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle)
+
+# -----------------------------------------------------------------
+
+def set_borders(ax, config):
+
+    """
+    This function ...
+    :param ax:
+    :param config:
+    :return:
+    """
+
+    # Set border width
+    if config.add_borders: [i.set_linewidth(config.borderwidth) for i in ax.spines.itervalues()]
+
+    # Remove borders
+    else:
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.tick_params(axis=u'both', which=u'both', length=0)
 
 # -----------------------------------------------------------------
