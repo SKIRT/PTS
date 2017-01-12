@@ -654,6 +654,9 @@ class SKIRTInstaller(Installer):
         # Determine the path for the Qt source code
         path = fs.join(temp_path, "qt.tar.gz")
 
+        print(path)
+        exit()
+
         # Download Qt
         self.remote.download_from_url_to(qt_url, path)
 

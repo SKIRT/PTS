@@ -17,7 +17,8 @@ import imageio
 
 # Import the relevant PTS classes and modules
 from ...core.basics.animation import Animation
-from ...core.plot.scatter import ScatterPlotter
+from ...core.plot.scatter import Scatter3DPlotter
+from ...core.basics.scatter import Scatter3D
 
 # -----------------------------------------------------------------
 
@@ -50,8 +51,14 @@ class ScatterAnimation(Animation):
 
         self.density = True
 
+        # The scatter data
+        self.scatter = Scatter3D()
+
         # The plotter
-        self._plotter = ScatterPlotter()
+        self._plotter = Scatter3DPlotter()
+
+        # Add the scatter data
+        self._plotter.add_data("Scatter data", self.scatter)
 
     # -----------------------------------------------------------------
 
@@ -62,8 +69,11 @@ class ScatterAnimation(Animation):
         :return:
         """
 
+        # Add a point to the scatter
+        self.scatter.add_point(x, y, z)
+
         # Add a point to the plotter
-        self._plotter.add_point(x, y, z)
+        #self._plotter.add_point(x, y, z)
 
         buf = io.BytesIO()
 

@@ -78,19 +78,6 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Call the saveto function of the base class
-        super(Curve, self).saveto(path)
-
-    # -----------------------------------------------------------------
-
     @property
     def has_errors(self):
 

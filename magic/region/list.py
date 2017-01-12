@@ -26,7 +26,6 @@ from astropy.units import Unit, Quantity, dimensionless_unscaled
 # Import the relevant PTS classes and modules
 from ..basics.vector import Extent
 from ..basics.mask import Mask
-
 from ..basics.coordinate import Coordinate, PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
@@ -39,93 +38,7 @@ from .rectangle import RectangleRegion, PixelRectangleRegion, SkyRectangleRegion
 from .polygon import PolygonRegion, PixelPolygonRegion, SkyPolygonRegion, PhysicalPolygonRegion
 from .text import TextRegion, PixelTextRegion, SkyTextRegion, PhysicalTextRegion
 from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion, PhysicalCompositeRegion
-
-# -----------------------------------------------------------------
-
-def interleave(seqs):
-
-    """ Interleave a sequence of sequences
-    >>> list(interleave([[1, 2], [3, 4]]))
-    [1, 3, 2, 4]
-    >>> ''.join(interleave(('ABC', 'XY')))
-    'AXBYC'
-    Both the individual sequences and the sequence of sequences may be infinite
-    Returns a lazy iterator
-    """
-
-    iters = itertools.cycle(map(iter, seqs))
-    while True:
-        try:
-            for itr in iters:
-                yield next(itr)
-            return
-        except StopIteration:
-            predicate = partial(operator.is_not, itr)
-            iters = itertools.cycle(itertools.takewhile(predicate, iters))
-
-# -----------------------------------------------------------------
-
-def stripwhite_around(text, around):
-
-    """
-    This function ...
-    :param text:
-    :param around:
-    :return:
-    """
-
-    return text.replace(" " + around, around).replace(around + " ", around)
-
-# -----------------------------------------------------------------
-
-def stripwhite_except_quotes(text):
-
-    """
-    This function strips the whitespace from a string, except when it is within quotes
-    :param text:
-    :return:
-    """
-
-    lst = text.split('"')
-    for i, item in enumerate(lst):
-        if not i % 2:
-            lst[i] = re.sub("\s+", "", item)
-    return '"'.join(lst)
-
-# -----------------------------------------------------------------
-
-def stripwhite_except_curlybrackets(text):
-
-    """
-    This function strips the whitespace from a string, except when it is within curly brackets
-    :param text:
-    :return:
-    """
-
-    if "{" in text and "}" in text:
-        lst = []
-        for part in text.split("{"): lst += part.split("}")
-        for i, item in enumerate(lst):
-            if not i % 2:
-                lst[i] = re.sub("\s+", "", item)
-        return "".join(list(interleave([lst, ["{", "}"]])))
-    else: return text.replace(" ", "")
-
-# -----------------------------------------------------------------
-
-def stripwhite_except_singlequotes(text):
-
-    """
-    This function strips the whitespace from a string, except when it is within single quotes
-    :param text:
-    :return:
-    """
-
-    lst = text.split("'")
-    for i, item in enumerate(lst):
-        if not i % 2:
-            lst[i] = re.sub("\s+", "", item)
-    return "'".join(lst)
+from ...core.tools.strings import stripwhite_around
 
 # -----------------------------------------------------------------
 
@@ -1858,7 +1771,7 @@ class PixelRegionList(RegionList):
 
         for shape in self:
 
-            if isinstance(shape, Composite):
+            if isinstance(shape, CompositeRegion):
 
                 copy_base = copy.deepcopy(shape.base)
                 copy_exclude = copy.deepcopy(shape.exclude)

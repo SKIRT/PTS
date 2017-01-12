@@ -160,6 +160,7 @@ class Host(object):
         self.user = config.user
         self.password = config.password
         self.scheduler = config.scheduler
+        self.scratch_path = config.scratch_path
         self.output_path = config.output_path
         self.mpi_command = config.mpi_command
         self.force_process_binding = config.force_process_binding

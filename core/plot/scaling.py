@@ -16,10 +16,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 import numpy as np
-import matplotlib
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter, ScalarFormatter, LogFormatter
+from matplotlib.ticker import FormatStrFormatter
 from collections import defaultdict
 from collections import Callable
 #from types import FunctionType
@@ -46,14 +45,11 @@ from ..basics.range import RealRange
 from ..tools import tables
 from ..tools import stringify
 from ..tools.serialization import write_dict, load_dict, write_list, load_list
+from ..tools.strings import alphabet
 
 # -----------------------------------------------------------------
 
 rc('text', usetex=True)
-
-# -----------------------------------------------------------------
-
-alphabet = list(ascii_lowercase)
 
 # -----------------------------------------------------------------
 

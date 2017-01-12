@@ -18,12 +18,12 @@ import os
 from subprocess import call, STDOUT
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import formatting as fmt
 from pts.core.tools.logging import setup_log
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time
 from pts.core.tools import introspection
+#from pts.core.tools.strings import split_except_within_single_quotes
 
 # -----------------------------------------------------------------
 
@@ -72,29 +72,6 @@ memory_path = fs.create_directory_in(output_path, "Memory scaling")
 # -----------------------------------------------------------------
 
 pts_path = introspection.pts_executable_path
-
-# -----------------------------------------------------------------
-
-def split_string_except_within_single_quotes(text):
-
-    """
-    This function strips the whitespace from a string, except when it is within quotes
-    :param text:
-    :return:
-    """
-
-    parts = []
-
-    lst = text.split("'")
-
-    for i, item in enumerate(lst):
-
-        if i % 2: parts.append("'" + item + "'")
-        else:
-
-            for a in item.split(): parts.append(a)
-
-    return parts
 
 # -----------------------------------------------------------------
 
