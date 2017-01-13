@@ -111,8 +111,8 @@ class GalaxyModeler(Configurable):
         # The modeling configuration
         self.modeling_config = None
 
-        # Host id of the first host currently available
-        self.host_id = None
+        # Host ids of the available hosts
+        self.available_host_ids = set()
 
         # The modeling history
         self.history = None
@@ -156,11 +156,29 @@ class GalaxyModeler(Configurable):
         # Add main host ID
         host_ids.add(self.host_id)
 
-        # Add fitting host ids
-        for host_id in self.modeling_config.fitting_host_ids: host_ids.add(host_id)
+        # Add fitting host ids, if they are available
+        for host_id in self.modeling_config.fitting_host_ids:
+            if host_id in self.available_host_ids: host_ids.add(host_id)
 
         # Return the list of host IDs
         return list(host_ids)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the preferred hosts
+        for host_id in self.modeling_config.host_ids:
+            if host_id in self.available_host_ids: return host_id
+
+        # No host avilable
+        return None
 
     # -----------------------------------------------------------------
 
@@ -217,8 +235,8 @@ class GalaxyModeler(Configurable):
         if not fs.is_file(get_config_file_path(self.modeling_path)): raise ValueError("The current working directory is not a radiative transfer modeling directory (the configuration file is missing)")
         else: self.modeling_config = load_modeling_configuration(self.modeling_path)
 
-        # Find the first currently available host
-        self.find_available_host()
+        # Find which hosts are available
+        self.find_available_hosts()
 
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
@@ -234,20 +252,33 @@ class GalaxyModeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def find_available_host(self):
+    def find_available_hosts(self):
 
         """
         This function ...
         :return:
         """
 
-        # Find first available host
+        # Inform the user
+        log.info("Finding available hosts ...")
+
+        # Find available hosts from host_ids list
         for host_id in self.modeling_config.host_ids:
-            if is_available(host_id): self.host_id = host_id
-            if self.host_id is not None: break # found an available host
+            if is_available(host_id):
+                log.debug("Host '" + host_id + "' is available")
+                self.available_host_ids.add(host_id)
+            else: log.debug("Host '" + host_id + "' is not available")
+
+        # Find available hosts from fitting.host_ids list
+        for host_id in self.modeling_config.fitting_host_ids:
+            if host_id in self.modeling_config.host_ids: continue
+            if is_available(host_id):
+                log.debug("Host '" + host_id + "' is available")
+                self.available_host_ids.add(host_id)
+            else: log.debug("Host '" + host_id + "' is not available")
 
         # No available host in the list of preferred host ids
-        if self.host_id is None: raise RuntimeError("None of the preferred hosts are available at this moment")
+        if len(self.available_host_ids) == 0: raise RuntimeError("None of the preferred hosts are available at this moment")
 
     # -----------------------------------------------------------------
 
@@ -331,10 +362,10 @@ class GalaxyModeler(Configurable):
                 updater = SKIRTUpdater()
 
                 # Set remote host ID
-                updater.config.remote = host_id
+                #updater.config.host_id = host_id        # remote is passed as kwarg
 
                 # Run the updater
-                updater.run()
+                updater.run(remote=remote)
 
             # If not installed, install
             else:
@@ -346,12 +377,12 @@ class GalaxyModeler(Configurable):
                 installer = SKIRTInstaller()
 
                 # Set the remote host ID
-                installer.config.remote = host_id
-                installer.config.force = True # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
+                #installer.config.host_id = host_id      # remote is passed as kwarg
+                installer.config.force = True     # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
                 installer.config.repository = "origin"
 
                 # Run the installer
-                installer.run()
+                installer.run(remote=remote)
 
     # -----------------------------------------------------------------
 

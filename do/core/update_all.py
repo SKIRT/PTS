@@ -27,7 +27,7 @@ for host_id in find_host_ids():
 
     # Create and configure the SKIRT updater
     skirt = SKIRTUpdater()
-    skirt.config.remote = host_id
+    skirt.config.host_id = host_id
 
     # Inform the user
     log.info("Updating SKIRT ...")
@@ -43,7 +43,7 @@ for host_id in find_host_ids():
 
     # Create and configure the PTS updater
     pts = PTSUpdater()
-    pts.config.remote = host_id
+    pts.config.host_id = host_id
 
     # Update PTS
     pts.run()

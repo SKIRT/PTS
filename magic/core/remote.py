@@ -22,7 +22,6 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.remote.remote import Remote, connected_remotes
 from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
 from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
 from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!

@@ -73,14 +73,15 @@ class Installer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Create the necessary directories
         self.create_directories()
@@ -93,25 +94,36 @@ class Installer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
         super(Installer, self).setup()
 
+        # Check if a remote instance is passed
+        if "remote" in kwargs:
+
+            # Get the remote
+            self.remote = kwargs.pop("remote")
+            if not self.remote.connected: raise ValueError("Remote has not been setup")
+
         # Setup the remote execution environment if necessary
-        if self.config.remote is not None:
+        elif self.config.host_id is not None:
 
             # Create and setup the remote execution environment
             self.remote = Remote()
-            self.remote.setup(self.config.remote)
+            self.remote.setup(self.config.host_id)
 
-            # Fix configuration files
-            self.remote.fix_configuration_files()
+        # Local
+        else: log.info("No remote host is specified, will be installing locally ...")
+
+        # Fix configuration files
+        self.remote.fix_configuration_files()
 
     # -----------------------------------------------------------------
 

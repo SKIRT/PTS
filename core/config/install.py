@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add optional arguments
-definition.add_positional_optional("remote", "string", "install SKIRT/PTS remotely")
+definition.add_positional_optional("host_id", "string", "install SKIRT/PTS remotely")
 definition.add_optional("repository", "string", "repository name from which to clone (only possible when installing remotely and SKIRT/PTS is already installed locally)")
 
 # Add flags

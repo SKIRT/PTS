@@ -40,10 +40,6 @@ from .python import RemotePythonSession
 
 # -----------------------------------------------------------------
 
-connected_remotes = dict()
-
-# -----------------------------------------------------------------
-
 def is_available(host_id):
 
     """
@@ -57,6 +53,7 @@ def is_available(host_id):
     try: remote.setup(host_id)
     except HostDownException: return False
 
+    del remote
     return True
 
 # -----------------------------------------------------------------
@@ -377,6 +374,9 @@ class Remote(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Checking and fixing shell configuration files ...")
 
         # Check if bashrc exists, if not create it
         bashrc_path = fs.join(self.home_directory, ".bashrc")
@@ -869,9 +869,6 @@ class Remote(object):
         # Check whether connection was succesful
         if not self.connected: raise RuntimeError("Connection failed")
 
-        # If the connection was succesful, add the remote to the dictionary of currently connected remotes
-        if self.connected: connected_remotes[self.host.id] = self
-
     # -----------------------------------------------------------------
 
     def logout(self):
@@ -882,7 +879,7 @@ class Remote(object):
         """
 
         # Inform the user
-        if log is not None: log.info("Logging out from the remote environment ...")
+        if log is not None: log.info("Logging out from the remote environment on host '" + self.host_id + "' ...")
         # the conditional statement is because of this error message during destruction at the end of a script:
         # Exception AttributeError: "'NoneType' object has no attribute 'info'" in <bound method SkirtRemote.__del__ of <pts.core.simulation.remote.SkirtRemote object at 0x118628d50>> ignored
 
@@ -892,7 +889,6 @@ class Remote(object):
             # TODO: Check if there are python sessions open?
 
             self.ssh.logout()
-            if connected_remotes is not None: del connected_remotes[self.host.id] # the conditional statement is because 'connected_remotes' is set to None during destruction at the end of a script
             self.connected = False
 
         # Disconnect from the VPN service if necessary
@@ -1638,9 +1634,9 @@ class Remote(object):
             output = self.execute(command, cwd=path)
             paths = [dirpath for dirpath in output if self.is_directory(dirpath)]
         else:
-            print(path)
+            #print(path)
             output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done", cwd=path)
-            print(output)
+            #print(output)
             if "cannot access */" in output[0]: return []
             paths = [fs.join(path, name) for name in output]
 
