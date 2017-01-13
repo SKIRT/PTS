@@ -279,7 +279,7 @@ class Remote(object):
                 description = line.split("    ")[1]
                 was_empty = False
             else:
-                print(line)
+                #print(line)
                 description += line.split("    ")[1]
                 was_empty = False
 
@@ -1351,14 +1351,16 @@ class Remote(object):
         # Set the log file back to 'None'
         self.ssh.logfile = None
 
+        # Ignore the first and the last line (the first is the command itself, the last is always empty)
+        # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
+        if contains_extra_eof: the_output = self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
+        else: the_output = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+
         # Set the working directory back to the original
         if original_cwd is not None: self.change_cwd(original_cwd)
 
-        # Ignore the first and the last line (the first is the command itself, the last is always empty)
-        if output:
-            # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
-            if contains_extra_eof: return self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
-            else: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+        # Return the output
+        if output: return the_output
 
     # -----------------------------------------------------------------
 
@@ -1418,11 +1420,14 @@ class Remote(object):
         # Set the log file back to 'None'
         self.ssh.logfile = None
 
-        # Change the working directory back to the original
+        # Return the output
+        the_output = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+
+        # Set the working directory back to the original
         if original_cwd is not None: self.change_cwd(original_cwd)
 
         # Return the output
-        if output: return self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+        if output: return the_output
 
     # -----------------------------------------------------------------
 
@@ -1556,7 +1561,15 @@ class Remote(object):
         original_cwd = self.working_directory
 
         # Try to change the directory, give an error if this fails
-        output = self.execute("cd " + path)
+        #output = self.execute("cd " + path)
+        #if len(output) > 0 and "No such file or directory" in output[0]: raise RuntimeError("The directory does not exist")
+
+        #return original_cwd
+
+        # Send the command
+        self.ssh.sendline("cd " + path)
+        self.ssh.prompt()
+        output = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
         if len(output) > 0 and "No such file or directory" in output[0]: raise RuntimeError("The directory does not exist")
 
         return original_cwd
@@ -1622,7 +1635,9 @@ class Remote(object):
             output = self.execute(command, cwd=path)
             paths = [dirpath for dirpath in output if self.is_directory(dirpath)]
         else:
+            print(path)
             output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done", cwd=path)
+            print(output)
             if "cannot access */" in output[0]: return []
             paths = [fs.join(path, name) for name in output]
 
@@ -2212,6 +2227,17 @@ class Remote(object):
         :return:
         """
 
+        # Replace environment variables
+        if "$" in path:
+
+            splitted = path.split("/")
+            new_splitted = []
+            for part in splitted:
+                if part.startswith("$"): new = self.resolve_environment_variable(part[1:])
+                else: new = part
+                new_splitted.append(new)
+            path = fs.join(*new_splitted)
+
         if path.startswith("~"): return fs.join(self.home_directory, path.split("~/")[1])
         elif path.startswith("/"): return path
         else: return fs.join(self.working_directory, path)
@@ -2284,7 +2310,12 @@ class Remote(object):
         """
 
         # Find out the path to the current working directory and return it
-        output = self.execute("echo $PWD")
+        #output = self.execute("echo $PWD")
+        #return output[0]
+
+        self.ssh.sendline("echo $PWD")
+        self.ssh.prompt()
+        output = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
         return output[0]
 
     # -----------------------------------------------------------------
@@ -2918,6 +2949,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def resolve_environment_variable(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.execute("echo $" + name)[0]
+
+    # -----------------------------------------------------------------
+
     @property
     def username(self):
 
@@ -2926,7 +2969,7 @@ class Remote(object):
         :return:
         """
 
-        return self.execute("echo $USER")[0]
+        return self.resolve_environment_variable("USER")
 
     # -----------------------------------------------------------------
 

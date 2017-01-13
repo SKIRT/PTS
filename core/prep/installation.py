@@ -20,7 +20,6 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..simulation.execute import SkirtExec
 from ..remote.remote import Remote
 from ..tools import introspection
 from ..tools import filesystem as fs
@@ -28,6 +27,7 @@ from ..tools.logging import log
 from ..tools import google
 from ..tools import network, archive
 from ..tools.parallelization import ncores
+from ..tools import terminal
 
 # -----------------------------------------------------------------
 
@@ -231,8 +231,8 @@ qt_configure_options = []
 qt_configure_options.append("-prefix '$HOME/Qt'")
 qt_configure_options.append("-opensource")
 qt_configure_options.append("-confirm-license")
-qt_configure_options.append("-c++11")
-qt_configure_options.append("-no-javascript-jit")
+#qt_configure_options.append("-c++11") # not valid anymore
+#qt_configure_options.append("-no-javascript-jit") # not valid anymore
 qt_configure_options.append("-no-qml-debug")
 qt_configure_options.append("-no-gif")
 qt_configure_options.append("-no-libpng")
@@ -245,7 +245,7 @@ qt_configure_options.append("-no-xcb-xlib")
 qt_configure_options.append("-no-glib")
 qt_configure_options.append("-no-gui")
 qt_configure_options.append("-no-widgets")
-qt_configure_options.append("-no-nis")
+#qt_configure_options.append("-no-nis") # not valid anymore
 qt_configure_options.append("-no-cups")
 qt_configure_options.append("-no-fontconfig")
 qt_configure_options.append("-no-dbus")
@@ -472,6 +472,9 @@ class SKIRTInstaller(Installer):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the SKIRT source code ...")
+
         # Get repository link
         if self.config.repository is not None: raise ValueError("Repository cannot be specified for local installation")
         elif self.config.private: url = introspection.private_skirt_https_link
@@ -485,14 +488,6 @@ class SKIRTInstaller(Installer):
 
         # Find the account file for the repository host (e.g. github.ugent.be)
         username, password = introspection.get_account(host)
-
-        # Set the command lines
-        #lines = []
-        #lines.append(command)
-        #lines.append(("':", username))
-        #lines.append(("':", password))
-        # Clone the repository
-        #self.remote.execute_lines(*lines, show_output=True)
 
         # Clone
         child = pexpect.spawn(command, timeout=30)
@@ -648,20 +643,27 @@ class SKIRTInstaller(Installer):
         log.info("Installing Qt ...")
 
         # Detemrine location
-        if self.remote.host.scratch_path is not None: temp_path = self.remote.host.scratch_path
+        if self.remote.host.scratch_path is not None: temp_path = self.remote.absolute_path(self.remote.host.scratch_path)
         else: temp_path = self.remote.home_directory
 
         # Determine the path for the Qt source code
-        path = fs.join(temp_path, "qt.tar.gz")
+        #path = fs.join(temp_path, "qt.tar.gz")
 
         # Download Qt
         #self.remote.download_from_url_to(qt_url, path)
 
         # Unarchive
-        decompress_path = self.remote.create_directory_in(temp_path, "Qt-install")
+        #decompress_path = self.remote.create_directory_in(temp_path, "Qt-install")
         #self.remote.decompress_file(path, decompress_path)
 
+        decompress_path = fs.join(temp_path, "Qt-install")
+
+        print(self.remote.directories_in_path(decompress_path))
+
+        # Get the only directory in the Qt-install directory
         qt_everywhere_opensource_path = self.remote.directories_in_path(decompress_path)[0]
+
+        print(qt_everywhere_opensource_path)
 
         # Determine commands
         configure_command = "./configure " + " ".join(qt_configure_options)
@@ -672,8 +674,8 @@ class SKIRTInstaller(Installer):
         self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=qt_everywhere_opensource_path)
 
         # Remove decompressed folder and the tar.gz file
-        self.remote.remove_file(path)
-        self.remote.remove_directory(decompress_path)
+        #self.remote.remove_file(path)
+        #self.remote.remove_directory(decompress_path)
 
     # -----------------------------------------------------------------
 
@@ -694,14 +696,21 @@ class SKIRTInstaller(Installer):
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
         # because of the private/public key thingy, so use a trick
-        if self.remote.host.name == "login.hpc.ugent.be": self.git_version = get_skirt_hpc(self.remote, url, self.skirt_root_path, self.skirt_repo_path)
+        if self.remote.host.name == "login.hpc.ugent.be":
+            self.git_version = get_skirt_hpc(self.remote, url, self.skirt_root_path, self.skirt_repo_path)
         else:
 
-            # CONVERT TO HTTPS LINK
-            host = url.split("@")[1].split(":")[0]
-            user_or_organization = url.split(":")[1].split("/")[0]
-            repo_name = url.split("/")[-1].split(".git")[0]
-            url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+            # Already https link, get host adress
+            if url.startswith("https://"): host = url.split("//")[1].split("/")[0]
+
+            # SSH
+            else:
+
+                # CONVERT TO HTTPS LINK
+                host = url.split("@")[1].split(":")[0]
+                user_or_organization = url.split(":")[1].split("/")[0]
+                repo_name = url.split("/")[-1].split(".git")[0]
+                url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
 
             # Set the clone command
             command = "git clone " + url + " " + self.skirt_repo_path
@@ -955,10 +964,12 @@ class PTSInstaller(Installer):
         # Path to PTS/pts
         self.pts_package_path = None
 
+        # Conda
         self.conda_executable_path = None
         self.conda_pip_path = None
         self.conda_python_path = None
 
+        # Path to the PTS executable
         self.pts_path = None
 
         # The git version
@@ -1048,6 +1059,9 @@ class PTSInstaller(Installer):
         # Get PTS
         self.get_pts_local()
 
+        # Get PTS dependencies
+        self.get_dependencies_local()
+
     # -----------------------------------------------------------------
 
     def get_python_distribution_local(self):
@@ -1057,7 +1071,31 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Getting a Python distribution on the remote host ...")
+
+        if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
+        else:
+
+            if self.remote.platform == "MacOS":
+
+                # Add conda path to .profile
+                profile_path = fs.join(self.remote.home_directory, ".profile")
+
+                # ...
+
+            elif self.remote.platform == "Linux":
+
+                conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
+
+                # Download anaconda
+                # self.remote.download(miniconda_linux_url, conda_installer_path)
+
+                if not self.remote.is_file(conda_installer_path):
+                    # Download the installer
+                    self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
+
+                # ...
 
     # -----------------------------------------------------------------
 
@@ -1068,7 +1106,121 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Downloading PTS ...")
+
+        # Determine repo url
+        if self.config.repository is not None: raise ValueError("Repository cannot be specified for local installation")
+        elif self.config.private: url = introspection.private_pts_https_link
+        else: url = introspection.public_pts_https_link
+
+        # Get host (github.ugent.be)
+        host = url.split("//")[1].split("/")[0]
+
+        # Set the clone command
+        command = "git clone " + url + " " + self.pts_package_path
+
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        username, password = introspection.get_account(host)
+
+        # Set the command lines
+        lines = []
+        lines.append(command)
+        lines.append(("':", username))
+        lines.append(("':", password))
+
+        # Clone the repository
+        terminal.execute_lines(*lines, show_output=True)
+
+        # Get the git version
+        first_part_command = "git rev-list --count HEAD"
+        second_part_command = "git describe --dirty --always"
+        first_part = terminal.execute(first_part_command)[0].strip()
+        second_part = terminal.execute(second_part_command)[0].strip()
+        self.git_version = first_part + "-" + second_part
+
+        # Show the git version
+        log.info("The git version to be installed is '" + self.git_version + "'")
+
+        # Set PYTHONPATH
+        bashrc_path = fs.join(fs.home(), ".bashrc")
+        export_command = "export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH"
+        alias_pts_command = 'alias pts="python -m pts.do"'
+        alias_ipts_command = 'alias ipts="python -im pts.do"'
+        lines = []
+        lines.append("")
+        lines.append("# For PTS, added by PTS (Python Toolkit for SKIRT)")
+        lines.append(export_command)
+        lines.append(alias_pts_command)
+        lines.append(alias_ipts_command)
+        lines.append("")
+        fs.append_lines(bashrc_path, lines)
+
+        # Run commands in current shell, so that the pts command can be found
+        terminal.execute(export_command)
+        terminal.execute(alias_pts_command)
+        terminal.execute(alias_ipts_command)
+
+        # Set the path to the main PTS executable
+        self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
+
+    # -----------------------------------------------------------------
+
+    def get_dependencies_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the PTS dependencies ...")
+
+        # Get available conda packages
+        output = terminal.execute("conda search")
+        available_packages = []
+        for line in output:
+            if not line.split(" ")[0]: continue
+            available_packages.append(line.split(" ")[0])
+
+        # Get already installed packages
+        already_installed = []
+        for line in terminal.execute("conda list"):
+            if line.startswith("#"): continue
+            already_installed.append(line.split(" ")[0])
+
+        # Use the introspection module on the remote end to get the dependencies and installed python packages
+        # session = self.remote.start_python_session()
+        # session.import_package("introspection", from_name="pts.core.tools")
+
+        dependencies = introspection.get_all_dependencies().keys()
+        packages = introspection.installed_python_packages()
+
+        # Get installation commands
+        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages)
+
+        # Install
+        for module in installation_commands:
+
+            # Debugging
+            log.debug("Installing '" + module + "' ...")
+
+            command = installation_commands[module]
+
+            if isinstance(command, list): terminal.execute_lines(*command, show_output=True)
+            elif isinstance(command, basestring): terminal.execute(command, show_output=True)
+
+        # Show installed packages
+        log.info("Packages that were installed:")
+        for module in installed: log.info(" - " + module)
+
+        # Show not installed packages
+        log.info("Packages that could not be installed:")
+        for module in not_installed: log.info(" - " + module)
+
+        # Show already present packages
+        log.info("Packages that were already present:")
+        for module in already_installed: log.info(" - " + module)
 
     # -----------------------------------------------------------------
 
@@ -1083,10 +1235,10 @@ class PTSInstaller(Installer):
         log.info("Installing PTS remotely ...")
 
         # Get a python distribution
-        #self.get_python_distribution_remote()
+        self.get_python_distribution_remote()
 
         # Get PTS
-        #self.get_pts_remote()
+        self.get_pts_remote()
 
         # Get PTS dependencies
         self.get_dependencies_remote()
@@ -1144,23 +1296,19 @@ class PTSInstaller(Installer):
 
                 # Add conda bin path to bashrc
                 bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
-                line = 'PATH=' + conda_bin_path + ':$PATH'
+                export_command = "export PATH=" + conda_bin_path + ":$PATH"
                 lines = []
                 lines.append("")
                 lines.append("# For Miniconda, added by PTS (Python Toolkit for SKIRT)")
-                lines.append(line)
+                lines.append(export_command)
                 lines.append("")
 
                 # Debugging
                 log.debug("Adding the conda executables to the PATH ...")
                 self.remote.append_lines(bashrc_path, lines)
 
-                # Run commands in current shell, so that the conda commands can be found
-                self.remote.execute(line)
-
-                # Debugging
-                #log.debug("Sourcing the bashrc file ...")
-                #self.remote.execute("source " + bashrc_path)
+                # Run the export command in the current shell, so that the conda commands can be found
+                self.remote.execute(export_command)
 
     # -----------------------------------------------------------------
 
@@ -1183,16 +1331,21 @@ class PTSInstaller(Installer):
         if self.remote.host.name == "login.hpc.ugent.be": self.git_version = get_pts_hpc(self.remote, url, self.pts_root_path, self.pts_package_path)
         else:
 
+            # Already https link, get host adress
+            if url.startswith("https://"): host = url.split("//")[1].split("/")[0]
+
             # CONVERT TO HTTPS LINK
             # git@github.ugent.be:sjversto/PTS.git
             # to
             # https://github.ugent.be/SKIRT/PTS.git
+            else:
 
-            host = url.split("@")[1].split(":")[0]
-            user_or_organization = url.split(":")[1].split("/")[0]
-            repo_name = url.split("/")[-1].split(".git")[0]
+                host = url.split("@")[1].split(":")[0]
+                user_or_organization = url.split(":")[1].split("/")[0]
+                repo_name = url.split("/")[-1].split(".git")[0]
 
-            url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+                # Construct HTTPS url
+                url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
 
             # Set the clone command
             command = "git clone " + url + " " + self.pts_package_path
@@ -1221,22 +1374,22 @@ class PTSInstaller(Installer):
 
         # Set PYTHONPATH
         bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
+        export_command = "export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH"
+        alias_pts_command = 'alias pts="python -m pts.do"'
+        alias_ipts_command = 'alias ipts="python -im pts.do"'
         lines = []
         lines.append("")
         lines.append("# For PTS, added by PTS (Python Toolkit for SKIRT)")
-        lines.append("export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH")
-        lines.append('alias pts="python -m pts.do"')
-        lines.append('alias ipts="python -im pts.do"')
+        lines.append(export_command)
+        lines.append(alias_pts_command)
+        lines.append(alias_ipts_command)
         lines.append("")
         self.remote.append_lines(bashrc_path, lines)
 
         # Run commands in current shell, so that the pts command can be found
-        self.remote.execute("export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH")
-        self.remote.execute('alias pts="python -m pts.do"')
-        self.remote.execute('alias ipts="python -im pts.do"')
-
-        # Load bashrc file
-        # self.remote.execute("source " + bashrc_path)
+        self.remote.execute(export_command)
+        self.remote.execute(alias_pts_command)
+        self.remote.execute(alias_ipts_command)
 
         # Set the path to the main PTS executable
         self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
@@ -1344,7 +1497,7 @@ class PTSInstaller(Installer):
 
 # -----------------------------------------------------------------
 
-def find_real_name(module_name, available_packages, session):
+def find_real_name(module_name, available_packages, session=None):
 
     """
     This function ...
@@ -1390,10 +1543,15 @@ def find_real_name(module_name, available_packages, session):
 
 # -----------------------------------------------------------------
 
-def get_installation_commands(dependencies, packages, already_installed, available_packages, session):
+def get_installation_commands(dependencies, packages, already_installed, available_packages, session=None):
 
     """
     This function ...
+    :param dependencies:
+    :param packages:
+    :param already_installed:
+    :param available_packages:
+    :param session:
     :return:
     """
 
@@ -1501,10 +1659,18 @@ def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
     :return:
     """
 
-    # CONVERT TO HTTPS LINK
-    host = url.split("@")[1].split(":")[0]
-    user_or_organization = url.split(":")[1].split("/")[0]
-    repo_name = url.split("/")[-1].split(".git")[0]
+    if url.startswith("https://"):
+
+        host = url.split("//")[1].split("/")[0]
+        user_or_organization = url.split("/")[-2]
+        repo_name = url.split("/")[-1].split(".git")[0]
+
+    else:
+
+        # CONVERT TO HTTPS LINK
+        host = url.split("@")[1].split(":")[0]
+        user_or_organization = url.split(":")[1].split("/")[0]
+        repo_name = url.split("/")[-1].split(".git")[0]
 
     # Find the account file for the repository host (e.g. github.ugent.be)
     username, password = introspection.get_account(host)
