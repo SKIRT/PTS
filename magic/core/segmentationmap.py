@@ -99,10 +99,10 @@ class SegmentationMap(SegmentationImage):
         fwhm = None
         add_meta = False
 
-        from . import fits as pts_fits # Import here because io imports SegmentationMap
+        from .fits import load_frame # Import here because .fits imports SegmentationMap
 
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        segments =  pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        segments = load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
 
         # Set the path
         segments.path = path
@@ -221,10 +221,10 @@ class SegmentationMap(SegmentationImage):
         # FITS format
         if path.endswith(".fits"):
 
-            from . import fits as pts_fits  # Import here because io imports SegmentationMap
+            from .fits import write_frame  # Import here because io imports SegmentationMap
 
             # Write to a FITS file
-            pts_fits.write_frame(self._data, header, path)
+            write_frame(self._data, header, path)
 
         # ASDF format
         elif path.endswith(".asdf"):

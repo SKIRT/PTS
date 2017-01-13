@@ -127,6 +127,19 @@ class Installer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote is None: return self.config.host_id
+        else: return self.remote.host_id
+
+    # -----------------------------------------------------------------
+
     def create_directories(self):
 
         """
@@ -1769,6 +1782,7 @@ def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
     # Make a 'origin' file with the url of the repository AND THE GIT HASH OF THE REPO
     origin_path = fs.join(repo_path, "origin.txt")
     remote.write_line(origin_path, url)
+    remote.append_line(origin_path, git_version)
     remote.append_line(origin_path, git_hash)
 
     # Return the git version

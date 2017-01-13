@@ -1307,7 +1307,7 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None,
-                expect=None, cwd=None):
+                expect=None, cwd=None, output_start=1):
 
         """
         This function ...
@@ -1319,6 +1319,7 @@ class Remote(object):
         :param timeout:
         :param expect:
         :param cwd:
+        :param output_start:
         :return:
         """
 
@@ -1349,14 +1350,55 @@ class Remote(object):
 
         # Ignore the first and the last line (the first is the command itself, the last is always empty)
         # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
-        if contains_extra_eof: the_output = self.ssh.before.replace('\x1b[K', '').split("\r\n")[1:-1]
-        else: the_output = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
+        if contains_extra_eof:
+            splitted = self.ssh.before.replace('\x1b[K', '').split("\r\n")
+            #print(splitted)
+            if splitted[-1] == "": the_output = splitted[output_start:-1]
+            else: the_output = splitted[output_start:]
+        else:
+            splitted = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")
+            #print(splitted)
+            if splitted[-1] == "": the_output = splitted[output_start:-1]
+            else: the_output = splitted[output_start:]
 
         # Set the working directory back to the original
         if original_cwd is not None: self.change_cwd(original_cwd)
 
         # Return the output
-        if output: return the_output
+        if output:
+
+            # Something weird, encountered on Cindy,
+            # before is "staggering behind", we are already giving commands further and a 'prompt' has been missed or something like that...
+            """
+            if len(the_output) == 0:
+
+                new_output = []
+
+                new_output += self.ssh.before.split("\r\n")
+                new_output += self.ssh.after.split("\r\n")
+
+                # print(self.ssh.before)
+                self.ssh.sendline("\n")
+                self.ssh.prompt()
+                self.ssh.prompt()
+                # print(self.ssh.before)
+                # output = self.execute("echo $HOME")
+                # print("OUTPUT", output[0])
+                #print(self.ssh.before)
+
+                #splitted = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")
+                #return output[0]
+
+                new_output += self.ssh.before.split("\r\n")
+                new_output += self.ssh.after.split("\r\n")
+
+                print(new_output)
+
+                if splitted[-1] == "": the_output = splitted[output_start:-1]
+                else: the_output = splitted[output_start:]
+            """
+
+            return the_output
 
     # -----------------------------------------------------------------
 
@@ -2176,8 +2218,7 @@ class Remote(object):
         """
 
         # Find out the path to the user's home directory and return it
-        output = self.execute("echo $HOME")
-        return output[0]
+        return self.resolve_environment_variable("HOME")
 
     # -----------------------------------------------------------------
 
@@ -2899,8 +2940,6 @@ class Remote(object):
 
         # Launch a bash command to check whether the path exists as a directory on the remote file system
         output = self.execute(command)
-
-        # Return the result
         return output[0] == "True"
 
     # -----------------------------------------------------------------

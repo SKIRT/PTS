@@ -101,6 +101,19 @@ class Updater(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote is None: return self.config.host_id
+        else: return self.remote.host_id
+
+    # -----------------------------------------------------------------
+
     def update(self):
 
         """
@@ -163,6 +176,9 @@ class SKIRTUpdater(Updater):
         # The path to the qmake executable corresponding to the most recent Qt installation
         self.qmake_path = None
 
+        # Flag that says whether a rebuild is necessary
+        self.rebuild = True
+
     # -----------------------------------------------------------------
 
     def update_local(self):
@@ -185,7 +201,7 @@ class SKIRTUpdater(Updater):
         self.pull_local()
 
         # Build
-        self.build_local()
+        if self.rebuild: self.build_local()
 
     # -----------------------------------------------------------------
 
@@ -260,7 +276,7 @@ class SKIRTUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Updating SKIRT remotely on host '" + self.config.host_id + "' ...")
+        log.info("Updating SKIRT remotely on host '" + self.host_id + "' ...")
 
         # Check the compilers (C++ and MPI)
         self.check_compilers_remote()
@@ -272,7 +288,7 @@ class SKIRTUpdater(Updater):
         self.pull_remote()
 
         # Build
-        self.build_remote()
+        if self.rebuild: self.build_remote()
 
     # -----------------------------------------------------------------
 
@@ -331,58 +347,54 @@ class SKIRTUpdater(Updater):
             if self.remote.is_file(origin_path):
 
                 # Get url
-                url, git_hash = first_two_items_in_iterator(self.remote.read_lines(origin_path))
+                url, git_version, git_hash = first_three_items_in_iterator(self.remote.read_lines(origin_path))
 
-                # Check whether the repo is up-to-date
-                command = "git ls-remote " + url + " HEAD"
-                child = pexpect.spawn(command, timeout=30, logfile=sys.stdout)
-                index = child.expect([pexpect.EOF, "':"])
+                # Get the latest git hash for the URL of the repository
+                latest_git_hash = get_hash_remote_repository(url)
 
-                # A prompt appears where username is asked
-                if index == 1:
+                # Debugging
+                log.debug("Latest git hash for repository: " + latest_git_hash)
+                log.debug("Git hash of version installed: " + git_hash)
 
-                    # Username for 'https://github.ugent.be
-                    host_url = self.remote.ssh.before.split(" for '")[1]
-                    host = host_url.split("https://")[1]
+                # Compare the hashes
+                if latest_git_hash == git_hash:
 
-                    # Host info is present
-                    if introspection.has_account(host):
+                    # Already up to date
+                    log.success("Already up to date")
+                    self.rebuild = False
+                    self.git_version = git_version
+                    return
 
-                        username, password = introspection.get_account(host)
+                else: # not up to date
 
-                        self.remote.ssh.sendline(username)
-                        self.remote.ssh.expect("':")
-                        self.remote.ssh.sendline(password)
-                        self.remote.ssh.prompt()
+                    # Remove the previous SKIRT/git directory
+                    self.remote.remove_directory(self.remote.skirt_repo_path)
 
-                        output = self.remote.ssh.before.split("\r\n")[1:-1]
-
-                    # Error
-                    else: raise ValueError("Account info is not present for '" + host + "'")
-
-                # No username and password required
-                elif index == 0: output = self.remote.ssh.before.split("\r\n")[1:]
-
-                # This shouldn't happen
-                else: raise RuntimeError("Something went wrong")
-
-                print("OUTPUT:", output)
-
-                # Get the latest git hash from the output
-                latest_git_hash = output.split()[0]
-
-                print(latest_git_hash)
-
-                if latest_git_hash == git_hash: log.info("Already up to date")
-
-                # Remove the previous SKIRT/git directory
-                self.remote.remove_directory(self.remote.skirt_repo_path)
-
-                # Get the new code
-                self.git_version = get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
+                    # Get the new code
+                    self.git_version = get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
 
             # Not installed with PTS
             else:
+
+                # Get the url of the "origin"
+                url = get_url_repository(self.remote, self.remote.skirt_repo_path)
+
+                # Get latest hash
+                latest_git_hash = get_hash_remote_repository(url)
+
+                # Get hash of current state
+                git_hash = get_git_hash(self.remote, self.remote.skirt_repo_path)
+
+                # Debugging
+                log.debug("Latest git hash for repository: " + latest_git_hash)
+                log.debug("Git hash of version installed: " + git_hash)
+
+                # Compare git hashes
+                if latest_git_hash == git_hash:
+                    log.success("Already up to date")  # up to date
+                    self.rebuild = False
+                    self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
+                    return
 
                 # The repository can only be installed through SSH, thus no password is required
                 command = "git pull origin master"
@@ -391,14 +403,30 @@ class SKIRTUpdater(Updater):
                 self.remote.execute(command, cwd=self.remote.skirt_repo_path, show_output=True)
 
                 # Get the git version
-                first_part_command = "git rev-list --count HEAD"
-                second_part_command = "git describe --dirty --always"
-                first_part = self.remote.execute(first_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
-                second_part = self.remote.execute(second_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
-                self.git_version = first_part + "-" + second_part
+                self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
 
         # Else
         else:
+
+            # Get the url of the "origin"
+            url = get_url_repository(self.remote, self.remote.skirt_repo_path)
+
+            # Get latest hash
+            latest_git_hash = get_hash_remote_repository(url)
+
+            # Get hash of current state
+            git_hash = get_git_hash(self.remote, self.remote.skirt_repo_path)
+
+            # Debugging
+            log.debug("Latest git hash for repository: " + latest_git_hash)
+            log.debug("Git hash of version installed: " + git_hash)
+
+            # Compare git hashes
+            if latest_git_hash == git_hash:
+                log.success("Already up to date")  # up to date
+                self.rebuild = False
+                self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
+                return
 
             # FOR SSH:
             # Git pull
@@ -412,58 +440,9 @@ class SKIRTUpdater(Updater):
             # Set the clone command
             command = "git pull origin master"
 
-            # Get the url of the repo from which cloned
-            args = ["git", "remote", "show", "origin"]
-            show_command = " ".join(args)
+            # Get the url of the "origin"
+            url = get_url_repository(self.remote, self.remote.skirt_repo_path)
 
-            # Change cwd
-            original_cwd = self.remote.change_cwd(self.remote.skirt_repo_path)
-
-            # Send the 'git remote show origin' command and look at what comes out
-            self.remote.ssh.logfile = sys.stdout
-            self.remote.ssh.sendline(show_command)
-            index = self.remote.ssh.expect([self.remote.ssh.PROMPT,"':"])
-
-            # A prompt appears where username is asked
-            if index == 1:
-
-                # Username for 'https://github.ugent.be
-                host_url = self.remote.ssh.before.split(" for '")[1]
-                host = host_url.split("https://")[1]
-
-                #lines = []
-                #lines.append(show_command)
-                #lines.append(("':", username))
-                #lines.append(("':", password))
-
-                if introspection.has_account(host):
-
-                    username, password = introspection.get_account(host)
-
-                    self.remote.ssh.sendline(username)
-                    self.remote.ssh.expect("':")
-                    self.remote.ssh.sendline(password)
-                    self.remote.ssh.prompt()
-
-                    output = self.remote.ssh.before.split("\r\n")[1:-1]
-
-                else: raise ValueError("Account info is not present for '" + host + "'")
-
-            # No username and password required
-            elif index == 0: output = self.remote.ssh.before.split("\r\n")[1:]
-
-            # This shouldn't happen
-            else: raise RuntimeError("Something went wrong")
-
-            # Reset logfile
-            self.remote.ssh.logfile = None
-
-            # Reset cwd
-            self.remote.change_cwd(original_cwd)
-
-            url = None
-            for line in output:
-                if "Fetch URL" in line: url = line.split(": ")[1]
             # url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
             host = url.split("https://")[1].split("/")[0]
 
@@ -481,14 +460,11 @@ class SKIRTUpdater(Updater):
                 # Clone the repository
                 self.remote.execute_lines(*lines, show_output=True, cwd=self.remote.skirt_repo_path)
 
+            # Pull, no passwords
             else: self.remote.execute(command, show_output=True, cwd=self.remote.skirt_repo_path)
 
-            # Get the git version
-            first_part_command = "git rev-list --count HEAD"
-            second_part_command = "git describe --dirty --always"
-            first_part = self.remote.execute(first_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
-            second_part = self.remote.execute(second_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
-            self.git_version = first_part + "-" + second_part
+            # Get git version
+            self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
 
         # Success
         log.success("SKIRT was successfully updated on remote host " + self.remote.host_id)
@@ -737,5 +713,186 @@ def first_two_items_in_iterator(iterator):
     else: raise ValueError("Iterator contains less than 2 elements")
 
     return output[0], output[1]
+
+# -----------------------------------------------------------------
+
+def first_three_items_in_iterator(iterator):
+
+    """
+    This function ...
+    :param iterator:
+    :return:
+    """
+
+    output = []
+    for item in iterator:
+        output.append(item)
+        if len(output) == 3: break
+    else: raise ValueError("Iterator contains less than 3 elements")
+
+    return output[0], output[1], output[2]
+
+# -----------------------------------------------------------------
+
+def get_hash_remote_repository(url):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Check whether the repo is up-to-date
+    command = "git ls-remote " + url + " HEAD"
+    # child = pexpect.spawn(command, timeout=30, logfile=sys.stdout)
+    child = pexpect.spawn(command, timeout=30)
+    index = child.expect([pexpect.EOF, "':"])
+
+    # A prompt appears where username is asked
+    if index == 1:
+
+        # Username for 'https://github.ugent.be
+        host_url = child.before.split(" for '")[1]
+        host = host_url.split("https://")[1]
+
+        # Host info is present
+        if introspection.has_account(host):
+
+            username, password = introspection.get_account(host)
+
+            child.sendline(username)
+            child.expect("':")
+            child.sendline(password)
+            child.expect(pexpect.EOF)
+
+            #print(child.before)
+
+            output = child.before.split("\r\n")
+
+        # Error
+        else: raise ValueError("Account info is not present for '" + host + "'")
+
+    # No username and password required
+    elif index == 0:
+        #child.expect(pexpect.EOF)
+        #print(child.before)
+        output = child.before.split("\r\n")
+
+    # This shouldn't happen
+    else: raise RuntimeError("Something went wrong")
+
+    #print(output)
+
+    # Get the latest git hash from the output
+    #latest_git_hash = output[0].split("\t")[0]
+
+    latest_git_hash = None
+    for line in output:
+        if "HEAD" in line:
+            latest_git_hash = line.split("\t")[0]
+
+    # Return
+    return latest_git_hash
+
+# -----------------------------------------------------------------
+
+def get_url_repository(remote, repo_path):
+
+    """
+    This function ...
+    :param remote:
+    :param repo_path:
+    :return:
+    """
+
+    # Get the url of the repo from which cloned
+    args = ["git", "remote", "show", "origin"]
+    show_command = " ".join(args)
+
+    # Change cwd
+    original_cwd = remote.change_cwd(repo_path)
+
+    # Send the 'git remote show origin' command and look at what comes out
+    #remote.ssh.logfile = sys.stdout
+    remote.ssh.sendline(show_command)
+    index = remote.ssh.expect([remote.ssh.PROMPT, "':"])
+
+    # A prompt appears where username is asked
+    if index == 1:
+
+        # Username for 'https://github.ugent.be
+        host_url = remote.ssh.before.split(" for '")[1]
+        host = host_url.split("https://")[1]
+
+        if introspection.has_account(host):
+
+            username, password = introspection.get_account(host)
+
+            remote.ssh.sendline(username)
+            remote.ssh.expect("':")
+            remote.ssh.sendline(password)
+            remote.ssh.prompt()
+
+            output = remote.ssh.before.split("\r\n")[1:-1]
+
+        else: raise ValueError("Account info is not present for '" + host + "'")
+
+    # No username and password required
+    elif index == 0: output = remote.ssh.before.split("\r\n")[1:]
+
+    # This shouldn't happen
+    else:
+        raise RuntimeError("Something went wrong")
+
+    # Reset logfile
+    remote.ssh.logfile = None
+
+    # Reset cwd
+    remote.change_cwd(original_cwd)
+
+    url = None
+    for line in output:
+        if "Fetch URL" in line: url = line.split(": ")[1]
+
+    # Return the url
+    return url
+
+# -----------------------------------------------------------------
+
+def get_git_hash(remote, repo_path):
+
+    """
+    This function ...
+    :param remote:
+    :param repo_path:
+    :return:
+    """
+
+    # Check hash
+    get_hash_command = ["git", "rev-parse", "HEAD"]
+    get_hash_command = " ".join(get_hash_command)
+    git_hash = remote.execute(get_hash_command, cwd=repo_path)[0]
+
+    return git_hash
+
+# -----------------------------------------------------------------
+
+def get_short_git_version(remote, repo_path):
+
+    """
+    This function ...
+    :param remote:
+    :param repo_path:
+    :return:
+    """
+
+    # Get the git version
+    first_part_command = "git rev-list --count HEAD"
+    second_part_command = "git describe --dirty --always"
+    first_part = remote.execute(first_part_command, cwd=repo_path)[0].strip()
+    second_part = remote.execute(second_part_command, cwd=repo_path)[0].strip()
+
+    git_version = first_part + "-" + second_part
+
+    return git_version
 
 # -----------------------------------------------------------------

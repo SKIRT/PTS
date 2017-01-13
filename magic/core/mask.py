@@ -137,10 +137,10 @@ class Mask(MaskBase):
         # FITS format
         if path.endswith(".fits"):
 
-            from . import fits as pts_fits  # Import here because io imports SegmentationMap
+            from .fits import write_frame  # Import here because io imports Mask
 
             # Write to a FITS file
-            pts_fits.write_frame(self._data.astype(int), header, path)
+            write_frame(self._data.astype(int), header, path)
 
         # ASDF format
         elif path.endswith(".asdf"):

@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.modeler Contains the GalaxyModeler class.
+## \package pts.modeling.modeler Contains the GalaxyModeler class, which runs the radiative transfer modelling procedure
+#  for a certain galaxy.
 
 # -----------------------------------------------------------------
 
@@ -45,6 +46,7 @@ from ..core.prep.installation import SKIRTInstaller
 from ..core.remote.remote import Remote
 from ..core.tools import introspection
 from ..core.remote.versionchecker import VersionChecker
+from ..core.remote.host import HostDownException
 
 # -----------------------------------------------------------------
 
@@ -245,7 +247,7 @@ class GalaxyModeler(Configurable):
         self.install_or_update_skirt()
 
         # Update PTS
-        self.update_pts()
+        #self.update_pts()
 
         # Check versions
         self.check_versions()
@@ -347,7 +349,17 @@ class GalaxyModeler(Configurable):
 
             # Connect to the remote
             remote = Remote()
-            remote.setup(host_id)
+            try: remote.setup(host_id)
+            except HostDownException:
+
+                # Warning
+                log.warning("Connection to host '" + host_id + "' failed, trying again ...")
+                try: remote.setup(host_id)
+                except HostDownException:
+
+                    # Host down?
+                    log.warning("Host '" + host_id + "' is offline")
+                    continue
 
             # Check if SKIRT is present
             installed = remote.has_skirt
@@ -383,6 +395,9 @@ class GalaxyModeler(Configurable):
 
                 # Run the installer
                 installer.run(remote=remote)
+
+            # Logout from this remote
+            remote.logout()
 
     # -----------------------------------------------------------------
 
