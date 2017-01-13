@@ -109,6 +109,12 @@ def pts_version():
 
 # -----------------------------------------------------------------
 
+def has_account(service):
+    filepath = fs.join(pts_user_accounts_dir, service + ".txt")
+    return fs.is_file(filepath)
+
+# -----------------------------------------------------------------
+
 def get_account(service):
     import numpy as np
     filepath = fs.join(pts_user_accounts_dir, service + ".txt")

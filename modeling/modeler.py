@@ -348,6 +348,7 @@ class GalaxyModeler(Configurable):
                 # Set the remote host ID
                 installer.config.remote = host_id
                 installer.config.force = True # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
+                installer.config.repository = "origin"
 
                 # Run the installer
                 installer.run()

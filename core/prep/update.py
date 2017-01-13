@@ -13,6 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import sys
+import pexpect
 import subprocess
 from abc import ABCMeta, abstractmethod
 
@@ -21,7 +23,7 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, get_skirt_hpc, get_pts_hpc, find_qmake
+from .installation import get_installation_commands, get_skirt_hpc, get_pts_hpc, find_qmake, build_skirt_on_remote
 from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -142,6 +144,9 @@ class SKIRTUpdater(Updater):
         # The paths to the C++ compiler and MPI compiler
         self.compiler_path = None
         self.mpi_compiler_path = None
+
+        # The git version to which SKIRT is updated
+        self.git_version = None
 
         # The path to the qmake executable corresponding to the most recent Qt installation
         self.qmake_path = None
@@ -311,17 +316,58 @@ class SKIRTUpdater(Updater):
             origin_path = fs.join(self.remote.skirt_repo_path, "origin.txt")
 
             # Installed with PTS
-            if fs.is_file(origin_path):
+            if self.remote.is_file(origin_path):
 
-                for line in self.remote.read_lines(origin_path):
-                    url = line
-                    break
+                # Get url
+                url, git_hash = first_two_items_in_iterator(self.remote.read_lines(origin_path))
+
+                # Check whether the repo is up-to-date
+                command = "git ls-remote " + url + " HEAD"
+                child = pexpect.spawn(command, timeout=30, logfile=sys.stdout)
+                index = child.expect([pexpect.EOF, "':"])
+
+                # A prompt appears where username is asked
+                if index == 1:
+
+                    # Username for 'https://github.ugent.be
+                    host_url = self.remote.ssh.before.split(" for '")[1]
+                    host = host_url.split("https://")[1]
+
+                    # Host info is present
+                    if introspection.has_account(host):
+
+                        username, password = introspection.get_account(host)
+
+                        self.remote.ssh.sendline(username)
+                        self.remote.ssh.expect("':")
+                        self.remote.ssh.sendline(password)
+                        self.remote.ssh.prompt()
+
+                        output = self.remote.ssh.before.split("\r\n")[1:-1]
+
+                    # Error
+                    else: raise ValueError("Account info is not present for '" + host + "'")
+
+                # No username and password required
+                elif index == 0: output = self.remote.ssh.before.split("\r\n")[1:]
+
+                # This shouldn't happen
+                else: raise RuntimeError("Something went wrong")
+
+                print("OUTPUT:", output)
+
+                # Get the latest git hash from the output
+                latest_git_hash = output.split()[0]
+
+                print(latest_git_hash)
+
+                if latest_git_hash == git_hash: log.info("Already up to date")
 
                 # Remove the previous SKIRT/git directory
                 self.remote.remove_directory(self.remote.skirt_repo_path)
 
                 # Get the new code
-                get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
+                self.git_version = get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
 
             # Not installed with PTS
             else:
@@ -331,6 +377,13 @@ class SKIRTUpdater(Updater):
 
                 # Execute the command
                 self.remote.execute(command, cwd=self.remote.skirt_repo_path, show_output=True)
+
+                # Get the git version
+                first_part_command = "git rev-list --count HEAD"
+                second_part_command = "git describe --dirty --always"
+                first_part = self.remote.execute(first_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
+                second_part = self.remote.execute(second_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
+                self.git_version = first_part + "-" + second_part
 
         # Else
         else:
@@ -349,7 +402,53 @@ class SKIRTUpdater(Updater):
 
             # Get the url of the repo from which cloned
             args = ["git", "remote", "show", "origin"]
-            output = self.remote.execute(args, cwd=self.remote.skirt_repo_path)
+            show_command = " ".join(args)
+
+            # Change cwd
+            original_cwd = self.remote.change_cwd(self.remote.skirt_repo_path)
+
+            # Send the 'git remote show origin' command and look at what comes out
+            self.remote.ssh.logfile = sys.stdout
+            self.remote.ssh.sendline(show_command)
+            index = self.remote.ssh.expect([self.remote.ssh.PROMPT,"':"])
+
+            # A prompt appears where username is asked
+            if index == 1:
+
+                # Username for 'https://github.ugent.be
+                host_url = self.remote.ssh.before.split(" for '")[1]
+                host = host_url.split("https://")[1]
+
+                #lines = []
+                #lines.append(show_command)
+                #lines.append(("':", username))
+                #lines.append(("':", password))
+
+                if introspection.has_account(host):
+
+                    username, password = introspection.get_account(host)
+
+                    self.remote.ssh.sendline(username)
+                    self.remote.ssh.expect("':")
+                    self.remote.ssh.sendline(password)
+                    self.remote.ssh.prompt()
+
+                    output = self.remote.ssh.before.split("\r\n")[1:-1]
+
+                else: raise ValueError("Account info is not present for '" + host + "'")
+
+            # No username and password required
+            elif index == 0: output = self.remote.ssh.before.split("\r\n")[1:]
+
+            # This shouldn't happen
+            else: raise RuntimeError("Something went wrong")
+
+            # Reset logfile
+            self.remote.ssh.logfile = None
+
+            # Reset cwd
+            self.remote.change_cwd(original_cwd)
+
             url = None
             for line in output:
                 if "Fetch URL" in line: url = line.split(": ")[1]
@@ -357,19 +456,30 @@ class SKIRTUpdater(Updater):
             host = url.split("https://")[1].split("/")[0]
 
             # Find the account file for the repository host (e.g. github.ugent.be)
-            username, password = introspection.get_account(host)
+            if introspection.has_account(host):
 
-            # Set the command lines
-            lines = []
-            lines.append(command)
-            lines.append(("':", username))
-            lines.append(("':", password))
+                username, password = introspection.get_account(host)
 
-            # Clone the repository
-            self.remote.execute_lines(*lines, show_output=True, cwd=self.remote.skirt_repo_path)
+                # Set the command lines
+                lines = []
+                lines.append(command)
+                lines.append(("':", username))
+                lines.append(("':", password))
+
+                # Clone the repository
+                self.remote.execute_lines(*lines, show_output=True, cwd=self.remote.skirt_repo_path)
+
+            else: self.remote.execute(command, show_output=True, cwd=self.remote.skirt_repo_path)
+
+            # Get the git version
+            first_part_command = "git rev-list --count HEAD"
+            second_part_command = "git describe --dirty --always"
+            first_part = self.remote.execute(first_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
+            second_part = self.remote.execute(second_part_command, cwd=self.remote.skirt_repo_path)[0].strip()
+            self.git_version = first_part + "-" + second_part
 
         # Success
-        log.success("SKIRT was successfully updated")
+        log.success("SKIRT was successfully updated on remote host " + self.remote.host_id)
 
     # -----------------------------------------------------------------
 
@@ -383,8 +493,11 @@ class SKIRTUpdater(Updater):
         # Debugging
         log.debug("Compiling latest version ...")
 
-        # Build SKIRT
-        #self.remote.execute("./makeSKIRT.sh", show_output=True, output=False)
+        # Execute the build
+        build_skirt_on_remote(self.remote, self.remote.skirt_repo_path, self.qmake_path, self.git_version)
+
+        # Success
+        log.success("SKIRT was successfully built")
 
 # -----------------------------------------------------------------
 
@@ -472,9 +585,7 @@ class PTSUpdater(Updater):
 
             # Get the repo URL
             origin_path = fs.join(self.remote.pts_package_path, "origin.txt")
-            for line in self.remote.read_lines(origin_path)[0]:
-                url = line
-                break
+            url = first_item_in_iterator(self.remote.read_lines(origin_path)[0])
 
             # Remove the previous PTS/pts directory
             self.remote.remove_directory(self.remote.pts_package_path)
@@ -579,5 +690,40 @@ class PTSUpdater(Updater):
         lines.append(update_command)
         lines.append(("Proceed ([y]/n)?", "y", True))
         self.remote.execute_lines(*lines, show_output=True)
+
+# -----------------------------------------------------------------
+
+def first_item_in_iterator(iterator):
+
+    """
+    This function ...
+    :param iterator:
+    :return:
+    """
+
+    for item in iterator:
+        output = item
+        break
+    else: raise ValueError("Iterator contains no elements")
+
+    return output
+
+# -----------------------------------------------------------------
+
+def first_two_items_in_iterator(iterator):
+
+    """
+    This function ...
+    :param iterator:
+    :return:
+    """
+
+    output = []
+    for item in iterator:
+        output.append(item)
+        if len(output) == 2: break
+    else: raise ValueError("Iterator contains less than 2 elements")
+
+    return output[0], output[1]
 
 # -----------------------------------------------------------------

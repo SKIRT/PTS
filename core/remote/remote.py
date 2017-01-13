@@ -698,8 +698,8 @@ class Remote(object):
         """
 
         # Use modules or not
-        if self.has_lmod: self._check_qt_remote_lmod()
-        else: self._check_qt_remote_no_lmod()
+        if self.has_lmod: return self._check_qt_remote_lmod()
+        else: return self._check_qt_remote_no_lmod()
 
     # -----------------------------------------------------------------
 
@@ -1391,11 +1391,13 @@ class Remote(object):
         # Loop over the lines
         for line in args:
 
+            # If string
             if isinstance(line, basestring):
 
                 # Send the command
                 self.ssh.sendline(line)
 
+            # If tuple
             elif isinstance(line, tuple):
 
                 # Expect
@@ -1409,6 +1411,7 @@ class Remote(object):
                     self.ssh.expect(line[0])
                     self.ssh.sendline(line[1])
 
+            # Invalid
             else: raise ValueError("Lines must be strings or tuples")
 
         # Synchronize

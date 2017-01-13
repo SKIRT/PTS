@@ -487,14 +487,18 @@ class SKIRTInstaller(Installer):
         command = "git clone " + url + " " + self.skirt_repo_path
 
         # Find the account file for the repository host (e.g. github.ugent.be)
-        username, password = introspection.get_account(host)
+        if introspection.has_account(host):
 
-        # Clone
-        child = pexpect.spawn(command, timeout=30)
-        child.expect([':'])
-        child.sendline(username)
-        child.expect([':'])
-        child.sendline(password)
+            username, password = introspection.get_account(host)
+
+            # Clone
+            child = pexpect.spawn(command, timeout=30)
+            child.expect([':'])
+            child.sendline(username)
+            child.expect([':'])
+            child.sendline(password)
+
+        else: subprocess.call(command, shell=True)
 
         # Get the git version
         first_part_command = "git rev-list --count HEAD"
@@ -615,6 +619,10 @@ class SKIRTInstaller(Installer):
         self.compiler_path = self.remote.find_and_load_cpp_compiler()
         self.mpi_compiler_path = self.remote.find_and_load_mpi_compiler()
 
+        # Debugging
+        log.debug("The C++ compiler path is '" + self.compiler_path)
+        log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
+
     # -----------------------------------------------------------------
 
     def check_qt_remote(self):
@@ -629,6 +637,9 @@ class SKIRTInstaller(Installer):
 
         # Load Qt module, find the qmake path
         self.qmake_path = self.remote.find_and_load_qmake()
+
+        # Debugging
+        log.debug("The qmake path is '" + self.qmake_path + "'")
 
     # -----------------------------------------------------------------
 
@@ -647,23 +658,19 @@ class SKIRTInstaller(Installer):
         else: temp_path = self.remote.home_directory
 
         # Determine the path for the Qt source code
-        #path = fs.join(temp_path, "qt.tar.gz")
+        path = fs.join(temp_path, "qt.tar.gz")
 
         # Download Qt
-        #self.remote.download_from_url_to(qt_url, path)
+        self.remote.download_from_url_to(qt_url, path)
 
         # Unarchive
-        #decompress_path = self.remote.create_directory_in(temp_path, "Qt-install")
-        #self.remote.decompress_file(path, decompress_path)
+        decompress_path = self.remote.create_directory_in(temp_path, "Qt-install")
+        self.remote.decompress_file(path, decompress_path)
 
         decompress_path = fs.join(temp_path, "Qt-install")
 
-        print(self.remote.directories_in_path(decompress_path))
-
         # Get the only directory in the Qt-install directory
         qt_everywhere_opensource_path = self.remote.directories_in_path(decompress_path)[0]
-
-        print(qt_everywhere_opensource_path)
 
         # Determine commands
         configure_command = "./configure " + " ".join(qt_configure_options)
@@ -674,8 +681,11 @@ class SKIRTInstaller(Installer):
         self.remote.execute_lines(configure_command, make_command, install_command, show_output=log.is_debug(), cwd=qt_everywhere_opensource_path)
 
         # Remove decompressed folder and the tar.gz file
-        #self.remote.remove_file(path)
-        #self.remote.remove_directory(decompress_path)
+        self.remote.remove_file(path)
+        self.remote.remove_directory(decompress_path)
+
+        # Success
+        log.success("Qt was succesfully installed")
 
     # -----------------------------------------------------------------
 
@@ -716,16 +726,20 @@ class SKIRTInstaller(Installer):
             command = "git clone " + url + " " + self.skirt_repo_path
 
             # Find the account file for the repository host (e.g. github.ugent.be)
-            username, password = introspection.get_account(host)
+            if introspection.has_account(host):
 
-            # Set the command lines
-            lines = []
-            lines.append(command)
-            lines.append(("':", username))
-            lines.append(("':", password))
+                username, password = introspection.get_account(host)
 
-            # Clone the repository
-            self.remote.execute_lines(*lines, show_output=True)
+                # Set the command lines
+                lines = []
+                lines.append(command)
+                lines.append(("':", username))
+                lines.append(("':", password))
+
+                # Clone the repository
+                self.remote.execute_lines(*lines, show_output=True)
+
+            else: self.remote.execute(command, show_output=True)
 
             # Get the git version
             first_part_command = "git rev-list --count HEAD"
@@ -768,30 +782,8 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Building SKIRT ...")
 
-        # Navigate to the SKIRT repo directory
-        self.remote.change_cwd(self.skirt_repo_path)
-
-        # Create command strings
-        make_make_command = self.qmake_path + " BuildSKIRT.pro -o ../release/Makefile CONFIG+=release"
-        nthreads = self.remote.cores_per_socket
-        make_command = "make -j " + str(nthreads) + " -w -C ../release"
-
-        # Debugging
-        log.debug("Make commands:")
-        log.debug(" 1) " + make_make_command)
-        log.debug(" 2) " + make_command)
-
-        # Configure
-        self.remote.execute(make_make_command, show_output=True)
-
-        # Overwrite the git version
-        git_version_content = 'const char* git_version = " ' + self.git_version + ' " ;'
-        git_version_path = fs.join(self.skirt_repo_path, "SKIRTmain", "git_version.h")
-        write_command = 'echo "' + git_version_content + '" > ' + git_version_path
-        self.remote.execute(write_command)
-
-        # Make
-        self.remote.execute(make_command, show_output=True)
+        # Execute the build
+        build_skirt_on_remote(self.remote, self.skirt_repo_path, self.qmake_path, self.git_version)
 
         # Success
         log.success("SKIRT was successfully built")
@@ -810,7 +802,9 @@ class SKIRTInstaller(Installer):
 
         output = subprocess.check_output(["skirt", "-h"]).split("\n")
         for line in output:
-            if "Welcome to SKIRT" in line: break
+            if "Welcome to SKIRT" in line:
+                log.succes("SKIRT is working")
+                break
         else:
             log.error("Something is wrong with the SKIRT installation:")
             for line in output: log.error("   " + line)
@@ -829,10 +823,47 @@ class SKIRTInstaller(Installer):
 
         output = self.remote.execute("skirt -h")
         for line in output:
-            if "Welcome to SKIRT" in line: break
+            if "Welcome to SKIRT" in line:
+                log.success("SKIRT is working")
+                break
         else:
             log.error("Something is wrong with the SKIRT installation:")
             for line in output: log.error("   " + line)
+
+# -----------------------------------------------------------------
+
+def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
+
+    """
+    This function ...
+    :param remote:
+    :param skirt_repo_path:
+    :param qmake_path:
+    :param git_version:
+    :return:
+    """
+
+    # Create command strings
+    make_make_command = qmake_path + " BuildSKIRT.pro -o ../release/Makefile CONFIG+=release"
+    nthreads = remote.cores_per_socket
+    make_command = "make -j " + str(nthreads) + " -w -C ../release"
+
+    # Debugging
+    log.debug("Make commands:")
+    log.debug(" 1) " + make_make_command)
+    log.debug(" 2) " + make_command)
+
+    # Configure
+    remote.execute(make_make_command, show_output=True, cwd=skirt_repo_path)
+
+    # Overwrite the git version
+    git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
+    git_version_path = fs.join(skirt_repo_path, "SKIRTmain", "git_version.h")
+    write_command = 'echo "' + git_version_content + '" > ' + git_version_path
+    remote.execute(write_command)
+
+    # Make
+    remote.execute(make_command, show_output=True)
 
 # -----------------------------------------------------------------
 
@@ -1121,16 +1152,20 @@ class PTSInstaller(Installer):
         command = "git clone " + url + " " + self.pts_package_path
 
         # Find the account file for the repository host (e.g. github.ugent.be)
-        username, password = introspection.get_account(host)
+        if introspection.has_account(host):
 
-        # Set the command lines
-        lines = []
-        lines.append(command)
-        lines.append(("':", username))
-        lines.append(("':", password))
+            username, password = introspection.get_account(host)
 
-        # Clone the repository
-        terminal.execute_lines(*lines, show_output=True)
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
+
+            # Clone the repository
+            terminal.execute_lines(*lines, show_output=True)
+
+        else: subprocess.call(command, shell=True)
 
         # Get the git version
         first_part_command = "git rev-list --count HEAD"
@@ -1351,16 +1386,20 @@ class PTSInstaller(Installer):
             command = "git clone " + url + " " + self.pts_package_path
 
             # Find the account file for the repository host (e.g. github.ugent.be)
-            username, password = introspection.get_account(host)
+            if introspection.has_account(host):
 
-            # Set the command lines
-            lines = []
-            lines.append(command)
-            lines.append(("':", username))
-            lines.append(("':", password))
+                username, password = introspection.get_account(host)
 
-            # Clone the repository
-            self.remote.execute_lines(*lines, show_output=True)
+                # Set the command lines
+                lines = []
+                lines.append(command)
+                lines.append(("':", username))
+                lines.append(("':", password))
+
+                # Clone the repository
+                self.remote.execute_lines(*lines, show_output=True)
+
+            else: self.remote.execute(command, show_output=True)
 
             # Get the git version
             first_part_command = "git rev-list --count HEAD"
@@ -1673,14 +1712,21 @@ def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
         repo_name = url.split("/")[-1].split(".git")[0]
 
     # Find the account file for the repository host (e.g. github.ugent.be)
-    username, password = introspection.get_account(host)
-    url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+    if introspection.has_account(host):
+
+        username, password = introspection.get_account(host)
+        url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+
+    else: url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
 
     # Clone the repository locally in the pts temporary directory
     temp_repo_path = fs.join(introspection.pts_temp_dir, skirt_or_pts + "-git")
     if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
     command = "git clone " + url + " " + temp_repo_path
     subprocess.call(command.split())
+
+    # Get the git commit hash
+    git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=temp_repo_path).split("\n")[0]
 
     # Zip the repository
     zip_path = fs.join(introspection.pts_temp_dir, skirt_or_pts + ".zip")
@@ -1705,9 +1751,10 @@ def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
     # Unpack the zip file into the 'git' directory
     remote.decompress_file(remote_zip_path, repo_path)
 
-    # Make a 'origin' file with the url of the repository
+    # Make a 'origin' file with the url of the repository AND THE GIT HASH OF THE REPO
     origin_path = fs.join(repo_path, "origin.txt")
     remote.write_line(origin_path, url)
+    remote.write_line(origin_path, git_hash)
 
     # Return the git version
     return git_version
