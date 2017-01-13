@@ -863,7 +863,7 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
     remote.execute(write_command)
 
     # Make
-    remote.execute(make_command, show_output=True)
+    remote.execute(make_command, show_output=True, cwd=skirt_repo_path)
 
 # -----------------------------------------------------------------
 
@@ -1751,10 +1751,13 @@ def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
     # Unpack the zip file into the 'git' directory
     remote.decompress_file(remote_zip_path, repo_path)
 
+    # Remove remote zip
+    remote.remove_file(remote_zip_path)
+
     # Make a 'origin' file with the url of the repository AND THE GIT HASH OF THE REPO
     origin_path = fs.join(repo_path, "origin.txt")
     remote.write_line(origin_path, url)
-    remote.write_line(origin_path, git_hash)
+    remote.append_line(origin_path, git_hash)
 
     # Return the git version
     return git_version
