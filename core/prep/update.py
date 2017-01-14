@@ -13,8 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import sys
-import pexpect
 import subprocess
 from abc import ABCMeta, abstractmethod
 
@@ -23,8 +21,9 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, get_skirt_hpc, get_pts_hpc, find_qmake, build_skirt_on_remote
+from .installation import get_installation_commands, get_pts_hpc, find_qmake, build_skirt_on_remote
 from ..tools import filesystem as fs
+from ..tools import git
 
 # -----------------------------------------------------------------
 
@@ -284,6 +283,10 @@ class SKIRTUpdater(Updater):
         # Check Qt installation, find qmake
         self.check_qt_remote()
 
+        # Check the presence of git:
+        # no, loading the latest git version interferes with the intel compiler version on HPC UGent
+        # self.check_git_remote()
+
         # Pull
         self.pull_remote()
 
@@ -305,6 +308,25 @@ class SKIRTUpdater(Updater):
         # Get the compiler paths
         self.compiler_path = self.remote.find_and_load_cpp_compiler()
         self.mpi_compiler_path = self.remote.find_and_load_mpi_compiler()
+
+    # -----------------------------------------------------------------
+
+    def check_git_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of git ...")
+
+        # Find and load git
+        path, version = self.remote.find_and_load_git()
+
+        # Debugging
+        log.debug("The path of the git installation is '" + path)
+        log.debug("The version of git is '" + version + "'")
 
     # -----------------------------------------------------------------
 
@@ -338,133 +360,135 @@ class SKIRTUpdater(Updater):
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
         # because of the private/public key thingy, so use a trick
-        if self.remote.host.name == "login.hpc.ugent.be":
+
+        #if self.remote.host.name == "login.hpc.ugent.be":
 
             # Get path to the origin.txt file
-            origin_path = fs.join(self.remote.skirt_repo_path, "origin.txt")
+            #origin_path = fs.join(self.remote.skirt_repo_path, "origin.txt")
 
             # Installed with PTS
-            if self.remote.is_file(origin_path):
+            #if self.remote.is_file(origin_path):
 
                 # Get url
-                url, git_version, git_hash = first_three_items_in_iterator(self.remote.read_lines(origin_path))
+                #url, git_version, git_hash = first_three_items_in_iterator(self.remote.read_lines(origin_path))
 
                 # Get the latest git hash for the URL of the repository
-                latest_git_hash = get_hash_remote_repository(url)
+                #latest_git_hash = get_hash_remote_repository(url)
 
                 # Debugging
-                log.debug("Latest git hash for repository: " + latest_git_hash)
-                log.debug("Git hash of version installed: " + git_hash)
+                #log.debug("Latest git hash for repository: " + latest_git_hash)
+                #log.debug("Git hash of version installed: " + git_hash)
 
                 # Compare the hashes
-                if latest_git_hash == git_hash:
+                #if latest_git_hash == git_hash:
 
                     # Already up to date
-                    log.success("Already up to date")
-                    self.rebuild = False
-                    self.git_version = git_version
-                    return
+                    #log.success("Already up to date")
+                    #self.rebuild = False
+                    #self.git_version = git_version
+                    #return
 
-                else: # not up to date
+                #else: # not up to date
 
                     # Remove the previous SKIRT/git directory
-                    self.remote.remove_directory(self.remote.skirt_repo_path)
+                    #self.remote.remove_directory(self.remote.skirt_repo_path)
 
                     # Get the new code
-                    self.git_version = get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
+                    #self.git_version = get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
 
             # Not installed with PTS
-            else:
+            #else:
 
                 # Get the url of the "origin"
-                url = get_url_repository(self.remote, self.remote.skirt_repo_path)
+                #url = get_url_repository(self.remote, self.remote.skirt_repo_path)
 
                 # Get latest hash
-                latest_git_hash = get_hash_remote_repository(url)
+                #latest_git_hash = get_hash_remote_repository(url)
 
                 # Get hash of current state
-                git_hash = get_git_hash(self.remote, self.remote.skirt_repo_path)
+                #git_hash = get_git_hash(self.remote, self.remote.skirt_repo_path)
 
                 # Debugging
-                log.debug("Latest git hash for repository: " + latest_git_hash)
-                log.debug("Git hash of version installed: " + git_hash)
+                #log.debug("Latest git hash for repository: " + latest_git_hash)
+                #log.debug("Git hash of version installed: " + git_hash)
 
                 # Compare git hashes
-                if latest_git_hash == git_hash:
-                    log.success("Already up to date")  # up to date
-                    self.rebuild = False
-                    self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
-                    return
+                #if latest_git_hash == git_hash:
+                #    log.success("Already up to date")  # up to date
+                #    self.rebuild = False
+                #    self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
+                #    return
 
                 # The repository can only be installed through SSH, thus no password is required
-                command = "git pull origin master"
+                #command = "git pull origin master"
 
                 # Execute the command
-                self.remote.execute(command, cwd=self.remote.skirt_repo_path, show_output=True)
+                #self.remote.execute(command, cwd=self.remote.skirt_repo_path, show_output=True)
 
                 # Get the git version
-                self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
+                #self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
 
         # Else
-        else:
+        #else:
 
-            # Get the url of the "origin"
-            url = get_url_repository(self.remote, self.remote.skirt_repo_path)
+        # Get the url of the "origin"
+        url = git.get_url_repository(self.remote, self.remote.skirt_repo_path)
 
-            # Get latest hash
-            latest_git_hash = get_hash_remote_repository(url)
+        # Get latest hash
+        latest_git_hash = git.get_hash_remote_repository(url)
 
-            # Get hash of current state
-            git_hash = get_git_hash(self.remote, self.remote.skirt_repo_path)
+        # Get hash of current state
+        git_hash = git.get_git_hash(self.remote, self.remote.skirt_repo_path)
 
-            # Debugging
-            log.debug("Latest git hash for repository: " + latest_git_hash)
-            log.debug("Git hash of version installed: " + git_hash)
+        # Debugging
+        log.debug("Latest git hash for repository: " + latest_git_hash)
+        log.debug("Git hash of version installed: " + git_hash)
 
-            # Compare git hashes
-            if latest_git_hash == git_hash:
-                log.success("Already up to date")  # up to date
-                self.rebuild = False
-                self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
-                return
+        # Compare git hashes
+        if latest_git_hash == git_hash:
 
-            # FOR SSH:
-            # Git pull
-            #self.remote.ssh.sendline("git pull origin master")
-            #self.remote.ssh.expect(":")
-            # Expect password
-            #if "Enter passphrase for key" in self.remote.ssh.before:
-            #    self.remote.execute(self.config.pubkey_password, show_output=True)
-            #else: self.remote.prompt()
+            log.success("Already up to date")  # up to date
+            self.rebuild = False
+            self.git_version = git.get_short_git_version(self.remote.skirt_repo_path, self.remote)
+            return
 
-            # Set the clone command
-            command = "git pull origin master"
+        # FOR SSH:
+        # Git pull
+        #self.remote.ssh.sendline("git pull origin master")
+        #self.remote.ssh.expect(":")
+        # Expect password
+        #if "Enter passphrase for key" in self.remote.ssh.before:
+        #    self.remote.execute(self.config.pubkey_password, show_output=True)
+        #else: self.remote.prompt()
 
-            # Get the url of the "origin"
-            url = get_url_repository(self.remote, self.remote.skirt_repo_path)
+        # Set the clone command
+        command = "git pull origin master"
 
-            # url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
-            host = url.split("https://")[1].split("/")[0]
+        # Get the url of the "origin"
+        url = git.get_url_repository(self.remote, self.remote.skirt_repo_path)
 
-            # Find the account file for the repository host (e.g. github.ugent.be)
-            if introspection.has_account(host):
+        # Decompose
+        host, user_or_organization, repo_name, username, password = git.decompose_https(url)
 
-                username, password = introspection.get_account(host)
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        if username is None and password is None and introspection.has_account(host):
 
-                # Set the command lines
-                lines = []
-                lines.append(command)
-                lines.append(("':", username))
-                lines.append(("':", password))
+            username, password = introspection.get_account(host)
 
-                # Clone the repository
-                self.remote.execute_lines(*lines, show_output=True, cwd=self.remote.skirt_repo_path)
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
 
-            # Pull, no passwords
-            else: self.remote.execute(command, show_output=True, cwd=self.remote.skirt_repo_path)
+            # Clone the repository
+            self.remote.execute_lines(*lines, show_output=False)
 
-            # Get git version
-            self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
+        # Pull
+        else: self.remote.execute(command, show_output=False, cwd=self.remote.skirt_repo_path)
+
+        # Get git version
+        self.git_version = git.get_short_git_version(self.remote.skirt_repo_path, self.remote)
 
         # Success
         log.success("SKIRT was successfully updated on remote host " + self.remote.host_id)
@@ -601,7 +625,7 @@ class PTSUpdater(Updater):
             lines.append(("':", password))
 
             # Clone the repository
-            self.remote.execute_lines(*lines, show_output=True)
+            self.remote.execute_lines(*lines, show_output=False)
 
             #if "Enter passphrase for key" in self.remote.ssh.before:
             #    self.remote.execute(self.config.pubkey_password, show_output=True)
@@ -677,7 +701,7 @@ class PTSUpdater(Updater):
         lines = []
         lines.append(update_command)
         lines.append(("Proceed ([y]/n)?", "y", True))
-        self.remote.execute_lines(*lines, show_output=True)
+        self.remote.execute_lines(*lines, show_output=False)
 
 # -----------------------------------------------------------------
 
@@ -731,168 +755,5 @@ def first_three_items_in_iterator(iterator):
     else: raise ValueError("Iterator contains less than 3 elements")
 
     return output[0], output[1], output[2]
-
-# -----------------------------------------------------------------
-
-def get_hash_remote_repository(url):
-
-    """
-    This function ...
-    :return:
-    """
-
-    # Check whether the repo is up-to-date
-    command = "git ls-remote " + url + " HEAD"
-    # child = pexpect.spawn(command, timeout=30, logfile=sys.stdout)
-    child = pexpect.spawn(command, timeout=30)
-    index = child.expect([pexpect.EOF, "':"])
-
-    # A prompt appears where username is asked
-    if index == 1:
-
-        # Username for 'https://github.ugent.be
-        host_url = child.before.split(" for '")[1]
-        host = host_url.split("https://")[1]
-
-        # Host info is present
-        if introspection.has_account(host):
-
-            username, password = introspection.get_account(host)
-
-            child.sendline(username)
-            child.expect("':")
-            child.sendline(password)
-            child.expect(pexpect.EOF)
-
-            #print(child.before)
-
-            output = child.before.split("\r\n")
-
-        # Error
-        else: raise ValueError("Account info is not present for '" + host + "'")
-
-    # No username and password required
-    elif index == 0:
-        #child.expect(pexpect.EOF)
-        #print(child.before)
-        output = child.before.split("\r\n")
-
-    # This shouldn't happen
-    else: raise RuntimeError("Something went wrong")
-
-    #print(output)
-
-    # Get the latest git hash from the output
-    #latest_git_hash = output[0].split("\t")[0]
-
-    latest_git_hash = None
-    for line in output:
-        if "HEAD" in line:
-            latest_git_hash = line.split("\t")[0]
-
-    # Return
-    return latest_git_hash
-
-# -----------------------------------------------------------------
-
-def get_url_repository(remote, repo_path):
-
-    """
-    This function ...
-    :param remote:
-    :param repo_path:
-    :return:
-    """
-
-    # Get the url of the repo from which cloned
-    args = ["git", "remote", "show", "origin"]
-    show_command = " ".join(args)
-
-    # Change cwd
-    original_cwd = remote.change_cwd(repo_path)
-
-    # Send the 'git remote show origin' command and look at what comes out
-    #remote.ssh.logfile = sys.stdout
-    remote.ssh.sendline(show_command)
-    index = remote.ssh.expect([remote.ssh.PROMPT, "':"])
-
-    # A prompt appears where username is asked
-    if index == 1:
-
-        # Username for 'https://github.ugent.be
-        host_url = remote.ssh.before.split(" for '")[1]
-        host = host_url.split("https://")[1]
-
-        if introspection.has_account(host):
-
-            username, password = introspection.get_account(host)
-
-            remote.ssh.sendline(username)
-            remote.ssh.expect("':")
-            remote.ssh.sendline(password)
-            remote.ssh.prompt()
-
-            output = remote.ssh.before.split("\r\n")[1:-1]
-
-        else: raise ValueError("Account info is not present for '" + host + "'")
-
-    # No username and password required
-    elif index == 0: output = remote.ssh.before.split("\r\n")[1:]
-
-    # This shouldn't happen
-    else:
-        raise RuntimeError("Something went wrong")
-
-    # Reset logfile
-    remote.ssh.logfile = None
-
-    # Reset cwd
-    remote.change_cwd(original_cwd)
-
-    url = None
-    for line in output:
-        if "Fetch URL" in line: url = line.split(": ")[1]
-
-    # Return the url
-    return url
-
-# -----------------------------------------------------------------
-
-def get_git_hash(remote, repo_path):
-
-    """
-    This function ...
-    :param remote:
-    :param repo_path:
-    :return:
-    """
-
-    # Check hash
-    get_hash_command = ["git", "rev-parse", "HEAD"]
-    get_hash_command = " ".join(get_hash_command)
-    git_hash = remote.execute(get_hash_command, cwd=repo_path)[0]
-
-    return git_hash
-
-# -----------------------------------------------------------------
-
-def get_short_git_version(remote, repo_path):
-
-    """
-    This function ...
-    :param remote:
-    :param repo_path:
-    :return:
-    """
-
-    # Get the git version
-    first_part_command = "git rev-list --count HEAD"
-    second_part_command = "git describe --dirty --always"
-    first_part = remote.execute(first_part_command, cwd=repo_path)[0].strip()
-    second_part = remote.execute(second_part_command, cwd=repo_path)[0].strip()
-
-    git_version = first_part + "-" + second_part
-
-    return git_version
 
 # -----------------------------------------------------------------

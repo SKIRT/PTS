@@ -164,6 +164,9 @@ class Remote(object):
         # Swap cluster
         if self.host.cluster_name is not None: self.swap_cluster(self.host.cluster_name)
 
+        # LMOD_DISABLE_SAME_NAME_AUTOSWAP
+        #self.define_environment_variable("LMOD_DISABLE_SAME_NAME_AUTOSWAP", "yes")
+
     # -----------------------------------------------------------------
 
     def __del__(self):
@@ -175,6 +178,31 @@ class Remote(object):
 
         # Disconnect from the remote host
         self.logout()
+
+    # -----------------------------------------------------------------
+
+    def define_environment_variable(self, name, value):
+
+        """
+        This function ...
+        :param name:
+        :param value:
+        :return:
+        """
+
+        command = "export " + name + "=" + value
+        self.execute(command)
+
+    # -----------------------------------------------------------------
+
+    def purge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.execute("module purge")
 
     # -----------------------------------------------------------------
 
@@ -194,6 +222,7 @@ class Remote(object):
         """
         This function ...
         :param module_name:
+        :param show_output:
         :return:
         """
 
@@ -293,14 +322,20 @@ class Remote(object):
         :return:
         """
 
-        if exact: output = self.execute("module spider " + module_name)
-        else: output = self.execute("module spider -r " + module_name)
+        if exact: command = "module spider " + module_name
+        else: command = "module spider -r " + module_name
+
+        print(command)
+        print(self.ssh.before)
+        output = self.execute(command, show_output=True)
 
         versions = []
 
         triggered = False
         for line in output:
+
             if triggered:
+
                 if not line.strip(): break
 
                 version = line.strip()
@@ -308,6 +343,14 @@ class Remote(object):
                 versions.append(version)
 
             elif "Versions:" in line: triggered = True
+
+            elif module_name + ":" in line:
+
+                if line.split(":")[1].strip() == "": continue
+                else:
+
+                    # only one version
+                    return [line.split(":")[1].strip()]
 
         return versions
 
@@ -609,6 +652,42 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def find_and_load_git(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load intel compiler toolkit if possible
+        if self.has_lmod:
+
+            versions = self.get_module_versions("git")
+
+            latest_version = None
+            latest_module_name = None
+            for version in versions:
+
+                # Get version
+                the_version = version.split("/")[1].split("-")[0]
+
+                if latest_version is None or the_version > latest_version:
+                    latest_version = the_version
+                    latest_module_name = version
+
+            if latest_module_name is None: raise RuntimeError("Git not available from the modules")
+
+            self.load_module(latest_module_name)
+
+        # Get path and version
+        git_path = self.find_executable("git")
+        git_version = self.version_of("git")
+
+        # Return
+        return git_path, git_version
+
+    # -----------------------------------------------------------------
+
     def find_and_load_cpp_compiler(self):
 
         """
@@ -717,7 +796,7 @@ class Remote(object):
         if qt5_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
 
         # Load the module
-        self.load_module(qt5_version)
+        self.load_module(qt5_version, show_output=True)
 
         # Get the qmake path
         qmake_path = self.find_executable("qmake")
@@ -2316,8 +2395,12 @@ class Remote(object):
         :return:
         """
 
+        #print(name)
+
         # Get the output of the 'which' command
         output = self.execute("which " + name)
+
+        #print(output)
 
         if len(output) == 0: return None
         else:

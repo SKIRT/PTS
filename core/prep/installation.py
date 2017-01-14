@@ -28,6 +28,7 @@ from ..tools import google
 from ..tools import network, archive
 from ..tools.parallelization import ncores
 from ..tools import terminal
+from ..tools import git
 
 # -----------------------------------------------------------------
 
@@ -525,12 +526,8 @@ class SKIRTInstaller(Installer):
 
         else: subprocess.call(command, shell=True)
 
-        # Get the git version
-        first_part_command = "git rev-list --count HEAD"
-        second_part_command = "git describe --dirty --always"
-        first_part = subprocess.check_output(first_part_command).split("\n")[0].strip()
-        second_part = subprocess.check_output(second_part_command).split("\n")[0].strip()
-        self.git_version = first_part + "-" + second_part
+        # Get git version
+        self.git_version = git.get_short_git_version(self.skirt_repo_path)
 
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
@@ -573,6 +570,7 @@ class SKIRTInstaller(Installer):
         log.debug("Make commands:")
         log.debug(" 1) " + make_make_command)
         log.debug(" 2) " + make_command)
+        log.debug("in directory: " + self.skirt_repo_path)
 
         # Make make
         subprocess.call(make_make_command, cwd=self.skirt_repo_path, shell=True)
@@ -622,6 +620,10 @@ class SKIRTInstaller(Installer):
         # Install Qt if necessary
         if not self.has_qt: self.install_qt_remote()
 
+        # Check the presence of git:
+        # no, loading the latest git version interferes with the intel compiler version on HPC UGent
+        #self.check_git_remote()
+
         # Get the SKIRT code
         self.get_skirt_remote()
 
@@ -647,6 +649,25 @@ class SKIRTInstaller(Installer):
         # Debugging
         log.debug("The C++ compiler path is '" + self.compiler_path)
         log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
+
+    # -----------------------------------------------------------------
+
+    def check_git_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of git ...")
+
+        # Find and load git
+        path, version = self.remote.find_and_load_git()
+
+        # Debugging
+        log.debug("The path of the git installation is '" + path)
+        log.debug("The version of git is '" + version + "'")
 
     # -----------------------------------------------------------------
 
@@ -731,47 +752,29 @@ class SKIRTInstaller(Installer):
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
         # because of the private/public key thingy, so use a trick
-        if self.remote.host.name == "login.hpc.ugent.be":
-            self.git_version = get_skirt_hpc(self.remote, url, self.skirt_root_path, self.skirt_repo_path)
-        else:
+        # DON'T NEED THIS AFTER ALL! WE CAN JUST ADD THE USERNAME AND PASSWORD TO THE HTTPS LINK AND IT WORKS!
+        #if self.remote.host.name == "login.hpc.ugent.be":
+        #    self.git_version = get_skirt_hpc(self.remote, url, self.skirt_root_path, self.skirt_repo_path)
+        #else:
 
-            # Already https link, get host adress
-            if url.startswith("https://"): host = url.split("//")[1].split("/")[0]
+        # Decompose
+        host, user_or_organization, repo_name, _, _ = git.decompose_repo_url(url)
 
-            # SSH
-            else:
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        if introspection.has_account(host): username, password = introspection.get_account(host)
+        else: username = password = None
 
-                # CONVERT TO HTTPS LINK
-                host = url.split("@")[1].split(":")[0]
-                user_or_organization = url.split(":")[1].split("/")[0]
-                repo_name = url.split("/")[-1].split(".git")[0]
-                url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+        # Compose HTTPS link
+        url = git.compose_https(host, user_or_organization, repo_name, username, password)
 
-            # Set the clone command
-            command = "git clone " + url + " " + self.skirt_repo_path
+        # Set the clone command
+        command = "git clone " + url + " " + self.skirt_repo_path
 
-            # Find the account file for the repository host (e.g. github.ugent.be)
-            if introspection.has_account(host):
+        # Clone
+        self.remote.execute(command, show_output=False)
 
-                username, password = introspection.get_account(host)
-
-                # Set the command lines
-                lines = []
-                lines.append(command)
-                lines.append(("':", username))
-                lines.append(("':", password))
-
-                # Clone the repository
-                self.remote.execute_lines(*lines, show_output=True)
-
-            else: self.remote.execute(command, show_output=True)
-
-            # Get the git version
-            first_part_command = "git rev-list --count HEAD"
-            second_part_command = "git describe --dirty --always"
-            first_part = self.remote.execute(first_part_command)[0].strip()
-            second_part = self.remote.execute(second_part_command)[0].strip()
-            self.git_version = first_part + "-" + second_part
+        # Get the git version
+        self.git_version = git.get_short_git_version(self.skirt_repo_path, self.remote)
 
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
@@ -877,9 +880,10 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
     log.debug("Make commands:")
     log.debug(" 1) " + make_make_command)
     log.debug(" 2) " + make_command)
+    log.debug("in directory " + skirt_repo_path)
 
     # Configure
-    remote.execute(make_make_command, show_output=True, cwd=skirt_repo_path)
+    output = remote.execute(make_make_command, show_output=False, cwd=skirt_repo_path)
 
     # Overwrite the git version
     git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
@@ -888,7 +892,12 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
     remote.execute(write_command)
 
     # Make
-    remote.execute(make_command, show_output=True, cwd=skirt_repo_path)
+    output = remote.execute(make_command, show_output=False, cwd=skirt_repo_path)
+
+    # Check the output
+    for line in output:
+        if "No targets specified and no makefile found.  Stop." in line:
+            raise RuntimeError("Building SKIRT on the remote " + remote.host_id + " failed")
 
 # -----------------------------------------------------------------
 
@@ -1188,16 +1197,12 @@ class PTSInstaller(Installer):
             lines.append(("':", password))
 
             # Clone the repository
-            terminal.execute_lines(*lines, show_output=True)
+            terminal.execute_lines(*lines)
 
         else: subprocess.call(command, shell=True)
 
         # Get the git version
-        first_part_command = "git rev-list --count HEAD"
-        second_part_command = "git describe --dirty --always"
-        first_part = terminal.execute(first_part_command)[0].strip()
-        second_part = terminal.execute(second_part_command)[0].strip()
-        self.git_version = first_part + "-" + second_part
+        self.git_version = git.get_short_git_version(self.pts_package_path)
 
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
@@ -1388,50 +1393,28 @@ class PTSInstaller(Installer):
 
         # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
         # because of the private/public key thingy, so use a trick
-        if self.remote.host.name == "login.hpc.ugent.be": self.git_version = get_pts_hpc(self.remote, url, self.pts_root_path, self.pts_package_path)
-        else:
+        # DON'T NEED THIS AFTER ALL! WE CAN JUST ADD THE USERNAME AND PASSWORD TO THE HTTPS LINK AND IT WORKS!
+        #if self.remote.host.name == "login.hpc.ugent.be": self.git_version = get_pts_hpc(self.remote, url, self.pts_root_path, self.pts_package_path)
+        #else:
 
-            # Already https link, get host adress
-            if url.startswith("https://"): host = url.split("//")[1].split("/")[0]
+        # Decompose
+        host, user_or_organization, repo_name, _, _ = git.decompose_repo_url(url)
 
-            # CONVERT TO HTTPS LINK
-            # git@github.ugent.be:sjversto/PTS.git
-            # to
-            # https://github.ugent.be/SKIRT/PTS.git
-            else:
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        if introspection.has_account(host): username, password = introspection.get_account(host)
+        else: username = password = None
 
-                host = url.split("@")[1].split(":")[0]
-                user_or_organization = url.split(":")[1].split("/")[0]
-                repo_name = url.split("/")[-1].split(".git")[0]
+        # Compose url
+        url = git.compose_https(host, user_or_organization, repo_name, username, password)
 
-                # Construct HTTPS url
-                url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
+        # Set the clone command
+        command = "git clone " + url + " " + self.pts_package_path
 
-            # Set the clone command
-            command = "git clone " + url + " " + self.pts_package_path
+        # Clone
+        self.remote.execute(command, show_output=False)
 
-            # Find the account file for the repository host (e.g. github.ugent.be)
-            if introspection.has_account(host):
-
-                username, password = introspection.get_account(host)
-
-                # Set the command lines
-                lines = []
-                lines.append(command)
-                lines.append(("':", username))
-                lines.append(("':", password))
-
-                # Clone the repository
-                self.remote.execute_lines(*lines, show_output=True)
-
-            else: self.remote.execute(command, show_output=True)
-
-            # Get the git version
-            first_part_command = "git rev-list --count HEAD"
-            second_part_command = "git describe --dirty --always"
-            first_part = self.remote.execute(first_part_command)[0].strip()
-            second_part = self.remote.execute(second_part_command)[0].strip()
-            self.git_version = first_part + "-" + second_part
+        # Get the git version
+        self.git_version = git.get_short_git_version(self.pts_package_path, self.remote)
 
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
