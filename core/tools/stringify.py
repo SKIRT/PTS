@@ -17,6 +17,9 @@ import warnings
 import numpy as np
 from types import NoneType
 
+# Import astronomical modules
+from astropy.units import Quantity
+
 # Import the relevant PTS classes and modules
 from ..basics.filter import Filter
 from ..basics.range import RealRange, IntegerRange, QuantityRange
@@ -52,8 +55,8 @@ def stringify(value):
 
         return ptype + "_list", ",".join(strings)
 
-    # Array or derived from Array
-    elif isinstance(value, np.ndarray):
+    # Array or derived from Array, but not quantity
+    elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
 
         ptype, val = stringify_not_list(value[0])
         return ptype + "_array", ",".join([repr(el) for el in value])

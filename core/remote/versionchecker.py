@@ -62,7 +62,10 @@ class VersionChecker(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Show versions
+        # 2. Check versions
+        self.check()
+
+        # 3. Show versions if requested
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------

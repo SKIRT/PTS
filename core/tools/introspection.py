@@ -563,8 +563,8 @@ def cpp_compiler_version():
     """
 
     # Execute
-    output = subprocess.check_output(cpp_compiler_path() + " --version", shell=True)
-    return output
+    output = subprocess.check_output(cpp_compiler_path() + " --version", shell=True).split("\n")
+    return output[0]
 
 # -----------------------------------------------------------------
 
@@ -614,6 +614,8 @@ def mpi_compiler_version():
     This function ...
     :return:
     """
+
+    print(mpi_compiler_path())
 
     # Execute
     output = subprocess.check_output(mpi_compiler_path() + " --version", shell=True)

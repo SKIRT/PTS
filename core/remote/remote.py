@@ -325,9 +325,9 @@ class Remote(object):
         if exact: command = "module spider " + module_name
         else: command = "module spider -r " + module_name
 
-        print(command)
-        print(self.ssh.before)
-        output = self.execute(command, show_output=True)
+        #print(command)
+        #print(self.ssh.before)
+        output = self.execute(command, show_output=False)
 
         versions = []
 
@@ -796,7 +796,7 @@ class Remote(object):
         if qt5_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
 
         # Load the module
-        self.load_module(qt5_version, show_output=True)
+        self.load_module(qt5_version, show_output=False)
 
         # Get the qmake path
         qmake_path = self.find_executable("qmake")

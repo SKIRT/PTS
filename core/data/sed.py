@@ -228,8 +228,8 @@ class ObservedSED(FilterCurve):
         unit = PhotometricUnit(unit, density=density)
 
         # Add column for the errors
-        cls.column_info.append("Error-", float, unit, "Lower bound error")
-        cls.column_info.append("Error+", float, unit, "Upper bound error")
+        cls.column_info.append(("Error-", float, unit, "Lower bound error"))
+        cls.column_info.append(("Error+", float, unit, "Upper bound error"))
 
         # Call the initialize function of the base class
         return super(ObservedSED, cls).initialize("Photometry", "Photometric points", unit)

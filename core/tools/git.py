@@ -100,13 +100,27 @@ def get_url_repository(remote, repo_path):
     # Send the 'git remote show origin' command and look at what comes out
     #remote.ssh.logfile = sys.stdout
     remote.ssh.sendline(show_command)
-    index = remote.ssh.expect([remote.ssh.PROMPT, "':"])
+    #index = remote.ssh.expect([remote.ssh.PROMPT, "':"])
+    index = remote.ssh.expect([remote.ssh.PROMPT, "Username for"])
 
     # A prompt appears where username is asked
     if index == 1:
 
+        remote.ssh.expect("':")
+
+        #print(remote.ssh.before)
+
         # Username for 'https://github.ugent.be
-        host_url = remote.ssh.before.split(" for '")[1]
+        #host_url = remote.ssh.before.split(" for '")[1]
+        host_url = remote.ssh.before.split("'")[1].strip()
+
+        #host_url = remote.ssh.before.split("Username for '")[1].split("'")[0]
+
+        #remote.ssh.expect("':")
+
+        #print(remote.ssh.before)
+        #print(host_url)
+
         host = host_url.split("https://")[1]
 
         if introspection.has_account(host):
@@ -182,7 +196,6 @@ def get_short_git_version(repo_path, remote=None):
         first_part_command = "git rev-list HEAD"
         output = remote.execute(first_part_command, cwd=repo_path)
 
-        print("LEN OUTPUT:", len(output))
         first_part = str(len(output))
 
     else:
