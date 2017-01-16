@@ -49,12 +49,9 @@ def is_available(host_id):
     """
 
     remote = Remote()
-
-    try: remote.setup(host_id)
-    except HostDownException: return False
-
+    success = remote.setup(host_id)
     del remote
-    return True
+    return success
 
 # -----------------------------------------------------------------
 
@@ -159,13 +156,26 @@ class Remote(object):
             if self.host.key not in active_keys(): add_key(self.host.key)
 
         # Make the connection
-        self.login(login_timeout)
+        try: self.login(login_timeout)
+        except HostDownException:
+
+            # Warning
+            log.warning("Connection to host '" + host_id + "' failed, trying again ...")
+            #self.ssh.logout()
+            self.ssh = pxssh.pxssh()
+            try: self.login(login_timeout)
+            except HostDownException:
+                log.warning("Could not connect to the remote host")
+                return False
 
         # Swap cluster
         if self.host.cluster_name is not None: self.swap_cluster(self.host.cluster_name)
 
         # LMOD_DISABLE_SAME_NAME_AUTOSWAP
         #self.define_environment_variable("LMOD_DISABLE_SAME_NAME_AUTOSWAP", "yes")
+
+        # Return whether the connection was made
+        return self.connected
 
     # -----------------------------------------------------------------
 
@@ -411,6 +421,67 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def bashrc_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check if bashrc exists, if not create it if we are on Linux
+        bashrc_path = fs.join(self.home_directory, ".bashrc")
+        if self.is_linux and not self.is_file(bashrc_path): self.touch(bashrc_path)
+
+        # Return the path
+        return bashrc_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def profile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether .profile exists, create it if we are on MacOS
+        profile_path = fs.join(self.home_directory, ".profile")
+        if self.is_macos and not self.is_file(profile_path): self.touch(profile_path)
+
+        # Return the path
+        return profile_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def bash_profile_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        bash_profile_path = fs.join(self.home_directory, ".bash_profile")
+        return bash_profile_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def shell_configuration_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.is_macos: return self.profile_path
+        elif self.is_linux: return self.bashrc_path
+        else: raise NotImplemented("System must be running MacOS or Linux")
+
+    # -----------------------------------------------------------------
+
     def fix_configuration_files(self):
 
         """
@@ -421,40 +492,35 @@ class Remote(object):
         # Inform the user
         log.info("Checking and fixing shell configuration files ...")
 
-        # Check if bashrc exists, if not create it
-        bashrc_path = fs.join(self.home_directory, ".bashrc")
-        if not self.is_file(bashrc_path): self.touch(bashrc_path)
-
-        # Check whether .profile exists
-        profile_path = fs.join(self.home_directory, ".profile")
-        bash_profile_path = fs.join(self.home_directory, ".bash_profile")
+        # On MacOS, don't need fixing
+        if self.is_macos: return
 
         # If bash_profile file exists
-        if self.is_file(bash_profile_path):
+        if self.is_file(self.bash_profile_path):
 
             # Check if it points to the bashrc file
-            links_bashrc = ".bashrc" in ";".join(self.read_lines(bash_profile_path))
+            links_bashrc = ".bashrc" in ";".join(self.read_lines(self.bash_profile_path))
 
             # Add link to bashrc
-            if not links_bashrc: self._add_bashrc_link(bash_profile_path)
+            if not links_bashrc: self._add_bashrc_link(self.bash_profile_path)
 
         # If profile file exists
-        elif self.is_file(profile_path):
+        elif self.is_file(self.profile_path):
 
             # Check if it points to the bashrc file
-            links_bashrc = ".bashrc" in ";".join(self.read_lines(profile_path))
+            links_bashrc = ".bashrc" in ";".join(self.read_lines(self.profile_path))
 
             # Add link to bashrc
-            if not links_bashrc: self._add_bashrc_link(profile_path)
+            if not links_bashrc: self._add_bashrc_link(self.profile_path)
 
         # Profile and bash_profile files do not exist
         else:
 
             # Make bash profile
-            self.touch(bash_profile_path)
+            self.touch(self.bash_profile_path)
 
             # Make it link to bashrc
-            self._add_bashrc_link(bash_profile_path)
+            self._add_bashrc_link(self.bash_profile_path)
 
     # -----------------------------------------------------------------
 
@@ -476,6 +542,64 @@ class Remote(object):
 
         # Add the lines
         self.append_lines(path, lines)
+
+    # -----------------------------------------------------------------
+
+    def add_to_environment_variable(self, variable_name, value, comment=None, in_shell=False):
+
+        """
+        This function ...
+        :param variable_name:
+        :param value:
+        :param comment:
+        :param in_shell:
+        :return:
+        """
+
+        # Set PYTHONPATH
+        export_command = "export " + variable_name + "=" + value + ":$" + variable_name
+
+        # Define lines
+        lines = []
+        lines.append("")
+        if comment is not None: lines.append("# " + comment)
+        lines.append(export_command)
+        lines.append("")
+
+        # Add lines
+        self.append_lines(self.shell_configuration_path, lines)
+
+        # Execute in shell
+        if in_shell: self.execute(export_command)
+
+    # -----------------------------------------------------------------
+
+    def define_alias(self, name, alias_to, comment=None, in_shell=False):
+
+        """
+        This function ...
+        :param name:
+        :param alias_to:
+        :param comment:
+        :param in_shell:
+        :return:
+        """
+
+        # Generate the command
+        alias_command = 'alias ' + name + '="' + alias_to + '"'
+
+        # Define lines
+        lines = []
+        lines.append("")
+        if comment is not None: lines.append("# " + comment)
+        lines.append(alias_command)
+        lines.append("")
+
+        # Add lines
+        self.append_lines(self.shell_configuration_path, lines)
+
+        # Execute in shell
+        if in_shell: self.execute(alias_command)
 
     # -----------------------------------------------------------------
 
@@ -1402,6 +1526,9 @@ class Remote(object):
         :return:
         """
 
+        # Check whether connected
+        if not self.connected: raise RuntimeError("The remote is not connected")
+
         # Change the working directory if necessary
         if cwd is not None: original_cwd = self.change_cwd(cwd)
         else: original_cwd = None
@@ -2259,7 +2386,14 @@ class Remote(object):
         :return:
         """
 
-        return self.is_executable("pts")
+        #return self.is_executable("pts")
+
+        for line in self.execute("pts -v"):
+
+            if "command not found" in line: return False
+            elif "No module named pts" in line: return False
+
+        return True
 
     # -----------------------------------------------------------------
 
@@ -2395,12 +2529,8 @@ class Remote(object):
         :return:
         """
 
-        #print(name)
-
         # Get the output of the 'which' command
         output = self.execute("which " + name)
-
-        #print(output)
 
         if len(output) == 0: return None
         else:
@@ -2923,14 +3053,51 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
-    def operating_system(self):
+    def is_macos(self):
 
         """
         This function ...
         :return:
         """
 
-        output = self.execute("uname")
+        return self.operating_system_short == "Darwin"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_linux(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.operating_system_short == "Linux"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def operating_system_short(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("uname -s")
+        return output[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def operating_system_long(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("uname -a")
         return output[0]
 
     # -----------------------------------------------------------------

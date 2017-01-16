@@ -21,7 +21,7 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, get_pts_hpc, find_qmake, build_skirt_on_remote
+from .installation import get_installation_commands, find_qmake, build_skirt_on_remote
 from ..tools import filesystem as fs
 from ..tools import git
 
@@ -482,10 +482,10 @@ class SKIRTUpdater(Updater):
             lines.append(("':", password))
 
             # Clone the repository
-            self.remote.execute_lines(*lines, show_output=False)
+            self.remote.execute_lines(*lines, show_output=log.is_debug())
 
         # Pull
-        else: self.remote.execute(command, show_output=False, cwd=self.remote.skirt_repo_path)
+        else: self.remote.execute(command, show_output=log.is_debug(), cwd=self.remote.skirt_repo_path)
 
         # Get git version
         self.git_version = git.get_short_git_version(self.remote.skirt_repo_path, self.remote)
@@ -591,46 +591,29 @@ class PTSUpdater(Updater):
         # Debugging
         log.debug("Getting latest version ...")
 
-        # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
-        # because of the private/public key thingy, so use a trick
-        if self.remote.host.name == "login.hpc.ugent.be":
+        # Change working directory to repository directory
+        pts_git_path = self.remote.pts_package_path
+        self.remote.change_cwd(pts_git_path)
 
-            # Get the repo URL
-            origin_path = fs.join(self.remote.pts_package_path, "origin.txt")
-            url = first_item_in_iterator(self.remote.read_lines(origin_path)[0])
+        # Set the command
+        command = "git pull origin master"
 
-            # Remove the previous PTS/pts directory
-            self.remote.remove_directory(self.remote.pts_package_path)
+        # Get username and password
+        username, password = introspection.get_account("github.ugent.be")
 
-            # Get the new code
-            get_pts_hpc(self.remote, url, self.remote.pts_root_path, self.remote.pts_package_path)
+        # Set the command lines
+        lines = []
+        lines.append(command)
+        lines.append(("':", username))
+        lines.append(("':", password))
 
-        # Else
-        else:
+        # Clone the repository
+        self.remote.execute_lines(*lines, show_output=log.is_debug())
 
-            # Change working directory to repository directory
-            pts_git_path = self.remote.pts_package_path
-            self.remote.change_cwd(pts_git_path)
+        #if "Enter passphrase for key" in self.remote.ssh.before:
+        #    self.remote.execute(self.config.pubkey_password, show_output=True)
 
-            # Set the command
-            command = "git pull origin master"
-
-            # Get username and password
-            username, password = introspection.get_account("github.ugent.be")
-
-            # Set the command lines
-            lines = []
-            lines.append(command)
-            lines.append(("':", username))
-            lines.append(("':", password))
-
-            # Clone the repository
-            self.remote.execute_lines(*lines, show_output=False)
-
-            #if "Enter passphrase for key" in self.remote.ssh.before:
-            #    self.remote.execute(self.config.pubkey_password, show_output=True)
-
-            #else: self.remote.prompt()
+        #else: self.remote.prompt()
 
     # -----------------------------------------------------------------
 
@@ -681,8 +664,8 @@ class PTSUpdater(Updater):
 
             command = installation_commands[module]
 
-            if isinstance(command, list): self.remote.execute_lines(*command, show_output=True)
-            elif isinstance(command, basestring): self.remote.execute(command, show_output=True)
+            if isinstance(command, list): self.remote.execute_lines(*command, show_output=log.is_debug())
+            elif isinstance(command, basestring): self.remote.execute(command, show_output=log.is_debug())
 
         # Show installed packages
         log.info("Packages that were installed:")
@@ -701,7 +684,7 @@ class PTSUpdater(Updater):
         lines = []
         lines.append(update_command)
         lines.append(("Proceed ([y]/n)?", "y", True))
-        self.remote.execute_lines(*lines, show_output=False)
+        self.remote.execute_lines(*lines, show_output=log.is_debug())
 
 # -----------------------------------------------------------------
 

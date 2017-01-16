@@ -54,6 +54,9 @@ class SDSSMosaicMaker(Configurable):
         # 1. Call the setup function
         self.setup()
 
+        # Create directories
+        self.create_directories()
+
         # 2. Do the mosaicing
         self.mosaic()
 
@@ -73,6 +76,57 @@ class SDSSMosaicMaker(Configurable):
         self.dpdp = DustPediaDataProcessing()
 
     # -----------------------------------------------------------------
+
+    def create_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the temporary directory
+        temp_path = fs.join(fs.home(), time.unique_name("SDSS_" + galaxy_name + "_" + band))
+
+        # Create the temporary directory
+        fs.create_directory(temp_path)
+
+        # temp_path = fs.join(fs.home(), "SDSS_NGC3031_u_2016-08-10--16-48-33-775")
+
+        ###
+
+        # RAW PATH
+        raw_path = fs.join(temp_path,
+                           "raw")  # frames with HDU0, HDU1, HDU2 .. (primary, calib, sky, ...) IN NANOMAGGIES PER PIXEL
+        fs.create_directory(raw_path)
+
+        # FIELDS PATH
+        fields_path = fs.join(temp_path, "fields")  # photoField files
+        fs.create_directory(fields_path)
+
+        # COUNTS PATH
+        counts_path = fs.join(temp_path, "counts")  # frames IN COUNTS (DN)
+        fs.create_directory(counts_path)
+
+        # POISSON PATH
+        poisson_path = fs.join(temp_path, "poisson_nmgy")  # error maps in NANOMAGGIES PER PIXEL
+        fs.create_directory(poisson_path)
+
+        # REBINNED PATH
+        rebinned_path = fs.join(temp_path,
+                                "rebinned")  # images with frame and corresponding error map in NANOMAGGIES, REBINNED
+        fs.create_directory(rebinned_path)
+
+        # FOOTPRINTS PATH
+        footprints_path = fs.join(temp_path, "footprints")
+        fs.create_directory(footprints_path)
+
+        # MOSAIC PATH
+        mosaics_path = fs.join(temp_path, "mosaics")
+        fs.create_directory(mosaics_path)
+
+        # RESULT PATH
+        results_path = fs.join(temp_path, "results")
+        fs.create_directory(results_path)
 
     def mosaic(self):
 

@@ -23,6 +23,7 @@ from ...core.tools import filesystem as fs
 from ...core.launch.pts import PTSRemoteLauncher
 from ...core.tools import network, archive
 from ...magic.core.frame import Frame
+from ...core.tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
@@ -73,28 +74,28 @@ class ImageFetcher(DataComponent):
         self.fetch_galex()
 
         # 4. Fetch SDSS data and calculate poisson errors
-        #self.fetch_sdss()
+        self.fetch_sdss()
 
         # 5. Fetch the H-alpha image
-        #self.fetch_halpha()
+        self.fetch_halpha()
 
         # 6. Fetch the 2MASS images
-        #self.fetch_2mass()
+        self.fetch_2mass()
 
         # 7. Fetch the Spitzer images
-        #self.fetch_spitzer()
+        self.fetch_spitzer()
 
         # 8. Fetch the WISE images
-        #self.fetch_wise()
+        self.fetch_wise()
 
         # 9. Fetch the Herschel images
-        #self.fetch_herschel()
+        self.fetch_herschel()
 
         # 10. Fetch the Planck images
-        #self.fetch_planck()
+        self.fetch_planck()
 
         # 11. Writing
-        #self.write()
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -138,6 +139,7 @@ class ImageFetcher(DataComponent):
         # Order the names per origin
         for origin in self.data_origins:
 
+            # Loop over all URLs
             for name in all_urls:
 
                 if not self.config.errors and "_Error" in name: continue # Skip error frames unless the 'errors' flag has been enabled
@@ -343,5 +345,26 @@ class ImageFetcher(DataComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the URLs
+        self.write_urls()
+
+    # -----------------------------------------------------------------
+
+    def write_urls(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the image URLs ...")
+
+        # Determine the path
+        path = fs.join(self.data_images_path, "urls.dat")
+
+        # Write
+        write_dict(self.dustpedia_image_urls, path)
 
 # -----------------------------------------------------------------

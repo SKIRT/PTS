@@ -14,8 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import requests
-import subprocess
-import pexpect
 from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
@@ -477,13 +475,13 @@ class SKIRTInstaller(Installer):
         install_command = "make install"
 
         # Configure
-        subprocess.call(configure_command, shell=True, cwd=decompress_path)
+        terminal.execute(configure_command, cwd=decompress_path)
 
         # Make
-        subprocess.call(make_command, shell=True, cwd=decompress_path)
+        terminal.execute(make_command, cwd=decompress_path)
 
         # Install
-        subprocess.call(install_command, shell=True, cwd=decompress_path)
+        terminal.execute(install_command, cwd=decompress_path)
 
         # Remove the tar.gz file and the temporary directory
         fs.remove_file(path)
@@ -518,13 +516,22 @@ class SKIRTInstaller(Installer):
             username, password = introspection.get_account(host)
 
             # Clone
-            child = pexpect.spawn(command, timeout=30)
-            child.expect([':'])
-            child.sendline(username)
-            child.expect([':'])
-            child.sendline(password)
+            #child = pexpect.spawn(command, timeout=30)
+            #child.expect([':'])
+            #child.sendline(username)
+            #child.expect([':'])
+            #child.sendline(password)
 
-        else: subprocess.call(command, shell=True)
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
+
+            # Clone the repository
+            terminal.execute_lines(*lines)
+
+        else: terminal.execute(command)
 
         # Get git version
         self.git_version = git.get_short_git_version(self.skirt_repo_path)
@@ -532,22 +539,17 @@ class SKIRTInstaller(Installer):
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
 
-        # Set PYTHONPATH
-        bashrc_path = fs.join(fs.home(), ".bashrc")
+        # Determine path of SKIRT and FitSKIRT main directories with executable
+        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
+        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
 
-        lines = []
-        export_command = "export PATH=" + fs.join(self.skirt_release_path, "SKIRTmain") + ":" + fs.join(self.skirt_release_path, "FitSKIRTmain") + ":$PATH"
-        lines.append("")
-        lines.append("# For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)")
-        lines.append(export_command)
-        lines.append("")
-        fs.append_lines(bashrc_path, lines)
+        # Add to path, also execute in current shell to make SKIRT (and FtiSKIRT) visible
+        add_to_environment_variable("PATH", skirt_main_path, comment=comment, in_shell=True)
+        add_to_environment_variable("PATH", fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
-        self.skirt_path = fs.join(self.skirt_release_path, "SKIRTmain", "skirt")
-
-        # Run export path in the current shell to make SKIRT command visible
-        subprocess.call(export_command, shell=True)
+        self.skirt_path = fs.join(skirt_main_path, "skirt")
 
     # -----------------------------------------------------------------
 
@@ -573,16 +575,16 @@ class SKIRTInstaller(Installer):
         log.debug("in directory: " + self.skirt_repo_path)
 
         # Make make
-        subprocess.call(make_make_command, cwd=self.skirt_repo_path, shell=True)
+        terminal.execute(make_make_command, cwd=self.skirt_repo_path)
 
         # Overwrite the git version
         git_version_content = 'const char* git_version = " ' + self.git_version + ' " ;'
         git_version_path = fs.join(self.skirt_repo_path, "SKIRTmain", "git_version.h")
         write_command = 'echo "' + git_version_content + '" > ' + git_version_path
-        subprocess.call(write_command, shell=True)
+        terminal.execute(write_command)
 
         # Make
-        subprocess.call(make_command, cwd=self.skirt_repo_path, shell=True)
+        terminal.execute(make_command, cwd=self.skirt_repo_path)
 
         # Success
         log.success("SKIRT was successfully built")
@@ -771,7 +773,7 @@ class SKIRTInstaller(Installer):
         command = "git clone " + url + " " + self.skirt_repo_path
 
         # Clone
-        self.remote.execute(command, show_output=False)
+        self.remote.execute(command, show_output=log.is_debug())
 
         # Get the git version
         self.git_version = git.get_short_git_version(self.skirt_repo_path, self.remote)
@@ -779,21 +781,17 @@ class SKIRTInstaller(Installer):
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
 
-        # Set PYTHONPATH
-        bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
-        lines = []
-        export_command = "export PATH=" + fs.join(self.skirt_release_path, "SKIRTmain") + ":" + fs.join(self.skirt_release_path, "FitSKIRTmain") + ":$PATH"
-        lines.append("")
-        lines.append("# For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)")
-        lines.append(export_command)
-        lines.append("")
-        self.remote.append_lines(bashrc_path, lines)
+        # Determine SKIRT and FitSKIRT main paths
+        skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
+        fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+
+        # Add
+        comment = "Added by the Python Toolkit for SKIRT (PTS)"
+        self.remote.add_to_environment_variable("PATH", skirt_main_path, comment=comment, in_shell=True)
+        self.remote.add_to_environment_variable("PATH", fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
-        self.skirt_path = fs.join(self.skirt_release_path, "SKIRTmain", "skirt")
-
-        # Run export path in the current shell to make SKIRT command visible
-        self.remote.execute(export_command)
+        self.skirt_path = fs.join(skirt_main_path, "skirt")
 
         # Success
         log.success("SKIRT was successfully downloaded")
@@ -828,7 +826,7 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Testing the SKIRT installation ...")
 
-        output = subprocess.check_output(["skirt", "-h"]).split("\n")
+        output = terminal.execute("skirt -h")
         for line in output:
             if "Welcome to SKIRT" in line:
                 log.succes("SKIRT is working")
@@ -883,7 +881,7 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
     log.debug("in directory " + skirt_repo_path)
 
     # Configure
-    output = remote.execute(make_make_command, show_output=False, cwd=skirt_repo_path)
+    output = remote.execute(make_make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
 
     # Overwrite the git version
     git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
@@ -892,7 +890,7 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
     remote.execute(write_command)
 
     # Make
-    output = remote.execute(make_command, show_output=False, cwd=skirt_repo_path)
+    output = remote.execute(make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
 
     # Check the output
     for line in output:
@@ -1142,14 +1140,16 @@ class PTSInstaller(Installer):
         if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
         else:
 
-            if self.remote.platform == "MacOS":
+            # Mac
+            if self.remote.is_macos:
 
                 # Add conda path to .profile
                 profile_path = fs.join(self.remote.home_directory, ".profile")
 
                 # ...
 
-            elif self.remote.platform == "Linux":
+            # Linux
+            elif self.remote.is_linux:
 
                 conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
 
@@ -1161,6 +1161,9 @@ class PTSInstaller(Installer):
                     self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
 
                 # ...
+
+            # Other
+            else: raise NotImplementedError("OS must be Linux or MacOS")
 
     # -----------------------------------------------------------------
 
@@ -1199,7 +1202,7 @@ class PTSInstaller(Installer):
             # Clone the repository
             terminal.execute_lines(*lines)
 
-        else: subprocess.call(command, shell=True)
+        else: terminal.execute(command)
 
         # Get the git version
         self.git_version = git.get_short_git_version(self.pts_package_path)
@@ -1207,24 +1210,11 @@ class PTSInstaller(Installer):
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
 
-        # Set PYTHONPATH
-        bashrc_path = fs.join(fs.home(), ".bashrc")
-        export_command = "export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH"
-        alias_pts_command = 'alias pts="python -m pts.do"'
-        alias_ipts_command = 'alias ipts="python -im pts.do"'
-        lines = []
-        lines.append("")
-        lines.append("# For PTS, added by PTS (Python Toolkit for SKIRT)")
-        lines.append(export_command)
-        lines.append(alias_pts_command)
-        lines.append(alias_ipts_command)
-        lines.append("")
-        fs.append_lines(bashrc_path, lines)
-
-        # Run commands in current shell, so that the pts command can be found
-        terminal.execute(export_command)
-        terminal.execute(alias_pts_command)
-        terminal.execute(alias_ipts_command)
+        # Add PTS to shell configuration file
+        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+        add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
+        define_alias("pts", "python -m pts.do", comment=comment, in_shell=True)
+        define_alias("ipts", "python -im pts.do", comment=comment, in_shell=True)
 
         # Set the path to the main PTS executable
         self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
@@ -1272,8 +1262,8 @@ class PTSInstaller(Installer):
 
             command = installation_commands[module]
 
-            if isinstance(command, list): terminal.execute_lines(*command, show_output=True)
-            elif isinstance(command, basestring): terminal.execute(command, show_output=True)
+            if isinstance(command, list): terminal.execute_lines(*command, show_output=log.is_debug())
+            elif isinstance(command, basestring): terminal.execute(command, show_output=log.is_debug())
 
         # Show installed packages
         log.info("Packages that were installed:")
@@ -1323,14 +1313,16 @@ class PTSInstaller(Installer):
         if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
         else:
 
-            if self.remote.platform == "MacOS":
+            # MacOS
+            if self.remote.is_macos:
 
                 # Add conda path to .profile
                 profile_path = fs.join(self.remote.home_directory, ".profile")
 
                 # ...
 
-            elif self.remote.platform == "Linux":
+            # Linux
+            elif self.remote.is_linux == "Linux":
 
                 conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
 
@@ -1352,28 +1344,23 @@ class PTSInstaller(Installer):
                 if not self.remote.is_directory(conda_installation_path):
 
                     command = "bash " + conda_installer_path + " -b -p " + conda_installation_path
-                    self.remote.execute(command, show_output=True)
+                    self.remote.execute(command, show_output=log.is_debug())
 
                 conda_bin_path = fs.join(conda_installation_path, "bin")
                 self.conda_executable_path = fs.join(conda_bin_path, "conda")
                 self.conda_pip_path = fs.join(conda_bin_path, "pip")
                 self.conda_python_path = fs.join(conda_bin_path, "python")
 
-                # Add conda bin path to bashrc
-                bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
-                export_command = "export PATH=" + conda_bin_path + ":$PATH"
-                lines = []
-                lines.append("")
-                lines.append("# For Miniconda, added by PTS (Python Toolkit for SKIRT)")
-                lines.append(export_command)
-                lines.append("")
-
                 # Debugging
                 log.debug("Adding the conda executables to the PATH ...")
-                self.remote.append_lines(bashrc_path, lines)
 
-                # Run the export command in the current shell, so that the conda commands can be found
-                self.remote.execute(export_command)
+                # Add conda bin path to bashrc / profile
+                comment = "For Miniconda, added by PTS (Python Toolkit for SKIRT)"
+                # Run the export command also in the current shell, so that the conda commands can be found
+                self.remote.add_to_environment_variable("PATH", conda_bin_path, comment=comment, shell=True)
+
+            # Other
+            else: raise NotImplementedError("OS must be MacOS or Linux")
 
     # -----------------------------------------------------------------
 
@@ -1411,7 +1398,7 @@ class PTSInstaller(Installer):
         command = "git clone " + url + " " + self.pts_package_path
 
         # Clone
-        self.remote.execute(command, show_output=False)
+        self.remote.execute(command, show_output=log.is_debug())
 
         # Get the git version
         self.git_version = git.get_short_git_version(self.pts_package_path, self.remote)
@@ -1419,24 +1406,11 @@ class PTSInstaller(Installer):
         # Show the git version
         log.info("The git version to be installed is '" + self.git_version + "'")
 
-        # Set PYTHONPATH
-        bashrc_path = fs.join(self.remote.home_directory, ".bashrc")
-        export_command = "export PYTHONPATH=" + self.pts_root_path + ":$PYTHONPATH"
-        alias_pts_command = 'alias pts="python -m pts.do"'
-        alias_ipts_command = 'alias ipts="python -im pts.do"'
-        lines = []
-        lines.append("")
-        lines.append("# For PTS, added by PTS (Python Toolkit for SKIRT)")
-        lines.append(export_command)
-        lines.append(alias_pts_command)
-        lines.append(alias_ipts_command)
-        lines.append("")
-        self.remote.append_lines(bashrc_path, lines)
-
         # Run commands in current shell, so that the pts command can be found
-        self.remote.execute(export_command)
-        self.remote.execute(alias_pts_command)
-        self.remote.execute(alias_ipts_command)
+        comment = "Added by the Python Toolkit for SKIRT (PTS)"
+        self.remote.add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
+        self.remote.define_alias("pts", "python -m pts.do", comment=comment, in_shell=True)
+        self.remote.define_alias("ipts", "python -im pts.do", comment=comment, in_shell=True)
 
         # Set the path to the main PTS executable
         self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
@@ -1489,8 +1463,8 @@ class PTSInstaller(Installer):
 
             command = installation_commands[module]
 
-            if isinstance(command, list): self.remote.execute_lines(*command, show_output=True)
-            elif isinstance(command, basestring): self.remote.execute(command, show_output=True)
+            if isinstance(command, list): self.remote.execute_lines(*command, show_output=log.is_debug())
+            elif isinstance(command, basestring): self.remote.execute(command, show_output=log.is_debug())
 
         # Show installed packages
         log.info("Packages that were installed:")
@@ -1516,7 +1490,7 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Testing the PTS installation ...")
 
-        output = subprocess.check_output(["pts", "-h"]).split("\n")
+        output = terminal.execute("pts -h")
         for line in output:
             if "usage: pts" in line: break
         else:
@@ -1664,115 +1638,6 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
 # -----------------------------------------------------------------
 
-def get_skirt_hpc(remote, url, skirt_root_path, skirt_repo_path):
-
-    """
-    This function ...
-    :param remote:
-    :param url:
-    :param skirt_root_path:
-    :param skirt_repo_path:
-    :return:
-    """
-
-    return get_skirt_or_pts_hpc(remote, url, skirt_root_path, skirt_repo_path, "skirt")
-
-# -----------------------------------------------------------------
-
-def get_pts_hpc(remote, url, pts_root_path, pts_package_path):
-
-    """
-    This function ...
-    :param remote:
-    :param url:
-    :param pts_root_path:
-    :param pts_package_path:
-    :return:
-    """
-
-    return get_skirt_or_pts_hpc(remote, url, pts_root_path, pts_package_path, "pts")
-
-# -----------------------------------------------------------------
-
-def get_skirt_or_pts_hpc(remote, url, root_path, repo_path, skirt_or_pts):
-
-    """
-    This function ...
-    :param remote:
-    :param url:
-    :param root_path:
-    :param repo_path:
-    :param skirt_or_pts:
-    :return:
-    """
-
-    if url.startswith("https://"):
-
-        host = url.split("//")[1].split("/")[0]
-        user_or_organization = url.split("/")[-2]
-        repo_name = url.split("/")[-1].split(".git")[0]
-
-    else:
-
-        # CONVERT TO HTTPS LINK
-        host = url.split("@")[1].split(":")[0]
-        user_or_organization = url.split(":")[1].split("/")[0]
-        repo_name = url.split("/")[-1].split(".git")[0]
-
-    # Find the account file for the repository host (e.g. github.ugent.be)
-    if introspection.has_account(host):
-
-        username, password = introspection.get_account(host)
-        url = "https://" + username + ":" + password + "@" + host + "/" + user_or_organization + "/" + repo_name + ".git"
-
-    else: url = "https://" + host + "/" + user_or_organization + "/" + repo_name + ".git"
-
-    # Clone the repository locally in the pts temporary directory
-    temp_repo_path = fs.join(introspection.pts_temp_dir, skirt_or_pts + "-git")
-    if fs.is_directory(temp_repo_path): fs.remove_directory(temp_repo_path)
-    command = "git clone " + url + " " + temp_repo_path
-    subprocess.call(command.split())
-
-    # Get the git commit hash
-    git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=temp_repo_path).split("\n")[0]
-
-    # Zip the repository
-    zip_path = fs.join(introspection.pts_temp_dir, skirt_or_pts + ".zip")
-    zip_command = "git archive --format zip --output " + zip_path + " master"
-    subprocess.call(zip_command.split(), cwd=temp_repo_path)
-
-    # Get the git version
-    first_part_command = "git rev-list --count HEAD"
-    second_part_command = "git describe --dirty --always"
-    first_part = subprocess.check_output(first_part_command.split(), cwd=temp_repo_path).strip()
-    second_part = subprocess.check_output(second_part_command.split(), cwd=temp_repo_path).strip()
-    git_version = first_part + "-" + second_part
-
-    # Transfer to the remote to the SKIRT/PTS directory
-    remote.upload(zip_path, root_path)
-    remote_zip_path = fs.join(root_path, fs.name(zip_path))
-
-    # Remove local temporary things
-    fs.remove_file(zip_path)
-    fs.remove_directory(temp_repo_path)
-
-    # Unpack the zip file into the 'git' directory
-    remote.decompress_file(remote_zip_path, repo_path)
-
-    # Remove remote zip
-    remote.remove_file(remote_zip_path)
-
-    # Make a 'origin' file with the url of the repository AND THE GIT HASH OF THE REPO
-    origin_path = fs.join(repo_path, "origin.txt")
-    remote.write_line(origin_path, url)
-    remote.append_line(origin_path, git_version)
-    remote.append_line(origin_path, git_hash)
-
-    # Return the git version
-    return git_version
-
-# -----------------------------------------------------------------
-
 def find_qmake():
 
     """
@@ -1802,7 +1667,7 @@ def find_qmake():
     for qmake_path in qmake_paths:
 
         # Get the version
-        output = subprocess.check_output([qmake_path, "-v"]).split("\n")[:-1]
+        output = terminal.execute(qmake_path + " -v")
 
         qt_version = output[1].split("Qt version ")[1].split(" in")[0]
 
@@ -1818,5 +1683,63 @@ def find_qmake():
 
     # Return the path
     return latest_qmake_path
+
+# -----------------------------------------------------------------
+
+def add_to_environment_variable(variable_name, value, comment=None, in_shell=False):
+
+    """
+    This function ...
+    :param variable_name:
+    :param value:
+    :param comment:
+    :param in_shell:
+    :return:
+    """
+
+    # Determine command
+    export_command = "export " + variable_name + "=" + value + ":$PATH"
+
+    # Define lines
+    lines = []
+    lines.append("")
+    if comment is not None: lines.append("# " + comment)
+    lines.append(export_command)
+    lines.append("")
+
+    # Add lines
+    fs.append_lines(introspection.shell_configuration_path(), lines)
+
+    # Run export path in the current shell to make variable visible
+    if in_shell: terminal.execute(export_command)
+
+# -----------------------------------------------------------------
+
+def define_alias(name, alias_to, comment=None, in_shell=False):
+
+    """
+    This function ...
+    :param name:
+    :param alias_to:
+    :param comment:
+    :param in_shell:
+    :return:
+    """
+
+    # Generate the command
+    alias_command = 'alias ' + name + '="' + alias_to + '"'
+
+    # Define lines
+    lines = []
+    lines.append("")
+    if comment is not None: lines.append("# " + comment)
+    lines.append(alias_command)
+    lines.append("")
+
+    # Add lines
+    fs.append_lines(introspection.shell_configuration_path(), lines)
+
+    # Execute in shell
+    if in_shell: terminal.execute(alias_command)
 
 # -----------------------------------------------------------------

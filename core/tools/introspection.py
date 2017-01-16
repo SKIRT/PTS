@@ -153,14 +153,39 @@ def suppress_stdout():
 
 # -----------------------------------------------------------------
 
-def python_version():
+def python_version_long():
 
     """
     This function ...
     :return:
     """
 
-    return subprocess.check_output(["python", "--version"])
+    import pexpect
+
+    # Launch interactive python session
+    child = pexpect.spawn("python")
+    child.expect(">>>")
+    output = child.before.split("\r\n")
+
+    # Close python again
+    child.sendline("exit()")
+    child.expect(pexpect.EOF)
+
+    distribution_and_version = output[0].split("|")[0].strip()
+    architecture = output[0].split("|")[1].strip()
+
+    return distribution_and_version + " " + architecture
+
+# -----------------------------------------------------------------
+
+def python_version_short():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return str(sys.version_info.major) + "." + str(sys.version_info.minor) + "." + str(sys.version_info.micro)
 
 # -----------------------------------------------------------------
 
@@ -374,14 +399,104 @@ def skirt_git_official_remote():
 
 # -----------------------------------------------------------------
 
-def operating_system():
+def is_macos():
 
     """
     This function ...
     :return:
     """
 
-    return subprocess.check_output(["uname", "-a"])
+    return operating_system_short() == "Darwin"
+
+# -----------------------------------------------------------------
+
+def is_linux():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return operating_system_short() == "Linux"
+
+# -----------------------------------------------------------------
+
+def operating_system_short():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return subprocess.check_output(["uname", "-s"]).split("\n")[0]
+
+# -----------------------------------------------------------------
+
+def operating_system_long():
+
+    """o
+    This function ...
+    :return:
+    """
+
+    return subprocess.check_output(["uname", "-a"]).split("\n")[0]
+
+# -----------------------------------------------------------------
+
+def bashrc_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Check if bashrc exists, if not create it if we are on Linux
+    bashrc_path = fs.join(fs.home(), ".bashrc")
+    if is_linux() and not fs.is_file(bashrc_path): fs.touch(bashrc_path)
+
+    # Return the path
+    return bashrc_path
+
+# -----------------------------------------------------------------
+
+def profile_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Check whether .profile exists, create it if we are on MacOS
+    profile_path = fs.join(fs.home(), ".profile")
+    if is_macos() and not fs.is_file(profile_path): fs.touch(profile_path)
+
+    # Return the path
+    return profile_path
+
+# -----------------------------------------------------------------
+
+def bash_profile_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    bash_profile_path = fs.join(fs.home(), ".bash_profile")
+    return bash_profile_path
+
+# -----------------------------------------------------------------
+
+def shell_configuration_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    if is_macos(): return profile_path()
+    elif is_linux(): return bashrc_path()
+    else: raise NotImplemented("System must be running MacOS or Linux")
 
 # -----------------------------------------------------------------
 

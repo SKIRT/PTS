@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
-from pts.core.remote.remote import Remote, HostDownException
+from pts.core.remote.remote import Remote
 from pts.core.tools.logging import log
 from ..basics.configurable import Configurable
 
@@ -37,9 +37,8 @@ class VersionChecker(Configurable):
         # Call the constructor of the base class
         super(VersionChecker, self).__init__(config)
 
-        # The hosts
-        self.host_ids = []
-        self.down_hosts = []
+        # The remotes
+        self.remotes = []
 
         # Versions for each remote host
         self.python_versions = dict()
@@ -70,6 +69,24 @@ class VersionChecker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ids = []
+
+        # Loop over the remotes
+        for remote in self.remotes: ids.append(remote.host_id)
+
+        # Return the IDs
+        return ids
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -78,9 +95,37 @@ class VersionChecker(Configurable):
         :return:
         """
 
-        # Gather host IDs
-        if self.config.not_remotes is not None: self.host_ids = [host_id for host_id in self.config.host_ids if host_id not in self.config.not_remotes]
-        else: self.host_ids = self.config.host_ids
+        # Call the setup function of the base class
+        super(VersionChecker, self).setup(**kwargs)
+
+        # If remotes are passed
+        if "remotes" in kwargs:
+
+            # Get the remotes
+            self.remotes = kwargs.pop("remotes")
+
+            # Check if they are setup
+            for remote in self.remotes:
+                if not remote.connected: raise RuntimeError("Remotes must be connected")
+
+        # Remotes are not passed
+        else:
+
+            # Gather host IDs
+            if self.config.not_remotes is not None: host_ids = [host_id for host_id in self.config.host_ids if host_id not in self.config.not_remotes]
+            else: host_ids = self.config.host_ids
+
+            # Loop over the different hosts
+            for host_id in host_ids:
+
+                # Setup the remote (login)
+                remote = Remote()
+                if not remote.setup(host_id):
+                    log.warning("Remote host '" + host_id + "' is down: skipping")
+                    continue
+
+                # Add the remote to the list
+                self.remotes.append(remote)
 
     # -----------------------------------------------------------------
 
@@ -94,16 +139,11 @@ class VersionChecker(Configurable):
         # Inform the user
         log.info("Checking on each remote host ...")
 
-        # Loop over the different hosts
-        for host_id in self.host_ids:
+        # Loop over the remotes
+        for remote in self.remotes:
 
-            # Setup the remote (login)
-            remote = Remote()
-            try: remote.setup(host_id)
-            except HostDownException:
-                log.warning("Remote host '" + host_id + "' is down: skipping")
-                self.down_hosts.append(host_id)
-                continue
+            # Get host ID
+            host_id = remote.host_id
 
             # Loading compilers
             compiler_path = remote.find_and_load_cpp_compiler()
@@ -156,7 +196,6 @@ class VersionChecker(Configurable):
         print("")
         print(" - local: " + introspection.skirt_version())
         for host_id in self.host_ids:
-            if host_id in self.down_hosts: continue
             if host_id in self.skirt_versions:
                 print(" - " + host_id + ": " + self.skirt_versions[host_id])
             else: print(" - " + host_id + ": not found")
@@ -166,7 +205,6 @@ class VersionChecker(Configurable):
         print("")
         print(" - local: " + introspection.pts_version())
         for host_id in self.host_ids:
-            if host_id in self.down_hosts: continue
             if host_id in self.pts_versions:
                 print(" - " + host_id + ": " + self.pts_versions[host_id])
             else:
@@ -177,7 +215,6 @@ class VersionChecker(Configurable):
         print("")
         print(" - local: " + " ...")
         for host_id in self.host_ids:
-            if host_id in self.down_hosts: continue
             if host_id in self.cpp_versions:
                 print(" - " + host_id + ": " + self.cpp_versions[host_id])
             else:
@@ -188,7 +225,6 @@ class VersionChecker(Configurable):
         print("")
         print(" - local: " + "...")
         for host_id in self.host_ids:
-            if host_id in self.down_hosts: continue
             if host_id in self.mpi_versions:
                 print(" - " + host_id + ": " + self.mpi_versions[host_id])
             else:
@@ -199,7 +235,6 @@ class VersionChecker(Configurable):
         print("")
         print(" - local: " + "...")
         for host_id in self.host_ids:
-            if host_id in self.down_hosts: continue
             if host_id in self.qt_versions:
                 print(" - " + host_id + ": " + self.qt_versions[host_id])
             else:
@@ -208,9 +243,8 @@ class VersionChecker(Configurable):
 
         print(fmt.bold + fmt.green + "Python" + fmt.reset + ":")
         print("")
-        print(" - local: " + introspection.python_version())
+        print(" - local: " + introspection.python_version_long())
         for host_id in self.host_ids:
-            if host_id in self.down_hosts: continue
             if host_id in self.python_versions:
                 print(" - " + host_id + ": " + self.python_versions[host_id])
             else:

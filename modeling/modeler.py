@@ -41,12 +41,7 @@ from ..core.basics.range import QuantityRange
 from .fitting.component import get_generations_table
 from ..core.launch.synchronizer import RemoteSynchronizer
 from ..core.remote.remote import is_available
-from ..core.prep.update import SKIRTUpdater, PTSUpdater
-from ..core.prep.installation import SKIRTInstaller
-from ..core.remote.remote import Remote
-from ..core.tools import introspection
-from ..core.remote.versionchecker import VersionChecker
-from ..core.remote.host import HostDownException
+from ..core.prep.deploy import Deployer
 
 # -----------------------------------------------------------------
 
@@ -243,14 +238,8 @@ class GalaxyModeler(Configurable):
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
 
-        # Update SKIRT
-        self.install_or_update_skirt()
-
-        # Update PTS
-        #self.update_pts()
-
-        # Check versions
-        self.check_versions()
+        # Deploy SKIRT and PTS
+        self.deploy()
 
     # -----------------------------------------------------------------
 
@@ -284,7 +273,7 @@ class GalaxyModeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def install_or_update_skirt(self):
+    def deploy(self):
 
         """
         This function ...
@@ -292,184 +281,19 @@ class GalaxyModeler(Configurable):
         """
 
         # Inform the user
-        log.info("Installing or updating SKIRT ...")
+        log.info("Deploying SKIRT and PTS ...")
 
-        # Locally
-        self.install_or_update_locally()
+        # Create the deployer
+        deployer = Deployer()
 
-        # Remotely
-        self.install_or_update_remotely()
+        # Set the host ids
+        deployer.config.host_ids = self.used_host_ids
 
-    # -----------------------------------------------------------------
+        # Set the host id on which PTS should be installed
+        deployer.config.pts_on = [self.host_id]
 
-    def install_or_update_locally(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Installing or updating SKIRT locally ...")
-
-        # Check whether installed
-        installed = introspection.skirt_is_present()
-
-        # Not installed: install
-        if not installed:
-
-            # Create installer and run it
-            installer = SKIRTInstaller()
-            installer.run()
-
-        # Installed and not SKIRT developer: update
-        elif not introspection.is_skirt_developer():
-
-            # Create updater and run it
-            updater = SKIRTUpdater()
-            updater.run()
-
-    # -----------------------------------------------------------------
-
-    def install_or_update_remotely(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Installing or updating SKIRT remotely ...")
-
-        # Loop over the used host IDs
-        for host_id in self.used_host_ids:
-
-            # Debugging
-            log.debug("Connecting to remote host " + host_id + " ...")
-
-            # Connect to the remote
-            remote = Remote()
-            try: remote.setup(host_id)
-            except HostDownException:
-
-                # Warning
-                log.warning("Connection to host '" + host_id + "' failed, trying again ...")
-                try: remote.setup(host_id)
-                except HostDownException:
-
-                    # Host down?
-                    log.warning("Host '" + host_id + "' is offline")
-                    continue
-
-            # Check if SKIRT is present
-            installed = remote.has_skirt
-
-            # If installed, update
-            if installed:
-
-                # Debugging
-                log.debug("SKIRT is present, updating ...")
-
-                # Create the updater
-                updater = SKIRTUpdater()
-
-                # Set remote host ID
-                #updater.config.host_id = host_id        # remote is passed as kwarg
-
-                # Run the updater
-                updater.run(remote=remote)
-
-            # If not installed, install
-            else:
-
-                # Debugging
-                log.debug("SKIRT is not present, installing ...")
-
-                # Create the installer
-                installer = SKIRTInstaller()
-
-                # Set the remote host ID
-                #installer.config.host_id = host_id      # remote is passed as kwarg
-                installer.config.force = True     # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
-                installer.config.repository = "origin"
-
-                # Run the installer
-                installer.run(remote=remote)
-
-            # Logout from this remote
-            remote.logout()
-
-    # -----------------------------------------------------------------
-
-    def update_pts(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Updating PTS (locally and remotely) ...")
-
-        # Loop over the used host IDs
-        for host_id in self.used_host_ids:
-
-            # Create the updater
-            updater = PTSUpdater()
-
-            # Set remote host ID
-            updater.config.remote = host_id
-
-            # Run the updater
-            updater.run()
-
-    # -----------------------------------------------------------------
-
-    def check_versions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize the version checker
-        checker = VersionChecker()
-        checker.config.host_ids = self.used_host_ids
-        checker.config.show = False
-
-        # Run the checker
-        checker.run()
-
-        # C++ compiler
-        log.info("Local C++ compiler version: " + introspection.cpp_compiler_version())
-        log.info("Remote C++ compiler versions:")
-        for host_id in checker.cpp_versions: log.info(" - " + host_id + ": " + checker.cpp_versions[host_id])
-
-        # MPI compiler
-        if introspection.has_mpi_compiler():
-            log.info("Local MPI compiler version: " + introspection.mpi_compiler_version())
-            log.info("Remote MPI compiler versions:")
-            for host_id in checker.mpi_versions: log.info(" - " + host_id + ": " + checker.mpi_versions[host_id])
-
-        # Qt version
-        log.info("Local Qt version: " + introspection.qmake_version())
-        log.info("Remote Qt versions:")
-        for host_id in checker.qt_versions: log.info(" - " + host_id + ": " + checker.qt_versions[host_id])
-
-        # Python
-        log.info("Local Python version: " + introspection.python_version())
-        log.info("Remote Python versions:")
-        for host_id in checker.python_versions: log.info(" - " + host_id + ": " + checker.python_versions[host_id])
-
-        # SKIRT
-        log.info("Local SKIRT version: " + introspection.skirt_version())
-        log.info("Remote SKIRT versions:")
-        for host_id in checker.skirt_versions: log.info(" - " + host_id + ": " + checker.skirt_versions[host_id])
-
-        # PTS
-        log.info("Local PTS version: " + introspection.pts_version())
-        log.info("Remote PTS versions:")
-        for host_id in checker.pts_versions: log.info(" - " + host_id + ": " + checker.pts_versions[host_id])
+        # Run the deployer
+        deployer.run()
 
     # -----------------------------------------------------------------
 
@@ -493,7 +317,8 @@ class GalaxyModeler(Configurable):
         if "fetch_images" not in self.history:
 
             self.get_images()
-            log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. Wait for it to finished and resume the modeling afterwards")
+            log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. "
+                        "Wait for it to finished and resume the modeling afterwards")
             exit()
 
     # -----------------------------------------------------------------
