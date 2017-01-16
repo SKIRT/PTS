@@ -437,8 +437,8 @@ class ExtendedSourceFinder(Configurable):
         # Get the angle
         angle = self.principal.pa_for_wcs(self.frame.wcs)
 
-        x_radius = 0.5 * self.principal.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
-        y_radius = 0.5 * self.principal.minor.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
+        x_radius = 0.5 * self.principal.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec").value
+        y_radius = 0.5 * self.principal.minor.to("arcsec").value / self.frame.average_pixelscale.to("arcsec").value
         radius = PixelStretch(x_radius, y_radius)
 
         # Create and return an ellipse
@@ -543,15 +543,15 @@ class ExtendedSourceFinder(Configurable):
 
                 color = "green"
 
-                x_radius = 0.5 * source.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
+                x_radius = 0.5 * source.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec").value
                 y_radius = x_radius
 
             else:
 
                 color = "green"
 
-                x_radius = 0.5 * source.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
-                y_radius = 0.5 * source.minor.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
+                x_radius = 0.5 * source.major.to("arcsec").value / self.frame.average_pixelscale.to("arcsec").value
+                y_radius = 0.5 * source.minor.to("arcsec").value / self.frame.average_pixelscale.to("arcsec").value
 
             radius = PixelStretch(x_radius, y_radius)
 

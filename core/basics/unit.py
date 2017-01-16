@@ -14,9 +14,12 @@ import math
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, CompositeUnit, spectral
+from astropy.units import Unit, CompositeUnit, spectral, Quantity
 from astropy import constants
 from astropy.table import Table
+
+# Import the relevant PTS classes and modules
+from ...magic.basics.pixelscale import Pixelscale
 
 # -----------------------------------------------------------------
 
@@ -409,7 +412,7 @@ class PhotometricUnit(CompositeUnit):
             self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, self.distance_unit, self.solid_angle_unit = analyse_unit(unit)
 
         # Call the constructor of the base class
-        super(PhotometricUnit, self).__init__(self.scale_factor, unit.bases, unit.powers)
+        super(PhotometricUnit, self).__init__(unit.scale, unit.bases, unit.powers)
 
     # -----------------------------------------------------------------
 
@@ -589,7 +592,8 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
-    def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None, fltr=None, pixelscale=None):
+    def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None,
+                          fltr=None, pixelscale=None):
 
         """
         This function ...
@@ -623,9 +627,39 @@ class PhotometricUnit(CompositeUnit):
             factor = self / to_unit
             return factor.scale
 
+        # Convert
+        if isinstance(solid_angle, basestring):
+            from ..tools import parsing
+            solid_angle = parsing.quantity(solid_angle)
+
+        # Convert
+        if isinstance(distance, basestring):
+            from ..tools import parsing
+            distance = parsing.quantity(distance)
+
+        # Convert
+        if isinstance(frequency, basestring):
+            from ..tools import parsing
+            frequency = parsing.quantity(frequency)
+
+        # Convert
+        if isinstance(wavelength, basestring):
+            from ..tools import parsing
+            wavelength = parsing.quantity(wavelength)
+
+        # Convert
+        if isinstance(pixelscale, basestring):
+            from ..tools import parsing
+            pixelscale = parsing.quantity(pixelscale)
+
+        # Make PixelScale instance
+        if isinstance(pixelscale, Quantity): pixelscale = Pixelscale(pixelscale)
+        elif isinstance(pixelscale, Pixelscale): pass
+        elif pixelscale is None: pass
+        else: raise ValueError("Don't know what to do with pixelscale of type " + str(type(pixelscale)))
+
         # If solid angle is None, convert pixelscale to solid angle (of one pixel)
-        if solid_angle is None and pixelscale is not None:
-            solid_angle = (pixelscale * Unit("pix")).to("sr")
+        if solid_angle is None and pixelscale is not None: solid_angle = pixelscale.solid_angle
 
         # Neutral density
         if self.is_neutral_density:

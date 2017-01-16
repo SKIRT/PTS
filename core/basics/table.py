@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from collections import OrderedDict
 
 # Import astronomical modules
@@ -105,6 +106,26 @@ class SmartTable(Table):
 
         # Set the path
         table.path = path
+
+        # Clear the column info so that we can rebuild it
+        table.column_info = []
+
+        # Set the column info
+        # Loop over the columns
+        for name in table.colnames:
+
+            # Get the type
+            dtype = table[name].dtype
+            if np.issubdtype(dtype, np.string_): simple_dtype = str
+            elif np.issubdtype(dtype, np.float): simple_dtype = float
+            elif np.issubdtype(dtype, np.int): simple_dtype = int
+            else: raise ValueError("Did not recognize the dtype of column '" + name + "'")
+
+            # Get unit of the column
+            unit = table[name].unit
+
+            # Add column info
+            table.add_column_info(name, simple_dtype, unit, None)
 
         # Return the table
         return table

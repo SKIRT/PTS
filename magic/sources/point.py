@@ -1070,8 +1070,8 @@ class PointSourceFinder(Configurable):
             # If the star contains a model, add the fwhm of that model to the list
             elif source.has_model:
 
-                fwhm_pix = source.fwhm * Unit("pix")
-                fwhm_arcsec = fwhm_pix * self.frame.average_pixelscale.to("arcsec/pix")
+                fwhm_pix = source.fwhm
+                fwhm_arcsec = fwhm_pix * self.frame.average_pixelscale.to("arcsec")
                 fwhms.append(fwhm_arcsec)
 
             else: fwhms.append(None)
@@ -1089,7 +1089,7 @@ class PointSourceFinder(Configurable):
         :return:
         """
 
-        return [(fwhm / self.frame.average_pixelscale.to("arcsec/pix")).to("pix").value if fwhm is not None else None for fwhm in self.fwhms]
+        return [(fwhm / self.frame.average_pixelscale.to("arcsec")).to("").value if fwhm is not None else None for fwhm in self.fwhms]
 
     # -----------------------------------------------------------------
 

@@ -294,7 +294,7 @@ class OtherSourceFinder(Configurable):
             max_fwhm = max(fwhms)
         else:
             if self.star_finder.config.use_frame_fwhm and self.frame.fwhm is not None:
-                fwhm = self.frame.fwhm.to("arcsec").value / self.frame.average_pixelscale.to("arcsec/pix").value
+                fwhm = self.frame.fwhm.to("arcsec").value / self.frame.average_pixelscale.to("arcsec").value
             else: fwhm = self.star_finder.fwhm
             min_fwhm = fwhm * 0.5
             max_fwhm = fwhm * 1.5

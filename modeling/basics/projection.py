@@ -323,14 +323,14 @@ def get_relevant_wcs_properties(wcs, center, distance):
     # CENTER PIXEL
     pixel_center = center.to_pixel(wcs)
     center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
-    center_x = center.x * Unit("pix")
-    center_y = center.y * Unit("pix")
-    center_x = (center_x * wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
-    center_y = (center_y * wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+    center_x = center.x
+    center_y = center.y
+    center_x = (center_x * wcs.pixelscale.x.to("deg") * distance).to("pc", equivalencies=dimensionless_angles())
+    center_y = (center_y * wcs.pixelscale.y.to("deg") * distance).to("pc", equivalencies=dimensionless_angles())
 
     # FIELD OF VIEW
-    field_x_angular = wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
-    field_y_angular = wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
+    field_x_angular = wcs.pixelscale.x.to("deg") * pixels_x
+    field_y_angular = wcs.pixelscale.y.to("deg") * pixels_y
     field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
     field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
 

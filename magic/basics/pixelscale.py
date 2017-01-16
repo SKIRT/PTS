@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
+# Import astronomical modules
+from astropy.units import Unit
+
 # Import standard modules
 from .vector import Extent
 
@@ -32,10 +35,39 @@ class Pixelscale(Extent):
         The constructor ...
         """
 
+        # Remove '/pix' if present
         if y is None: y = x
+
+        # Convert to just arcsec or just
+        x = only_angle(x)
+        y = only_angle(y)
 
         # Call the constructor of the base class
         super(Pixelscale, self).__init__(x, y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def abs_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return abs(self.x)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def abs_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return abs(self.y)
 
     # -----------------------------------------------------------------
 
@@ -47,8 +79,8 @@ class Pixelscale(Extent):
         :return:
         """
 
-        x_pixelscale = abs(self.x.to("arcsec/pix"))
-        y_pixelscale = abs(self.y.to("arcsec/pix"))
+        x_pixelscale = abs(self.x.to("arcsec"))
+        y_pixelscale = abs(self.y.to("arcsec"))
 
         # Check if the x pixelscale and y pixelscale are close
         if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
@@ -64,5 +96,31 @@ class Pixelscale(Extent):
 
         # Other way from wcs:
         #np.mean(np.abs(np.diagonal(img_wcs.pixel_scale_matrix)))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def solid_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        solid_angle = (self.abs_x * self.abs_y).to("sr")
+        return solid_angle
+
+# -----------------------------------------------------------------
+
+def only_angle(quantity):
+
+    """
+    This function ...
+    :return:
+    """
+
+    if "pix" in quantity.unit.bases: return quantity * Unit("pix")
+    elif len(quantity.unit.bases) == 1: return quantity
+    else: raise ValueError("Don't know what to do with " + str(quantity) + " to convert to angular pixelscale")
 
 # -----------------------------------------------------------------

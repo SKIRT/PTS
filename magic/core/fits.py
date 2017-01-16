@@ -393,13 +393,13 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Check whether pixelscale as defined by header keyword and pixelscale derived from WCS match!
     if header_pixelscale is not None and pixelscale is not None:
 
-        x_isclose = np.isclose(header_pixelscale.x.to("arcsec/pix").value, pixelscale.x.to("arcsec/pix").value)
-        y_isclose = np.isclose(header_pixelscale.y.to("arcsec/pix").value, pixelscale.y.to("arcsec/pix").value)
+        x_isclose = np.isclose(header_pixelscale.x.to("arcsec").value, pixelscale.x.to("arcsec").value)
+        y_isclose = np.isclose(header_pixelscale.y.to("arcsec").value, pixelscale.y.to("arcsec").value)
 
         if not (x_isclose or y_isclose):
             log.warning("The pixel scale defined in the header is WRONG:")
-            log.warning(" - header pixelscale: (" + str(header_pixelscale.x.to("arcsec/pix")) + ", " + str(header_pixelscale.y.to("arcsec/pix")) + ")")
-            log.warning(" - actual pixelscale: (" + str(pixelscale.x.to("arcsec/pix")) + ", " + str(pixelscale.y.to("arcsec/pix")) + ")")
+            log.warning(" - header pixelscale: (" + str(header_pixelscale.x.to("arcsec")) + ", " + str(header_pixelscale.y.to("arcsec")) + ")")
+            log.warning(" - actual pixelscale: (" + str(pixelscale.x.to("arcsec")) + ", " + str(pixelscale.y.to("arcsec")) + ")")
 
     if wcs is None: pixelscale = header_pixelscale
     else: pixelscale = None

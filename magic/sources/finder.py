@@ -1558,7 +1558,7 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
     # kernel = self.star_finder.kernel # doesn't work when there was no star extraction on the image, self.star_finder does not have attribute image thus cannot give image.fwhm
     # Set the kernel (PSF)
     #if finder.config.use_frame_fwhm and frame.fwhm is not None:
-    #    fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec/pix").value
+    #    fwhm = frame.fwhm.to("arcsec").value / frame.average_pixelscale.to("arcsec").value
     #    sigma = fwhm * statistics.fwhm_to_sigma
     #    kernel = Gaussian2DKernel(sigma)
     #else: kernel = finder.kernel

@@ -175,9 +175,9 @@ class CatalogBuilder(Configurable):
             on_galaxy_column.append(self.star_extractor.catalog["On galaxy"][index])
             original_id_column.append(None)
 
-        #position_error = 0.5 * self.frame.average_pixelscale.to("mas/pix").value  # in mas !!
-        x_position_error = 0.5 * self.frame.pixelscale.x.to("mas/pix").value
-        y_position_error = 0.5 * self.frame.pixelscale.y.to("mas/pix").value
+        #position_error = 0.5 * self.frame.average_pixelscale.to("mas").value  # in mas !!
+        x_position_error = 0.5 * self.frame.pixelscale.x.to("mas").value
+        y_position_error = 0.5 * self.frame.pixelscale.y.to("mas").value
 
         # Append stars from the trained extractor; loop over the stars found by the trained extractor
         for star in self.trained_extractor.stars:

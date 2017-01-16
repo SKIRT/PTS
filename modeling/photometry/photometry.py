@@ -725,7 +725,7 @@ class PhotoMeter(PhotometryComponent):
         input_dict["cutout"] = frame
 
 
-        config_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec/pix").value
+        config_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec").value
 
 
         truncation_ellipse_sky = self.truncation_ellipse

@@ -343,8 +343,8 @@ class CoordinateSystem(wcs.WCS):
         dec_distance = abs(dec_end - dec_begin)
 
         # Calculate the pixel scale of this image in degrees
-        x_pixelscale_deg = self.pixelscale.x.to("deg/pix").value
-        y_pixelscale_deg = self.pixelscale.y.to("deg/pix").value
+        x_pixelscale_deg = self.pixelscale.x.to("deg").value
+        y_pixelscale_deg = self.pixelscale.y.to("deg").value
 
         # Get the center pixel
         ref_pix = self.wcs.crpix

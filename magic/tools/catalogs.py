@@ -457,7 +457,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
 
                 difference_ra = saved_star_position.ra - position.ra
                 difference_dec = saved_star_position.dec - position.dec
-                difference = Extent((difference_ra * pixelscale.average).to("pix").value, (difference_dec * pixelscale.average).to("pix").value)
+                difference = Extent((difference_ra * pixelscale.average).to("").value, (difference_dec * pixelscale.average).to("").value)
 
                 # Check whether the distance is less then 3 pixels
                 if difference.norm < 3.0:

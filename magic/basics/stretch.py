@@ -252,8 +252,8 @@ class PixelStretch(Extent, Stretch):
         :return:
         """
 
-        x_pixels = (sky_stretch.ra / wcs.pixelscale.x.to("deg/pix")).to("pix").value
-        y_pixels = (sky_stretch.dec / wcs.pixelscale.y.to("deg/pix")).to("pix").value
+        x_pixels = (sky_stretch.ra / wcs.pixelscale.x.to("deg")).to("").value
+        y_pixels = (sky_stretch.dec / wcs.pixelscale.y.to("deg")).to("").value
 
         return cls(x_pixels, y_pixels)
 
@@ -367,8 +367,8 @@ class SkyStretch(SkyExtent, Stretch):
         :return:
         """
 
-        x_angular = wcs.pixelscale.x.to("deg/pix") * stretch.x * Unit("pix")
-        y_angular = wcs.pixelscale.y.to("deg/pix") * stretch.y * Unit("pix")
+        x_angular = wcs.pixelscale.x.to("deg") * stretch.x
+        y_angular = wcs.pixelscale.y.to("deg") * stretch.y
 
         return cls(x_angular, y_angular)
 

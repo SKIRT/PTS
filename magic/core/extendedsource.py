@@ -159,13 +159,13 @@ class ExtendedSource(Source):
 
         elif self.minor is None or angle == 0.0:
 
-            x_radius = 0.5 * self.major.to("arcsec").value / wcs.pixelscale.x.to("arcsec/pix").value
+            x_radius = 0.5 * self.major.to("arcsec").value / wcs.pixelscale.x.to("arcsec").value
             y_radius = x_radius
 
         else:
 
-            x_radius = 0.5 * self.major.to("arcsec").value / wcs.pixelscale.x.to("arcsec/pix").value
-            y_radius = 0.5 * self.minor.to("arcsec").value / wcs.pixelscale.y.to("arcsec/pix").value
+            x_radius = 0.5 * self.major.to("arcsec").value / wcs.pixelscale.x.to("arcsec").value
+            y_radius = 0.5 * self.minor.to("arcsec").value / wcs.pixelscale.y.to("arcsec").value
 
         pixel_position = self.pixel_position(wcs)
 
