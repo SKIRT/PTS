@@ -29,42 +29,46 @@ class Scatter(SmartTable):
     This class ...
     """
 
-    column_info = []
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, variables, units, descriptions):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param variables: list of the names of the variables   [OR: AN INTER WITH THE NUMBER OF VARIABLES]
-        :param units: a dict with units  [OR: A LIST WITH A LENGTH OF THE NUMBER OF VARIABLES]
-        :param descriptions: a dict with descriptions [OR: A LIST WITH A LENGTH OF THE NUMBER OF VARIABLES]
-        :return:
+        :param args:
+        :param kwargs:
         """
 
-        if isinstance(variables, int):
+        # Check
+        if "variables" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-            # Loop over the variables
-            for index in range(variables):
+        # Get properties
+        if not from_astropy:
+            variables = kwargs.pop("variables")
+            units = kwargs.pop("units")
+            descriptions = kwargs.pop("descriptions")
+        else: variables = units = descriptions = None
 
-                # Add column
-                cls.column_info.append((alphabet[index], float, units[index], descriptions[index]))
+        # Call the constructor of the base class
+        super(Scatter, self).__init__(*args, **kwargs)
 
-        else:
+        # Add column info
+        if not from_astropy:
 
-            # Loop over the variables
-            for variable in variables:
+            if isinstance(variables, int):
 
-                unit = units[variable] if variable in units else None
-                description = descriptions[variable] if variable in descriptions else None
+                # Loop over the variables
+                for index in range(variables): self.add_column_info(alphabet[index], float, units[index], descriptions[index])
 
-                # Add column
-                cls.column_info.append((variable, float, unit, description))
+            else:
 
-        # Call the initialize function of the SmartTable table function
-        return super(Scatter, cls).initialize()
+                # Loop over the variables
+                for variable in variables:
+
+                    unit = units[variable] if variable in units else None
+                    description = descriptions[variable] if variable in descriptions else None
+
+                    # Add column
+                    self.add_column_info(variable, float, unit, description)
 
     # -----------------------------------------------------------------
 
@@ -144,25 +148,38 @@ class Scatter3D(Scatter):
     This class ...
     """
 
-    @classmethod
-    def initialize(cls, x_label, y_label, z_label, x_unit, y_unit, z_unit, x_description, y_description, z_description):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param x_label:
-        :param y_label:
-        :param z_label:
-        :param x_unit:
-        :param y_unit:
-        :param z_unit:
-        :param x_description:
-        :param y_description:
-        :param z_description:
-        :return:
+        :param args:
+        :param kwargs:
         """
 
-        # Call the initialize function of the base class
-        return super(Scatter3D, cls).initialize([x_label, y_label, z_label], {x_label: x_unit, y_label: y_unit, z_label: z_unit}, {x_label: x_description, y_label: y_description, z_label: z_description})
+        if "x_label" in kwargs: from_astropy = False
+        else: from_astropy = True
+
+        # Get properties
+        if not from_astropy:
+
+            x_label = kwargs.pop("x_label")
+            y_label = kwargs.pop("y_label")
+            z_label = kwargs.pop("z_label")
+            x_unit = kwargs.pop("x_unit")
+            y_unit = kwargs.pop("y_unit")
+            z_unit = kwargs.pop("z_unit")
+            x_description = kwargs.pop("x_description")
+            y_description = kwargs.pop("y_description")
+            z_description = kwargs.pop("z_description")
+
+            kwargs["variables"] = [x_label, y_label, z_label]
+            kwargs["units"] = {x_label: x_unit, y_label: y_unit, z_label: z_unit}
+            kwargs["descriptions"] = {x_label: x_description, y_label: y_description, z_label: z_description}
+
+        else: x_label = y_label = z_label = x_unit = y_unit = z_unit = x_description = y_description = z_description = None
+
+        # Call the constructor of the base class
+        super(Scatter3D, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 

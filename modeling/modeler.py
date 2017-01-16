@@ -233,13 +233,13 @@ class GalaxyModeler(Configurable):
         else: self.modeling_config = load_modeling_configuration(self.modeling_path)
 
         # Find which hosts are available
-        self.find_available_hosts()
+        if self.config.check_hosts: self.find_available_hosts()
 
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
 
         # Deploy SKIRT and PTS
-        self.deploy()
+        if self.config.deploy: self.deploy()
 
     # -----------------------------------------------------------------
 
@@ -291,6 +291,9 @@ class GalaxyModeler(Configurable):
 
         # Set the host id on which PTS should be installed
         deployer.config.pts_on = [self.host_id]
+
+        # Set
+        deployer.config.check = self.config.check_versions
 
         # Run the deployer
         deployer.run()

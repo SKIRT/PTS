@@ -186,7 +186,7 @@ class FittingComponent(ModelingComponent):
 
         # Initialize the timing table if necessary
         if not fs.is_file(self.timing_table_path):
-            timing_table = TimingTable.initialize()
+            timing_table = TimingTable()
             timing_table.saveto(self.timing_table_path)
 
         ## MEMORY TABLE
@@ -196,7 +196,7 @@ class FittingComponent(ModelingComponent):
 
         # Initialize the memory table if necessary
         if not fs.is_file(self.memory_table_path):
-            memory_table = MemoryTable.initialize()
+            memory_table = MemoryTable()
             memory_table.saveto(self.memory_table_path)
 
         ## GENERATIONS TABLE
@@ -206,7 +206,7 @@ class FittingComponent(ModelingComponent):
 
         # Initialize the generations table if necessary
         if not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
-            generations_table = GenerationsTable.initialize(self.free_parameter_labels)
+            generations_table = GenerationsTable(self.free_parameter_labels)
             generations_table.saveto(self.generations_table_path)
 
         ## PROBABILITY DISTRIBUTION TABLES
@@ -224,7 +224,7 @@ class FittingComponent(ModelingComponent):
 
         # Initialize the best parameters table if necessary
         if not fs.is_file(self.best_parameters_table_path) and self.free_parameter_labels is not None:
-            best_parameters_table = BestParametersTable.initialize(self.free_parameter_labels, self.parameter_units)
+            best_parameters_table = BestParametersTable(self.free_parameter_labels, self.parameter_units)
             best_parameters_table.saveto(self.best_parameters_table_path)
 
     # -----------------------------------------------------------------

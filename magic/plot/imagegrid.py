@@ -41,6 +41,18 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+# EXISTS:
+
+# astropy.visualization.wcsaxes.WCSAxesSubplot(fig, *args, **kwargs)[source] [edit on github]¶
+# For making subplots with WCS
+
+# A subclass class for WCSAxes
+# fig is a matplotlib.figure.Figure instance.
+# args is the tuple (numRows, numCols, plotNum), where the array of subplots in the figure has dimensions numRows, numCols, and where plotNum is the number of the subplot being created. plotNum starts at 1 in the upper left corner and increases to the right.
+# If numRows <= numCols <= plotNum < 10, args can be the decimal integer numRows * 100 + numCols * 10 + plotNum.
+
+# -----------------------------------------------------------------
+
 class ImageGridPlotter(object):
 
     """
@@ -253,7 +265,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
             #f1.show_beam(major=0.01, minor=0.01, angle=0, fill=True, color='white')
             ## f1.axis_labels.show_y()
             #f1.tick_labels.set_xposition('top')
-            #f1.tick_labels.show()
+            #f1.tick_labels.show()r
 
             ax.set_xticks([])
             ax.set_yticks([])

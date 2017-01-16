@@ -40,3 +40,5 @@ plot_fitting | plot_fitting | plotting.fitting.FittingPlotter | interactive | Ma
 plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | arguments | Make plots of the analysis step
 fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
 fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
+make_movie | -- | show.movie.MovieMaker | arguments | Make a movie from the galaxy model
+make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the galaxy model

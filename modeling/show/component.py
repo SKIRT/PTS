@@ -39,14 +39,15 @@ class ShowComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(ShowComponent, self).setup()
+        super(ShowComponent, self).setup(**kwargs)
 
 # -----------------------------------------------------------------

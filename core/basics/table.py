@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import astronomical modules
-from astropy.table import Table
+from astropy.table import Table, MaskedColumn
 
 # -----------------------------------------------------------------
 
@@ -26,15 +26,49 @@ class SmartTable(Table):
     This class ...
     """
 
-    # column_info defined in the sublasses
-
     # default extension
     default_extension = "dat"
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def initialize(cls):
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Always used masked tables
+        kwargs["masked"] = True
+
+        # Call the constructor of the base class
+        super(SmartTable, self).__init__(*args, **kwargs)
+
+        # Column info
+        self.column_info = []
+
+        # Path
+        self.path = None
+
+    # -----------------------------------------------------------------
+
+    def add_column_info(self, name, dtype, unit, description):
+
+        """
+        This function ...
+        :param name:
+        :param dtype:
+        :param unit:
+        :param description:
+        :return:
+        """
+
+        self.column_info.append((name, dtype, unit, description))
+
+    # -----------------------------------------------------------------
+
+    def setup(self):
 
         """
         This function ...
@@ -42,33 +76,17 @@ class SmartTable(Table):
         """
 
         # Create the table names and types lists
-        names = []
-        dtypes = []
-        for entry in cls.column_info:
+        for entry in self.column_info:
+
             name = entry[0]
             dtype = entry[1]
-            names.append(name)
-            dtypes.append(dtype)
-
-        # Call the constructor of the base class
-        table = cls(names=names, dtype=dtypes, masked=True)
-
-        # Set the column units
-        for entry in cls.column_info:
-
-            name = entry[0]
             unit = entry[2]
 
-            if unit is None: continue
+            data = []
 
-            # Set the column unit
-            table[name].unit = unit
-
-        # Add the path attribute
-        table.path = None
-
-        # Return the smart table instance
-        return table
+            # Add column
+            col = MaskedColumn(data=data, name=name, dtype=dtype, unit=unit)
+            self.add_column(col)
 
     # -----------------------------------------------------------------
 
@@ -270,6 +288,9 @@ class SmartTable(Table):
         :param values:
         :return:
         """
+
+        # Setup if necessary
+        if len(self.colnames) == 0: self.setup()
 
         # Resize string columns for the new values
         self._resize_string_columns(values)

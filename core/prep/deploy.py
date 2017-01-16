@@ -14,16 +14,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
 from .update import SKIRTUpdater, PTSUpdater
 from .installation import SKIRTInstaller, PTSInstaller
 from ..remote.versionchecker import VersionChecker
+from ..remote.configurable import RemotesConfigurable
 
 # -----------------------------------------------------------------
 
-class Deployer(Configurable):
+class Deployer(RemotesConfigurable):
 
     """
     This class ...
@@ -38,9 +38,6 @@ class Deployer(Configurable):
 
         # Call the constructor of the base class
         super(Deployer, self).__init__(config)
-
-        # The remotes
-        self.remotes = []
 
     # -----------------------------------------------------------------
 
@@ -62,25 +59,7 @@ class Deployer(Configurable):
         if self.config.pts: self.install_or_update_pts()
 
         # 4. Check versions
-        self.check_versions()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        ids = []
-
-        # Loop over the remotes
-        for remote in self.remotes: ids.append(remote.host_id)
-
-        # Return the list of IDs
-        return ids
+        if self.config.check: self.check_versions()
 
     # -----------------------------------------------------------------
 
@@ -94,30 +73,6 @@ class Deployer(Configurable):
 
         # Call the setup function of the base class
         super(Deployer, self).setup(**kwargs)
-
-        # Get remotes if passed
-        if "remotes" in kwargs:
-
-            # Get the remotes
-            self.remotes = kwargs.pop("remotes")
-
-            # Check if they are setup
-            for remote in self.remotes:
-                if not remote.connected: raise RuntimeError("Remotes must be connected")
-
-        # Otherwise, loop over the host ids
-        else:
-
-            for host_id in self.config.host_ids:
-
-                # Create and setup remote
-                remote = Remote()
-                if not remote.setup(host_id):
-                    log.warning("Host '" + host_id + "' is offline")
-                    continue
-
-                # Add the remote to the list
-                self.remotes.append(remote)
 
     # -----------------------------------------------------------------
 

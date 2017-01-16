@@ -202,7 +202,7 @@ class SEDFitter(FittingComponent):
                 probabilities = np.exp(-0.5 * chi_squared_values)
 
                 # Create the probabilities table
-                probabilities_table = ModelProbabilitiesTable.initialize(self.free_parameter_labels, self.parameter_units)
+                probabilities_table = ModelProbabilitiesTable(self.free_parameter_labels, self.parameter_units)
 
                 # Add the entries to the model probabilities table
                 for i in range(len(chi_squared_table)):
@@ -250,7 +250,7 @@ class SEDFitter(FittingComponent):
             unique_values = sorted(list(unique_values))
 
             # Initialize a ParameterProbabilitiesTable instance for this parameter
-            table = ParameterProbabilitiesTable.initialize()
+            table = ParameterProbabilitiesTable()
 
             # Add an entry for each unique parameter value that has been encountered
             for value in unique_values:

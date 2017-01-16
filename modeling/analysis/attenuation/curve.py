@@ -194,7 +194,7 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         a_v_mappings = 0.67 * average_column_density / 1e5
 
         # Creat the attenuation curve for the SFR dust
-        self.attenuation_sfr = MappingsAttenuationCurve.initialize(a_v_mappings, self.v_band_wavelength)
+        self.attenuation_sfr = MappingsAttenuationCurve(attenuation=a_v_mappings, wavelength=self.v_band_wavelength)
 
         # Find the V-band attenuation for the SFR dust component
         v_band_attenuation_sfr = self.attenuation_sfr.attenuation_at(self.v_band_wavelength)
@@ -272,10 +272,10 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
         log.info("Loading the reference attenuation curves ...")
 
         # Load the Milky Way, SMC and Calzetti attenuation curves
-        self.references["Milky Way"] = MilkyWayAttenuationCurve.initialize()
-        self.references["SMC"] = SMCAttenuationCurve.initialize()
-        self.references["Calzetti"] = CalzettiAttenuationCurve.initialize()
-        self.references["Battisti"] = BattistiAttenuationCurve.initialize()
+        self.references["Milky Way"] = MilkyWayAttenuationCurve()
+        self.references["SMC"] = SMCAttenuationCurve()
+        self.references["Calzetti"] = CalzettiAttenuationCurve()
+        self.references["Battisti"] = BattistiAttenuationCurve()
 
     # -----------------------------------------------------------------
 

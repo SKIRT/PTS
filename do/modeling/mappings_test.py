@@ -162,7 +162,7 @@ for i in range(len(wavelengths)):
     fluxes.append(flux)
 
 # Create an SED
-flux_sed = SED.initialize("Jy")
+flux_sed = SED(photometry_unit="Jy")
 
 for i in range(len(wavelengths)):
 
@@ -279,7 +279,7 @@ for i in range(len(flambda)):
     fnus.append(fnu)
 
 # Create the SED
-sed = SED.initialize("Jy")
+sed = SED(photometry_unit="Jy")
 
 for i in range(len(lambdas)):
     sed.add_point(lambdas[i] * Unit("micron"), fnus[i] * Unit("Jy"))

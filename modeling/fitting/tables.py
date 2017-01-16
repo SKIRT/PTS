@@ -28,30 +28,40 @@ class BestParametersTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Generation name", str, None, "Name for the generation")]
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, parameters, units):
+    def __init__(self, *args, **kwargs):
 
         """
-        This function ...
-        :param parameters:
-        :param units:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
-        # Set the labels
-        for label in parameters:
-            unit = units[label] if label in units else None
-            cls.column_info.append((label, float, unit, "value for " + label))
+        # Check
+        if "parameters" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-        # Add the Chi squared column
-        cls.column_info.append(("Chi squared", float, None, "chi-squared value"))
+        # Get properties
+        if from_astropy:
+            parameters = kwargs.pop("parameters")
+            units = kwargs.pop("units")
+        else: parameters = units = None
 
-        # Call the initialize function of the best parameters table function
-        return super(BestParametersTable, cls).initialize()
+        # Call the constructor of the base class
+        super(BestParametersTable, self).__init__(*args, **kwargs)
+
+        # Not from constructor called by Astropy
+        if not from_astropy:
+
+            # Generation column
+            self.column_info.append(("Generation name", str, None, "Name for the generation"))
+
+            # Parameters columns
+            for label in parameters:
+                unit = units[label] if label in units else None
+                self.column_info.append((label, float, unit, "value for " + label))
+
+            # Add the chi squared column
+            self.column_info.append(("Chi squared", float, None, "chi-squared value"))
 
     # -----------------------------------------------------------------
 
@@ -114,37 +124,47 @@ class GenerationsTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Generation name", str, None, "Name for the generation"),
-                   ("Generation index", int, None, "Index of the generation"),
-                   ("Launching time", str, None, "Time of launching the generation simulations"),
-                   ("Method", str, None, "Method used for model generation"),
-                   ("Wavelength grid level", int, None, "level of the wavelength gid"),
-                   ("Dust grid level", int, None, "level of the dust grid"),
-                   ("Number of simulations", int, None, "number of simulations (individuals) in the generation"),
-                   ("Number of photon packages", int, None, "number of photon packages per wavelength"),
-                   ("Self-absorption", bool, None, "dust self-absorption enabled"),
-                   ("Transient heating", bool, None, "transient heating enabled")]
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, parameters):
+    def __init__(self, *args, **kwargs):
 
         """
-        This function ...
-        :param parameters:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
-        for label in parameters:
+        # Check
+        if "parameters" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-            cls.column_info.append(("Minimum value for " + label, float, None, "minimum value for " + label))
-            cls.column_info.append(("Maximum value for " + label, float, None, "Maximum value for " + label))
+        # Get properties
+        if from_astropy: parameters = kwargs.pop("parameters")
+        else: parameters = None
 
-        cls.column_info.append(("Finishing time", str, None, "Time of finishing the generation"))
+        # Call the constructor of the base class
+        super(GenerationsTable, self).__init__(*args, **kwargs)
 
-        # Call the initialize function of the generations table function
-        return super(GenerationsTable, cls).initialize()
+        # If not called from astropy
+        if not from_astropy:
+
+            self.add_column_info("Generation name", str, None, "Name for the generation")
+            self.add_column_info("Generation index", int, None, "Index of the generation")
+            self.add_column_info("Launching time", str, None, "Time of launching the generation simulations")
+            self.add_column_info("Method", str, None, "Method used for model generation")
+            self.add_column_info("Wavelength grid level", int, None, "level of the wavelength gid")
+            self.add_column_info("Dust grid level", int, None, "level of the dust grid")
+            self.add_column_info("Number of simulations", int, None, "number of simulations (individuals) in the generation")
+            self.add_column_info("Number of photon packages", int, None, "number of photon packages per wavelength")
+            self.add_column_info("Self-absorption", bool, None, "dust self-absorption enabled")
+            self.add_column_info("Transient heating", bool, None, "transient heating enabled")
+
+            # Loop over the parameters
+            for label in parameters:
+
+                self.add_column_info("Minimum value for " + label, float, None, "minimum value for " + label)
+                self.add_column_info("Maximum value for " + label, float, None, "Maximum value for " + label)
+
+            # Add finishing time column
+            self.add_column_info("Finishing time", str, None, "Time of finishing the generation")
 
     # -----------------------------------------------------------------
 
@@ -399,26 +419,36 @@ class ParametersTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Simulation name", str, None, "name of the simulation")]
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, parameters, units):
+    def __init__(self, *args, **kwargs):
 
         """
-        This function ...
-        :param parameters:
-        :param units:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
-        for label in parameters:
-            unit = units[label] if label in units else None
-            cls.column_info.append((label, float, unit, "value for " + label))
+        if "parameters" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-        # Call the initialize function of the parameters table function
-        return super(ParametersTable, cls).initialize()
+        if from_astropy:
+            parameters = kwargs.pop("parameters")
+            units = kwargs.pop("units")
+        else: parameters = units = None
+
+        # Call the constructor of the base class
+        super(ParametersTable, self).__init__(*args, **kwargs)
+
+        # Set column info
+        if not from_astropy:
+
+            # Add simuation name column
+            self.add_column_info("Simulation name", str, None, "name of the simulation")
+
+            # Loop over the parameters
+            for label in parameters:
+
+                unit = units[label] if label in units else None
+                self.add_column_info(label, float, unit, "value for " + label)
 
     # -----------------------------------------------------------------
 
@@ -498,8 +528,20 @@ class ChiSquaredTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Simulation name", str, None, "name of the simulation"),
-                   ("Chi squared", float, None, "chi-squared value")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ChiSquaredTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.column_info.append(("Simulation name", str, None, "name of the simulation"))
+        self.column_info.append(("Chi squared", float, None, "chi-squared value"))
 
     # -----------------------------------------------------------------
 
@@ -577,7 +619,41 @@ class ModelProbabilitiesTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Simulation name", str, None, "name of the simulation")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Check if from astropy
+        if "parameters" in kwargs: from_astropy = False
+        else: from_astropy = True
+
+        # Get properties
+        if not from_astropy:
+            parameters = kwargs.pop("parameters")
+            units = kwargs.pop("units")
+        else: parameters = units = None
+
+        # Call the constructor of the base class
+        super(ModelProbabilitiesTable, self).__init__(*args, **kwargs)
+
+        # Not from astropy
+        if not from_astropy:
+
+            # Add simulation name column
+            self.column_info.append(("Simulation name", str, None, "name of the simulation"))
+
+            # Loop over the parameters
+            for label in parameters:
+
+                unit = units[label] if label in units else None
+                self.column_info.append((label, float, unit, "value for " + label))
+
+            # Add column for the probabilities
+            self.column_info.append(("Probability", float, None, "model probability"))
 
     # -----------------------------------------------------------------
 
@@ -597,30 +673,6 @@ class ModelProbabilitiesTable(SmartTable):
             labels.append(name)
 
         return labels
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, parameters, units):
-
-        """
-        This function ...
-        :param parameters:
-        :param units:
-        :return:
-        """
-
-        # Add columns for the parameter values
-        for label in parameters:
-
-            unit = units[label] if label in units else None
-            cls.column_info.append((label, float, unit, "value for " + label))
-
-        # Add column for probabilities
-        cls.column_info.append(("Probability", float, None, "model probability"))
-
-        # Call the initialize function of the parameters table function
-        return super(ModelProbabilitiesTable, cls).initialize()
 
     # -----------------------------------------------------------------
 
@@ -654,8 +706,20 @@ class ParameterProbabilitiesTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Value", float, None, "value of the parameter"),
-                   ("Probability", float, None, "probability for this parameter value")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ParameterProbabilitiesTable, self).__init__(*args, **kwargs)
+
+        # Set column info
+        self.column_info.append(("Value", float, None, "value of the parameter"))
+        self.column_info.append(("Probability", float, None, "probability for this parameter value"))
 
     # -----------------------------------------------------------------
 

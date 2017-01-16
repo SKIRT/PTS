@@ -263,7 +263,7 @@ class SEDFetcher(Configurable):
         # Result is a list of tables, we only have one table with one entry
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         # All AB magnitudes
 
@@ -463,7 +463,7 @@ class SEDFetcher(Configurable):
         result = self.vizier.query_object(self.config.galaxy_name, catalog="VII/233/xsc")
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         # In 2MASS magnitude system -> can be converted directly into Jy (see below)
         j_mag = result[0][0]["J.ext"]
@@ -564,7 +564,7 @@ class SEDFetcher(Configurable):
         #print(self.ngc_name)
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         galaxy_index = tables.find_index(result[5], self.ngc_name)
 
@@ -843,7 +843,7 @@ class SEDFetcher(Configurable):
         log.info("Getting fluxes from the LVL catalog ...")
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         # "J/MNRAS/445/881": LVL global optical photometry (Cook+, 2014)
         #  - "J/MNRAS/445/881/sample": Galaxies of the Spitzer Local Volume Legacy (LVL): properties (table1) and R25 photometry
@@ -908,7 +908,7 @@ class SEDFetcher(Configurable):
         # "J/ApJ/703/517/sample": Galaxy sample (table 1) and infrared flux densities (table 2) (258 rows)
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJ/703/517/sample")
 
@@ -981,7 +981,7 @@ class SEDFetcher(Configurable):
         # e_F(70): rms uncertainty on F(70) [Jy]
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/414/500/catalog")
 
@@ -1029,7 +1029,7 @@ class SEDFetcher(Configurable):
         # No errors ...
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/ApJS/178/280/table1")
 
@@ -1138,7 +1138,7 @@ class SEDFetcher(Configurable):
         # e_Kmag rms uncertainty on Kmag [mag]
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/398/109/iifsczv4")
 
@@ -1170,7 +1170,7 @@ class SEDFetcher(Configurable):
         log.info("Getting fluxes from the S4G catalog ...")
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         # Get parameters from S4G catalog
         result = self.vizier.query_object(self.config.galaxy_name, catalog=["J/PASP/122/1397/s4g"])
@@ -1214,7 +1214,7 @@ class SEDFetcher(Configurable):
         # AB magnitudes for the sample with neither foreground nor intrinsic dust extinction corrections, and modeled Milky Way foreground dust extinction
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         # FUV: [12.5/22.9] GALEX FUV AB band magnitude
         # e_FUV:
@@ -1279,7 +1279,7 @@ class SEDFetcher(Configurable):
         """
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         # The second release is not yet available ... ??
 
@@ -1293,7 +1293,7 @@ class SEDFetcher(Configurable):
         """
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         # J/ApJS/190/233/Opt
 
@@ -1371,7 +1371,7 @@ class SEDFetcher(Configurable):
         galaxy_index = tables.find_index(result[0], self.config.galaxy_name)
 
         # Create an SED
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         relevant_bands = [("FUV", "FUV"), ("NUV", "NUV"), ("Ha", "Ha"), ("8", "I4"), ("24", "MIPS 24")]
         for band_prefix_catalog, filter_name in relevant_bands:

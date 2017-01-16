@@ -16,14 +16,13 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import formatting as fmt
-from pts.core.remote.remote import Remote
-from pts.core.tools.logging import log
-from ..basics.configurable import Configurable
+from ..tools import formatting as fmt
+from ..tools.logging import log
+from .configurable import RemotesConfigurable
 
 # -----------------------------------------------------------------
 
-class LoadChecker(Configurable):
+class LoadChecker(RemotesConfigurable):
 
     """
     This class ...
@@ -38,9 +37,6 @@ class LoadChecker(Configurable):
 
         # Call the constructor of the base class
         super(LoadChecker, self).__init__(config)
-
-        # The remotes
-        self.remotes = []
 
         # Architecture
         self.architecture_dict = dict()
@@ -83,20 +79,6 @@ class LoadChecker(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
-    def host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        ids = []
-        for remote in self.remotes: ids.append(remote.host_id)
-        return ids
-
-    # -----------------------------------------------------------------
-
     def setup(self, **kwargs):
 
         """
@@ -107,26 +89,6 @@ class LoadChecker(Configurable):
 
         # Call the setup function of the base class
         super(LoadChecker, self).setup(**kwargs)
-
-        # Check if remotes are passed
-        if "remotes" in kwargs:
-            self.remotes = kwargs.pop("remotes")
-            for remote in self.remotes:
-                if not remote.connected: raise ValueError("Remotes must be setup")
-
-        else:
-
-            # Loop over the remotes
-            for host_id in self.config.host_ids:
-
-                # Setup the remote (login)
-                remote = Remote()
-                if not remote.setup(host_id):
-                    log.warning("Remote host '" + host_id + "' is down: skipping")
-                    continue
-
-                # Add the remote
-                self.remotes.append(remote)
 
     # -----------------------------------------------------------------
 

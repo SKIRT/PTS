@@ -35,30 +35,39 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def initialize(cls, x_unit=None, y_unit=None, x_name="x", y_name="y", x_description="x values", y_description="y values"):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param x_unit:
-        :param y_unit:
-        :param x_name:
-        :param y_name:
-        :param x_description:
-        :param y_description:
-        :return:
+        :param args:
+        :param kwargs:
         """
 
-        # Add columns
-        cls.column_info.append((x_name, float, str(x_unit), x_description))
-        cls.column_info.append((y_name, float, str(y_unit), y_description))
+        if "x_unit" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-        # Call the initialize function of the SmartTable table function
-        curve = super(Curve, cls).initialize()
+        if not from_astropy:
 
-        # Set x name and y name
-        curve.x_name = x_name
-        curve.y_name = y_name
+            # Get properties
+            x_unit = kwargs.pop("x_unit", None)
+            y_unit = kwargs.pop("y_unit", None)
+            x_name = kwargs.pop("x_name", "x")
+            y_name = kwargs.pop("y_name", "y")
+            x_description = kwargs.pop("x_description", "x values")
+            y_description = kwargs.pop("y_description", "y values")
+
+        # Call the constructor of the base class
+        super(Curve, self).__init__(*args, **kwargs)
+
+        if not from_astropy:
+
+            # Set the column info
+            self.column_info.append((x_name, float, str(x_unit), x_description))
+            self.column_info.append((y_name, float, str(y_unit), y_description))
+
+            # Set x name and y name
+            self.x_name = x_name
+            self.y_name = y_name
 
     # -----------------------------------------------------------------
 
@@ -124,19 +133,40 @@ class WavelengthCurve(Curve):
     This function ...
     """
 
-    @classmethod
-    def initialize(cls, name, description, unit=None):
+    def __init__(self, *args, **kwargs):
 
         """
-        This class ...
-        :param name:
-        :param description:
-        :param unit:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
-        # Call the initialize function of the base class
-        return super(WavelengthCurve, cls).initialize("micron", unit, "Wavelength", name, "Wavelength", description)
+        if "y_name" in kwargs: from_astropy = False
+        else: from_astropy = True
+
+        if not from_astropy:
+
+            # Get properties
+            name = kwargs.pop("y_name")
+            description = kwargs.pop("y_description")
+            unit = kwargs.pop("y_unit", None)
+
+            x_unit = "micron"
+            y_unit = unit
+            x_name = "Wavelength"
+            y_name = name
+            x_description = "Wavelength"
+            y_description = description
+
+            kwargs["x_unit"] = x_unit
+            kwargs["y_unit"] = y_unit
+            kwargs["x_name"] = x_name
+            kwargs["y_name"] = y_name
+            kwargs["x_description"] = x_description
+            kwargs["y_description"] = y_description
+
+        # Call the constructor of the base class
+        super(WavelengthCurve, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -224,7 +254,21 @@ class FilterCurve(WavelengthCurve):
     This function ...
     """
 
-    column_info = ["Observatory", "Instrument", "Band"] # first three columns
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(FilterCurve, self).__init__(*args, **kwargs)
+
+        # Set column info
+        self.column_info.insert(0, ("Observatory", str, None, "observatory"))
+        self.column_info.insert(0, ("Instrument", str, None, "instrument"))
+        self.column_info.insert(0, ("Band", str, None, "band"))
 
     # -----------------------------------------------------------------
 

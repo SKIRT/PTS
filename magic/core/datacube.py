@@ -272,7 +272,7 @@ class DataCube(Image):
         """
 
         # Initialize the SED
-        sed = ObservedSED.initialize(self.unit)
+        sed = ObservedSED(photometry_unit=self.unit)
 
         # Create a mask from the region (or shape)
         mask = region.to_mask(self.xsize, self.ysize)
@@ -320,7 +320,7 @@ class DataCube(Image):
         """
 
         # Initialize the SED
-        sed = ObservedSED.initialize(self.unit)
+        sed = ObservedSED(photometry_unit=self.unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
@@ -369,7 +369,7 @@ class DataCube(Image):
         else: raise ValueError("Mask must be string or Mask (or None) instead of " + str(type(mask)))
 
         # Initialize the SED
-        sed = SED.initialize(self.unit)
+        sed = SED(photometry_unit=self.unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):

@@ -436,10 +436,10 @@ class ParameterExplorer(FittingComponent):
         self.generation_info["Chi squared table path"] = fs.join(self.generation_info["Path"], "chi_squared.dat")
 
         # Initialize the parameters table
-        self.parameters_table = ParametersTable.initialize(self.free_parameter_labels, self.parameter_units)
+        self.parameters_table = ParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
 
         # Initialize the chi squared table
-        self.chi_squared_table = ChiSquaredTable.initialize()
+        self.chi_squared_table = ChiSquaredTable()
 
     # -----------------------------------------------------------------
 

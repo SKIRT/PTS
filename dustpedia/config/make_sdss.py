@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.dustpedia.core.sdss import sdss_bands
 
 # -----------------------------------------------------------------
 
@@ -15,7 +16,7 @@ definition = ConfigurationDefinition()
 
 # Galaxy name
 definition.add_required("galaxy_name", "string", "the name of the galaxy")
-definition.add_optional("band", "string", "the band (u/g/r/i/z)", choices=["u", "g", "r", "i", "z"], default=None)
+definition.add_optional("bands", "string_list", "the bands (u/g/r/i/z)", choices=sdss_bands, default=sdss_bands)
 
 # Output
 definition.add_optional("output", "string", "the name of the output directory", default="out")

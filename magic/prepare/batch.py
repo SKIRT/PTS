@@ -59,6 +59,10 @@ class PreparationStatistics(SimplePropertyComposite):
         :param kwargs:
         """
 
+        # Call the constructor of the base class
+        super(PreparationStatistics, self).__init__()
+
+        # Get properties
         self.convolution_filter = kwargs.pop("convolution_filter")
         self.rebinning_filter = kwargs.pop("rebinning_filter")
         self.not_rebinned = kwargs.pop("not_rebinned")

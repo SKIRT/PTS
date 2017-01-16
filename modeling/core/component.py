@@ -199,7 +199,7 @@ class ModelingComponent(Configurable):
 
         # Initialize the history file
         if not fs.is_file(self.history_file_path):
-            history = ModelingHistory.initialize()
+            history = ModelingHistory()
             history.saveto(self.history_file_path)
 
         # Get the full paths to the necessary subdirectories and CREATE THEM
@@ -1496,7 +1496,7 @@ def load_modeling_history(modeling_path):
     # Create new history
     if not fs.is_file(history_file_path):
 
-        history = ModelingHistory.initialize()
+        history = ModelingHistory()
         history.saveto(history_file_path)
 
     else: history = ModelingHistory.from_file(history_file_path)

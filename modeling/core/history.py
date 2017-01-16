@@ -24,9 +24,21 @@ class ModelingHistory(SmartTable):
     This class...
     """
 
-    column_info = [("Command", str, None, "name of the modeling command"),
-                   ("Start time", str, None, "timestamp for start of command"),
-                   ("End time", str, None, "timestamp for end of command")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ModelingHistory, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Command", str, None, "name of the modeling command")
+        self.add_column_info("Start time", str, None, "timestamp for start of command")
+        self.add_column_info("End time", str, None, "timestamp for end of command")
 
     # -----------------------------------------------------------------
 

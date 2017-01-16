@@ -146,8 +146,13 @@ class DustPediaPhotometry(object):
         :param add_planck:
         """
 
+        # Inform the user
+        log.info("Getting the DustPedia SED for galaxy '" + galaxy_name + "' ...")
+
+        # Get DustPedia name of galaxy
         objname = self.sample.get_name(galaxy_name)
 
+        # Find in table
         index = tables.find_index(self.aperture, objname, "name")
 
         filters = []
@@ -208,11 +213,12 @@ class DustPediaPhotometry(object):
                     errors.append(self.planck[colname + "_err"][index])
                 else: errors.append(None)
 
-        sed = ObservedSED.initialize("Jy")
+        sed = ObservedSED(photometry_unit="Jy")
 
         for i in range(len(filters)):
             sed.add_point(filters[i], fluxes[i], errors[i])
 
+        # Return the SED
         return sed
 
 # -----------------------------------------------------------------

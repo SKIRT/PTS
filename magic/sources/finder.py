@@ -45,16 +45,21 @@ class FWHMTable(FilterCurve):
     This function ...
     """
 
-    @classmethod
-    def initialize(cls):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :return:
+        :param args:
+        :param kwargs:
         """
 
-        # Call the initialize function of the base class
-        return super(FWHMTable, cls).initialize("FWHM", "FWHM of the PSF", "arcsec")
+        # Set properties
+        kwargs["y_name"] = "FWHM"
+        kwargs["y_description"] = "FWHM of the PSF"
+        kwargs["y_unit"] = "arcsec"
+
+        # Call the constructor of the base class
+        super(FWHMTable, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -89,28 +94,36 @@ class GalaxyTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Index", int, None, "index of the extended source in the catalog"),
-                   ("Name", str, None, "name of the galaxy")]
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, filters):
+    def __init__(self, *args, **kwargs):
 
         """
-        This function ...
-        :param filters:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
-        # Loop over the filters
-        for fltr in filters:
+        # Check
+        if "filters" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-            column_name = str(fltr) + " flux"
-            cls.column_info.append((column_name, float, "Jy", str(fltr) + " flux density"))
+        # Get properties
+        if not from_astropy: filters = kwargs.pop("filters")
+        else: filters = None
 
-        # Call the initialize function of the base class
-        return super(GalaxyTable, cls).initialize()
+        # Call the constructor of the base class
+        super(GalaxyTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        if not from_astropy:
+
+            # Add columns
+            self.add_column_info("Index", int, None, "index of the extended source in the catalog")
+            self.add_column_info("Name", str, None, "name of the galaxy")
+
+            for fltr in filters:
+
+                column_name = str(fltr) + " flux"
+                self.add_column_info(column_name, float, "Jy", str(fltr) + " flux density")
 
     # -----------------------------------------------------------------
 
@@ -156,35 +169,43 @@ class StarTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Index", int, None, "index of the point source in the catalog"),
-                   ("Catalog", str, None, "original catalog"),
-                   ("ID", str, None, "ID of the point source in the original catalog")]
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, filters):
+    def __init__(self, *args, **kwargs):
 
         """
-        This function ...
-        :param filters:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
-        # Loop over the filters
-        for fltr in filters:
+        # Check
+        if "filters" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-            column_name = str(fltr) + " FWHM"
-            cls.column_info.append((column_name, float, "arcsec", str(fltr) + " FWHM"))
+        # Get properties
+        if not from_astropy: filters = kwargs.pop("filters")
+        else: filters = None
 
-        # Loop over the filters
-        for fltr in filters:
+        # Call the constructor of the base class
+        super(StarTable, self).__init__(*args, **kwargs)
 
-            column_name = str(fltr) + " flux"
-            cls.column_info.append((column_name, float, "Jy", str(fltr) + " flux density"))
+        # Add column info
+        if not from_astropy:
 
-        # Call the initialize function of the base class
-        return super(StarTable, cls).initialize()
+            self.add_column_info("Index", int, None, "index of the point source in the catalog")
+            self.add_column_info("Catalog", str, None, "original catalog")
+            self.add_column_info("ID", str, None, "ID of the point source in the original catalog")
+
+            # Loop over the filters
+            for fltr in filters:
+
+                column_name = str(fltr) + " FWHM"
+                self.add_column_info(column_name, float, "arcsec", str(fltr) + " FWHM")
+
+            # Loop over the filters
+            for fltr in filters:
+
+                column_name = str(fltr) + " flux"
+                self.add_column_info(column_name, float, "Jy", str(fltr) + " flux density")
 
     # -----------------------------------------------------------------
 
@@ -608,10 +629,10 @@ class SourceFinder(Configurable):
         self.star_segments = Image("stars")
 
         # Initialize the galaxy table
-        self.galaxy_table = GalaxyTable.initialize(self.filters)
+        self.galaxy_table = GalaxyTable(filters=self.filters)
 
         # Initialiee the star table
-        self.star_table = StarTable.initialize(self.filters)
+        self.star_table = StarTable(filters=self.filters)
 
     # -----------------------------------------------------------------
 
@@ -803,7 +824,7 @@ class SourceFinder(Configurable):
             position = self.extended_source_catalog.get_position(index)
 
             # Create SED
-            sed = ObservedSED.initialize("Jy")
+            sed = ObservedSED(photometry_unit="Jy")
 
             # Loop over the frames
             for name in self.frames:
@@ -991,7 +1012,7 @@ class SourceFinder(Configurable):
             position = self.point_source_catalog.get_position(index)
 
             # Create SED
-            sed = ObservedSED.initialize("Jy")
+            sed = ObservedSED(photometry_unit="Jy")
 
             # Loop over the frames
             for name in self.frames:
@@ -1057,7 +1078,7 @@ class SourceFinder(Configurable):
             dec_error = self.point_source_catalog.get_dec_error(index)
 
             # Create FWHM table
-            fwhms = FWHMTable.initialize()
+            fwhms = FWHMTable()
 
             # Loop over the frames
             for name in self.frames:

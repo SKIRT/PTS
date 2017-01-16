@@ -34,19 +34,25 @@ class SED(WavelengthCurve):
     This class ...
     """
 
-    @classmethod
-    def initialize(cls, unit, density=False):
+    def __init__(self, *args, **kwargs):
 
         """
-        This function ...
-        :param unit:
-        :param density:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
         # Call the initialize function of the base class
+        unit = kwargs.pop("photometry_unit")
+        density = kwargs.pop("density")
         unit = PhotometricUnit(unit, density=density)
-        return super(SED, cls).initialize("Photometry", "Photometric points", unit)
+
+        kwargs["y_name"] = "Photometry"
+        kwargs["y_description"] = "Photometric points"
+        kwargs["y_unit"] = unit
+
+        # Call the constructor of the base class
+        super(SED, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -114,7 +120,7 @@ class SED(WavelengthCurve):
         photometry_unit = PhotometricUnit(photometry_unit, density=density)
 
         # Create new SED
-        sed = cls.initialize(photometry_unit, density=density)
+        sed = cls(unit=photometry_unit, density=density)
 
         # Add the entries
         for index in range(len(wavelengths)):
@@ -191,7 +197,7 @@ class SED(WavelengthCurve):
         #sed.table["Flux"].unit = "Jy"
 
         # Create a new SED
-        sed = cls.initialize("Jy")
+        sed = cls("Jy")
 
         # Add the entries
         for index in range(len(wavelength_column)):
@@ -214,25 +220,37 @@ class ObservedSED(FilterCurve):
     This class ...
     """
 
-    @classmethod
-    def initialize(cls, unit, density=False):
+    def __init__(self, *args, **kwargs):
 
         """
-        This fucntion ...
-        :param unit:
-        :param density:
-        :return:
+        This function ...
+        :param args:
+        :param kwargs:
         """
 
-        # Create photometric unit
-        unit = PhotometricUnit(unit, density=density)
+        if "photometry_unit" not in kwargs: from_astropy = True
+        else: from_astropy = False
 
-        # Add column for the errors
-        cls.column_info.append(("Error-", float, unit, "Lower bound error"))
-        cls.column_info.append(("Error+", float, unit, "Upper bound error"))
+        if not from_astropy:
 
-        # Call the initialize function of the base class
-        return super(ObservedSED, cls).initialize("Photometry", "Photometric points", unit)
+            # Get properties
+            unit = kwargs.pop("photometry_unit")
+            density = kwargs.pop("density", False)
+            unit = PhotometricUnit(unit, density=density)
+
+            # Set kwargs
+            kwargs["y_name"] = "Photometry"
+            kwargs["y_description"] = "Photometric points"
+            kwargs["y_unit"] = unit
+
+        # Call the constructor of the base class
+        super(ObservedSED, self).__init__(*args, **kwargs)
+
+        if not from_astropy:
+
+            # Add columns
+            self.column_info.append(("Error-", float, unit, "Lower bound error"))
+            self.column_info.append(("Error+", float, unit, "Upper bound error"))
 
     # -----------------------------------------------------------------
 
@@ -246,7 +264,10 @@ class ObservedSED(FilterCurve):
         :return:
         """
 
-        values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), photometry, error]
+        if error is not None:
+            if not isinstance(error, ErrorBar): error = ErrorBar(error)
+            values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), photometry, error.lower, error.upper]
+        else: values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), photometry, None, None]
         self.add_row(values)
 
     # -----------------------------------------------------------------
@@ -512,7 +533,7 @@ class ObservedSED(FilterCurve):
         #return sed
 
         # Initialize SED
-        sed = cls.initialize("Jy")
+        sed = cls("Jy")
 
         # Add entries
         for index in range(len(filter_column)):

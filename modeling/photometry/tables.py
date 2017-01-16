@@ -23,15 +23,27 @@ class FluxErrorTable(SmartTable):
     This class...
     """
 
-    column_info = [("Instrument", str, None, "name of the instrument"),
-                   ("Band", str, None, "name of the band"),
-                   ("Calibration error-", float, None, "calibration error lower"),
-                   ("Calibration error+", float, None, "calibration error upper"),
-                   ("Aperture noise-", float, None, "aperture noise lower"),
-                   ("Aperture noise+", float, None, "aperture noise upper"),
-                   ("Total error-", float, None, "total error lower"),
-                   ("Total error+", float, None, "total error upper"),
-                   ("Total relative error", float, None, "total relative error")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(FluxErrorTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Instrument", str, None, "name of the instrument")
+        self.add_column_info("Band", str, None, "name of the band")
+        self.add_column_info("Calibration error-", float, None, "calibration error lower")
+        self.add_column_info("Calibration error+", float, None, "calibration error upper")
+        self.add_column_info("Aperture noise-", float, None, "aperture noise lower")
+        self.add_column_info("Aperture noise+", float, None, "aperture noise upper")
+        self.add_column_info("Total error-", float, None, "total error lower")
+        self.add_column_info("Total error+", float, None, "total error upper")
+        self.add_column_info("Total relative error", float, None, "total relative error")
 
     # -----------------------------------------------------------------
 
@@ -61,26 +73,35 @@ class FluxDifferencesTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Instrument", str, None, "name of of the instrument"),
-                   ("Band", str, None, "name of the band"),
-                   ("Flux", float, None, "the flux value")]
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def initialize(cls, labels):
+    def __init__(self, *args, **kwargs):
 
         """
-        This function ...
-        :param labels:
-        :return:
+        The constructor ...
+        :param args:
+        :param kwargs:
         """
 
-        # Add the column info
-        for label in labels: cls.column_info.append((label + " relative difference", float, None, "relative difference with the " + label + " flux"))
+        # Check
+        if "labels" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-        # Call the initialize function of the generations table function
-        return super(FluxDifferencesTable, cls).initialize()
+        # Get properties
+        if not from_astropy: labels = kwargs.pop("labels")
+        else: labels = None
+
+        # Call the constructor of the base class
+        super(FluxDifferencesTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        if not from_astropy:
+
+            # Add column info
+            self.add_column_info("Instrument", str, None, "name of of the instrument")
+            self.add_column_info("Band", str, None, "name of the band")
+            self.add_column_info("Flux", float, None, "the flux value")
+
+            # Loop over the labels
+            for label in labels: self.add_column_info(label + " relative difference", float, None, "relative difference with the " + label + " flux")
 
     # -----------------------------------------------------------------
 

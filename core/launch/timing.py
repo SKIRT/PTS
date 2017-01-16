@@ -30,41 +30,53 @@ class TimingTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Simulation name", str, None, "Name of the simulation"),
-                   ("Timestamp", str, None, "Timestamp"),
-                   ("Host id", str, None, "Remote host ID"),
-                   ("Cluster name", str, None, "Remote cluster name"),
-                   ("Cores", int, None, "number of cores"),
-                   ("Threads per core", int, None, "number of threads per core"),
-                   ("Processes", int, None, "number of processes"),
-                   ("Wavelengths", int, None, "number of wavelengths"),
-                   ("Packages", int, None, "number of photon packages per wavelength"),
-                   ("Dust cells", int, None, "number of dust cells"),
-                   ("Grid type", str, None, "type of grid"),
-                   ("Min level", int, None, "minimum division level for the tree"),
-                   ("Max level", int, None, "maximum division level for the tree"),
-                   ("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)"),
-                   ("Sample count", int, None, "sample count"),
-                   ("Max optical depth", float, None, "maximum optical depth"),
-                   ("Max mass fraction", float, None, "maximum mass fraction"),
-                   ("Max density dispersion", float, None, "maximum density dispersion"),
-                   ("Self-absorption", bool, None, "self-absorption enabled"),
-                   ("Transient heating", bool, None, "transient (non-LTE) heating enabled"),
-                   ("Data-parallel", bool, None, "data parallelization enabled"),
-                   ("Total runtime", float, "s", "total simulation time"),
-                   ("Setup time", float, "s", "time spent in simulation setup"),
-                   ("Stellar emission time", float, "s", "time spent shooting stellar photon packages"),
-                   ("Spectra calculation time", float, "s", "time spent in calculation of dust emission spectra"),
-                   ("Dust emission time", float, "s", "time spent shooting dust emission photon packages"),
-                   ("Writing time", float, "s", "time spent writing to disk"),
-                   ("Waiting time", float, "s", "time spent waiting for other processes"),
-                   ("Communication time", float, "s", "time spent in inter-process communication"),
-                   ("Dust densities communication time", float, "s", "time spent in communication of dust densities"),
-                   ("Stellar absorption communication time", float, "s", "time spent in communication of stellar absorption luminosities"),
-                   ("Dust absorption communication time", float, "s", "time spent in communication of dust absorption luminosities"),
-                   ("Emission spectra communication time", float, "s", "time spent in communication of emission spectra"),
-                   ("Instruments communication time", float, "s", "time spent in communication of instrument data"),
-                   ("Intermediate time", float, "s", "time spent in between other phases")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(TimingTable, self).__init__(*args, **kwargs)
+
+        # Add columns
+        self.add_column_info("Simulation name", str, None, "Name of the simulation")
+        self.add_column_info("Timestamp", str, None, "Timestamp")
+        self.add_column_info("Host id", str, None, "Remote host ID")
+        self.add_column_info("Cluster name", str, None, "Remote cluster name")
+        self.add_column_info("Cores", int, None, "number of cores")
+        self.add_column_info("Threads per core", int, None, "number of threads per core")
+        self.add_column_info("Processes", int, None, "number of processes")
+        self.add_column_info("Wavelengths", int, None, "number of wavelengths")
+        self.add_column_info("Packages", int, None, "number of photon packages per wavelength")
+        self.add_column_info("Dust cells", int, None, "number of dust cells")
+        self.add_column_info("Grid type", str, None, "type of grid")
+        self.add_column_info("Min level", int, None, "minimum division level for the tree")
+        self.add_column_info("Max level", int, None, "maximum division level for the tree")
+        self.add_column_info("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)")
+        self.add_column_info("Sample count", int, None, "sample count")
+        self.add_column_info("Max optical depth", float, None, "maximum optical depth")
+        self.add_column_info("Max mass fraction", float, None, "maximum mass fraction")
+        self.add_column_info("Max density dispersion", float, None, "maximum density dispersion")
+        self.add_column_info("Self-absorption", bool, None, "self-absorption enabled")
+        self.add_column_info("Transient heating", bool, None, "transient (non-LTE) heating enabled")
+        self.add_column_info("Data-parallel", bool, None, "data parallelization enabled")
+        self.add_column_info("Total runtime", float, "s", "total simulation time")
+        self.add_column_info("Setup time", float, "s", "time spent in simulation setup")
+        self.add_column_info("Stellar emission time", float, "s", "time spent shooting stellar photon packages")
+        self.add_column_info("Spectra calculation time", float, "s", "time spent in calculation of dust emission spectra")
+        self.add_column_info("Dust emission time", float, "s", "time spent shooting dust emission photon packages")
+        self.add_column_info("Writing time", float, "s", "time spent writing to disk")
+        self.add_column_info("Waiting time", float, "s", "time spent waiting for other processes")
+        self.add_column_info("Communication time", float, "s", "time spent in inter-process communication")
+        self.add_column_info("Dust densities communication time", float, "s", "time spent in communication of dust densities")
+        self.add_column_info("Stellar absorption communication time", float, "s", "time spent in communication of stellar absorption luminosities")
+        self.add_column_info("Dust absorption communication time", float, "s", "time spent in communication of dust absorption luminosities")
+        self.add_column_info("Emission spectra communication time", float, "s", "time spent in communication of emission spectra")
+        self.add_column_info("Instruments communication time", float, "s", "time spent in communication of instrument data")
+        self.add_column_info("Intermediate time", float, "s", "time spent in between other phases")
 
     # -----------------------------------------------------------------
 

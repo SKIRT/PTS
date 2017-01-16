@@ -15,13 +15,12 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
-from pts.core.remote.remote import Remote
 from pts.core.tools.logging import log
-from ..basics.configurable import Configurable
+from .configurable import RemotesConfigurable
 
 # -----------------------------------------------------------------
 
-class VersionChecker(Configurable):
+class VersionChecker(RemotesConfigurable):
     
     """
     This class ...
@@ -36,9 +35,6 @@ class VersionChecker(Configurable):
 
         # Call the constructor of the base class
         super(VersionChecker, self).__init__(config)
-
-        # The remotes
-        self.remotes = []
 
         # Versions for each remote host
         self.python_versions = dict()
@@ -69,24 +65,6 @@ class VersionChecker(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
-    def host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        ids = []
-
-        # Loop over the remotes
-        for remote in self.remotes: ids.append(remote.host_id)
-
-        # Return the IDs
-        return ids
-
-    # -----------------------------------------------------------------
-
     def setup(self, **kwargs):
 
         """
@@ -97,35 +75,6 @@ class VersionChecker(Configurable):
 
         # Call the setup function of the base class
         super(VersionChecker, self).setup(**kwargs)
-
-        # If remotes are passed
-        if "remotes" in kwargs:
-
-            # Get the remotes
-            self.remotes = kwargs.pop("remotes")
-
-            # Check if they are setup
-            for remote in self.remotes:
-                if not remote.connected: raise RuntimeError("Remotes must be connected")
-
-        # Remotes are not passed
-        else:
-
-            # Gather host IDs
-            if self.config.not_remotes is not None: host_ids = [host_id for host_id in self.config.host_ids if host_id not in self.config.not_remotes]
-            else: host_ids = self.config.host_ids
-
-            # Loop over the different hosts
-            for host_id in host_ids:
-
-                # Setup the remote (login)
-                remote = Remote()
-                if not remote.setup(host_id):
-                    log.warning("Remote host '" + host_id + "' is down: skipping")
-                    continue
-
-                # Add the remote to the list
-                self.remotes.append(remote)
 
     # -----------------------------------------------------------------
 

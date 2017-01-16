@@ -26,33 +26,45 @@ class MemoryTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Simulation name", str, None, "name of the simulation"),
-                   ("Timestamp", str, None, "timestamp"),
-                   ("Host id", str, None, "remote host ID"),
-                   ("Cluster name", str, None, "remote cluster name"),
-                   ("Cores", int, None, "number of cores"),
-                   ("Threads per core", int, None, "number of threads per core"),
-                   ("Processes", int, None, "number of processes"),
-                   ("Wavelengths", int, None, "number of wavelengths"),
-                   ("Dust cells", int, None, "number of dust cells"),
-                   ("Grid type", str, None, "type of grid"),
-                   ("Min level", int, None, "minimum division level for the tree"),
-                   ("Max level", int, None, "maximum division level for the tree"),
-                   ("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)"),
-                   ("Sample count", int, None, "sample count"),
-                   ("Max optical depth", float, None, "maximum optical depth"),
-                   ("Max mass fraction", float, None, "maximum mass fraction"),
-                   ("Max density dispersion", float, None, "maximum density dispersion"),
-                   ("Self-absorption", bool, None, "self-absorption enabled"),
-                   ("Transient heating", bool, None, "transient (non-LTE) heating enabled"),
-                   ("Data-parallel", bool, None, "data parallelization enabled"),
-                   ("Number of pixels", int, None, "total number of spatial pixels for all instruments"),
-                   ("Total peak memory", float, "GB", "peak memory usage during total simulation"),
-                   ("Setup peak memory", float, "GB", "peak memory usage during setup"),
-                   ("Stellar emission peak memory", float, "GB", "peak memory usage during stellar emission"),
-                   ("Spectra calculation peak memory", float, "GB", "peak memory usage during spectra calculation"),
-                   ("Dust emission peak memory", float, "GB", "peak memory usage during dust emission"),
-                   ("Writing peak memory", float, "GB", "peak memory usage during writing")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(MemoryTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Simulation name", str, None, "name of the simulation")
+        self.add_column_info("Timestamp", str, None, "timestamp")
+        self.add_column_info("Host id", str, None, "remote host ID")
+        self.add_column_info("Cluster name", str, None, "remote cluster name")
+        self.add_column_info("Cores", int, None, "number of cores")
+        self.add_column_info("Threads per core", int, None, "number of threads per core")
+        self.add_column_info("Processes", int, None, "number of processes")
+        self.add_column_info("Wavelengths", int, None, "number of wavelengths")
+        self.add_column_info("Dust cells", int, None, "number of dust cells")
+        self.add_column_info("Grid type", str, None, "type of grid")
+        self.add_column_info("Min level", int, None, "minimum division level for the tree"),
+        self.add_column_info("Max level", int, None, "maximum division level for the tree"),
+        self.add_column_info("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)")
+        self.add_column_info("Sample count", int, None, "sample count")
+        self.add_column_info("Max optical depth", float, None, "maximum optical depth")
+        self.add_column_info("Max mass fraction", float, None, "maximum mass fraction")
+        self.add_column_info("Max density dispersion", float, None, "maximum density dispersion")
+        self.add_column_info("Self-absorption", bool, None, "self-absorption enabled")
+        self.add_column_info("Transient heating", bool, None, "transient (non-LTE) heating enabled")
+        self.add_column_info("Data-parallel", bool, None, "data parallelization enabled")
+        self.add_column_info("Number of pixels", int, None, "total number of spatial pixels for all instruments")
+        self.add_column_info("Total peak memory", float, "GB", "peak memory usage during total simulation")
+        self.add_column_info("Setup peak memory", float, "GB", "peak memory usage during setup")
+        self.add_column_info("Stellar emission peak memory", float, "GB", "peak memory usage during stellar emission")
+        self.add_column_info("Spectra calculation peak memory", float, "GB", "peak memory usage during spectra calculation")
+        self.add_column_info("Dust emission peak memory", float, "GB", "peak memory usage during dust emission")
+        self.add_column_info("Writing peak memory", float, "GB", "peak memory usage during writing")
 
     # -----------------------------------------------------------------
 

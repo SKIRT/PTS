@@ -171,16 +171,16 @@ class PhotoMeter(PhotometryComponent):
         super(PhotoMeter, self).setup()
 
         # Create an observed SED
-        self.sed = ObservedSED.initialize("Jy")
+        self.sed = ObservedSED(photometry_unit="Jy")
 
         # Setup the remote PTS launcher
         self.launcher.setup(self.config.remote)
 
         # Initialize the flux error table
-        self.error_table = FluxErrorTable.initialize()
+        self.error_table = FluxErrorTable()
 
         # Initialize the flux differences table
-        self.differences_table = FluxDifferencesTable.initialize(self.reference_sed_labels)
+        self.differences_table = FluxDifferencesTable(labels=self.reference_sed_labels)
 
     # -----------------------------------------------------------------
 

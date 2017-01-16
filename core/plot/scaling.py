@@ -613,10 +613,10 @@ class ScalingPlotter(Configurable):
         extract_memory = self.memory is None
 
         # Initialize a timing table
-        if extract_timing: self.timing = TimingTable.initialize()
+        if extract_timing: self.timing = TimingTable()
 
         # Initialize a memory table
-        if extract_memory: self.memory = MemoryTable.initialize()
+        if extract_memory: self.memory = MemoryTable()
 
         # Loop over the simulations
         for simulation in self.simulations:

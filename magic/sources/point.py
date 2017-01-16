@@ -46,12 +46,24 @@ class PointSourceTable(SmartTable):
     This class ...
     """
 
-    column_info = [("RA", float, "deg", "right ascension"),
-                   ("DEC", float, "deg", "declination"),
-                   ("Detected", bool, None, "Has source detected"),
-                   ("Flux", float, "Jy", "flux for the point source"),
-                   ("Flux error", float, "Jy", "error on the flux value"),
-                   ("FWHM", float, "arcsec", "FWHM of the point source")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(PointSourceTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("RA", float, "deg", "right ascension")
+        self.add_column_info("DEC", float, "deg", "declination")
+        self.add_column_info("Detected", bool, None, "Has source detected")
+        self.add_column_info("Flux", float, "Jy", "flux for the point source")
+        self.add_column_info("Flux error", float, "Jy", "error on the flux value")
+        self.add_column_info("FWHM", float, "arcsec", "FWHM of the point source")
 
     # -----------------------------------------------------------------
 
@@ -311,7 +323,7 @@ class PointSourceFinder(Configurable):
         self.segments = Frame.zeros_like(self.frame)
 
         # Initialize the table
-        self.table = PointSourceTable.initialize()
+        self.table = PointSourceTable()
 
     # -----------------------------------------------------------------
 
