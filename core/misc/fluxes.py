@@ -176,7 +176,7 @@ class ObservedFluxCalculator(object):
             # Get the wavelengths and flux densities
             wavelengths = sed.wavelengths("micron", asarray=True)
             fluxdensities = []
-            for wavelength, fluxdensity_jy in zip(sed.wavelengths("micron"), sed.fluxes("Jy")):
+            for wavelength, fluxdensity_jy in zip(sed.wavelengths("micron"), sed.photometry("Jy")):
 
                 # 2 different ways should be the same:
                 #fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))

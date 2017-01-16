@@ -261,7 +261,7 @@ class BlackBodyDustMapMaker(MapsComponent):
             sed = self.datacube.pixel_sed(x, y, errorcube=self.errorcube)
 
             # Check values
-            if np.any(sed.fluxes(asarray=True) < 0): continue
+            if np.any(sed.photometry(asarray=True) < 0): continue
 
             # Set the pixel
             self.pixels.append(pixel)
@@ -448,7 +448,7 @@ class BlackBodyDustMapMaker(MapsComponent):
             sed = self.datacube.pixel_sed(x, y)
 
             # Get the fluxes
-            fluxes = sed.fluxes(unit="Jy", asarray=True)
+            fluxes = sed.photometry(unit="Jy", asarray=True)
 
             if np.any(fluxes < 0): continue
 

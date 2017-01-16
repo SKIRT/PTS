@@ -327,9 +327,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         all_wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
         dust_wavelengths = all_wavelengths > 10.
 
-        total_fluxes = self.total_sed.fluxes(asarray=True)
-        evolved_fluxes = self.evolved_sed.fluxes(asarray=True)
-        unevolved_fluxes = self.unevolved_sed.fluxes(asarray=True)
+        total_fluxes = self.total_sed.photometry(asarray=True)
+        evolved_fluxes = self.evolved_sed.photometry(asarray=True)
+        unevolved_fluxes = self.unevolved_sed.photometry(asarray=True)
 
         # Calculate the heating fractions
         unevolved_fractions = 0.5 * (unevolved_fluxes + total_fluxes - evolved_fluxes) / total_fluxes

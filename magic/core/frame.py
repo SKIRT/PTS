@@ -74,16 +74,16 @@ class Frame(NDDataArray):
         self._pixelscale = kwargs.pop("pixelscale", None)
         self._wavelength = kwargs.pop("wavelength", None)
 
+        # The path
+        self.path = kwargs.pop("path", None)
+        self._from_multiplane = kwargs.pop("from_multiplane", False)
+
         # Call the constructor of the base class
         super(Frame, self).__init__(data, *args, **kwargs)
 
         # Set the WCS and unit
         self.wcs = wcs # go through the setter
         self.unit = unit # go through the setter
-
-        # The path
-        self.path = kwargs.pop("path", None)
-        self._from_multiplane = kwargs.pop("from_multiplane", False)
 
     # -----------------------------------------------------------------
 

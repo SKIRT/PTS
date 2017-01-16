@@ -94,8 +94,8 @@ class AttenuationCurve(Curve):
         wavelengths = total.wavelengths(unit="micron", add_unit=False)
 
         # Get the total and transparent fluxes
-        total_fluxes = total.fluxes(asarray=True)
-        transparent_fluxes = transparent.fluxes(asarray=True)
+        total_fluxes = total.photometry(asarray=True)
+        transparent_fluxes = transparent.photometry(asarray=True)
 
         # Calculate the attenuations
         attenuations = -2.5 * np.log10(total_fluxes / transparent_fluxes)

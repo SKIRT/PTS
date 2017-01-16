@@ -406,7 +406,7 @@ class GridBlackBodyFitter(BlackBodyFitter):
             wavelengths = sed.wavelengths(unit="micron", asarray=True)
 
             # Get fluxes and errors in Jansky
-            ydata = sed.fluxes(unit="Jy", asarray=True)
+            ydata = sed.photometry(unit="Jy", asarray=True)
             yerr_low = sed.errors_min(unit="Jy", asarray=True)
             yerr_high = sed.errors_max(unit="Jy", asarray=True)
 
@@ -530,7 +530,7 @@ class GeneticBlackBodyFitter(BlackBodyFitter):
             wavelengths = sed.wavelengths(unit="micron", asarray=True)
 
             # Get fluxes and errors in Jansky
-            ydata = sed.fluxes(unit="Jy", asarray=True)
+            ydata = sed.photometry(unit="Jy", asarray=True)
             yerr_low = sed.errors_min(unit="Jy", asarray=True)
             yerr_high = sed.errors_max(unit="Jy", asarray=True)
 
