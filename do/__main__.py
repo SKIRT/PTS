@@ -206,7 +206,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     # Mark begin of modeling command for history
     if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy":
 
-        from ..modeling.core.component import load_modeling_history
+        from ..modeling.component.component import load_modeling_history
         history = load_modeling_history(fs.cwd())
         history.add_entry(command_name)
         history.save()

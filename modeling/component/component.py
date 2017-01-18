@@ -307,6 +307,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def modeling_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_configuration.modeling_type
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def history(self):
 
         """

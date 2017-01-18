@@ -17,7 +17,7 @@ from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...magic.tools.catalogs import get_ngc_name, get_hyperleda_name
 from ...core.tools import filesystem as fs
-from ..core.component import get_config_file_path
+from ..component.component import get_config_file_path
 from ...core.basics.configuration import Configuration, ConfigurationDefinition, InteractiveConfigurationSetter
 from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
