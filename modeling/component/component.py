@@ -429,7 +429,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter.from_string("GALEX FUV")
+        return Filter("GALEX FUV")
 
     # -----------------------------------------------------------------
 
@@ -441,7 +441,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter.from_string("IRAC I1")
+        return Filter("IRAC I1")
 
     # -----------------------------------------------------------------
 
@@ -453,7 +453,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter.from_string("Pacs 160")
+        return Filter("Pacs 160")
 
     # -----------------------------------------------------------------
 
@@ -465,7 +465,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter.from_string("SPIRE PSW")
+        return Filter("SPIRE PSW")
 
     # -----------------------------------------------------------------
 

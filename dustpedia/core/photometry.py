@@ -109,7 +109,7 @@ class DustPediaPhotometry(object):
 
             if colname.endswith("_err") or colname.endswith("_flag"): continue
 
-            fltr = Filter.from_string(colname)
+            fltr = Filter(colname)
 
             self.aperture_filters[colname] = fltr
 
@@ -120,7 +120,7 @@ class DustPediaPhotometry(object):
             if colname in non_flux_columns: continue
             if colname.endswith("_err") or colname.endswith("_flag"): continue
 
-            fltr = Filter.from_string(colname)
+            fltr = Filter(colname)
 
             self.iras_filters[colname] = fltr
 
@@ -131,7 +131,7 @@ class DustPediaPhotometry(object):
             if colname in non_flux_columns: continue
             if colname.endswith("_err") or colname.endswith("_flag"): continue
 
-            fltr = Filter.from_string(colname)
+            fltr = Filter(colname)
 
             self.planck_filters[colname] = fltr
 

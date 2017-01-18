@@ -169,8 +169,8 @@ class AnianoKernels(object):
         :return:
         """
 
-        if isinstance(from_filter, basestring): from_filter = Filter.from_string(from_filter)
-        if isinstance(to_filter, basestring): to_filter = Filter.from_string(to_filter)
+        if isinstance(from_filter, basestring): from_filter = Filter(from_filter)
+        if isinstance(to_filter, basestring): to_filter = Filter(to_filter)
 
         # For variable FWHM of input image
         if str(from_filter) in variable_fwhms: # Is SDSS

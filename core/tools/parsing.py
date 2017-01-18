@@ -653,7 +653,7 @@ def filter(argument):
     :return:
     """
 
-    return Filter.from_string(argument)
+    return Filter(argument)
 
 # -----------------------------------------------------------------
 

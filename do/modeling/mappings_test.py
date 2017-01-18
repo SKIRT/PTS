@@ -65,7 +65,7 @@ log.start("Starting mappings_test ...")
 
 # -----------------------------------------------------------------
 
-fuv_filter = Filter.from_string("FUV")
+fuv_filter = Filter("FUV")
 fuv_wavelength = fuv_filter.pivot
 
 # -----------------------------------------------------------------

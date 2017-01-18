@@ -52,9 +52,9 @@ class SPIRE(object):
         """
 
         # Create the SPIRE filters
-        self.psw = Filter.from_string("SPIRE PSW")
-        self.pmw = Filter.from_string("SPIRE PMW")
-        self.plw = Filter.from_string("SPIRE PLW")
+        self.psw = Filter("SPIRE PSW")
+        self.pmw = Filter("SPIRE PMW")
+        self.plw = Filter("SPIRE PLW")
 
         # BASED ON TEMPERATURE
         # --------------------

@@ -563,7 +563,7 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     log.info("[convolution with " + fltrname + " filter] Loading filter ...")
 
     # Resurrect the filter
-    fltr = Filter.from_string(fltrname)
+    fltr = Filter(fltrname)
 
     log.info("[convolution with " + fltrname + " filter] Loading wavelength grid ...")
 

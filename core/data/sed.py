@@ -502,7 +502,7 @@ class ObservedSED(FilterCurve):
             band = instrument_band.split("_")[1]
 
             # Create filter
-            fltr = Filter.from_string(instrument + " " + band)
+            fltr = Filter(instrument + " " + band)
 
             # Get filter properties
             observatory = fltr.observatory

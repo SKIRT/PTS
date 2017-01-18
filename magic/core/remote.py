@@ -363,7 +363,7 @@ class RemoteFrame(object):
         """
 
         # Get the filter
-        fltr = Filter.from_string(self.session.get_string("str(" + self.label + ".filter)"))
+        fltr = Filter(self.session.get_string("str(" + self.label + ".filter)"))
 
         # Return the filter
         return fltr
@@ -1693,7 +1693,7 @@ class RemoteDataCube(RemoteImage):
         self.session.send_line("filters = []")
 
         # Reconstruct the list of filters remotely
-        for fltr in filters: self.session.send_line("filters.append(Filter.from_string('" + str(fltr) + "'))")
+        for fltr in filters: self.session.send_line("filters.append(Filter('" + str(fltr) + "'))")
 
         # Initialize a list with remoteframes
         remoteframes = []

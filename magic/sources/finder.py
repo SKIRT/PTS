@@ -150,7 +150,7 @@ class GalaxyTable(SmartTable):
             if not name.endswith("flux"): continue
 
             # Filter
-            fltr = Filter.from_string(name.split(" flux")[0])
+            fltr = Filter(name.split(" flux")[0])
 
             # Get flux
             flux = galaxy.sed.flux_for_filter(fltr)
@@ -232,7 +232,7 @@ class StarTable(SmartTable):
             if name.endswith("FWHM"):
 
                 # Filter
-                fltr = Filter.from_string(name.split(" FWHM")[0])
+                fltr = Filter(name.split(" FWHM")[0])
 
                 fwhm = star.fwhms[name]
 
@@ -241,7 +241,7 @@ class StarTable(SmartTable):
             elif name.endswith("flux"):
 
                 # Filter
-                fltr = Filter.from_string(name.split(" flux")[0])
+                fltr = Filter(name.split(" flux")[0])
 
                 # Get flux
                 flux = star.sed.flux_for_filter(fltr)
@@ -1025,8 +1025,8 @@ class SourceFinder(Configurable):
 
             # Check whether it can be identified as a star
 
-            fuv = Filter.from_string("FUV")
-            nuv = Filter.from_string("NUV")
+            fuv = Filter("FUV")
+            nuv = Filter("NUV")
 
             # Check the FUV-NUV colour
             fuv_nuv_colour = sed.colour(fuv, nuv)
@@ -1054,9 +1054,9 @@ class SourceFinder(Configurable):
             # in the field. A second, colour-based, criterion disentangled the
             # background galaxies from the HII regions:
 
-            irac_i1 = Filter.from_string("IRAC I1")
-            irac_i3 = Filter.from_string("IRAC I3")
-            irac_i4 = Filter.from_string("IRAC I4")
+            irac_i1 = Filter("IRAC I1")
+            irac_i3 = Filter("IRAC I3")
+            irac_i4 = Filter("IRAC I4")
 
             # 0.29 < F5.8 / F8 < 0.85
             # F3.6 / F5.8 < 1.58

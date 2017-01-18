@@ -131,7 +131,7 @@ class ColourAnalyser(ColourAnalysisComponent):
         for key in keys:
 
             # Get the corresponding filter
-            fltr = Filter.from_string(filter_names[key])
+            fltr = Filter(filter_names[key])
 
             # Get the observed image for this filter
             frame = self.dataset.get_frame_for_filter(fltr)

@@ -161,13 +161,13 @@ def get_filter(name, header=None):
         # Get a name describing the filter
         if "FILTER" in header:
             try:
-                filter = Filter.from_string(header["FILTER"])
+                filter = Filter(header["FILTER"])
                 return filter
             except ValueError: pass
             filterid += " " + get_string(header['FILTER']).lower()
         if "FLTRNM" in header:
             try:
-                filter = Filter.from_string(header["FLTRNM"])
+                filter = Filter(header["FLTRNM"])
                 return filter
             except ValueError: pass
             filterid += " " + get_string(header['FLTRNM']).lower()
@@ -389,7 +389,7 @@ def get_filter(name, header=None):
     else:
 
         # Create the filter
-        fltr = Filter.from_string(final_filter_name)
+        fltr = Filter(final_filter_name)
 
         # Inform the user
         log.debug("Filter was identified as " + str(fltr))

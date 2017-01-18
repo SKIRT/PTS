@@ -68,7 +68,7 @@ class Model(object):
         fuv_luminosity = self.parameter_values["fuv_ionizing"]
 
         # Get the FUV pivot wavelength
-        fuv_wavelength = Filter.from_string("GALEX FUV").pivot
+        fuv_wavelength = Filter("GALEX FUV").pivot
 
         # Get the SFR
         sfr = Mappings.sfr_for_luminosity(metallicity, compactness, pressure, covering_factor, fuv_luminosity, fuv_wavelength)
@@ -96,7 +96,7 @@ class Model(object):
         fuv_luminosity = self.parameter_values["fuv_ionizing"]
 
         # Get the FUV pivot wavelength
-        fuv_wavelength = Filter.from_string("GALEX FUV").pivot
+        fuv_wavelength = Filter("GALEX FUV").pivot
 
         # Get the dust mass
         dust_mass = Mappings.dust_mass_for_luminosity(metallicity, compactness, pressure, covering_factor, fuv_luminosity, fuv_wavelength)

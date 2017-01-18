@@ -126,7 +126,7 @@ class ObservedFluxCalculator(object):
             log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
-            fltr = Filter.from_string(filter_name)
+            fltr = Filter(filter_name)
 
             # Add the filter to the list
             self.filters.append(fltr)

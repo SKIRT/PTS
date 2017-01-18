@@ -168,7 +168,7 @@ wavelength_unit = "micron"
 datacube.to_wavelength_density(new_unit, wavelength_unit)
 
 # Created observed images
-filters = [Filter.from_string(filter_name) for filter_name in sorted_filter_names]
+filters = [Filter(filter_name) for filter_name in sorted_filter_names]
 
 # Do the filter convolution
 frames = datacube.convolve_with_filters(filters, nprocesses=config.nprocesses)

@@ -120,7 +120,7 @@ class NED(Configurable):
                 if splitted[0].startswith("NGC_"):
                     band = splitted[0].split("NGC_")[1][5:]
                     try:
-                        filter = Filter.from_string(band)
+                        filter = Filter(band)
                         splitted = [self.config.galaxy, None, band, splitted[1]]
                     except: pass
 
@@ -165,10 +165,10 @@ class NED(Configurable):
         for band, year, bibcode, url in images:
 
             if band is None: fltr = None
-            elif "Ha" in band or "H-alpha" in band or "H_alph" in band: fltr = Filter.from_string("Ha")
+            elif "Ha" in band or "H-alpha" in band or "H_alph" in band: fltr = Filter("Ha")
             else:
 
-                try: fltr = Filter.from_string(band)
+                try: fltr = Filter(band)
                 except ValueError: fltr = None
 
             #print(fltr, year, bibcode, url)
@@ -336,7 +336,7 @@ class NED(Configurable):
         :return:
         """
 
-        names = sorted(self.images.keys(), key=lambda key: Filter.from_string(key).pivotwavelength())
+        names = sorted(self.images.keys(), key=lambda key: Filter(key).pivotwavelength())
         return names
 
 # -----------------------------------------------------------------

@@ -1253,7 +1253,7 @@ class SkiFile:
         elif normalization.tag == "LuminosityStellarCompNormalization":
 
             # Return the luminosity and the corresponding band
-            return self.get_quantity(normalization, "luminosity"), Filter.from_string(normalization.get("band"))
+            return self.get_quantity(normalization, "luminosity"), Filter(normalization.get("band"))
 
         elif normalization.tag == "SpectralLuminosityStellarCompNormalization":
 
