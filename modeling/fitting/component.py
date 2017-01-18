@@ -19,7 +19,7 @@ from abc import ABCMeta
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
@@ -37,7 +37,7 @@ contributions = ["old", "young", "ionizing"]
 
 # -----------------------------------------------------------------
 
-class FittingComponent(ModelingComponent):
+class FittingComponent(GalaxyModelingComponent):
     
     """
     This class...

@@ -17,31 +17,31 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..core.basics.configurable import Configurable
-from ..core.tools.logging import log
-from ..core.tools import filesystem as fs
-from .data.properties import PropertyFetcher
-from .data.images import ImageFetcher
-from .data.seds import SEDFetcher
-from .preparation.initialization import PreparationInitializer
-from .preparation.preparer import DataPreparer
-from .decomposition.decomposition import GalaxyDecomposer
-from .truncation.truncation import Truncator
-from .photometry.photometry import PhotoMeter
-from .maps.stars.old import OldStellarMapMaker
-from .maps.stars.young import YoungStellarMapMaker
-from .maps.stars.ionizing import IonizingStellarMapMaker
-from .maps.dust.dust import DustMapMaker
-from .fitting.configuration import FittingConfigurer
-from .fitting.initialization import FittingInitializer
-from .fitting.explorer import ParameterExplorer
-from .fitting.sedfitting import SEDFitter
-from .core.component import load_modeling_history, get_config_file_path, load_modeling_configuration
-from ..core.basics.range import QuantityRange
-from .fitting.component import get_generations_table
-from ..core.launch.synchronizer import RemoteSynchronizer
-from ..core.remote.remote import is_available
-from ..core.prep.deploy import Deployer
+from ...core.basics.configurable import Configurable
+from ...core.tools.logging import log
+from ...core.tools import filesystem as fs
+from ..data.properties import PropertyFetcher
+from ..data.images import ImageFetcher
+from ..data.seds import SEDFetcher
+from ..preparation.initialization import PreparationInitializer
+from ..preparation.preparer import DataPreparer
+from ..decomposition.decomposition import GalaxyDecomposer
+from ..truncation.truncation import Truncator
+from ..photometry.photometry import PhotoMeter
+from ..maps.stars.old import OldStellarMapMaker
+from ..maps.stars.young import YoungStellarMapMaker
+from ..maps.stars.ionizing import IonizingStellarMapMaker
+from ..maps.dust.dust import DustMapMaker
+from ..fitting.configuration import FittingConfigurer
+from ..fitting.initialization import FittingInitializer
+from ..fitting.explorer import ParameterExplorer
+from ..fitting.sedfitting import SEDFitter
+from ..core.component import load_modeling_history, get_config_file_path, load_modeling_configuration
+from ...core.basics.range import QuantityRange
+from ..fitting.component import get_generations_table
+from ...core.launch.synchronizer import RemoteSynchronizer
+from ...core.remote.remote import is_available
+from ...core.prep.deploy import Deployer
 
 # -----------------------------------------------------------------
 

@@ -1207,7 +1207,7 @@ class DataSetCreator(Configurable):
             name = fs.strip_extension(fs.name(path))
 
             definition = ConfigurationDefinition()
-            definition.add_optional("error_path", "filepath", "path to the error map for " + name)
+            definition.add_optional("error_path", "file_path", "path to the error map for " + name)
 
             setter = InteractiveConfigurationSetter("datasetcreator_errors")
 

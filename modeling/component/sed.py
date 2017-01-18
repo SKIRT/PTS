@@ -5,24 +5,30 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.truncation.component Contains the TruncationComponent class
+## \package pts.modeling.component.sed Contains the SEDModelingComponent class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta
+
 # Import the relevant PTS classes and modules
-from ..component.galaxy import GalaxyModelingComponent
-from ...core.tools import filesystem as fs
+from .component import ModelingComponent
 
 # -----------------------------------------------------------------
 
-class TruncationComponent(GalaxyModelingComponent):
+class SEDModelingComponent(ModelingComponent):
     
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -33,14 +39,11 @@ class TruncationComponent(GalaxyModelingComponent):
         """
 
         # Call the constructor of the base class
-        super(TruncationComponent, self).__init__(config)
-
-        # The path to the truncation/images directory
-        self.truncation_images_path = None
-
+        super(SEDModelingComponent, self).__init__(config)
+        
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -48,9 +51,6 @@ class TruncationComponent(GalaxyModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(TruncationComponent, self).setup()
-
-        # Set the path to the truncation/images directory
-        self.truncation_images_path = fs.create_directory_in(self.truncation_path, "images")
+        super(SEDModelingComponent, self).setup()
 
 # -----------------------------------------------------------------

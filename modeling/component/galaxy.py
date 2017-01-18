@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.component Contains the ModelingComponent class.
+## \package pts.modeling.component.galaxy Contains the GalaxyModelingComponent class.
 
 # -----------------------------------------------------------------
 
@@ -21,29 +21,28 @@ from astropy.utils import lazyproperty
 from astropy.units import Unit, dimensionless_angles
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.data.sed import ObservedSED
 from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
 from ...magic.core.frame import Frame
-from ...magic.region.list import PixelRegionList, SkyRegionList
+from ...magic.region.list import SkyRegionList
 from ..basics.models import load_3d_model, load_2d_model
 from ..basics.projection import GalaxyProjection
 from ..basics.properties import GalaxyProperties
-from ...magic.tools import catalogs
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.mask import Mask
 from ...core.tools.logging import log
 from ...core.basics.configuration import Configuration
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
-from .history import ModelingHistory
+from ..core.history import ModelingHistory
 from ...magic.prepare.batch import PreparationStatistics
+from .component import ModelingComponent
 
 # -----------------------------------------------------------------
 
-class ModelingComponent(Configurable):
+class GalaxyModelingComponent(ModelingComponent):
     
     """
     This class...
@@ -62,7 +61,7 @@ class ModelingComponent(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ModelingComponent, self).__init__(config)
+        super(GalaxyModelingComponent, self).__init__(config)
 
         # Attributes
         self.galaxy_name = None
@@ -181,7 +180,7 @@ class ModelingComponent(Configurable):
         """
 
         # Call the setup function of the base class
-        super(ModelingComponent, self).setup()
+        super(GalaxyModelingComponent, self).setup()
 
         # -- Attributes --
 
@@ -1371,138 +1370,6 @@ class ModelingComponent(Configurable):
 
         # Return the SED
         return sed
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def fuv_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Filter.from_string("GALEX FUV")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def i1_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Filter.from_string("IRAC I1")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def pacs_red_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Filter.from_string("Pacs 160")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def spire_psw_filter(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Filter.from_string("SPIRE PSW")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def v_band_wavelength(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return 0.55 * Unit("micron")
-
-# -----------------------------------------------------------------
-
-def load_fitting_configuration(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    # Determine the path to the fitting configuration file
-    fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
-
-    # Open the configuration and return it
-    return Configuration.from_file(fitting_configuration_path)
-
-# -----------------------------------------------------------------
-
-def get_config_file_path(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    # Determine the path to the configuration file
-    path = fs.join(modeling_path, "modeling.cfg")
-
-    # Return the path
-    return path
-
-# -----------------------------------------------------------------
-
-def load_modeling_configuration(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    # Determine the path to the modeling configuration file
-    path = get_config_file_path(modeling_path)
-
-    # Open the configuration and return it
-    return Configuration.from_file(path)
-
-# -----------------------------------------------------------------
-
-def load_modeling_history(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    # Determine history file path
-    history_file_path = fs.join(modeling_path, "history.dat")
-
-    # Create new history
-    if not fs.is_file(history_file_path):
-
-        history = ModelingHistory()
-        history.saveto(history_file_path)
-
-    else: history = ModelingHistory.from_file(history_file_path)
-
-    # Return the history
-    return history
 
 # -----------------------------------------------------------------
 

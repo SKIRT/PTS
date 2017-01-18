@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
@@ -25,7 +25,7 @@ from .run import AnalysisRun
 
 # -----------------------------------------------------------------
 
-class AnalysisComponent(ModelingComponent):
+class AnalysisComponent(GalaxyModelingComponent):
     
     """
     This class...

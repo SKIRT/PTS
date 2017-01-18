@@ -13,13 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
-from ...core.tools import tables
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class PreparationComponent(ModelingComponent):
+class PreparationComponent(GalaxyModelingComponent):
     
     """
     This class...
@@ -35,8 +34,6 @@ class PreparationComponent(ModelingComponent):
 
         # Call the constructor of the base class
         super(PreparationComponent, self).__init__(config)
-
-        # -- Attributes --
 
     # -----------------------------------------------------------------
 

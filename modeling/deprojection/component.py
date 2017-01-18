@@ -13,12 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
-from ...core.tools import filesystem as fs
+from ..component.galaxy import GalaxyModelingComponent
 
 # -----------------------------------------------------------------
 
-class DeprojectionComponent(ModelingComponent):
+class DeprojectionComponent(GalaxyModelingComponent):
     
     """
     This class...
@@ -34,8 +33,6 @@ class DeprojectionComponent(ModelingComponent):
 
         # Call the constructor of the base class
         super(DeprojectionComponent, self).__init__(config)
-
-        # -- Attributes --
 
     # -----------------------------------------------------------------
 

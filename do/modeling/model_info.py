@@ -15,7 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.core.tools import filesystem as fs
-from pts.modeling.core.component import load_modeling_configuration, load_fitting_configuration, load_preparation_statistics, load_modeling_history
+from pts.modeling.component.component import load_modeling_configuration, load_fitting_configuration, load_modeling_history
+from pts.modeling.component.galaxy import load_preparation_statistics
 from pts.magic.core.frame import Frame
 
 # -----------------------------------------------------------------

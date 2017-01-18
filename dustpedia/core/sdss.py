@@ -12,13 +12,22 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from .dataprocessing import DustPediaDataProcessing
+from .sample import DustPediaSample
 from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.core.image import Image
+from ...magic.core.frame import Frame
+from ...core.tools import network
+from ...magic.basics.coordinate import SkyCoordinate
+from ...core.tools import archive
 
 # -----------------------------------------------------------------
 
@@ -41,11 +50,27 @@ class SDSSMosaicMaker(Configurable):
         # Call the constructor of the base class
         super(SDSSMosaicMaker, self).__init__(config)
 
+        # The DustPedia sample object
+        self.sample = None
+
         # The DustPedia data processing object
         self.dpdp = None
 
+        # The NGC name
+        self.ngc_name = None
+
+        # The cutout properties
+        self.cutout_center = None
+        self.cutout_width = None
+
+        # The WCS
+        self.rebin_wcs = None
+
+        # Temporary root path
         self.root_path = None
 
+        # Paths for different bands
+        self.fields_paths = dict()
         self.band_paths = dict()
         self.counts_paths = dict()
         self.footprints_paths = dict()
@@ -62,22 +87,31 @@ class SDSSMosaicMaker(Configurable):
         # 1. Call the setup function
         self.setup()
 
-        # Create directories
+        # 2. Create directories
         self.create_directories()
 
-        # 2. Download
-        self.get_frames()
+        # 3. Get the cutout range
+        self.get_range()
 
-        # Convert to counts
+        # Get target header
+        self.get_target_header()
+
+        # 3. Download fields
+        self.download_fields()
+
+        # Convert to counts (decalibrate)
         self.convert_to_counts()
 
-        # Make poisson frames
-        self.make_poisson_frames()
+        # 5. Convert to counts
+        self.convert_to_nanomaggies()
 
-        # Rebin
+        # 7. Rebin
         self.rebin()
 
-        # Write
+        # 8. Show
+        self.show()
+
+        # 9. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -92,11 +126,14 @@ class SDSSMosaicMaker(Configurable):
         # Call the setup function of the base class
         super(SDSSMosaicMaker, self).setup()
 
+        # Create the DustPedia sample object
+        self.sample = DustPediaSample()
+
         # Create the DustPedia data processing instance
         self.dpdp = DustPediaDataProcessing()
 
-        # Get target header
-        self.get_target_header()
+        # Get the NGC name
+        self.ngc_name = self.sample.get_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -119,11 +156,12 @@ class SDSSMosaicMaker(Configurable):
 
             path = fs.create_directory_in(self.root_path, band)
 
+            fields_path = fs.create_directory_in(path, "fields")
             counts_path = fs.create_directory_in(path, "counts")
-
             footprints_path = fs.create_directory_in(path, "footprints")
 
             self.band_paths[band] = path
+            self.fields_paths[band] = fields_path
             self.counts_paths[band] = counts_path
             self.footprints_paths[band] = footprints_path
 
@@ -165,7 +203,7 @@ class SDSSMosaicMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_frames(self):
+    def get_range(self):
 
         """
         This function ...
@@ -173,15 +211,58 @@ class SDSSMosaicMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Downloading ...")
+        log.info("")
+
+        # Get the coordinate range first for this galaxy
+        ra, dec, width = self.dpdp.get_cutout_range_for_galaxy(self.ngc_name)
+        #ra = ra.to("deg").value
+        #dec = dec.to("deg").value
+        #width = width.to("deg").value
+
+        self.cutout_center = SkyCoordinate(ra, dec, unit="deg", frame="fk5")
+        self.cutout_width = width
+
+    # -----------------------------------------------------------------
+
+    def get_target_header(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("")
+
+        # Get the target header
+        header = self.dpdp.get_header_for_galaxy(self.ngc_name, "SDSS")
+
+        # To coordinate system
+        self.rebin_wcs = CoordinateSystem(header)
+
+    # -----------------------------------------------------------------
+
+    def download_fields(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Downloading the fields ...")
 
         # Download the FITS files to be used for mosaicing
-        urls = self.download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, raw_path)
+        urls = download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, raw_path)
 
         #### NEW: DOWNLOAD THE FIELD TABLES
 
         # dr10 / boss / photoObj / frames
 
+        # Inform the user
+        #log.info("Downloading the field tables ...")
+
+        # Start of URLs
         field_url_start = "http://data.sdss3.org/sas/dr12/env/BOSS_PHOTOOBJ"  # = $BOSS_PHOTOOBJ/RERUN/RUN
         # NOT WORKING WITH DR13 : BECAUSE OF PERMISSION ISSUES (PASSWORD IS ASKED WHEN ENTERED IN BROWSER !!)
 
@@ -193,6 +274,7 @@ class SDSSMosaicMaker(Configurable):
 
         field_urls = []
         for url in urls:
+
             rerun_run_camcol = url.split("frames/")[1].split("/frame-")[0]
             rerun, run, camcol = rerun_run_camcol.split("/")
             rerun_run = rerun + "/" + run
@@ -211,7 +293,7 @@ class SDSSMosaicMaker(Configurable):
         log.debug("Downloading the photoField data files ...")
 
         # Download the files
-        field_paths = network.download_files(field_urls, fields_path)
+        self.field_paths = network.download_files(field_urls, fields_path)
 
     # -----------------------------------------------------------------
 
@@ -222,9 +304,60 @@ class SDSSMosaicMaker(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Converting to counts ...")
+
+        # Loop over the downloaded "frame" files
+        for path in fs.files_in_path(raw_path, extension="fits"):  # extension must be specified because there is also the meta.dat and overlap.dat files!!
+
+            # Open the HDUList
+            hdulist = open_fits(path)
+
+            # Get calibrated image in nanomaggies/pixel
+            img = hdulist[0].data
+            nrowc = img.shape[0]  # ysize    (x = columns, y = rows)
+
+            # Get the sky HDU (header)
+            sky = hdulist[2].data
+            allsky = sky.field("allsky")[0]  # for some reason, "allsky" has 3 axes (1, 192, 256), therefore [0]
+            xinterp = sky.field("xinterp")[
+                0]  # columns (xsize = 2048)    # for some reason, "xinterp" has 2 axes (1, 2048)
+            yinterp = sky.field("yinterp")[
+                0]  # rows    (ysize = 1489)    # for some reason, "yinterp" has 2 axes (1, 1489)
+
+            # Split x, y and z values that are not masked
+            # x_values, y_values, z_values = split_xyz(allsky, arrays=True)
+
+            allsky_xrange = np.arange(allsky.shape[1], dtype=float)
+            allsky_yrange = np.arange(allsky.shape[0], dtype=float)
+
+            # INTERPOLATE SKY
+            skyf = interp2d(allsky_xrange, allsky_yrange, allsky)
+            simg = skyf(xinterp, yinterp)
+
+            # Get the calibration HDU (header)
+            calib = hdulist[1].data
+            replicate = np.ones(nrowc)
+            cimg = np.outer(replicate, calib)
+
+            # DECALIBRATE
+            dn = img / cimg + simg
+
+            # CREATE FRAME AND SAVE
+
+            dn_frame = Frame(dn)
+            dn_frame.unit = "count"
+
+            # Set the WCS of THE DN FRAME
+            dn_frame.wcs = CoordinateSystem(hdulist[0].header)
+
+            name = fs.name(path)
+            dn_path = fs.join(counts_path, name)
+            dn_frame.saveto(dn_path)
+
     # -----------------------------------------------------------------
 
-    def make_poisson_frames(self):
+    def convert_to_nanomaggies(self):
 
         """
         This function ...
@@ -232,22 +365,7 @@ class SDSSMosaicMaker(Configurable):
         """
 
         # Make (Poisson) noise maps
-        self.make_sdss_noise_maps_in_nanomaggies(raw_path, counts_path, fields_path, poisson_path)
-
-    # -----------------------------------------------------------------
-
-    def get_target_header(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the target header
-        header = self.dpdp.get_header_for_galaxy(galaxy_name, "SDSS")
-
-        # To coordinate system
-        self.rebin_wcs = CoordinateSystem(header)
+        make_sdss_noise_maps_in_nanomaggies(raw_path, counts_path, fields_path, poisson_path)
 
     # -----------------------------------------------------------------
 
@@ -258,8 +376,11 @@ class SDSSMosaicMaker(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Rebinning ...")
+
         # DO REBINNING, CREATE IMAGES WITH REBINNED PRIMARY AND ERROR FRAME IN NANOMAGGIES PER PIXEL, AND FOOTPRINT FILES
-        self.rebin_sdss_frames_and_error_maps(rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path)
+        rebin_sdss_frames_and_error_maps(rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path)
 
         ## Make the footprints: WAS ONLY NECESSARY FOR WHEN FOOTPRINTS WERE NOT CREATED DURING FUNCTION ABOVE
         ##self.make_sdss_footprints(rebinned_path, footprints_path)
@@ -274,7 +395,18 @@ class SDSSMosaicMaker(Configurable):
         """
 
         # CONVERT TO JY/PIX
-        self.convert_sdss_mosaic_and_error_map_to_jansky(galaxy_name, band, mosaics_path, results_path)
+        convert_sdss_mosaic_and_error_map_to_jansky(galaxy_name, band, mosaics_path, results_path)
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -285,10 +417,13 @@ class SDSSMosaicMaker(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
         ## WRITE RESULT TO OUTPUT DIRECTORY
 
         # Load the image
-        id_string = galaxy_name + '_SDSS_' + band
+        id_string = self.ngc_name + '_SDSS_' + band
         result_path = fs.join(results_path, id_string + ".fits")
         image = Image.from_file(result_path)
 
@@ -347,10 +482,10 @@ def download_sdss_primary_fields_for_galaxy_for_mosaic(galaxy_name, band, temp_p
     urls = download_sdss_primary_fields_for_galaxy(galaxy_name, band, temp_path)
 
     # Get the coordinate range first for this galaxy
-    ra, dec, width = get_cutout_range_for_galaxy(galaxy_name)
-    ra = ra.to("deg").value
-    dec = dec.to("deg").value
-    width = width.to("deg").value
+    #ra, dec, width = get_cutout_range_for_galaxy(galaxy_name)
+    #ra = ra.to("deg").value
+    #dec = dec.to("deg").value
+    #width = width.to("deg").value
 
     # Get the names of the overlapping image files
     overlap_files = get_overlapping_files(temp_path, ra, dec, width)
@@ -477,5 +612,239 @@ def filter_sdss_urls_for_primary_frames(urls, index):
         if check_string in index:
             urls_pri.append(url)
     return urls_pri
+
+# -----------------------------------------------------------------
+
+def make_sdss_noise_maps_in_nanomaggies(raw_path, counts_path, fields_path, poisson_path):
+
+    """
+    This function ...
+    :param raw_path:
+    :param counts_path:
+    :param fields_path:
+    :param poisson_path:
+    :return:
+    """
+
+    # Inform the user
+    log.info("Computing error maps for each SDSS frame in nanomaggies per pixel ...")
+
+    # Loop over the files in the counts path
+    for path, name in fs.files_in_path(counts_path, extension="fits", returns=["path", "name"]):
+
+        # EXAMPLE FILE NAME: frame-u-004294-4-0231.fits
+
+        # FIELD URL = field_url_start / RERUN / RUN    + / photoField-6digits-CAMCOL.fits
+        # example: http://data.sdss3.org/sas/dr12/env/BOSS_PHOTOOBJ/301/4294/photoField-004294-5.fits
+
+        # FRAME URL = $BOSS_PHOTOOBJ / frames / RERUN / RUN / CAMCOL    +   /frame-[ugriz]-6digits-CAMCOL-FRAMESEQ.fits.bz2
+        # example: http://data.sdss3.org/sas/dr10/boss/photoObj/frames/301/4294/5/frame-i-004294-5-0229.fits.bz2
+
+        splitted = name.split("-")
+
+        band = splitted[1]
+        digits = splitted[2]
+        camcol = splitted[3]
+        frameseq = splitted[4]
+
+        # Determine the path to the corresponding field file
+        field_file_path = fs.join(fields_path, "photoField-" + digits + "-" + camcol + ".fits")
+
+        # Get the gain and dark variance
+        gain, dark_variance = get_gain_and_dark_variance_from_photofield(field_file_path, band)
+
+        # Calculate the error
+
+        # dn_err = sqrt(dn/gain+darkVariance)   # NOISE IN DN
+
+        # img_err = dn_err*cimg                 # NOISE IN NANOMAGGIES / PIXEL
+
+
+        # Load the image in DN
+        dn_frame = Frame.from_file(path)
+
+        # COMPUTE THE DN ERROR
+        dn_error = np.sqrt(dn_frame.data / gain + dark_variance)
+
+        # CONVERT ERROR MAP IN DN TO ERROR MAP IN NANOMAGGIES PER PIXEL
+
+        # COMPUTE THE CALIBRATION FRAME AGAIN
+        raw_frame_path = fs.join(raw_path, name + ".fits")
+        hdulist = open_fits(raw_frame_path)
+        img = hdulist[0].data
+        nrowc = img.shape[0]  # ysize    (x = columns, y = rows)
+        # Get the calibration HDU (header)
+        calib = hdulist[1].data
+        replicate = np.ones(nrowc)
+        cimg = np.outer(replicate, calib)
+
+        # IMAGE ERROR MAP IN NANOMAGGIES PER PIXEL
+        img_error = dn_error * cimg
+        error_map = Frame(img_error)
+
+        # SET THE WCS OF THE IMAGE ERROR MAP
+        error_map.wcs = dn_frame.wcs
+
+        # SAVE the error map
+        poisson_error_map_path = fs.join(poisson_path, name + ".fits")
+        error_map.saveto(poisson_error_map_path)
+
+# -----------------------------------------------------------------
+
+def get_gain_and_dark_variance_from_photofield(path, band):
+
+    """
+    This function ...
+    :param path:
+    :param band:
+    :return:
+    """
+
+    # Get the hdulist
+    hdulist = open_fits(path)
+
+    # HDU0: Empty Header
+    # HDU1: photoField Table
+
+    # Data Model: photoField: https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/RERUN/RUN/photoField.html
+
+    column_names = hdulist[1].columns
+
+    tbdata = hdulist[1].data
+
+    gain_2d = tbdata.field("gain")
+    dark_variance_2d = tbdata.field("dark_variance")
+
+    gain_1d = gain_2d[:, sdss_filter_number[band]]
+    dark_variance_1d = dark_variance_2d[:, sdss_filter_number[band]]
+
+    if not is_constant_array(gain_1d): raise ValueError("Gain 1D not constant: " + str(gain_1d))
+    if not is_constant_array(dark_variance_1d): raise ValueError("Dark variance 1D not constant: " + str(dark_variance_1d))
+
+    gain = gain_1d[0]
+    dark_variance = dark_variance_1d[0]
+
+    # Return the values
+    return gain, dark_variance
+
+# -----------------------------------------------------------------
+
+def rebin_sdss_frames_and_error_maps(self, rebin_wcs, raw_path, poisson_path, rebinned_path, footprints_path):
+
+    """
+    This function ...
+    :param rebin_wcs:
+    :param raw_path:
+    :param poisson_path:
+    :param rebinned_path:
+    :param footprints_path
+    :return:
+    """
+
+    # Inform the user
+    log.info("Rebinning primary SDSS frames and corresponding error maps to the target coordinate system ...")
+
+    # Loop over the files in the raw directory
+    for path, name in fs.files_in_path(raw_path, extension="fits", returns=["path", "name"]):
+
+        # Open the frame IN NANOMAGGIES PER PIXEL
+        frame = Frame.from_file(path)  # HDU 0 is used
+
+        # Open the corresponding error map IN NANOMAGGIES PER PIXEL
+        error_path = fs.join(poisson_path, name + ".fits")
+        errormap = Frame.from_file(error_path)
+
+        # Debugging
+        log.debug("Converting " + name + " frame and error map to nanomaggy / sr...")
+
+        # NUMBER OF SR PER PIXEL
+        pixelsr = frame.pixelarea.to("sr").value
+
+        # CONVERT FRAME
+        frame /= pixelsr  # IN NANOMAGGIES PER SR NOW
+
+        # CONVERT ERROR MAP
+        errormap /= pixelsr  # IN NANOMAGGIES PER SR NOW
+
+        # Debugging
+        log.debug("Rebinning " + name + " frame and error map to the target coordinate system ...")
+
+        # Rebin the frame
+        footprint = frame.rebin(rebin_wcs, exact=False)
+
+        # REBIN THE ERROR MAP
+        errormap.rebin(rebin_wcs, exact=False)
+
+        # Debugging
+        log.debug("Converting " + name + " frame and error map back to nanomaggy ...")
+
+        # NUMBER OF SR PER PIXEL
+        new_pixelsr = frame.pixelarea.to("sr").value
+
+        # CONVERT THE REBINNED FRAME BACK TO NANOMAGGY (PER PIXEL)
+        frame *= new_pixelsr
+
+        # CONVERT THE REBINNED ERROR MAP BACK TO NANOMAGGY
+        errormap *= new_pixelsr
+
+        # CREATE IMAGE
+        image = Image()
+
+        image.add_frame(frame, "primary")
+        image.add_frame(errormap, "noise")
+
+        # Determine path for the image
+        image_path = fs.join(rebinned_path, name + ".fits")
+        image.saveto(image_path)
+
+        # SAVE THE FOOTPRINT
+        footprint_path = fs.join(footprints_path, name + ".fits")
+        footprint.saveto(footprint_path)
+
+# -----------------------------------------------------------------
+
+def convert_sdss_mosaic_and_error_map_to_jansky(self, galaxy_name, band, mosaics_path, results_path):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :param band:
+    :param mosaics_path:
+    :param results_path:
+    :return:
+    """
+
+    # DETERMINE ID STRING TO SAVE THE RESULT
+    id_string = galaxy_name + '_SDSS_' + band
+
+    # Inform the user
+    log.info("Converting the SDSS mosaic and error map to Jansky per pixel ...")
+
+    # 1 nanomaggy = approximately 3.613e-6 Jy
+
+    # Open the mosaic
+    mosaic_path = fs.join(mosaics_path, "mosaic.fits")
+    mosaic = Frame.from_file(mosaic_path)
+
+    # Open the mosaic error map
+    mosaic_error_path = fs.join(mosaics_path, "mosaic_errors.fits")
+    mosaic_errors = Frame.from_file(mosaic_error_path)
+
+    # DO THE CONVERSION FOR THE MOSAIC, SET NEW UNIT
+    mosaic *= 3.613e-6
+    mosaic.unit = "Jy / pix"
+
+    # DO THE CONVERSION FOR THE MOSAIC ERROR MAP, SET NEW UNIT
+    mosaic_errors *= 3.613e-6
+    mosaic_errors.unit = "Jy / pix"
+
+    # CREATE IMAGE
+    image = Image()
+    image.add_frame(mosaic, "primary")
+    image.add_frame(mosaic_errors, "errors")
+
+    # SAVE THE MOSAIC IMAGE (with error map) IN JANSKY
+    result_path = fs.join(results_path, id_string + ".fits")
+    image.saveto(result_path)
 
 # -----------------------------------------------------------------

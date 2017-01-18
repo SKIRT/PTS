@@ -13,12 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class ShowComponent(ModelingComponent):
+class ShowComponent(GalaxyModelingComponent):
     
     """
     This class...

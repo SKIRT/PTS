@@ -16,12 +16,12 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class MapsComponent(ModelingComponent):
+class MapsComponent(GalaxyModelingComponent):
     
     """
     This class...
