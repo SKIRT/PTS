@@ -13,6 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
+import bisect
 import numpy as np
 
 # Import astronomical modules
@@ -129,15 +131,22 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def linear(self, npoints, as_list=False):
+    def linear(self, npoints, as_list=False, fancy=False):
 
         """
         This function ...
         :param npoints:
         :param as_list:
+        :param fancy:
         """
 
-        values = np.linspace(self._min, self._max, npoints, endpoint=self.inclusive)
+        if fancy:
+            span = self.max - self.min
+            maxnpoints = npoints
+            ticksize = BestTick(span, maxnpoints)
+            fancy_min = round_to_1(self.min)
+            values = np.arange(fancy_min, self.max, step=ticksize)
+        else: values = np.linspace(self._min, self._max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
 
         if as_list: return list(values)
@@ -145,16 +154,23 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def log(self, npoints, as_list=False):
+    def log(self, npoints, as_list=False, fancy=False):
 
         """
         This function ...
         :param npoints:
         :param as_list:
+        :param fancy:
         :return:
         """
 
-        values = np.logspace(self.log_min, self.log_max, npoints, endpoint=self.inclusive)
+        if fancy:
+            span = self.log_max - self.log_min
+            maxnpoints = npoints
+            ticksize = BestTick(span, maxnpoints)
+            fancy_logmin = round_to_1(self.log_min)
+            values = np.array([round_to_1(value) for value in 10**np.arange(fancy_logmin, self.log_max, step=ticksize)])
+        else: values = np.logspace(self.log_min, self.log_max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
 
         if as_list: return list(values)
@@ -162,14 +178,17 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def sqrt(self, npoints, as_list=False):
+    def sqrt(self, npoints, as_list=False, fancy=False):
 
         """
         This function ...
         :param npoints:
         :param as_list:
+        :param fancy:
         :return:
         """
+
+        if fancy: raise NotImplementedError("Not implemented")
 
         width = self._max - self._min
         normalized = np.linspace(0.0, 1.0, npoints, endpoint=self.inclusive)
@@ -533,5 +552,53 @@ def zip_sqrt(*args, **kwargs):
     # Zip
     result = zip(*temp)
     return result
+
+# -----------------------------------------------------------------
+
+def BestTick(largest, mostticks):
+
+    """
+    This function ...
+    :param largest:
+    :param mostticks:
+    :return:
+    """
+
+    minimum = largest / mostticks
+    magnitude = 10 ** math.floor(math.log(minimum, 10))
+    residual = minimum / magnitude
+    if residual > 5:
+        tick = 10 * magnitude
+    elif residual > 2:
+        tick = 5 * magnitude
+    elif residual > 1:
+        tick = 2 * magnitude
+    else:
+        tick = magnitude
+    return tick
+
+# -----------------------------------------------------------------
+
+def BestTick2(largest, mostticks):
+
+    """
+    This function ...
+    :param largest:
+    :param mostticks:
+    :return:
+    """
+
+    minimum = largest / mostticks
+    magnitude = 10 ** math.floor(math.log(minimum, 10))
+    residual = minimum / magnitude
+    # this table must begin with 1 and end with 10
+    table = [1, 1.5, 2, 3, 5, 7, 10]
+    tick = table[bisect.bisect_right(table, residual)] if residual < 10 else 10
+    return tick * magnitude
+
+# -----------------------------------------------------------------
+
+def round_to_1(x):
+    return round(x, -int(math.floor(math.log10(abs(x)))))
 
 # -----------------------------------------------------------------

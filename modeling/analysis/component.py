@@ -172,7 +172,8 @@ def get_analysis_run_names(modeling_path):
     """
 
     analysis_path = fs.join(modeling_path, "analysis")
-    return fs.directories_in_path(analysis_path, returns="name")
+    if not fs.is_file(analysis_path): return None
+    else: return fs.directories_in_path(analysis_path, returns="name")
 
 # -----------------------------------------------------------------
 
@@ -184,6 +185,8 @@ def get_last_run_name(modeling_path):
     :return:
     """
 
-    return sorted(get_analysis_run_names(modeling_path))[-1]
+    names = get_analysis_run_names(modeling_path)
+    if names is None: return None
+    else: return sorted(names)[-1]
 
 # -----------------------------------------------------------------

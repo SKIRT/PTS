@@ -489,9 +489,10 @@ class ConfigurationDefinition(object):
         # Required
         for name in self.required:
 
-            real_type = self.required[name][0]
-            description = self.required[name][1]
-            choices = self.required[name][2]
+            # Get properties
+            real_type = self.required[name].type
+            description = self.required[name].description
+            choices = self.required[name].choices
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -507,10 +508,11 @@ class ConfigurationDefinition(object):
         # Positional optional
         for name in self.pos_optional:
 
-            real_type = self.pos_optional[name][0]
-            description = self.pos_optional[name][1]
-            default = self.pos_optional[name][2]
-            choices = self.pos_optional[name][3]
+            # Get properties
+            real_type = self.pos_optional[name].type
+            description = self.pos_optional[name].description
+            default = self.pos_optional[name].default
+            choices = self.pos_optional[name].choices
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -526,12 +528,12 @@ class ConfigurationDefinition(object):
         # Optional
         for name in self.optional:
 
-            # (real_type, description, default, letter)
-            real_type = self.optional[name][0]
-            description = self.optional[name][1]
-            default = self.optional[name][2]
-            choices = self.optional[name][3]
-            letter = self.optional[name][4]
+            # Get properties
+            real_type = self.optional[name].type
+            description = self.optional[name].description
+            default = self.optional[name].default
+            choices = self.optional[name].choices
+            letter = self.optional[name].letter
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -550,10 +552,10 @@ class ConfigurationDefinition(object):
         # Flag
         for name in self.flags:
 
-            # (description, letter)
-            description = self.flags[name][0]
-            letter = self.flags[name][1]
-            default = self.flags[name][2] # True or False
+            # Get properties
+            description = self.flags[name].description
+            letter = self.flags[name].letter
+            default = self.flags[name].default
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -594,13 +596,14 @@ class ConfigurationDefinition(object):
         """
 
         # Add fixed
-        for name in self.fixed: settings[name] = self.fixed[name][1]
+        for name in self.fixed: settings[name] = self.fixed[name].value
 
         # Add required
         for name in self.required:
 
-            real_type = self.required[name][0]
-            choices = self.required[name][2]
+            # Get properties
+            real_type = self.required[name].type
+            choices = self.required[name].choices
 
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
@@ -620,8 +623,9 @@ class ConfigurationDefinition(object):
         # Add positional optional
         for name in self.pos_optional:
 
-            real_type = self.pos_optional[name][0]
-            choices = self.pos_optional[name][3]
+            # Get properties
+            real_type = self.pos_optional[name].type
+            choices = self.pos_optional[name].choices
 
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
@@ -641,8 +645,9 @@ class ConfigurationDefinition(object):
         # Add optional
         for name in self.optional:
 
-            real_type = self.optional[name][0]
-            choices = self.optional[name][3]
+            # Get properties
+            real_type = self.optional[name].type
+            choices = self.optional[name].choices
 
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
@@ -662,7 +667,8 @@ class ConfigurationDefinition(object):
         # Add flags
         for name in self.flags:
 
-            default = self.flags[name][2]
+            # Get properties
+            default = self.flags[name].default
 
             if default is True: command_name = "not_" + name
             else: command_name = name
@@ -742,7 +748,7 @@ class ConfigurationDefinition(object):
         :return:
         """
 
-        self.fixed[name] = (description, value)
+        self.fixed[name] = Map(description=description, value=value)
 
     # -----------------------------------------------------------------
 
@@ -762,7 +768,7 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Add
-        self.required[name] = (real_type, description, choices, dynamic_list)
+        self.required[name] = Map(type=real_type, description=description, choices=choices, dynamic_list=dynamic_list)
 
     # -----------------------------------------------------------------
 
@@ -788,7 +794,7 @@ class ConfigurationDefinition(object):
         if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
-        self.pos_optional[name] = (real_type, description, default, choices, dynamic_list)
+        self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices, dynamic_list=dynamic_list)
 
     # -----------------------------------------------------------------
 
@@ -816,7 +822,7 @@ class ConfigurationDefinition(object):
         if convert_default and default is not None: default = get_real_value(default, real_type)
 
         # Add
-        self.optional[name] = (real_type, description, default, choices, letter, dynamic_list)
+        self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices, letter=letter, dynamic_list=dynamic_list)
 
     # -----------------------------------------------------------------
 
@@ -832,7 +838,7 @@ class ConfigurationDefinition(object):
         """
 
         # Add
-        self.flags[name] = (description, letter, default)
+        self.flags[name] = Map(description=description, letter=letter, default=default)
 
 # -----------------------------------------------------------------
 
@@ -1490,8 +1496,9 @@ def write_definition(definition, configfile, indent=""):
     # Fixed
     for name in definition.fixed:
 
-        description = definition.fixed[name][0]
-        value = definition.fixed[name][1]
+        # Get properties
+        description = definition.fixed[name].description
+        value = definition.fixed[name].value
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [fixed]: " + str(value), file=configfile)
@@ -1499,9 +1506,10 @@ def write_definition(definition, configfile, indent=""):
     # Required
     for name in definition.required:
 
-        real_type = definition.required[name][0]
-        description = definition.required[name][1]
-        choices = definition.required[name][2]
+        # Get properties
+        real_type = definition.required[name].type
+        description = definition.required[name].description
+        choices = definition.required[name].choices
 
         choices_string = ""
         if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
@@ -1513,10 +1521,11 @@ def write_definition(definition, configfile, indent=""):
     # Positional optional
     for name in definition.pos_optional:
 
-        real_type = definition.pos_optional[name][0]
-        description = definition.pos_optional[name][1]
-        default = definition.pos_optional[name][2]
-        choices = definition.pos_optional[name][3]
+        # Get properties
+        real_type = definition.pos_optional[name].type
+        description = definition.pos_optional[name].description
+        default = definition.pos_optional[name].default
+        choices = definition.pos_optional[name].choices
 
         choices_string = ""
         if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
@@ -1528,11 +1537,12 @@ def write_definition(definition, configfile, indent=""):
     # Optional
     for name in definition.optional:
 
-        real_type = definition.optional[name][0]
-        description = definition.optional[name][1]
-        default = definition.optional[name][2]
-        choices = definition.optional[name][3]
-        letter = definition.optional[name][5]
+        # Get properties
+        real_type = definition.optional[name].type
+        description = definition.optional[name].description
+        default = definition.optional[name].default
+        choices = definition.optional[name].choices
+        letter = definition.optional[name].letter
 
         choices_string = ""
         if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
@@ -1544,10 +1554,10 @@ def write_definition(definition, configfile, indent=""):
     # Flag
     for name in definition.flags:
 
-        # (description, letter)
-        description = definition.flags[name][0]
-        letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        description = definition.flags[name].description
+        letter = definition.flags[name].letter
+        default = definition.flags[name].default  # True or False
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [flag]: " + str(default), file=configfile)
@@ -1555,6 +1565,7 @@ def write_definition(definition, configfile, indent=""):
     # Sections
     for section_name in definition.sections:
 
+        # Get properties
         section_definition = definition.sections[section_name]
         section_description = definition.section_descriptions[section_name]
 
@@ -1584,7 +1595,7 @@ def add_settings_from_dict(config, definition, dictionary):
     # Fixed
     for name in definition.fixed:
 
-        value = definition.fixed[name][1]
+        value = definition.fixed[name].value
         config[name] = value
 
     # Required
@@ -1592,7 +1603,7 @@ def add_settings_from_dict(config, definition, dictionary):
 
         if not name in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
 
-        choices = definition.required[name][2]
+        choices = definition.required[name].choices
 
         # Get the value specified in the dictionary
         #value = dictionary[name]
@@ -1611,8 +1622,9 @@ def add_settings_from_dict(config, definition, dictionary):
     # Positional optional
     for name in definition.pos_optional:
 
-        default = definition.pos_optional[name][2]
-        choices = definition.pos_optional[name][3]
+        # Get properties
+        default = definition.pos_optional[name].default
+        choices = definition.pos_optional[name].choices
 
         # Check if this option is specified in the dictionary
         if name in dictionary:
@@ -1636,9 +1648,9 @@ def add_settings_from_dict(config, definition, dictionary):
     # Optional
     for name in definition.optional:
 
-        # (real_type, description, default, letter)
-        default = definition.optional[name][2]
-        choices = definition.optional[name][3]
+        # Get properties
+        default = definition.optional[name].default
+        choices = definition.optional[name].choices
 
         # Check if this option is specified in the dictionary
         if name in dictionary:
@@ -1662,9 +1674,9 @@ def add_settings_from_dict(config, definition, dictionary):
     # Flags
     for name in definition.flags:
 
-        # (description, letter, default)
-        #letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        #letter = definition.flags[name].letter
+        default = definition.flags[name].default  # True or False
 
         # Check if this option is specified in the dictionary
         if name in dictionary: value = dict_that_is_emptied.pop(name)
@@ -1706,7 +1718,7 @@ def add_settings_default(config, definition):
 
     # Fixed
     for name in definition.fixed:
-        value = definition.fixed[name][1]
+        value = definition.fixed[name].value
         config[name] = value
 
     # Required
@@ -1718,7 +1730,8 @@ def add_settings_default(config, definition):
     # Positional optional
     for name in definition.pos_optional:
 
-        default = definition.pos_optional[name][2]
+        # Get properties
+        default = definition.pos_optional[name].default
 
         # Set the value
         config[name] = default
@@ -1726,8 +1739,8 @@ def add_settings_default(config, definition):
     # Optional
     for name in definition.optional:
 
-        # (real_type, description, default, letter)
-        default = definition.optional[name][2]
+        # Get properties
+        default = definition.optional[name].default
 
         # Set the value
         config[name] = default
@@ -1735,9 +1748,8 @@ def add_settings_default(config, definition):
     # Flags
     for name in definition.flags:
 
-        # (description, letter, default)
-        # letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        default = definition.flags[name].default  # True or False
 
         # Set the boolean value
         config[name] = default
@@ -1766,8 +1778,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Fixed
     for name in definition.fixed:
 
-        description = definition.fixed[name][0]
-        value = definition.fixed[name][1]
+        # Get properties
+        description = definition.fixed[name].description
+        value = definition.fixed[name].value
 
         # Give name and description
         log.success(name + ": " + description)
@@ -1781,10 +1794,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Required
     for name in definition.required:
 
-        real_type = definition.required[name][0]
-        description = definition.required[name][1]
-        choices = definition.required[name][2]
-        dynamic_list = definition.required[name][3]
+        # Get properties
+        real_type = definition.required[name].type
+        description = definition.required[name].description
+        choices = definition.required[name].choices
+        dynamic_list = definition.required[name].dynamic_list
 
         # Give name and description
         log.success(name + ": " + description)
@@ -1883,11 +1897,12 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Positional optional
     for name in definition.pos_optional:
 
-        real_type = definition.pos_optional[name][0]
-        description = definition.pos_optional[name][1]
-        default = definition.pos_optional[name][2]
-        choices = definition.pos_optional[name][3]
-        dynamic_list = definition.pos_optional[name][4]
+        # Get properties
+        real_type = definition.pos_optional[name].type
+        description = definition.pos_optional[name].description
+        default = definition.pos_optional[name].default
+        choices = definition.pos_optional[name].choices
+        dynamic_list = definition.pos_optional[name].dynamic_list
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -2011,13 +2026,13 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Optional
     for name in definition.optional:
 
-        # (real_type, description, default, letter)
-        real_type = definition.optional[name][0]
-        description = definition.optional[name][1]
-        default = definition.optional[name][2]
-        choices = definition.optional[name][3]
-        letter = definition.optional[name][4]
-        dynamic_list = definition.optional[name][5]
+        # Get properties
+        real_type = definition.optional[name].type
+        description = definition.optional[name].description
+        default = definition.optional[name].default
+        choices = definition.optional[name].choices
+        letter = definition.optional[name].letter
+        dynamic_list = definition.optional[name].dynamic_list
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -2144,10 +2159,10 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Flags
     for name in definition.flags:
 
-        # (description, letter)
-        description = definition.flags[name][0]
-        letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        description = definition.flags[name].description
+        letter = definition.flags[name].letter
+        default = definition.flags[name].default  # True or False
 
         if not prompt_optional:
             value = default

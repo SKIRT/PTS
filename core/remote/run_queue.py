@@ -30,7 +30,7 @@ definition = ConfigurationDefinition()
 
 # Add required
 definition.add_required("name", "string", "name of the simulation queue")
-definition.add_required("walltime", "", "walltime for the jobs")
+definition.add_required("walltime", "duration", "walltime for the jobs")
 definition.add_positional_optional("runid", "integer", "start with this run ID", default=0)
 
 # -----------------------------------------------------------------

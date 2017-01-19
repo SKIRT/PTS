@@ -19,15 +19,15 @@ from sklearn import svm
 from sklearn.externals import joblib
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
 from ..core.image import Image
 from ..core.source import Source
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class Classifier(OldConfigurable):
+class Classifier(Configurable):
 
     """
     This class ...
@@ -42,7 +42,7 @@ class Classifier(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(Classifier, self).__init__(config, "magic")
+        super(Classifier, self).__init__(config)
 
         # The classifier object
         self.vector_classifier = None
@@ -154,7 +154,7 @@ class Classifier(OldConfigurable):
         """
 
         # Inform the user
-        self.log.info("Starting the classification procedure ...")
+        log.info("Starting the classification procedure ...")
 
         # Get a list of the filepaths for every FITS file in the 'yes' directory
         yes_paths = fs.files_in_path(self.yes_path, extension="fits")
@@ -170,7 +170,7 @@ class Classifier(OldConfigurable):
         self.targets = []
 
         # Inform the user
-        self.log.info("Gathering files ...")
+        log.info("Gathering files ...")
 
         # Loop over all FITS files
         for label in paths:
@@ -219,7 +219,7 @@ class Classifier(OldConfigurable):
         """
 
         # Inform the user
-        self.log.info("Fitting training data ...")
+        log.info("Fitting training data ...")
 
         # The classifier is fit to the model, or learns from the model: by passing the training set
         self.vector_classifier.fit(self.data, self.targets)
@@ -249,7 +249,7 @@ class Classifier(OldConfigurable):
         classifier_path = os.path.join(self.classification_mode_path, "classifier.pkl")
 
         # Inform the user
-        self.log.info("Writing the classifier to " + classifier_path)
+        log.info("Writing the classifier to " + classifier_path)
 
         # Serialize and dump the classifier
         joblib.dump(self.vector_classifier, classifier_path)

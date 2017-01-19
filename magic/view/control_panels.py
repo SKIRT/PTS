@@ -11,6 +11,5 @@ control_panels_to_load = [("Source", SourcePanel),
                           ("Plot", PlotPanel),
                           ("Stats", StatsPanel),
                           ("Phot", PhotPanel),
-                          ("Faker", FitsFakerPanel)
+                          #("Faker", FitsFakerPanel)
                           ]
-

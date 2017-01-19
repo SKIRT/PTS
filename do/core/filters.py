@@ -75,9 +75,9 @@ for label in sorted(categorized.keys(), key=lambda x: identifiers.keys().index(c
             print("    - Minimum wavelength: " + stringify.str_from_quantity(fltr.min))
             print("    - Maximum wavelength: " + stringify.str_from_quantity(fltr.max))
             print("    - Mean wavelength: " + stringify.str_from_quantity(fltr.mean))
-            print("    - Effective wavelength: " + stringify.str_from_quantity(fltr.effective))
+            if fltr.effective is not None: print("    - Effective wavelength: " + stringify.str_from_quantity(fltr.effective))
             print("    - Pivot wavelength: " + stringify.str_from_quantity(fltr.pivot))
-            print("    - Effective bandwidth: " + stringify.str_from_quantity(fltr.bandwidth))
+            if fltr.effective is not None: print("    - Effective bandwidth: " + stringify.str_from_quantity(fltr.bandwidth))
 
             print("")
 

@@ -491,6 +491,7 @@ def load_fitting_configuration(modeling_path):
 
     # Determine the path to the fitting configuration file
     fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
+    if not fs.is_file(fitting_configuration_path): return None
 
     # Open the configuration and return it
     return Configuration.from_file(fitting_configuration_path)

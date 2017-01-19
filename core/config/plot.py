@@ -25,6 +25,7 @@ definition.add_optional("legend_bordercolor", "string", "border color of legend"
 definition.add_flag("add_grid", "add a grid", True)
 definition.add_optional("grid_linewidth", "real", "linewidth of grid", default=2.0)
 definition.add_optional("grid_linestyle", "string", "linestyle of grid", default="dotted", choices=["solid", "dashed", "dashdot", "dotted", "offset", "on-off-dash-seq", '-', '--', '-.', ':', 'None', ' ', ''])
+definition.add_optional("grid_color", "string", "color of the grid lines", default="0.70")
 definition.add_flag("add_border", "add border to the plot", False)
 definition.add_optional("label_fontsize", "positive_integer", "fontsize of the axes labels", default=18)
 definition.add_flag("add_legend_border", "add border to legend", False)

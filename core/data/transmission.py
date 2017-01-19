@@ -66,6 +66,10 @@ class TransmissionCurve(object):
         wavelengths = fltr._Wavelengths
         transmissions = fltr._Transmission
 
+        # Make sure that the transmission curves are not floating, but are attached to the x axis
+        transmissions[0] = 0.0
+        transmissions[-1] = 0.0
+
         # Create a new TransmissionCurve instance
         return cls(wavelengths, transmissions)
 

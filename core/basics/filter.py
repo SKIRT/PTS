@@ -83,14 +83,14 @@ identifiers["Swift.UVOT.Vband"] = Map(observatories=["Swift"], instruments=["UVO
 identifiers["UVOT.UVW2"] = Map(observatories=["Swift"], instruments=["UVOT"], bands=["UVW2", "W2"])
 identifiers["UVOT.UVM2"] = Map(observatories=["Swift"], instruments=["UVOT"], bands=["UVM2", "M2"])
 identifiers["UVOT.UVW1"] = Map(observatories=["Swift"], instruments=["UVOT"], bands=["UVW1", "W1"])
-identifiers["ALMA.3"] = Map(observatories=["APEX", "ALMA"], channel=3)
-identifiers["ALMA.4"] = Map(observatories=["APEX", "ALMA"], channel=4)
-identifiers["ALMA.5"] = Map(observatories=["APEX", "ALMA"], channel=5)
-identifiers["ALMA.6"] = Map(observatories=["APEX", "ALMA"], channel=6)
-identifiers["ALMA.7"] = Map(observatories=["APEX", "ALMA"], channel=7, wavelength="870 micron")
-identifiers["ALMA.8"] = Map(observatories=["APEX", "ALMA"], channel=8)
-identifiers["ALMA.9"] = Map(observatories=["APEX", "ALMA"], channel=9, wavelength="440 micron")
-identifiers["ALMA.10"] = Map(observatories=["APEX", "ALMA"], channel=10, wavelength="350 micron")
+identifiers["ALMA.3"] = Map(observatories=["ALMA", "APEX"], channel=3)
+identifiers["ALMA.4"] = Map(observatories=["ALMA", "APEX"], channel=4)
+identifiers["ALMA.5"] = Map(observatories=["ALMA", "APEX"], channel=5)
+identifiers["ALMA.6"] = Map(observatories=["ALMA", "APEX"], channel=6)
+identifiers["ALMA.7"] = Map(observatories=["ALMA", "APEX"], channel=7, wavelength="870 micron")
+identifiers["ALMA.8"] = Map(observatories=["ALMA", "APEX"], channel=8)
+identifiers["ALMA.9"] = Map(observatories=["ALMA", "APEX"], channel=9, wavelength="440 micron")
+identifiers["ALMA.10"] = Map(observatories=["ALMA", "APEX"], channel=10, wavelength="350 micron")
 
 # -----------------------------------------------------------------
 
@@ -848,6 +848,10 @@ def load_alma(filterspec, pwv=0.2):
     mask = (min_wavelength < wavelengths) * (wavelengths < max_wavelength)
     wavelengths = wavelengths[mask]
     transmissions = transmissions[mask]
+
+    # Make sure that the transmission curves are not floating, but are attached to the x axis
+    transmissions[0] = 0.0
+    transmissions[-1] = 0.0
 
     # Return
     return wavelengths, transmissions

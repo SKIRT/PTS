@@ -20,3 +20,4 @@ fill_ski | -- | simulation.fill.SkiFiller | arguments | Fill a ski file with the
 versions | -- | remote.versionchecker.VersionChecker | arguments | Check versions of compiler, python, qmake, SKIRT and PTS on remote hosts
 deploy | -- | prep.deploy.Deployer | arguments | Deploy SKIRT and/or PTS locally and on remote hosts
 load | -- | remote.load.LoadChecker | arguments | Check the load of remote systems
+plot_transmission | -- | plot.transmission.TransmissionPlotter | arguments | Plot transmission curves of a set of photometric filters

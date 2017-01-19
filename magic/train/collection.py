@@ -20,9 +20,9 @@ from matplotlib.widgets import Button
 # Import the relevant PTS classes and modules
 from ..core.image import Image
 from ..core.source import Source
-from ...core.basics.configurable import OldConfigurable
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -30,7 +30,7 @@ description = {"star": "star", "saturation": "saturated star / diffraction patte
 
 # -----------------------------------------------------------------
 
-class Collector(OldConfigurable):
+class Collector(Configurable):
 
     """
     This class ...
@@ -45,7 +45,7 @@ class Collector(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(Collector, self).__init__(config, "magic")
+        super(Collector, self).__init__(config)
 
         # The current and previous source
         self.previous_source = None

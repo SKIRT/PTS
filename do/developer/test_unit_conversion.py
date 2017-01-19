@@ -5,39 +5,21 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.plot.classification Contains the ClassificationPlotter class
+## \package pts.do.developer.test_unit_conversion Test the unit conversion things.
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 functionality
+# Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-import matplotlib.pyplot as plt
-
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from pts.core.tools import parsing
+from pts.core.tools import formatting as fmt
+from pts.core.tools import introspection
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class ClassificationPlotter(OldConfigurable):
 
-    """
-    This class ...
-    """
-
-    def __init__(self, config=None):
-
-        """
-        The constructor ...
-        :param config:
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(ClassificationPlotter, self).__init__(config, "magic")
-
-        # -- Attributes --
 
 # -----------------------------------------------------------------

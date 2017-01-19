@@ -13,14 +13,29 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from textwrap import wrap
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
+from matplotlib import rc
+from matplotlib.ticker import FormatStrFormatter
+
+# Import astronomical modules
+from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
+from ..basics.configurable import Configurable
+from ..data.transmission import TransmissionCurve
+from ...modeling.core.emissionlines import EmissionLines
+from ..basics.filter import identifiers, Filter
+from ..basics.range import RealRange
+
+# -----------------------------------------------------------------
+
+rc('text', usetex=True)
 
 # -----------------------------------------------------------------
 
@@ -30,21 +45,28 @@ pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow
 
 # -----------------------------------------------------------------
 
-class TransmissionPlotter(object):
+class TransmissionPlotter(Configurable):
     
     """
     This class ...
     """
 
-    def __init__(self, title=None):
+    def __init__(self, config=None):
 
         """
         This function ...
+        :param config:
         :return:
         """
 
-        # Set the title
-        self.title = title
+        # Call the constructor of the base class
+        super(TransmissionPlotter, self).__init__(config)
+
+        # The title
+        self.title = None
+
+        # Output
+        self.output = None
 
         # The different curves
         self.curves = OrderedDict()
@@ -62,7 +84,6 @@ class TransmissionPlotter(object):
         self._figure = None
 
         # Properties
-        self.size = (17,4)
         self.colormap = "rainbow"  # or "nipy_spectral"
         self.format = None
         self.transparent = False
@@ -108,26 +129,70 @@ class TransmissionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path=None, min_wavelength=None, max_wavelength=None, min_transmission=None, max_transmission=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param output_path:
-        :param min_wavelength:
-        :param max_wavelength:
-        :param min_transmission:
-        :param max_transmission:
         :return:
         """
 
-        # Set the axis limits
-        self._min_wavelength = min_wavelength
-        self._max_wavelength = max_wavelength
-        self._min_transmission = min_transmission
-        self._max_transmission = max_transmission
+        # 1. Call the setup function
+        self.setup(**kwargs)
 
         # Make the plot
-        self.plot(output_path)
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(TransmissionPlotter, self).setup(**kwargs)
+
+        # Load the images (from config or input kwargs)
+        if "curves" in kwargs: self.curves = kwargs.pop("curves")
+        if "filters" in kwargs:
+            for fltr in kwargs.pop("filters"):
+                curve = TransmissionCurve.from_filter(fltr)
+                self.add_transmission_curve(curve, fltr.description())
+        elif self.config.filters is not None:
+            for fltr in self.config.filters:
+                curve = TransmissionCurve.from_filter(fltr)
+                self.add_transmission_curve(curve, fltr.description())
+
+        # Add emission lines
+        if self.config.emission:
+            emission_lines = EmissionLines()
+            for line in emission_lines:
+                center = line.center * Unit("micron")
+                self.add_wavelength(center)
+
+        # No curves
+        if len(self.curves) == 0:
+            for spec in identifiers:
+                fltr = Filter(spec)
+                curve = TransmissionCurve.from_filter(fltr)
+                self.add_transmission_curve(curve, fltr.description())
+
+        # Set properties
+        if "title" in kwargs: self.title = kwargs.pop("title")
+        else: self.title = self.config.title
+
+        # Set limits
+        self._min_wavelength = kwargs.pop("min_wavelength", None)
+        self._max_wavelength = kwargs.pop("max_wavelength", None)
+        self._min_transmission = kwargs.pop("min_transmission", None)
+        self._max_transmission = kwargs.pop("max_transmission", None)
+
+        # Set output
+        if "output" in kwargs: self.output = kwargs.pop("output")
+        else: self.output = self.config.output
 
     # -----------------------------------------------------------------
 
@@ -228,7 +293,7 @@ class TransmissionPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path=None):
+    def plot(self):
 
         """
         This function ...
@@ -240,13 +305,12 @@ class TransmissionPlotter(object):
         log.info("Plotting the transmission plot ...")
 
         # Create the figure
-        self._figure = plt.figure(figsize=self.size)
-        plt.ylabel('$T_\lambda$', fontsize=28)
-        plt.xlabel('$\lambda/\mu$m', fontsize=28)
+        self._figure = plt.figure(figsize=self.config.plot.figsize)
+        plt.clf()
 
         # Set axes limits
         plt.xlim(self.min_wavelength, self.max_wavelength)
-        plt.ylim(self.min_transmission, self.max_transmission)
+        plt.ylim(self.min_transmission, self.max_transmission*1.05)
 
         plt.xscale('log')
 
@@ -261,6 +325,9 @@ class TransmissionPlotter(object):
         # Sort the labels based on the peak wavelength
         sorted_labels = sorted(self.curves.keys(), key=lambda label: self.curves[label].peak_wavelength)
 
+        min_wavelength = float("inf")
+        max_wavelength = 0.0
+
         # Plot the transmission curves
         counter = 0
         for label in sorted_labels:
@@ -273,8 +340,12 @@ class TransmissionPlotter(object):
             colorVal = scalarMap.to_rgba(counter)
 
             # Plot the curve
-            #plt.plot(wavelengths, transmissions, label=label, linewidth=2, color=colorVal)
-            plt.fill(wavelengths, transmissions, label=label, linewidth=2, color=colorVal, alpha=0.5)
+            plt.fill(wavelengths, transmissions, label=label, color=colorVal, alpha=0.5, linewidth=self.config.plot.linewidth)
+
+            minw = np.min(wavelengths)
+            maxw = np.max(wavelengths)
+            if minw < min_wavelength: min_wavelength = minw
+            if maxw > max_wavelength: max_wavelength = maxw
 
             counter += 1
 
@@ -282,20 +353,164 @@ class TransmissionPlotter(object):
         for wavelength in self.wavelengths:
             plt.axvline(wavelength.to("micron").value, color="0.8")
 
-        # Set the title
-        if self.title is not None: self._figure.suptitle("\n".join(wrap(self.title, 60)))
+        # Get axes
+        ax = plt.gca()
+
+        # Set background
+        #set_background(plt.gcf(), plt.gca(), self.config.plot) # it crashes with this
+
+        # Set the plot title
+        if self.config.plot.add_titles and self.title is not None:
+            #title = "Transmission curves"
+            title = "\n".join(wrap(self.title, 60))
+            plt.suptitle(self.title, fontsize=self.config.plot.title_fontsize)
+
+        # Format the axis ticks and create a grid
+        ticks = RealRange(min_wavelength, max_wavelength).log(len(self.curves)*2, fancy=True)
+        ax.set_xticks(ticks)
+        ax.set_xticklabels(ticks)
+
+        # Tick formatter
+        #ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+
+        # Set ticks fontsize
+        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+
+        # Set grid
+        set_grid(self.config.plot)
+
+        # Set the borders
+        set_borders(ax, self.config.plot)
+
+        # Labels
+        plt.xlabel('$\lambda [\mu m]$', fontsize=self.config.plot.label_fontsize)
+        plt.ylabel('$T_\lambda$', fontsize=self.config.plot.label_fontsize)
+
+        # Add the legend
+        add_legend(ax, self.config.plot, "Filters")
+
+        # Finish the plot
+        self.finish_plot()
+
+    # -----------------------------------------------------------------
+
+    def finish_plot(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # plt.tight_layout()
 
         # Debugging
-        if type(path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
-        elif path is None: log.debug("Showing the SED plot ...")
-        else: log.debug("Saving the SED plot to " + str(path) + " ...")
+        if type(self.output).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
+        elif self.output is None: log.debug("Showing the transmission plot ...")
+        else: log.debug("Saving the transmission plot to " + str(self.output) + " ...")
 
-        if path is not None:
-            # Save the figure
-            plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+        # Save the figure
+        if self.output is not None: plt.savefig(self.output, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
         else: plt.show()
         plt.close()
+
+# -----------------------------------------------------------------
+
+def set_borders(ax, config):
+
+    """
+    This function ...
+    :param ax:
+    :param config:
+    :return:
+    """
+
+    # Set border width
+    if config.add_borders: [i.set_linewidth(config.borderwidth) for i in ax.spines.itervalues()]
+
+    # Remove borders
+    else:
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.tick_params(axis=u'both', which=u'both', length=0)
+
+# -----------------------------------------------------------------
+
+def add_legend(ax, config, legend_title=None):
+
+    """
+    This function ...
+    :param ax:
+    :param config:
+    :param legend_title:
+    :return:
+    """
+
+    #if nlegends > 1: percentage = 25.
+    #else: percentage = 10.
+    percentage = 20.
+
+    # Shrink current axis's height by a certain percentage on the bottom
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0 + box.height * percentage/100., box.width, box.height * (100-percentage)/100.])
+
+    # Plot legend
+    legend_title = r"\underline{" + legend_title + "}"
+    legend = plt.legend(loc="upper center", title=legend_title, bbox_to_anchor=(0.5, -0.25), fancybox=False, shadow=False, ncol=4)
+
+    frame = legend.get_frame()
+
+    # Set legend frame color and line width
+    if config.add_legend_border:
+        frame.set_linewidth(config.legend_borderwidth)
+    else:
+        frame.set_linewidth(0)
+    frame.set_edgecolor(config.legend_bordercolor)
+
+    # Set background color
+    frame.set_facecolor('0.85')
+    legend.legendPatch.set_alpha(0.75)
+
+    index = 0
+
+    # Move to foreground
+    legend.set_zorder(100 + index)
+
+    # Set fontsize
+    plt.setp(legend.get_title(), fontsize=str(config.legend_title_fontsize))
+
+# -----------------------------------------------------------------
+
+def set_grid(config):
+
+    """
+    This function ...
+    :param config:
+    :return:
+    """
+
+    if config.add_grid: plt.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle, color=config.grid_color)
+
+# -----------------------------------------------------------------
+
+def set_background(fig, ax, config):
+
+    """
+    This function ...
+    :param fig:
+    :param ax:
+    :param config:
+    :return:
+    """
+
+    if config.transparent_background:
+
+        # Set transparent background
+        for item in [fig, ax]:
+            item.patch.set_visible(False)
 
 # -----------------------------------------------------------------

@@ -19,10 +19,6 @@ def funcinv(wa,D,f,T1):
 
 
 
-
-
-
-
 for i in range(len(data[:,0])):
 
 	ydata = [data[i,30],data[i,34],data[i,36],data[i,38],data[i,40],data[i,42]]

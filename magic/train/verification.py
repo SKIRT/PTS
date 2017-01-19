@@ -17,15 +17,15 @@ import os
 
 # Import the relevant PTS classes and modules
 from .classification import Classifier
-from ...core.basics.configurable import OldConfigurable
 from ..core.image import Image
 from ..core.source import Source
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class Verifier(OldConfigurable):
+class Verifier(Configurable):
 
     """
     This class ...
@@ -40,7 +40,7 @@ class Verifier(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(Verifier, self).__init__(config, "magic")
+        super(Verifier, self).__init__(config)
 
         # The classifier object
         self.classifier = None

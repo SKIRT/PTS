@@ -24,7 +24,7 @@ from astropy.units import Unit
 from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
-from ..basics.filter import Filter
+from ..basics.filter import Filter, identifiers
 
 # -----------------------------------------------------------------
 
@@ -654,6 +654,48 @@ def filter(argument):
     """
 
     return Filter(argument)
+
+# -----------------------------------------------------------------
+
+def filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [filter(arg) for arg in string_list(argument)]
+
+# -----------------------------------------------------------------
+
+def lazy_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    filters = []
+    for arg in string_list(argument):
+        try:
+            fltr = Filter(arg)
+            filters.append(fltr)
+        except ValueError:
+            for spec in identifiers:
+                identifier = identifiers[spec]
+                if "instruments" in identifier:
+                    if arg in identifier.instruments:
+                        filters.append(Filter(spec))
+                        continue # this filter matches
+                if "observatories" in identifier:
+                    if arg in identifier.observatories:
+                        filters.append(Filter(spec))
+                        continue # this filter matches
+
+    # Return the list of filters
+    return filters
 
 # -----------------------------------------------------------------
 
