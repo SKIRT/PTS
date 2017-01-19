@@ -210,9 +210,11 @@ def generate_aliases(identifier):
             for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
                 for string in generate_from_two_parts(instrument, band): yield string
+                for string in generate_from_two_parts("the " + instrument, band + "-band"): yield string
+                for string in generate_from_two_parts("the " + instrument, band + " band"): yield string
 
     # Combinations of instrument with channel
-    if "channel" in identifier:
+    if "channel" in identifier and "instruments" in identifier:
 
         for instrument in strings.case_combinations_list(identifier.instruments):
 
