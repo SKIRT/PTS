@@ -143,7 +143,7 @@ class Range(object):
         if fancy:
             span = self.max - self.min
             maxnpoints = npoints
-            ticksize = BestTick(span, maxnpoints)
+            ticksize = best_tick(span, maxnpoints)
             fancy_min = round_to_1(self.min)
             values = np.arange(fancy_min, self.max, step=ticksize)
         else: values = np.linspace(self._min, self._max, npoints, endpoint=self.inclusive)
@@ -165,11 +165,19 @@ class Range(object):
         """
 
         if fancy:
-            span = self.log_max - self.log_min
-            maxnpoints = npoints
-            ticksize = BestTick(span, maxnpoints)
-            fancy_logmin = round_to_1(self.log_min)
-            values = np.array([round_to_1(value) for value in 10**np.arange(fancy_logmin, self.log_max, step=ticksize)])
+            #span = self.log_max - self.log_min
+            #maxnpoints = npoints
+            #ticksize = best_tick(span, maxnpoints)
+            #fancy_logmin = round_to_1(self.log_min)
+            #values = np.array([round_to_1(value) for value in 10**np.arange(fancy_logmin, self.log_max, step=ticksize)])
+
+            ticksize = best_tick_log(self.max/self.min, npoints)
+            values = [round_to_1(self.min)] * npoints
+            for i in range(1,npoints):
+                new_value = values[i-1] * ticksize
+                if new_value > self.max: break
+                else: values[i] = new_value
+            values = np.array(values)
         else: values = np.logspace(self.log_min, self.log_max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
 
@@ -555,16 +563,16 @@ def zip_sqrt(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
-def BestTick(largest, mostticks):
+def best_tick(largest, max_nticks):
 
     """
     This function ...
     :param largest:
-    :param mostticks:
+    :param max_nticks:
     :return:
     """
 
-    minimum = largest / mostticks
+    minimum = largest / max_nticks
     magnitude = 10 ** math.floor(math.log(minimum, 10))
     residual = minimum / magnitude
     if residual > 5:
@@ -579,16 +587,44 @@ def BestTick(largest, mostticks):
 
 # -----------------------------------------------------------------
 
-def BestTick2(largest, mostticks):
+def best_tick_log(largest, maxnticks):
 
     """
     This function ...
     :param largest:
-    :param mostticks:
+    :param maxnticks:
     :return:
     """
 
-    minimum = largest / mostticks
+    minimum_ticksize = math.pow(largest, 1./maxnticks)
+    magnitude = math.floor(minimum_ticksize)
+
+    residual = math.pow(minimum_ticksize, 1./magnitude)
+
+    if residual > 5:
+        tick = 10*magnitude
+    elif residual > 2:
+        tick = 5**magnitude
+    elif residual > 1:
+        tick = 2**magnitude
+    else:
+        tick = magnitude
+
+    # Return
+    return tick
+
+# -----------------------------------------------------------------
+
+def best_tick2(largest, max_nticks):
+
+    """
+    This function ...
+    :param largest:
+    :param max_nticks:
+    :return:
+    """
+
+    minimum = largest / max_nticks
     magnitude = 10 ** math.floor(math.log(minimum, 10))
     residual = minimum / magnitude
     # this table must begin with 1 and end with 10
