@@ -396,7 +396,9 @@ class PhotometricUnit(CompositeUnit):
         else:
 
             if isinstance(unit, basestring):
-                for key in replacements: unit = unit.replace(key, replacements[key])
+                for key in replacements:
+                    unit = unit.replace(key, replacements[key])
+                if unit.count("(") == 1 and unit.count(")") == 1 and unit.startswith("(") and unit.endswith(")"): unit = unit[1:-1]
 
             # Parse the unit
             try: unit = Unit(unit)

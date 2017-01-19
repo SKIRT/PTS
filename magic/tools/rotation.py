@@ -198,8 +198,3 @@ def readBox(region):
     ysize = float(line[4])
 
     return int(round(xc-xsize/2.)), int(round(yc-ysize/2.)), int(round(xc+xsize/2.)), int(round(yc+ysize/2.))
-
-
-if __name__ == '__main__':
-    
-    main()

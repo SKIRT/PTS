@@ -13,13 +13,16 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import parsing
-from pts.core.tools import formatting as fmt
-from pts.core.tools import introspection
-from pts.core.tools import filesystem as fs
+from pts.core.basics.unit import PhotometricUnit
 
 # -----------------------------------------------------------------
 
+# Create nanomaggy unit
+nanomaggy = PhotometricUnit("nMgy")
 
+# Conversion factor to Jansky
+factor = nanomaggy.conversion_factor("Jy")
+
+print(factor, 3.613e-6)
 
 # -----------------------------------------------------------------

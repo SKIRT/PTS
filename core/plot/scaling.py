@@ -5125,7 +5125,7 @@ def set_grid(config):
     :return:
     """
 
-    if config.add_grid: plt.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle)
+    if config.add_grid: plt.grid(linewidth=config.grid_linewidth, linestyle=config.grid_linestyle, color=config.grid_color)
 
 # -----------------------------------------------------------------
 

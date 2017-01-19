@@ -437,6 +437,19 @@ class Filter(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def sdss(cls, band):
+
+        """
+        This function ...
+        :param band:
+        :return:
+        """
+
+        return cls("SDSS " + band)
+
+    # -----------------------------------------------------------------
+
     def _initialize1(self):
 
         # calculate the pivot wavelength

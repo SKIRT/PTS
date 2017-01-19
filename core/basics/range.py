@@ -165,12 +165,6 @@ class Range(object):
         """
 
         if fancy:
-            #span = self.log_max - self.log_min
-            #maxnpoints = npoints
-            #ticksize = best_tick(span, maxnpoints)
-            #fancy_logmin = round_to_1(self.log_min)
-            #values = np.array([round_to_1(value) for value in 10**np.arange(fancy_logmin, self.log_max, step=ticksize)])
-
             ticksize = best_tick_log(self.max/self.min, npoints)
             values = [round_to_1(self.min)] * npoints
             for i in range(1,npoints):

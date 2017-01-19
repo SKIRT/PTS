@@ -1712,11 +1712,13 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
+        # Path of the meta file
         meta_path = fs.join(path, "meta.dat")
 
         # Get the image table of which images cover a given part of the sky
         montage.commands.mImgtbl(path, meta_path, corners=True)
 
+        # Path of the overlap file
         overlap_path = fs.join(path, "overlap.dat")
 
         # Check the coverage for our galaxy
@@ -1833,6 +1835,7 @@ class DustPediaDataProcessing(object):
         :return:
         """
 
+        # Get cutout range
         ra, dec, width = self.get_cutout_range_for_galaxy(galaxy_name)
 
         # Get the pixelscale
