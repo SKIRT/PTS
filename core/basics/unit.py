@@ -391,6 +391,9 @@ class PhotometricUnit(CompositeUnit):
             self.scale_factor = unit.scale_factor
             self.base_unit = unit.base_unit
             self.wavelength_unit = unit.wavelength_unit
+            self.frequency_unit = unit.frequency_unit
+            self.distance_unit = unit.distance_unit
+            self.solid_angle_unit = unit.solid_angle_unit
 
         # Regular unit
         else:
