@@ -52,9 +52,9 @@ identifiers["WISE.W4"] = Map(instruments=["WISE"], bands=["W4"], channel=4, wave
 identifiers["MIPS.24mu"] = Map(observatories=["Spitzer"], instruments=["MIPS"], wavelength="24 micron")
 identifiers["MIPS.70mu"] = Map(observatories=["Spitzer"], instruments=["MIPS"], wavelength="70 micron")
 identifiers["MIPS.160mu"] = Map(observatories=["Spitzer"], instruments=["MIPS"], wavelength="160 micron")
-identifiers["Pacs.blue"] = Map(observatories=["Herschel"], instruments=["Pacs"], wavelength="70 micron")
-identifiers["Pacs.green"] = Map(observatories=["Herschel"], instruments=["Pacs"], wavelength="100 micron")
-identifiers["Pacs.red"] = Map(observatories=["Herschel"], instruments=["Pacs"], wavelength="160 micron")
+identifiers["Pacs.blue"] = Map(observatories=["Herschel"], instruments=["Pacs"], wavelength="70 micron", bands=["blue"])
+identifiers["Pacs.green"] = Map(observatories=["Herschel"], instruments=["Pacs"], wavelength="100 micron", bands=["green"])
+identifiers["Pacs.red"] = Map(observatories=["Herschel"], instruments=["Pacs"], wavelength="160 micron", bands=["red"])
 identifiers["SPIRE.PSW"] = Map(observatories=["Herschel"], instruments=["SPIRE"], bands=["PSW", "PSW_ext"], wavelength="250 micron")
 identifiers["SPIRE.PMW"] = Map(observatories=["Herschel"], instruments=["SPIRE"], bands=["PMW", "PMW_ext"], wavelength="350 micron")
 identifiers["SPIRE.PLW"] = Map(observatories=["Herschel"], instruments=["SPIRE"], bands=["PLW", "PLW_ext"], wavelength="500 micron")
@@ -142,6 +142,61 @@ alma_ranges[10] = (320, 380)
 
 # -----------------------------------------------------------------
 
+def get_filter_description(spec):
+
+    """
+    This function ...
+    :param spec:
+    :return:
+    """
+
+    identifier = identifiers[spec]
+    description = "the "
+
+    if "bands" in identifier: description += identifier.bands[0] + " "
+    elif "channel" in identifier:
+        print(identifier.channel)
+        description += strings.num_to_ith(identifier.channel) + " "
+    description += "band "
+
+    if "wavelength" in identifier and "frequency" in identifier:
+        description += "at " + identifier.wavelength + " or " + identifier.frequency + " "
+    elif "wavelength" in identifier:
+        description += "at " + identifier.wavelength + " "
+    elif "frequency" in identifier:
+        description += "at " + identifier.frequency + " "
+
+    if "instruments" in identifier:
+        description += "of the " + identifier.instruments[0] + " instrument "
+
+    if "system" in identifier:
+        description += "of the " + identifier.system + " system "
+
+    if "observatories" in identifier:
+        description += "on the " + identifier.observatories[0] + " observatory "
+
+    # Return the description
+    return description.strip()
+
+# -----------------------------------------------------------------
+
+def get_filter_descriptions():
+
+    """
+    This function ...
+    :return:
+    """
+
+    descriptions = dict()
+
+    # Loop over the filters
+    for spec in identifiers: descriptions[spec] = get_filter_description(spec)
+
+    # Return the dictionary
+    return descriptions
+
+# -----------------------------------------------------------------
+
 def is_sdss_2mass_or_johnson(identifier):
 
     """
@@ -200,7 +255,6 @@ def generate_aliases(identifier):
     if "system" in identifier and "bands" in identifier:
 
         for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
-
             for string in generate_from_two_parts(identifier.system, band): yield string
 
     # Combinations of instrument with band
@@ -217,20 +271,17 @@ def generate_aliases(identifier):
     if "channel" in identifier and "instruments" in identifier:
 
         for instrument in strings.case_combinations_list(identifier.instruments):
-
-            yield instrument + str(identifier.channel)
-            yield instrument + "-" + str(identifier.channel)
+            for string in generate_from_two_parts(instrument, str(identifier.channel)): yield string
 
     # Combinations of observatory with band
     if "observatories" in identifier and "bands" in identifier:
 
-        for observatory in identifier.observatories:
+        for observatory in strings.case_combinations_list(identifier.observatories):
             for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
-                yield observatory + "." + band
-                yield observatory + " " + band
-                yield observatory + "_" + band
-                yield observatory + "-" + band
+                for string in generate_from_two_parts(observatory, band): yield string
+                for string in generate_from_two_parts("the " + observatory, band + "-band"): yield string
+                for string in generate_from_two_parts("the " + observatory, band + "-band"): yield string
 
     # Combinations of instrument and wavelength
     if "wavelength" in identifier and "instruments" in identifier:
@@ -238,18 +289,10 @@ def generate_aliases(identifier):
         from ..tools import parsing
         wavelength = parsing.quantity(identifier.wavelength)
 
-        for instrument in identifier.instruments:
-
-            yield instrument + " " + str(wavelength.value) + " " + str(wavelength.unit)
-            yield instrument + "_" + str(wavelength.value)
-            yield instrument + "-" + str(wavelength.value)
-            yield "the " + instrument + " " + str(wavelength.value) + " band"
-            yield "the " + instrument + " " + str(wavelength.value) + " " + str(wavelength.unit) + " band"
-
-            if wavelength.unit == "micron":
-
-                yield instrument + str(wavelength.value) + "mu"
-                yield instrument + str(wavelength.value) + "um"
+        for instrument in strings.case_combinations_list(identifier.instruments):
+            for wavelength_string in strings.quantity_combinations(wavelength):
+                for string in generate_from_two_parts(instrument, wavelength_string): yield string
+                for string in generate_from_two_parts("the " + instrument, wavelength_string + " band"): yield string
 
     # Combinations of observatory with wavelength
     if "observatories" in identifier and "wavelength" in identifier:

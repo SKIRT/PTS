@@ -1856,6 +1856,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 if dynamic_list:
 
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
                     log.info("Provide a value for a list item and press ENTER. Leave blank and press ENTER to end the list")
 
                     value = []
@@ -1863,7 +1865,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         answer = raw_input("   : ")
                         if answer == "": break # end of the list
                         try:
-                            single_value = real_type(answer)
+                            single_value = real_base_type(answer)
                             value.append(single_value)
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 

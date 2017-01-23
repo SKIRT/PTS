@@ -18,9 +18,12 @@ from ...core.tools.logging import log
 from ...magic.tools.catalogs import get_ngc_name, get_hyperleda_name
 from ...core.tools import filesystem as fs
 from ..component.component import get_config_file_path
+from ..component.sed import get_sed_file_path, get_ski_template_path
 from ...core.basics.configuration import Configuration, ConfigurationDefinition, InteractiveConfigurationSetter
 from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
+from ...core.data.sed import ObservedSED
+from ...core.simulation.skifile import LabeledSkiFile
 
 # -----------------------------------------------------------------
 
@@ -55,6 +58,12 @@ class ModelingSetupTool(Configurable):
         # The modeling configuration
         self.modeling_config = None
 
+        # The observed SED
+        self.sed = None
+
+        # The ski template
+        self.ski = None
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -67,13 +76,19 @@ class ModelingSetupTool(Configurable):
         # 1. Call the setup function
         self.setup()
 
-        # 3. Create the modeling directory
+        # 2. Create the modeling directory
         self.create_directory()
 
-        # Differentiate
+        # 3. Get options
         if self.config.type == "galaxy": self.set_galaxy_options()
         elif self.config.type == "other": self.set_other_options()
         else: raise ValueError("Invalid option for 'type': " + self.config.type)
+
+        # 4. load the SED
+        if self.config.type == "other": self.load_sed()
+
+        # 5. Load the ski template
+        if self.config.type == "other": self.load_ski()
 
         # 5. Writing
         self.write()
@@ -235,15 +250,73 @@ class ModelingSetupTool(Configurable):
 
         # Create definition
         definition = ConfigurationDefinition()
-        definition.add_required("sed", "file_path", "path/name of the SED file")
         definition.add_required("ski", "file_path", "path/name of the template ski file")
-        definition.add_required("parameters", "file_path", "path/name of the parameters file")
+        definition.add_flag("use_sed_file", "import an SED file produced with PTS (instead of manually entering the flux points)", False)
 
         # Create configuration setter
         setter = InteractiveConfigurationSetter("SED modeling", "options for SED modeling of an object")
 
         # Create the object config
         self.object_config = setter.run(definition)
+
+    # -----------------------------------------------------------------
+
+    def load_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the SED ...")
+
+        # Use SED file as input
+        if self.object_config.use_sed_file:
+
+            # Create definition
+            definition = ConfigurationDefinition()
+            definition.add_required("sed_path", "file_path", "path/name of the SED file")
+
+            # Prompt for the SED path
+            setter = InteractiveConfigurationSetter("SED", "name/path of the input SED")
+            config = setter.run(definition)
+
+            # Load the sed
+            self.sed = ObservedSED.from_file(config.sed_path)
+
+        # Manually enter flux points
+        else:
+
+            # Create definition
+            definition = ConfigurationDefinition()
+            definition.add_required("flux_points", "sed_entry_list", "flux points", dynamic_list=True)
+
+            # Prompt for the flux points
+            setter = InteractiveConfigurationSetter("Fluxes", "flux points for the SED")
+            config = setter.run(definition)
+
+            # Create new observed SED
+            self.sed = ObservedSED(photometry_unit="Jy")
+
+            # Add the flux points
+            print(config.flux_points)
+            for fltr, flux, error in config.flux_points: self.sed.add_point(fltr, flux, error)
+
+    # -----------------------------------------------------------------
+
+    def load_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ski template ...")
+
+        # Load the ski file
+        self.ski = LabeledSkiFile(self.object_config.ski)
 
     # -----------------------------------------------------------------
 
@@ -260,9 +333,6 @@ class ModelingSetupTool(Configurable):
         # Set the settings
         self.modeling_config.name = self.config.name
         self.modeling_config.modeling_type = self.config.type
-        self.modeling_config.sed_path = self.object_config.sed
-        self.modeling_config.ski_path = self.object_config.ski
-        self.modeling_config.parameters_path = self.object_config.parameters
         self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
 
     # -----------------------------------------------------------------
@@ -279,6 +349,12 @@ class ModelingSetupTool(Configurable):
 
         # Write the configuration
         self.write_config()
+
+        # Write the SED
+        if self.config.type == "other": self.write_sed()
+
+        # Write the ski template
+        if self.config.type == "other": self.write_ski()
 
     # -----------------------------------------------------------------
 
@@ -297,5 +373,41 @@ class ModelingSetupTool(Configurable):
 
         # Save the config
         self.modeling_config.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the input SED ...")
+
+        # Determine the path
+        path = get_sed_file_path(self.modeling_path)
+
+        # Save the SED
+        self.sed.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the ski template ...")
+
+        # Determine the path
+        path = get_ski_template_path(self.modeling_path)
+
+        # Save the ski template
+        self.ski.saveto(path)
 
 # -----------------------------------------------------------------

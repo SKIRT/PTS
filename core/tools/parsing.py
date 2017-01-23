@@ -25,6 +25,8 @@ from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
 from ..basics.filter import Filter, identifiers
+from ..basics.errorbar import ErrorBar
+from ..basics.unit import PhotometricUnit
 
 # -----------------------------------------------------------------
 
@@ -311,6 +313,19 @@ def quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def photometric_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    a, b = map(photometric_quantity, argument.split(","))
+    return a, b
+
+# -----------------------------------------------------------------
+
 def mixed_tuple(argument):
 
     """
@@ -494,6 +509,18 @@ def unit(argument):
 
 # -----------------------------------------------------------------
 
+def photometric_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return PhotometricUnit(argument)
+
+# -----------------------------------------------------------------
+
 def quantity(argument):
 
     """
@@ -524,22 +551,18 @@ def quantity(argument):
             argument = argument[:-1]
     return number * Unit(units.strip())
 
-    # FIRST IMPLEMENTATION
-    #splitted = argument.split()
-    #value = float(splitted[0])
-    #unit = Unit(splitted[1])
-    #return value * unit
+# -----------------------------------------------------------------
 
-    # http://stackoverflow.com/questions/2240303/separate-number-from-unit-in-a-string-in-python
+def photometric_quantity(argument):
 
-    # SECOND IMPLEMENTATION
-    #numeric = '0123456789-.'
-    #for i, c in enumerate(argument + " "):
-    #    if c not in numeric:
-    #        break
-    #value = argument[:i]
-    #unit = Unit(argument[i:].lstrip())
-    #return value * unit
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    q = quantity(argument)
+    return q.value * PhotometricUnit(q.unit)
 
 # -----------------------------------------------------------------
 
@@ -579,6 +602,40 @@ def angle(argument, default_unit=None):
 
     # Create and return the Angle object
     return Angle(number, units)
+
+# -----------------------------------------------------------------
+
+def errorbar(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    upper = None
+    if ">" in argument: lower, upper = quantity_tuple(argument)
+    else: lower = quantity(argument)
+
+    # Create error bar
+    return ErrorBar(lower, upper)
+
+# -----------------------------------------------------------------
+
+def photometric_errorbar(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    upper = None
+    if ">" in argument: lower, upper = photometric_quantity_tuple(argument)
+    else: lower = photometric_quantity(argument)
+
+    # Create error bar
+    return ErrorBar(lower, upper)
 
 # -----------------------------------------------------------------
 
@@ -724,5 +781,37 @@ def skycoordinate(argument):
     from ...magic.basics.coordinate import SkyCoordinate
     ra, dec = quantity_tuple(argument)
     return SkyCoordinate(ra=ra, dec=dec)
+
+# -----------------------------------------------------------------
+
+def sed_entry(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    fltr, flux, flux_error = argument.split("::")
+
+    fltr = filter(fltr)
+    flux = photometric_quantity(flux)
+    flux_error = photometric_errorbar(flux_error)
+
+    return fltr, flux, flux_error
+
+# -----------------------------------------------------------------
+
+def sed_entry_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    entries = []
+    for item in string_list(argument): entries.append(sed_entry(item))
+    return entries
 
 # -----------------------------------------------------------------

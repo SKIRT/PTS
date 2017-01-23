@@ -35,7 +35,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ...core.tools import tables, network
 from ...magic.basics.coordinate import SkyCoordinate
-from ...magic.tools import mosaic
+from ...magic.tools import mosaicing
 from ...core.tools.parallelization import ParallelTarget
 from ...magic.misc import chrisfuncs
 from ...magic.basics.coordinatesystem import CoordinateSystem
@@ -439,7 +439,7 @@ class GALEXMosaicMaker(Configurable):
         log.info("Filtering non-overlapping observations ...")
 
         # Parallel execution
-        with ParallelTarget(mosaic.filter_non_overlapping, self.config.nprocesses) as target:
+        with ParallelTarget(mosaicing.filter_non_overlapping, self.config.nprocesses) as target:
 
             # Loop over the bands
             for band in self.config.bands: target(self.ngc_name, band, self.download_observations_paths[band], self.cutout_center, self.cutout_width, mode='point')
@@ -929,7 +929,7 @@ def filter_galex_tiles(galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_pat
     new_overlap_path = fs.join(tiles_path, "overlap_circle.dat")
 
     # Get overlapping file paths
-    overlapping_file_paths = mosaic.generate_overlapping_filenames(meta_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width_deg) * (2.0 ** 0.5))
+    overlapping_file_paths = mosaicing.generate_overlapping_filenames(meta_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width_deg) * (2.0 ** 0.5))
 
     # Check
     if len(overlapping_file_paths.shape) == 0: overlapping_file_paths = [overlapping_file_paths.tolist()]

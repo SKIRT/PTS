@@ -19,6 +19,9 @@ from collections import OrderedDict
 # Import astronomical modules
 from astropy.table import Table, MaskedColumn
 
+# Import the relevant PTS classes and modules
+from .unit import PhotometricUnit
+
 # -----------------------------------------------------------------
 
 class SmartTable(Table):
@@ -212,8 +215,16 @@ class SmartTable(Table):
                 column_unit = self.column_info[i][2]
                 assert column_unit is not None
 
-                scalar_value = value.to(column_unit).value
+                # Quantity with photometric unit
+                if isinstance(value.unit, PhotometricUnit):
 
+                    factor = value.unit.conversion_factor(column_unit)
+                    scalar_value = value.value * factor
+
+                # Quantity with regular Astropy Unit
+                else: scalar_value = value.to(column_unit).value
+
+                # Add the value
                 scalar_values.append(scalar_value)
 
             # A scalar value (or string, int, ...)

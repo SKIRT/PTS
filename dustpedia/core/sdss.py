@@ -31,7 +31,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.image import Image
 from ...core.tools import network
 from ...magic.basics.coordinate import SkyCoordinate
-from ...magic.tools import mosaic
+from ...magic.tools import mosaicing
 from ...core.basics.filter import Filter
 from ...core.tools import formatting as fmt
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
@@ -414,7 +414,7 @@ class SDSSMosaicMaker(Configurable):
         log.info("Getting the URLs of the primary field for galaxy " + self.ngc_name + " for the " + band + " band ...")
 
         # Get the SDSS fields that cover this coordinate range (from Montage) (URLS)
-        table = mosaic.get_field_table(self.cutout_center, self.cutout_width, band)
+        table = mosaicing.get_field_table(self.cutout_center, self.cutout_width, band)
 
         # Get the set of unique URLs
         sdss_urls = list(set(table["url"]))
@@ -444,7 +444,7 @@ class SDSSMosaicMaker(Configurable):
         log.info("Filtering non-overlapping SDSS primary fields (in parallel) ...")
 
         # Parallel execution
-        with ParallelTarget(mosaic.filter_non_overlapping, self.config.nprocesses) as target:
+        with ParallelTarget(mosaicing.filter_non_overlapping, self.config.nprocesses) as target:
 
             # Loop over the bands
             for band in self.config.bands: target(self.ngc_name, band, self.fields_paths[band], self.cutout_center, self.cutout_width)

@@ -153,6 +153,28 @@ def case_combinations_list(string_list, also_one_letter=True):
 
 # -----------------------------------------------------------------
 
+def quantity_combinations(quantity):
+
+    """
+    This function ...
+    :param quantity:
+    :return:
+    """
+
+    result = []
+    result.append(str(quantity.value) + " " + str(quantity.unit))
+    result.append(str(quantity.value) + str(quantity.unit))
+    result.append(str(quantity.value))
+
+    if quantity.unit == "micron":
+
+        result.append(str(quantity.value) + "mu")
+        result.append(str(quantity.value) + "um")
+
+    return result
+
+# -----------------------------------------------------------------
+
 def iterate_alphabet():
 
     """
@@ -248,5 +270,21 @@ def stripwhite_except_singlequotes(text):
         if not i % 2:
             lst[i] = re.sub("\s+", "", item)
     return "'".join(lst)
+
+# -----------------------------------------------------------------
+
+def num_to_ith(num):
+
+    """
+    1 becomes 1st, 2 becomes 2nd, etc.
+    """
+
+    value             = str(num)
+    last_digit        = value[-1]
+    if len(value) > 1 and value[-2] == '1': return value +'th'
+    if last_digit == '1': return value + 'st'
+    if last_digit == '2': return value + 'nd'
+    if last_digit == '3': return value + 'rd'
+    return value + 'th'
 
 # -----------------------------------------------------------------
