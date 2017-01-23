@@ -992,6 +992,18 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
     def convert_to(self, to_unit, distance=None, density=False):
 
         """
@@ -1046,6 +1058,9 @@ class Image(object):
         :param exact:
         :param parallel:
         """
+
+        # Check whether the image has a WCS
+        if self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Create a copy of the current wcs
         original_wcs = self.wcs.deepcopy()

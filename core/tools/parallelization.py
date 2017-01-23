@@ -14,10 +14,71 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import psutil
-import multiprocessing
+from multiprocessing import Pool
 
 # Import astronomical modules
 from astropy.units import Unit
+
+# -----------------------------------------------------------------
+
+class ParallelTarget(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, target, nprocesses):
+
+        """
+        This function ...
+        :param target:
+        :param nprocesses:
+        """
+
+        # Set the target
+        self.target = target
+
+        # Get the process pool
+        self.nprocesses = nprocesses
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize the process pool
+        self.pool = Pool(processes=self.nprocesses)
+
+    # -----------------------------------------------------------------
+
+    def __call__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Launch
+        self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs)
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Close and join the process pool
+        self.pool.close()
+        self.pool.join()
 
 # -----------------------------------------------------------------
 

@@ -40,12 +40,13 @@ def exists(url):
 
 # -----------------------------------------------------------------
 
-def download_and_decompress_file(url, path):
+def download_and_decompress_file(url, path, remove=True):
 
     """
     This function ...
     :param url:
     :param path:
+    :param remove:
     :return:
     """
 
@@ -54,7 +55,7 @@ def download_and_decompress_file(url, path):
 
     # Download the file and decompress
     filepath = download_file(url, path)
-    decompressed_filepath = archive.decompress_file_in_place(filepath, remove=True)
+    decompressed_filepath = archive.decompress_file_in_place(filepath, remove=remove)
     return decompressed_filepath
 
 # -----------------------------------------------------------------
@@ -83,6 +84,33 @@ def download_file(url, path):
 
     # Return the file path
     return filepath
+
+# -----------------------------------------------------------------
+
+def download_and_decompress_files(urls, path, remove=True):
+
+    """
+    This function ...
+    :param urls:
+    :param path:
+    :param remove:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Downloading the files to '" + path + "' ...")
+
+    # Download the files
+    paths = download_files(urls, path)
+
+    # Debugging
+    log.debug("Decompressing the files ...")
+
+    # Decompress the files and remove the originals
+    new_paths = archive.decompress_files(paths, remove=remove)
+
+    # Return the paths of the decompressed files
+    return new_paths
 
 # -----------------------------------------------------------------
 

@@ -347,15 +347,18 @@ def name(path):
 
 # -----------------------------------------------------------------
 
-def strip_extension(name):
+def strip_extension(name_or_path, double=False):
 
     """
     This function ...
-    :param name:
+    :param name_or_path:
+    :param double:
     :return:
     """
 
-    return os.path.splitext(name)[0]
+    name_or_path = os.path.splitext(name_or_path)[0]
+    if double: name_or_path = os.path.splitext(name_or_path)[0]
+    return name_or_path
 
 # -----------------------------------------------------------------
 

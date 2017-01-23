@@ -112,6 +112,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
     @NDDataArray.unit.setter
     def unit(self, unit):
 
@@ -926,6 +938,9 @@ class Frame(NDDataArray):
         :param parallel:
         :return:
         """
+
+        # Check whether the frame has a WCS
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)

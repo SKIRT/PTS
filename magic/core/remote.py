@@ -208,7 +208,7 @@ class RemoteFrame(object):
         """
         This function ...
         :param label
-        :param remote:
+        :param session:
         """
 
         self.label = label
@@ -325,6 +325,18 @@ class RemoteFrame(object):
         """
 
         self.session.send_line(self.label + ".unit = '" + str(unit) + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.session.evaluate_boolean_expression(self.label + ".has_wcs")
 
     # -----------------------------------------------------------------
 
@@ -709,6 +721,9 @@ class RemoteFrame(object):
         :param parallel:
         :return:
         """
+
+        # Check whether the remote frame has a WCS
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Upload the WCS
         self.session.send_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
@@ -1334,6 +1349,18 @@ class RemoteImage(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.session.evaluate_boolean_expression(self.label + ".has_wcs")
+
+    # -----------------------------------------------------------------
+
+    @property
     def wcs(self):
 
         """
@@ -1560,6 +1587,9 @@ class RemoteImage(object):
         :param parallel:
         :return:
         """
+
+        # Check whether the remote image has a WCS
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Upload the WCS
         self.session.send_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')

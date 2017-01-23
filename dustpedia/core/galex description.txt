@@ -1,0 +1,100 @@
+# GALEX:
+
+# For GALEX, I should be able to give you exactly what you're after immediately.
+# I have attached a file called DustPedia_Herschel_GALEX_Results.csv containing the details of every GALEX
+# observation that I used in the cutout-making process (such as exposure time), and which target galaxy each
+# observation was used for (ie, a given observation can appear more than once in that file, as it could be associated
+# with more than one target galaxy - and vice-a-versa).
+
+# However, note that some of these observations are not incorporated into the final cutouts, for various reasons.
+# For example:
+# - Any observations that were not contiguously "attached" to the location of the target galaxy (ie, if there were
+#   "gaps" in coverage between observations) were rejected.
+# - The outer region of each observation was masked, to remove low-quality data. In some cases, this resulted in the
+#   remainder of the observation not providing coverage of the region of interest.
+# - The final cutouts had diameters of either 1 degree of 0.5 degrees. However, for all sources I queried a region of
+#   sky large enough to produce a 1 degree cutout - I just discarded the observation that were not needed for the smaller
+#   cutouts.
+
+# Also, note that the DustPedia GALtEX cutouts have been re-gridded to larger pixel sizes than the standard GALEX
+# archive data (the ancillary data report provides details).
+
+# Also attached is a file that lists the URLs each GALEX observation can be downloaded from. Annoyingly, the URLs are
+# *not* properly standardised; simply knowing the details of am observation is *not* enough to automatically construct
+# the correct URL! I had to write a script that crawled through the GALEX GR6/7 archive website page-by-page,
+# doing string-matching to find the appropriate URLs... I hate that archive.
+
+# It's easy to work out which URLs correspond to which observations, as the URL for a given observation always
+# contains the tilename (note that there will often be multiple observations, and hence URLS, associated with a given tilename).
+
+
+####
+
+
+## NEW INFO:
+
+# Firstly, checking my code, I realised that I didn't implement the "attachment to target location" criterion in the
+# GALEX maps; it appears it basically never happens in GALEX. (I mainly brought in that criterion to handle Spitzer
+# maps, where it is really common to have multiple unattached observations within a given 0.5x0.5 degree patch of sky.)
+
+# To use Montage to find out what images cover a given part of the sky, you first want to run mImgTable on the folder
+# containing your image files, like so:
+# montage_wrapper.commands.mImgtbl('/folder/with/maps/', 'Image_Metadata_Table.dat', corners=True)
+
+# The 'Image_Metadata_Table.dat' output file is a table recording the geometry of all the files in the folder in
+# question. You then use this file as an input to the function mCoverageCheck, which is used like this:
+
+# montage_wrapper.commands_extra.mCoverageCheck('Image_Metadata_Table.dat', 'Overlap_Table.dat', mode='box', ra=ra,
+# dec=dec, width=width)
+
+# The 'Overlap_Table.dat' contains the subset of the rows from 'Image_Metadata_Table.dat' that intersect the defined
+# region (not just those that cover the centre coordinate). I then read in this in with:
+
+# overlap_files = np.genfromtxt('Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
+
+# Regarding doing the actual mosaicing, it was nice and straightforward with the SDSS data, where I used the
+# high-level Montage command mExec:
+
+# montage_wrapper.commands.mExec('SDSS', band, raw_dir='/path/to/files/', level_only=False, corners=False,
+# debug_level=0, output_image='Mosaic.fits', region_header='Header.hdr', workspace_dir='/some/temp/dir')
+
+# The nice thing about this command is that if you leave out the set raw_dir=None, then it will automatically
+# retrieve the necessary SDSS primary fields from the SDSS server. However, when dealing with large numbers of
+# cutouts in succession, I found it somewhat quicker to wget the files myself. The region_header is typically a
+# file created by Montage's mHdr function.
+
+# For GALEX, the mosaicing was a bit more involved:
+#
+# - I had to use the relative-response and sky-background maps to work out which part of each fits file was usable,
+#   becuase raw GALEX tiles use 0 to indicate that a pixel recieved no photons... *or* that the pixel is outside
+#   the detector footprint... MADNESS!
+# - The co-addition had to be weighted by the exposure time. To do this, I created relative weight maps where each
+#   pixel was just the square root of the 'exptime' header keyword value (where the relative-response and
+#   sky-background maps were used to remove irrelevant pixels).
+# - I had to adjust the background levels myself, as Montage hates all the zeros in GALEX maps.
+
+# And whilst I did the re-projection with Montage, I did the actual coaddition using SWarp (as it has a far quicker
+# runtime than doing it myself in Python). I have attached the very (very, very, very, very) ugly script I used to do
+# all this. This should make it possible for you to work out the process I followed.
+
+# Regarding not needing to make the full maps to work out the poisson noise, you're probably right.
+
+# For the GALEX maps, you probably just need the input maps and the weight maps, re-projected to the output grid.
+
+# For SDSS, all input maps are given equal weighting. By using mExec I skipped all of the 'intermediate' steps of
+# the mosaicing. However you could just use mProjExec to regrid to all of the input fields for a given galaxy to the
+# output projection mExec will have used. Jjust give the ra, dec, and width to mHdr to produce a header, and then
+# use this header as input to mProjExec to regrid all the individual image to the final projection.
+
+
+## GALEX exposure, background , etc.
+
+# That's nice and straightforwad! You can use the same URLs as for the standard maps, but just replace
+# '-int.fits' with '-rr.fits' for the relative response maps, or '-exp.fits' for exposure maps, etc.
+
+# If you can look at the various files available for each tilenum by looking at this page for each tile:
+
+# 'http://galex.stsci.edu/GR6/?page=downloadlist&tilenum='+str(tilenum)+'&type=coaddI&product=Imaging%20Only'
+
+
+####
