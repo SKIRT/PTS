@@ -800,6 +800,37 @@ def copy_files(file_paths, directory_path):
 
 # -----------------------------------------------------------------
 
+def move_file(file_path, directory_path, new_name=None):
+
+    """
+    This function ...
+    :param file_path:
+    :param directory_path:
+    :param new_name:
+    :return:
+    """
+
+    if new_name is not None: destination = join(directory_path, new_name)
+    else: destination = directory_path
+
+    # Move the file
+    shutil.move(file_path, destination)
+
+# -----------------------------------------------------------------
+
+def move_files(file_paths, directory_path):
+
+    """
+    This function ...
+    :param file_paths:
+    :param directory_path:
+    :return:
+    """
+
+    for file_path in file_paths: copy_file(file_path, directory_path)
+
+# -----------------------------------------------------------------
+
 def read_lines(path):
 
     """

@@ -55,16 +55,17 @@ def generate_meta_file(path):
 
 # -----------------------------------------------------------------
 
-def generate_overlap_file(path, ra, dec, width, meta_path, mode='box'):
+def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radius=None):
 
     """
     This function ...
     :param path:
     :param ra:
     :param dec:
-    :param width:
     :param meta_path:
     :param mode: 'box', 'point'
+    :param width:
+    :param radius:
     :return:
     """
 
@@ -75,13 +76,38 @@ def generate_overlap_file(path, ra, dec, width, meta_path, mode='box'):
     overlap_path = fs.join(path, "overlap.dat")
 
     # Check the coverage for our galaxy
-    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode=mode, ra=ra, dec=dec, width=width)
+    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode=mode, ra=ra, dec=dec, width=width, radius=radius)
 
     # Check if there is any coverage for this galaxy and band
-    if sum(1 for line in open(overlap_path)) <= 3 log.warning("No coverage")
+    if sum(1 for line in open(overlap_path)) <= 3: log.warning("No coverage")
 
     # Return the path to the created file
     return overlap_path
+
+# -----------------------------------------------------------------
+
+def generate_overlapping_file_paths(path, ra, dec, meta_path, mode="box", width=None, radius=None):
+
+    """
+    This function ...
+    :param path:
+    :param ra:
+    :param dec:
+    :param meta_path:
+    :param mode:
+    :param width:
+    :param radius:
+    :return:
+    """
+
+    # Generate the file
+    overlap_path = generate_overlap_file(path, ra, dec, meta_path, mode, width, radius)
+
+    # Get file paths of overlapping observations
+    overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
+
+    # Return the file paths
+    return overlapping_file_paths
 
 # -----------------------------------------------------------------
 
@@ -162,7 +188,7 @@ def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_wi
     overlap_path = generate_overlap_file(fields_path, cutout_center.ra, cutout_center.dec, cutout_width, meta_path, mode=mode)
 
     # Get the names of the overlapping image files
-    overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype="S500")
+    overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
 
     # Loop over the FITS files in the temp directory, remove non-overlapping
     for path in fs.files_in_path(fields_path, extension="fits"):
@@ -171,5 +197,8 @@ def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_wi
         if path not in overlap_files:
             log.debug("Removing the '" + fs.name(path) + "' image since it does not overlap with the target area ...")
             fs.remove_file(path)
+
+    # Return the meta path and overlap path
+    return meta_path, overlap_path
 
 # -----------------------------------------------------------------

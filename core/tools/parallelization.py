@@ -65,7 +65,9 @@ class ParallelTarget(object):
         """
 
         # Launch
-        self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs)
+        result = self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs)
+        output = PendingOutput(result)
+        return output
 
     # -----------------------------------------------------------------
 
@@ -79,6 +81,60 @@ class ParallelTarget(object):
         # Close and join the process pool
         self.pool.close()
         self.pool.join()
+
+# -----------------------------------------------------------------
+
+class PendingOutput(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, result):
+
+        """
+        This function ...
+        :param result:
+        """
+
+        self.result = result
+        self.output = None
+
+    # -----------------------------------------------------------------
+
+    def request(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.output = self.result.get()
+
+    # -----------------------------------------------------------------
+
+    def __iter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.output is None: self.request()
+        for item in self.output: yield item
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, item):
+
+        """
+        This function ...
+        :param item:
+        :return:
+        """
+
+        if self.output is None: self.request()
+        return self.output[item]
 
 # -----------------------------------------------------------------
 
