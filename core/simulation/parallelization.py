@@ -303,9 +303,12 @@ class Parallelization(object):
         This function ...
         """
 
-        return self.__class__.__name__ + " scheme with " + str(self.processes) + " processes and " \
+        if self.processes > 1: mode_string = " in task+data parallel mode" if self.data_parallel else " in task parallel mode"
+        else: mode_string = ""
+
+        return "parallelization scheme with " + str(self.processes) + " processes and " \
                + str(self.threads_per_core) + " threads per core on a total of " + str(self.cores) + " cores " \
-               + "(" + str(self.threads) + " threads per process)"
+               + "(" + str(self.threads) + " threads per process)" + mode_string
 
     # -----------------------------------------------------------------
 
@@ -316,6 +319,6 @@ class Parallelization(object):
         """
 
         return '<' + self.__class__.__name__ + " cores: " + str(self.cores) + ", threads per core: " \
-               + str(self.threads_per_core) + ", processes: " + str(self.processes) + ">"
+               + str(self.threads_per_core) + ", processes: " + str(self.processes) + ", data_parallel: " + str(self.data_parallel) + ">"
 
 # -----------------------------------------------------------------

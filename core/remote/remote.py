@@ -3207,6 +3207,20 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def is_directory_alternative(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        #print(self.execute("ls " + fs.directory_of(path)))
+        paths = self.directories_in_path(fs.directory_of(path))
+        return path in paths
+
+    # -----------------------------------------------------------------
+
     def is_file(self, path):
 
         """

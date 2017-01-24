@@ -698,7 +698,7 @@ class BatchLauncher(Configurable):
 
                 # Get host properties
                 nnodes = 1
-                nsockets = math.floor(remote.free_sockets)
+                nsockets = int(math.floor(remote.free_sockets))
                 ncores = remote.cores_per_socket
                 memory = remote.free_memory
 
@@ -809,14 +809,17 @@ class BatchLauncher(Configurable):
         # Inform the user
         log.info("Launching the simulations ...")
 
-        # The remote input path
-        remote_input_path = None
-
         # The complete list of simulations
         simulations = []
 
         # Loop over the different remotes
         for remote in self.remotes:
+
+            # Debugging
+            log.debug("Launching simulations on host '" + remote.host_id + "' ...")
+
+            # The remote input path
+            remote_input_path = None
 
             # Get the parallelization scheme for this remote host
             parallelization_host = self.parallelization_for_host(remote.host_id)
@@ -883,7 +886,7 @@ class BatchLauncher(Configurable):
             # Set a path for the screen output to be saved remotely (for debugging)
             if remote.host_id in self.save_screen_output:
                 remote_skirt_dir_path = remote.skirt_dir
-                remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen output")
+                remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen")
                 if not remote.is_directory(remote_skirt_screen_output_path): remote.create_directory(remote_skirt_screen_output_path)
                 this_screen_output_path = fs.join(remote_skirt_screen_output_path, queue_name)
                 remote.create_directory(this_screen_output_path)
@@ -904,6 +907,7 @@ class BatchLauncher(Configurable):
                 # If all simulations should have the same handle
                 if isinstance(handles, ExecutionHandle): simulation.handle = handles
                 else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
+                simulation.save()
 
             # Add the simulations of this remote to the total list of simulations
             simulations += simulations_remote

@@ -594,16 +594,19 @@ class SkiFile:
         for instrument in instruments:
             type = instrument.tag
             name = instrument.attrib["instrumentName"]
-            datacube = int(instrument.attrib["pixelsX"])*int(instrument.attrib["pixelsY"])*nwavelengths
             if type == "SimpleInstrument" or type == "FrameInstrument":
+                datacube = int(instrument.attrib["pixelsX"]) * int(instrument.attrib["pixelsY"]) * nwavelengths
                 pixels.append([name, type, datacube])
             elif type == "FullInstrument":
+                datacube = int(instrument.attrib["pixelsX"]) * int(instrument.attrib["pixelsY"]) * nwavelengths
                 try: scattlevels = int(instrument.attrib["scatteringLevels"])
                 except KeyError: scattlevels = 0
                 scattering = scattlevels + 1 if scattlevels > 0 else 0
                 dustemission = 1 if self.dustemission() else 0
                 npixels = datacube * (3 + scattering + dustemission)
                 pixels.append([name, type, npixels])
+            elif type == "SEDInstrument":
+                pixels.append([name, type, nwavelengths])
         return pixels
 
     ## This function returns the total number of spatial pixels from all the instruments (an SED counts for one pixel)
