@@ -226,6 +226,43 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the input file names
+        return self.ski_template.needs_input
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wavelength_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(fs.files_in_path(self.fit_wavelength_grids_path, extension="txt")) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(fs.files_in_path(self.fit_dust_grids_path, extension="txt")) > 0
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def generations_table(self):
 

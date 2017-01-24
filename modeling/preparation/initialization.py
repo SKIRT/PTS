@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from .component import PreparationComponent
 from ...magic.sources.finder import SourceFinder
@@ -25,30 +22,31 @@ from ...magic.core.frame import Frame
 from ...core.basics.animation import Animation
 from ...magic.core.dataset import DataSet
 from ...core.launch.pts import PTSRemoteLauncher
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
 # Reference: Common-Resolution Convolution Kernels for Space- and Ground-Based Telescopes (G. Aniano et. al)
-fwhms = {"GALEX FUV": 4.48 * Unit("arcsec"),
-         "GALEX NUV": 5.05 * Unit("arcsec"),
-         "Mosaic Halpha": 2.0 * Unit("arcsec"),
-         "IRAC I1": 1.90 * Unit("arcsec"),
-         "IRAC I2": 1.81 * Unit("arcsec"),
-         "IRAC I3": 2.11 * Unit("arcsec"),
-         "IRAC I4": 2.82 * Unit("arcsec"),
-         "WISE W1": 5.79 * Unit("arcsec"),
-         "WISE W2": 6.37 * Unit("arcsec"),
-         "WISE W3": 6.60 * Unit("arcsec"),
-         "WISE W4": 11.89 * Unit("arcsec"),
-         "MIPS 24mu": 6.43 * Unit("arcsec"),
-         "MIPS 70mu": 18.74 * Unit("arcsec"),
-         "MIPS 160mu": 38.78 * Unit("arcsec"),
-         "Pacs blue": 5.67 * Unit("arcsec"),
-         "Pacs green": 7.04 * Unit("arcsec"),
-         "Pacs red": 11.18 * Unit("arcsec"),
-         "SPIRE PSW": 18.15 * Unit("arcsec"),
-         "SPIRE PMW": 24.88 * Unit("arcsec"),
-         "SPIRE PLW": 36.09 * Unit("arcsec")}
+fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
+         "GALEX NUV": 5.05 * u("arcsec"),
+         "Mosaic Halpha": 2.0 * u("arcsec"),
+         "IRAC I1": 1.90 * u("arcsec"),
+         "IRAC I2": 1.81 * u("arcsec"),
+         "IRAC I3": 2.11 * u("arcsec"),
+         "IRAC I4": 2.82 * u("arcsec"),
+         "WISE W1": 5.79 * u("arcsec"),
+         "WISE W2": 6.37 * u("arcsec"),
+         "WISE W3": 6.60 * u("arcsec"),
+         "WISE W4": 11.89 * u("arcsec"),
+         "MIPS 24mu": 6.43 * u("arcsec"),
+         "MIPS 70mu": 18.74 * u("arcsec"),
+         "MIPS 160mu": 38.78 * u("arcsec"),
+         "Pacs blue": 5.67 * u("arcsec"),
+         "Pacs green": 7.04 * u("arcsec"),
+         "Pacs red": 11.18 * u("arcsec"),
+         "SPIRE PSW": 18.15 * u("arcsec"),
+         "SPIRE PMW": 24.88 * u("arcsec"),
+         "SPIRE PLW": 36.09 * u("arcsec")}
 
 # -----------------------------------------------------------------
 

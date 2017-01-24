@@ -17,7 +17,6 @@ import math
 
 # Import astronomical modules
 from astropy.coordinates import Angle
-from astropy.units import Unit
 from astropy.wcs import utils
 from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
 
@@ -26,6 +25,7 @@ from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from ..basics.mask import Mask
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -230,8 +230,8 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * Unit("deg/pix")
-        y_pixelscale = result[1] * Unit("deg/pix")
+        x_pixelscale = result[0] * u("deg/pix")
+        y_pixelscale = result[1] * u("deg/pix")
         # pixelscale = Extent(x_pixelscale, y_pixelscale)
 
         semimajor = (region.semimajor / x_pixelscale).to("pix").value
@@ -371,12 +371,12 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
         # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * Unit("deg/pix")
-        y_pixelscale = result[1] * Unit("deg/pix")
+        x_pixelscale = result[0] * u("deg/pix")
+        y_pixelscale = result[1] * u("deg/pix")
         # pixelscale = Extent(x_pixelscale, y_pixelscale)
 
-        semimajor = region.semimajor * Unit("pix") * x_pixelscale
-        semiminor = region.semiminor * Unit("pix") * y_pixelscale
+        semimajor = region.semimajor * u("pix") * x_pixelscale
+        semiminor = region.semiminor * u("pix") * y_pixelscale
 
         radius = SkyStretch(semimajor, semiminor)
 
@@ -414,8 +414,8 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
         a_projected_y = x_radius * math.sin(self.angle.radian)
         b_projected_y = y_radius * math.cos(self.angle.radian)
 
-        box_x_radius = max(abs(a_projected_x), abs(b_projected_x)) * Unit("arcsec")
-        box_y_radius = max(abs(a_projected_y), abs(b_projected_y)) * Unit("arcsec")
+        box_x_radius = max(abs(a_projected_x), abs(b_projected_x)) * u("arcsec")
+        box_y_radius = max(abs(a_projected_y), abs(b_projected_y)) * u("arcsec")
 
         radius = SkyStretch(box_x_radius, box_y_radius)
 

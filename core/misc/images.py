@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy import constants
 
 # Import the relevant PTS classes and modules
@@ -25,6 +24,7 @@ from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.remote import RemoteDataCube
 from ..simulation.wavelengthgrid import WavelengthGrid
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -406,7 +406,7 @@ class ObservedImageMaker(object):
 
                 # From W / (m2 * arcsec2 * Hz) to MJy / sr
                 #conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
-                conversion_factor *= 1e26 * 1e-6 * (Unit("sr") / Unit("arcsec2")).to("")
+                conversion_factor *= 1e26 * 1e-6 * (u("sr") / u("arcsec2")).to("")
 
                 # Convert
                 self.images[datacube_name][filter_name] *= conversion_factor

@@ -299,15 +299,16 @@ def clean_unit_string(string):
 
 # -----------------------------------------------------------------
 
-def parse_unit(argument):
+def parse_unit(argument, density=False):
 
     """
     This function ...
     :param argument:
+    :param density:
     :return:
     """
 
-    try: unit = PhotometricUnit(argument)
+    try: unit = PhotometricUnit(argument, density=density)
     except ValueError:
         if isinstance(argument, basestring): argument = clean_unit_string(argument)
         unit = Unit(argument)
@@ -471,6 +472,22 @@ class PhotometricUnit(CompositeUnit):
 
         # Call the constructor of the base class
         super(PhotometricUnit, self).__init__(unit.scale, unit.bases, unit.powers)
+
+    # -----------------------------------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        try: other = PhotometricUnit(other)
+        except ValueError: raise ValueError("The other unit is not a photometric unit")
+
+        # Use implementation in base class
+        return super(PhotometricUnit, self).__eq__(other)
 
     # -----------------------------------------------------------------
 

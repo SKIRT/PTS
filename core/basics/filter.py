@@ -409,7 +409,7 @@ class Filter(object):
                         filterspec = spec
                         break
                 # Break not encountered
-                else: raise ValueError("Could not recognize the filter")
+                else: raise ValueError("Could not recognize the filter: " + filterspec)
 
         # Planck filters have to be handled seperately
         if isinstance(filterspec, types.StringTypes) and "planck" in filterspec.lower():
@@ -477,6 +477,20 @@ class Filter(object):
             self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
             self._EffWidth = self._WavelengthMax - self._WavelengthMin
             self.true_filter = False
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_instrument_and_band(cls, instrument, band):
+
+        """
+        This function ...
+        :param instrument:
+        :param band:
+        :return:
+        """
+
+        return cls(instrument + "." + band)
 
     # -----------------------------------------------------------------
 
@@ -656,8 +670,8 @@ class Filter(object):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def mean(self):
-        from astropy.units import Unit
-        return self.meanwavelength() * Unit("micron")
+        from .unit import parse_unit as u
+        return self.meanwavelength() * u("micron")
 
     ## This function returns the effective wavelength for the filter, in micron.
     def effectivewavelength(self):
@@ -667,8 +681,8 @@ class Filter(object):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def effective(self):
-        from astropy.units import Unit
-        return self.effectivewavelength() * Unit("micron") if self._WavelengthEff is not None else None
+        from .unit import parse_unit as u
+        return self.effectivewavelength() * u("micron") if self._WavelengthEff is not None else None
 
     ## This function returns the minimum wavelength for the filter, in micron.
     def minwavelength(self):
@@ -678,8 +692,8 @@ class Filter(object):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def min(self):
-        from astropy.units import Unit
-        return self.minwavelength() * Unit("micron")
+        from .unit import parse_unit as u
+        return self.minwavelength() * u("micron")
 
     ## This function returns the maximum wavelength for the filter, in micron.
     def maxwavelength(self):
@@ -689,8 +703,8 @@ class Filter(object):
     #  function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def max(self):
-        from astropy.units import Unit
-        return self.maxwavelength() * Unit("micron")
+        from .unit import parse_unit as u
+        return self.maxwavelength() * u("micron")
 
     ## This function returns the center wavelength for the filter, in micron. The center wavelength is
     # defined as the wavelength halfway between the two points for which filter response or transmission
@@ -702,8 +716,8 @@ class Filter(object):
     #  support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def center(self):
-        from astropy.units import Unit
-        return self.centerwavelength() * Unit("micron")
+        from .unit import parse_unit as u
+        return self.centerwavelength() * u("micron")
 
     ## This function returns the pivot wavelength for the filter, in micron. The pivot wavelength is defined
     # as the wavelength that connects the filter-averaged wavelength and frequency-style fluxes through
@@ -721,8 +735,8 @@ class Filter(object):
     #  support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def pivot(self):
-        from astropy.units import Unit
-        return self.pivotwavelength() * Unit("micron")
+        from .unit import parse_unit as u
+        return self.pivotwavelength() * u("micron")
 
     ## This function returns the effective bandwith, in micron.
     def effective_bandwidth(self):
@@ -730,8 +744,8 @@ class Filter(object):
 
     @property
     def bandwidth(self):
-        from astropy.units import Unit
-        return self.effective_bandwidth() * Unit("micron") if self._EffWidth is not None else None
+        from .unit import parse_unit as u
+        return self.effective_bandwidth() * u("micron") if self._EffWidth is not None else None
 
     # ---------- Integrating --------------------------------------
 
@@ -822,7 +836,8 @@ def load_planck(filterspec):
     """
 
     # Import Astropy stuff
-    from astropy.units import Unit, spectral
+    from astropy.units import spectral
+    from .unit import parse_unit as u
 
     this_path = os.path.dirname(os.path.abspath(__file__))
     core_path = os.path.dirname(this_path)
@@ -844,12 +859,12 @@ def load_planck(filterspec):
 
     # HFI
     if instrument == "HFI":
-        wavenumbers = wavenumbers * Unit("1/cm")
+        wavenumbers = wavenumbers * u("1/cm")
         wavelengths = (1.0 / wavenumbers).to("micron").value
 
     # LFI
     else:
-        frequencies = wavenumbers * Unit("GHz")
+        frequencies = wavenumbers * u("GHz")
         wavelengths = frequencies.to("micron", equivalencies=spectral()).value
 
     # REVERSE
@@ -876,7 +891,8 @@ def load_alma(filterspec, pwv=0.2):
     assert pwv in possible_pwvs, "Pwv must be one of " + str(possible_pwvs)
 
     # Import Astropy stuff
-    from astropy.units import Unit, spectral
+    from astropy.units import spectral
+    from .unit import parse_unit as u
 
     this_path = os.path.dirname(os.path.abspath(__file__))
     core_path = os.path.dirname(this_path)
@@ -892,7 +908,7 @@ def load_alma(filterspec, pwv=0.2):
     frequencies, transmissions = np.loadtxt(filepath, unpack=True, usecols=(0, 1))
 
     # Get array of wavelengths
-    frequencies = frequencies * Unit("GHz")
+    frequencies = frequencies * u("GHz")
     wavelengths = frequencies.to("micron", equivalencies=spectral()).value
 
     # REVERSE

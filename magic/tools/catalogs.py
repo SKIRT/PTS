@@ -20,7 +20,7 @@ import numpy as np
 from lxml import html
 
 # Import astronomical modules
-from astropy.units import Unit, Magnitude
+from astropy.units import Magnitude
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 from astroquery.ned import Ned
@@ -32,6 +32,7 @@ from ...core.tools import tables
 from ...core.tools.logging import log
 from ..basics.coordinate import SkyCoordinate
 from ..basics.vector import Extent
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -397,13 +398,13 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
             # Get the mean error on the right ascension and declination
             if catalog == "UCAC4" or catalog == "NOMAD":
 
-                ra_error = table["e_RAJ2000"][i] * Unit("mas")
-                dec_error = table["e_DEJ2000"][i] * Unit("mas")
+                ra_error = table["e_RAJ2000"][i] * u("mas")
+                dec_error = table["e_DEJ2000"][i] * u("mas")
 
             elif catalog == "II/246":
 
-                error_maj = table["errMaj"][i] * Unit("arcsec")
-                error_min = table["errMin"][i] * Unit("arcsec")
+                error_maj = table["errMaj"][i] * u("arcsec")
+                error_min = table["errMin"][i] * u("arcsec")
                 error_theta = Angle(table["errPA"][i], "deg")
 
                 # Temporary: use only the major axis error (convert the error ellipse into a circle)
@@ -486,8 +487,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
                 # Fill in the column lists
                 catalog_column.append(catalog)
                 id_column.append(star_id)
-                ra_column.append(star_ra) * Unit("deg")
-                dec_column.append(star_dec) * Unit("deg")
+                ra_column.append(star_ra) * u("deg")
+                dec_column.append(star_dec) * u("deg")
                 ra_error_column.append(ra_error.value)
                 dec_error_column.append(dec_error.value)
                 confidence_level_column.append(1)
@@ -770,7 +771,7 @@ def get_galaxy_info(name, position):
 
     # Get the size of the galaxy
     ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
-    diameter = np.power(10.0, entry["logD25"]) * 0.1 * Unit("arcmin") if entry["logD25"] else None
+    diameter = np.power(10.0, entry["logD25"]) * 0.1 * u("arcmin") if entry["logD25"] else None
 
     #print("  ratio = ", ratio)
     #print("  D25_diameter = ", diameter)
@@ -782,9 +783,9 @@ def get_galaxy_info(name, position):
 
         radial_profiles_entry = radial_profiles_result[0][0]
 
-        gal_distance = radial_profiles_entry["Dist"] * Unit("Mpc")
+        gal_distance = radial_profiles_entry["Dist"] * u("Mpc")
         gal_inclination = Angle(radial_profiles_entry["i"], "deg")
-        gal_d25 = radial_profiles_entry["D25"] * Unit("arcmin")
+        gal_d25 = radial_profiles_entry["D25"] * u("arcmin")
 
     else:
 

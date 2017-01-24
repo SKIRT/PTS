@@ -18,14 +18,14 @@ import tempfile
 # Import astronomical modules
 from astropy.table import Table
 from astropy.utils import lazyproperty
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.tools import time
-from ...magic.tools import mosaic
+from ...magic.tools import mosaicing
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -45,8 +45,8 @@ ledawise_table_path = fs.join(dustpedia_data_path, "DustPedia_LEDAWISE_Herschel.
 
 # -----------------------------------------------------------------
 
-dustpedia_final_pixelsizes = {"GALEX": 3.2 * Unit("arcsec"), "SDSS": 0.45 * Unit("arcsec"),
-                              "2MASS": 1. * Unit("arcsec"), "WISE": 1.375 * Unit("arcsec")} # in arcsec, 2MASS and WISE pixel sizes are original pixelsizes
+dustpedia_final_pixelsizes = {"GALEX": 3.2 * u("arcsec"), "SDSS": 0.45 * u("arcsec"),
+                              "2MASS": 1. * u("arcsec"), "WISE": 1.375 * u("arcsec")} # in arcsec, 2MASS and WISE pixel sizes are original pixelsizes
 
 # -----------------------------------------------------------------
 
@@ -143,7 +143,7 @@ class DustPediaDataProcessing(object):
         pixelscale = dustpedia_final_pixelsizes[instrument]
 
         # Get the header
-        return mosaic.make_header(ra, dec, width, pixelscale)
+        return mosaicing.make_header(ra, dec, width, pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -159,14 +159,14 @@ class DustPediaDataProcessing(object):
         index = tables.find_index(self.leda_wise_table, galaxy_name)
 
         # Get the RA and DEC
-        ra = self.leda_wise_table["ra2000"][index] * Unit("deg")
-        dec = self.leda_wise_table["de2000"][index] * Unit("deg")
+        ra = self.leda_wise_table["ra2000"][index] * u("deg")
+        dec = self.leda_wise_table["de2000"][index] * u("deg")
 
         # Get the D25
         d25_arcmin = self.leda_wise_table["d25"][index]
 
-        if d25_arcmin < 6: width = .5 * Unit("deg")
-        else: width = 1. * Unit("deg")
+        if d25_arcmin < 6: width = .5 * u("deg")
+        else: width = 1. * u("deg")
 
         # Return the RA, DEC and width (all in degrees)
         return ra, dec, width

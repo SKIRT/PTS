@@ -12,13 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ...core.data.sed import SED
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -27,30 +25,30 @@ sun_sed_path = fs.join(introspection.skirt_repo_dir, "dat", "SED", "Sun", "SunSE
 
 # -----------------------------------------------------------------
 
-Lsun = 3.839e26 * Unit("W")                 # solar luminosity without solar neutrino radiation
+Lsun = 3.839e26 * u("W")                 # solar luminosity without solar neutrino radiation
 
 # -----------------------------------------------------------------
 
 # Effective wavelengths (in m)
-eff_wavelengths = {"FUV": 152e-9 * Unit("m"),
-                   "NUV": 231e-9 * Unit("m"),
-                   "U": 365e-9 * Unit("m"),
-                   "B": 445e-9 * Unit("m"),
-                   "V": 551e-9 * Unit("m"),
-                   "R": 658e-9 * Unit("m"),
-                   "I": 806e-9 * Unit("m"),
-                   "J": 1.22e-6 * Unit("m"),
-                   "H": 1.63e-6 * Unit("m"),
-                   "K": 2.19e-6 * Unit("m"),
-                   "SDSS u": 354e-9 * Unit("m"),
-                   "SDSS g": 477e-9 * Unit("m"),
-                   "SDSS r": 623e-9 * Unit("m"),
-                   "SDSS i": 763e-9 * Unit("m"),
-                   "SDSS z": 913e-9 * Unit("m"),
-                   "IRAC1": 3.56e-6 * Unit("m"),
-                   "IRAC2": 4.51e-6 * Unit("m"),
-                   "WISE1": 3.35e-9 * Unit("m"),
-                   "WISE2": 4.60e-6 * Unit("m")}
+eff_wavelengths = {"FUV": 152e-9 * u("m"),
+                   "NUV": 231e-9 * u("m"),
+                   "U": 365e-9 * u("m"),
+                   "B": 445e-9 * u("m"),
+                   "V": 551e-9 * u("m"),
+                   "R": 658e-9 * u("m"),
+                   "I": 806e-9 * u("m"),
+                   "J": 1.22e-6 * u("m"),
+                   "H": 1.63e-6 * u("m"),
+                   "K": 2.19e-6 * u("m"),
+                   "SDSS u": 354e-9 * u("m"),
+                   "SDSS g": 477e-9 * u("m"),
+                   "SDSS r": 623e-9 * u("m"),
+                   "SDSS i": 763e-9 * u("m"),
+                   "SDSS z": 913e-9 * u("m"),
+                   "IRAC1": 3.56e-6 * u("m"),
+                   "IRAC2": 4.51e-6 * u("m"),
+                   "WISE1": 3.35e-9 * u("m"),
+                   "WISE2": 4.60e-6 * u("m")}
 
 # -----------------------------------------------------------------
 

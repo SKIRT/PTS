@@ -266,9 +266,9 @@ class FilterCurve(WavelengthCurve):
         super(FilterCurve, self).__init__(*args, **kwargs)
 
         # Set column info
-        self.column_info.insert(0, ("Observatory", str, None, "observatory"))
-        self.column_info.insert(0, ("Instrument", str, None, "instrument"))
         self.column_info.insert(0, ("Band", str, None, "band"))
+        self.column_info.insert(0, ("Instrument", str, None, "instrument"))
+        self.column_info.insert(0, ("Observatory", str, None, "observatory"))
 
     # -----------------------------------------------------------------
 

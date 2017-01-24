@@ -31,7 +31,7 @@ from astropy.table import Table
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ..basics.quantity import Quantity
+from ..basics.measurement import Measurement
 from ..basics.map import Map
 from .timeline import create_timeline_plot
 from ..tools.logging import log
@@ -2420,7 +2420,7 @@ class ScalingPlotter(Configurable):
                 # Get the serial runtime (and error) for this phase (create a Quantity object)
                 serial_time = self.serial_timing[phase].time
                 serial_error = self.serial_timing[phase].error
-                serial = Quantity(serial_time, serial_error)
+                serial = Measurement(serial_time, serial_error)
 
                 # Create a dictionary that stores the fitted parameters for each different mode
                 parameters = dict()
@@ -2442,7 +2442,7 @@ class ScalingPlotter(Configurable):
                     for i in range(len(processor_counts)):
 
                         # Create a quantity for the current runtime
-                        time = Quantity(times[i], errors[i])
+                        time = Measurement(times[i], errors[i])
 
                         # Calculate the speedup based on the current runtime and the serial runtime
                         speedup = serial / time
@@ -2849,7 +2849,7 @@ class ScalingPlotter(Configurable):
                 if self.config.normalize_runtimes:
                     serial_time = self.serial_timing[parameter_set][plot_phase].time
                     serial_error = self.serial_timing[parameter_set][plot_phase].error
-                    serial = Quantity(serial_time, serial_error)
+                    serial = Measurement(serial_time, serial_error)
                 else: serial = None
 
                 # Loop over the different parallelization modes (the different curves)
@@ -2880,7 +2880,7 @@ class ScalingPlotter(Configurable):
                         for i in range(len(processor_counts)):
 
                             # Create a quantity for the current runtime
-                            time = Quantity(times[i], errors[i])
+                            time = Measurement(times[i], errors[i])
 
                             # Calculate the normalized runtim
                             speedup = time / serial
@@ -2942,7 +2942,7 @@ class ScalingPlotter(Configurable):
                     # Get the serial runtime (and error) for this phase (create a Quantity object)
                     serial_time = self.serial_timing[parameter_set][plot_phase].time
                     serial_error = self.serial_timing[parameter_set][plot_phase].error
-                    serial = Quantity(serial_time, serial_error)
+                    serial = Measurement(serial_time, serial_error)
 
                     # Calculate the ideal runtimes
                     runtimes = [serial.value / ncores for ncores in ticks_ncores]
@@ -3081,7 +3081,7 @@ class ScalingPlotter(Configurable):
                 # Get the serial runtime (and error) for this phase (create a Quantity object)
                 serial_time = self.serial_timing[parameter_set][plot_phase].time
                 serial_error = self.serial_timing[parameter_set][plot_phase].error
-                serial = Quantity(serial_time, serial_error)
+                serial = Measurement(serial_time, serial_error)
 
                 # Loop over the different parallelization modes (the different curves)
                 for mode in sorted(self.timing_data[plot_phase][parameter_set].keys()): # sort alphabetically
@@ -3108,7 +3108,7 @@ class ScalingPlotter(Configurable):
                     for i in range(len(processor_counts)):
 
                         # Create a quantity for the current runtime
-                        time = Quantity(times[i], errors[i])
+                        time = Measurement(times[i], errors[i])
 
                         # Calculate the speedup based on the current runtime and the serial runtime
                         speedup = serial / time
@@ -3301,7 +3301,7 @@ class ScalingPlotter(Configurable):
                 # Get the serial runtime (and error) for this phase (create a Quantity object)
                 serial_time = self.serial_timing[parameter_set][plot_phase].time
                 serial_error = self.serial_timing[parameter_set][plot_phase].error
-                serial = Quantity(serial_time, serial_error)
+                serial = Measurement(serial_time, serial_error)
                 serial_ncores = self.serial_timing_ncores[parameter_set][plot_phase] if plot_phase in self.serial_timing_ncores[parameter_set] else 1
 
                 # Loop over the different parallelization modes (the different curves)
@@ -3333,7 +3333,7 @@ class ScalingPlotter(Configurable):
                     for i in range(len(processor_counts)):
 
                         # Create a quantity for the current runtime
-                        time = Quantity(times[i], errors[i])
+                        time = Measurement(times[i], errors[i])
 
                         # Calculate the efficiency based on the current runtime and the serial runtime
                         speedup = serial / time
@@ -3574,7 +3574,7 @@ class ScalingPlotter(Configurable):
                     # Get the serial runtime (and error) for this phase (create a Quantity object)
                     serial_time = self.serial_timing[parameter_set][plot_phase].time
                     serial_error = self.serial_timing[parameter_set][plot_phase].error
-                    serial = Quantity(serial_time, serial_error)
+                    serial = Measurement(serial_time, serial_error)
 
                     # Calculate the ideal runtimes
                     runtimes = [serial.value] * len(ticks_ncores)
@@ -3696,7 +3696,7 @@ class ScalingPlotter(Configurable):
             if self.config.normalize_memory:
                 serial_memory = self.serial_memory[parameter_set][phase].memory
                 serial_error = self.serial_memory[parameter_set][phase].error
-                serial = Quantity(serial_memory, serial_error)
+                serial = Measurement(serial_memory, serial_error)
             else: serial = None
 
             # Loop over the different parallelization modes (the different curves)
@@ -3726,7 +3726,7 @@ class ScalingPlotter(Configurable):
                     for i in range(len(processor_counts)):
 
                         # Create a quantity for the current memory usage
-                        memory = Quantity(memories[i], errors[i])
+                        memory = Measurement(memories[i], errors[i])
 
                         # Calculate the efficiency based on the current memory usage and the serial memory usage
                         memory_new = memory / serial
@@ -3871,7 +3871,7 @@ class ScalingPlotter(Configurable):
             # Get the serial memory (and error) for this phase (create a Quantity object)
             serial_memory = self.serial_memory[parameter_set][phase].memory
             serial_error = self.serial_memory[parameter_set][phase].error
-            serial = Quantity(serial_memory, serial_error)
+            serial = Measurement(serial_memory, serial_error)
 
             # Loop over the different parallelization modes (the different curves)
             for mode in sorted(self.memory_data[phase][parameter_set].keys()): # sort alphabetically
@@ -3898,7 +3898,7 @@ class ScalingPlotter(Configurable):
                 for i in range(len(processor_counts)):
 
                     # Create a quantity for the current memory usage
-                    memory = Quantity(memories[i], errors[i])
+                    memory = Measurement(memories[i], errors[i])
 
                     # Calculate the efficiency based on the current memory usage and the serial memory usage
                     gain = serial / memory

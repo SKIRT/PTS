@@ -71,42 +71,6 @@ class SEDModelingComponent(ModelingComponent):
         # Set the ski template path
         self.ski_path = get_ski_template_path(self.config.path)
 
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_sed(self):
-
-        """
-        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
-        :return:
-        """
-
-        return get_observed_sed(self.config.path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sed_filters(self):
-
-        """
-        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
-        :return:
-        """
-
-        return self.observed_sed.filters()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sed_filter_names(self):
-
-        """
-        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
-        :return:
-        """
-
-        return [str(fltr) for fltr in self.sed_filters]
-
 # -----------------------------------------------------------------
 
 def get_observed_sed_file_path(modeling_path):

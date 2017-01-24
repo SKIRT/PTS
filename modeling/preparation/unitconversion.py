@@ -16,13 +16,14 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy import units as u
 from astropy import constants
+from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools.logging import log
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -30,7 +31,7 @@ from ...core.tools.logging import log
 speed_of_light = constants.c
 
 # Flux zero point for AB magnitudes
-ab_mag_zero_point = 3631. * u.Unit("Jy")
+ab_mag_zero_point = 3631. * u("Jy")
 
 # 2MASS F_0 (in Jy)
 f_0_2mass = {"2MASS.J": 1594.0, "2MASS.H": 1024.0, "2MASS.Ks": 666.7}
@@ -59,7 +60,7 @@ galex_conversion_factors = {"GALEX.FUV": 1.40e-15, "GALEX.NUV": 2.06e-16}
 ergscmHz_to_Jy = 1e23
 
 # Effective wavelengths for GALEX
-effective_wavelengths = {"GALEX.FUV": 1528.0 * u.Unit("Angstrom"), "GALEX.NUV": 2271.0 * u.Unit("Angstrom")}
+effective_wavelengths = {"GALEX.FUV": 1528.0 * u("Angstrom"), "GALEX.NUV": 2271.0 * u("Angstrom")}
 
 # Conversion between flux density in SI units and Jansky
 jansky_to_si = 1e-26  # 1 Jy in W / [ m2 * Hz]
@@ -78,8 +79,8 @@ def spectral_factor(wavelength, wavelength_unit, frequency_unit):
     """
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = u.Unit(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = u.Unit(frequency_unit)
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 
@@ -343,7 +344,7 @@ class UnitConverter(Configurable):
         super(UnitConverter, self).setup()
 
         # Create a unit object
-        self.target_unit = u.Unit(self.config.to_unit)
+        self.target_unit = u(self.config.to_unit)
 
         # Set the image reference
         self.image = image
@@ -539,7 +540,7 @@ class UnitConverter(Configurable):
         # What Ilse says it should be:
 
         # Get the frequency of Ha
-        frequency = self.image.wavelength.to("Hz", equivalencies=u.spectral())
+        frequency = self.image.wavelength.to("Hz", equivalencies=spectral())
 
         # Conversion from erg / [s * cm2] (per pixel2) to erg / [s * cm2 * Hz] (per pixel2)
         self.conversion_factor *= 1.0 / frequency.value

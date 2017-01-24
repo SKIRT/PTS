@@ -19,7 +19,8 @@ make_ionizing_map | -- | maps.stars.ionizing.IonizingStellarMapMaker | interacti
 make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make the map of the dust distribution
 deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure
-initialize_fit | -- | fitting.initialization.FittingInitializer | arguments | Do the initialization before starting the fitting
+initialize_fit_galaxy | initialize_fit | fitting.initialization.galaxy.GalaxyFittingInitializer | arguments | Do the initialization before starting the fitting
+initialize_fit_sed | initialize_fit | fitting.initialization.sed.SEDFittingInitializer | arguments | Do the initialization before starting the fitting
 explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the parameter space for the radiative transfer modeling
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation

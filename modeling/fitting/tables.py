@@ -282,6 +282,27 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def has_unfinished(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over each generation
+        for i in range(len(self)):
+
+            finished = not self["Finishing time"].mask[i]
+
+            # If one unfinished is encountered, return True
+            if not finished: return True
+
+        # None are unfinished
+        return False
+
+    # -----------------------------------------------------------------
+
+    @property
     def finished_generations(self):
 
         """
@@ -511,6 +532,8 @@ class ParametersTable(SmartTable):
         :param parameter_values:
         :return:
         """
+
+        if len(self.colnames) == 0: self.setup()
 
         values = [name]
 

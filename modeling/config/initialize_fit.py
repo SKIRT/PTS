@@ -7,7 +7,6 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.magic.config.find_sources import definition as sources_definition
 
 # -----------------------------------------------------------------
 
@@ -18,6 +17,9 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_section("wg", "settings for the wavelength grids")
 definition.sections["wg"].add_optional("npoints_range", "integer_range", "the range of the wavelength grid size", "150>500", convert_default=True)
 definition.sections["wg"].add_optional("ngrids", "integer", "the number of wavelength grids to generate", 10)
+definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
+definition.sections["wg"].add_optional("min_wavelength", "quantity", "minimum wavelength")
+definition.sections["wg"].add_optional("max_wavelength", "quantity", "maximum wavelength")
 
 # Settings for the dust grid generation
 definition.add_section("dg", "settings for the dust grids")
@@ -29,8 +31,6 @@ definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "the
 # Add optional arguments
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)
 definition.add_flag("selfabsorption", "enable dust self-absorption")
-
-# Add section for the source finder
-definition.import_section("sources", "options for the source finder", sources_definition)
+definition.add_flag("transient_heating", "enable transient heating", True)
 
 # -----------------------------------------------------------------

@@ -116,6 +116,30 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def object_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_configuration.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return []
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def observed_sed(self):
 
@@ -129,6 +153,60 @@ class ModelingComponent(Configurable):
 
         if self.modeling_type == "galaxy": return get_sed_galaxy(self.config.path)
         else: return get_sed_other(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .sed import get_observed_sed_file_path as get_path_other
+        from .galaxy import get_observed_sed_file_path as get_path_galaxy
+
+        if self.modeling_type == "galaxy": return get_path_galaxy(self.config.path)
+        else: return get_path_other(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    def observed_flux(self, fltr, unit=None, add_unit=True):
+
+        """
+        This function ...
+        :param fltr:
+        :param unit:
+        :param add_unit:
+        :return:
+        """
+
+        return self.observed_sed.flux_for_filter(fltr, unit=unit, add_unit=add_unit)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.observed_sed.filters()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.observed_filters]
 
     # -----------------------------------------------------------------
 
@@ -153,6 +231,18 @@ class ModelingComponent(Configurable):
         """
 
         return [str(fltr) for fltr in self.sed_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_filter_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.pivot for fltr in self.sed_filters]
 
     # -----------------------------------------------------------------
 
@@ -269,8 +359,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        from ..config.parameters import choices
-        return choices
+        return self.fitting_configuration.descriptions
 
     # -----------------------------------------------------------------
 
@@ -282,8 +371,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        from ..config.parameters import units
-        return units
+        return self.fitting_configuration.units
 
     # -----------------------------------------------------------------
 

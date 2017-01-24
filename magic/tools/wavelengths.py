@@ -12,12 +12,10 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ...core.basics.map import Map
 from ...core.basics.range import QuantityRange
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -54,8 +52,8 @@ for key in spectrum_wavelengths:
 
     if division not in ranges: ranges[division] = Map()
     ranges[division][subdivision] = Map()
-    ranges[division][subdivision].min = spectrum_wavelengths[key][0] * Unit("micron")
-    ranges[division][subdivision].max = spectrum_wavelengths[key][1] * Unit("micron")
+    ranges[division][subdivision].min = spectrum_wavelengths[key][0] * u("micron")
+    ranges[division][subdivision].max = spectrum_wavelengths[key][1] * u("micron")
 
 # -----------------------------------------------------------------
 

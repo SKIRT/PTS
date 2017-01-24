@@ -5,113 +5,46 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.quantity Contains the Quantity class, representing floating point values with a certain
-#  uncertainty
+## \package pts.core.basics.quantity Contains the PhotometricQuantity class.
 
 # -----------------------------------------------------------------
 
-# Import standard modules
-import math
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import astronomical modules
+from astropy.units import Quantity
 
 # -----------------------------------------------------------------
 
-class Quantity(object):
+def parse_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: quantity = PhotometricQuantity(argument)
+    except ValueError: quantity = Quantity(argument)
+    return quantity
+        
+# -----------------------------------------------------------------
+
+class PhotometricQuantity(Quantity):
     
     """
     This class ...
     """
     
-    def __init__(self, value, error=None):
+    def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
+                subok=False, ndmin=0):
         
         """
         The constructor ...
         """
-        
-        # Set the attributes
-        self.value = value
-        self.error = error
 
-    # -----------------------------------------------------------------
-
-    @property
-    def relative_error(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        try: return self.error / self.value
-        except ZeroDivisionError: return float("nan")
-
-    # -----------------------------------------------------------------
-
-    def __add__(self, quantity):
-
-        """
-        This function ...
-        :param quantity:
-        :return:
-        """
-
-        value = self.value + quantity.value
-        error = math.sqrt(math.pow(self.error, 2) + math.pow(quantity.error, 2))
-        return Quantity(value, error)
-
-    # -----------------------------------------------------------------
-
-    def __sub__(self, quantity):
-
-        """
-        This function ...
-        :param quantity:
-        :return:
-        """
-
-        value = self.value - quantity.value
-        error = math.sqrt(math.pow(self.error, 2) + math.pow(quantity.error, 2))
-        return Quantity(value, error)
-
-    # -----------------------------------------------------------------
-
-    def __mul__(self, quantity):
-
-        """
-        This function ...
-        :param quantity:
-        :return:
-        """
-
-        value = self.value * quantity.value
-        error = math.sqrt(math.pow(quantity.value * self.error, 2) + math.pow(self.value * quantity.error, 2))
-        return Quantity(value, error)
-
-    # -----------------------------------------------------------------
-
-    def __div__(self, quantity):
-
-        """
-        This function ...
-        :param quantity:
-        :return:
-        """
-
-        value = self.value / quantity.value
-        error = math.fabs(value) * math.sqrt(math.pow(self.relative_error, 2) + math.pow(quantity.relative_error, 2))
-        return Quantity(value, error)
-
-    # -----------------------------------------------------------------
-
-    def __truediv__(self, quantity):
-
-        """
-        This function ...
-        :param quantity:
-        :return:
-        """
-
-        value = self.value / quantity.value
-        error = math.fabs(value) * math.sqrt(math.pow(self.relative_error, 2) + math.pow(quantity.relative_error, 2))
-        return Quantity(value, error)
+        # Call the constructor of the base class
+        return super(PhotometricQuantity, cls).__new__(value, unit, dtype, copy, order, subok, ndmin)
 
 # -----------------------------------------------------------------

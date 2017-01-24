@@ -122,6 +122,7 @@ class SmartTable(Table):
             if np.issubdtype(dtype, np.string_): simple_dtype = str
             elif np.issubdtype(dtype, np.float): simple_dtype = float
             elif np.issubdtype(dtype, np.int): simple_dtype = int
+            elif np.issubdtype(dtype, np.bool): simple_dtype = bool
             else: raise ValueError("Did not recognize the dtype of column '" + name + "'")
 
             # Get unit of the column

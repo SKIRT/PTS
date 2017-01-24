@@ -1392,6 +1392,18 @@ class SkiFile:
         # Get the wavelength grid
         return self.get_unique_base_element("wavelengthGrid")
 
+    def set_minwavelength(self, value):
+        self.set_quantity(self.get_wavelength_grid(), "minWavelength", value)
+
+    def set_maxwavelength(self, value):
+        self.set_quantity(self.get_wavelength_grid(), "maxWavelength", value)
+
+    def minwavelength(self):
+        self.get_quantity(self.get_wavelength_grid(), "minWavelength")
+
+    def maxwavelength(self):
+        self.get_quantity(self.get_wavelength_grid(), "maxWavelength")
+
     ## This function sets the number of wavelength points
     def set_nwavelengths(self, value):
 
@@ -1858,6 +1870,14 @@ class SkiFile:
 
         # Return the dust emissivity element
         return get_unique_element(dust_system, "dustEmissivity")
+
+    ## This property returns whether a dust emissivit object is present in the ski file
+    @property
+    def has_dust_emissivity(self):
+        try:
+            em = self.get_dust_emissivity()
+            return True
+        except ValueError: return False
 
     ## This function sets a transient dust emissivity for the simulation
     def set_transient_dust_emissivity(self):

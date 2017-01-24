@@ -147,7 +147,8 @@ class GPopulation(object):
             self.stats = Statistics()
             return
 
-        log.debug("New population instance, %s class genomes.", genome.__class__.__name__)
+        # Debugging
+        log.debug("New population instance, %s class genomes", genome.__class__.__name__)
 
         self.oneSelfGenome = genome
         self.internalPop = []

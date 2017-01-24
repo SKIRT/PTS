@@ -15,10 +15,11 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
-from ..fitting.initialization import FittingInitializer
+from ..fitting.initialization.sed import SEDFittingInitializer
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
 from ..component.sed import get_ski_template, get_observed_sed
+from ...core.basics.range import IntegerRange
 
 # -----------------------------------------------------------------
 
@@ -105,7 +106,7 @@ class SEDModeler(Modeler):
         if "configure_fit" not in self.history: self.configure_fit()
 
         # Initialize the fitting
-        if "initialize_fit" not in self.history: self.initialize_fit()
+        if "initialize_fit_sed" not in self.history: self.initialize_fit()
 
         # Load the generations table
         generations = get_generations_table(self.modeling_path)
@@ -175,13 +176,33 @@ class SEDModeler(Modeler):
         log.info("Initializing the fitting ...")
 
         # Create the fitting initializer
-        initializer = FittingInitializer()
+        initializer = SEDFittingInitializer()
 
         # Add an entry to the history
-        self.history.add_entry(FittingInitializer.command_name())
+        self.history.add_entry(SEDFittingInitializer.command_name())
 
         # Set the working directory
         initializer.config.path = self.modeling_path
+
+        # Load the current ski template
+        ski = get_ski_template(self.modeling_path)
+
+        # Set fixed settings for the ski model
+        initializer.config.npackages = ski.packages()
+        initializer.config.selfabsorption = ski.dustselfabsorption()
+        initializer.config.transient_heating = ski.transientheating()
+
+        # Set options for the wavelength grids
+        nwavelengths = ski.nwavelengths()
+        min_nwavelengths = max(int(0.1 * nwavelengths), 20)
+        max_nwavelengths = nwavelengths
+        initializer.config.wg.npoints_range = IntegerRange(min_nwavelengths, max_nwavelengths)
+        initializer.config.wg.ngrids = 5
+        initializer.config.wg.add_emission_lines = False
+        initializer.config.wg.min_wavelength = ski.minwavelength()
+        initializer.config.wg.max_wavelength = ski.maxwavelength()
+
+        # OPTIONS FOR THE DUST GRID NOT RELEVANT FOR SED MODELING (YET)
 
         # Run the fitting initializer
         initializer.run()

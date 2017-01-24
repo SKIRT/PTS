@@ -111,7 +111,7 @@ class ParameterExplorer(FittingComponent):
         self.generate_models()
 
         # 6. Set the paths to the input files
-        self.set_input()
+        if self.needs_input: self.set_input()
 
         # 7. Adjust the ski template
         self.adjust_ski()
@@ -151,8 +151,9 @@ class ParameterExplorer(FittingComponent):
             raise ValueError("The specified remote hosts cannot be used for the first generation: at least one remote uses a scheduling system")
 
         # Check whether initialize_fit has been called
-        if not fs.is_file(self.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit before starting the parameter exploration")
-        if not fs.is_file(self.dust_grids_table_path): raise RuntimeError("Call initialize_fit before starting the parameter exploration")
+        if self.modeling_type == "galaxy":
+            if not fs.is_file(self.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
+            if not fs.is_file(self.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
 
     # -----------------------------------------------------------------
 
@@ -453,11 +454,44 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Adjusting the ski template for the properties of this generation ...")
 
+        # Set packages
+        self.set_npackages()
+
+        # Set self-absoprtion
+        self.set_selfabsorption()
+
+        # Set transient heating
+        self.set_transient_heating()
+
+        # Set wavelength grid
+        if self.has_wavelength_grids: self.set_wavelength_grid()
+
+        # Set dust grid
+        if self.has_dust_grids: self.set_dust_grid()
+
+    # -----------------------------------------------------------------
+
+    def set_npackages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
 
         # Set the number of photon packages per wavelength
         self.ski_template.setpackages(self.config.npackages)
+
+    # -----------------------------------------------------------------
+
+    def set_selfabsorption(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
@@ -466,6 +500,15 @@ class ParameterExplorer(FittingComponent):
         if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
         else: self.ski_template.disable_selfabsorption()
 
+    # -----------------------------------------------------------------
+
+    def set_transient_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
 
@@ -473,11 +516,29 @@ class ParameterExplorer(FittingComponent):
         if self.config.transient_heating: self.ski_template.set_transient_dust_emissivity()
         else: self.ski_template.set_grey_body_dust_emissivity()
 
+    # -----------------------------------------------------------------
+
+    def set_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # Debugging
         log.debug("Setting the name of the wavelengths file to " + fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])) + " ...")
 
         # Set the name of the wavelength grid file
         self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
+
+    # -----------------------------------------------------------------
+
+    def set_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Debugging
         log.debug("Setting the dust grid (level " + str(self.generation_info["Dust grid level"]) + ") ...")
@@ -566,7 +627,7 @@ class ParameterExplorer(FittingComponent):
             parallelization = self.launcher.parallelization_for_host(host.id)
 
             # Visualisation of the distribution of estimated runtimes
-            if self.config.visualise: plot_path = fs.join(self.visualisation_path, time.unique_name("advancedparameterexploration_runtime_" + host.id) + ".pdf")
+            if self.config.visualise: plot_path = fs.join(self.visualisation_path, time.unique_name("explorer_runtimes_" + host.id) + ".pdf")
             else: plot_path = None
 
             # Estimate the runtime for the current number of photon packages and the current remote host
@@ -609,10 +670,14 @@ class ParameterExplorer(FittingComponent):
 
                 # Get the value for this model from the generator and get the unit defined for this parameter
                 value = self.generator.parameters[label][i]
-                unit = Unit(self.parameter_units[label])
 
-                # Set the value with unit to the dictionary for this model
-                parameter_values[label] = value * unit
+                # Set value with unit
+                if self.parameter_units[label] is not None:
+                    unit = Unit(self.parameter_units[label])
+                    parameter_values[label] = value * unit
+
+                # Set dimensionless value
+                else: parameter_values[label] = value
 
             # Debugging
             log.debug("Adjusting ski file for the following model parameters:")
@@ -636,7 +701,7 @@ class ParameterExplorer(FittingComponent):
             simulation_output_path = fs.create_directory_in(simulation_path, "out")
 
             # Put the ski file with adjusted parameters into the simulation directory
-            ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
+            ski_path = fs.join(simulation_path, self.object_name + ".ski")
             self.ski_template.saveto(ski_path)
 
             # Create the SKIRT simulation definition

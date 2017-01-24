@@ -64,6 +64,14 @@ class WavelengthGridGenerator(object):
 
         # -- Attributes --
 
+        # Settings
+        self.npoints_range = None
+        self.ngrids = None
+        self.fixed = None
+        self.add_emission_lines = False
+        self.min_wavelength = None
+        self.max_wavelength = None
+
         # The wavelength grids
         self.grids = []
 
@@ -75,7 +83,7 @@ class WavelengthGridGenerator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, npoints_range, ngrids, fixed=None): # fixed wavelength points: I1 AND FUV !!
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -83,19 +91,33 @@ class WavelengthGridGenerator(object):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Generate the grids
-        self.generate(npoints_range, ngrids, fixed)
+        self.generate()
+
+        # 3. Show
+        self.show()
+
+        # 4. Write
+        self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
         :return:
         """
+
+        # Set options
+        self.npoints_range = kwargs.pop("npoints_range")
+        self.ngrids = kwargs.pop("ngrids")
+        self.fixed = kwargs.pop("fixed", None)
+        self.add_emission_lines = kwargs.pop("add_emission_lines", False)
+        self.min_wavelength = kwargs.pop("min_wavelength", None)
+        self.max_wavelength = kwargs.pop("max_wavelength", None)
 
         # Create the emission lines instance
         self.emission_lines = EmissionLines()
@@ -107,44 +129,39 @@ class WavelengthGridGenerator(object):
 
     # -----------------------------------------------------------------
 
-    def generate(self, npoints_range, ngrids, fixed=None):
+    def generate(self):
 
         """
         This function ...
-        :param npoints_range:
-        :param ngrids:
-        :param fixed:
-        :return:
+        :param:
         """
 
         # Inform the user
         log.info("Generating the wavelength grids ...")
 
         # Loop over the different number of points
-        for npoints in npoints_range.linear(ngrids):
+        for npoints in self.npoints_range.linear(self.ngrids):
 
             # Create the grid and add it to the list
-            self.create_grid(npoints, fixed=fixed)
+            self.create_grid(npoints)
 
     # -----------------------------------------------------------------
 
-    def create_grid(self, npoints, add_emission_lines=False, fixed=None):
+    def create_grid(self, npoints):
 
         """
         This function ...
         :param npoints:
-        :param add_emission_lines:
-        :param fixed:
         :return:
         """
 
         # Inform the user
-        with_without = " with " if add_emission_lines else " without "
+        with_without = " with " if self.add_emission_lines else " without "
         log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
 
         # Create the grid
-        if add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, self.emission_lines, fixed)
-        else: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, fixed=fixed)
+        if self.add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, self.emission_lines, self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength)
+        else: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, fixed=self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength)
 
         # Add the grid
         self.grids.append(grid)
@@ -157,15 +174,39 @@ class WavelengthGridGenerator(object):
         extension_npoints = subgrid_npoints["extension"]
         self.table.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints, fixed_npoints, len(grid)])
 
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
 # -----------------------------------------------------------------
 
-def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None):
+def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None, min_wavelength=None, max_wavelength=None):
 
     """
     This function ...
     :param npoints:
     :param emission_lines:
     :param fixed:
+    :param min_wavelength:
+    :param max_wavelength:
     :return:
     """
 
@@ -184,29 +225,53 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None)
         # Debugging
         log.debug("Adding the " + subgrid + " subgrid ...")
 
-        # Determine minimum, maximum and number of wavelength points for this subgrid
+        # Determine minimum, maximum
         min_lambda = limits[subgrid][0]
         max_lambda = limits[subgrid][1]
+
+        # Skip subgrids out of range
+        if min_wavelength is not None and max_lambda < min_wavelength: continue
+        if max_wavelength is not None and min_lambda > max_wavelength: continue
+
+        # Determine the normal number of wavelength points for this subgrid
         points = int(round(relpoints[subgrid] * npoints))
 
-        subgrid_npoints[subgrid] = points
+        # Correct the number of wavelengths based on the given min and max wavelength
+        #if min_wavelength is not None: min_lambda = max(min_lambda, min_wavelength)
+        #if max_wavelength is not None: max_lambda = min(max_lambda, max_wavelength)
 
         # Generate and add the wavelength points
-        wavelengths += make_grid(min_lambda, max_lambda, points)
+        wavelengths_subgrid_original = make_grid(min_lambda, max_lambda, points)
+
+        # Filter based on given boundaries
+        wavelengths_subgrid = []
+        for wav in wavelengths_subgrid_original:
+            if min_wavelength is not None and wav < min_wavelength: continue
+            if max_wavelength is not None and wav > max_wavelength: continue
+            wavelengths_subgrid.append(wav)
+
+        # Set the number of points for this subgrid
+        subgrid_npoints[subgrid] = len(wavelengths_subgrid)
+
+        # Add the wavelength points
+        wavelengths += wavelengths_subgrid
 
     # Add the emission lines
     emission_npoints = 0
     if emission_lines is not None:
 
         # Add the mission lines
-        wavelengths = add_emission_lines(wavelengths, emission_lines)
+        wavelengths = add_emission_lines(wavelengths, emission_lines, min_wavelength, max_wavelength)
         emission_npoints = len(emission_lines)
 
     # Add fixed wavelength points
     fixed_npoints = 0
     if fixed is not None:
         fixed_npoints = len(fixed)
-        for wavelength in fixed: wavelengths.append(wavelength)
+        for wavelength in fixed:
+            if min_wavelength is not None and wavelength < min_wavelength: continue
+            if max_wavelength is not None and wavelength > max_wavelength: continue
+            wavelengths.append(wavelength)
 
     # Sort the wavelength points
     wavelengths = sorted(wavelengths)
@@ -336,12 +401,14 @@ def create_one_nested_log_wavelength_grid(wrange, npoints, wrange_zoom, npoints_
 
 # -----------------------------------------------------------------
 
-def add_emission_lines(wavelengths, emission_lines):
+def add_emission_lines(wavelengths, emission_lines, min_wavelength=None, max_wavelength=None):
 
     """
     This function ...
     :param wavelengths:
     :param emission_lines:
+    :param min_wavelength:
+    :param max_wavelength:
     :return:
     """
 
@@ -352,6 +419,9 @@ def add_emission_lines(wavelengths, emission_lines):
         center = line.center
         left = line.left
         right = line.right
+
+        if min_wavelength is not None and center < min_wavelength: continue
+        if max_wavelength is not None and center > max_wavelength: continue
 
         # logcenter = np.log10(center)
         logleft = np.log10(left if left > 0 else center) - logdelta

@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ..core.frame import sum_frames_quadratically
 from ..basics.coordinatesystem import CoordinateSystem
@@ -36,6 +33,7 @@ from ..core.kernel import ConvolutionKernel
 from ..core.remote import RemoteImage
 from ..core.frame import Frame
 from ...core.remote.python import RemotePythonSession
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -345,7 +343,7 @@ class ImagePreparer(Configurable):
         # Run the unit conversion
         #self.unit_converter.run(self.image)
 
-        assert self.image.unit == Unit("Jy/pix")
+        assert self.image.unit == "Jy"
 
         # Get pixelscale
         pixelscale = self.image.average_pixelscale
@@ -360,7 +358,7 @@ class ImagePreparer(Configurable):
         self.image *= conversion_factor
 
         # Set the new unit
-        self.image.unit = Unit("MJy/sr")
+        self.image.unit = u("MJy/sr")
 
         # Write intermediate result
         if self.config.write_steps: self.write_intermediate_result("converted_unit.fits")

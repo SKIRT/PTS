@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.modeling.models import Gaussian2D
 
 # Import the relevant PTS classes and modules
@@ -27,8 +26,8 @@ from pts.magic.core.source import Source
 from pts.magic.tools import statistics, plotting, fitting
 from pts.magic.region.ellipse import PixelEllipseRegion
 from pts.magic.basics.vector import Extent
-
 from .component import DecompositionComponent
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -282,7 +281,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
         exit()
 
         # FWHM of all the images
-        fwhm = 11.18 * Unit("arcsec")
+        fwhm = 11.18 * u("arcsec")
         fwhm_pix = (fwhm / frame.average_pixelscale).to("pix").value
         sigma = fwhm_pix * statistics.fwhm_to_sigma
 
@@ -306,7 +305,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
         rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
         plotting.plot_peak_model(source.cutout, rel_center.x, rel_center.y, rel_model)
 
-        model_fwhm_pix = fitting.fwhm(model) * Unit("pix")
+        model_fwhm_pix = fitting.fwhm(model) * u("pix")
         model_fwhm = (model_fwhm_pix * frame.average_pixelscale).to("arcsec")
 
         print("Model FWHM: ", model_fwhm)

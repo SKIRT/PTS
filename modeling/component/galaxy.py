@@ -71,8 +71,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.components_path = None
         self.deprojection_path = None
 
-        # The path to the observed SEDs
-        self.observed_sed_path = None
+        # The path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = None
 
         # The path to the maps
@@ -171,9 +170,6 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = fs.create_directory_in(self.config.path, "maps")
         self.components_path = fs.create_directory_in(self.config.path, "components")
         self.deprojection_path = fs.create_directory_in(self.config.path, "deprojection")
-
-        # Set the path to the observed SED
-        self.observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
 
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
@@ -286,80 +282,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Get the HYPERLEDA name from the configuration
         return self.modeling_configuration.hyperleda_name
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return ObservedSED.from_file(self.observed_sed_path)
-
-    # -----------------------------------------------------------------
-
-    def observed_flux(self, fltr, unit=None, add_unit=True):
-
-        """
-        This function ...
-        :param fltr:
-        :param unit:
-        :param add_unit:
-        :return:
-        """
-
-        return self.observed_sed.flux_for_filter(fltr, unit=unit, add_unit=add_unit)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.observed_sed.filters()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def observed_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return [str(fltr) for fltr in self.observed_filters]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sed_filters(self):
-
-        """
-        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
-        :return:
-        """
-
-        return self.observed_filters
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def sed_filter_names(self):
-
-        """
-        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
-        :return:
-        """
-
-        return self.observed_filter_names
 
     # -----------------------------------------------------------------
 

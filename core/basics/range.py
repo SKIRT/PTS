@@ -135,6 +135,18 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 0.5 * (self.min + self.max)
+
+    # -----------------------------------------------------------------
+
     def linear(self, npoints, as_list=False, fancy=False):
 
         """
@@ -276,7 +288,7 @@ class IntegerRange(Range):
         """
 
         real = super(IntegerRange, self).linear(npoints)
-        integers = list(set(map(int, real)))
+        integers = sorted(list(set(map(int, real))))
 
         if as_list: return integers
         else: return np.array(integers)
@@ -293,7 +305,7 @@ class IntegerRange(Range):
         """
 
         real = super(IntegerRange, self).log(npoints)
-        integers = list(set(map(int, real)))
+        integers = sorted(list(set(map(int, real))))
 
         if as_list: return integers
         else: return np.array(integers)
@@ -310,7 +322,7 @@ class IntegerRange(Range):
         """
 
         real = super(IntegerRange, self).sqrt(npoints)
-        integers = list(set(map(int, real)))
+        integers = sorted(list(set(map(int, real))))
 
         if as_list: return integers
         else: return np.array(integers)

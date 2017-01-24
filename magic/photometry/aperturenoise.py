@@ -26,7 +26,6 @@ from matplotlib import font_manager
 from skimage.measure import block_reduce
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
@@ -48,6 +47,7 @@ from ..region.circle import PixelCircleRegion
 from ..region.composite import PixelCompositeRegion
 from ..core.source import Source
 from ..misc import chrisfuncs
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -685,7 +685,7 @@ class ExactApertureNoiseCalculator(Configurable):
         #shape = (self.cutout.shape[1], self.cutout.shape[0])
         center = Position(int(round(self.centre_j)), int(round(self.centre_i)))
         ratio = self.adj_axial_ratio
-        angle = self.adj_angle * Unit("deg")
+        angle = self.adj_angle * u("deg")
 
         distance_ell = Frame(distance_ellipse(self.cutout.shape, center, ratio, angle))
 
@@ -746,7 +746,7 @@ class ExactApertureNoiseCalculator(Configurable):
             #random_r_list = adj_semimin_pix + np.abs(np.random.normal(loc=0.0, scale=5.0 * self.adj_semimaj_pix_full, size=random_size))
             random_normalized_r = np.random.uniform(min_random_r, max_random_r)
 
-            unrotated_ellipse_angle = (random_theta - self.adj_angle) * Unit("deg")
+            unrotated_ellipse_angle = (random_theta - self.adj_angle) * u("deg")
 
             #print("AXIAL RATIO", self.adj_axial_ratio)
             #print("UNROTATED ELLIPSE ANGLE", unrotated_ellipse_angle)

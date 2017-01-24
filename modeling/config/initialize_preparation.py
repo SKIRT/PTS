@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
+from pts.magic.config.find_sources import definition as sources_definition
 
 # -----------------------------------------------------------------
 
@@ -22,5 +23,8 @@ definition.add_flag("visualise", "make visualisations")
 
 # Remote source detection
 definition.add_optional("remote", "string", "remote host on which to run the source finder", choices=find_host_ids())
+
+# Add section for the source finder
+definition.import_section("sources", "options for the source finder", sources_definition)
 
 # -----------------------------------------------------------------

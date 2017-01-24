@@ -28,7 +28,7 @@ from ..maps.stars.young import YoungStellarMapMaker
 from ..maps.stars.ionizing import IonizingStellarMapMaker
 from ..maps.dust.dust import DustMapMaker
 from ..fitting.configuration import FittingConfigurer
-from ..fitting.initialization import FittingInitializer
+from ..fitting.initialization.galaxy import GalaxyFittingInitializer
 from ...core.basics.range import QuantityRange
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
@@ -611,7 +611,7 @@ class GalaxyModeler(Modeler):
         if "configure_fit" not in self.history: self.configure_fit()
 
         # Initialize the fitting
-        if "initialize_fit" not in self.history: self.initialize_fit()
+        if "initialize_fit_galaxy" not in self.history: self.initialize_fit()
 
         # Load the generations table
         generations = get_generations_table(self.modeling_path)
@@ -687,10 +687,10 @@ class GalaxyModeler(Modeler):
         log.info("Initializing the fitting ...")
 
         # Create the fitting initializer
-        initializer = FittingInitializer()
+        initializer = GalaxyFittingInitializer()
 
         # Add an entry to the history
-        self.history.add_entry(FittingInitializer.command_name())
+        self.history.add_entry(GalaxyFittingInitializer.command_name())
 
         # Set the working directory
         initializer.config.path = self.modeling_path

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, spectral
+from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
 from ..basics.curve import WavelengthCurve, FilterCurve
@@ -25,7 +25,7 @@ from ..tools import tables
 from ..basics.filter import Filter
 from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
-from ..basics.unit import parse_unit
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -129,8 +129,8 @@ class SED(WavelengthCurve):
         sed = cls(photometry_unit=photometry_unit, density=density)
 
         # Parse units
-        wavelength_unit = parse_unit(wavelength_unit)
-        photometry_unit = parse_unit(photometry_unit)
+        wavelength_unit = u(wavelength_unit)
+        photometry_unit = u(photometry_unit)
 
         # Add the entries
         for index in range(len(wavelengths)):
@@ -194,8 +194,8 @@ class SED(WavelengthCurve):
         for i in range(len(wavelength_column)):
 
             # Get the flux density in W / m2 and the wavelength in micron
-            neutral_fluxdensity = flux_column[i] * Unit("W/m2")
-            wavelength = wavelength_column[i] * Unit("micron")
+            neutral_fluxdensity = flux_column[i] * PhotometricUnit("W/m2")
+            wavelength = wavelength_column[i] * u("micron")
 
             # Convert to Jansky (2 methods give same result)
             # jansky_ = unitconversion.neutral_fluxdensity_to_jansky(neutral_fluxdensity, wavelength)
@@ -216,8 +216,8 @@ class SED(WavelengthCurve):
         for index in range(len(wavelength_column)):
 
             # Get values
-            wavelength = wavelength_column[index] * Unit("micron")
-            flux = jansky_column * Unit("Jy")
+            wavelength = wavelength_column[index] * u("micron")
+            flux = jansky_column * PhotometricUnit("Jy")
 
             # Add point
             sed.add_point(wavelength, flux)
@@ -433,8 +433,8 @@ class ObservedSED(FilterCurve):
                 # If a target unit is specified, convert
                 if unit is not None:
 
-                    error_min = error_min.to(unit).value * Unit(unit)
-                    error_plus = error_plus.to(unit).value * Unit(unit)
+                    error_min = error_min.to(unit).value * u(unit)
+                    error_plus = error_plus.to(unit).value * u(unit)
 
                 if not add_unit:
 

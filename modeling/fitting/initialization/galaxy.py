@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.initialization Contains the FittingInitializer class.
+## \package pts.modeling.fitting.initialization.galaxy Contains the GalaxyFittingInitializer class.
 
 # -----------------------------------------------------------------
 
@@ -21,24 +21,25 @@ from astropy import constants
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from .component import FittingComponent
-from ...core.tools import tables
-from ...core.tools import filesystem as fs
-from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
-from ...core.data.sun import Sun
-from ..core.mappings import Mappings
-from ...magic.tools import wavelengths
-from ...core.tools.logging import log
-from .wavelengthgrids import WavelengthGridGenerator
-from .dustgrids import DustGridGenerator
-from ...core.basics.range import IntegerRange, RealRange, QuantityRange
-from ..basics.models import DeprojectionModel3D
-from ...core.basics.configuration import write_mapping
-from ...core.basics.map import Map
+from ..component import FittingComponent
+from ....core.tools import tables
+from ....core.tools import filesystem as fs
+from ...basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
+from ....core.data.sun import Sun
+from ...core.mappings import Mappings
+from ....magic.tools import wavelengths
+from ....core.tools.logging import log
+from ..wavelengthgrids import WavelengthGridGenerator
+from ..dustgrids import DustGridGenerator
+from ....core.basics.range import IntegerRange, RealRange, QuantityRange
+from ...basics.models import DeprojectionModel3D
+from ....core.basics.configuration import write_mapping
+from ....core.basics.map import Map
+from ...component.galaxy import GalaxyModelingComponent
 
 # -----------------------------------------------------------------
 
-class FittingInitializer(FittingComponent):
+class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
     
     """
     This class...
@@ -53,9 +54,8 @@ class FittingInitializer(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(FittingInitializer, self).__init__(config)
-
-        # -- Attributes --
+        FittingComponent.__init__(self, config)
+        GalaxyModelingComponent.__init__(self, config)
 
         # The deprojection model
         self.deprojection = None
@@ -86,15 +86,16 @@ class FittingInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Create the wavelength grids
         self.create_wavelength_grids()
@@ -119,15 +120,17 @@ class FittingInitializer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(FittingInitializer, self).setup()
+        FittingComponent.setup(self, **kwargs)
+        GalaxyModelingComponent.setup(self, **kwargs)
 
         # Solar properties
         sun = Sun()
@@ -159,7 +162,9 @@ class FittingInitializer(FittingComponent):
         fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
 
         # Generate the wavelength grids
-        self.wg_generator.run(self.config.wg.npoints_range, self.config.wg.ngrids, fixed=fixed)
+        self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
+                              fixed=fixed, add_emission_lines=self.config.wg.add_emission_lines,
+                              min_wavelength=self.config.wg.min_wavelength, max_wavelength=self.config.wg.max_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -298,8 +303,8 @@ class FittingInitializer(FittingComponent):
         # Set the stellar and dust components
         self.set_components()
 
-        # Set transient dust emissivity
-        self.ski_template.set_transient_dust_emissivity()
+        # Set the dust emissivity
+        self.set_dust_emissivity()
 
         # Set the lowest-resolution dust grid
         self.ski_template.set_dust_grid(self.dg_generator.grids[0])
@@ -307,9 +312,8 @@ class FittingInitializer(FittingComponent):
         # Set all-cells dust library
         self.ski_template.set_allcells_dust_lib()
 
-        # Dust self-absorption
-        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
-        else: self.ski_template.disable_selfabsorption()
+        # Set the dust selfabsorption
+        self.set_selfabsorption()
 
         # Disable all writing options
         self.ski_template.disable_all_writing_options()
@@ -568,6 +572,41 @@ class FittingInitializer(FittingComponent):
         #self.ski_template.set_dust_component_mass(0, dust_mass) # dust mass
 
         self.ski_template.set_labeled_value("dust_mass", dust_mass) # keep label
+
+    # -----------------------------------------------------------------
+
+    def set_dust_emissivity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the dust emissivity ...")
+
+        # Set dust emissivity if present
+        if self.ski_template.has_dust_emissivity:
+
+            # Enable or disable
+            if self.config.transient_heating: self.ski_template.set_transient_dust_emissivity()
+            else: self.ski_template.set_grey_body_dust_emissivity()
+
+    # -----------------------------------------------------------------
+
+    def set_selfabsorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the dust self-absorption ...")
+
+        # Dust self-absorption
+        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
+        else: self.ski_template.disable_selfabsorption()
 
     # -----------------------------------------------------------------
 
