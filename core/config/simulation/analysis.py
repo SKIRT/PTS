@@ -43,6 +43,6 @@ definition.sections["misc"].add_optional("observation_instruments", "string_list
 definition.sections["misc"].add_optional("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", choices=find_host_ids(schedulers=False))
 definition.sections["misc"].add_optional("images_wcs", "file_path", "the path to the FITS file for which the WCS should be set as the WCS of the recreated observed images")
 definition.sections["misc"].add_optional("images_unit", "string", "the unit to which the recreated observed images should be converted")
-definition.sections["misc"].add_optional("images_kernels", "dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names")
+definition.sections["misc"].add_optional("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names")
 
 # -----------------------------------------------------------------

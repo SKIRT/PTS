@@ -18,9 +18,6 @@ import requests
 from lxml import html
 from collections import OrderedDict
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ..core.kernel import ConvolutionKernel
 from ...core.tools import introspection
@@ -28,6 +25,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import archive
 from ...core.basics.filter import Filter
+from ...core.basics.unit import parse_unit
 
 # -----------------------------------------------------------------
 
@@ -44,25 +42,25 @@ aniano_psf_files_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_201
 # -----------------------------------------------------------------
 
 # Reference: Common-Resolution Convolution Kernels for Space- and Ground-Based Telescopes (G. Aniano et. al)
-fwhms = {"GALEX_FUV": 4.48 * Unit("arcsec"),
-         "GALEX_NUV": 5.05 * Unit("arcsec"),
-         "IRAC_3.6": 1.90 * Unit("arcsec"),
-         "IRAC_4.5": 1.81 * Unit("arcsec"),
-         "IRAC_5.8": 2.11 * Unit("arcsec"),
-         "IRAC_8.0": 2.82 * Unit("arcsec"),
-         "WISE_FRAME_3.4": 5.79 * Unit("arcsec"),
-         "WISE_FRAME_4.6": 6.37 * Unit("arcsec"),
-         "WISE_FRAME_11.6": 6.60 * Unit("arcsec"),
-         "WISE_FRAME_22.1": 11.89 * Unit("arcsec"),
-         "MIPS_24": 6.43 * Unit("arcsec"),
-         "MIPS_70": 18.74 * Unit("arcsec"),
-         "MIPS_160": 38.78 * Unit("arcsec"),
-         "PACS_70": 5.67 * Unit("arcsec"),
-         "PACS_100": 7.04 * Unit("arcsec"),
-         "PACS_160": 11.18 * Unit("arcsec"),
-         "SPIRE_250": 18.15 * Unit("arcsec"),
-         "SPIRE_350": 24.88 * Unit("arcsec"),
-         "SPIRE_500": 36.09 * Unit("arcsec")}
+fwhms = {"GALEX_FUV": 4.48 * parse_unit("arcsec"),
+         "GALEX_NUV": 5.05 * parse_unit("arcsec"),
+         "IRAC_3.6": 1.90 * parse_unit("arcsec"),
+         "IRAC_4.5": 1.81 * parse_unit("arcsec"),
+         "IRAC_5.8": 2.11 * parse_unit("arcsec"),
+         "IRAC_8.0": 2.82 * parse_unit("arcsec"),
+         "WISE_FRAME_3.4": 5.79 * parse_unit("arcsec"),
+         "WISE_FRAME_4.6": 6.37 * parse_unit("arcsec"),
+         "WISE_FRAME_11.6": 6.60 * parse_unit("arcsec"),
+         "WISE_FRAME_22.1": 11.89 * parse_unit("arcsec"),
+         "MIPS_24": 6.43 * parse_unit("arcsec"),
+         "MIPS_70": 18.74 * parse_unit("arcsec"),
+         "MIPS_160": 38.78 * parse_unit("arcsec"),
+         "PACS_70": 5.67 * parse_unit("arcsec"),
+         "PACS_100": 7.04 * parse_unit("arcsec"),
+         "PACS_160": 11.18 * parse_unit("arcsec"),
+         "SPIRE_250": 18.15 * parse_unit("arcsec"),
+         "SPIRE_350": 24.88 * parse_unit("arcsec"),
+         "SPIRE_500": 36.09 * parse_unit("arcsec")}
 
 # -----------------------------------------------------------------
 
@@ -121,19 +119,20 @@ class AnianoKernels(object):
 
     # -----------------------------------------------------------------
 
-    def get_kernel(self, from_filter, to_filter, high_res=True, fwhm=None):
+    def get_kernel(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None):
 
         """
         This function ...
         :param from_filter:
         :param to_filter:
         :param high_res:
-        :param fwhm:
+        :param from_fwhm:
+        :param to_fwhm:
         :return:
         """
 
         # Get the local path to the kernel (will be downloaded if necessary)
-        kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, fwhm=fwhm, return_name=True)
+        kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
 
         # Load the kernel frame
         kernel = ConvolutionKernel.from_file(kernel_path)
@@ -142,9 +141,9 @@ class AnianoKernels(object):
         if kernel.fwhm is None:
 
             # Find the appropriate FWHM
-            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * Unit("arcsec")
+            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * parse_unit("arcsec")
             elif to_psf_name in fwhms: fwhm = fwhms[to_psf_name]
-            else: fwhm = None
+            else: fwhm = to_fwhm
 
             # Set the FWHM of the kernel
             kernel.fwhm = fwhm
@@ -214,7 +213,7 @@ class AnianoKernels(object):
             self.download_kernel(kernel_file_basename)
 
             # Find the appropriate FWHM
-            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * Unit("arcsec")
+            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * parse_unit("arcsec")
             elif to_psf_name in fwhms: fwhm = fwhms[to_psf_name]
             else: fwhm = None
 
@@ -244,7 +243,7 @@ class AnianoKernels(object):
         psf = ConvolutionKernel.from_file(psf_path)
 
         # Get the FWHM of the PSF
-        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * Unit("arcsec")
+        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * parse_unit("arcsec")
         elif psf_name in fwhms: fwhm = fwhms[psf_name]
         else: fwhm = None
 
@@ -279,7 +278,7 @@ class AnianoKernels(object):
             self.download_psf(basename)
 
             # Get the FWHM of the PSF
-            if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * Unit("arcsec")
+            if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * parse_unit("arcsec")
             elif psf_name in fwhms: fwhm = fwhms[psf_name]
             else: fwhm = None
 
@@ -304,7 +303,7 @@ class AnianoKernels(object):
         psf_name = aniano_names[str(fltr)]
 
         # Get the FWHM of the PSF
-        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * Unit("arcsec")
+        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * parse_unit("arcsec")
         elif psf_name in fwhms: fwhm = fwhms[psf_name]
         else: fwhm = None
 

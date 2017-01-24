@@ -141,7 +141,7 @@ denominator = 4. * math.pi * prop.distance**2.
 
 sed = mappings_initial.sed
 wavelengths = sed.wavelengths(unit="micron")
-luminosities = sed.luminosities(unit="W/micron")
+luminosities = sed.photometry(unit="W/micron")
 
 fluxes = []
 

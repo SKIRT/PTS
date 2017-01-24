@@ -18,7 +18,6 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.coordinates import Angle
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ..basics.range import IntegerRange, RealRange, QuantityRange
@@ -26,7 +25,7 @@ from ...magic.basics.vector import Vector
 from . import filesystem as fs
 from ..basics.filter import Filter, identifiers
 from ..basics.errorbar import ErrorBar
-from ..basics.unit import PhotometricUnit
+from ..basics.unit import PhotometricUnit, parse_unit
 
 # -----------------------------------------------------------------
 
@@ -470,43 +469,73 @@ def dictionary(argument):
     :return:
     """
 
-    d = eval(argument)
+    d = eval("{" + argument + "}")
     if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
     return d
 
 # -----------------------------------------------------------------
 
-def simulation_ids(string):
+def string_string_dictionary(argument):
 
     """
-    The IDs of remote simulations
-    :param string:
+    This function ...
+    :param argument:
     :return:
     """
 
-    # Initialize a dictionary
-    delete = dict()
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not isinstance(value, basestring): raise ValueError("All values must be strings")
+    return d
 
-    # If the string is empty, raise an error
-    if not string.strip(): raise ValueError("No input for argument")
+# -----------------------------------------------------------------
 
-    # Split the string by the ';' character, so that each part represents a different remote host
-    for entry in string.split(";"):
+def string_filepath_dictionary(argument):
 
-        # Split again to get the host ID
-        splitted = entry.split(":")
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
 
-        # Get the host ID
-        host_id = splitted[0]
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        d[key] = file_path(value) # check if parsing as filepath succeeds
+    return d
 
-        # Get the simulation ID's
-        values = integer_list(splitted[1])
+# -----------------------------------------------------------------
 
-        # Add the simulation ID's to the dictionary for the correspoding host ID
-        delete[host_id] = values
+def string_unit_dictionary(argument):
 
-    # Return the dictionary with ID's of simulations that should be deleted
-    return delete
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        d[key] = unit(value)
+    return d
+
+# -----------------------------------------------------------------
+
+def string_photometricunit_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        d[key] = photometric_unit(value)
+    return d
 
 # -----------------------------------------------------------------
 
@@ -518,7 +547,7 @@ def unit(argument):
     :return:
     """
 
-    return Unit(argument)
+    return parse_unit(argument) # can be photometric, but doesn't need to be
 
 # -----------------------------------------------------------------
 
@@ -562,7 +591,8 @@ def quantity(argument):
         except ValueError:
             units = argument[-1:] + units
             argument = argument[:-1]
-    return number * Unit(units.strip())
+    if units == "": raise ValueError("Unit is not specified")
+    return number * parse_unit(units.strip())
 
 # -----------------------------------------------------------------
 

@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 
-# Import astronomical modules
-import astropy.units as u
-
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
 from ..region.rectangle import PixelRectangleRegion
@@ -27,6 +24,7 @@ from ..tools import catalogs
 from ...core.basics.configurable import Configurable
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
+from ...core.basics.unit import parse_unit
 
 # -----------------------------------------------------------------
 
@@ -334,16 +332,16 @@ class CatalogSynchronizer(Configurable):
                 distance = (old_position - new_position).norm
 
                 # Calculate the error on the star's position in the old catalog
-                old_error_ra_mas = old_stellar_catalog["Right ascension error"][j] * u.Unit("mas")
+                old_error_ra_mas = old_stellar_catalog["Right ascension error"][j] * parse_unit("mas")
                 old_error_ra_deg = old_error_ra_mas.to("deg").value
-                old_error_dec_mas = old_stellar_catalog["Declination error"][j] * u.Unit("mas")
+                old_error_dec_mas = old_stellar_catalog["Declination error"][j] * parse_unit("mas")
                 old_error_dec_deg = old_error_dec_mas.to("deg").value
                 old_error = Extent(old_error_ra_deg, old_error_dec_deg).norm
 
                 # Calculate the error on the star's position in the new catalog
-                new_error_ra_mas = self.stellar_catalog["Right ascension error"][i] * u.Unit("mas")
+                new_error_ra_mas = self.stellar_catalog["Right ascension error"][i] * parse_unit("mas")
                 new_error_ra_deg = new_error_ra_mas.to("deg").value
-                new_error_dec_mas = self.stellar_catalog["Declination error"][i] * u.Unit("mas")
+                new_error_dec_mas = self.stellar_catalog["Declination error"][i] * parse_unit("mas")
                 new_error_dec_deg = new_error_dec_mas.to("deg").value
                 new_error = Extent(new_error_ra_deg, new_error_dec_deg).norm
 

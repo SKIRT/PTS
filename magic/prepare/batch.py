@@ -17,7 +17,6 @@ from multiprocessing import Pool
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
@@ -622,7 +621,7 @@ class BatchImagePreparer(Configurable):
             log.debug("Converting the units of the '" + label + "' image ...")
 
             # Check the units of the image
-            assert image.unit == Unit("Jy/pix")
+            assert image.unit == "Jy"
 
             # Get pixelscale
             pixelscale = image.average_pixelscale
@@ -637,7 +636,7 @@ class BatchImagePreparer(Configurable):
             image *= conversion_factor
 
             # We can only do unit conversion to MJy/sr at the moment
-            assert self.config.unit_conversion.to_unit == Unit("MJy/sr")
+            assert self.config.unit_conversion.to_unit == "MJy/sr"
 
             # Set the new unit
             image.unit = self.config.unit_conversion.to_unit

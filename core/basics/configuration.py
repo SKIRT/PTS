@@ -34,14 +34,14 @@ class Configuration(Map):
     This function ...
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
         """
 
         # Call the constructor of the base class
-        super(Configuration, self).__init__()
+        super(Configuration, self).__init__(*args, **kwargs)
 
         # The path
         self._path = None

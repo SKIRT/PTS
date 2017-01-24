@@ -25,6 +25,7 @@ from ..tools import tables
 from ..basics.filter import Filter
 from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
+from ..basics.unit import parse_unit
 
 # -----------------------------------------------------------------
 
@@ -42,14 +43,19 @@ class SED(WavelengthCurve):
         :param kwargs:
         """
 
-        # Call the initialize function of the base class
-        unit = kwargs.pop("photometry_unit")
-        density = kwargs.pop("density")
-        unit = PhotometricUnit(unit, density=density)
+        if "photometry_unit" in kwargs: from_astropy = False
+        else: from_astropy = True
 
-        kwargs["y_name"] = "Photometry"
-        kwargs["y_description"] = "Photometric points"
-        kwargs["y_unit"] = unit
+        if not from_astropy:
+
+            # Call the initialize function of the base class
+            unit = kwargs.pop("photometry_unit")
+            density = kwargs.pop("density")
+            unit = PhotometricUnit(unit, density=density)
+
+            kwargs["y_name"] = "Photometry"
+            kwargs["y_description"] = "Photometric points"
+            kwargs["y_unit"] = unit
 
         # Call the constructor of the base class
         super(SED, self).__init__(*args, **kwargs)
@@ -120,7 +126,11 @@ class SED(WavelengthCurve):
         photometry_unit = PhotometricUnit(photometry_unit, density=density)
 
         # Create new SED
-        sed = cls(unit=photometry_unit, density=density)
+        sed = cls(photometry_unit=photometry_unit, density=density)
+
+        # Parse units
+        wavelength_unit = parse_unit(wavelength_unit)
+        photometry_unit = parse_unit(photometry_unit)
 
         # Add the entries
         for index in range(len(wavelengths)):
@@ -131,6 +141,9 @@ class SED(WavelengthCurve):
 
             # Add
             sed.add_point(wavelength, phot)
+
+        # Return the sed
+        return sed
 
     # -----------------------------------------------------------------
 

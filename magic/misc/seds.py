@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astroquery.vizier import Vizier
-from astropy.units import Unit, spectral
+from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
 from ...core.data.sed import ObservedSED
@@ -28,6 +28,7 @@ from ...core.basics.configurable import Configurable
 from ..tools import catalogs
 from ...modeling.preparation import unitconversion
 from ...core.tools import formatting as fmt
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -1309,15 +1310,15 @@ class SEDFetcher(Configurable):
         # e_FNII: Uncertainty in NII (aW/m2)
 
         # H alpha
-        ha_flux = table["FHa"][galaxy_index] * Unit("aW/m2")
-        ha_flux_error = table["e_FHa"][galaxy_index] * Unit("aW/m2")
+        ha_flux = table["FHa"][galaxy_index] * u("aW/m2")
+        ha_flux_error = table["e_FHa"][galaxy_index] * u("aW/m2")
 
         # NII
-        n2_flux = table["FNII"][galaxy_index] * Unit("aW/m2")
-        n2_flux_error = table["e_FNII"][galaxy_index] * Unit("aW/m2")
+        n2_flux = table["FNII"][galaxy_index] * u("aW/m2")
+        n2_flux_error = table["e_FNII"][galaxy_index] * u("aW/m2")
 
         ha_filter = self.filters["Ha"]
-        ha_wavelength = ha_filter.centerwavelength() * Unit("micron")
+        ha_wavelength = ha_filter.centerwavelength() * u("micron")
         ha_frequency = ha_wavelength.to("Hz", equivalencies=spectral())
 
         # Calculate flux density

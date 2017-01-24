@@ -18,7 +18,11 @@ import bisect
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, Quantity
+from astropy.units import Quantity
+
+# Import the relevant PTS classes and modules
+from .unit import parse_unit as u
+from .unit import represent_unit as ru
 
 # -----------------------------------------------------------------
 
@@ -358,8 +362,6 @@ class RealRange(Range):
 
         return cls(-0., 0.)
 
-
-
 # -----------------------------------------------------------------
 
 class QuantityRange(Range):
@@ -392,7 +394,7 @@ class QuantityRange(Range):
         elif (not min_is_quantity) and (not max_is_quantity):
 
             if unit is None: raise ValueError("Unit must be specified if min_value and max_value are not quantities")
-            elif isinstance(unit, basestring): unit = Unit(unit)
+            elif isinstance(unit, basestring): unit = u(unit)
 
         else: raise ValueError("min_value and max_value must be either both quantities or both floats (with unit specified seperately)")
 
@@ -488,6 +490,28 @@ class QuantityRange(Range):
 
         # Return the result (list or quantity)
         return result
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return str(self.min.value) + " " + ru(self.min.unit) + " > " + str(self.max.value) + " " + ru(self.max.unit)
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return repr(self.min.value) + " " + ru(self.min.unit) + " > " + repr(self.max.value) + " " + ru(self.max.unit)
 
 # -----------------------------------------------------------------
 

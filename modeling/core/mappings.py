@@ -149,7 +149,7 @@ class Mappings(object):
         """
 
         #luminosity = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
-        luminosity = fltr.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.luminosities(unit="W/micron", asarray=True)) # also in W/micron
+        luminosity = fltr.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.photometry(unit="W/micron", asarray=True)) # also in W/micron
         luminosity = luminosity * Unit("W/micron")
 
         # Return the luminosity in the desired unit

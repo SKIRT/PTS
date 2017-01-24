@@ -18,10 +18,7 @@ from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization import FittingInitializer
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
-from ..component.sed import get_ski_template, get_sed
-from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
-from ...core.basics.map import Map
-from ..config.parameters import default_units, possible_parameter_types_descriptions
+from ..component.sed import get_ski_template, get_observed_sed
 
 # -----------------------------------------------------------------
 
@@ -134,7 +131,7 @@ class SEDModeler(Modeler):
         # Inform the user
         log.info("Configuring the fitting ...")
 
-        # Create configuration
+        # Create configuration for the FittingConfigurer
         config = dict()
 
         # Load the ski template, get the free parameters
@@ -142,26 +139,11 @@ class SEDModeler(Modeler):
         free_parameter_names = ski.labels
 
         # Load the SED, get the fitting filters
-        sed = get_sed(self.config.path)
+        sed = get_observed_sed(self.config.path)
         fitting_filter_names = sed.filter_names()
 
-        # Prompt for the parameter types
-        definition = ConfigurationDefinition()
-        for name in free_parameter_names: definition.add_required(name + "_type", "string", "type of the '" + name + "' parameter", choices=possible_parameter_types_descriptions)
-        setter = InteractiveConfigurationSetter("Parameter types")
-        types_config = setter.run(definition)
-
-        # Create maps of the parameter types and default units
-        types = Map()
-        units = Map()
-        for name in free_parameter_names:
-            types[name] = types_config[name + "_type"]
-            units[name] = default_units[types[name]]
-
-        # Set free parameters
+        # Set free parameters and fitting filters
         config["parameters"] = free_parameter_names
-        config["types"] = types
-        config["units"] = units
         config["filters"] = fitting_filter_names
 
         # Create the fitting configurer

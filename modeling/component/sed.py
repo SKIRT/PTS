@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
 from ...core.tools import filesystem as fs
@@ -63,14 +66,50 @@ class SEDModelingComponent(ModelingComponent):
         super(SEDModelingComponent, self).setup()
 
         # Set the SED path
-        self.sed_path = get_sed_file_path(self.config.path)
+        self.sed_path = get_observed_sed_file_path(self.config.path)
 
         # Set the ski template path
         self.ski_path = get_ski_template_path(self.config.path)
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed(self):
+
+        """
+        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
+        :return:
+        """
+
+        return get_observed_sed(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_filters(self):
+
+        """
+        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
+        :return:
+        """
+
+        return self.observed_sed.filters()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_filter_names(self):
+
+        """
+        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.sed_filters]
+
 # -----------------------------------------------------------------
 
-def get_sed_file_path(modeling_path):
+def get_observed_sed_file_path(modeling_path):
 
     """
     This function ...
@@ -81,7 +120,7 @@ def get_sed_file_path(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_sed(modeling_path):
+def get_observed_sed(modeling_path):
 
     """
     This function ...
@@ -89,7 +128,7 @@ def get_sed(modeling_path):
     :return:
     """
 
-    return ObservedSED.from_file(get_sed_file_path(modeling_path))
+    return ObservedSED.from_file(get_observed_sed_file_path(modeling_path))
 
 # -----------------------------------------------------------------
 

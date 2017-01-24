@@ -192,7 +192,7 @@ class ModelingSetupTool(Configurable):
         definition.add_required("method", "string", "method to use for the modeling", choices=modeling_methods)
 
         # Create configuration setter
-        setter = InteractiveConfigurationSetter("galaxy modeling", "options for 3D modeling of a galaxy")
+        setter = InteractiveConfigurationSetter("galaxy modeling", "options for 3D modeling of a galaxy", add_cwd=False, add_logging=False)
 
         # Create the object config
         self.object_config = setter.run(definition)
@@ -254,7 +254,7 @@ class ModelingSetupTool(Configurable):
         definition.add_flag("use_sed_file", "import an SED file produced with PTS (instead of manually entering the flux points)", False)
 
         # Create configuration setter
-        setter = InteractiveConfigurationSetter("SED modeling", "options for SED modeling of an object")
+        setter = InteractiveConfigurationSetter("SED modeling", "options for SED modeling of an object", add_cwd=False, add_logging=False)
 
         # Create the object config
         self.object_config = setter.run(definition)
@@ -279,7 +279,7 @@ class ModelingSetupTool(Configurable):
             definition.add_required("sed_path", "file_path", "path/name of the SED file")
 
             # Prompt for the SED path
-            setter = InteractiveConfigurationSetter("SED", "name/path of the input SED")
+            setter = InteractiveConfigurationSetter("SED", "name/path of the input SED", add_cwd=False, add_logging=False)
             config = setter.run(definition)
 
             # Load the sed
@@ -293,14 +293,13 @@ class ModelingSetupTool(Configurable):
             definition.add_required("flux_points", "sed_entry_list", "flux points", dynamic_list=True)
 
             # Prompt for the flux points
-            setter = InteractiveConfigurationSetter("Fluxes", "flux points for the SED")
+            setter = InteractiveConfigurationSetter("Fluxes", "flux points for the SED", add_cwd=False, add_logging=False)
             config = setter.run(definition)
 
             # Create new observed SED
             self.sed = ObservedSED(photometry_unit="Jy")
 
             # Add the flux points
-            print(config.flux_points)
             for fltr, flux, error in config.flux_points: self.sed.add_point(fltr, flux, error)
 
     # -----------------------------------------------------------------

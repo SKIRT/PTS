@@ -49,7 +49,7 @@ class HostConfigurer(Configurable):
         super(HostConfigurer, self).__init__(config)
 
         # The configuration setter
-        self.setter = InteractiveConfigurationSetter("host")
+        self.setter = InteractiveConfigurationSetter("host", add_cwd=False, add_logging=False)
 
         # The configuration definition
         self.definition = None

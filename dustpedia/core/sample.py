@@ -18,13 +18,13 @@ import numpy as np
 # Import astronomical modules
 from astropy.table import Table
 from astroquery.vizier import Vizier
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.tools import catalogs
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -144,7 +144,7 @@ class DustPediaSample(object):
         if len(table) > 1: raise ValueError("Ambiguous result")
 
         # Calculate the diameter
-        diameter = np.power(10.0, table["logD25"][0]) * 0.1 * Unit("arcmin") if table["logD25"][0] else None
+        diameter = np.power(10.0, table["logD25"][0]) * 0.1 * u("arcmin") if table["logD25"][0] else None
 
         # Return
         return diameter

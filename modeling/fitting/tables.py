@@ -41,7 +41,7 @@ class BestParametersTable(SmartTable):
         else: from_astropy = True
 
         # Get properties
-        if from_astropy:
+        if not from_astropy:
             parameters = kwargs.pop("parameters")
             units = kwargs.pop("units")
         else: parameters = units = None
@@ -137,7 +137,7 @@ class GenerationsTable(SmartTable):
         else: from_astropy = True
 
         # Get properties
-        if from_astropy: parameters = kwargs.pop("parameters")
+        if not from_astropy: parameters = kwargs.pop("parameters")
         else: parameters = None
 
         # Call the constructor of the base class
@@ -430,7 +430,7 @@ class ParametersTable(SmartTable):
         if "parameters" in kwargs: from_astropy = False
         else: from_astropy = True
 
-        if from_astropy:
+        if not from_astropy:
             parameters = kwargs.pop("parameters")
             units = kwargs.pop("units")
         else: parameters = units = None

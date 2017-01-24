@@ -111,6 +111,49 @@ class ModelingComponent(Configurable):
         # Determine the path to the kernels user directory
         self.kernels_path = fs.join(introspection.pts_user_dir, "kernels")
 
+        # Set the path to the fitting configuration file
+        self.fitting_configuration_path = fs.join(self.fit_path, "configuration.cfg")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def observed_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .sed import get_observed_sed as get_sed_other
+        from .galaxy import get_observed_sed as get_sed_galaxy
+
+        if self.modeling_type == "galaxy": return get_sed_galaxy(self.config.path)
+        else: return get_sed_other(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_filters(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.observed_sed.filters()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.sed_filters]
+
     # -----------------------------------------------------------------
 
     @lazyproperty

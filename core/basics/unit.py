@@ -32,6 +32,24 @@ _arcsec2 = 2.350443053909789e-11  # solid angle of 1 square arc second in sterad
 
 # -----------------------------------------------------------------
 
+nanomaggy = 3.613e-6 * Unit("Jy")
+nanomaggy_string = "(3.613e-6 Jy)"
+
+# -----------------------------------------------------------------
+
+replacements = dict()
+
+replacements["DN"] = "count"
+replacements["SEC"] = "second"
+replacements["nanomaggy"] = nanomaggy_string
+replacements["nmaggy"] = nanomaggy_string
+replacements["nmaggy"] = nanomaggy_string
+replacements["nmgy"] = nanomaggy_string
+replacements["nMgy"] = nanomaggy_string
+replacements["nanomaggies"] = nanomaggy_string
+
+# -----------------------------------------------------------------
+
 # LUMINOSITY: W
 # WAVELENGTH LUMINOSITY DENSITY: W/micron
 # FREQUENCY LUMINOSITY DENSITY: W/Hz
@@ -266,8 +284,46 @@ names = ["Band", "b", "Zero-flux magnitude", "m"]
 
 # -----------------------------------------------------------------
 
-nanomaggy = 3.613e-6 * Unit("Jy")
-nanomaggy_string = "(3.613e-6 Jy)"
+def clean_unit_string(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    for key in replacements:
+        string = string.replace(key, replacements[key])
+    if string.count("(") == 1 and string.count(")") == 1 and string.startswith("(") and string.endswith(")"): string = string[1:-1]
+    return string
+
+# -----------------------------------------------------------------
+
+def parse_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: unit = PhotometricUnit(argument)
+    except ValueError:
+        if isinstance(argument, basestring): argument = clean_unit_string(argument)
+        unit = Unit(argument)
+    return unit
+
+# -----------------------------------------------------------------
+
+def represent_unit(unit):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+    return str(unit).replace("solMass", "Msun").replace("solLum", "Lsun").replace(" ", "")
 
 # -----------------------------------------------------------------
 
@@ -321,10 +377,18 @@ def analyse_unit(unit):
 
             elif base.physical_type == "power":
                 assert power == 1
+                assert base_unit == ""
+                base_unit = base
+
+            elif base.physical_type == "energy":
+                assert power == 1
+                assert base_unit == ""
                 base_unit = base
 
             elif base.physical_type == "unknown":
                 base_unit *= base ** power
+
+            else: raise ValueError("Not a photometric unit: found " + base.physical_type + "^" + str(power) + " dimension as a base")
 
         elif base.physical_type == "time":
             assert power == -1
@@ -337,6 +401,7 @@ def analyse_unit(unit):
             elif power == -3:
                 wavelength_unit = base
                 distance_unit = base ** 2
+            else: raise ValueError("Not a photometric unit: found length^" + str(power) + " dimension")
         elif base.physical_type == "frequency":
             assert power == -1, power
             frequency_unit = base
@@ -348,21 +413,11 @@ def analyse_unit(unit):
             assert power == -2, power
             solid_angle_unit = base ** power
 
+    # Check if wavelength and frequency unit are not both defined
+    if wavelength_unit != "" and frequency_unit != "": raise ValueError("Not a photometric unit: found wavelength^-1 and frequency^-1 dimensions")
+
     # Return
     return scale_factor, base_unit, wavelength_unit, frequency_unit, distance_unit, solid_angle_unit
-
-# -----------------------------------------------------------------
-
-replacements = dict()
-
-replacements["DN"] = "count"
-replacements["SEC"] = "second"
-replacements["nanomaggy"] = nanomaggy_string
-replacements["nmaggy"] = nanomaggy_string
-replacements["nmaggy"] = nanomaggy_string
-replacements["nmgy"] = nanomaggy_string
-replacements["nMgy"] = nanomaggy_string
-replacements["nanomaggies"] = nanomaggy_string
 
 # -----------------------------------------------------------------
 
@@ -398,10 +453,8 @@ class PhotometricUnit(CompositeUnit):
         # Regular unit
         else:
 
-            if isinstance(unit, basestring):
-                for key in replacements:
-                    unit = unit.replace(key, replacements[key])
-                if unit.count("(") == 1 and unit.count(")") == 1 and unit.startswith("(") and unit.endswith(")"): unit = unit[1:-1]
+            # Clean unit string
+            if isinstance(unit, basestring): unit = clean_unit_string(unit)
 
             # Parse the unit
             try: unit = Unit(unit)

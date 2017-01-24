@@ -13,9 +13,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..data.properties import PropertyFetcher
@@ -36,8 +33,8 @@ from ...core.basics.range import QuantityRange
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
 from ..config.parameters import units as parameter_units
-from ..config.parameters import default_ranges, types
-from ..config.parameters import parsing_types_for_parameter_types
+from ..config.parameters import default_ranges, types, parameter_descriptions
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -71,7 +68,7 @@ fitting_filter_names = ["GALEX FUV", "GALEX NUV", "SDSS u", "SDSS g", "SDSS r", 
 
 # URLS for Halpha data for different galaxies (keys are the HYPERLEDA names)
 halpha_urls = {"NGC3031": "https://ned.ipac.caltech.edu/img/2001ApJ...559..878H/MESSIER_081:I:Ha:hwb2001.fits.gz"}
-halpha_fluxes = {"NGC3031": 7.8e40 * Unit("erg/s")}
+halpha_fluxes = {"NGC3031": 7.8e40 * u("erg/s")}
 
 # -----------------------------------------------------------------
 
@@ -646,18 +643,14 @@ class GalaxyModeler(Modeler):
         # Set free parameters
         config["parameters"] = free_parameters[self.modeling_config.method]
 
+        # Set parameter descriptions
+        config["descriptions"] = parameter_descriptions
+
         # Set parameter types
-        for name in config["parameters"]: config["types"].name = types[name]
+        config["types"].name = types
 
         # Set parameter units
-        for name in config["parameters"]:
-            if name not in parameter_units: continue
-            config["units"].name = parameter_units[name]
-
-        # Set default ranges
-        for name in config["parameters"]:
-            if name not in default_ranges: continue
-            config["default_ranges"].name = default_ranges[name]
+        config["units"] = parameter_units
 
         # Set ranges
         config["ranges"] = free_parameter_ranges[self.modeling_config.method]
@@ -675,7 +668,7 @@ class GalaxyModeler(Modeler):
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        configurer.run()
+        configurer.run(default_ranges=default_ranges)
 
         # Mark the end and save the history file
         self.history.mark_end()

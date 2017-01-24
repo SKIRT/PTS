@@ -18,13 +18,11 @@ from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
-from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.data.sed import ObservedSED
-from ...core.basics.filter import Filter
 from ...magic.core.dataset import DataSet
 from ...magic.core.frame import Frame
 from ...magic.region.list import SkyRegionList
@@ -34,9 +32,7 @@ from ..basics.properties import GalaxyProperties
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.mask import Mask
 from ...core.tools.logging import log
-from ...core.basics.configuration import Configuration
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
-from ..core.history import ModelingHistory
 from ...magic.prepare.batch import PreparationStatistics
 from .component import ModelingComponent
 
@@ -181,9 +177,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
-
-        # Set the path to the fitting configuration file
-        self.fitting_configuration_path = fs.join(self.fit_path, "configuration.cfg")
 
         # Set the paths to the input maps
         self.old_stellar_map_path = fs.join(self.maps_path, "old_stars.fits")
@@ -343,6 +336,30 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return [str(fltr) for fltr in self.observed_filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_filters(self):
+
+        """
+        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
+        :return:
+        """
+
+        return self.observed_filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_filter_names(self):
+
+        """
+        IMPLEMENTATION IN THIS CLASS, DEFINITION IN BASE CLASS
+        :return:
+        """
+
+        return self.observed_filter_names
 
     # -----------------------------------------------------------------
 
@@ -1223,5 +1240,28 @@ def load_preparation_statistics(modeling_path):
 
     # Load and return the statistics
     return PreparationStatistics.from_file(path)
+
+# -----------------------------------------------------------------
+
+def get_observed_sed_file_path(modeling_path):
+
+    """
+    This function ...
+    :return:
+    """
+
+    return fs.join(modeling_path, "phot", "fluxes.dat")
+
+# -----------------------------------------------------------------
+
+def get_observed_sed(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return ObservedSED.from_file(get_observed_sed_file_path(modeling_path))
 
 # -----------------------------------------------------------------

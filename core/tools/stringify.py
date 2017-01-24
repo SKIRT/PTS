@@ -23,6 +23,7 @@ from astropy.units import Quantity
 # Import the relevant PTS classes and modules
 from ..basics.filter import Filter
 from ..basics.range import RealRange, IntegerRange, QuantityRange
+from ..basics.unit import represent_unit
 
 # -----------------------------------------------------------------
 
@@ -105,7 +106,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
         if scientific: return "real", ("{:." + str(decimal_places) + "e}").format(value).replace("+", "").replace("e0", "e")
         else: return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
-    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit).replace("solMass", "Msun").replace("solLum", "Lsun").replace(" ", "")
+    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + represent_unit(value.unit)
     elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit).replace(" ", "")
     elif isinstance(value, NoneType): return "None", "None"
     elif isinstance(value, RealRange): return "real_range", repr(value)

@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import tempfile
 from itertools import count, izip
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -28,6 +25,7 @@ from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
 from ...core.basics.filter import Filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
+from ...core.basics.unit import parse_unit
 
 # -----------------------------------------------------------------
 
@@ -311,7 +309,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return Unit(self.session.get_string("str(" + self.label + ".unit)"))
+        return parse_unit(self.session.get_string("str(" + self.label + ".unit)"))
 
     # -----------------------------------------------------------------
 
@@ -1331,7 +1329,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return Unit(self.session.get_string("str(" + self.label + ".unit)"))
+        return parse_unit(self.session.get_string("str(" + self.label + ".unit)"))
 
     # -----------------------------------------------------------------
 

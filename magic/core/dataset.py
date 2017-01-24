@@ -1191,7 +1191,7 @@ class DataSetCreator(Configurable):
         log.info("Loading interactive prompt for image paths ...")
 
         # The configuration setter
-        setter = InteractiveConfigurationSetter("datasetcreator_images")
+        setter = InteractiveConfigurationSetter("datasetcreator_images", add_cwd=False, add_logging=False)
 
         definition = ConfigurationDefinition()
         definition.add_required("image_paths", "filepath_list", "paths to the images")
@@ -1209,7 +1209,7 @@ class DataSetCreator(Configurable):
             definition = ConfigurationDefinition()
             definition.add_optional("error_path", "file_path", "path to the error map for " + name)
 
-            setter = InteractiveConfigurationSetter("datasetcreator_errors")
+            setter = InteractiveConfigurationSetter("datasetcreator_errors", add_cwd=False, add_logging=False)
 
             # Get the error path
             config = setter.run(definition)

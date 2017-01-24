@@ -18,7 +18,6 @@ import numpy as np
 
 # Import astronomical modules
 from astropy import coordinates
-from astropy import units as u
 
 # Import the relevant PTS classes and modules
 from ...core.basics.filter import Filter
@@ -26,6 +25,7 @@ from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
 from ...core.basics.unit import PhotometricUnit
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -72,14 +72,14 @@ def get_pixelscale(header):
 
                 unit = unit.replace("asec", "arcsec")
                 if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
-                try: unit = u.Unit(unit)
+                try: unit = u(unit)
                 except ValueError: unit = None
 
             log.debug("pixelscale found in " + str(keyword) + " keyword = " + str(scale))
             log.debug("unit for the pixelscale = " + str(unit))
 
             # If no unit is found, guess that it's arcseconds / pixel ...
-            if unit is None: unit = u.Unit("arcsec/pix")
+            if unit is None: unit = u("arcsec/pix")
             scale = scale * unit
 
             # Return the scale
@@ -105,22 +105,22 @@ def get_pixelscale(header):
 
                 unit1 = unit1.replace("asec", "arcsec")
                 if not (unit1.endswith("pixel") or unit1.endswith("pix")): unit1 = unit1 + "/pix"
-                try: unit1 = u.Unit(unit1)
+                try: unit1 = u(unit1)
                 except ValueError: unit1 = None
 
             if unit2 is not None:
 
                 unit2 = unit2.replace("asec", "arcsec")
                 if not (unit2.endswith("pixel") or unit2.endswith("pix")): unit2 = unit2 + "/pix"
-                try: unit2 = u.Unit(unit2)
+                try: unit2 = u(unit2)
                 except ValueError: unit2 = None
 
             log.debug("pixelscale found in PXSCAL1 and PXSCAL2 keywords = (" + str(scale1) + "," +str(scale2) + ")")
             log.debug("unit for the pixelscale = (" + str(unit1) + "," + str(unit2) + ")")
 
             # If no unit is found, guess that it's arcseconds / pixel ...
-            if unit1 is None: unit1 = u.Unit("arcsec/pix")
-            if unit2 is None: unit2 = u.Unit("arcsec/pix")
+            if unit1 is None: unit1 = u("arcsec/pix")
+            if unit2 is None: unit2 = u("arcsec/pix")
             scale1 = scale1 * unit1
             scale2 = scale2 * unit2
 
@@ -722,7 +722,7 @@ def get_pixel_mapping(header1, header2):
 
         # Transform the world coordinates from the output image into the coordinate
         # system of the input image
-        C2 = coordinates.SkyCoord(lon2,lat2,unit=(u.deg,u.deg),frame=csys2)
+        C2 = coordinates.SkyCoord(lon2, lat2, unit="deg", frame=csys2)
         C1 = C2.transform_to(csys1)
         lon2,lat2 = C1.spherical.lon.deg,C1.spherical.lat.deg
 
@@ -786,7 +786,7 @@ def get_quantity(entry, default_unit=None):
 
         num_value = float(value)
         if default_unit is None: raise RuntimeError("Default unit is not provided")
-        unit = u.Unit(default_unit)
+        unit = u(default_unit)
 
     except ValueError:
 
@@ -800,10 +800,10 @@ def get_quantity(entry, default_unit=None):
 
         #unit = u.Unit(unit_description)
 
-        composite_unit = u.Unit(value)
+        composite_unit = u(value)
 
         num_value = composite_unit.to("micron")
-        unit = u.Unit("micron")
+        unit = u("micron")
 
     return num_value * unit
 

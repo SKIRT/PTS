@@ -20,8 +20,9 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
 from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
-from ...core.basics.map import Map
 from ..config.parameters import parsing_types_for_parameter_types
+
+from ..config.parameters import default_units, possible_parameter_types_descriptions
 
 # -----------------------------------------------------------------
 
@@ -48,11 +49,17 @@ class FittingConfigurer(FittingComponent):
 
         # -- Attributes --
 
+        # The default ranges
+        self.default_ranges = dict()
+
         # The ski file template
         self.ski = None
 
         # The individual configurations
         self.parameters_config = None
+        self.descriptions_config = None
+        self.types_config = None
+        self.units_config = None
         self.ranges_config = None
         self.filters_config = None
 
@@ -61,15 +68,16 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the necessary input
         self.load_input()
@@ -77,21 +85,30 @@ class FittingConfigurer(FittingComponent):
         # 3. Get the fitting parameters
         self.get_parameters()
 
-        # 4. Get the physical parameter ranges
+        # 4. Get parameter descriptions
+        self.get_descriptions()
+
+        # 5. Get parameter types
+        self.get_types()
+
+        # 6. Get parameter units
+        self.get_units()
+
+        # 7. Get the physical parameter ranges
         self.get_ranges()
 
-        # 5. Get the fitting filters
+        # 8. Get the fitting filters
         self.get_filters()
 
-        # 6. Adjust the labels of the template ski file
+        # 9. Adjust the labels of the template ski file
         self.adjust_labels()
 
-        # 7. Writing
+        # 10. Writing
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -100,6 +117,9 @@ class FittingConfigurer(FittingComponent):
 
         # Call the setup function of the base class
         super(FittingConfigurer, self).setup()
+
+        # Get the default ranges
+        self.default_ranges = kwargs.pop("default_ranges", dict())
 
     # -----------------------------------------------------------------
 
@@ -138,14 +158,83 @@ class FittingConfigurer(FittingComponent):
         """
 
         # The free parameters are specified
-        if self.config.parameters is not None: self.parameters_config = Map(free_parameters=self.config.parameters)
+        if self.config.parameters is not None: self.parameters_config = Configuration(free_parameters=self.config.parameters)
         else:
 
             # Create configuration setter
-            setter = InteractiveConfigurationSetter("free parameters", add_logging=False, add_cwd=False)
+            setter = InteractiveConfigurationSetter("Free parameters", add_logging=False, add_cwd=False)
 
             # Create config
             self.parameters_config = setter.run(parameters_definition, prompt_optional=False)
+
+    # -----------------------------------------------------------------
+
+    def get_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.descriptions is not None: self.descriptions_config = Configuration(descriptions=self.config.descriptions)
+        else:
+
+            # Create configuration definition
+            definition = ConfigurationDefinition()
+            for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "description of the '" + name + "' parameter")
+
+            # Create the configuration setter
+            setter = InteractiveConfigurationSetter("Parameter descriptions and types", add_cwd=False, add_logging=False)
+
+            # Get the config and set the descriptions configuration
+            config = setter.run(definition, prompt_optional=False)
+            self.descriptions_config = Configuration(descriptions=config)
+
+    # -----------------------------------------------------------------
+
+    def get_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.types is not None: self.types_config = Configuration(types=self.config.types)
+        else:
+
+            # Create definition
+            definition = ConfigurationDefinition()
+            for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "type of the '" + name + "' parameter", choices=possible_parameter_types_descriptions)
+
+            # Create configuration setter
+            setter = InteractiveConfigurationSetter("Parameter types", add_cwd=False, add_logging=False)
+
+            # Create the config and set the types configuration
+            config = setter.run(definition, prompt_optional=False)
+            self.types_config = Configuration(types=config)
+
+    # -----------------------------------------------------------------
+
+    def get_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.units is not None: self.units_config = Configuration(units=self.config.units)
+        else:
+
+            # Create definition
+            definition = ConfigurationDefinition()
+            for name in self.parameters_config.free_parameters: definition.add_optional(name, "unit", "unit of the '" + name + "' parameter", default=default_units[self.types_config.types[name]])
+
+            # Create configuration setter
+            setter = InteractiveConfigurationSetter("Parameter units", add_cwd=False, add_logging=False)
+
+            # Create the config and set the units configuration
+            config = setter.run(definition, prompt_optional=True)
+            self.units_config = Configuration(units=config)
 
     # -----------------------------------------------------------------
 
@@ -172,10 +261,20 @@ class FittingConfigurer(FittingComponent):
             # Add the options for the ranges
             for label in self.parameters_config.free_parameters:
 
-                in_units_string = " (in " + self.config.units[label] + ")" if label in self.config.units else ""
-                default_range = self.config.default_ranges[label] if label in self.config.default_ranges else None
-                parsing_type = parsing_types_for_parameter_types[self.config.types[label]]
-                description = "range of the '" + label + "' parameter" + in_units_string
+                # Get the unit
+                unit = self.units_config.units[label]
+                #in_units_string = " (in " + unit + ")" if unit is not None else " (dimensionless)"
+                units_info_string = " (specify the units!) " if unit is not None else " (dimensionless)"
+
+                # Get the default range
+                default_range = self.default_ranges[label] if label in self.default_ranges else None
+
+                # Get the parsing type
+                parsing_type = parsing_types_for_parameter_types[self.types_config.types[label]]
+
+                # Get the description
+                parameter_description = self.descriptions_config.descriptions[label]
+                description = "range of " + parameter_description + units_info_string
 
                 # Make optional or required depending on whether default is given
                 if default_range is not None: definition.add_optional(label + "_range", parsing_type + "_range", description, default=default_range, convert_default=True)
@@ -203,7 +302,7 @@ class FittingConfigurer(FittingComponent):
             definition = ConfigurationDefinition(write_config=False)
 
             # Choose from all the possible filter names
-            definition.add_required("filters", "string_list", "the filters for which to use the observed flux as reference for the fitting procedure", choices=self.observed_filter_names)
+            definition.add_required("filters", "string_list", "the filters for which to use the observed flux as reference for the fitting procedure", choices=self.sed_filter_names)
 
             # Create configuration setter
             setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
@@ -263,7 +362,7 @@ class FittingConfigurer(FittingComponent):
         log.info("Writing the fitting configuration file ...")
 
         # Combine configs
-        self.fitting_config = combine_configs(self.parameters_config, self.ranges_config, self.filters_config)
+        self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config, self.units_config, self.ranges_config, self.filters_config)
 
         # Write the configuration
         self.fitting_config.saveto(self.fitting_configuration_path)

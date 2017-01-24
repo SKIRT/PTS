@@ -299,7 +299,7 @@ class MappingsPlayground(object):
         for (logp, sfr, met, logc, fpdr), sed in seds.items():
 
             wavelengths = sed.wavelengths(unit="micron", add_unit=False)
-            luminosities = sed.luminosities(unit="erg/s", add_unit=False)
+            luminosities = sed.photometry(unit="erg/s", add_unit=False)
 
             # plot the SED
             plt.plot(wavelengths, luminosities, color=colors[counter], label="SFR={} Z={} logC={} logP={} fPDR={}".format(sfr, met/Zsun, logc, logp, fpdr))
