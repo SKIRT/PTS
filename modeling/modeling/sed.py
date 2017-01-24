@@ -18,6 +18,10 @@ from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization import FittingInitializer
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
+from ..component.sed import get_ski_template, get_sed
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ...core.basics.map import Map
+from ..config.parameters import default_units, possible_parameter_types_descriptions
 
 # -----------------------------------------------------------------
 
@@ -133,9 +137,31 @@ class SEDModeler(Modeler):
         # Create configuration
         config = dict()
 
+        # Load the ski template, get the free parameters
+        ski = get_ski_template(self.config.path)
+        free_parameter_names = ski.labels
+
+        # Load the SED, get the fitting filters
+        sed = get_sed(self.config.path)
+        fitting_filter_names = sed.filter_names()
+
+        # Prompt for the parameter types
+        definition = ConfigurationDefinition()
+        for name in free_parameter_names: definition.add_required(name + "_type", "string", "type of the '" + name + "' parameter", choices=possible_parameter_types_descriptions)
+        setter = InteractiveConfigurationSetter("Parameter types")
+        types_config = setter.run(definition)
+
+        # Create maps of the parameter types and default units
+        types = Map()
+        units = Map()
+        for name in free_parameter_names:
+            types[name] = types_config[name + "_type"]
+            units[name] = default_units[types[name]]
+
         # Set free parameters
-        config["parameters"] = free_parameters[self.modeling_config.method]
-        config["ranges"] = free_parameter_ranges[self.modeling_config.method]
+        config["parameters"] = free_parameter_names
+        config["types"] = types
+        config["units"] = units
         config["filters"] = fitting_filter_names
 
         # Create the fitting configurer

@@ -15,6 +15,9 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add optional
 definition.add_optional("parameters", "string_list", "parameters to be used as free parameters during the fitting")
+definition.add_section("types", "parameter types")
+definition.add_section("units", "parameter units")
+definition.add_section("default_ranges", "default parameter ranges")
 definition.add_section("ranges", "parameter ranges")
 definition.add_optional("filters", "string_list", "fit to the observed data of these filters")
 

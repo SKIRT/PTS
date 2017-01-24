@@ -66,12 +66,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # Attributes
         self.galaxy_name = None
 
-        # The modeling configuration file
-        self.config_file_path = None
-
-        # The modeling history file
-        self.history_file_path = None
-
         # Modeling directories
         self.data_path = None
         self.prep_path = None
@@ -80,24 +74,10 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = None
         self.components_path = None
         self.deprojection_path = None
-        self.fit_path = None
-        self.analysis_path = None
-        self.reports_path = None
-        self.visualisation_path = None
-        self.plot_path = None
-        self.log_path = None
-        self.config_path = None
-        self.show_path = None
-
-        # PTS directories
-        self.kernels_path = None
 
         # The path to the observed SEDs
         self.observed_sed_path = None
         self.observed_sed_dustpedia_path = None
-
-        # The path to the fitting configuration file
-        self.fitting_configuration_path = None
 
         # The path to the maps
         self.old_stellar_map_path = None
@@ -187,20 +167,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = fs.name(self.config.path)
 
-        # Determine the path to the modeling configuration file
-        self.config_file_path = fs.join(self.config.path, "modeling.cfg")
-
-        # Check for the presence of the configuration file
-        if not fs.is_file(self.config_file_path): raise ValueError("The current working directory is not a radiative transfer modeling directory (the configuration file is missing)")
-
-        # Determine the path to the modeling history file
-        self.history_file_path = fs.join(self.config.path, "history.dat")
-
-        # Initialize the history file
-        if not fs.is_file(self.history_file_path):
-            history = ModelingHistory()
-            history.saveto(self.history_file_path)
-
         # Get the full paths to the necessary subdirectories and CREATE THEM
         self.data_path = fs.create_directory_in(self.config.path, "data")
         self.prep_path = fs.create_directory_in(self.config.path, "prep")
@@ -209,17 +175,6 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = fs.create_directory_in(self.config.path, "maps")
         self.components_path = fs.create_directory_in(self.config.path, "components")
         self.deprojection_path = fs.create_directory_in(self.config.path, "deprojection")
-        self.fit_path = fs.create_directory_in(self.config.path, "fit")
-        self.analysis_path = fs.create_directory_in(self.config.path, "analysis")
-        self.reports_path = fs.create_directory_in(self.config.path, "reports")
-        self.visualisation_path = fs.create_directory_in(self.config.path, "visualisation")
-        self.plot_path = fs.create_directory_in(self.config.path, "plot")
-        self.log_path = fs.create_directory_in(self.config.path, "log")
-        self.config_path = fs.create_directory_in(self.config.path, "config")
-        self.show_path = fs.create_directory_in(self.config.path, "show")
-
-        # Determine the path to the kernels user directory
-        self.kernels_path = fs.join(introspection.pts_user_dir, "kernels")
 
         # Set the path to the observed SED
         self.observed_sed_path = fs.join(self.phot_path, "fluxes.dat")
@@ -300,35 +255,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Set the path to the preparation statistics file
         self.preparation_statistics_path = fs.join(self.prep_path, "statistics.dat")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def modeling_configuration(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Load the configuration
-        config = Configuration.from_file(self.config_file_path)
-
-        # Return the configuration
-        return config
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def history(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Open the modeling history
-        return ModelingHistory.from_file(self.history_file_path)
 
     # -----------------------------------------------------------------
 
@@ -417,96 +343,6 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return [str(fltr) for fltr in self.observed_filters]
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def fitting_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return map(Filter.from_string, self.fitting_filter_names)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def fitting_configuration(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return Configuration.from_file(self.fitting_configuration_path) if fs.is_file(self.fitting_configuration_path) else None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def fitting_filter_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.fitting_configuration.filters if self.fitting_configuration is not None else None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def free_parameter_labels(self):
-
-        """
-        THIS FUNCTION GUARANTEES THAT THE LABELS ARE ALWAYS ORDERED ALPHABETICALLY !!
-        :return:
-        """
-
-        return sorted(self.fitting_configuration.free_parameters) if self.fitting_configuration is not None else None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def free_parameter_ranges(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        ranges = dict()
-        for label in self.free_parameter_labels:
-            parameter_range = self.fitting_configuration[label + "_range"]
-            ranges[label] = parameter_range
-        return ranges
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def parameter_descriptions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        from ..config.parameters import choices
-        return choices
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def parameter_units(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        from ..config.parameters import units
-        return units
 
     # -----------------------------------------------------------------
 

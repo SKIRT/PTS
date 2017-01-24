@@ -18,10 +18,10 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
-from ..config.parameters import choices, types_and_ranges
-from ..config.parameters import units as parameter_units
 from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
+from ...core.basics.map import Map
+from ..config.parameters import parsing_types_for_parameter_types
 
 # -----------------------------------------------------------------
 
@@ -137,7 +137,8 @@ class FittingConfigurer(FittingComponent):
         :return:
         """
 
-        if self.config.parameters is not None: self.parameters_config = {"free_parameters": self.config.parameters}
+        # The free parameters are specified
+        if self.config.parameters is not None: self.parameters_config = Map(free_parameters=self.config.parameters)
         else:
 
             # Create configuration setter
@@ -155,21 +156,30 @@ class FittingConfigurer(FittingComponent):
         :return:
         """
 
-        if self.config.ranges is not None: #self.ranges_config = self.config.ranges
+        # If ranges are given
+        if len(self.config.ranges) != 0: #self.ranges_config = self.config.ranges
 
             self.ranges_config = dict()
             for label in self.config.ranges:
                 self.ranges_config[label + "_range"] = self.config.ranges[label]
 
+        # Ranges are not given
         else:
 
             # Create the configuration
             definition = ConfigurationDefinition(write_config=False)
 
-            # Add the options
+            # Add the options for the ranges
             for label in self.parameters_config.free_parameters:
-                in_units_string = " (in " + parameter_units[label] + ")" if label in parameter_units else ""
-                definition.add_optional(label + "_range", types_and_ranges[label][0] + "_range", "range of the " + choices[label] + in_units_string, default=types_and_ranges[label][1], convert_default=True)
+
+                in_units_string = " (in " + self.config.units[label] + ")" if label in self.config.units else ""
+                default_range = self.config.default_ranges[label] if label in self.config.default_ranges else None
+                parsing_type = parsing_types_for_parameter_types[self.config.types[label]]
+                description = "range of the '" + label + "' parameter" + in_units_string
+
+                # Make optional or required depending on whether default is given
+                if default_range is not None: definition.add_optional(label + "_range", parsing_type + "_range", description, default=default_range, convert_default=True)
+                else: definition.add_required(label + "_range", parsing_type + "_range", description)
 
             # Create configuration setter
             setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)

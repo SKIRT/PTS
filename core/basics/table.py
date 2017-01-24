@@ -395,6 +395,9 @@ class SmartTable(Table):
         :return:
         """
 
+        # Setup if necessary
+        if len(self.colnames) == 0: self.setup()
+
         # Write the table in ECSV format
         self.write(path, format="ascii.ecsv")
 

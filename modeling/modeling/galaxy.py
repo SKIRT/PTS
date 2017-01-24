@@ -35,6 +35,9 @@ from ..fitting.initialization import FittingInitializer
 from ...core.basics.range import QuantityRange
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
+from ..config.parameters import units as parameter_units
+from ..config.parameters import default_ranges, types
+from ..config.parameters import parsing_types_for_parameter_types
 
 # -----------------------------------------------------------------
 
@@ -642,7 +645,24 @@ class GalaxyModeler(Modeler):
 
         # Set free parameters
         config["parameters"] = free_parameters[self.modeling_config.method]
+
+        # Set parameter types
+        for name in config["parameters"]: config["types"].name = types[name]
+
+        # Set parameter units
+        for name in config["parameters"]:
+            if name not in parameter_units: continue
+            config["units"].name = parameter_units[name]
+
+        # Set default ranges
+        for name in config["parameters"]:
+            if name not in default_ranges: continue
+            config["default_ranges"].name = default_ranges[name]
+
+        # Set ranges
         config["ranges"] = free_parameter_ranges[self.modeling_config.method]
+
+        # Set fitting filters
         config["filters"] = fitting_filter_names
 
         # Create the fitting configurer

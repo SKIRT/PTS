@@ -215,6 +215,19 @@ def quantity_range(argument):
 
 # -----------------------------------------------------------------
 
+def photometric_quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    min_quantity, max_quantity = photometric_quantity_tuple(argument.replace(">", ","))
+    return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
 def directory_path(argument):
 
     """

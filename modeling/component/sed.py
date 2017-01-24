@@ -18,6 +18,8 @@ from abc import ABCMeta
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
 from ...core.tools import filesystem as fs
+from ...core.simulation.skifile import LabeledSkiFile
+from ...core.data.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -79,6 +81,18 @@ def get_sed_file_path(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_sed(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return ObservedSED.from_file(get_sed_file_path(modeling_path))
+
+# -----------------------------------------------------------------
+
 def get_ski_template_path(modeling_path):
 
     """
@@ -88,5 +102,17 @@ def get_ski_template_path(modeling_path):
     """
 
     return fs.join(modeling_path, "template.ski")
+
+# -----------------------------------------------------------------
+
+def get_ski_template(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return LabeledSkiFile(get_ski_template_path(modeling_path))
 
 # -----------------------------------------------------------------

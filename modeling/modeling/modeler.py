@@ -67,7 +67,7 @@ class Modeler(Configurable):
         host_ids = set()
 
         # Add main host ID
-        host_ids.add(self.host_id)
+        if self.host_id is not None: host_ids.add(self.host_id)
 
         # Add fitting host ids, if they are available
         for host_id in self.modeling_config.fitting_host_ids:
@@ -85,6 +85,8 @@ class Modeler(Configurable):
         This function ...
         :return:
         """
+
+        if self.modeling_config.host_ids is None: return None
 
         # Loop over the preferred hosts
         for host_id in self.modeling_config.host_ids:
@@ -135,15 +137,16 @@ class Modeler(Configurable):
         log.info("Finding available hosts ...")
 
         # Find available hosts from host_ids list
-        for host_id in self.modeling_config.host_ids:
-            if is_available(host_id):
-                log.debug("Host '" + host_id + "' is available")
-                self.available_host_ids.add(host_id)
-            else: log.debug("Host '" + host_id + "' is not available")
+        if self.modeling_config.host_ids is not None:
+            for host_id in self.modeling_config.host_ids:
+                if is_available(host_id):
+                    log.debug("Host '" + host_id + "' is available")
+                    self.available_host_ids.add(host_id)
+                else: log.debug("Host '" + host_id + "' is not available")
 
         # Find available hosts from fitting.host_ids list
         for host_id in self.modeling_config.fitting_host_ids:
-            if host_id in self.modeling_config.host_ids: continue
+            if self.modeling_config.host_ids is not None and host_id in self.modeling_config.host_ids: continue
             if is_available(host_id):
                 log.debug("Host '" + host_id + "' is available")
                 self.available_host_ids.add(host_id)
