@@ -629,9 +629,8 @@ class BatchLauncher(Configurable):
             # Check whether a cluster name is defined
             cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
 
-            # Setup the remote for the specified host
-            try: remote.setup(host_id, cluster_name=cluster_name)
-            except HostDownException:
+            # Setup the remote for the specified host, check if succesful
+            if not remote.setup(host_id, cluster_name=cluster_name):
                 log.warning("Remote host '" + host_id + "' is down")
                 continue
 
@@ -639,7 +638,7 @@ class BatchLauncher(Configurable):
             self.remotes.append(remote)
 
         # Check if any remotes are initialized
-        if len(self.remotes) == 0: raise RuntimeError("No remotes are available")
+        if len(self.remotes) == 0: raise RuntimeError("None of the remotes are available")
 
     # -----------------------------------------------------------------
 

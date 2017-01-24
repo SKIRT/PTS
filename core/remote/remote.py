@@ -1527,7 +1527,7 @@ class Remote(object):
         """
 
         # Check whether connected
-        if not self.connected: raise RuntimeError("The remote is not connected")
+        if not self.connected: raise RuntimeError("The remote is not available")
 
         # Change the working directory if necessary
         if cwd is not None: original_cwd = self.change_cwd(cwd)

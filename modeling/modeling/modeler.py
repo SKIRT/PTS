@@ -23,6 +23,7 @@ from ..component.component import load_modeling_history, get_config_file_path, l
 from ...core.launch.synchronizer import RemoteSynchronizer
 from ...core.remote.remote import is_available
 from ...core.prep.deploy import Deployer
+from ...core.remote.host import Host
 
 # -----------------------------------------------------------------
 
@@ -71,7 +72,7 @@ class Modeler(Configurable):
 
         # Add fitting host ids, if they are available
         for host_id in self.modeling_config.fitting_host_ids:
-            if host_id in self.available_host_ids: host_ids.add(host_id)
+            if not self.config.check_hosts or host_id in self.available_host_ids: host_ids.add(host_id)
 
         # Return the list of host IDs
         return list(host_ids)
@@ -90,10 +91,46 @@ class Modeler(Configurable):
 
         # Loop over the preferred hosts
         for host_id in self.modeling_config.host_ids:
-            if host_id in self.available_host_ids: return host_id
+            if not self.config.check_hosts or host_id in self.available_host_ids: return host_id
 
         # No host avilable
         return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        host_ids = []
+
+        # Loop over the specified hosts
+        for host_id in self.modeling_config.fitting_host_ids:
+            if not self.config.check_hosts or host_id in self.available_host_ids: host_ids.append(host_id)
+
+        # Return the list of host IDs
+        return host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_host_ids_non_schedulers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        host_ids = []
+        for host_id in self.fitting_host_ids:
+            host = Host(host_id)
+            if host.scheduler: continue
+            else: host_ids.append(host_id)
+        return host_ids
 
     # -----------------------------------------------------------------
 
@@ -247,6 +284,9 @@ class Modeler(Configurable):
 
         # Set the working directory
         explorer.config.path = self.modeling_path
+
+        # Set the remote host IDs
+        explorer.config.remotes = self.fitting_host_ids
 
         # Run the parameter explorer
         explorer.run()

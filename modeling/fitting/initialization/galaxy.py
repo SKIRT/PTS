@@ -16,9 +16,8 @@ from __future__ import absolute_import, division, print_function
 import math
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
 from astropy import constants
-from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ..component import FittingComponent
@@ -31,11 +30,13 @@ from ....magic.tools import wavelengths
 from ....core.tools.logging import log
 from ..wavelengthgrids import WavelengthGridGenerator
 from ..dustgrids import DustGridGenerator
-from ....core.basics.range import IntegerRange, RealRange, QuantityRange
+from ....core.basics.range import RealRange, QuantityRange
 from ...basics.models import DeprojectionModel3D
 from ....core.basics.configuration import write_mapping
 from ....core.basics.map import Map
 from ...component.galaxy import GalaxyModelingComponent
+from ..tables import WeightsTable
+from ....core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -144,7 +145,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.dg_generator = DustGridGenerator()
 
         # Create the table to contain the weights
-        self.weights = Table(names=["Instrument", "Band", "Weight"], dtype=["S5", "S7", "float64"])
+        self.weights = WeightsTable()
 
     # -----------------------------------------------------------------
 
@@ -198,7 +199,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         yc = pixel_center.y
 
         # Get the pixelscale in physical units
-        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix") # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg") # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the number of x and y pixels
@@ -247,7 +248,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Get the pixelscale in physical units
         distance = self.galaxy_properties.distance
-        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         # BINTREE: (smallest_cell_pixels, min_level, max_mass_fraction)
@@ -271,7 +272,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.dg_generator.grid_type = self.config.dg.grid_type # set grid type
         self.dg_generator.x_radius = radius_physical
         self.dg_generator.y_radius = radius_physical
-        self.dg_generator.z_radius = 3. * Unit("kpc")
+        self.dg_generator.z_radius = 3. * u("kpc")
 
         # Generate the dust grids
         self.dg_generator.run(scale_range, self.config.dg.level_range, mass_fraction_range, 10)
@@ -376,7 +377,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.ski_template.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
         self.ski_template.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * u("micron"))
 
     # -----------------------------------------------------------------
 
@@ -426,7 +427,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.ski_template.set_stellar_component_geometry("Evolved stellar disk", deprojection)
         self.ski_template.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1_filter.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1_filter.centerwavelength() * u("micron"))
 
     # -----------------------------------------------------------------
 
@@ -448,7 +449,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Get the scale height
         #scale_height = 150 * Unit("pc") # first models
-        scale_height = 100. * Unit("pc") # M51
+        scale_height = 100. * u("pc") # M51
 
         # Get the FUV flux density
         fluxdensity = 2. * self.observed_flux(self.fuv_filter, unit="Jy")
@@ -473,10 +474,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
         self.ski_template.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
-        #self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
+        #self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * u("micron"))
 
         # SET NORMALIZATION (IS FREE PARAMETER)
-        self.ski_template.set_stellar_component_normalization_wavelength("Young stars", self.fuv_filter.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_normalization_wavelength("Young stars", self.fuv_filter.centerwavelength() * u("micron"))
         self.ski_template.set_labeled_value("fuv_young", luminosity)
 
     # -----------------------------------------------------------------
@@ -495,12 +496,12 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #ionizing_metallicity = 0.02
         ionizing_metallicity = 0.03 # XU KONG et al. 2000
         ionizing_compactness = 6.
-        ionizing_pressure = 1e12 * Unit("K/m3")
+        ionizing_pressure = 1e12 * u("K/m3")
         ionizing_covering_factor = 0.2
 
         # Get the scale height
         #scale_height = 150 * Unit("pc") # first models
-        scale_height = 100. * Unit("pc") # M51
+        scale_height = 100. * u("pc") # M51
 
         ## NEW: SET FIXED PARAMETERS
         self.fixed["ionizing_scaleheight"] = scale_height
@@ -533,7 +534,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
 
         # SET NORMALIZATION (IS FREE PARAMETER)
-        self.ski_template.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * Unit("micron"))
+        self.ski_template.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
         self.ski_template.set_labeled_value("fuv_ionizing", luminosity) # keep label
 
     # -----------------------------------------------------------------
@@ -549,8 +550,8 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Configuring the dust component ...")
 
         #scale_height = 260.5 * Unit("pc") # first models
-        scale_height = 200. * Unit("pc") # M51
-        dust_mass = 1.5e7 * Unit("Msun")
+        scale_height = 200. * u("pc") # M51
+        dust_mass = 1.5e7 * u("Msun")
 
         hydrocarbon_pops = 25
         enstatite_pops = 25
@@ -635,7 +636,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         for fltr in self.fitting_filters:
 
             # Get the central wavelength
-            wavelength = fltr.centerwavelength() * Unit("micron")
+            wavelength = fltr.centerwavelength() * u("micron")
 
             # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
             spectrum = wavelengths.name_in_spectrum(wavelength)
@@ -774,7 +775,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Writing the table with weights to " + self.weights_table_path + " ...")
 
         # Write the table with weights
-        tables.write(self.weights, self.weights_table_path)
+        self.weights.saveto(self.weights_table_path)
 
     # -----------------------------------------------------------------
 
@@ -870,8 +871,8 @@ def spectral_factor_hz_to_micron(wavelength):
     frequency_unit = "Hz"
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = Unit(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = Unit(frequency_unit)
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 
@@ -896,7 +897,7 @@ def fluxdensity_to_luminosity(fluxdensity, wavelength, distance):
     # 3 ways:
     #luminosity_ = luminosity.to("W/micron", equivalencies=spectral_density(wavelength)) # does not work
     luminosity_ = (speed_of_light * luminosity / wavelength**2).to("W/micron")
-    luminosity = luminosity.to("W/Hz").value * spectral_factor_hz_to_micron(wavelength) * Unit("W/micron")
+    luminosity = luminosity.to("W/Hz").value * spectral_factor_hz_to_micron(wavelength) * u("W/micron")
     #print(luminosity_, luminosity) # is OK!
 
     return luminosity

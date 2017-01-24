@@ -24,31 +24,7 @@ from ....core.tools.logging import log
 from ..wavelengthgrids import WavelengthGridGenerator
 from ...component.sed import SEDModelingComponent
 from ....core.simulation.skifile import LabeledSkiFile
-from ....core.basics.curve import FilterCurve
-
-# -----------------------------------------------------------------
-
-class WeightsTable(FilterCurve):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        The constructor ...
-        :param args:
-        :param kwargs:
-        """
-
-        # Set kwargs
-        kwargs["y_name"] = "Weight"
-        kwargs["y_description"] = "Weight given to the filter"
-        kwargs["y_unit"] = None
-
-        # Call the constructor of the base class
-        super(WeightsTable, self).__init__(*args, **kwargs)
+from ..tables import WeightsTable
 
 # -----------------------------------------------------------------
 

@@ -110,7 +110,9 @@ class RemoteSynchronizer(Configurable):
                 else: remote = Remote()
 
                 # Setup the remote execution context
-                remote.setup(host_id)
+                if not remote.setup(host_id):
+                    log.warning("Remote host '" + host_id + "' is not available: skipping ...")
+                    continue
 
                 # Add the remote to the list of remote objects
                 self.remotes.append(remote)

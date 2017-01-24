@@ -74,7 +74,8 @@ class SkirtRemote(Remote):
         """
 
         # Call the setup function of the base class
-        super(SkirtRemote, self).setup(host_id, cluster_name)
+        success = super(SkirtRemote, self).setup(host_id, cluster_name)
+        if not success: return False
 
         # Obtain some information about the SKIRT installation on the remote machine
         self.skirt_path = self.find_executable("skirt")
@@ -108,6 +109,9 @@ class SkirtRemote(Remote):
         remote_version = self.skirt_version.split("built on")[0]
         if remote_version != local_version:
             log.warning("Remote SKIRT version (" + remote_version + ") is different from local SKIRT version (" + local_version + ")")
+
+        # Return succes
+        return success
 
     # -----------------------------------------------------------------
 

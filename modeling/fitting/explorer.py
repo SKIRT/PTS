@@ -33,6 +33,7 @@ from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.tools.stringify import stringify_not_list
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
+from ...core.remote.host import Host
 
 # -----------------------------------------------------------------
 
@@ -147,8 +148,8 @@ class ParameterExplorer(FittingComponent):
         self.set_generator()
 
         # Check whether this is not the first generation so that we can use remotes with a scheduling system
-        if self.ngenerations == 0 and self.uses_schedulers:
-            raise ValueError("The specified remote hosts cannot be used for the first generation: at least one remote uses a scheduling system")
+        #if self.ngenerations == 0 and self.uses_schedulers:
+        #    raise ValueError("The specified remote hosts cannot be used for the first generation: at least one remote uses a scheduling system")
 
         # Check whether initialize_fit has been called
         if self.modeling_type == "galaxy":
@@ -167,15 +168,23 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting options for the batch simulation launcher ...")
 
+        # Set remote host IDs
+        remote_host_ids = []
+        if self.ngenerations == 0:
+            for host_id in self.config.remotes:
+                if Host(host_id).scheduler: log.warning("Not using remote host '" + host_id + "' for the initial generation because it uses a scheduling system for launching jobs")
+                else: remote_host_ids.append(host_id)
+        else: remote_host_ids = self.config.remotes
+
         # Basic options
-        self.launcher.config.shared_input = True                    # The input directories (or files) for the different simulations are shared
-        self.launcher.config.remotes = self.config.remotes          # the remote host(s) on which to run the simulations
-        self.launcher.config.group_simulations = self.config.group  # group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
-        self.launcher.config.group_walltime = self.config.walltime  # the preferred walltime for jobs of a group of simulations
+        self.launcher.config.shared_input = True                         # The input directories (or files) for the different simulations are shared
+        self.launcher.config.remotes = remote_host_ids               # the remote host(s) on which to run the simulations
+        self.launcher.config.group_simulations = self.config.group       # group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
+        self.launcher.config.group_walltime = self.config.walltime       # the preferred walltime for jobs of a group of simulations
         self.launcher.config.timing_table_path = self.timing_table_path  # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path  # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # the number of cores per process, for non-schedulers
-        self.launcher.config.dry = self.config.dry                  # dry run (don't actually launch simulations)
+        self.launcher.config.dry = self.config.dry                       # dry run (don't actually launch simulations)
 
         # Simulation analysis options
 
