@@ -1444,56 +1444,11 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Getting the PTS dependencies on the remote host ...")
 
-        # Get available conda packages
-        output = self.remote.execute("conda search")
-        available_packages = []
-        for line in output:
-            if not line.split(" ")[0]: continue
-            available_packages.append(line.split(" ")[0])
+        # Install PTS dependencies
+        get_pts_dependencies_remote(self.remote)
 
-        # Get already installed packages
-        already_installed = []
-        for line in self.remote.execute("conda list"):
-            if line.startswith("#"): continue
-            already_installed.append(line.split(" ")[0])
-
-        # Use the introspection module on the remote end to get the dependencies and installed python packages
-        session = self.remote.start_python_session()
-        session.import_package("introspection", from_name="pts.core.tools")
-        dependencies = session.get_simple_property("introspection", "get_all_dependencies().keys()")
-        packages = session.get_simple_property("introspection", "installed_python_packages()")
-        #self.remote.end_python_session()
-        # Don't end the python session just yet
-
-        # Get installation commands
-        session.import_package("google", from_name="pts.core.tools")
-        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, session)
-
-        # Stop the python session
-        del session
-
-        # Install
-        for module in installation_commands:
-
-            # Debugging
-            log.debug("Installing '" + module + "' ...")
-
-            command = installation_commands[module]
-
-            if isinstance(command, list): self.remote.execute_lines(*command, show_output=log.is_debug())
-            elif isinstance(command, basestring): self.remote.execute(command, show_output=log.is_debug())
-
-        # Show installed packages
-        log.info("Packages that were installed:")
-        for module in installed: log.info(" - " + module)
-
-        # Show not installed packages
-        log.info("Packages that could not be installed:")
-        for module in not_installed: log.info(" - " + module)
-
-        # Show already present packages
-        log.info("Packages that were already present:")
-        for module in already_installed: log.info(" - " + module)
+        # Success
+        log.success("Succesfully installed the dependencies on the remote host")
 
     # -----------------------------------------------------------------
 
@@ -1758,5 +1713,81 @@ def define_alias(name, alias_to, comment=None, in_shell=False):
 
     # Execute in shell
     if in_shell: terminal.execute(alias_command)
+
+# -----------------------------------------------------------------
+
+def get_pts_dependencies_remote(remote):
+
+    """
+    This fucntion ...
+    :param remote:
+    :return:
+    """
+
+    # Get available conda packages
+    output = remote.execute("conda search")
+    available_packages = []
+    for line in output:
+        if not line.split(" ")[0]: continue
+        available_packages.append(line.split(" ")[0])
+
+    # Get already installed packages
+    already_installed = []
+    for line in remote.execute("conda list"):
+        if line.startswith("#"): continue
+        already_installed.append(line.split(" ")[0])
+
+    ## Install essential packages: numpy and astropy
+    for essential in ["numpy", "astropy"]:
+
+        # Skip installation if it is already present
+        if essential in already_installed: continue
+
+        # NUMPY
+        command = "conda install " + essential
+        lines = []
+        lines.append(command)
+        lines.append(("Proceed ([y]/n)?", "y"))
+        remote.execute_lines(*lines, show_output=log.is_debug())
+
+    # Use the introspection module on the remote end to get the dependencies and installed python packages
+    session = remote.start_python_session()
+    session.import_package("introspection", from_name="pts.core.tools")
+    dependencies = session.get_simple_property("introspection", "get_all_dependencies().keys()")
+    packages = session.get_simple_property("introspection", "installed_python_packages()")
+    # self.remote.end_python_session()
+    # Don't end the python session just yet
+
+    # Get installation commands
+    session.import_package("google", from_name="pts.core.tools")
+    installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
+                                                                                already_installed, available_packages,
+                                                                                session)
+
+    # Stop the python session
+    del session
+
+    # Install
+    for module in installation_commands:
+
+        # Debugging
+        log.debug("Installing '" + module + "' ...")
+
+        command = installation_commands[module]
+
+        if isinstance(command, list): remote.execute_lines(*command, show_output=log.is_debug())
+        elif isinstance(command, basestring): remote.execute(command, show_output=log.is_debug())
+
+    # Show installed packages
+    log.info("Packages that were installed:")
+    for module in installed: log.info(" - " + module)
+
+    # Show not installed packages
+    log.info("Packages that could not be installed:")
+    for module in not_installed: log.info(" - " + module)
+
+    # Show already present packages
+    log.info("Packages that were already present:")
+    for module in already_installed: log.info(" - " + module)
 
 # -----------------------------------------------------------------

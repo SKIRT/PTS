@@ -1656,7 +1656,7 @@ class Remote(object):
                     elif index == 1: self.ssh.sendline(line[1])
                     #eof = self.ssh.prompt()
                 else:
-                    self.ssh.expect(line[0])
+                    self.ssh.expect(line[0], timeout=timeout)
                     self.ssh.sendline(line[1])
 
             # Invalid

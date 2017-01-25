@@ -21,7 +21,7 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, find_qmake, build_skirt_on_remote, build_skirt_local
+from .installation import get_installation_commands, find_qmake, build_skirt_on_remote, build_skirt_local, get_pts_dependencies_remote
 from ..tools import git
 from ..tools import terminal
 
@@ -673,57 +673,8 @@ class PTSUpdater(Updater):
         # Inform the user
         log.info("Updating the PTS dependencies ...")
 
-        # NOTE: this function has completely the same implementation as the function 'get_dependencies_remote' in the PTSInstaller class ! (TODO: accomodate this)
-
-        # Get available conda packages
-        output = self.remote.execute("conda search")
-        available_packages = []
-        for line in output:
-            if not line.split(" ")[0]: continue
-            available_packages.append(line.split(" ")[0])
-
-        # Get already installed packages
-        already_installed = []
-        for line in self.remote.execute("conda list"):
-            if line.startswith("#"): continue
-            already_installed.append(line.split(" ")[0])
-
-        # Use the introspection module on the remote end to get the dependencies and installed python packages
-        python = self.remote.start_python_session()
-        python.import_package("introspection", from_name="pts.core.tools")
-        dependencies = python.get_simple_property("introspection", "get_all_dependencies().keys()")
-        packages = python.get_simple_property("introspection", "installed_python_packages()")
-        #self.remote.end_python_session()
-        # Don't end the python session just yet
-
-        # Get installation commands
-        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages, already_installed, available_packages, self.remote)
-
-        # End the python session
-        del python
-
-        # Install
-        for module in installation_commands:
-
-            # Debugging
-            log.debug("Installing '" + module + "' ...")
-
-            command = installation_commands[module]
-
-            if isinstance(command, list): self.remote.execute_lines(*command, show_output=log.is_debug())
-            elif isinstance(command, basestring): self.remote.execute(command, show_output=log.is_debug())
-
-        # Show installed packages
-        log.info("Packages that were installed:")
-        for module in installed: log.info(" - " + module)
-
-        # Show not installed packages
-        log.info("Packages that could not be installed:")
-        for module in not_installed: log.info(" - " + module)
-
-        # Show already present packages
-        log.info("Packages that were already present:")
-        for module in already_installed: log.info(" - " + module)
+        # Install PTS dependencies
+        get_pts_dependencies_remote(self.remote)
 
         # Update all packages
         update_command = "conda update --all"
@@ -731,6 +682,9 @@ class PTSUpdater(Updater):
         lines.append(update_command)
         lines.append(("Proceed ([y]/n)?", "y", True))
         self.remote.execute_lines(*lines, show_output=log.is_debug())
+
+        # Success
+        log.success("Succesfully installed and updated the dependencies on the remote host")
 
     # -----------------------------------------------------------------
 
