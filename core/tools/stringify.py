@@ -18,12 +18,14 @@ import numpy as np
 from types import NoneType
 
 # Import astronomical modules
-from astropy.units import Quantity
+from astropy.units import Unit, Quantity
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ..basics.filter import Filter
 from ..basics.range import RealRange, IntegerRange, QuantityRange
-from ..basics.unit import represent_unit
+from ..basics.unit import stringify_unit
+from ..basics.quantity import stringify_quantity
 
 # -----------------------------------------------------------------
 
@@ -34,8 +36,6 @@ def stringify(value):
     :param value:
     :return:
     """
-
-    #print(type(value))
 
     # List or derived from list
     if isinstance(value, list):
@@ -93,20 +93,19 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     :return:
     """
 
-    from astropy.units import Quantity
-    from astropy.coordinates import Angle
     from pts.magic.basics.coordinate import SkyCoordinate
     from pts.magic.basics.stretch import SkyStretch
 
-    if isinstance(value, bool): return "boolean", str(value)
-    elif isinstance(value, int) or isinstance(value, np.int32) or isinstance(value, np.int64) or isinstance(value, np.uint32) or isinstance(value, np.uint64):
+    if is_boolean_type(value): return "boolean", str(value)
+    elif is_integer_type(value):
         if scientific: return "integer", "{:.0e}".format(value).replace("+", "").replace("e0", "e")
         else: return "integer", str(value)
-    elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64):
+    elif is_real_type(value):
         if scientific: return "real", ("{:." + str(decimal_places) + "e}").format(value).replace("+", "").replace("e0", "e")
         else: return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
-    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + represent_unit(value.unit)
+    elif isinstance(value, Unit): return stringify_unit(value)
+    elif isinstance(value, Quantity): return stringify_quantity(value)
     elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit).replace(" ", "")
     elif isinstance(value, NoneType): return "None", "None"
     elif isinstance(value, RealRange): return "real_range", repr(value)
@@ -120,6 +119,12 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
 # -----------------------------------------------------------------
 
 def str_from_angle(angle):
+
+    """
+    This function ...
+    :param angle:
+    :return:
+    """
 
     try: return str(angle.to("deg").value) + " deg"
     except AttributeError: return str(angle)
@@ -154,6 +159,49 @@ def str_from_quantity(quantity, unit=None):
 # -----------------------------------------------------------------
 
 def str_from_bool(boolean):
+
+    """
+    This function ...
+    :param boolean:
+    :return:
+    """
+
     return str(boolean).lower()
+
+# -----------------------------------------------------------------
+
+def is_boolean_type(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return isinstance(value, bool) or isinstance(value, np.bool)
+
+# -----------------------------------------------------------------
+
+def is_integer_type(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return isinstance(value, int) or isinstance(value, np.int32) or isinstance(value, np.int64) or isinstance(value, np.uint32) or isinstance(value, np.uint64)
+
+# -----------------------------------------------------------------
+
+def is_real_type(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64)
 
 # -----------------------------------------------------------------

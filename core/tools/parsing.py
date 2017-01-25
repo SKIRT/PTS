@@ -563,6 +563,18 @@ def photometric_unit(argument):
 
 # -----------------------------------------------------------------
 
+def photometric_density_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return PhotometricUnit(argument, density=True)
+
+# -----------------------------------------------------------------
+
 def quantity(argument):
 
     """
@@ -606,6 +618,19 @@ def photometric_quantity(argument):
 
     q = quantity(argument)
     return q.value * PhotometricUnit(q.unit)
+
+# -----------------------------------------------------------------
+
+def photometric_density_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    q = quantity(argument)
+    return q.value * PhotometricUnit(q.unit, density=True)
 
 # -----------------------------------------------------------------
 

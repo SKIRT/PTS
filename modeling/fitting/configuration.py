@@ -20,8 +20,7 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
 from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
-from ..config.parameters import parsing_types_for_parameter_types
-
+from ..config.parameters import parsing_types_for_parameter_types, unit_parsing_type
 from ..config.parameters import default_units, possible_parameter_types_descriptions
 
 # -----------------------------------------------------------------
@@ -227,7 +226,14 @@ class FittingConfigurer(FittingComponent):
 
             # Create definition
             definition = ConfigurationDefinition()
-            for name in self.parameters_config.free_parameters: definition.add_optional(name, "unit", "unit of the '" + name + "' parameter", default=default_units[self.types_config.types[name]])
+            for name in self.parameters_config.free_parameters:
+
+                # Get the type of quantity for this parameter
+                parameter_type = self.types_config.types[name]
+
+                # Don't ask for units for dimensionless quantities
+                if parameter_type == "dimless": definition.add_fixed(name, name + " has no unit (dimensionless)", None)
+                else: definition.add_optional(name, unit_parsing_type(parameter_type), "unit of the '" + name + "' parameter", default=default_units[parameter_type])
 
             # Create configuration setter
             setter = InteractiveConfigurationSetter("Parameter units", add_cwd=False, add_logging=False)
@@ -264,7 +270,7 @@ class FittingConfigurer(FittingComponent):
                 # Get the unit
                 unit = self.units_config.units[label]
                 #in_units_string = " (in " + unit + ")" if unit is not None else " (dimensionless)"
-                units_info_string = " (specify the units!) " if unit is not None else " (dimensionless)"
+                units_info_string = " (don't forget the units!) " if unit is not None else " (dimensionless)"
 
                 # Get the default range
                 default_range = self.default_ranges[label] if label in self.default_ranges else None

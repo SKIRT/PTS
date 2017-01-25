@@ -272,7 +272,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
         log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
 
     # Mark the end of this modeling script
-    if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy":
+    if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy" and command_name != "model_sed":
         history.mark_end()
         history.save()
 

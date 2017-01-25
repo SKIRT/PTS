@@ -37,16 +37,24 @@ nanomaggy_string = "(3.613e-6 Jy)"
 
 # -----------------------------------------------------------------
 
-replacements = dict()
+# Input string->unit replacements
+input_replacements = dict()
+input_replacements["DN"] = "count"
+input_replacements["SEC"] = "second"
+input_replacements["nanomaggy"] = nanomaggy_string
+input_replacements["nmaggy"] = nanomaggy_string
+input_replacements["nmaggy"] = nanomaggy_string
+input_replacements["nmgy"] = nanomaggy_string
+input_replacements["nMgy"] = nanomaggy_string
+input_replacements["nanomaggies"] = nanomaggy_string
 
-replacements["DN"] = "count"
-replacements["SEC"] = "second"
-replacements["nanomaggy"] = nanomaggy_string
-replacements["nmaggy"] = nanomaggy_string
-replacements["nmaggy"] = nanomaggy_string
-replacements["nmgy"] = nanomaggy_string
-replacements["nMgy"] = nanomaggy_string
-replacements["nanomaggies"] = nanomaggy_string
+# -----------------------------------------------------------------
+
+# Output unit->string replacements
+output_replacements = dict()
+output_replacements["solMass"] = "Msun"
+output_replacements["solLum"] = "Lsun"
+output_replacements[" "] = ""
 
 # -----------------------------------------------------------------
 
@@ -292,8 +300,8 @@ def clean_unit_string(string):
     :return:
     """
 
-    for key in replacements:
-        string = string.replace(key, replacements[key])
+    for key in input_replacements:
+        string = string.replace(key, input_replacements[key])
     if string.count("(") == 1 and string.count(")") == 1 and string.startswith("(") and string.endswith(")"): string = string[1:-1]
     return string
 
@@ -316,6 +324,25 @@ def parse_unit(argument, density=False):
 
 # -----------------------------------------------------------------
 
+def stringify_unit(unit):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+    # Get parsing type
+    if isinstance(unit, PhotometricUnit):
+        if unit.density: parsing_type = "photometric_density_unit"
+        else: parsing_type = "photometric_unit"
+    else: parsing_type = "unit"
+
+    # Return type and stringified unit
+    return parsing_type, represent_unit(unit)
+
+# -----------------------------------------------------------------
+
 def represent_unit(unit):
 
     """
@@ -324,7 +351,12 @@ def represent_unit(unit):
     :return:
     """
 
-    return str(unit).replace("solMass", "Msun").replace("solLum", "Lsun").replace(" ", "")
+    string = str(unit)
+
+    for key in output_replacements:
+        string = string.replace(key, output_replacements[key])
+
+    return string
 
 # -----------------------------------------------------------------
 

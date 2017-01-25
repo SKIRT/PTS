@@ -57,7 +57,7 @@ definition.add_flag("dust_log", "use logarithmic spacing of the dust mass values
 definition.add_flag("visualise", "make visualisations")
 
 # Simulation options
-definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)
+definition.add_optional("npackages", "integer", "the number of photon packages per wavelength", int(2e5))
 definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations")
 definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations")
 definition.add_flag("selfabsorption", "dust self-absorption", True)

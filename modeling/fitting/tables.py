@@ -5,7 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.generations Contains the GenerationsTable class.
+## \package pts.modeling.fitting.tables Contains table classes: WeightsTable, BestParametersTable, GenerationsTable,
+#  ParametersTable, ChiSquaredTable, ModelProbabilitiesTable, and ParameterProbabilitiesTable
 
 # -----------------------------------------------------------------
 
@@ -20,6 +21,7 @@ from ...core.basics.table import SmartTable
 from ...core.tools import tables
 from ...core.basics.range import RealRange
 from ...core.basics.curve import FilterCurve
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -162,8 +164,10 @@ class GenerationsTable(SmartTable):
         else: from_astropy = True
 
         # Get properties
-        if not from_astropy: parameters = kwargs.pop("parameters")
-        else: parameters = None
+        if not from_astropy:
+            parameters = kwargs.pop("parameters")
+            units = kwargs.pop("units")
+        else: parameters = units = None
 
         # Call the constructor of the base class
         super(GenerationsTable, self).__init__(*args, **kwargs)
@@ -185,8 +189,12 @@ class GenerationsTable(SmartTable):
             # Loop over the parameters
             for label in parameters:
 
-                self.add_column_info("Minimum value for " + label, float, None, "minimum value for " + label)
-                self.add_column_info("Maximum value for " + label, float, None, "Maximum value for " + label)
+                # Get the unit
+                unit = u(units[label]) if label in units and units[label] is not None else None
+
+                # Add columns for the minimum and maximum value for this parameter
+                self.add_column_info("Minimum value for " + label, float, unit, "minimum value for " + label)
+                self.add_column_info("Maximum value for " + label, float, unit, "Maximum value for " + label)
 
             # Add finishing time column
             self.add_column_info("Finishing time", str, None, "Time of finishing the generation")
@@ -426,7 +434,8 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages, selfabsorption, transientheating, ranges):
+    def add_entry(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages,
+                  selfabsorption, transientheating, ranges):
 
         """
         This function ...

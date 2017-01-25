@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -15,20 +16,55 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # -----------------------------------------------------------------
 
 # Types of parameters
-possible_parameter_types = ["dimless", "mass", "grainsize", "length", "angle", "posangle", "luminosity", "pressure"]
+possible_parameter_types = ["dimless", "mass", "grainsize", "length", "angle", "posangle", "luminosity",
+                            "spectral luminosity density", "flux", "spectral flux density", "intensity",
+                            "spectral intensity density", "surface brightness", "spectral surface brightness density",
+                            "pressure"]
+
+# -----------------------------------------------------------------
+
+def is_photometric_density(parameter_type):
+
+    """
+    This function ...
+    :param parameter_type:
+    :return:
+    """
+
+    return parameter_type.startswith("spectral") and parameter_type.endswith("density")
+
+# -----------------------------------------------------------------
+
+def unit_parsing_type(parameter_type):
+
+    """
+    This function ...
+    :param parameter_type:
+    :return:
+    """
+
+    ptype = "photometric_density_unit" if is_photometric_density(parameter_type) else "unit"
+    return ptype
 
 # -----------------------------------------------------------------
 
 # Default units for different parameter types
 default_units = dict()
 default_units["dimless"] = None
-default_units["mass"] = "Msun"
-default_units["grainsize"] = "micron"
-default_units["length"] = "pc"
-default_units["angle"] = "deg"
-default_units["posangle"] = "deg"
-default_units["luminosity"] = "W/micron"
-default_units["pressure"] = "K/m3"
+default_units["mass"] = u("Msun")
+default_units["grainsize"] = u("micron")
+default_units["length"] = u("pc")
+default_units["angle"] = u("deg")
+default_units["posangle"] = u("deg")
+default_units["luminosity"] = u("Lsun") # bolometric luminosity
+default_units["spectral luminosity density"] = u("W/micron", density=True) # spectral luminosity density
+default_units["flux"] = u("W/m2", density=True) # bolometric flux
+default_units["spectral flux density"] = u("Jy", density=True) # spectral flux density
+default_units["intensity"] = u("W/sr") # bolometric intensity
+default_units["spectral intensity density"] = u("W/sr/micron", density=True) # spectral intensity density
+default_units["surface brightness"] = u("W/m2/sr") # bolometric surface brightness
+default_units["spectral surface brightness density"] = u("W/m2/sr/micron", density=True) # spectral surface brightness density
+default_units["pressure"] = u("K/m3")
 
 # -----------------------------------------------------------------
 
@@ -39,7 +75,14 @@ possible_parameter_types_descriptions["grainsize"] = "grain size (default unit: 
 possible_parameter_types_descriptions["length"] = "physical length (default unit: " + default_units["length"] + ")"
 possible_parameter_types_descriptions["angle"] = "angle (default unit: " + default_units["angle"] + ")"
 possible_parameter_types_descriptions["posangle"] = "position angle (default unit: " + default_units["posangle"] + ")"
-possible_parameter_types_descriptions["luminosity"] = "(spectral) luminosity (default unit: " + default_units["luminosity"] + ")"
+possible_parameter_types_descriptions["luminosity"] = "bolometric luminosity (default unit: " + default_units["luminosity"] + ")"
+possible_parameter_types_descriptions["spectral luminosity density"] = "spectral luminosity (default unit: " + default_units["spectral luminosity density"] + ")"
+possible_parameter_types_descriptions["flux"] = "bolometric flux (default unit: " + default_units["flux"] + ")"
+possible_parameter_types_descriptions["spectral flux density"] = "spectral flux (default unit: " + default_units["spectral flux density"] + ")"
+possible_parameter_types_descriptions["intensity"] = "bolometric intensity (default unit: " + default_units["intensity"] + ")"
+possible_parameter_types_descriptions["spectral intensity density"] = "spectral intensity (default unit: " + default_units["spectral intensity density"] + ")"
+possible_parameter_types_descriptions["surface brightness"] = "bolometric surface brightness (default unit: " + default_units["surface brightness"] + ")"
+possible_parameter_types_descriptions["spectral surface brightness density"] = "spectral surface brightness (default unit: " + default_units["spectral surface brightness density"] + ")"
 possible_parameter_types_descriptions["pressure"] = "pressure (default unit: " + default_units["pressure"] + ")"
 
 # -----------------------------------------------------------------
@@ -52,6 +95,13 @@ parsing_types_for_parameter_types["length"] = "quantity"
 parsing_types_for_parameter_types["angle"] = "angle"
 parsing_types_for_parameter_types["posangle"] = "angle"
 parsing_types_for_parameter_types["luminosity"] = "photometric_quantity"
+parsing_types_for_parameter_types["spectral luminosity density"] = "photometric_density_quantity"
+parsing_types_for_parameter_types["flux"] = "photometric_quantity"
+parsing_types_for_parameter_types["spectral flux density"] = "photometric_density_quantity"
+parsing_types_for_parameter_types["intensity"] = "photometric_quantity"
+parsing_types_for_parameter_types["spectral intensity density"] = "photometric_density_quantity"
+parsing_types_for_parameter_types["surface brightness"] = "photometric_quantity"
+parsing_types_for_parameter_types["spectral surface brightness density"] = "photometric_density_quantity"
 parsing_types_for_parameter_types["pressure"] = "quantity"
 
 # -----------------------------------------------------------------

@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import astronomical modules
 from astropy.units import Quantity
 
+# Import the relevant PTS classes and modules
+from .unit import stringify_unit
+
 # -----------------------------------------------------------------
 
 def parse_quantity(argument):
@@ -29,6 +32,28 @@ def parse_quantity(argument):
     except ValueError: quantity = Quantity(argument)
     return quantity
         
+# -----------------------------------------------------------------
+
+def stringify_quantity(quantity):
+
+    """
+    This function ...
+    :param quantity:
+    :return:
+    """
+
+    # Stringify the unit
+    unit_type, unit_string = stringify_unit(quantity.unit)
+
+    # Determine quantity parsing type
+    if unit_type == "photometric_unit": parsing_type = "photometric_quantity"
+    elif unit_type == "photometric_density_unit": parsing_type = "photometric_density_quantity"
+    elif unit_type == "unit": parsing_type = "quantity"
+    else: raise ValueError("Unknown unit type: " + unit_type)
+
+    # Return parsing type and stringified quantity
+    return parsing_type, repr(quantity.value) + " " + unit_string
+
 # -----------------------------------------------------------------
 
 class PhotometricQuantity(Quantity):

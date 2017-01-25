@@ -791,7 +791,11 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default and default is not None: default = get_real_value(default, real_type)
+        if default is not None:
+            if convert_default: default = get_real_value(default, real_type)
+            else: # check default
+                default_type, default_string = stringify.stringify(default)
+                if default_type != user_type: raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices, dynamic_list=dynamic_list)
@@ -819,7 +823,11 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default and default is not None: default = get_real_value(default, real_type)
+        if default is not None:
+            if convert_default: default = get_real_value(default, real_type)
+            else: # check default
+                default_type, default_string = stringify.stringify(default)
+                if default_type != user_type: raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add
         self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices, letter=letter, dynamic_list=dynamic_list)
@@ -1786,7 +1794,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         log.success(name + ": " + description)
 
         # Inform the user
-        log.info("Using fixed value for " + str(value))
+        log.info("Using fixed value '" + str(value) + "' for " + name)
 
         # Set the value
         config[name] = value
