@@ -21,7 +21,7 @@ from ....core.tools import tables
 from ....core.tools import filesystem as fs
 from ....magic.tools import wavelengths
 from ....core.tools.logging import log
-from ..wavelengthgrids import WavelengthGridGenerator
+from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ...component.sed import SEDModelingComponent
 from ....core.simulation.skifile import LabeledSkiFile
 from ..tables import WeightsTable

@@ -24,9 +24,9 @@ from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..tools import google
 from ..tools import network, archive
-from ..tools.parallelization import ncores
 from ..tools import terminal
 from ..tools import git
+from ..tools import parallelization
 
 # -----------------------------------------------------------------
 
@@ -39,7 +39,7 @@ from ..tools import git
 skirt_directories = ["git", "run", "doc", "release", "debug"]
 pts_directories = ["pts", "run", "doc", "temp", "remotes", "user", "ext"]
 
-# -----------------------------------------------------------------
+# -----------------------------------------------f------------------
 
 # Qt URL
 # link = "http://download.qt.io/official_releases/qt/5.5/5.5.1/single/qt-everywhere-opensource-src-5.5.1.tar.gz"
@@ -529,9 +529,9 @@ class SKIRTInstaller(Installer):
             lines.append(("':", password))
 
             # Clone the repository
-            terminal.execute_lines(*lines)
+            terminal.execute_lines(*lines, cwd=self.skirt_root_path)
 
-        else: terminal.execute(command)
+        else: terminal.execute(command, cwd=self.skirt_root_path)
 
         # Get git version
         self.git_version = git.get_short_git_version(self.skirt_repo_path)
@@ -563,28 +563,8 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Building SKIRT ...")
 
-        # Create command strings
-        make_make_command = self.qmake_path + " BuildSKIRT.pro -o ../release/Makefile CONFIG+=release"
-        nthreads = ncores()
-        make_command = "make -j " + str(nthreads) + " -w -C ../release"
-
-        # Debugging
-        log.debug("Make commands:")
-        log.debug(" 1) " + make_make_command)
-        log.debug(" 2) " + make_command)
-        log.debug("in directory: " + self.skirt_repo_path)
-
-        # Make make
-        terminal.execute(make_make_command, cwd=self.skirt_repo_path)
-
-        # Overwrite the git version
-        git_version_content = 'const char* git_version = " ' + self.git_version + ' " ;'
-        git_version_path = fs.join(self.skirt_repo_path, "SKIRTmain", "git_version.h")
-        write_command = 'echo "' + git_version_content + '" > ' + git_version_path
-        terminal.execute(write_command)
-
-        # Make
-        terminal.execute(make_command, cwd=self.skirt_repo_path)
+        # Execute the build
+        build_skirt_local(self.skirt_repo_path, self.qmake_path, self.git_version)
 
         # Success
         log.success("SKIRT was successfully built")
@@ -855,6 +835,43 @@ class SKIRTInstaller(Installer):
         else:
             log.error("Something is wrong with the SKIRT installation:")
             for line in output: log.error("   " + line)
+
+# -----------------------------------------------------------------
+
+def build_skirt_local(skirt_repo_path, qmake_path, git_version):
+
+    """
+    This function ...
+    :param skirt_repo_path:
+    :param qmake_path:
+    :param git_version:
+    :return:
+    """
+
+    # Create command strings
+    make_make_command = qmake_path + " BuildSKIRT.pro -o ../release/Makefile CONFIG+=release"
+    nthreads = parallelization.ncores() * parallelization.nthreads_per_core()
+    make_command = "make -j " + str(nthreads) + " -w -C ../release"
+
+    # Debugging
+    log.debug("Make commands:")
+    log.debug(" 1) " + make_make_command)
+    log.debug(" 2) " + make_command)
+    log.debug("in directory " + skirt_repo_path)
+
+    # Execute
+    output = terminal.execute(make_make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
+
+    # Overwrite the git version
+    git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
+    git_version_path = fs.join(skirt_repo_path, "SKIRTmain", "git_version.h")
+    fs.write_line(git_version_path, git_version_content)
+
+    # Make
+    terminal.execute(make_command, cwd=skirt_repo_path)
+
+    # Success
+    log.success("SKIRT was successfully built")
 
 # -----------------------------------------------------------------
 

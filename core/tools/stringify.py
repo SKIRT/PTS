@@ -18,7 +18,7 @@ import numpy as np
 from types import NoneType
 
 # Import astronomical modules
-from astropy.units import Unit, Quantity
+from astropy.units import UnitBase, Quantity
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
@@ -104,7 +104,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
         if scientific: return "real", ("{:." + str(decimal_places) + "e}").format(value).replace("+", "").replace("e0", "e")
         else: return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
-    elif isinstance(value, Unit): return stringify_unit(value)
+    elif isinstance(value, UnitBase): return stringify_unit(value)
     elif isinstance(value, Quantity): return stringify_quantity(value)
     elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit).replace(" ", "")
     elif isinstance(value, NoneType): return "None", "None"

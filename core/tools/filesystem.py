@@ -899,6 +899,33 @@ def read_lines_reversed(path, buf_size=8192):
 
 # -----------------------------------------------------------------
 
+def write_line(filepath, line):
+
+    """
+    This function ...
+    :param filepath:
+    :param line:
+    :return:
+    """
+
+    with open(filepath, 'w') as fh: fh.write(line + "\n")
+
+# -----------------------------------------------------------------
+
+def write_lines(filepath, lines):
+
+    """
+    This function ...
+    :param filepath:
+    :param lines:
+    :return:
+    """
+
+    with open(filepath, 'w') as fh:
+        for line in lines: fh.write(line + "\n")
+
+# -----------------------------------------------------------------
+
 def append_line(filepath, line):
 
     """
@@ -908,7 +935,7 @@ def append_line(filepath, line):
     :return:
     """
 
-    with open(filepath, 'a') as fh: fh.write(line)
+    with open(filepath, 'a') as fh: fh.write(line + "\n")
 
 # -----------------------------------------------------------------
 
@@ -922,6 +949,6 @@ def append_lines(filepath, lines):
     """
 
     with open(filepath, 'a') as fh:
-        for line in lines: fh.write(line)
+        for line in lines: fh.write(line + "\n")
 
 # -----------------------------------------------------------------

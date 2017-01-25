@@ -134,6 +134,23 @@ class Modeler(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fitting_host_ids_schedulers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        host_ids = []
+        for host_id in self.fitting_host_ids:
+            host = Host(host_id)
+            if not host.scheduler: continue
+            else: host_ids.append(host_id)
+        return host_ids
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -210,8 +227,12 @@ class Modeler(Configurable):
         # Set the host ids
         deployer.config.host_ids = self.used_host_ids
 
-        # Set the host id on which PTS should be installed
-        deployer.config.pts_on = [self.host_id]
+        # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
+        # that have a scheduling system to launch the pts run_queue command)
+        pts_host_ids = []
+        if self.host_id is not None: pts_host_ids.append(self.host_id)
+        for host_id in self.fitting_host_ids_schedulers: pts_host_ids.append(host_id)
+        deployer.config.pts_on = pts_host_ids
 
         # Set
         deployer.config.check = self.config.check_versions

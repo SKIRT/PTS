@@ -1054,7 +1054,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def login(self, login_timeout=30):
+    def login(self, login_timeout=15):
 
         """
         This function ...
@@ -1785,6 +1785,9 @@ class Remote(object):
         :return:
         """
 
+        # Debugging
+        log.debug("Removing directory '" + path + "' ...")
+
         self.execute("rm -rf " + path, output=False)
 
     # -----------------------------------------------------------------
@@ -1796,6 +1799,9 @@ class Remote(object):
         :param path:
         :return:
         """
+
+        # Debugging
+        log.debug("Removing file '" + path + "' ...")
 
         self.execute("rm " + path, output=False)
 
@@ -2047,6 +2053,20 @@ class Remote(object):
 
         command = "echo '" + line + "' > " + filepath
         self.execute(command, output=False)
+
+    # -----------------------------------------------------------------
+
+    def write_lines(self, filepath, lines):
+
+        """
+        This function ...
+        :param filepath:
+        :param lines:
+        :return:
+        """
+
+        self.write_line(filepath, lines[0])
+        for line in lines[1:]: self.append_line(filepath, line)
 
     # -----------------------------------------------------------------
 

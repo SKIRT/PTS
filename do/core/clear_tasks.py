@@ -67,7 +67,10 @@ for host_id in config.remotes:
     else: remote = None
 
     # Determine the path to the run directory for the specified remote host
-    host_run_path = fs.join(introspection.pts_run_dir, config.remote)
+    host_run_path = fs.join(introspection.pts_run_dir, host_id)
+
+    # Check if there are tasks
+    if fs.is_empty(host_run_path): log.debug("No tasks for host '" + host_id + "'")
 
     # Loop over the task files in the run directory for the host
     for path, name in fs.files_in_path(host_run_path, extension="task", returns=["path", "name"]):
@@ -92,5 +95,8 @@ for host_id in config.remotes:
 
         # Remove the file
         fs.remove_file(path)
+
+    # Success
+    log.success("All cleared for host '" + host_id)
 
 # -----------------------------------------------------------------

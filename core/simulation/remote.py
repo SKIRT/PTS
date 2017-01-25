@@ -604,7 +604,7 @@ class SkirtRemote(Remote):
                 self.upload(local_input_file_paths, remote_input_path)
 
             # The specified remote directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory_alternative(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # Invalid format for arguments.input_path
         else: raise ValueError("Invalid value for 'input_path': must be None, local directory path or list of file paths")

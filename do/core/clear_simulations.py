@@ -65,6 +65,9 @@ for host_id in config.remotes:
     # Determine the path to the run directory for the specified remote host
     host_run_path = fs.join(introspection.skirt_run_dir, host_id)
 
+    # Check if there are simulations
+    if fs.is_empty(host_run_path): log.debug("No simulations for host '" + host_id + "'")
+
     # Loop over the simulation files in the run directory
     for path, name in fs.files_in_path(host_run_path, extension="sim", returns=["path", "name"]):
 
@@ -91,5 +94,8 @@ for host_id in config.remotes:
 
         # Remove the file
         fs.remove_file(path)
+
+    # Success
+    log.success("All cleared for host '" + host_id)
 
 # -----------------------------------------------------------------

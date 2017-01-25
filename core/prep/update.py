@@ -21,9 +21,9 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, find_qmake, build_skirt_on_remote
-from ..tools import filesystem as fs
+from .installation import get_installation_commands, find_qmake, build_skirt_on_remote, build_skirt_local
 from ..tools import git
+from ..tools import terminal
 
 # -----------------------------------------------------------------
 
@@ -64,6 +64,9 @@ class Updater(Configurable):
 
         # 2. Update
         self.update()
+
+        # 3. Tes
+        self.test()
 
     # -----------------------------------------------------------------
 
@@ -140,6 +143,43 @@ class Updater(Configurable):
 
     @abstractmethod
     def update_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def test(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Test locally or remotely
+        if self.remote is None: self.test_local()
+        else: self.test_remote()
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def test_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def test_remote(self):
 
         """
         This function ...
@@ -259,11 +299,11 @@ class SKIRTUpdater(Updater):
         :return:
         """
 
-        # Debugging
-        log.debug("Compiling latest version ...")
+        # Inform the user
+        log.info("Building SKIRT ...")
 
-        # Recompile SKIRT
-        subprocess.call(["sh", "makeSKIRT.sh"], cwd=introspection.skirt_repo_dir)
+        # Execute the build
+        build_skirt_local(introspection.skirt_repo_dir, self.qmake_path, self.git_version)
 
     # -----------------------------------------------------------------
 
@@ -358,79 +398,6 @@ class SKIRTUpdater(Updater):
         # Debugging
         log.debug("Getting latest version ...")
 
-        # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
-        # because of the private/public key thingy, so use a trick
-
-        #if self.remote.host.name == "login.hpc.ugent.be":
-
-            # Get path to the origin.txt file
-            #origin_path = fs.join(self.remote.skirt_repo_path, "origin.txt")
-
-            # Installed with PTS
-            #if self.remote.is_file(origin_path):
-
-                # Get url
-                #url, git_version, git_hash = first_three_items_in_iterator(self.remote.read_lines(origin_path))
-
-                # Get the latest git hash for the URL of the repository
-                #latest_git_hash = get_hash_remote_repository(url)
-
-                # Debugging
-                #log.debug("Latest git hash for repository: " + latest_git_hash)
-                #log.debug("Git hash of version installed: " + git_hash)
-
-                # Compare the hashes
-                #if latest_git_hash == git_hash:
-
-                    # Already up to date
-                    #log.success("Already up to date")
-                    #self.rebuild = False
-                    #self.git_version = git_version
-                    #return
-
-                #else: # not up to date
-
-                    # Remove the previous SKIRT/git directory
-                    #self.remote.remove_directory(self.remote.skirt_repo_path)
-
-                    # Get the new code
-                    #self.git_version = get_skirt_hpc(self.remote, url, self.remote.skirt_root_path, self.remote.skirt_repo_path)
-
-            # Not installed with PTS
-            #else:
-
-                # Get the url of the "origin"
-                #url = get_url_repository(self.remote, self.remote.skirt_repo_path)
-
-                # Get latest hash
-                #latest_git_hash = get_hash_remote_repository(url)
-
-                # Get hash of current state
-                #git_hash = get_git_hash(self.remote, self.remote.skirt_repo_path)
-
-                # Debugging
-                #log.debug("Latest git hash for repository: " + latest_git_hash)
-                #log.debug("Git hash of version installed: " + git_hash)
-
-                # Compare git hashes
-                #if latest_git_hash == git_hash:
-                #    log.success("Already up to date")  # up to date
-                #    self.rebuild = False
-                #    self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
-                #    return
-
-                # The repository can only be installed through SSH, thus no password is required
-                #command = "git pull origin master"
-
-                # Execute the command
-                #self.remote.execute(command, cwd=self.remote.skirt_repo_path, show_output=True)
-
-                # Get the git version
-                #self.git_version = get_short_git_version(self.remote, self.remote.skirt_repo_path)
-
-        # Else
-        #else:
-
         # Get the url of the "origin"
         url = git.get_url_repository(self.remote, self.remote.skirt_repo_path)
 
@@ -482,7 +449,7 @@ class SKIRTUpdater(Updater):
             lines.append(("':", password))
 
             # Clone the repository
-            self.remote.execute_lines(*lines, show_output=log.is_debug())
+            self.remote.execute_lines(*lines, show_output=log.is_debug(), cwd=self.remote.skirt_repo_path)
 
         # Pull
         else: self.remote.execute(command, show_output=log.is_debug(), cwd=self.remote.skirt_repo_path)
@@ -510,6 +477,48 @@ class SKIRTUpdater(Updater):
 
         # Success
         log.success("SKIRT was successfully built")
+
+    # -----------------------------------------------------------------
+
+    def test_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Testing the SKIRT installation ...")
+
+        output = terminal.execute("skirt -h")
+        for line in output:
+            if "Welcome to SKIRT" in line:
+                log.succes("SKIRT is working")
+                break
+        else:
+            log.error("Something is wrong with the SKIRT installation:")
+            for line in output: log.error("   " + line)
+
+    # -----------------------------------------------------------------
+
+    def test_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Testing the SKIRT installation ...")
+
+        output = self.remote.execute("skirt -h")
+        for line in output:
+            if "Welcome to SKIRT" in line:
+                log.success("SKIRT is working")
+                break
+        else:
+            log.error("Something is wrong with the SKIRT installation:")
+            for line in output: log.error("   " + line)
 
 # -----------------------------------------------------------------
 
@@ -591,10 +600,6 @@ class PTSUpdater(Updater):
         # Debugging
         log.debug("Getting latest version ...")
 
-        # Change working directory to repository directory
-        pts_git_path = self.remote.pts_package_path
-        self.remote.change_cwd(pts_git_path)
-
         # Set the command
         command = "git pull origin master"
 
@@ -608,7 +613,7 @@ class PTSUpdater(Updater):
         lines.append(("':", password))
 
         # Clone the repository
-        self.remote.execute_lines(*lines, show_output=log.is_debug())
+        self.remote.execute_lines(*lines, show_output=log.is_debug(), cwd=self.remote.pts_package_path)
 
         #if "Enter passphrase for key" in self.remote.ssh.before:
         #    self.remote.execute(self.config.pubkey_password, show_output=True)
@@ -685,6 +690,44 @@ class PTSUpdater(Updater):
         lines.append(update_command)
         lines.append(("Proceed ([y]/n)?", "y", True))
         self.remote.execute_lines(*lines, show_output=log.is_debug())
+
+    # -----------------------------------------------------------------
+
+    def test_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Testing the PTS installation ...")
+
+        output = terminal.execute("pts -h")
+        for line in output:
+            if "usage: pts" in line: break
+        else:
+            log.error("Something is wrong with the PTS installation:")
+            for line in output: log.error("   " + line)
+
+    # -----------------------------------------------------------------
+
+    def test_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Testing the PTS installation ...")
+
+        output = self.remote.execute("pts -h")
+        for line in output:
+            if "usage: pts" in line: break
+        else:
+            log.error("Something is wrong with the PTS installation:")
+            for line in output: log.error("   " + line)
 
 # -----------------------------------------------------------------
 
