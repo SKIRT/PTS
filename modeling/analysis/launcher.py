@@ -28,9 +28,9 @@ from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.simulation.parallelization import Parallelization
 from ...core.simulation.remote import SkirtRemote
 from ...magic.misc.kernels import AnianoKernels
-from ..core.emissionlines import EmissionLines
-from ..fitting.wavelengthgrids import create_one_subgrid_wavelength_grid
-from ..fitting.dustgrids import create_one_dust_grid
+from ...core.basics.emissionlines import EmissionLines
+from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
+from ...core.prep.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
 from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
 from ...core.advanced.dustgridtool import DustGridTool

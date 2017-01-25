@@ -26,7 +26,7 @@ from pts.core.remote.remote import Remote
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_required("remote", "string", "the name of the remote host for which to clear the simulations", choices=find_host_ids())
+definition.add_positional_optional("remotes", "string_list", "the IDs of the remote hosts for which to clear the simulations", choices=find_host_ids(), default=find_host_ids())
 
 # Add optional
 definition.add_positional_optional("ids", "integer_list", "the IDs of the simulations to clear")
@@ -51,47 +51,45 @@ log.start("Starting clear_simulations ...")
 
 # -----------------------------------------------------------------
 
-# Dictionaries of the different remotes
-remotes = dict()
+# Loop over the remote hosts
+for host_id in config.remotes:
 
-# -----------------------------------------------------------------
-
-# Determine the path to the run directory for the specified remote host
-host_run_path = fs.join(introspection.skirt_run_dir, config.remote)
-
-# Loop over the simulation files in the run directory
-for path, name in fs.files_in_path(host_run_path, extension="sim", returns=["path", "name"]):
-
-    # Skip
-    if config.ids is not None and int(name) not in config.ids: continue
-
-    # Inform the user
-    log.info("Removing simulation " + name + " ...")
-
-    # Fully clear
+    # Check whether the remote is available
     if config.full:
+        remote = Remote()
+        if not remote.setup(host_id):
+            log.warning("The remote host '" + host_id + "' is not available: skipping ...")
+            continue
+    else: remote = None
+
+    # Determine the path to the run directory for the specified remote host
+    host_run_path = fs.join(introspection.skirt_run_dir, host_id)
+
+    # Loop over the simulation files in the run directory
+    for path, name in fs.files_in_path(host_run_path, extension="sim", returns=["path", "name"]):
+
+        # Skip
+        if config.ids is not None and int(name) not in config.ids: continue
+
+        # Inform the user
+        log.info("Removing simulation " + name + " ...")
+
+        # Fully clear
+        if config.full:
+
+            # Debugging
+            log.debug("Removing the remote files and directories ...")
+
+            # Load the simulation
+            simulation = RemoteSimulation.from_file(path)
+
+            # Remove the simulation from the remote
+            simulation.remove_from_remote(remote, full=True)
 
         # Debugging
-        log.debug("Removing the remote files and directories ...")
+        log.debug("Removing the simulation file ...")
 
-        # Load the simulation
-        simulation = RemoteSimulation.from_file(path)
-
-        # Get the host ID, load the remote
-        host_id = simulation.host_id
-        if host_id not in remotes:
-            remote = Remote()
-            remote.setup(host_id)
-            remotes[host_id] = remote
-        remote = remotes[host_id]
-
-        # Remove the simulation from the remote
-        simulation.remove_from_remote(remote, full=True)
-
-    # Debugging
-    log.debug("Removing the simulation file ...")
-
-    # Remove the file
-    fs.remove_file(path)
+        # Remove the file
+        fs.remove_file(path)
 
 # -----------------------------------------------------------------

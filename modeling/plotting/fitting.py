@@ -30,13 +30,12 @@ from ...core.plot.wavelengthgrid import WavelengthGridPlotter
 from ...core.plot.grids import plotgrids
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.simulation.logfile import LogFile
-from ..core.emissionlines import EmissionLines
+from ...core.basics.emissionlines import EmissionLines
 from ...core.data.seds import load_example_mappings_sed, load_example_bruzualcharlot_sed, load_example_zubko_sed
 from ...core.data.sed import SED, ObservedSED
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.core.frame import Frame
 from ...core.plot.sed import SEDPlotter
-from ...magic.region.list import SkyRegionList
 from ..misc.geometryplotter import GeometryPlotter
 from ..basics.models import load_3d_model
 from ...core.plot.distribution import DistributionPlotter

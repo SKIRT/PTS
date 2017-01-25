@@ -22,3 +22,5 @@ deploy | -- | prep.deploy.Deployer | arguments | Deploy SKIRT and/or PTS locally
 load | -- | remote.load.LoadChecker | arguments | Check the load of remote systems
 plot_transmission | -- | plot.transmission.TransmissionPlotter | arguments | Plot transmission curves of a set of photometric filters
 *run_queue | -- | remote.runner.QueueRunner | arguments | Run a particular simulation queue (intended to be run on a remote system)
+generate_wavelength_grids | -- | prep.wavelengthgrids.WavelengthGridGenerator | arguments | Generate wavelength grids
+generate_dust_grids | -- | prep.dustgrids.DustGridGenerator | arguments | Generate dust grids

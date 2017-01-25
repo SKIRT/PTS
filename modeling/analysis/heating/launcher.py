@@ -21,9 +21,9 @@ from ....core.tools import filesystem as fs
 from ....core.launch.batchlauncher import BatchLauncher
 from ....core.simulation.definition import SingleSimulationDefinition
 from ....core.tools.logging import log
-from ...core.emissionlines import EmissionLines
+from ....core.basics.emissionlines import EmissionLines
 from ....core.basics.range import RealRange
-from ...fitting.wavelengthgrids import create_one_logarithmic_wavelength_grid
+from ....core.prep.wavelengthgrids import create_one_logarithmic_wavelength_grid
 from ....core.simulation.parallelization import Parallelization
 from ....core.advanced.runtimeestimator import RuntimeEstimator
 from ....core.launch.options import SchedulingOptions

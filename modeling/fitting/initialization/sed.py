@@ -133,6 +133,10 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         # Get fixed wavelengths
         fixed = [wav.to("micron").value for wav in self.sed_filter_wavelengths]
 
+        # Set options
+        self.wg_generator.config.show = False
+        self.wg_generator.config.write = False
+
         # Generate the wavelength grids
         self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
                               add_emission_lines=self.config.wg.add_emission_lines,

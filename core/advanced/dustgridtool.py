@@ -21,6 +21,7 @@ from ...core.tools import filesystem as fs
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.arguments import SkirtArguments
 from ...core.basics.map import Map
+from ..simulation.grids import load_grid
 
 # -----------------------------------------------------------------
 

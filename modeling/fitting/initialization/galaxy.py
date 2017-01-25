@@ -28,8 +28,8 @@ from ....core.data.sun import Sun
 from ...core.mappings import Mappings
 from ....magic.tools import wavelengths
 from ....core.tools.logging import log
-from ..wavelengthgrids import WavelengthGridGenerator
-from ..dustgrids import DustGridGenerator
+from ....core.prep.wavelengthgrids import WavelengthGridGenerator
+from ....core.prep.dustgrids import DustGridGenerator
 from ....core.basics.range import RealRange, QuantityRange
 from ...basics.models import DeprojectionModel3D
 from ....core.basics.configuration import write_mapping
@@ -162,6 +162,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # Fixed wavelengths (always in the grid)
         fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
 
+        # Set options
+        self.wg_generator.config.show = False
+        self.wg_generator.config.write = False
+
         # Generate the wavelength grids
         self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
                               fixed=fixed, add_emission_lines=self.config.wg.add_emission_lines,
@@ -274,8 +278,12 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.dg_generator.y_radius = radius_physical
         self.dg_generator.z_radius = 3. * u("kpc")
 
+        # Set options
+        self.dg_generator.show = False
+        self.dg_generator.write = False
+
         # Generate the dust grids
-        self.dg_generator.run(scale_range, self.config.dg.level_range, mass_fraction_range, 10)
+        self.dg_generator.run(scale_range=scale_range, level_range=self.config.dg.level_range, mass_fraction_range=mass_fraction_range, ngrids=10)
 
     # -----------------------------------------------------------------
 

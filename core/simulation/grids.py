@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.basics.grids Contains the BinaryTreeGrid, OctTreeGrid and CartesianGrid classes.
+## \package pts.core.simulation.grids Contains the BinaryTreeGrid, OctTreeGrid and CartesianGrid classes.
 
 # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.fitting.wavelengthgrids Contains the WavelengthGridGenerator class.
+## \package pts.core.prep.wavelengthgrids Contains the WavelengthGridGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -21,7 +21,8 @@ from astropy.table import Table
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ..core.emissionlines import EmissionLines
+from ..basics.emissionlines import EmissionLines
+from ..basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -46,13 +47,13 @@ relpoints["extension"] = 25./325.  # 25
 
 # -----------------------------------------------------------------
 
-class WavelengthGridGenerator(object):
+class WavelengthGridGenerator(Configurable):
     
     """
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -60,7 +61,7 @@ class WavelengthGridGenerator(object):
         """
 
         # Call the constructor of the base class
-        super(WavelengthGridGenerator, self).__init__()
+        super(WavelengthGridGenerator, self).__init__(config)
 
         # -- Attributes --
 
@@ -97,10 +98,10 @@ class WavelengthGridGenerator(object):
         self.generate()
 
         # 3. Show
-        self.show()
+        if self.config.show: self.show()
 
         # 4. Write
-        self.write()
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 

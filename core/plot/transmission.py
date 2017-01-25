@@ -29,7 +29,7 @@ from astropy.units import Unit
 from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..data.transmission import TransmissionCurve
-from ...modeling.core.emissionlines import EmissionLines
+from ..basics.emissionlines import EmissionLines
 from ..basics.filter import identifiers, Filter
 from ..basics.range import RealRange
 

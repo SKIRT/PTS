@@ -27,7 +27,7 @@ from pts.core.remote.remote import Remote
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_required("remote", "string", "the name of the remote host for which to clear the tasks", choices=find_host_ids())
+definition.add_positional_optional("remotes", "string_list", "the IDs of the remote hosts for which to clear the tasks", choices=find_host_ids(), default=find_host_ids())
 
 # Add optional
 definition.add_positional_optional("ids", "integer_list", "the IDs of the tasks to clear")
@@ -55,44 +55,42 @@ log.start("Starting clear_tasks ...")
 
 # -----------------------------------------------------------------
 
-# Dictionaries of the different remotes
-remotes = dict()
+# Loop over the remotes
+for host_id in config.remotes:
 
-# -----------------------------------------------------------------
-
-# Determine the path to the run directory for the specified remote host
-host_run_path = fs.join(introspection.pts_run_dir, config.remote)
-
-# Loop over the task files in the run directory for the host
-for path, name in fs.files_in_path(host_run_path, extension="task", returns=["path", "name"]):
-
-    # Skip
-    if config.ids is not None and int(name) not in config.ids: continue
-
-    # Inform the user
-    log.info("Removing task " + name + " ...")
-
-    # Fully clear
+    # Check whether the remote is available
     if config.full:
+        remote = Remote()
+        if not remote.setup(host_id):
+            log.warning("The remote host '" + host_id + "' is not available: skipping ...")
+            continue
+    else: remote = None
 
-        # Debugging
-        log.debug("Removing the remote files and directories ...")
+    # Determine the path to the run directory for the specified remote host
+    host_run_path = fs.join(introspection.pts_run_dir, config.remote)
 
-        # Load the simulation
-        task = Task.from_file(path)
+    # Loop over the task files in the run directory for the host
+    for path, name in fs.files_in_path(host_run_path, extension="task", returns=["path", "name"]):
 
-        # Get the host ID, load the remote
-        host_id = task.host_id
-        if host_id not in remotes:
-            remote = Remote()
-            remote.setup(host_id)
-            remotes[host_id] = remote
-        remote = remotes[host_id]
+        # Skip
+        if config.ids is not None and int(name) not in config.ids: continue
 
-        # Remove the simulation from the remote
-        task.remove_from_remote(remote, full=True)
+        # Inform the user
+        log.info("Removing task " + name + " ...")
 
-    # Remove the file
-    fs.remove_file(path)
+        # Fully clear
+        if config.full:
+
+            # Debugging
+            log.debug("Removing the remote files and directories ...")
+
+            # Load the simulation
+            task = Task.from_file(path)
+
+            # Remove the simulation from the remote
+            task.remove_from_remote(remote, full=True)
+
+        # Remove the file
+        fs.remove_file(path)
 
 # -----------------------------------------------------------------

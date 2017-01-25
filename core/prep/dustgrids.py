@@ -19,29 +19,37 @@ import math
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ..basics.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
+from ..simulation.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
 from ...core.tools.logging import log
 from ...core.basics.range import zip_linear, zip_log
+from ..basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class DustGridGenerator(object):
+class DustGridGenerator(Configurable):
     
     """
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
+        :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(DustGridGenerator, self).__init__()
+        super(DustGridGenerator, self).__init__(config)
 
         # -- Attributes --
+
+        # Settings
+        self.scale_range = None
+        self.level_range = None
+        self.mass_fraction_range = None
+        self.ngrids = None
 
         self._grid_type = None
         self.x_radius = None
@@ -189,31 +197,44 @@ class DustGridGenerator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, scale_range, level_range, mass_fraction_range, ngrids):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param scale_range:
-        :param level_range:
-        :param mass_fraction_range:
-        :param ngrids:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Generate the dust grids
-        self.generate(scale_range, level_range, mass_fraction_range, ngrids)
+        self.generate()
+
+        # 3. Show
+        if self.config.show: self.show()
+
+        # 4. Write
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
+
+        # Call the setup function of the base class
+        super(DustGridGenerator, self).setup(**kwargs)
+
+        # Get settings
+        self.scale_range = kwargs.pop("scale_range")
+        self.level_range = kwargs.pop("level_range")
+        self.mass_fraction_range = kwargs.pop("mass_fraction_range")
+        self.ngrids = kwargs.pop("ngrids")
 
         # Initialize the table
         names = ["Type", "Min x", "Max x", "Min y", "Max y", "Min z", "Max z", "Smallest scale", "Min level", "Max mass fraction"]
@@ -222,14 +243,10 @@ class DustGridGenerator(object):
 
     # -----------------------------------------------------------------
 
-    def generate(self, scale_range, level_range, mass_fraction_range, ngrids):
+    def generate(self):
 
         """
         This function ...
-        :param scale_range:
-        :param level_range:
-        :param mass_fraction_range:
-        :param ngrids:
         :return:
         """
 
@@ -237,7 +254,7 @@ class DustGridGenerator(object):
         log.info("Creating the grids ...")
 
         # Loop over the different grid parameter values
-        for scale, level, mass_fraction in zip_linear(scale_range, level_range, mass_fraction_range, npoints=ngrids):
+        for scale, level, mass_fraction in zip_linear(self.scale_range, self.level_range, self.mass_fraction_range, npoints=self.ngrids):
 
             # Create the grid and add it to the list
             if self.grid_type == "cartesian": self.create_cartesian_dust_grid(scale)
@@ -304,6 +321,59 @@ class DustGridGenerator(object):
 
         # Add a row to the table
         self.table.add_row([self.grid_type, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, scale, min_level, max_mass_fraction])
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the grids
+        self.write_grids()
+
+        # Write table
+        self.write_table()
+
+    # -----------------------------------------------------------------
+
+    def write_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing grids ...")
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing table ...")
 
 # -----------------------------------------------------------------
 

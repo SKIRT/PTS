@@ -29,7 +29,7 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.distribution import Distribution
 from ..basics.instruments import load_instrument
 from ..core.model import Model
-from ..basics.grids import load_grid
+from ...core.simulation.grids import load_grid
 from ...core.simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
