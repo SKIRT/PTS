@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import time as _time
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
@@ -331,33 +328,38 @@ class RemotePythonSession(object):
         :return:
         """
 
+        # Marker
         self.send_line("'[PTS]'")
 
+        # Spit out the value of the variable with name 'name'
         self.send_line(name)
 
-        #self.send_line("[PTS]")
-
-        #print(output)
-
-        #if len(output) < 1: raise NameError("No such variable: '" + name + "'")
-        #if len(output) == 0: return None
-        #elif len(output) > 1: raise RuntimeError("Unexpected output: " + str(output))
-
-        #return eval(output[0])
-
         # Wait for some time
-        _time.sleep(2)
+        time.wait(5)
 
         # Get output
         lines = []
         for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
-            print(line)
+            #print(line)
             if line == "[PTS]": break
             lines.append(line)
         lines.reverse()
 
-        print(lines)
+        #print(lines)
 
+        if len(lines) == 0 or lines[0] == "":
+
+            time.wait(5)
+
+            # Get output
+            lines = []
+            for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
+                # print(line)
+                if line == "[PTS]": break
+                lines.append(line)
+            lines.reverse()
+
+        # Return the value
         return eval(lines[0])
 
     # -----------------------------------------------------------------
@@ -434,21 +436,9 @@ class RemotePythonSession(object):
         if self.tmux: send_command = 'tmux send-keys -t ' + self.screen_name + ' "' + line + '" Enter'
         else:
 
-            #if "'" not in line: send_command = "screen -r -S " + self.screen_name + " -X stuff $'" + line + "\n'"
-            #elif '"' not in line: send_command = 'screen -r -S ' + self.screen_name + ' -X stuff $"' + line + '\n"'
-            #else: raise ValueError("Line cannot contain both single quotes and double quotes")
-
-            #if "'" not in line: send_command = "screen -r -S " + self.screen_name + " -p 0 -X stuff '" + line + "\n'"
-            #elif '"' not in line: send_command = 'screen -r -S ' + self.screen_name + ' -p 0 -X stuff "' + line + '\n"'
-            #else: raise ValueError("Line cannot contain both single quotes and double quotes")
-
             if "'" not in line: send_command = "screen -S " + self.screen_name + " -p 0 -X stuff '" + line + "\n'"
             elif '"' not in line: send_command = 'screen -S ' + self.screen_name + ' -p 0 -X stuff "' + line + '\n"'
             else: raise ValueError("Line cannot contain both single quotes and double quotes")
-
-        #print("COMMAND: ", send_command)
-        #send_command = 'tmux send-keys -t ' + self.screen_name + ' "' + line + '"'
-        #send_command = 'tmux send-keys -t ' + self.screen_name + ' "' + line + r'\n"'
 
         # Debugging
         log.debug("The command to execute the line is:")
@@ -457,42 +447,8 @@ class RemotePythonSession(object):
         # Send the line
         self.remote.execute(send_command, show_output=log.is_debug())
 
-        #self.remote.append_line(self.in_pipe_filepath, line + "\n")
-
-        # Check the output
-        #if output:
-
-            # Debugging
-            #log.debug("Reading output from file '" + self.out_pipe_filepath + "' ...")
-
-            # Get output
-            #lines = []
-            #for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
-            #    if line == "[PTS]": break
-            #    lines.append(line)
-            #lines.reverse()
-
-        #else: lines = None
-
-        #print(lines)
-
-        #if send_marker:
-
-            # Mark the end for this command
-            #print_marker = 'print("[PTS]")'
-            ##send_marker_command = "screen -r -S " + self.screen_name + " -X stuff $'" + print_marker + "\n'"
-            ##send_marker_command = "screen -r -S " + self.screen_name + " -X stuff '" + print_marker + "\n'"
-            ##self.remote.append_to_file(self.out_pipe_filepath, "[PTS]")
-            #send_marker_command = "tmux send-keys -t " + self.screen_name + " '" + print_marker + "' Enter"
-
-            # Debugging
-            #log.debug("The command to send the marker is:")
-            #log.debug(send_marker_command)
-
-            #self.remote.execute(send_marker_command, output=True)
-
-        # Return the output lines
-        #return lines
+        # Sleep for a while so that we are sure that the actual python stuff has reached the interactive python session within the screen
+        time.wait(5) # in seconds
 
     # -----------------------------------------------------------------
 

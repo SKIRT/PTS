@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Quantity
 
 # Import the relevant PTS classes and modules
-from .unit import stringify_unit
+from .unit import stringify_unit, represent_unit
 
 # -----------------------------------------------------------------
 
@@ -53,6 +53,18 @@ def stringify_quantity(quantity):
 
     # Return parsing type and stringified quantity
     return parsing_type, repr(quantity.value) + " " + unit_string
+
+# -----------------------------------------------------------------
+
+def represent_quantity(quantity):
+
+    """
+    This function ...
+    :param quantity:
+    :return:
+    """
+
+    return repr(quantity.value) + " " + represent_unit(quantity.unit)
 
 # -----------------------------------------------------------------
 

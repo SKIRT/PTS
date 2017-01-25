@@ -152,7 +152,7 @@ class SkiFile:
             for filename in filenames:
 
                 # Check if in list
-                if filename not in input_names: raise ValueError("The list of input files does not specify the file '" + filename + "' needed for ski file " + ski.prefix)
+                if filename not in input_names: raise ValueError("The list of input files does not specify the file '" + filename + "' needed for ski file " + self.prefix)
 
             # Set the input paths
             input_paths = input_path
@@ -2509,45 +2509,31 @@ class SkiFile:
     #  default unit can be specified which is used when the unit is not described in the ski file.
     def get_quantity(self, element, name, default_unit=None):
 
-        # Import Astropy here to avoid import errors for this module for users without an Astropy installation
-        from astropy.units import Unit
+        # Import here to avoid import errors for this module for users without an Astropy installation
+        from ..basics.quantity import parse_quantity
+        from ..basics.unit import parse_unit
 
-        splitted = element.get(name).split()
-        value = float(splitted[0])
-        try:
-            unit = splitted[1]
-        except IndexError:
-            unit = default_unit
-
-        # Create a quantity object
-        if unit is not None: value = value * Unit(unit)
-        return value
+        string = element.get(name)
+        quantity = parse_quantity(string)
+        if quantity.unit == "" and default_unit is not None:
+            quantity = quantity * parse_unit(default_unit)
+        return quantity
 
     # -----------------------------------------------------------------
 
     ## This function sets the value of a certain parameter of the specified tree element from an Astropy quantity.
     def set_quantity(self, element, name, value, default_unit=None):
 
-        # Import Astropy here to avoid import errors for this module for users without an Astropy installation
-        from astropy.units import Unit
+        # Import here to avoid import errors for this module for users without an Astropy installation
+        from ..basics.quantity import represent_quantity
+        from ..basics.unit import represent_unit, parse_unit
 
-        try:
-
-            # If this works, assume it is a Quantity (or Angle)
-            unit = value.unit
-
-            # Works for Angles as well (str(angle) gives something that is not 'value + unit'
-            to_string = str(value.to(value.unit).value) + " " + str(unit)
-
-        except AttributeError:
-
-            if default_unit is not None:
-                to_string = str(value) + " " + str(Unit(default_unit))
-            else:
-                to_string = str(value)  # dimensionless quantity
+        if hasattr(value, "unit"): string = represent_quantity(value)
+        elif default_unit is not None: string = repr(value) + " " + represent_unit(parse_unit(default_unit))
+        else: string = repr(value)
 
         # Set the value in the tree element
-        element.set(name, to_string)
+        element.set(name, string)
 
 # -----------------------------------------------------------------
 
@@ -2737,19 +2723,16 @@ class LabeledSkiFile(SkiFile):
         """
 
         # Import Astropy here to avoid import errors for this module for users without an Astropy installation
-        from astropy.units import Unit
+        from ..basics.quantity import parse_quantity
+        from ..basics.unit import parse_unit
 
         prop = element.get(name)
         if prop.startswith("[") and prop.endswith("]"): prop = prop[1:-1].split(":")[1]
 
-        splitted = prop.split()
-        value = float(splitted[0])
-        try: unit = splitted[1]
-        except IndexError: unit = default_unit
-
-        # Create a quantity object
-        if unit is not None: value = value * Unit(unit)
-        return value
+        quantity = parse_quantity(prop)
+        if quantity.unit == "" and default_unit is not None:
+            quantity = quantity * parse_unit(default_unit)
+        return quantity
 
     # -----------------------------------------------------------------
 

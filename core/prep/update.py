@@ -678,10 +678,19 @@ class PTSUpdater(Updater):
 
         # Update all packages
         update_command = "conda update --all"
-        lines = []
-        lines.append(update_command)
-        lines.append(("Proceed ([y]/n)?", "y", True))
-        self.remote.execute_lines(*lines, show_output=log.is_debug())
+        #lines = []
+        #lines.append(update_command)
+        #lines.append(("Proceed ([y]/n)?", "y", True))
+        #self.remote.execute_lines(*lines, show_output=log.is_debug())
+
+        # Send the command
+        self.remote.ssh.sendline(update_command)
+
+        # Expect the prompt or question
+        while self.remote.ssh.expect([self.remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None) == 1: self.remote.ssh.sendline("y")
+
+        # Match prompt
+        self.remote.ssh.prompt(timeout=None)
 
         # Success
         log.success("Succesfully installed and updated the dependencies on the remote host")

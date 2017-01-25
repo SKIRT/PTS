@@ -1500,7 +1500,7 @@ def find_real_name(module_name, available_packages, session=None):
     :return:
     """
 
-    if module_name in available_packages: return module_name
+    if module_name in available_packages: return module_name, None
 
     # Look for real module name
     try:
