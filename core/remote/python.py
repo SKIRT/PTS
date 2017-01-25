@@ -856,6 +856,6 @@ class RemotePythonSession(object):
             self.remote.kill_screen(self.screen_name)
 
         # Remove the pipe file
-        self.remote.remove_file(self.out_pipe_filepath)
+        #self.remote.remove_file(self.out_pipe_filepath)
 
 # -----------------------------------------------------------------

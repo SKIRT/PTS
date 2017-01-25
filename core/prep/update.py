@@ -431,9 +431,6 @@ class SKIRTUpdater(Updater):
         # Set the clone command
         command = "git pull origin master"
 
-        # Get the url of the "origin"
-        url = git.get_url_repository(self.remote, self.remote.skirt_repo_path)
-
         # Decompose
         host, user_or_organization, repo_name, username, password = git.decompose_https(url)
 
@@ -528,6 +525,21 @@ class PTSUpdater(Updater):
     This class ...
     """
 
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(PTSUpdater, self).__init__(config)
+
+        # The git version to which PTS is updated
+        self.git_version = None
+
+    # -----------------------------------------------------------------
+
     def update_local(self):
 
         """
@@ -600,25 +612,54 @@ class PTSUpdater(Updater):
         # Debugging
         log.debug("Getting latest version ...")
 
+        # Get the url of the "origin"
+        url = git.get_url_repository(self.remote, self.remote.pts_package_path)
+
+        # Get latest hash
+        latest_git_hash = git.get_hash_remote_repository(url)
+
+        # Get hash of current state
+        git_hash = git.get_git_hash(self.remote, self.remote.pts_package_path)
+
+        # Debugging
+        log.debug("Latest git hash for repository: " + latest_git_hash)
+        log.debug("Git hash of version installed: " + git_hash)
+
+        # Compare git hashes
+        if latest_git_hash == git_hash:
+
+            log.success("Already up to date")  # up to date
+            self.git_version = git.get_short_git_version(self.remote.pts_package_path, self.remote)
+            return
+
         # Set the command
         command = "git pull origin master"
 
-        # Get username and password
-        username, password = introspection.get_account("github.ugent.be")
+        # Decompose
+        host, user_or_organization, repo_name, username, password = git.decompose_https(url)
 
-        # Set the command lines
-        lines = []
-        lines.append(command)
-        lines.append(("':", username))
-        lines.append(("':", password))
+        # Find the account file for the repository host (e.g. github.ugent.be)
+        if username is None and password is None and introspection.has_account(host):
 
-        # Clone the repository
-        self.remote.execute_lines(*lines, show_output=log.is_debug(), cwd=self.remote.pts_package_path)
+            username, password = introspection.get_account(host)
 
-        #if "Enter passphrase for key" in self.remote.ssh.before:
-        #    self.remote.execute(self.config.pubkey_password, show_output=True)
+            # Set the command lines
+            lines = []
+            lines.append(command)
+            lines.append(("':", username))
+            lines.append(("':", password))
 
-        #else: self.remote.prompt()
+            # Clone the repository
+            self.remote.execute_lines(*lines, show_output=log.is_debug(), cwd=self.remote.pts_package_path)
+
+        # Pull
+        else: self.remote.execute(command, show_output=log.is_debug(), cwd=self.remote.pts_package_path)
+
+        # Get git version
+        self.git_version = git.get_short_git_version(self.remote.pts_package_path, self.remote)
+
+        # Success
+        log.success("PTS was successfully updated on remote host " + self.remote.host_id)
 
     # -----------------------------------------------------------------
 
