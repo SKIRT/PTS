@@ -127,6 +127,10 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     subproject, index = table_matches[0]
     command_name = tables[subproject]["Command"][index]
+    hidden = False
+    if command_name.startswith("*"):
+        hidden = True
+        command_name = command_name[1:]
     description = tables[subproject]["Description"][index]
     class_path_relative = tables[subproject]["Path"][index]
     class_path = "pts." + subproject + "." + class_path_relative

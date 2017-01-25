@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.remote.run_queue Run a particular simulation queue (intended to be run on a remote system)
+## \package pts.core.remote.runner Contains the QueueRunner class.
 
 # -----------------------------------------------------------------
 
@@ -13,28 +13,55 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.tools.logging import log
-from pts.core.remote.queue import SimulationQueue
-from pts.core.tools import filesystem as fs
-from pts.core.simulation.execute import SkirtExec
-from pts.core.remote.jobscript import JobScript
+from .queue import SimulationQueue
+from ..tools import filesystem as fs
+from ..simulation.execute import SkirtExec
+from .jobscript import JobScript
+from ..basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-# Create the configuration definition
-definition = ConfigurationDefinition()
+class QueueRunner(Configurable):
 
-# Add required
-definition.add_required("name", "string", "name of the simulation queue")
-definition.add_required("walltime", "duration", "walltime for the jobs")
-definition.add_positional_optional("runid", "integer", "start with this run ID", default=0)
+    """
+    This class ...
+    """
 
-# -----------------------------------------------------------------
+    def __init__(self, config=None):
 
-# Parse the arguments into a configuration
-setter = ArgumentConfigurationSetter("run_queue", "Run particular simulation queue")
-config = setter.run(definition)
+        """
+        This function ...
+        :param config:
+        """
+
+        # Call the constructor of the base class
+        super(QueueRunner, self).__init__(config)
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(QueueRunner, self).setup(**kwargs)
 
 # -----------------------------------------------------------------
 

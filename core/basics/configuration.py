@@ -634,7 +634,7 @@ class ConfigurationDefinition(object):
             value = getattr(arguments, argument_name)
 
             # Check each value in the list, if applicable
-            if real_type.__name__.endswith("_list") and choices is not None:
+            if real_type.__name__.endswith("_list") and choices is not None and value is not None:
                 # Check whether they are all in the choices
                 for item in value:
                     if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
@@ -656,7 +656,7 @@ class ConfigurationDefinition(object):
             value = getattr(arguments, argument_name)
 
             # Check each value in the list, if applicable
-            if real_type.__name__.endswith("_list") and choices is not None:
+            if real_type.__name__.endswith("_list") and choices is not None and value is not None:
                 # Check whether they are all in the choices
                 for item in value:
                     if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])

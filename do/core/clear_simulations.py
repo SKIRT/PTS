@@ -17,6 +17,8 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import logging, introspection
 from pts.core.tools import filesystem as fs
+from pts.core.simulation.simulation import RemoteSimulation
+from pts.core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -28,6 +30,9 @@ definition.add_required("remote", "string", "the name of the remote host for whi
 
 # Add optional
 definition.add_positional_optional("ids", "integer_list", "the IDs of the simulations to clear")
+
+# Add flags
+definition.add_flag("full", "fully clear the simulations, also remove remote simulation directories")
 
 # -----------------------------------------------------------------
 
@@ -46,6 +51,11 @@ log.start("Starting clear_simulations ...")
 
 # -----------------------------------------------------------------
 
+# Dictionaries of the different remotes
+remotes = dict()
+
+# -----------------------------------------------------------------
+
 # Determine the path to the run directory for the specified remote host
 host_run_path = fs.join(introspection.skirt_run_dir, config.remote)
 
@@ -57,6 +67,29 @@ for path, name in fs.files_in_path(host_run_path, extension="sim", returns=["pat
 
     # Inform the user
     log.info("Removing simulation " + name + " ...")
+
+    # Fully clear
+    if config.full:
+
+        # Debugging
+        log.debug("Removing the remote files and directories ...")
+
+        # Load the simulation
+        simulation = RemoteSimulation.from_file(path)
+
+        # Get the host ID, load the remote
+        host_id = simulation.host_id
+        if host_id not in remotes:
+            remote = Remote()
+            remote.setup(host_id)
+            remotes[host_id] = remote
+        remote = remotes[host_id]
+
+        # Remove the simulation from the remote
+        simulation.remove_from_remote(remote, full=True)
+
+    # Debugging
+    log.debug("Removing the simulation file ...")
 
     # Remove the file
     fs.remove_file(path)

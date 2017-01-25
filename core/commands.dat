@@ -21,3 +21,4 @@ versions | -- | remote.versionchecker.VersionChecker | arguments | Check version
 deploy | -- | prep.deploy.Deployer | arguments | Deploy SKIRT and/or PTS locally and on remote hosts
 load | -- | remote.load.LoadChecker | arguments | Check the load of remote systems
 plot_transmission | -- | plot.transmission.TransmissionPlotter | arguments | Plot transmission curves of a set of photometric filters
+*run_queue | -- | remote.runner.QueueRunner | arguments | Run a particular simulation queue (intended to be run on a remote system)

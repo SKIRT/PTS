@@ -1344,7 +1344,10 @@ def find_matches_tables(name, tables):
 
             for i in range(len(table["Command"])):
 
-                if table["Command"][i].startswith(script_name): matches.append((subproject, i))
+                command_name = table["Command"][i]
+                if command_name.startswith("*"): command_name = command_name[1:]
+
+                if command_name.startswith(script_name): matches.append((subproject, i))
 
         return matches
 
@@ -1357,7 +1360,11 @@ def find_matches_tables(name, tables):
             table = tables[subproject]
 
             for i in range(len(table["Command"])):
-                if table["Command"][i].startswith(name): matches.append((subproject, i))
+
+                command_name = table["Command"][i]
+                if command_name.startswith("*"): command_name = command_name[1:]
+
+                if command_name.startswith(name): matches.append((subproject, i))
 
         return matches
 

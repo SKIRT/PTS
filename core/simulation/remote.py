@@ -1015,15 +1015,8 @@ class SkirtRemote(Remote):
                 # Debug info
                 log.debug("Successfully retrieved the necessary simulation output")
 
-                # Remove the remote input, if present, if requested
-                if simulation.remove_remote_input and simulation.has_input: self.remove_directory(simulation.remote_input_path)
-
-                # Remove the remote output, if requested
-                if simulation.remove_remote_output: self.remove_directory(simulation.remote_output_path)
-
-                # If both the input and output directories have to be removed, the remote simulation directory
-                # can be removed too
-                if simulation.remove_remote_simulation_directory: self.remove_directory(simulation.remote_simulation_path)
+                # Remove the simulation from the remote
+                simulation.remove_from_remote(self)
 
                 # Add the simulation to the list of retrieved simulations
                 simulations.append(simulation)

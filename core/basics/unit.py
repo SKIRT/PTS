@@ -54,7 +54,6 @@ input_replacements["nanomaggies"] = nanomaggy_string
 output_replacements = dict()
 output_replacements["solMass"] = "Msun"
 output_replacements["solLum"] = "Lsun"
-output_replacements[" "] = ""
 
 # -----------------------------------------------------------------
 

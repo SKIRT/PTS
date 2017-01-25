@@ -1479,6 +1479,10 @@ class Remote(object):
         # Create a new Task object
         task = Task(command, config.to_string())
 
+        # Set the host ID and cluster name (if applicable)
+        task.host_id = self.host_id
+        task.cluster_name = self.cluster_name
+
         # Generate a new task ID
         task_id = self._new_task_id()
 
@@ -3447,15 +3451,8 @@ class Remote(object):
                 task.retrieved = True
                 task.save()
 
-                ## REMOVE REMOTE OUTPUT IF REQUESTED
-                if task.remove_remote_output:
-
-                    # Remove the temporary PTS directory if it contains the output directory
-                    if self.is_subdirectory(task.remote_output_path, task.remote_temp_pts_path): self.remove_directory(task.remote_temp_pts_path)
-                    else:
-                        # Remove the output directory and the temporary directory seperately
-                        self.remove_directory(task.remote_output_path)
-                        self.remove_directory(task.remote_temp_pts_path)
+                # Remove the task from the remote
+                task.remove_from_remote(self)
 
         # Return the list of retrieved tasks
         return tasks

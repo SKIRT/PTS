@@ -55,9 +55,16 @@ def show_all_available(scripts, tables=None):
 
     # Tables
     for subproject in tables:
+
         table = tables[subproject]
         for i in range(len(table["Command"])):
+
             command = table["Command"][i]
+            hidden = False
+            if command.startswith("*"):
+                hidden = True
+                command = command[1:]
+            if hidden: continue # skip hidden
             description = table["Description"][i]
             configuration_method = table["Configuration method"][i]
             info.append((subproject, command, description, configuration_method))
@@ -134,7 +141,13 @@ def show_possible_matches(matches, table_matches=None, tables=None):
 
     # Tables
     for subproject, index in table_matches:
+
         command = tables[subproject]["Command"][index]
+        hidden = False
+        if command.startswith("*"):
+            hidden = True
+            command = command[1:]
+        if hidden: continue # skip if hidden
         description = tables[subproject]["Description"][index]
         configuration_method = tables[subproject]["Configuration method"][index]
         info.append((subproject, command, description, configuration_method))

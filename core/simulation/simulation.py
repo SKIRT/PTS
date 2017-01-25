@@ -18,7 +18,6 @@ import os.path
 import types
 import numpy as np
 import importlib
-from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ..tools import serialization
@@ -683,6 +682,27 @@ class RemoteSimulation(SkirtSimulation):
 
         # Return the list of classes
         return classes
+
+    # -----------------------------------------------------------------
+
+    def remove_from_remote(self, remote, full=False):
+
+        """
+        This function ...
+        :param remote:
+        :param full:
+        :return:
+        """
+
+        # Remove the remote input, if present, if requested
+        if (self.remove_remote_input or full) and self.has_input: remote.remove_directory(self.remote_input_path)
+
+        # Remove the remote output, if requested
+        if self.remove_remote_output or full: remote.remove_directory(self.remote_output_path)
+
+        # If both the input and output directories have to be removed, the remote simulation directory
+        # can be removed too
+        if self.remove_remote_simulation_directory or full: remote.remove_directory(self.remote_simulation_path)
 
     # -----------------------------------------------------------------
 

@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.basics.unit import parse_unit as u
+from pts.core.basics.unit import represent_unit as ru
 
 # -----------------------------------------------------------------
 
@@ -70,20 +71,20 @@ default_units["pressure"] = u("K/m3")
 
 possible_parameter_types_descriptions = dict()
 possible_parameter_types_descriptions["dimless"] = "dimensionless quantity (no unit)"
-possible_parameter_types_descriptions["mass"] = "mass (default unit: " + default_units["mass"] + ")"
-possible_parameter_types_descriptions["grainsize"] = "grain size (default unit: " + default_units["grainsize"] + ")"
-possible_parameter_types_descriptions["length"] = "physical length (default unit: " + default_units["length"] + ")"
-possible_parameter_types_descriptions["angle"] = "angle (default unit: " + default_units["angle"] + ")"
-possible_parameter_types_descriptions["posangle"] = "position angle (default unit: " + default_units["posangle"] + ")"
-possible_parameter_types_descriptions["luminosity"] = "bolometric luminosity (default unit: " + default_units["luminosity"] + ")"
-possible_parameter_types_descriptions["spectral luminosity density"] = "spectral luminosity (default unit: " + default_units["spectral luminosity density"] + ")"
-possible_parameter_types_descriptions["flux"] = "bolometric flux (default unit: " + default_units["flux"] + ")"
-possible_parameter_types_descriptions["spectral flux density"] = "spectral flux (default unit: " + default_units["spectral flux density"] + ")"
-possible_parameter_types_descriptions["intensity"] = "bolometric intensity (default unit: " + default_units["intensity"] + ")"
-possible_parameter_types_descriptions["spectral intensity density"] = "spectral intensity (default unit: " + default_units["spectral intensity density"] + ")"
-possible_parameter_types_descriptions["surface brightness"] = "bolometric surface brightness (default unit: " + default_units["surface brightness"] + ")"
-possible_parameter_types_descriptions["spectral surface brightness density"] = "spectral surface brightness (default unit: " + default_units["spectral surface brightness density"] + ")"
-possible_parameter_types_descriptions["pressure"] = "pressure (default unit: " + default_units["pressure"] + ")"
+possible_parameter_types_descriptions["mass"] = "mass (default unit: " + ru(default_units["mass"]) + ")"
+possible_parameter_types_descriptions["grainsize"] = "grain size (default unit: " + ru(default_units["grainsize"]) + ")"
+possible_parameter_types_descriptions["length"] = "physical length (default unit: " + ru(default_units["length"]) + ")"
+possible_parameter_types_descriptions["angle"] = "angle (default unit: " + ru(default_units["angle"]) + ")"
+possible_parameter_types_descriptions["posangle"] = "position angle (default unit: " + ru(default_units["posangle"]) + ")"
+possible_parameter_types_descriptions["luminosity"] = "bolometric luminosity (default unit: " + ru(default_units["luminosity"]) + ")"
+possible_parameter_types_descriptions["spectral luminosity density"] = "spectral luminosity (default unit: " + ru(default_units["spectral luminosity density"]) + ")"
+possible_parameter_types_descriptions["flux"] = "bolometric flux (default unit: " + ru(default_units["flux"]) + ")"
+possible_parameter_types_descriptions["spectral flux density"] = "spectral flux (default unit: " + ru(default_units["spectral flux density"]) + ")"
+possible_parameter_types_descriptions["intensity"] = "bolometric intensity (default unit: " + ru(default_units["intensity"]) + ")"
+possible_parameter_types_descriptions["spectral intensity density"] = "spectral intensity (default unit: " + ru(default_units["spectral intensity density"]) + ")"
+possible_parameter_types_descriptions["surface brightness"] = "bolometric surface brightness (default unit: " + ru(default_units["surface brightness"]) + ")"
+possible_parameter_types_descriptions["spectral surface brightness density"] = "spectral surface brightness (default unit: " + ru(default_units["spectral surface brightness density"]) + ")"
+possible_parameter_types_descriptions["pressure"] = "pressure (default unit: " + ru(default_units["pressure"]) + ")"
 
 # -----------------------------------------------------------------
 
