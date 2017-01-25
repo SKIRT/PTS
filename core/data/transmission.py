@@ -17,12 +17,12 @@ import numpy as np
 from scipy import interpolate
 
 # Import astronomical modules
-from astropy.units import Unit, spectral
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ..tools import tables
 from ..basics.curve import Curve
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -49,7 +49,7 @@ class TransmissionCurve(object):
         else: self.table = tables.new([wavelengths, transmissions], names)
 
         # Set column units
-        self.table["Wavelength"].unit = Unit("micron")
+        self.table["Wavelength"].unit = u("micron")
 
     # -----------------------------------------------------------------
 

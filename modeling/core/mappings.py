@@ -16,13 +16,13 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.data.sed import SED
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -94,7 +94,7 @@ class Mappings(object):
 
         # Return the scaling factor with respect to a SFR of 1
         # So SFR = scaling factor * Msun / yr
-        return scaling_factor * Unit("Msun / yr")
+        return scaling_factor * u("Msun / yr")
 
     # -----------------------------------------------------------------
 
@@ -119,7 +119,7 @@ class Mappings(object):
         sfr_to_dust_mass = 2143279.799
 
         # Determine the total dust mass in SFR clouds
-        dust_mass = sfr.to("Msun/yr") * sfr_to_dust_mass * Unit("Msun")
+        dust_mass = sfr.to("Msun/yr") * sfr_to_dust_mass * u("Msun")
 
         # Return the dust mass
         return dust_mass
@@ -150,7 +150,7 @@ class Mappings(object):
 
         #luminosity = filter.integrate(self.sed["Wavelength"], self.sed["Luminosity"])
         luminosity = fltr.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.photometry(unit="W/micron", asarray=True)) # also in W/micron
-        luminosity = luminosity * Unit("W/micron")
+        luminosity = luminosity * u("W/micron")
 
         # Return the luminosity in the desired unit
         return luminosity.to(unit)

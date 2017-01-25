@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import argparse
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from pts.magic.misc.imageimporter import ImageImporter
 from pts.magic.sources.finder import SourceFinder
@@ -27,6 +24,7 @@ from pts.magic.region.list import PixelRegionList, SkyRegionList
 from pts.core.tools import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
+from pts.core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -128,7 +126,7 @@ image_path = fs.absolute_path(arguments.image)
 bad_region_path = fs.join(input_path, arguments.bad) if arguments.bad is not None else None
 
 # Set FWHM
-fwhm = arguments.fwhm * Unit("arcsec") if arguments.fwhm is not None else None
+fwhm = arguments.fwhm * u("arcsec") if arguments.fwhm is not None else None
 
 # Import the image
 importer = ImageImporter()

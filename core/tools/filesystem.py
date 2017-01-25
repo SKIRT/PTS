@@ -506,7 +506,7 @@ def remove_files(paths):
 
 # -----------------------------------------------------------------
 
-def size(path):
+def directory_size(path):
 
     """
     This function ...
@@ -514,7 +514,27 @@ def size(path):
     :return:
     """
 
-    return os.path.getsize(path)
+    from ..basics.unit import parse_unit as u
+    total_size = 0. * u("byte")
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += file_size(fp)
+
+    return total_size
+
+# -----------------------------------------------------------------
+
+def file_size(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..basics.unit import parse_unit as u
+    return os.path.getsize(path) * u("byte")
 
 # -----------------------------------------------------------------
 

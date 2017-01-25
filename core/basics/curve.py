@@ -15,13 +15,11 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from scipy import interpolate
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from .table import SmartTable
 from ..tools import tables
 from .filter import Filter
+from .unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -318,7 +316,7 @@ class FilterCurve(WavelengthCurve):
                 value = self[self.value_name][i] * self[self.value_name].unit
 
                 # If a target unit is specified, convert
-                if unit is not None: value = value.to(unit).value * Unit(unit)
+                if unit is not None: value = value.to(unit).value * u(unit)
 
                 # Strip unit if requested
                 if not add_unit: value = value.value

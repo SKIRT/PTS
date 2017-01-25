@@ -26,6 +26,7 @@ from . import filesystem as fs
 from ..basics.filter import Filter, identifiers
 from ..basics.errorbar import ErrorBar
 from ..basics.unit import PhotometricUnit, parse_unit
+from ..basics.quantity import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -593,18 +594,7 @@ def quantity(argument):
     (1.0, '')
     """
 
-    # NEW IMPLEMENTATION
-    units = ""
-    number = 1.0
-    while argument:
-        try:
-            number = float(argument)
-            break
-        except ValueError:
-            units = argument[-1:] + units
-            argument = argument[:-1]
-    if units == "": raise ValueError("Unit is not specified")
-    return number * parse_unit(units.strip())
+    return parse_quantity(argument)
 
 # -----------------------------------------------------------------
 
@@ -616,8 +606,7 @@ def photometric_quantity(argument):
     :return:
     """
 
-    q = quantity(argument)
-    return q.value * PhotometricUnit(q.unit)
+    return parse_quantity(argument)
 
 # -----------------------------------------------------------------
 
@@ -629,8 +618,7 @@ def photometric_density_quantity(argument):
     :return:
     """
 
-    q = quantity(argument)
-    return q.value * PhotometricUnit(q.unit, density=True)
+    return parse_quantity(argument, density=True)
 
 # -----------------------------------------------------------------
 

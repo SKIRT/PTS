@@ -18,11 +18,11 @@ from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.coordinates import Angle
-from astropy.units import Unit
 from astropy.modeling.models import Sersic2D
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -107,7 +107,7 @@ class SersicModel3D(Model):
             z_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
 
             # Set azimuth
-            azimuth = 0. * Unit("deg")
+            azimuth = 0. * u("deg")
 
             # Calculate the tilt angle of the bulge (tilt w.r.t. the x-axis)
             tilt = deproject_pa_to_tilt(sersic2d.position_angle - position_angle, inclination)
@@ -293,7 +293,7 @@ def project_azimuth_to_pa(azimuth, inclination):
     cos_pa = math.cos(azimuth_radian) * math.cos(i_radian) / denominator
     sin_pa = math.sin(azimuth_radian) / denominator
 
-    pa_radian = math.atan2(sin_pa, cos_pa) * Unit("radian")
+    pa_radian = math.atan2(sin_pa, cos_pa) * u("radian")
 
     return pa_radian.to("deg")
 
@@ -317,7 +317,7 @@ def deproject_pa_to_azimuth(pa, inclination):
     cos_azimuth = math.cos(pa_radian) / denominator
     sin_azimuth = math.sin(pa_radian) * math.cos(i_radian) / denominator
 
-    azimuth_radian = math.atan2(sin_azimuth, cos_azimuth) * Unit("radian")
+    azimuth_radian = math.atan2(sin_azimuth, cos_azimuth) * u("radian")
 
     return azimuth_radian.to("deg")
 
@@ -341,7 +341,7 @@ def project_tilt_to_pa(tilt, inclination):
     cos_pa = math.sin(tilt_radian) * math.sin(i_radian) / denominator
     sin_pa = math.cos(tilt_radian) / denominator
 
-    pa_radian = math.atan2(sin_pa, cos_pa) * Unit("radian")
+    pa_radian = math.atan2(sin_pa, cos_pa) * u("radian")
 
     return pa_radian.to("deg")
 
@@ -365,7 +365,7 @@ def deproject_pa_to_tilt(pa, inclination):
     cos_tilt = math.sin(pa_radian) * math.sin(i_radian) / denominator
     sin_tilt = math.cos(pa_radian) / denominator
 
-    tilt_radian = math.atan2(sin_tilt, cos_tilt) * Unit("radian")
+    tilt_radian = math.atan2(sin_tilt, cos_tilt) * u("radian")
 
     return tilt_radian.to("deg")
 

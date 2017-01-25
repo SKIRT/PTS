@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
@@ -34,6 +34,7 @@ from ...core.prep.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
 from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
 from ...core.advanced.dustgridtool import DustGridTool
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -316,12 +317,12 @@ class AnalysisLauncher(AnalysisComponent):
 
         # Get the pixelscale in physical units
         distance = self.galaxy_properties.distance
-        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale * u("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         x_radius = radius_physical
         y_radius = radius_physical
-        z_radius = 3. * Unit("kpc")
+        z_radius = 3. * u("kpc")
 
         x_min = - x_radius
         x_max = x_radius

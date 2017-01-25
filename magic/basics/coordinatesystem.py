@@ -21,7 +21,6 @@ import warnings
 # Import astronomical modules
 from astropy import wcs
 from astropy.wcs import utils
-from astropy.units import Unit
 from astropy.io import fits
 from astropy.coordinates import Angle
 
@@ -31,6 +30,7 @@ from ..region.rectangle import SkyRectangleRegion
 from .stretch import SkyStretch
 from ..tools import coordinates
 from .pixelscale import Pixelscale
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -164,8 +164,8 @@ class CoordinateSystem(wcs.WCS):
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
 
-        x_pixelscale = result[0] * Unit("deg/pix")
-        y_pixelscale = result[1] * Unit("deg/pix")
+        x_pixelscale = result[0] * u("deg")
+        y_pixelscale = result[1] * u("deg")
 
         # Return the pixel scale as an extent
         return Pixelscale(x_pixelscale, y_pixelscale)
@@ -192,7 +192,7 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
-        square_pixel = 1.0 * Unit("pix2")
+        square_pixel = 1.0 * u("pix2")
         return (self.pixelscale.x * self.pixelscale.y * square_pixel).to("sr")
 
     # -----------------------------------------------------------------
@@ -355,7 +355,7 @@ class CoordinateSystem(wcs.WCS):
         # Get the orientation of the coordinate system
         try: orientation = self.orientation
         except ValueError:
-            largest_distance = max(ra_distance, dec_distance) * Unit("deg")
+            largest_distance = max(ra_distance, dec_distance) * u("deg")
             return center, largest_distance, largest_distance
 
         if "x" in orientation[0] and "y" in orientation[1]: # RA axis = x axis and DEC axis = y axis
@@ -380,8 +380,8 @@ class CoordinateSystem(wcs.WCS):
             warnings.warn("The coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
 
         # Create RA and DEC span as quantities
-        ra_span = ra_distance * Unit("deg")
-        dec_span = dec_distance * Unit("deg")
+        ra_span = ra_distance * u("deg")
+        dec_span = dec_distance * u("deg")
 
         # Return the center coordinate and the RA and DEC span
         return center, ra_span, dec_span
@@ -428,8 +428,8 @@ class CoordinateSystem(wcs.WCS):
         """
 
         # Calculate the number of pixels in the x and y direction that corresponds one arcmin
-        pix_x = (1. / self.pixelscale.x * Unit("arcmin")).to("pix").value
-        pix_y = (1. / self.pixelscale.y * Unit("arcmin")).to("pix").value
+        pix_x = (1. / self.pixelscale.x * u("arcmin")).to("").value
+        pix_y = (1. / self.pixelscale.y * u("arcmin")).to("").value
 
         #print(pix_x, pix_y)
 

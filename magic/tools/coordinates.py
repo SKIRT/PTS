@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-import astropy.units as u
 from astropy.coordinates import SkyCoord
 
 # -----------------------------------------------------------------
@@ -69,7 +68,7 @@ def pixel_mapping(wcs1, wcs2):
 
         # Transform the world coordinates from the output image into the coordinate
         # system of the input image
-        C2 = SkyCoord(lon2,lat2,unit=(u.Unit("deg"),u.Unit("deg")), frame=csys2)
+        C2 = SkyCoord(lon2, lat2, unit="deg", frame=csys2)
         C1 = C2.transform_to(csys1)
         lon2,lat2 = C1.spherical.lon.deg,C1.spherical.lat.deg
 

@@ -23,6 +23,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.tools import stringify
 from pts.core.plot.transmission import TransmissionPlotter
 from pts.core.data.transmission import TransmissionCurve
+from pts.core.basics.quantity import represent_quantity
 
 # -----------------------------------------------------------------
 
@@ -72,12 +73,12 @@ for label in sorted(categorized.keys(), key=lambda x: identifiers.keys().index(c
 
             print("")
 
-            print("    - Minimum wavelength: " + stringify.str_from_quantity(fltr.min))
-            print("    - Maximum wavelength: " + stringify.str_from_quantity(fltr.max))
-            print("    - Mean wavelength: " + stringify.str_from_quantity(fltr.mean))
-            if fltr.effective is not None: print("    - Effective wavelength: " + stringify.str_from_quantity(fltr.effective))
-            print("    - Pivot wavelength: " + stringify.str_from_quantity(fltr.pivot))
-            if fltr.effective is not None: print("    - Effective bandwidth: " + stringify.str_from_quantity(fltr.bandwidth))
+            print("    - Minimum wavelength: " + represent_quantity(fltr.min))
+            print("    - Maximum wavelength: " + represent_quantity(fltr.max))
+            print("    - Mean wavelength: " + represent_quantity(fltr.mean))
+            if fltr.effective is not None: print("    - Effective wavelength: " + represent_quantity(fltr.effective))
+            print("    - Pivot wavelength: " + represent_quantity(fltr.pivot))
+            if fltr.effective is not None: print("    - Effective bandwidth: " + represent_quantity(fltr.bandwidth))
 
             print("")
 

@@ -16,22 +16,34 @@ from __future__ import absolute_import, division, print_function
 from astropy.units import Quantity
 
 # Import the relevant PTS classes and modules
-from .unit import stringify_unit, represent_unit
+from .unit import stringify_unit, represent_unit, parse_unit
 
 # -----------------------------------------------------------------
 
-def parse_quantity(argument):
+def parse_quantity(argument, density=False):
 
     """
     This function ...
     :param argument:
+    :param density:
     :return:
     """
 
-    try: quantity = PhotometricQuantity(argument)
-    except ValueError: quantity = Quantity(argument)
-    return quantity
-        
+    # NEW IMPLEMENTATION
+    units = ""
+    number = 1.0
+    while argument:
+        try:
+            number = float(argument)
+            break
+        except ValueError:
+            units = argument[-1:] + units
+            argument = argument[:-1]
+    if units == "": raise ValueError("Unit is not specified")
+
+    # Create quantity
+    return number * parse_unit(units.strip(), density=density)
+
 # -----------------------------------------------------------------
 
 def stringify_quantity(quantity):
@@ -68,6 +80,7 @@ def represent_quantity(quantity):
 
 # -----------------------------------------------------------------
 
+# NOT OPERATIONAL YET
 class PhotometricQuantity(Quantity):
     
     """

@@ -24,7 +24,8 @@ from .units import SkirtUnits
 from ..basics.filter import Filter
 from ..tools import archive as arch
 from ..tools import filesystem as fs
-from ..tools.stringify import str_from_angle, str_from_quantity, str_from_bool
+from ..tools.stringify import str_from_bool, str_from_angle
+from ..basics.quantity import represent_quantity
 
 # -----------------------------------------------------------------
 #  SkiFile class
@@ -451,7 +452,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeConvergence' setting to true
-        dust_system.set("writeConvergence", str_from_bool(value))
+        dust_system.set("writeConvergence", str_from_bool(value, lower=True))
 
     def set_write_density(self, value=True):
 
@@ -459,7 +460,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeDensity' setting to true
-        dust_system.set("writeDensity", str_from_bool(value))
+        dust_system.set("writeDensity", str_from_bool(value, lower=True))
 
     def set_write_depth_map(self, value=True):
 
@@ -467,7 +468,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeDepthMap' setting to true
-        dust_system.set("writeDepthMap", str_from_bool(value))
+        dust_system.set("writeDepthMap", str_from_bool(value, lower=True))
 
     def set_write_quality(self, value=True):
 
@@ -475,7 +476,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeQuality' setting to true
-        dust_system.set("writeQuality", str_from_bool(value))
+        dust_system.set("writeQuality", str_from_bool(value, lower=True))
 
     def set_write_cell_properties(self, value=True):
 
@@ -483,7 +484,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeCellProperties' setting to true
-        dust_system.set("writeCellProperties", str_from_bool(value))
+        dust_system.set("writeCellProperties", str_from_bool(value, lower=True))
 
     def set_write_stellar_density(self, value=True):
 
@@ -491,7 +492,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeStellarDensity' setting to true
-        dust_system.set("writeStellarDensity", str_from_bool(value))
+        dust_system.set("writeStellarDensity", str_from_bool(value, lower=True))
 
     def set_write_cells_crossed(self, value=True):
 
@@ -499,7 +500,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeCellsCrossed' setting to true
-        dust_system.set("writeCellsCrossed", str_from_bool(value))
+        dust_system.set("writeCellsCrossed", str_from_bool(value, lower=True))
 
     def set_write_emissivity(self, value=True):
 
@@ -507,7 +508,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeEmissivity' setting to true
-        dust_system.set("writeEmissivity", str_from_bool(value))
+        dust_system.set("writeEmissivity", str_from_bool(value, lower=True))
 
     def set_write_temperature(self, value=True):
 
@@ -515,7 +516,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeTemperature' setting to true
-        dust_system.set("writeTemperature", str_from_bool(value))
+        dust_system.set("writeTemperature", str_from_bool(value, lower=True))
 
     def set_write_isrf(self, value=True):
 
@@ -523,7 +524,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeISRF' setting to true
-        dust_system.set("writeISRF", str_from_bool(value))
+        dust_system.set("writeISRF", str_from_bool(value, lower=True))
 
     def set_write_absorption(self, value=True):
 
@@ -531,7 +532,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeAbsorption' setting to true
-        dust_system.set("writeAbsorption", str_from_bool(value))
+        dust_system.set("writeAbsorption", str_from_bool(value, lower=True))
 
     def set_write_grid(self, value=True):
 
@@ -539,7 +540,7 @@ class SkiFile:
         grid = self.get_dust_grid()
 
         # Set the 'writeGrid' setting to true
-        grid.set("writeGrid", str_from_bool(value))
+        grid.set("writeGrid", str_from_bool(value, lower=True))
 
     def disable_all_dust_system_writing_options(self):
 
@@ -635,7 +636,7 @@ class SkiFile:
         if len(results) != 1: return []
         # split the first result in separate strings, extract the numbers using the appropriate units
         units = self.units()
-        return [units.convert(s,to_unit='micron',quantity='wavelength') for s in results[0].split(",")]
+        return [units.convert(s, to_unit='micron', quantity='wavelength') for s in results[0].split(",")]
 
     ## This function returns the first instrument's distance, in the specified units (default is 'pc').
     def instrumentdistance(self, unit='pc'):
@@ -730,7 +731,7 @@ class SkiFile:
             if hasattr(wavelengths, "unit"): wavelengths = [wavelengths]
 
             # Make the oligochromatic wavelength grid
-            attrs = {"wavelengths": ", ".join(map(str_from_quantity, wavelengths))}
+            attrs = {"wavelengths": ", ".join(map(represent_quantity, wavelengths))}
             parent.append(parent.makeelement("OligoWavelengthGrid", attrs))
 
             components = self.get_stellar_components()
@@ -1236,7 +1237,7 @@ class SkiFile:
         normalization = self.get_stellar_component_normalization(component_id)
 
         # Set the wavelength
-        normalization.set("wavelength", str_from_quantity(wavelength))
+        normalization.set("wavelength", represent_quantity(wavelength))
 
     ## This function returns the luminosity of the stellar component with the specified id,
     #   - if the normalization is by bolometric luminosity, returns (luminosity [as Astropy quantity], None)
@@ -1297,7 +1298,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity" : str_from_quantity(luminosity, unit="Lsun")}
+            attrs = {"luminosity" : luminosity.to("Lsun").value}
             parent.append(parent.makeelement("BolLuminosityStellarCompNormalization", attrs))
 
         # Filter is defined, use LuminosityStellarCompNormalization
@@ -1310,7 +1311,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity": str_from_quantity(luminosity), "band": filter_or_wavelength.skirt_description}
+            attrs = {"luminosity": represent_quantity(luminosity), "band": filter_or_wavelength.skirt_description}
             parent.append(parent.makeelement("LuminosityStellarCompNormalization", attrs))
 
         # Wavelength is defined as an Astropy quantity, use SpectralLuminosityStellarCompNormalization
@@ -1323,7 +1324,7 @@ class SkiFile:
             parent.remove(normalization)
 
             # Make and add the new normalization element
-            attrs = {"luminosity": str_from_quantity(luminosity), "wavelength": str_from_quantity(filter_or_wavelength)}
+            attrs = {"luminosity": represent_quantity(luminosity), "wavelength": represent_quantity(filter_or_wavelength)}
             parent.append(parent.makeelement("SpectralLuminosityStellarCompNormalization", attrs))
 
         # Invalid filter or wavelength argument
@@ -1360,8 +1361,8 @@ class SkiFile:
         parent.remove(mix)
 
         # Make and add the new mix
-        attrs = {"writeMix": str_from_bool(write_mix), "writeMeanMix": str_from_bool(write_mean_mix),
-                 "writeSize": str_from_bool(write_size), "hydrocarbonPops": str(hydrocarbon_pops),
+        attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
+                 "writeSize": str_from_bool(write_size, lower=True), "hydrocarbonPops": str(hydrocarbon_pops),
                  "enstatitePops": str(enstatite_pops), "forsteritePops": str(forsterite_pops)}
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
@@ -1387,7 +1388,7 @@ class SkiFile:
         if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
 
         # Set the new dust mass
-        normalization.set("dustMass", str_from_quantity(mass))
+        normalization.set("dustMass", represent_quantity(mass))
 
     ## This function returns the wavelength grid
     def get_wavelength_grid(self):
@@ -1445,10 +1446,10 @@ class SkiFile:
         parent.remove(wavelength_grid)
 
         # Make and add the new wavelength grid
-        attrs = {"minWavelength": str_from_quantity(min_lambda), "maxWavelength": str_from_quantity(max_lambda),
-                 "points": str(points), "minWavelengthSubGrid": str_from_quantity(min_lambda_sub),
-                 "maxWavelengthSubGrid": str_from_quantity(max_lambda_sub), "pointsSubGrid": str(points_sub),
-                 "writeWavelengths": str_from_bool(write)}
+        attrs = {"minWavelength": represent_quantity(min_lambda), "maxWavelength": represent_quantity(max_lambda),
+                 "points": str(points), "minWavelengthSubGrid": represent_quantity(min_lambda_sub),
+                 "maxWavelengthSubGrid": represent_quantity(max_lambda_sub), "pointsSubGrid": str(points_sub),
+                 "writeWavelengths": str_from_bool(write, lower=True)}
         parent.append(parent.makeelement("NestedLogWavelengthGrid", attrs))
 
     ## This functions sets the wavelength grid to a LogWavelengthGrid
@@ -1464,8 +1465,8 @@ class SkiFile:
         parent.remove(wavelength_grid)
 
         # Make and add the new wavelength grid
-        attrs = {"minWavelength": str_from_quantity(min_lambda), "maxWavelength": str_from_quantity(max_lambda),
-                 "points": str(points), "writeWavelengths": str_from_bool(write)}
+        attrs = {"minWavelength": represent_quantity(min_lambda), "maxWavelength": represent_quantity(max_lambda),
+                 "points": str(points), "writeWavelengths": str_from_bool(write, lower=True)}
         parent.append(parent.makeelement("LogWavelengthGrid", attrs))
 
     ## This function returns the geometry of the stellar component with the specified id
@@ -1862,7 +1863,7 @@ class SkiFile:
         parent.remove(sed)
 
         # Create and add the new geometry
-        attrs = {"metallicity": str(metallicity), "compactness": str(compactness), "pressure": str_from_quantity(pressure), "coveringFactor": str(covering_factor)}
+        attrs = {"metallicity": str(metallicity), "compactness": str(compactness), "pressure": represent_quantity(pressure), "coveringFactor": str(covering_factor)}
         parent.append(parent.makeelement("MappingsSED", attrs))
 
     ## This function returns the dust emissivity
@@ -2019,9 +2020,9 @@ class SkiFile:
         parent.remove(grid)
 
         # Create and add the new grid
-        attrs = {"minX": str_from_quantity(min_x), "maxX": str_from_quantity(max_x), "minY": str_from_quantity(min_y),
-                 "maxY": str_from_quantity(max_y), "minZ": str_from_quantity(min_z), "maxZ": str_from_quantity(max_z),
-                 "writeGrid": str_from_bool(write_grid)}
+        attrs = {"minX": represent_quantity(min_x), "maxX": represent_quantity(max_x), "minY": represent_quantity(min_y),
+                 "maxY": represent_quantity(max_y), "minZ": represent_quantity(min_z), "maxZ": represent_quantity(max_z),
+                 "writeGrid": str_from_bool(write_grid, lower=True)}
         grid = parent.makeelement("CartesianDustGrid", attrs)
         parent.append(grid)
 
@@ -2087,7 +2088,7 @@ class SkiFile:
 
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
-                 "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid), "minLevel": str(min_level),
+                 "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
                  "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method}
@@ -2133,10 +2134,10 @@ class SkiFile:
 
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
-                 "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid), "minLevel": str(min_level),
+                 "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": sample_count,
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric)}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric, lower=True)}
                  #"assigner": assigner}
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 

@@ -18,7 +18,7 @@ import numpy as np
 # Import astronomical modules
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
 from astroquery.ned import Ned
 
 # Import the relevant PTS classes and modules
@@ -31,6 +31,7 @@ from ...magic.tools import catalogs
 from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
 from ...dustpedia.core.database import DustPediaDatabase, get_account
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -217,16 +218,16 @@ class PropertyFetcher(DataComponent):
         #self.properties.center = SkyCoordinate(ra=self.info["RA"][0], dec=self.info["DEC"][0], unit="deg") # center position from DustPedia
 
         # Distance
-        self.properties.distance = table["Dmean"][0] * Unit("Mpc")
-        self.properties.distance_error = table["e_Dmean"][0] * Unit("Mpc")
+        self.properties.distance = table["Dmean"][0] * u("Mpc")
+        self.properties.distance_error = table["e_Dmean"][0] * u("Mpc")
 
         # Major axis, ellipticity, position angle
-        self.properties.major_arcsec = table["amaj"][0] * Unit("arcsec")
+        self.properties.major_arcsec = table["amaj"][0] * u("arcsec")
         self.properties.major = (self.properties.distance * self.properties.major_arcsec).to("pc", equivalencies=dimensionless_angles())
 
         # Ellipticity
         self.properties.ellipticity = table["ell"][0]
-        self.properties.position_angle = Angle(table["PA"][0] + 90.0, Unit("deg"))
+        self.properties.position_angle = Angle(table["PA"][0] + 90.0, u("deg"))
 
         # Magnitudes
         asymptotic_ab_magnitude_i1 = table["__3.6_"][0]
@@ -239,26 +240,26 @@ class PropertyFetcher(DataComponent):
         self.properties.i2_mag = asymptotic_ab_magnitude_i2
         self.properties.i2_mag_error = asymptotic_ab_magnitude_i2_error
 
-        self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * Unit("Jy")
+        self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * u("Jy")
         i1_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i1_mag + self.properties.i1_mag_error) * Unit("Jy")
+            self.properties.i1_mag + self.properties.i1_mag_error) * u("Jy")
         i1_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i1_mag - self.properties.i1_mag_error) * Unit("Jy")
+            self.properties.i1_mag - self.properties.i1_mag_error) * u("Jy")
         i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.properties.i1_fluxdensity)
         self.properties.i1_error = i1_error.average
 
-        self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * Unit("Jy")
+        self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * u("Jy")
         i2_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i2_mag + self.properties.i2_mag_error) * Unit("Jy")
+            self.properties.i2_mag + self.properties.i2_mag_error) * u("Jy")
         i2_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i2_mag - self.properties.i2_mag_error) * Unit("Jy")
+            self.properties.i2_mag - self.properties.i2_mag_error) * u("Jy")
         i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.properties.i2_fluxdensity)
         self.properties.i2_error = i2_error.average
 
         # Other ...
         # absolute_magnitude_i1 = table["M3.6"][0]
         # absolute_magnitude_i2 = table["M4.5"][0]
-        # stellar_mass = 10.0**table["logM_"][0] * u.Unit("Msun")
+        # stellar_mass = 10.0**table["logM_"][0] * u("Msun")
 
     # -----------------------------------------------------------------
 

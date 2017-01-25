@@ -300,7 +300,7 @@ class BestModelLauncher(FittingComponent):
 
         # Get the pixelscale in physical units
         distance = self.galaxy_properties.distance
-        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         x_radius = radius_physical

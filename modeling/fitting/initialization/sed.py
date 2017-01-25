@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ..component import FittingComponent
 from ....core.tools import tables
@@ -25,6 +22,7 @@ from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ...component.sed import SEDModelingComponent
 from ....core.simulation.skifile import LabeledSkiFile
 from ..tables import WeightsTable
+from ....core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -256,7 +254,7 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         for fltr in self.fitting_filters:
 
             # Get the central wavelength
-            wavelength = fltr.centerwavelength() * Unit("micron")
+            wavelength = fltr.centerwavelength() * u("micron")
 
             # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
             spectrum = wavelengths.name_in_spectrum(wavelength)

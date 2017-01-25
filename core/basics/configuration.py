@@ -1930,7 +1930,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         log.success(name + ": " + description)
 
         #
-        log.info("Press ENTER to use the default value (" + str(default) + ")")
+        log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
         if choices_list is not None:
 
@@ -2060,7 +2060,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         log.success(name + ": " + description)
 
         #
-        log.info("Press ENTER to use the default value (" + str(default) + ")")
+        log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
         if choices_list is not None:
 

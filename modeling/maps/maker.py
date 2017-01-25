@@ -185,7 +185,7 @@ class MapMaker(MapsComponent):
         image = Image.from_file(path)
 
         # Assert that the units are MJy/sr
-        if not "Halpha" in image_name: assert image.unit == Unit("MJy/sr")
+        if not "Halpha" in image_name: assert image.unit == "MJy/sr"
 
         # Add the image to the dictionary
         self.images[image_id] = image

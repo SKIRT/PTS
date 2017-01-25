@@ -16,12 +16,10 @@ from __future__ import absolute_import, division, print_function
 import re
 import string
 import itertools
-import operator
-from functools import partial
 
 # Import astronomical modules
 from astropy.coordinates import Angle, frame_transform_graph, UnitSphericalRepresentation, BaseCoordinateFrame
-from astropy.units import Unit, Quantity, dimensionless_unscaled
+from astropy.units import Quantity, dimensionless_unscaled
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import Extent
@@ -39,6 +37,7 @@ from .polygon import PolygonRegion, PixelPolygonRegion, SkyPolygonRegion, Physic
 from .text import TextRegion, PixelTextRegion, SkyTextRegion, PhysicalTextRegion
 from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion, PhysicalCompositeRegion
 from ...core.tools.strings import stripwhite_around
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -53,11 +52,11 @@ coordsys_name_mapping['ecliptic'] = 'geocentrictrueecliptic'  # needs expert att
 # -----------------------------------------------------------------
 
 hour_or_deg = 'hour_or_deg'
-coordinate_units = {'fk5': (hour_or_deg, Unit("deg")),
-                    'fk4': (hour_or_deg, Unit("deg")),
-                    'icrs': (hour_or_deg, Unit("deg")),
-                    'geocentrictrueecliptic': (Unit("deg"), Unit("deg")),
-                    'galactic': (Unit("deg"), Unit("deg")),
+coordinate_units = {'fk5': (hour_or_deg, u("deg")),
+                    'fk4': (hour_or_deg, u("deg")),
+                    'icrs': (hour_or_deg, u("deg")),
+                    'geocentrictrueecliptic': (u("deg"), u("deg")),
+                    'galactic': (u("deg"), u("deg")),
                     'physical': (dimensionless_unscaled, dimensionless_unscaled),
                     'image': (dimensionless_unscaled, dimensionless_unscaled),
                     'wcs': (dimensionless_unscaled, dimensionless_unscaled),
@@ -68,9 +67,9 @@ for letter in string.ascii_lowercase:
 # -----------------------------------------------------------------
 
 unit_mapping = {
-    '"': Unit("arcsec"),
-    "'": Unit("arcmin"),
-    'r': Unit("rad"),
+    '"': u("arcsec"),
+    "'": u("arcmin"),
+    'r': u("rad"),
     'i': dimensionless_unscaled,
 }
 

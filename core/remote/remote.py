@@ -24,7 +24,6 @@ from lxml import etree
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from .host import Host, HostDownException
@@ -37,6 +36,7 @@ from ..basics.task import Task
 from ..tools import introspection
 from ..tools.introspection import possible_cpp_compilers, possible_mpi_compilers, possible_mpirun_names
 from .python import RemotePythonSession
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -1937,6 +1937,42 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def directory_size(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from ..basics.quantity import parse_quantity
+
+        command = "du -sh " + path
+        output = self.execute(command)
+
+        string = output[0].split(" ")[0].lower() + "byte"
+        return parse_quantity(string)
+
+    # -----------------------------------------------------------------
+
+    def file_size(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        from ..basics.quantity import parse_quantity
+
+        command = "du -sh " + path
+        output = self.execute(path)
+
+        string = output[0].split(" ")[0].lower() + "byte"
+        return parse_quantity(string)
+
+    # -----------------------------------------------------------------
+
     def to_home_directory(self):
 
         """
@@ -2794,7 +2830,7 @@ class Remote(object):
             splitted = output[0].split(":")[1].split()
 
             # Calculate the free amount of memory in gigabytes
-            total_swap = float(splitted[0]) * 1e-6 * Unit("GB")
+            total_swap = float(splitted[0]) * 1e-6 * u("GB")
 
             # Return the free amount of virtual memory in gigabytes
             return total_swap

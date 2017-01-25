@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
@@ -38,6 +35,7 @@ from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.core.plot.seds import plotseds
 from pts.modeling.basics.projection import GalaxyProjection
 from pts.modeling.basics.instruments import FullInstrument, FrameInstrument, SimpleInstrument
+from pts.core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -151,7 +149,7 @@ for i in range(len(wavelengths)):
     wavelength = wavelengths[i]
     luminosity = luminosities[i]
 
-    new_luminosity = luminosity.to("W/micron").value / spectral_factor_hz_to_micron(wavelength) * Unit("W/Hz")
+    new_luminosity = luminosity.to("W/micron").value / spectral_factor_hz_to_micron(wavelength) * u("W/Hz")
 
     #new_luminosities.append(new_luminosity)
 
@@ -274,7 +272,7 @@ fnus = []
 
 for i in range(len(flambda)):
 
-    fnu = flambda[i] / spectral_factor_hz_to_micron(lambdas[i] * Unit("micron")) * Unit("W / (m2 * Hz)")
+    fnu = flambda[i] / spectral_factor_hz_to_micron(lambdas[i] * u("micron")) * u("W / (m2 * Hz)")
     fnu = fnu.to("Jy").value
     fnus.append(fnu)
 
@@ -282,7 +280,7 @@ for i in range(len(flambda)):
 sed = SED(photometry_unit="Jy")
 
 for i in range(len(lambdas)):
-    sed.add_point(lambdas[i] * Unit("micron"), fnus[i] * Unit("Jy"))
+    sed.add_point(lambdas[i] * u("micron"), fnus[i] * u("Jy"))
 
 plotter = SEDPlotter()
 plotter.add_sed(sed, "...", residuals=False)

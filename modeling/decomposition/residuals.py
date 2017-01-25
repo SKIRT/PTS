@@ -305,7 +305,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
         rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
         plotting.plot_peak_model(source.cutout, rel_center.x, rel_center.y, rel_model)
 
-        model_fwhm_pix = fitting.fwhm(model) * u("pix")
+        model_fwhm_pix = fitting.fwhm(model)
         model_fwhm = (model_fwhm_pix * frame.average_pixelscale).to("arcsec")
 
         print("Model FWHM: ", model_fwhm)

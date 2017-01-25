@@ -44,7 +44,11 @@ def unit_parsing_type(parameter_type):
     :return:
     """
 
-    ptype = "photometric_density_unit" if is_photometric_density(parameter_type) else "unit"
+    if parsing_types_for_parameter_types[parameter_type] == "photometric_quantity":
+        if is_photometric_density(parameter_type): ptype = "photometric_density_unit"
+        else: ptype = "photometric_unit"
+    else: ptype = "unit"
+
     return ptype
 
 # -----------------------------------------------------------------

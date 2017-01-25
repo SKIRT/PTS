@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -22,6 +19,7 @@ from ...core.simulation.execute import SkirtExec
 from ...core.simulation.arguments import SkirtArguments
 from ...core.basics.map import Map
 from ..simulation.grids import load_grid
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -71,7 +69,7 @@ class DustGridTool(object):
         ski = ski.copy()
 
         # Set npackages to zero
-        ski.to_oligochromatic(1. * Unit("micron"))
+        ski.to_oligochromatic(1. * u("micron"))
         ski.setpackages(0)
 
         # ski.remove_all_stellar_components()
@@ -191,7 +189,7 @@ class DustGridTool(object):
         ski.set_dust_grid(grid)
 
         # Convert to oligochromatic simulation
-        ski.to_oligochromatic([1. * Unit("micron")])
+        ski.to_oligochromatic([1. * u("micron")])
 
         # Remove the instrument system
         ski.remove_instrument_system()

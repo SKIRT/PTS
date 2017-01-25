@@ -92,40 +92,41 @@ class Sun(object):
         """
 
         # Create and return the new unit
-        return Unit("Lsun", self.total_luminosity())
+        return u("Lsun", self.total_luminosity())
 
     # -----------------------------------------------------------------
 
-    def luminosity_for_filter(self, filter, unit="W/micron"):
+    def luminosity_for_filter(self, fltr, unit="W/micron"):
 
         """
         This function ...
-        :param filter:
+        :param fltr:
         :param unit:
         :return:
         """
 
         # Convole the Sun SED over the filter transmission curve
-        luminosity = filter.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.photometry(unit="W/micron", asarray=True)) # also in W/micron
-        luminosity = luminosity * Unit("W/micron")
+        luminosity = fltr.convolve(self.sed.wavelengths(unit="micron", asarray=True), self.sed.photometry(unit="W/micron", asarray=True)) # also in W/micron
+        luminosity = luminosity * u("W/micron")
 
         # Return the luminosity
         return luminosity.to(unit)
 
     # -----------------------------------------------------------------
 
-    def luminosity_for_filter_as_unit(self, filter):
+    def luminosity_for_filter_as_unit(self, fltr):
 
         """
         This function ...
-        :param filter:
+        :param fltr:
         :return:
         """
 
         # Determine a name for this unit
-        unit_name = "Lsun_" + filter.band
+        unit_name = "Lsun_" + fltr.band
 
         # Create and return the new unit
-        return Unit(unit_name, self.luminosity_for_filter(filter))
+        from astropy.units import Unit
+        return Unit(unit_name, represents=self.luminosity_for_filter(fltr))
 
 # -----------------------------------------------------------------

@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
@@ -25,6 +24,7 @@ from ..analysis import sources
 from ..region.ellipse import PixelEllipseRegion
 from ...core.tools.logging import log
 from ..basics.stretch import PixelStretch
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -237,7 +237,7 @@ class PointSource(Source):
         """
 
         # Return the parameters
-        return self.pixel_position(wcs), default_radius, Angle(0.0, Unit("deg"))
+        return self.pixel_position(wcs), default_radius, Angle(0.0, "deg")
 
     # -----------------------------------------------------------------
 
@@ -264,7 +264,7 @@ class PointSource(Source):
 
         # Stars from the DustPedia catalog should always be removed (because we trust this catalog)
         # New: only enable this for optical and NIR (some stars are not present in UV maps and MIR maps)
-        if frame.wavelength is None or (frame.wavelength > 0.39 * Unit("micron") and frame.wavelength < 10.0 * Unit("micron")):
+        if frame.wavelength is None or (frame.wavelength > 0.39 * u("micron") and frame.wavelength < 10.0 * u("micron")):
             if self.catalog == "DustPedia" and removal_method is None: removal_method = "interpolation"
 
         # Remove the star by subtracting the model if a model was found and the method is set to 'model'
@@ -320,7 +320,7 @@ class PointSource(Source):
             # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
             # NEW: only enable this for optical and NIR (galaxy has smooth emission there but not in UV and MIR)
             # We take 0.39 micron and 20 micron as the limits for 'smoothness'
-            if frame.wavelength is None or (frame.wavelength > 0.39 * Unit("micron") and frame.wavelength < 10.0 * Unit("micron")):
+            if frame.wavelength is None or (frame.wavelength > 0.39 * u("micron") and frame.wavelength < 10.0 * u("micron")):
                 if self.on_galaxy and config.polynomial_on_galaxy: method = "polynomial"
                 else: method = config.interpolation_method
             else: method = config.interpolation_method
@@ -569,7 +569,7 @@ class PointSource(Source):
 
         # Determine whether we want the background to be estimated by a polynomial if we are on the galaxy
         # NEW: only enable this for optical and IR (galaxy has smooth emission there but not in UV)
-        if frame.wavelength is None or frame.wavelength > 0.39 * u.Unit("micron"):
+        if frame.wavelength is None or frame.wavelength > 0.39 * u("micron"):
             if self.on_galaxy and config.polynomial_on_galaxy:
                 interpolation_method = "polynomial"
             else: interpolation_method = config.interpolation_method

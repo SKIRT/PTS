@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import math
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
 from astropy.coordinates import Angle
 from astroquery.vizier import Vizier
 
@@ -30,11 +30,10 @@ from ...modeling.basics.models import SersicModel2D, ExponentialDiskModel2D
 from ...core.basics.configurable import Configurable
 from ..tools import catalogs
 from ..basics.coordinate import SkyCoordinate
-from ...dustpedia.core.database import DustPediaDatabase
-from ...core.basics.errorbar import ErrorBar
 from ...modeling.basics.properties import GalaxyProperties
 from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D
 from ...core.tools import formatting as fmt
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -249,16 +248,16 @@ class S4G(Configurable):
         #self.properties.center = SkyCoordinate(ra=self.info["RA"][0], dec=self.info["DEC"][0], unit="deg") # center position from DustPedia
 
         # Distance
-        self.properties.distance = table["Dmean"][0] * Unit("Mpc")
-        self.properties.distance_error = table["e_Dmean"][0] * Unit("Mpc")
+        self.properties.distance = table["Dmean"][0] * u("Mpc")
+        self.properties.distance_error = table["e_Dmean"][0] * u("Mpc")
 
         # Major axis, ellipticity, position angle
-        self.properties.major_arcsec = table["amaj"][0] * Unit("arcsec")
+        self.properties.major_arcsec = table["amaj"][0] * u("arcsec")
         self.properties.major = (self.properties.distance * self.properties.major_arcsec).to("pc", equivalencies=dimensionless_angles())
 
         # Ellipticity
         self.properties.ellipticity = table["ell"][0]
-        self.properties.position_angle = Angle(table["PA"][0] + 90.0, Unit("deg"))
+        self.properties.position_angle = Angle(table["PA"][0] + 90.0, u("deg"))
 
         # Magnitudes
         asymptotic_ab_magnitude_i1 = table["__3.6_"][0]
@@ -423,26 +422,26 @@ class S4G(Configurable):
                     elif value.to("deg").value < -180.: value = value + Angle(360., "deg")
                 elif parameter == "mag":
                     parameter = "fluxdensity"
-                    value = unitconversion.ab_to_jansky(value) * Unit("Jy")
-                elif parameter == "mu0": value = value * Unit("mag/arcsec2")
+                    value = unitconversion.ab_to_jansky(value) * u("Jy")
+                elif parameter == "mu0": value = value * u("mag/arcsec2")
                 elif parameter == "hr":
-                    value = value * Unit("arcsec")
+                    value = value * u("arcsec")
                     value = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
                 elif parameter == "hz":
-                    value = value * Unit("arcsec")
+                    value = value * u("arcsec")
                     value = (self.parameters.distance * value).to("pc", equivalencies=dimensionless_angles())
 
                 component_parameters[parameter] = value
 
             if functionname == "sersic":
 
-                re = table["Re"][index] * Unit("arcsec")
+                re = table["Re"][index] * u("arcsec")
                 component_parameters["Re"] = (self.parameters.distance * re).to("pc", equivalencies=dimensionless_angles())
                 component_parameters["n"] = table["n"][index]
 
             elif functionname == "ferrer2":
 
-                rbar = table["Rbar"][index] * Unit("arcsec")
+                rbar = table["Rbar"][index] * u("arcsec")
                 component_parameters["Rbar"] = (self.parameters.distance * rbar).to("pc", equivalencies=dimensionless_angles())
 
             if interpretation == "B": # bulge
@@ -546,10 +545,10 @@ class S4G(Configurable):
                 #self.parameters.bulge.interpretation = splitted[sersic_1_index].split("|")[1]
                 bulge_f = float(splitted[sersic_1_index + 1])
                 mag = float(splitted[sersic_1_index + 2])
-                bulge_fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
+                bulge_fluxdensity = unitconversion.ab_to_jansky(mag) * u("Jy")
 
                 # Effective radius in pc
-                re_arcsec = float(splitted[sersic_1_index + 3]) * Unit("arcsec")
+                re_arcsec = float(splitted[sersic_1_index + 3]) * u("arcsec")
                 bulge_re = (self.properties.distance * re_arcsec).to("pc", equivalencies=dimensionless_angles())
 
                 bulge_q = float(splitted[sersic_1_index + 4])
@@ -570,15 +569,15 @@ class S4G(Configurable):
                     #self.parameters.disk.interpretation = splitted[disk_1_index].split("|")[1]
                     disk_f = float(splitted[disk_1_index + 1])
                     mag = float(splitted[disk_1_index + 2])
-                    disk_fluxdensity = unitconversion.ab_to_jansky(mag) * Unit("Jy")
+                    disk_fluxdensity = unitconversion.ab_to_jansky(mag) * u("Jy")
 
                     # Scale length in pc
-                    hr_arcsec = float(splitted[disk_1_index + 3]) * Unit("arcsec")
+                    hr_arcsec = float(splitted[disk_1_index + 3]) * u("arcsec")
                     disk_hr = (self.properties.distance * hr_arcsec).to("pc", equivalencies=dimensionless_angles())
 
                     disk_q = float(splitted[disk_1_index + 4]) # axial ratio
                     disk_pa = Angle(float(splitted[disk_1_index + 5]) - 90., "deg")
-                    disk_mu0 = float(splitted[disk_1_index + 6]) * Unit("mag/arcsec2")
+                    disk_mu0 = float(splitted[disk_1_index + 6]) * u("mag/arcsec2")
 
                     # Create the disk component
                     disk = ExponentialDiskModel2D(relative_contribution=disk_f, fluxdensity=disk_fluxdensity, scalelength=disk_hr,
@@ -596,7 +595,7 @@ class S4G(Configurable):
 
                     #print(disk_f)
 
-                    disk_mu0 = float(splitted[edgedisk_1_index + 2]) * Unit("mag/arcsec2")
+                    disk_mu0 = float(splitted[edgedisk_1_index + 2]) * u("mag/arcsec2")
 
                     #  rs    hs      pa
 

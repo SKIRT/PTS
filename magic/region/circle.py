@@ -193,7 +193,7 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
         center = PixelCoordinate.from_sky(region.center, wcs)
 
         # Convert the radius
-        radius = (region.radius / wcs.average_pixelscale).to("pix").value
+        radius = (region.radius / wcs.average_pixelscale).to("").value
 
         # Create the pixel circle region
         return cls(center, radius, meta=region.meta)

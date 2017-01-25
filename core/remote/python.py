@@ -802,16 +802,16 @@ class RemotePythonSession(object):
             self.remote.execute(end_session_command)
 
         # Using screen
-        else: pass
+        else:
 
             # Stop the python session
-            #end_python_command = "screen -r -S " + self.screen_name + " -X stuff 'exit()\n'"
-            #self.remote.execute(end_python_command)
+            end_python_command = "screen -r -S " + self.screen_name + " -X stuff 'exit()\n'"
+            self.remote.execute(end_python_command)
 
             # Stop screen session
-            #self.remote.kill_screen(self.screen_name)
+            self.remote.kill_screen(self.screen_name)
 
         # Remove the pipe file
-        #self.remote.remove_file(self.out_pipe_filepath)
+        self.remote.remove_file(self.out_pipe_filepath)
 
 # -----------------------------------------------------------------

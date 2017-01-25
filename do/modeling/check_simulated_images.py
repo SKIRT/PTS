@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy import constants
 
 # Import the relevant PTS classes and modules
@@ -27,9 +26,9 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
-from pts.magic.tools import plotting
 from pts.core.basics.filter import Filter
 from pts.core.remote.python import RemotePythonSession
+from pts.core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -192,8 +191,8 @@ for filter_name in images:
     conversion_factor *= (wavelength ** 2 / speed_of_light).to("micron/Hz").value
 
     # From W / (m2 * arcsec2 * Hz) to MJy / sr
-    # conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
-    conversion_factor *= 1e26 * 1e-6 * (Unit("sr") / Unit("arcsec2")).to("")
+    # conversion_factor *= (u("W/(m2 * arcsec2 * Hz)") / u("MJy/sr")).to("")
+    conversion_factor *= 1e26 * 1e-6 * (u("sr") / u("arcsec2")).to("")
 
     # Multiply the frame with the conversion factor
     frame *= conversion_factor

@@ -17,9 +17,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ..component import MapsComponent
 from ....core.tools.logging import log
@@ -28,6 +25,7 @@ from ....core.launch.pts import PTSRemoteLauncher
 from .fitter import GridBlackBodyFitter, GeneticBlackBodyFitter
 from ....magic.tools import wavelengths
 from ....magic.basics.vector import Pixel
+from ....core.basics.unit import parse_unit as u
 
 # PTS evolution classes and modules
 from ....evolve.engine import GAEngine, RawScoreCriteria
@@ -174,7 +172,7 @@ class BlackBodyDustMapMaker(MapsComponent):
         exclude_filters = ["MIPS 70mu", "MIPS 160mu"]
 
         # Determine the minimum and maximum wavelength
-        #min_wavelength = 23. * Unit("micron") for 'old' version
+        #min_wavelength = 23. * u("micron") for 'old' version
 
         # Get the wavelength range
         wavelength_range = wavelengths.black_body_wavelength_range
@@ -467,7 +465,7 @@ class BlackBodyDustMapMaker(MapsComponent):
             errors = fluxes * 0.0 + 1.0
 
             # The distance
-            distance = 3.62 * Unit("Mpc")
+            distance = 3.62 * u("Mpc")
             #distance = distance.to("pc").value
             distance = distance.value
 

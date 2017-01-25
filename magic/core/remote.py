@@ -25,7 +25,7 @@ from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
 from ...core.basics.filter import Filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
-from ...core.basics.unit import parse_unit
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -309,7 +309,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return parse_unit(self.session.get_string("str(" + self.label + ".unit)"))
+        return u(self.session.get_string("str(" + self.label + ".unit)"))
 
     # -----------------------------------------------------------------
 
@@ -1329,7 +1329,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return parse_unit(self.session.get_string("str(" + self.label + ".unit)"))
+        return u(self.session.get_string("str(" + self.label + ".unit)"))
 
     # -----------------------------------------------------------------
 

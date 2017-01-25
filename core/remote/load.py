@@ -12,13 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ..tools import formatting as fmt
 from ..tools.logging import log
 from .configurable import RemotesConfigurable
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -163,10 +161,10 @@ class LoadChecker(RemotesConfigurable):
 
                     size = status.split("size=")[1].split(",")[0]
                     netload = status.split("netload=")[1].split(",")[0]
-                    physmem = float(status.split("physmem=")[1].split("kb")[0]) * 1e-6 * Unit("GB")
-                    availmem = float(status.split("availmem=")[1].split("kb")[0]) * 1e-6 * Unit("GB")
-                    totmem = float(status.split("totmem=")[1].split("kb")[0]) * 1e-6 * Unit("GB")
-                    idletime = int(status.split("idletime=")[1].split(",")[0]) * Unit("GB")
+                    physmem = float(status.split("physmem=")[1].split("kb")[0]) * 1e-6 * u("GB")
+                    availmem = float(status.split("availmem=")[1].split("kb")[0]) * 1e-6 * u("GB")
+                    totmem = float(status.split("totmem=")[1].split("kb")[0]) * 1e-6 * u("GB")
+                    idletime = int(status.split("idletime=")[1].split(",")[0]) * u("GB")
                     opsys = status.split("opsys=")[1]
 
                     architecture = status.split("uname=")[1].split(" #")[0].split(" ")[2]

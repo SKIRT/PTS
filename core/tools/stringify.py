@@ -96,7 +96,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     from pts.magic.basics.coordinate import SkyCoordinate
     from pts.magic.basics.stretch import SkyStretch
 
-    if is_boolean_type(value): return "boolean", str(value)
+    if is_boolean_type(value): return "boolean", str_from_bool(value)
     elif is_integer_type(value):
         if scientific: return "integer", "{:.0e}".format(value).replace("+", "").replace("e0", "e")
         else: return "integer", str(value)
@@ -106,7 +106,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     elif isinstance(value, basestring): return "string", value
     elif isinstance(value, UnitBase): return stringify_unit(value)
     elif isinstance(value, Quantity): return stringify_quantity(value)
-    elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit).replace(" ", "")
+    elif isinstance(value, Angle): return "angle", str_from_angle(value)
     elif isinstance(value, NoneType): return "None", "None"
     elif isinstance(value, RealRange): return "real_range", repr(value)
     elif isinstance(value, IntegerRange): return "integer_range", repr(value)
@@ -118,6 +118,20 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
 
 # -----------------------------------------------------------------
 
+def str_from_bool(boolean, lower=False):
+
+    """
+    This function ...
+    :param boolean:
+    :param lower:
+    :return:
+    """
+
+    if lower: return str(boolean).lower()
+    else: return str(boolean)
+
+# -----------------------------------------------------------------
+
 def str_from_angle(angle):
 
     """
@@ -126,47 +140,7 @@ def str_from_angle(angle):
     :return:
     """
 
-    try: return str(angle.to("deg").value) + " deg"
-    except AttributeError: return str(angle)
-
-# -----------------------------------------------------------------
-
-def str_from_quantity(quantity, unit=None):
-
-    """
-    This function ...
-    :param quantity:
-    :param unit:
-    :return:
-    """
-
-    if unit is not None:
-
-        if not quantity.__class__.__name__ == "Quantity": raise ValueError("Value is not a quantity, so unit cannot be converted")
-        return str(quantity.to(unit).value)
-
-    elif quantity.__class__.__name__ == "Quantity":
-
-        to_string = str(quantity.value) + " " + str(quantity.unit).replace(" ", "")
-        return to_string.replace("solMass", "Msun").replace("solLum", "Lsun")
-
-    else:
-
-        warnings.warn("The given value is not a quantity but a scalar value. No guarantee can be given that the parameter value"
-                      "is specified in the correct unit")
-        return str(quantity)
-
-# -----------------------------------------------------------------
-
-def str_from_bool(boolean):
-
-    """
-    This function ...
-    :param boolean:
-    :return:
-    """
-
-    return str(boolean).lower()
+    return "angle", repr(angle.value) + " " + str(angle.unit).replace(" ", "")
 
 # -----------------------------------------------------------------
 

@@ -20,14 +20,12 @@ from scipy.optimize import minimize
 from scipy.constants import h,k,c
 from multiprocessing import Pool, current_process
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....magic.misc.spire import SPIRE
 from ....core.basics.configurable import Configurable
 from ....core.basics.range import RealRange, QuantityRange
+from ....core.basics.unit import parse_unit as u
 
 # PTS evolution classes and modules
 from ....evolve.engine import GAEngine, RawScoreCriteria
@@ -160,9 +158,9 @@ def chi_squared_genome(genome, wavelengths, yorig, yerrorig, distance, redshift)
     d2 = genome.genomeList[3]
 
     # KEcorr factor dependant on (cold) model SED temperature
-    kecorr_250 = spire.get_kcol_temperature_psw(T1 * Unit("K"), beta, extended=True)
-    kecorr_350 = spire.get_kcol_temperature_pmw(T1 * Unit("K"), beta, extended=True)
-    kecorr_500 = spire.get_kcol_temperature_plw(T1 * Unit("K"), beta, extended=True)
+    kecorr_250 = spire.get_kcol_temperature_psw(T1 * u("K"), beta, extended=True)
+    kecorr_350 = spire.get_kcol_temperature_pmw(T1 * u("K"), beta, extended=True)
+    kecorr_500 = spire.get_kcol_temperature_plw(T1 * u("K"), beta, extended=True)
     corr = [1., 1., kecorr_250, kecorr_350, kecorr_500]  # pacs 70, pacs 160, SPIRE 250, SPIRE 350, SPIRE 500
 
     # chi_squared, initial_guess, args=(wavelengths, ydatab, yerr, distance, redshift, T1, T2, corr)
@@ -665,9 +663,9 @@ def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
                 initial_guess = np.array([7., 6.])
 
                 # KEcorr factor dependant on (cold) model SED temperature
-                kecorr_250 = spire.get_kcol_temperature_psw(T1 * Unit("K"), beta, extended=True)
-                kecorr_350 = spire.get_kcol_temperature_pmw(T1 * Unit("K"), beta, extended=True)
-                kecorr_500 = spire.get_kcol_temperature_plw(T1 * Unit("K"), beta, extended=True)
+                kecorr_250 = spire.get_kcol_temperature_psw(T1 * u("K"), beta, extended=True)
+                kecorr_350 = spire.get_kcol_temperature_pmw(T1 * u("K"), beta, extended=True)
+                kecorr_500 = spire.get_kcol_temperature_plw(T1 * u("K"), beta, extended=True)
                 corr = [1., 1., kecorr_250, kecorr_350, kecorr_500] # pacs 70, pacs 160, SPIRE 250, SPIRE 350, SPIRE 500
 
                 # Do the minimization
@@ -706,9 +704,9 @@ def _fit_one_pixel(wavelengths, ydata, yerr_low, yerr_high, distance, redshift):
             initial_guess = np.array([7., 6.])
 
             # KEcorr factor dependant on (cold) model SED temperature
-            kecorr_250 = spire.get_kcol_temperature_psw(T1 * Unit("K"), beta, extended=True)
-            kecorr_350 = spire.get_kcol_temperature_pmw(T1 * Unit("K"), beta, extended=True)
-            kecorr_500 = spire.get_kcol_temperature_plw(T1 * Unit("K"), beta, extended=True)
+            kecorr_250 = spire.get_kcol_temperature_psw(T1 * u("K"), beta, extended=True)
+            kecorr_350 = spire.get_kcol_temperature_pmw(T1 * u("K"), beta, extended=True)
+            kecorr_500 = spire.get_kcol_temperature_plw(T1 * u("K"), beta, extended=True)
             corr = [1., 1., kecorr_250, kecorr_350, kecorr_500]  # pacs 70, pacs 160, SPIRE 250, SPIRE 350, SPIRE 500
 
             # Do minimization

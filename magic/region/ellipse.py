@@ -230,12 +230,12 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * u("deg/pix")
-        y_pixelscale = result[1] * u("deg/pix")
+        x_pixelscale = result[0] * u("deg")
+        y_pixelscale = result[1] * u("deg")
         # pixelscale = Extent(x_pixelscale, y_pixelscale)
 
-        semimajor = (region.semimajor / x_pixelscale).to("pix").value
-        semiminor = (region.semiminor / y_pixelscale).to("pix").value
+        semimajor = (region.semimajor / x_pixelscale).to("").value
+        semiminor = (region.semiminor / y_pixelscale).to("").value
 
         radius = PixelStretch(semimajor, semiminor)
 
@@ -371,12 +371,12 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
         # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
-        x_pixelscale = result[0] * u("deg/pix")
-        y_pixelscale = result[1] * u("deg/pix")
+        x_pixelscale = result[0] * u("deg")
+        y_pixelscale = result[1] * u("deg")
         # pixelscale = Extent(x_pixelscale, y_pixelscale)
 
-        semimajor = region.semimajor * u("pix") * x_pixelscale
-        semiminor = region.semiminor * u("pix") * y_pixelscale
+        semimajor = region.semimajor * x_pixelscale
+        semiminor = region.semiminor * y_pixelscale
 
         radius = SkyStretch(semimajor, semiminor)
 

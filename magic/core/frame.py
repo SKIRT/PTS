@@ -22,7 +22,6 @@ import tempfile
 # Import astronomical modules
 from reproject import reproject_exact, reproject_interp
 from astropy.io import fits
-from astropy.units import Unit
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 
@@ -39,6 +38,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import archive
 from ..basics.vector import Pixel
 from ...core.basics.unit import PhotometricUnit
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -615,7 +615,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        square_pixel = 1.0 * Unit("pix2")
+        square_pixel = 1.0 * u("pix2")
         return (self.pixelscale.x * self.pixelscale.y * square_pixel).to("sr")
 
     # -----------------------------------------------------------------
@@ -712,7 +712,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return (self.fwhm / self.average_pixelscale).to("pix").value if self.fwhm is not None else None
+        return (self.fwhm / self.average_pixelscale).to("").value if self.fwhm is not None else None
 
     # -----------------------------------------------------------------
 
@@ -760,7 +760,7 @@ class Frame(NDDataArray):
         """
 
         # Return the pivot wavelength of the frame's filter, if defined
-        if self.filter is not None: return self.filter.effectivewavelength() * Unit("micron")
+        if self.filter is not None: return self.filter.effectivewavelength() * u("micron")
         else: return self._wavelength # return the wavelength (if defined, is None otherwise)
 
     # -----------------------------------------------------------------

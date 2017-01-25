@@ -17,7 +17,6 @@ import numpy as np
 
 # Import astronomical modules
 from astropy import constants
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
@@ -28,11 +27,12 @@ from ....core.plot.distribution import DistributionPlotter
 from ....magic.region.composite import PixelCompositeRegion
 from ....magic.region.list import PixelRegionList
 from ....magic.core.image import Image
+from ....core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
 speed_of_light = constants.c
-solar_luminosity = 3.846e26 * Unit("W")
+solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 

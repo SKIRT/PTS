@@ -15,7 +15,7 @@ definition = ConfigurationDefinition()
 
 # Input and output
 definition.add_optional("input", "directory_path", "input directory for the simulation(s)", letter="i")
-definition.add_optional("output", "directory_path", "output directory for the simulation(s)", fs.cwd(), letter="o")
+definition.add_optional("output", "directory_path", "output directory for the simulation(s)", fs.cwd(), letter="o", convert_default=True)
 
 # Various flags
 definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
@@ -42,8 +42,7 @@ retrieve_type_choices["grid"] = "grid files"
 retrieve_type_choices["grho"] = "grid dust density"
 retrieve_type_choices["trho"] = "theoretical dust density"
 retrieve_type_choices["convergence"] = "convergence file"
-definition.add_optional("retrieve_types", "string_list", "types of output files that have to be retrieved/retained (None means everything)",
-                        choices=retrieve_type_choices)
+definition.add_optional("retrieve_types", "string_list", "types of output files that have to be retrieved/retained (None means everything)", choices=retrieve_type_choices)
 
 definition.add_flag("dry", "dry run (don't actually launch the simulations)", False)
 definition.add_flag("attached", "launch the simulations in attached mode (only works if remotes without scheduling system are used)")

@@ -17,7 +17,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 # Import astronomical modules
-from astropy.units import Unit, spectral_density, spectral
+from astropy.units import spectral_density, spectral
 from astropy import constants
 
 # Import the relevant PTS classes and modules
@@ -27,6 +27,7 @@ from ..tools.logging import log
 from ..basics.filter import Filter
 from ..data.sed import SED
 from ...magic.misc.spire import SPIRE
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -180,11 +181,11 @@ class ObservedFluxCalculator(object):
 
                 # 2 different ways should be the same:
                 #fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
-                fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * Unit("W / (m2 * micron)")
+                fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
                 #print(fluxdensity_, fluxdensity) # IS OK!
                 fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
 
-                if wavelength > 50. * Unit("micron"):
+                if wavelength > 50. * u("micron"):
                     bb_frequencies.append(wavelength.to("Hz", equivalencies=spectral()).value)
                     bb_fluxdensities.append(fluxdensity_jy.to("W / (m2 * Hz)").value) # must be frequency-fluxdensity
 
@@ -204,7 +205,7 @@ class ObservedFluxCalculator(object):
                 log.debug("Calculating the observed flux for the " + str(fltr) + " filter ...")
 
                 # Calculate the flux: flux densities must be per wavelength instead of per frequency!
-                fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * Unit("W / (m2 * micron)")
+                fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * u("W / (m2 * micron)")
                 fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value # convert back to Jy
 
                 # For SPIRE, also multiply with Kbeam correction factor
@@ -268,8 +269,8 @@ def spectral_factor_hz_to_micron(wavelength):
     frequency_unit = "Hz"
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = Unit(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = Unit(frequency_unit)
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 
@@ -290,8 +291,8 @@ def spectral_factor_hz_to_meter(wavelength):
     frequency_unit = "Hz"
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = Unit(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = Unit(frequency_unit)
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 
