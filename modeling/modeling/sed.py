@@ -203,12 +203,12 @@ class SEDModeler(Modeler):
         definition.add_optional("nwavelengths_range", "integer_range", "range for the number of wavelengths to vary over the generations", default=default_nwavelengths_range)
         definition.add_optional("ngrids", "positive_integer", "number of wavelength grids to be generated", default=10)
         definition.add_flag("add_emission_lines", "add additional points to the wavelength grids to sample important dust/gas emission lines", default=False)
-        default_wavelength_range = QuantityRange(ski.minwavelength(), ski.maxwavelength())
+        default_wavelength_range = QuantityRange(ski.min_wavelength, ski.max_wavelength)
         definition.add_optional("wavelength_range", "quantity_range", "wavelength range for all wavelength grids", default=default_wavelength_range)
 
         # Create the setter
         setter = InteractiveConfigurationSetter("Initialization of the ski template", add_cwd=False, add_logging=False)
-        config = setter.run(definition)
+        config = setter.run(definition, prompt_optional=True)
 
         # Set fixed settings for the ski model
         initializer.config.npackages = config.npackages

@@ -95,7 +95,7 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_wavelengths(cls, wavelengths, unit="micron"):
+    def from_wavelengths(cls, wavelengths, unit=None):
 
         """
         This function ...
@@ -106,6 +106,19 @@ class WavelengthGrid(object):
 
         # Create a new class instance
         grid = cls()
+
+        # Check if wavelengths are values or quantities
+        for index in range(len(wavelengths)):
+
+            if unit is None:
+                if hasattr(wavelengths[index], "unit"):
+                    unit = wavelengths[index].unit
+                    wavelengths[index] = wavelengths[index].value
+                else: pass
+            else:
+                if hasattr(wavelengths[index], "unit"):
+                    wavelengths[index] = wavelengths[index].to(unit).value
+                else: pass
 
         # Add the wavelengths
         grid.table = Table()

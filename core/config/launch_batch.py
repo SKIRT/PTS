@@ -10,6 +10,7 @@ from pts.core.remote.host import find_host_ids
 from pts.core.config.simulation.logging import definition as logging_definition
 from pts.core.config.simulation.launch import definition
 from pts.core.config.simulation.analysis import definition as analysis_definition
+from pts.core.launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
@@ -37,6 +38,7 @@ definition.import_section("logging", "logging options", logging_definition)
 
 # Analysis options
 definition.import_section("analysis", "simulation analysis options", analysis_definition)
+#definition.import_section_from_properties("analysis", "simulation analysis options", AnalysisOptions)
 
 # The analyser classes
 definition.add_optional("analysers", "string_list", "analyser classes for the simulations")

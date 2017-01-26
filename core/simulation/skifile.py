@@ -1419,10 +1419,18 @@ class SkiFile:
         self.set_quantity(self.get_wavelength_grid(), "maxWavelength", value)
 
     def minwavelength(self):
-        self.get_quantity(self.get_wavelength_grid(), "minWavelength")
+        return self.get_quantity(self.get_wavelength_grid(), "minWavelength")
+
+    @property
+    def min_wavelength(self):
+        return self.minwavelength()
 
     def maxwavelength(self):
-        self.get_quantity(self.get_wavelength_grid(), "maxWavelength")
+        return self.get_quantity(self.get_wavelength_grid(), "maxWavelength")
+
+    @property
+    def max_wavelength(self):
+        return self.maxwavelength()
 
     ## This function sets the number of wavelength points
     def set_nwavelengths(self, value):

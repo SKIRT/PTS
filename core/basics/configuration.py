@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import inspect
 from abc import ABCMeta, abstractmethod
 from types import NoneType
 import sys
@@ -822,6 +823,25 @@ class ConfigurationDefinition(object):
         self.sections[name] = copy.deepcopy(definition)
         self.sections[name].prefix = prefix
         self.section_descriptions[name] = description
+
+    # -----------------------------------------------------------------
+
+    def import_section_from_properties(self, name, description, cls):
+
+        """
+        This function creates a configuration section from a SimplePropertyComposite-derived class
+        :param name:
+        :param description:
+        :param composite:
+        :return:
+        """
+
+        #prefix = name
+
+        default_values = vars(cls())
+
+        # Add the section
+        #self.sections[name]
 
     # -----------------------------------------------------------------
 

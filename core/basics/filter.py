@@ -269,8 +269,12 @@ def generate_aliases(identifier):
 
     # Combinations of instrument with channel
     if "channel" in identifier and "instruments" in identifier:
-
         for instrument in strings.case_combinations_list(identifier.instruments):
+            for string in generate_from_two_parts(instrument, str(identifier.channel)): yield string
+
+    # Combinations of observatory with channel
+    if "channel" in identifier and "observatories" in identifier:
+        for instrument in strings.case_combinations_list(identifier.observatories):
             for string in generate_from_two_parts(instrument, str(identifier.channel)): yield string
 
     # Combinations of observatory with band
@@ -535,7 +539,7 @@ class Filter(object):
 
         self._WavelengthMin = np.min(wavelengths)
         self._WavelengthMax = np.max(wavelengths)
-        self._WavelengthCen = None
+        self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
 
         self._Wavelengths = wavelengths
         self._Transmission = transmissions

@@ -153,6 +153,57 @@ class AnalysisOptions(Options):
     This class ...
     """
 
+    # Descriptions
+    descriptions = dict()
+
+    # Extraction settings
+    descriptions["extraction"] = "settings for extraction data from the simulation's log files"
+    descriptions[("extraction", "path")] = "directory_path", "extraction directory"
+    descriptions[("extraction", "progress")] = "extract information about the progress in the different simulation phases"
+    descriptions[("extraction", "timeline")] = "extract timeline information for the different simulation phases on the different processes"
+    descriptions[("extraction", "memory")] = "extract information about the memory usage during the simulation"
+
+    # Plotting settings
+    descriptions["plotting"] = "settings for plotting simulation data"
+    descriptions[("plotting", "path")] = "plotting directory"
+    descriptions[("plotting", "seds")] = "make plots of the simulated SEDs"
+    descriptions[("plotting", "grids")] = "make plots of the dust grid"
+    descriptions[("plotting", "progress")] = "make plots of the progress of the simulation phases as a function of time"
+    descriptions[("plotting", "timeline")] = "plot the timeline for the different processes"
+    descriptions[("plotting", "memory")] = "plot the memory consumption as a function of time"
+    descriptions[("plotting", "reference_seds")] = "the path to a reference SED file against which the simulated SKIRT SEDs should be plotted"
+    descriptions[("plotting", "format")] = "image format for the plots" #choices=["pdf", "png"])
+
+    # Miscellaneous settings
+    #definition.add_section("misc", "settings for creating data of various types from the simulation output")
+    #definition.sections["misc"].add_optional("path", "directory_path", "misc output directory")
+    #definition.sections["misc"].add_flag("wave", "make a wavelength movie through the simulated datacube(s)")
+    #definition.sections["misc"].add_flag("rgb", "make RGB images from the simulated datacube(s)")
+    #definition.sections["misc"].add_flag("fluxes", "calculate observed fluxes from the SKIRT output SEDs")
+    #definition.sections["misc"].add_flag("images", "make observed images form the simulated datacube(s)")
+    #definition.sections["misc"].add_optional("observation_filters", "string_list",
+    #                                         "the names of the filters for which to recreate the observations")
+    #definition.sections["misc"].add_optional("observation_instruments", "string_list",
+    #                                         "the names of the instruments for which to recreate the observations")
+    #definition.sections["misc"].add_optional("make_images_remote", "string",
+    #                                         "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)",
+    #                                         choices=find_host_ids(schedulers=False))
+    #definition.sections["misc"].add_optional("images_wcs", "file_path",
+    #                                         "the path to the FITS file for which the WCS should be set as the WCS of the recreated observed images")
+    #definition.sections["misc"].add_optional("images_unit", "string",
+    #                                         "the unit to which the recreated observed images should be converted")
+    #definition.sections["misc"].add_optional("images_kernels", "string_string_dictionary",
+    #                                         "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names")
+
+    # Other
+    #definition.add_optional("timing_table_path", "file_path", "timing table path")
+    #definition.add_optional("memory_table_path", "file_path", "memory table path")
+    #definition.add_optional("scaling_path", "directory_path", "scaling directory path")
+    #definition.add_optional("scaling_run_name", "string", "name of scaling run")
+    #definition.add_optional("modeling_path", "directory_path", "modeling directory path")
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """

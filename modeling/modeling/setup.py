@@ -195,7 +195,7 @@ class ModelingSetupTool(Configurable):
         setter = InteractiveConfigurationSetter("galaxy modeling", "options for 3D modeling of a galaxy", add_cwd=False, add_logging=False)
 
         # Create the object config
-        self.object_config = setter.run(definition)
+        self.object_config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
@@ -230,10 +230,10 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Setting options for modeling the SED of an object ...")
 
-        # Prompt for options
+        # 1. Prompt for options
         self.prompt_other()
 
-        # Create the configuration
+        # 2. Create the configuration
         self.create_other_config()
 
     # -----------------------------------------------------------------
@@ -257,7 +257,7 @@ class ModelingSetupTool(Configurable):
         setter = InteractiveConfigurationSetter("SED modeling", "options for SED modeling of an object", add_cwd=False, add_logging=False)
 
         # Create the object config
-        self.object_config = setter.run(definition)
+        self.object_config = setter.run(definition, prompt_optional=True)
 
     # -----------------------------------------------------------------
 
@@ -280,7 +280,7 @@ class ModelingSetupTool(Configurable):
 
             # Prompt for the SED path
             setter = InteractiveConfigurationSetter("SED", "name/path of the input SED", add_cwd=False, add_logging=False)
-            config = setter.run(definition)
+            config = setter.run(definition, prompt_optional=False)
 
             # Load the sed
             self.sed = ObservedSED.from_file(config.sed_path)
@@ -294,7 +294,7 @@ class ModelingSetupTool(Configurable):
 
             # Prompt for the flux points
             setter = InteractiveConfigurationSetter("Fluxes", "flux points for the SED", add_cwd=False, add_logging=False)
-            config = setter.run(definition)
+            config = setter.run(definition, prompt_optional=False)
 
             # Create new observed SED
             self.sed = ObservedSED(photometry_unit="Jy")

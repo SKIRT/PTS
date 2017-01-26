@@ -129,7 +129,7 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         log.info("Creating the wavelength grids ...")
 
         # Get fixed wavelengths
-        fixed = [wav.to("micron").value for wav in self.sed_filter_wavelengths]
+        fixed = self.sed_filter_wavelengths
 
         # Set options
         self.wg_generator.config.show = False
@@ -252,6 +252,8 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
 
         # Loop over the observed SED filters
         for fltr in self.fitting_filters:
+
+            print(fltr)
 
             # Get the central wavelength
             wavelength = fltr.centerwavelength() * u("micron")

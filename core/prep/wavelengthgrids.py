@@ -22,6 +22,7 @@ from ..basics.emissionlines import EmissionLines
 from ..basics.configurable import Configurable
 from ..basics.table import SmartTable
 from ..basics.range import QuantityRange
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -87,11 +88,11 @@ class WavelengthGridsTable(SmartTable):
         """
 
         # Get values
-        uv_npoints = subgrid_npoints["UV"]
-        optical_npoints = subgrid_npoints["optical"]
-        pah_npoints = subgrid_npoints["PAH"]
-        dust_npoints = subgrid_npoints["dust"]
-        extension_npoints = subgrid_npoints["extension"]
+        uv_npoints = subgrid_npoints["UV"] if "UV" in subgrid_npoints else 0
+        optical_npoints = subgrid_npoints["optical"] if "optical" in subgrid_npoints else 0
+        pah_npoints = subgrid_npoints["PAH"] if "PAH" in subgrid_npoints else 0
+        dust_npoints = subgrid_npoints["dust"] if "dust" in subgrid_npoints else 0
+        extension_npoints = subgrid_npoints["extension"] if "extension" in subgrid_npoints else 0
 
         # Add row
         self.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints, fixed_npoints, len(grid)])
@@ -306,8 +307,8 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
         log.debug("Adding the " + subgrid + " subgrid ...")
 
         # Determine minimum, maximum
-        min_lambda = ranges[subgrid].min.to("micron").value
-        max_lambda = ranges[subgrid].max.to("micron").value
+        min_lambda = ranges[subgrid].min
+        max_lambda = ranges[subgrid].max
 
         # Skip subgrids out of range
         if min_wavelength is not None and max_lambda < min_wavelength: continue
@@ -510,12 +511,12 @@ def add_emission_lines(wavelengths, emission_lines, min_wavelength=None, max_wav
         for w in wavelengths:
             logw = np.log10(w)
             if logw < logleft or logw > logright:
-                newgrid.append(w)
+                newgrid.append(w * u("micron"))
         newgrid.append(center)
         if left > 0:
-            newgrid.append(left)
+            newgrid.append(left * u("micron"))
         if right > 0:
-            newgrid.append(right)
+            newgrid.append(right * u("micron"))
         wavelengths = newgrid
 
     # Return the new wavelength list
@@ -532,13 +533,16 @@ def make_grid(wmin, wmax, N):
 
     result = []
 
+    wmin = wmin.to("micron").value
+    wmax = wmax.to("micron").value
+
     # generate wavelength points p on a logarithmic scale with lambda = 10**p micron
     #  -2 <==> 0.01
     #   4 <==> 10000
     for i in range(-2*N,4*N+1):
         p = float(i)/N
         w = 10.**p
-        if wmin <= w < wmax: result.append(w)
+        if wmin <= w < wmax: result.append(w * u("micron"))
 
     # Return the grid
     return result

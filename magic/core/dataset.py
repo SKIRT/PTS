@@ -1197,7 +1197,7 @@ class DataSetCreator(Configurable):
         definition.add_required("image_paths", "filepath_list", "paths to the images")
 
         # Create the configuration and get the paths
-        config = setter.run(definition)
+        config = setter.run(definition, prompt_optional=False)
         self.image_paths = config.image_paths
 
         self.error_paths = dict()
@@ -1212,7 +1212,7 @@ class DataSetCreator(Configurable):
             setter = InteractiveConfigurationSetter("datasetcreator_errors", add_cwd=False, add_logging=False)
 
             # Get the error path
-            config = setter.run(definition)
+            config = setter.run(definition, prompt_optional=True)
             error_path = config.error_path
 
             if error_path is not None: self.error_paths[name] = error_path
