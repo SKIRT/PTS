@@ -50,7 +50,7 @@ class SED(WavelengthCurve):
 
             # Call the initialize function of the base class
             unit = kwargs.pop("photometry_unit")
-            density = kwargs.pop("density")
+            density = kwargs.pop("density", False)
             unit = PhotometricUnit(unit, density=density)
 
             kwargs["y_name"] = "Photometry"
@@ -210,7 +210,7 @@ class SED(WavelengthCurve):
         #sed.table["Flux"].unit = "Jy"
 
         # Create a new SED
-        sed = cls("Jy")
+        sed = cls(photometry_unit="Jy")
 
         # Add the entries
         for index in range(len(wavelength_column)):
@@ -546,7 +546,7 @@ class ObservedSED(FilterCurve):
         #return sed
 
         # Initialize SED
-        sed = cls("Jy")
+        sed = cls(photometry_unit="Jy")
 
         # Add entries
         for index in range(len(filter_column)):

@@ -193,11 +193,11 @@ class Task(object):
         if self.remove_remote_output or full:
 
             # Remove the temporary PTS directory if it contains the output directory
-            if remote.is_subdirectory(self.remote_output_path, self.remote_temp_pts_path): remote.remove_directory(self.remote_temp_pts_path)
+            if remote.is_subdirectory(self.remote_output_path, self.remote_temp_pts_path) and remote.is_directory(self.remote_temp_pts_path): remote.remove_directory(self.remote_temp_pts_path)
             else:
                 # Remove the output directory and the temporary directory seperately
-                remote.remove_directory(self.remote_output_path)
-                remote.remove_directory(self.remote_temp_pts_path)
+                if remote.is_directory(self.remote_output_path): remote.remove_directory(self.remote_output_path)
+                if remote.is_directory(self.remote_temp_pts_path): remote.remove_directory(self.remote_temp_pts_path)
 
     # -----------------------------------------------------------------
 

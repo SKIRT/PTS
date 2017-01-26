@@ -135,13 +135,15 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=15):
+    def setup(self, host_id, cluster_name=None, login_timeout=15, nrows=None, ncols=200):
 
         """
         This function ...
         :param host_id:
         :param cluster_name:
         :param login_timeout:
+        :param nrows:
+        :param ncols:
         :return:
         """
 
@@ -174,6 +176,10 @@ class Remote(object):
         # LMOD_DISABLE_SAME_NAME_AUTOSWAP
         #self.define_environment_variable("LMOD_DISABLE_SAME_NAME_AUTOSWAP", "yes")
 
+        # Set the nrows and ncols
+        if nrows is not None: self.nrows = nrows
+        if ncols is not None: self.ncols = ncols
+
         # Return whether the connection was made
         return self.connected
 
@@ -188,6 +194,90 @@ class Remote(object):
 
         # Disconnect from the remote host
         self.logout()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncols(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        command = "tput cols"
+        return int(self.execute(command)[0])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        command = "tput lines"
+        return int(self.execute(command)[0])
+
+    # -----------------------------------------------------------------
+
+    @nrows.setter
+    def nrows(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Compose the command
+        assert int(value) == value
+        command = "stty rows " + str(value)
+        self.execute(command, output=False)
+
+    # -----------------------------------------------------------------
+
+    @ncols.setter
+    def ncols(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        # Compose the command
+        assert int(value) == value
+        command = "stty columns " + str(value)
+        self.execute(command, output=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrows, self.ncols
+
+    # -----------------------------------------------------------------
+
+    @size.setter
+    def size(self, size_tuple):
+
+        """
+        This function ...
+        :param size_tuple:
+        :return:
+        """
+
+        self.nrows = size_tuple[0]
+        self.ncols = size_tuple[1]
 
     # -----------------------------------------------------------------
 
@@ -1562,12 +1652,12 @@ class Remote(object):
         # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
         if contains_extra_eof:
             splitted = self.ssh.before.replace('\x1b[K', '').split("\r\n")
-            #print(splitted)
+            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "")
             if splitted[-1] == "": the_output = splitted[output_start:-1]
             else: the_output = splitted[output_start:]
         else:
             splitted = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")
-            #print(splitted)
+            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "")
             if splitted[-1] == "": the_output = splitted[output_start:-1]
             else: the_output = splitted[output_start:]
 
@@ -1575,40 +1665,7 @@ class Remote(object):
         if original_cwd is not None: self.change_cwd(original_cwd)
 
         # Return the output
-        if output:
-
-            # Something weird, encountered on Cindy,
-            # before is "staggering behind", we are already giving commands further and a 'prompt' has been missed or something like that...
-            """
-            if len(the_output) == 0:
-
-                new_output = []
-
-                new_output += self.ssh.before.split("\r\n")
-                new_output += self.ssh.after.split("\r\n")
-
-                # print(self.ssh.before)
-                self.ssh.sendline("\n")
-                self.ssh.prompt()
-                self.ssh.prompt()
-                # print(self.ssh.before)
-                # output = self.execute("echo $HOME")
-                # print("OUTPUT", output[0])
-                #print(self.ssh.before)
-
-                #splitted = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")
-                #return output[0]
-
-                new_output += self.ssh.before.split("\r\n")
-                new_output += self.ssh.after.split("\r\n")
-
-                print(new_output)
-
-                if splitted[-1] == "": the_output = splitted[output_start:-1]
-                else: the_output = splitted[output_start:]
-            """
-
-            return the_output
+        if output: return the_output
 
     # -----------------------------------------------------------------
 
@@ -1726,12 +1783,11 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def execute_python_interactive(self, lines, show_output=False):
+    def execute_python_interactive(self, lines):
 
         """
         This function ...
         :param lines:
-        :param show_output:
         :return:
         """
 
@@ -1739,7 +1795,7 @@ class Remote(object):
         python = self.start_python_session()
 
         # Execute the lines
-        output = python.send_lines(lines, show_output=show_output)
+        output = python.send_lines(lines)
 
         # Return the output
         return output
@@ -1788,6 +1844,7 @@ class Remote(object):
         # Debugging
         log.debug("Removing directory '" + path + "' ...")
 
+        # Execute the command
         self.execute("rm -rf " + path, output=False)
 
     # -----------------------------------------------------------------
@@ -1803,6 +1860,7 @@ class Remote(object):
         # Debugging
         log.debug("Removing file '" + path + "' ...")
 
+        # Execute the command
         self.execute("rm " + path, output=False)
 
     # -----------------------------------------------------------------
@@ -3247,9 +3305,30 @@ class Remote(object):
 
         # The commmand
         command = "if [ " + expression + " ]; then echo True; else echo False; fi"
-
+        #print(command)
         # Launch a bash command to check whether the path exists as a directory on the remote file system
-        output = self.execute(command)
+        #output = self.execute(command, show_output=False)
+
+        #if len(output) == 0: self.ssh.prompt()
+
+        #print("BEFORE:", self.ssh.before)
+        #print("AFTER:", self.ssh.after)
+
+        # Send the command
+        self.ssh.sendline(command)
+
+        matched = self.ssh.prompt()
+
+        #print("MATCHED:", matched)
+        #print("BEFORE:", list(self.ssh.before))
+        #print("AFTER:", list(self.ssh.after))
+
+        output = self.ssh.before.replace(" \r", "").replace("\x1b[K", "").split("\r\n")
+
+        #print("OUTPUT:", output)
+
+        output = output[1:-1]
+
         return output[0] == "True"
 
     # -----------------------------------------------------------------

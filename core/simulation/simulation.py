@@ -695,14 +695,14 @@ class RemoteSimulation(SkirtSimulation):
         """
 
         # Remove the remote input, if present, if requested
-        if (self.remove_remote_input or full) and self.has_input: remote.remove_directory(self.remote_input_path)
+        if (self.remove_remote_input or full) and self.has_input and remote.is_directory(self.remote_input_path): remote.remove_directory(self.remote_input_path)
 
         # Remove the remote output, if requested
-        if self.remove_remote_output or full: remote.remove_directory(self.remote_output_path)
+        if (self.remove_remote_output or full) and remote.is_directory(self.remote_output_path): remote.remove_directory(self.remote_output_path)
 
         # If both the input and output directories have to be removed, the remote simulation directory
         # can be removed too
-        if self.remove_remote_simulation_directory or full: remote.remove_directory(self.remote_simulation_path)
+        if (self.remove_remote_simulation_directory or full) and remote.is_directory(self.remote_simulation_path): remote.remove_directory(self.remote_simulation_path)
 
     # -----------------------------------------------------------------
 
