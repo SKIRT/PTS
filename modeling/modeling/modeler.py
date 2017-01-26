@@ -362,6 +362,9 @@ class Modeler(Configurable):
         # Set the remote host IDs
         explorer.config.remotes = self.fitting_host_ids
 
+        # Set the number of simulations per generation
+        if self.config.nsimulations is not None: explorer.config.nsimulations = self.config.nsimulations
+
         # Run the parameter explorer
         explorer.run()
 

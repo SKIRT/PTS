@@ -25,4 +25,7 @@ definition.add_optional("remote", "string", "remote host for computationally hea
 definition.add_flag("fitting_local", "launch the simulations as part of the fitting locally (overrule the modeling configuration")
 definition.add_optional("fitting_remote", "string", "remote host for the fitting (overrule the modeling configuration)", choices=find_host_ids())
 
+# Genetic algorithm settings
+definition.add_optional("nsimulations", "positive_integer", "number of simulations per generation")
+
 # -----------------------------------------------------------------

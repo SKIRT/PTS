@@ -217,7 +217,7 @@ class SED(WavelengthCurve):
 
             # Get values
             wavelength = wavelength_column[index] * u("micron")
-            flux = jansky_column * PhotometricUnit("Jy")
+            flux = jansky_column[index] * PhotometricUnit("Jy")
 
             # Add point
             sed.add_point(wavelength, flux)

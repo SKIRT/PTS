@@ -222,6 +222,7 @@ class BatchLauncher(Configurable):
         """
 
         total_in_queue = 0
+        total_in_queue += len(self.local_queue)
         for host_id in self.host_ids: total_in_queue += self.in_queue_for_host(host_id)
         return total_in_queue
 
@@ -963,8 +964,6 @@ class BatchLauncher(Configurable):
 
             # Perform the simulation locally
             simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()))
-
-            print(simulation)
 
             # Set the analysis options
             simulation.set_analysis_options(analysis_options)
