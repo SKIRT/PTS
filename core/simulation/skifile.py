@@ -346,9 +346,24 @@ class SkiFile:
         components = self.tree.xpath("//CompDustDistribution/components/*")
         return int(len(components))
 
+    ## This function returns the dust lib
+    def get_dust_lib(self):
+        dustlib = self.tree.xpath("//dustLib/*")[0]
+        return dustlib
+
+    ## This function returns the dust lib type
+    def dustlib_type(self):
+        return self.get_dust_lib().tag
+
+    ## This function returns the dust lib dimension
+    def dustlib_dimension(self):
+        if self.dustlib_type == "AllCellsDustLib": return 3
+        elif self.dustlib_type == "Dim2DustLib": return 2
+        else: return 1
+
     ## This function returns the number of dust library items
     def nlibitems(self):
-        dustlib = self.tree.xpath("//dustLib/*")[0]
+        dustlib = self.get_dust_lib()
         if dustlib.tag == "AllCellsDustLib":
             return self.ncells()
         elif dustlib.tag == "Dim2DustLib":
@@ -356,7 +371,7 @@ class SkiFile:
             wavelengthpoints = dustlib.attrib["pointsWavelength"] if "pointsWavelength" in dustlib.attrib else 10
             return temppoints * wavelengthpoints
         elif dustlib.tag == "Dim1DustLib":
-            return dustlib.attrib["entries"]
+            return int(dustlib.attrib["entries"])
 
     ## This function returns the number of dust populations (from all dust mixes combined)
     def npopulations(self):

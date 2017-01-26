@@ -58,24 +58,56 @@ class Modeler(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def used_host_ids(self):
+    def allowed_host_ids(self):
 
         """
         This function ...
         :return:
         """
 
-        host_ids = set()
+        if self.config.local: return []
+        elif self.config.remote is not None: return [self.config.remote]
+        elif self.modeling_config.host_ids is None: return []
+        else: return self.modeling_config.host_ids
 
-        # Add main host ID
-        if self.host_id is not None: host_ids.add(self.host_id)
+    # -----------------------------------------------------------------
 
-        # Add fitting host ids, if they are available
-        for host_id in self.modeling_config.fitting_host_ids:
-            if not self.config.check_hosts or host_id in self.available_host_ids: host_ids.add(host_id)
+    @property
+    def allowed_fitting_host_ids(self):
 
-        # Return the list of host IDs
-        return list(host_ids)
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.fitting_local: return []
+        elif self.config.fitting_remote is not None: return [self.config.fitting_remote]
+        elif self.modeling_config.fitting_host_ids is None: return []
+        else: return self.modeling_config.fitting_host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_allowed_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.allowed_host_ids) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_allowed_fitting_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.allowed_fitting_host_ids) > 0
 
     # -----------------------------------------------------------------
 
@@ -83,14 +115,14 @@ class Modeler(Configurable):
     def host_id(self):
 
         """
-        This function ...
+        This function returns the ID of the host used for the computationaly heavy stuff
         :return:
         """
 
-        if self.modeling_config.host_ids is None: return None
+        if self.allowed_host_ids is None: return None
 
         # Loop over the preferred hosts
-        for host_id in self.modeling_config.host_ids:
+        for host_id in self.allowed_host_ids:
             if not self.config.check_hosts or host_id in self.available_host_ids: return host_id
 
         # No host avilable
@@ -109,11 +141,32 @@ class Modeler(Configurable):
         host_ids = []
 
         # Loop over the specified hosts
-        for host_id in self.modeling_config.fitting_host_ids:
+        for host_id in self.allowed_fitting_host_ids:
             if not self.config.check_hosts or host_id in self.available_host_ids: host_ids.append(host_id)
 
         # Return the list of host IDs
         return host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        host_ids = set()
+
+        # Add main host ID
+        if self.host_id is not None: host_ids.add(self.host_id)
+
+        # Add fitting host ids, if they are available
+        for host_id in self.fitting_host_ids: host_ids.add(host_id)
+
+        # Return the list of host IDs
+        return list(host_ids)
 
     # -----------------------------------------------------------------
 
@@ -191,23 +244,23 @@ class Modeler(Configurable):
         log.info("Finding available hosts ...")
 
         # Find available hosts from host_ids list
-        if self.modeling_config.host_ids is not None:
-            for host_id in self.modeling_config.host_ids:
-                if is_available(host_id):
-                    log.debug("Host '" + host_id + "' is available")
-                    self.available_host_ids.add(host_id)
-                else: log.debug("Host '" + host_id + "' is not available")
+        for host_id in self.allowed_host_ids:
+            if is_available(host_id):
+                log.debug("Host '" + host_id + "' is available")
+                self.available_host_ids.add(host_id)
+            else: log.debug("Host '" + host_id + "' is not available")
 
         # Find available hosts from fitting.host_ids list
-        for host_id in self.modeling_config.fitting_host_ids:
-            if self.modeling_config.host_ids is not None and host_id in self.modeling_config.host_ids: continue
+        for host_id in self.allowed_fitting_host_ids:
+            if self.allowed_host_ids is not None and host_id in self.allowed_host_ids: continue
             if is_available(host_id):
                 log.debug("Host '" + host_id + "' is available")
                 self.available_host_ids.add(host_id)
             else: log.debug("Host '" + host_id + "' is not available")
 
         # No available host in the list of preferred host ids
-        if len(self.available_host_ids) == 0: raise RuntimeError("None of the preferred hosts are available at this moment")
+        if (self.has_allowed_host_ids or self.has_allowed_fitting_host_ids) and len(self.available_host_ids) == 0:
+            raise RuntimeError("None of the preferred hosts are available at this moment")
 
     # -----------------------------------------------------------------
 
@@ -225,7 +278,7 @@ class Modeler(Configurable):
         deployer = Deployer()
 
         # Set the host ids
-        deployer.config.host_ids = self.used_host_ids
+        deployer.config.host_ids = self.all_host_ids
 
         # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
         # that have a scheduling system to launch the pts run_queue command)

@@ -142,6 +142,9 @@ class SkirtSimulation(object):
         # The options for analysing the simulation output
         self.analysis = AnalysisOptions()
 
+        # The paths to the extra simulation analysers
+        self.analyser_paths = []
+
     ## This function returns whether the simulation requires input
     @property
     def has_input(self):
@@ -562,6 +565,34 @@ class SkirtSimulation(object):
     def from_modeling(self):
         return self.analysis.modeling_path is not None
 
+    ## This function adds an analyser class to the simulation
+    def add_analyser(self, clspath):
+        self.analyser_paths.append(clspath)
+
+    @property
+    def analyser_classes(self):
+
+        # The list of classes
+        classes = []
+
+        # Loop over the class paths
+        for class_path in self.analyser_paths:
+            module_path, class_name = class_path.rsplit('.', 1)
+
+            # Get the class of the configurable of which an instance has to be created
+            module = importlib.import_module(module_path)
+            cls = getattr(module, class_name)
+
+            # Add the class to the list of classes
+            classes.append(cls)
+
+        # Return the list of classes
+        return classes
+
+    ## Saving a local simulation object does nothing
+    def save(self):
+        pass
+
 # -----------------------------------------------------------------
 
 class RemoteSimulation(SkirtSimulation):
@@ -621,9 +652,6 @@ class RemoteSimulation(SkirtSimulation):
         # Flag indicating whether this simulation has been analysed or not
         self.analysed = False
 
-        # The paths to the extra simulation analysers
-        self.analyser_paths = []
-
     # -----------------------------------------------------------------
 
     @classmethod
@@ -643,45 +671,6 @@ class RemoteSimulation(SkirtSimulation):
 
         # Return the simulation object
         return simulation
-
-    # -----------------------------------------------------------------
-
-    def add_analyser(self, clspath):
-
-        """
-        This function ...
-        :param clspath:
-        :return:
-        """
-
-        self.analyser_paths.append(clspath)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def analyser_classes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # The list of classes
-        classes = []
-
-        # Loop over the class paths
-        for class_path in self.analyser_paths:
-            module_path, class_name = class_path.rsplit('.', 1)
-
-            # Get the class of the configurable of which an instance has to be created
-            module = importlib.import_module(module_path)
-            cls = getattr(module, class_name)
-
-            # Add the class to the list of classes
-            classes.append(cls)
-
-        # Return the list of classes
-        return classes
 
     # -----------------------------------------------------------------
 

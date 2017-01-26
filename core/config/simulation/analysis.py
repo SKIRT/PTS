@@ -45,4 +45,11 @@ definition.sections["misc"].add_optional("images_wcs", "file_path", "the path to
 definition.sections["misc"].add_optional("images_unit", "string", "the unit to which the recreated observed images should be converted")
 definition.sections["misc"].add_optional("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names")
 
+# Other
+definition.add_optional("timing_table_path", "file_path", "timing table path")
+definition.add_optional("memory_table_path", "file_path", "memory table path")
+definition.add_optional("scaling_path", "directory_path", "scaling directory path")
+definition.add_optional("scaling_run_name", "string", "name of scaling run")
+definition.add_optional("modeling_path", "directory_path", "modeling directory path")
+
 # -----------------------------------------------------------------

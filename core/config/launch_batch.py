@@ -38,4 +38,7 @@ definition.import_section("logging", "logging options", logging_definition)
 # Analysis options
 definition.import_section("analysis", "simulation analysis options", analysis_definition)
 
+# The analyser classes
+definition.add_optional("analysers", "string_list", "analyser classes for the simulations")
+
 # -----------------------------------------------------------------

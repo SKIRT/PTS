@@ -78,6 +78,9 @@ class ParallelizationTool(Configurable):
         # The ski file
         self.ski = None
 
+        # The dimension of the dust lib
+        self.dustlib_dimension = None
+
         # The memory estimator
         self.estimator = MemoryEstimator()
 
@@ -96,11 +99,14 @@ class ParallelizationTool(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Get additional properties from the ski file
+        self.get_properties()
+
         # 2. Set the parallelization scheme
         self.set_parallelization()
 
         # 3. Show the parallelization scheme
-        if self.config.show: self.show_parallelization()
+        if self.config.show: self.show()
 
     # -----------------------------------------------------------------
 
@@ -117,6 +123,18 @@ class ParallelizationTool(Configurable):
 
         # Open the ski file
         self.ski = self.config.ski if isinstance(self.config.ski, SkiFile) else SkiFile(self.config.ski)
+
+    # -----------------------------------------------------------------
+
+    def get_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dustlib dimension
+        self.dustlib_dimension = self.ski.dustlib_dimension()
 
     # -----------------------------------------------------------------
 
@@ -235,7 +253,7 @@ class ParallelizationTool(Configurable):
 
                 # Nlambda >= 10 * Np?
                 nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
-                if nwavelengths >= 10 * nprocesses:
+                if nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3:
 
                     # data parallelization
                     # Create the parallelization object
@@ -248,7 +266,7 @@ class ParallelizationTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_parallelization(self):
+    def show(self):
 
         """
         This function ...
