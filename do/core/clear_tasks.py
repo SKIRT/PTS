@@ -73,7 +73,7 @@ for host_id in config.remotes:
     if fs.is_empty(host_run_path): log.debug("No tasks for host '" + host_id + "'")
 
     # Loop over the task files in the run directory for the host
-    for path, name in fs.files_in_path(host_run_path, extension="task", returns=["path", "name"]):
+    for path, name in fs.files_in_path(host_run_path, extension="task", returns=["path", "name"], sort=int):
 
         # Skip
         if config.ids is not None and int(name) not in config.ids: continue

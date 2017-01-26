@@ -1522,6 +1522,7 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
         sky_ap_rad_pix = (ap_area / np.pi)**0.5
 
         # Generate list of mini-aperture sizes to use, and declare result lists
+        #mini_ap_rad_base = 1.2 # NEW value used by Chris
         #mini_ap_rad_base = 2.0
         mini_ap_rad_base = 5.0
         mini_ap_rad_pix_input = mini_ap_rad_base**np.arange(1.0, np.ceil( math.log( sky_ap_rad_pix, mini_ap_rad_base)))[::-1]

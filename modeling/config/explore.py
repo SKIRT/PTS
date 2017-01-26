@@ -35,8 +35,8 @@ definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 
 # Advanced options for the genetic engine
-definition.add_optional("crossover_rate", "fraction", "the crossover rate", "0.5", convert_default=True)
-definition.add_optional("mutation_rate", "fraction", "the mutation rate", "0.5", convert_default=True)
+definition.add_optional("crossover_rate", "fraction", "the crossover rate", 0.5)
+definition.add_optional("mutation_rate", "fraction", "the mutation rate", 0.5)
 
 # The ranges of the different free parameters (although the absolute ranges are defined in the fitting configuration,
 # give the option to refine these ranges for each exploration step (generation))

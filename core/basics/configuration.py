@@ -28,6 +28,15 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
+subtypes = dict()
+subtypes["integer"] = ["positive_integer", "negative_integer"]
+subtypes["real"] = ["fraction", "positive_real", "negative_real"]
+subtypes["string"] = ["file_path"]
+subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
+subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
+
+# -----------------------------------------------------------------
+
 class Configuration(Map):
 
     """
@@ -795,7 +804,8 @@ class ConfigurationDefinition(object):
             if convert_default: default = get_real_value(default, real_type)
             else: # check default
                 default_type, default_string = stringify.stringify(default)
-                if default_type != user_type: raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
+                if default_type != user_type and user_type not in subtypes[default_type]:
+                    raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices, dynamic_list=dynamic_list)
@@ -827,7 +837,8 @@ class ConfigurationDefinition(object):
             if convert_default: default = get_real_value(default, real_type)
             else: # check default
                 default_type, default_string = stringify.stringify(default)
-                if default_type != user_type: raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
+                if default_type != user_type and user_type not in subtypes[default_type]:
+                    raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add
         self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices, letter=letter, dynamic_list=dynamic_list)

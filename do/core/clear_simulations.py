@@ -69,7 +69,7 @@ for host_id in config.remotes:
     if fs.is_empty(host_run_path): log.debug("No simulations for host '" + host_id + "'")
 
     # Loop over the simulation files in the run directory
-    for path, name in fs.files_in_path(host_run_path, extension="sim", returns=["path", "name"]):
+    for path, name in fs.files_in_path(host_run_path, extension="sim", returns=["path", "name"], sort=int):
 
         # Skip
         if config.ids is not None and int(name) not in config.ids: continue

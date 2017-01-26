@@ -875,13 +875,12 @@ class BatchLauncher(Configurable):
                 # Save the simulation object
                 simulation.save()
 
-            # Set a path for the script file to be saved to locally (for manual inspection)
-            if remote.host_id in self.script_paths:
-                local_script_path = fs.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
-            else: local_script_path = None
-
             # Determine queue name (name of the screen session or the remote simulation queue)
             queue_name = time.unique_name("batch_launcher")
+
+            # Set a path for the script file to be saved to locally (for manual inspection)
+            if remote.host_id in self.script_paths: local_script_path = fs.join(self.script_paths[remote.host_id], queue_name + "_" + remote.host_id  + ".sh")
+            else: local_script_path = None
 
             # Set a path for the screen output to be saved remotely (for debugging)
             if remote.host_id in self.save_screen_output:

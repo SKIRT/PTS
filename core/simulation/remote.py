@@ -425,7 +425,7 @@ class SkirtRemote(Remote):
 
         # Write a general header to the batch script
         script_file.write("#!/bin/sh\n")
-        script_file.write("# Batch script for running SKIRT on a remote system\n")
+        script_file.write("# Batch script for running SKIRT on remote host " + self.host_id + "\n")
         script_file.write("# To execute manualy, copy this file to the remote filesystem and enter the following commmand:\n")
         script_file.write("# screen -S " + screen_name + " -L -d -m " + fs.name(local_script_path) + "'\n")
         script_file.write("\n")

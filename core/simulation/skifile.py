@@ -28,6 +28,12 @@ from ..tools.stringify import str_from_bool, str_from_angle
 from ..basics.quantity import represent_quantity
 
 # -----------------------------------------------------------------
+
+# Define parameters in the ski file that are actually quantities but should be entered as scalar values for SKIRT
+fake_quantities = dict()
+fake_quantities[("BolLuminosityStellarCompNormalization", "luminosity")] = "Lsun"
+
+# -----------------------------------------------------------------
 #  SkiFile class
 # -----------------------------------------------------------------
 
@@ -2650,11 +2656,15 @@ class LabeledSkiFile(SkiFile):
             # Get the labeled elements
             elements = self.get_labeled_elements(label)
 
-            # Labeled value
-            labeled_value = "[" + label + ":" + stringify_not_list(values[label])[1] + "]"
-
             # Set the new value for each corresponding element
             for element, setting_name in elements:
+
+                # Convert the value into a string
+                if (element.tag, setting_name) in fake_quantities: string = repr(values[label].to(fake_quantities[(element.tag, setting_name)]).value)
+                else: string = stringify_not_list(values[label])[1]
+
+                # Label the value string and set it in the ski file
+                labeled_value = "[" + label + ":" + string + "]"
                 element.set(setting_name, labeled_value)
 
     # -----------------------------------------------------------------
