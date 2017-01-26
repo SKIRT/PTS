@@ -112,6 +112,56 @@ class Modeler(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def configured_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.modeling_config.host_ids is None: return []
+        else: return self.modeling_config.host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_configured_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.configured_host_ids) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def configured_fitting_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.modeling_config.fitting_host_ids is None: return []
+        else: return self.modeling_config.fitting_host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_configured_fitting_host_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.configured_fitting_host_ids) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
     def host_id(self):
 
         """

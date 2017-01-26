@@ -20,17 +20,24 @@ from matplotlib import colors
 import matplotlib.patches as patches
 from collections import OrderedDict
 from textwrap import wrap
+from matplotlib.ticker import FormatStrFormatter
+import matplotlib.gridspec as gridspec
+from matplotlib import rc
+from scipy.interpolate import interp1d
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
 from ..data.sed import ObservedSED, SED
+from ..basics.range import RealRange
 
 # -----------------------------------------------------------------
 
-import matplotlib.gridspec as gridspec
-from scipy.interpolate import interp1d
+rc('text', usetex=True)
+
+# -----------------------------------------------------------------
+
 line_styles = ['-', '--', '-.', ':']
 
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd'] * 6
@@ -172,7 +179,7 @@ class SEDPlotter(Configurable):
         self.max_flux = kwargs.pop("max_flux", None)
 
         # Set the output path
-        self.out_path = kwargs.pop("output", self.config.path)
+        self.out_path = kwargs.pop("output", None)
 
         # Add SED files present in the current working directory (if nothing is added manually)
         if self.nseds == 0: self.load_seds()
@@ -267,15 +274,11 @@ class SEDPlotter(Configurable):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
         # Determine color map class
         colormap = plt.get_cmap("rainbow")
-
-        # The size of the figure
-        #figsize = (10,6)
 
         # Setup the figure
         self._figure = plt.figure(figsize=self.config.plot.figsize)
@@ -846,6 +849,7 @@ class SEDPlotter(Configurable):
         :param error:
         :param marker:
         :param color:
+        :param return_patch:
         :return:
         """
 
@@ -868,6 +872,8 @@ class SEDPlotter(Configurable):
                 lower_flux = flux + error.lower
                 upper_flux = flux + error.upper
 
+                #print(label, flux, lower_flux, upper_flux)
+
                 if lower_flux <= 0:
                     flux_lower_flux = float("-inf")
                 else: flux_lower_flux = flux/lower_flux
@@ -880,8 +886,7 @@ class SEDPlotter(Configurable):
                 axis.errorbar(wavelength, np.log10(flux), yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
             #else: axis.plot(wavelength, np.log10(flux), fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
-            else:
-                axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
+            else: axis.plot(wavelength, np.log10(flux), markersize=7, color=color, markeredgecolor='black')
 
             patch = axis.plot(wavelength, np.log10(flux), marker, markersize=7, color=color, markeredgecolor='black', markerfacecolor=color, label=label)
 
@@ -902,6 +907,7 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    # instruments, bands, wavelengths, fluxes, errors, colors
     def draw_observation(self, instruments, bands, wavelengths, fluxes, errors, colors):
 
         """
@@ -942,6 +948,8 @@ class SEDPlotter(Configurable):
             marker = markers[unique_labels.index(labels[k])]
 
             # Plot on the main axis with the specified marker and color
+            #print("fluxes", fluxes)
+            #print("errors", errors)
             self.plot_wavelength(self._main_axis, labels[k], used_labels, wavelengths[k], fluxes[k], errors[k], marker, color)
 
     # -----------------------------------------------------------------
@@ -1041,8 +1049,21 @@ class SEDPlotter(Configurable):
         if len(self._residual_axes) > 0: self._residual_axes[len(self._residual_axes)-1].set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
         else: self._main_axis.set_xlabel(r"Wavelength $\lambda\,[\mu \mathrm{m}]$", fontsize='large')
 
-        self._figure.subplots_adjust(hspace=0)
-        plt.setp([a.get_xticklabels() for a in self._figure.axes[:-1]], visible=False)
+        # Format the axis ticks and create a grid
+        ticks = RealRange(self.min_wavelength, self.max_wavelength).log(10, fancy=True)
+        #self._main_axis.set_xlim(ticks[0], ticks[-1])
+        self._main_axis.set_xticks(ticks)
+        self._main_axis.set_xticklabels(ticks)
+
+        self._main_axis.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+        self._main_axis.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+
+        #self._figure.subplots_adjust(hspace=0)
+        #plt.setp([a.get_xticklabels() for a in self._figure.axes[:-1]], visible=False)
+
+        # Set ticks fontsize
+        plt.setp(self._main_axis.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        plt.setp(self._main_axis.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
 
         # Add axis labels and a legend
         self._main_axis.set_xscale('log')
@@ -1059,8 +1080,8 @@ class SEDPlotter(Configurable):
         self._main_axis.set_ylim((plot_min, plot_max))
 
         # Set wavelength axis limits
-        plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self.min_wavelength, self.max_wavelength)
-        self._main_axis.set_xlim(plot_min_wavelength, plot_max_wavelength)
+        #plot_min_wavelength, plot_max_wavelength = get_plot_wavelength_limits(self.min_wavelength, self.max_wavelength)
+        #self._main_axis.set_xlim(plot_min_wavelength, plot_max_wavelength)
 
         # Add the legend
         if for_legend_patches is not None:

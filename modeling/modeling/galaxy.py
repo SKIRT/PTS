@@ -617,7 +617,7 @@ class GalaxyModeler(Modeler):
         generations = get_generations_table(self.modeling_path)
 
         # If some generations have not finished, check the status of and retrieve simulations
-        if generations.has_unfinished: self.synchronize()
+        if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
 
         # If some generations have finished, fit the SED
         if generations.has_finished: self.fit_sed()

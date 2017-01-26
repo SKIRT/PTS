@@ -176,7 +176,10 @@ class WavelengthCurve(Curve):
         :return:
         """
 
-        return self.colnames[-1]
+        for index in reversed(range(len(self.colnames))):
+            name = self.colnames[index]
+            if name == "Error+" or name == "Error-": continue
+            return self.colnames[index]
 
     # -----------------------------------------------------------------
 

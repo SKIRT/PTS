@@ -50,6 +50,9 @@ class SEDModelingComponent(ModelingComponent):
         # The SED file path
         self.sed_path = None
 
+        # The observed SED plot file path
+        self.sed_plot_path = None
+
         # The ski template path
         self.ski_path = None
 
@@ -67,6 +70,9 @@ class SEDModelingComponent(ModelingComponent):
 
         # Set the SED path
         self.sed_path = get_observed_sed_file_path(self.config.path)
+
+        # Set the SED plot path
+        self.sed_plot_path = fs.join(self.config.path, "sed.pdf")
 
         # Set the ski template path
         self.ski_path = get_ski_template_path(self.config.path)

@@ -165,6 +165,8 @@ class Range(object):
         else: values = np.linspace(self._min, self._max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
 
+        values = sorted(list(set(values)))
+
         if as_list: return list(values)
         else: return values
 
@@ -183,13 +185,15 @@ class Range(object):
         if fancy:
             ticksize = best_tick_log(self.max/self.min, npoints)
             values = [round_to_1(self.min)] * npoints
-            for i in range(1,npoints):
+            for i in range(1, npoints):
                 new_value = values[i-1] * ticksize
                 if new_value > self.max: break
                 else: values[i] = new_value
             values = np.array(values)
         else: values = np.logspace(self.log_min, self.log_max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
+
+        values = sorted(list(set(values)))
 
         if as_list: return list(values)
         else: return values
@@ -212,6 +216,8 @@ class Range(object):
         normalized = np.linspace(0.0, 1.0, npoints, endpoint=self.inclusive)
         values = self._min + normalized * width
         if self.invert: values = np.flipud(values)
+
+        values = sorted(list(set(values)))
 
         if as_list: return list(values)
         else: return values

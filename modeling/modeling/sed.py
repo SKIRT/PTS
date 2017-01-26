@@ -21,6 +21,7 @@ from .modeler import Modeler
 from ..component.sed import get_ski_template, get_observed_sed
 from ...core.basics.range import IntegerRange, QuantityRange
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -85,11 +86,34 @@ class SEDModeler(Modeler):
         # Inform the user
         log.info("Loading the input data ...")
 
-        # Get the galaxy properties
-        if "fetch_properties" not in self.history: pass
+        # Plot SED
+        if "plot_sed" not in self.history: self.plot_sed()
 
-        # Get the SEDs
-        if "fetch_seds" not in self.history: pass
+    # -----------------------------------------------------------------
+
+    def plot_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add an entry to the history
+        self.history.add_entry("plot_sed")
+
+        # Create SED plotter
+        plotter = SEDPlotter()
+
+        # Add the observed SED
+        sed = get_observed_sed(self.modeling_path)
+        plotter.add_sed(sed, "Observations")
+
+        # Run the plotter
+        plotter.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -113,7 +137,7 @@ class SEDModeler(Modeler):
         generations = get_generations_table(self.modeling_path)
 
         # If some generations have not finished, check the status of and retrieve simulations
-        if generations.has_unfinished: self.synchronize()
+        if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
 
         # If some generations have finished, fit the SED
         if generations.has_finished: self.fit_sed()
