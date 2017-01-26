@@ -898,6 +898,54 @@ class FittingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def current_npackages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Generations exist
+        if len(self.generations_table) > 0: return self.generations_table["Number of photon packages"]
+
+        # Initial value
+        else: return self.ski_template.packages()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_selfabsorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Generations exist
+        if len(self.generations_table) > 0: return self.generations_table["Self-absorption"][-1]
+
+        # Initial value
+        else: return self.ski_template.dustselfabsorption()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_transient_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Generations exist
+        if len(self.generations_table) > 0: return self.generations_table["Transient heating"][-1]
+
+        # Initial value
+        else: return self.ski_template.transient_dust_emissivity
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def highest_wavelength_grid_level(self):
 
         """
@@ -918,7 +966,10 @@ class FittingComponent(ModelingComponent):
         :return:
         """
 
+        # Generations exist
         if len(self.generations_table) > 0: return self.generations_table["Wavelength grid level"][-1]
+
+        # Initial value
         else: return 0
 
     # -----------------------------------------------------------------
@@ -956,7 +1007,10 @@ class FittingComponent(ModelingComponent):
         :return:
         """
 
+        # Generations exist
         if len(self.generations_table) > 0: return self.generations_table["Dust grid level"][-1]
+
+        # Initial value
         else: return 0
 
     # -----------------------------------------------------------------

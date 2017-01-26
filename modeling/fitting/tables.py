@@ -22,6 +22,7 @@ from ...core.tools import tables
 from ...core.basics.range import RealRange
 from ...core.basics.curve import FilterCurve
 from ...core.basics.unit import parse_unit as u
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -434,7 +435,35 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages,
+    def add_entry(self, generation_info, ranges):
+
+        """
+        This function ...
+        :param generation_info:
+        :param ranges:
+        :return:
+        """
+
+        # Generate a timestamp
+        timestamp = time.timestamp()
+
+        # Add an entry to the generations table
+        name = generation_info.name
+        index = generation_info.index
+        method = generation_info.method
+        wg_level = generation_info.wavelength_grid_level
+        dg_level = generation_info.dust_grid_level
+        nsimulations = generation_info.nsimulations
+        npackages = generation_info.npackages
+        selfabsorption = generation_info.selfabsorption
+        transientheating = generation_info.transient_heating
+
+        # Call other function
+        self.add_entry_impl(name, index, timestamp, method, wg_level, dg_level, nsimulations, npackages, selfabsorption, transientheating, ranges)
+
+    # -----------------------------------------------------------------
+
+    def add_entry_impl(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages,
                   selfabsorption, transientheating, ranges):
 
         """

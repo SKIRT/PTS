@@ -15,14 +15,63 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 
-# Import astronomical modules
-from astropy.table import Table
-
 # Import the relevant PTS classes and modules
 from ..simulation.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
 from ...core.tools.logging import log
-from ...core.basics.range import zip_linear, zip_log
+from ...core.basics.range import zip_linear
 from ..basics.configurable import Configurable
+from ..basics.table import SmartTable
+from ..basics.range import RealRange
+
+# -----------------------------------------------------------------
+
+class DustGridsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(DustGridsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Type", str, None, "grid type")
+        self.add_column_info("Min x", float, None, "minimum x")
+        self.add_column_info("Max x", float, None, "maximum x")
+        self.add_column_info("Min y", float, None, "minimum y")
+        self.add_column_info("Max y", float, None, "maximum y")
+        self.add_column_info("Min z", float, None, "minimum z")
+        self.add_column_info("Max z", float, None, "maximum z")
+        self.add_column_info("Smallest scale", float, None, "Smallest scale")
+        self.add_column_info("Min level", int, None, "Minimum level")
+        self.add_column_info("Max mass fraction", float, None, "Maximum mass fraction")
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, grid_type, x_range, y_range, z_range, scale, min_level, max_mass_fraction):
+
+        """
+        This function ...
+        :param grid_type:
+        :param x_range:
+        :param y_range:
+        :param z_range:
+        :param scale:
+        :param min_level:
+        :param max_mass_fraction:
+        :return:
+        """
+
+        # Add a row to the table
+        self.add_row([grid_type, x_range.min, x_range.max, y_range.min, y_range.max, z_range.min, z_range.max, scale, min_level, max_mass_fraction])
 
 # -----------------------------------------------------------------
 
@@ -237,9 +286,7 @@ class DustGridGenerator(Configurable):
         self.ngrids = kwargs.pop("ngrids")
 
         # Initialize the table
-        names = ["Type", "Min x", "Max x", "Min y", "Max y", "Min z", "Max z", "Smallest scale", "Min level", "Max mass fraction"]
-        dtypes = ["S9", "f8", "f8", "f8", "f8", "f8", "f8", "f8", int, "f8"]
-        self.table = Table(names=names, dtype=dtypes)
+        self.table = DustGridsTable()
 
     # -----------------------------------------------------------------
 
@@ -319,8 +366,11 @@ class DustGridGenerator(Configurable):
         # Add the grid
         self.grids.append(grid)
 
-        # Add a row to the table
-        self.table.add_row([self.grid_type, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, scale, min_level, max_mass_fraction])
+        # Add entry to the table
+        x_range = RealRange(self.x_min, self.x_max)
+        y_range = RealRange(self.y_min, self.y_max)
+        z_range = RealRange(self.z_min, self.z_max)
+        self.table.add_entry(self, self.grid_type, x_range, y_range, z_range, scale, min_level, max_mass_fraction)
 
     # -----------------------------------------------------------------
 

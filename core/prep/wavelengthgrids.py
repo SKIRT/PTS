@@ -15,27 +15,26 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.table import Table
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.emissionlines import EmissionLines
 from ..basics.configurable import Configurable
+from ..basics.table import SmartTable
+from ..basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
 # The names of the subgrids
 subgrids = ["UV", "optical", "PAH", "dust", "extension"]
 
-# Define the limits of the subgrids
-limits = dict()
-limits["UV"] = (0.02, 0.085)
-limits["optical"] = (0.085, 3.)
-limits["PAH"] = (3., 27.)
-limits["dust"] = (27., 1000.)
-limits["extension"] = (1000., 2000)
+# Define the ranges of the subgrids
+ranges = dict()
+ranges["UV"] = QuantityRange(0.02, 0.085, unit="micron")
+ranges["optical"] = QuantityRange(0.085, 3., unit="micron")
+ranges["PAH"] = QuantityRange(3., 27., unit="micron")
+ranges["dust"] = QuantityRange(27., 1000., unit="micron")
+ranges["extension"] = QuantityRange(1000., 2000, unit="micron")
 
 # Define the relative fineness (the number of points) of the subgrids
 relpoints = dict()
@@ -44,6 +43,58 @@ relpoints["optical"] = 100./325.     # 100
 relpoints["PAH"] = 125./325.  # 125
 relpoints["dust"] = 50./325.  # 50
 relpoints["extension"] = 25./325.  # 25
+
+# -----------------------------------------------------------------
+
+class WavelengthGridsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(WavelengthGridsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("UV points", int, None, "number of points in UV spectrum (range: " + str(ranges["UV"]) + ")")
+        self.add_column_info("Optical points", int, None, "number of points in the optical spectrum (range: " + str(ranges["optical"]) + ")")
+        self.add_column_info("PAH points", int, None, "number of points in the PAH spectrum (range: " + str(ranges["PAH"]) + ")")
+        self.add_column_info("Dust points", int, None, "number of points in the dust spectrum (range: " + str(ranges["dust"]) + ")")
+        self.add_column_info("Extension points", int, None, "number of points in the extension spectrum (range: " + str(ranges["extension"]) + ")")
+        self.add_column_info("Emission lines", int, None, "number of emission lines")
+        self.add_column_info("Fixed points", int, None, "number of fixed points")
+        self.add_column_info("Total points", int, None, "total number of points")
+
+    # -----------------------------------------------------------------
+
+    def add_grid(self, grid, subgrid_npoints, emission_npoints, fixed_npoints):
+
+        """
+        This function ...
+        :param grid:
+        :param subgrid_npoints:
+        :param emission_npoints:
+        :param fixed_npoints:
+        :return:
+        """
+
+        # Get values
+        uv_npoints = subgrid_npoints["UV"]
+        optical_npoints = subgrid_npoints["optical"]
+        pah_npoints = subgrid_npoints["PAH"]
+        dust_npoints = subgrid_npoints["dust"]
+        extension_npoints = subgrid_npoints["extension"]
+
+        # Add row
+        self.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints, fixed_npoints, len(grid)])
 
 # -----------------------------------------------------------------
 
@@ -124,9 +175,7 @@ class WavelengthGridGenerator(Configurable):
         self.emission_lines = EmissionLines()
 
         # Initialize the table
-        names = ["UV points", "Optical points", "PAH points", "Dust points", "Extension points", "Emission lines", "Fixed points", "Total points"]
-        dtypes = [int, int, int, int, int, int, int, int]
-        self.table = Table(names=names, dtype=dtypes)
+        self.table = WavelengthGridsTable()
 
     # -----------------------------------------------------------------
 
@@ -167,13 +216,8 @@ class WavelengthGridGenerator(Configurable):
         # Add the grid
         self.grids.append(grid)
 
-        # Add an entry to the table
-        uv_npoints = subgrid_npoints["UV"]
-        optical_npoints = subgrid_npoints["optical"]
-        pah_npoints = subgrid_npoints["PAH"]
-        dust_npoints = subgrid_npoints["dust"]
-        extension_npoints = subgrid_npoints["extension"]
-        self.table.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints, fixed_npoints, len(grid)])
+        # Add entry to the table
+        self.table.add_grid(grid, subgrid_npoints, emission_npoints, fixed_npoints)
 
     # -----------------------------------------------------------------
 
@@ -194,6 +238,41 @@ class WavelengthGridGenerator(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the grids
+        self.write_grids()
+
+        # Write the table
+        self.write_table()
+
+    # -----------------------------------------------------------------
+
+    def write_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the grids ...")
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the grids table ...")
 
         pass
 
@@ -227,8 +306,8 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
         log.debug("Adding the " + subgrid + " subgrid ...")
 
         # Determine minimum, maximum
-        min_lambda = limits[subgrid][0]
-        max_lambda = limits[subgrid][1]
+        min_lambda = ranges[subgrid].min.to("micron").value
+        max_lambda = ranges[subgrid].max.to("micron").value
 
         # Skip subgrids out of range
         if min_wavelength is not None and max_lambda < min_wavelength: continue

@@ -56,12 +56,13 @@ definition.add_flag("ionizing_log", "use logarithmic spacing of the ionizing ste
 definition.add_flag("dust_log", "use logarithmic spacing of the dust mass values")
 definition.add_flag("visualise", "make visualisations")
 
-# Simulation options
-definition.add_optional("npackages", "integer", "the number of photon packages per wavelength", int(2e5))
-definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations")
-definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations")
-definition.add_flag("selfabsorption", "dust self-absorption", True)
-definition.add_flag("transient_heating", "transient (non-LTE) dust heating", True)
+# Model options
+definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
+definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
+definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations", False)
+definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations", False)
+definition.add_flag("selfabsorption", "dust self-absorption", None)
+definition.add_flag("transient_heating", "transient (non-LTE) dust heating", None)
 
 # Parallelization options
 definition.add_optional("nnodes", "integer", "the number of nodes to use for the simulations (for scheduler)", 4)

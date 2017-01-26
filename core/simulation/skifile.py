@@ -346,11 +346,6 @@ class SkiFile:
         components = self.tree.xpath("//CompDustDistribution/components/*")
         return int(len(components))
 
-    ## This function returns the dust lib
-    def get_dust_lib(self):
-        dustlib = self.tree.xpath("//dustLib/*")[0]
-        return dustlib
-
     ## This function returns the dust lib type
     def dustlib_type(self):
         return self.get_dust_lib().tag
@@ -1896,13 +1891,25 @@ class SkiFile:
         # Return the dust emissivity element
         return get_unique_element(dust_system, "dustEmissivity")
 
-    ## This property returns whether a dust emissivit object is present in the ski file
+    ## This property returns whether a dust emissivity object is present in the ski file
     @property
     def has_dust_emissivity(self):
         try:
             em = self.get_dust_emissivity()
             return True
         except ValueError: return False
+
+    @property
+    def transient_dust_emissivity(self):
+
+        if self.has_dust_emissivity: return self.get_dust_emissivity().tag == "TransientDustEmissivity"
+        else: return None
+
+    @property
+    def grey_body_dust_emissivity(self):
+
+        if self.has_dust_emissivity: return self.get_dust_emissivity().tag == "GreyBodyDustEmissivity"
+        else: return None
 
     ## This function sets a transient dust emissivity for the simulation
     def set_transient_dust_emissivity(self):

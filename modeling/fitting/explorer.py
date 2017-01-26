@@ -37,6 +37,36 @@ from ...core.remote.host import Host
 
 # -----------------------------------------------------------------
 
+class GenerationInfo(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Set info
+        self.name = kwargs.pop("name", None)
+        self.index = kwargs.pop("index", None)
+        self.method = kwargs.pop("method", None)
+        self.wavelength_grid_level = kwargs.pop("wavelength_grid_level", None)
+        self.dust_grid_level = kwargs.pop("dust_grid_level", None)
+        self.nsimulations = kwargs.pop("nsimulations", None)
+        self.npackages = kwargs.pop("npackages", None)
+        self.selfabsorption = kwargs.pop("selfabsorption", None)
+        self.transient_heating = kwargs.pop("transient_heating", None)
+
+        self.path = kwargs.pop("path", None)
+        self.parameter_table_path = kwargs.pop("parameter_table_path", None)
+        self.chi_squared_table_path = kwargs.pop("chi_squared_table_path", None)
+
+# -----------------------------------------------------------------
+
 class ParameterExplorer(FittingComponent):
     
     """
@@ -60,7 +90,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher = BatchLauncher()
 
         # The generation info
-        self.generation_info = dict()
+        self.generation = GenerationInfo()
 
         # The parameters table
         self.parameters_table = None
@@ -386,24 +416,38 @@ class ParameterExplorer(FittingComponent):
         wavelength_grid_level = self.current_wavelength_grid_level
         dust_grid_level = self.current_dust_grid_level
 
-        # Increase the wavelength grid or dust grid level if requested
+        # Determine the wavelength grid level
         if self.config.refine_wavelengths:
             if wavelength_grid_level == self.highest_wavelength_grid_level: log.warning("Cannot refine wavelength grid: highest level reached (" + str(wavelength_grid_level) + ")")
             else: wavelength_grid_level += 1
+
+        # Determine the dust grid level
         if self.config.refine_dust:
             if dust_grid_level == self.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
             else: dust_grid_level += 1
 
+        # Determine the number of photon packages
+        if self.config.increase_npackages: npackages = int(self.current_npackages * self.config.npackages_factor)
+        else: npackages = self.current_npackages
+
+        # Determine whether selfabsorption should be enabled
+        if self.config.selfabsorption is not None: selfabsorption = self.config.selfabsorption
+        else: selfabsorption = self.current_selfabsorption
+
+        # Determine whether transient heating should be enabled
+        if self.config.transient_heating is not None: transient_heating = self.config.transient_heating
+        else: transient_heating = self.current_transient_heating
+
         # Set the generation info
-        self.generation_info["Generation name"] = self.generation_name
-        self.generation_info["Generation index"] = self.generation_index
-        self.generation_info["Method"] = self.config.generation_method
-        self.generation_info["Wavelength grid level"] = wavelength_grid_level
-        self.generation_info["Dust grid level"] = dust_grid_level
-        self.generation_info["Number of simulations"] = self.config.nsimulations
-        self.generation_info["Number of photon packages"] = self.config.npackages
-        self.generation_info["Self-absorption"] = self.config.selfabsorption
-        self.generation_info["Transient heating"] = self.config.transient_heating
+        self.generation.name = self.generation_name
+        self.generation.index = self.generation_index
+        self.generation.method = self.config.generation_method
+        self.generation.wavelength_grid_level = wavelength_grid_level
+        self.generation.dust_grid_level = dust_grid_level
+        self.generation.nsimulations = self.config.nsimulations
+        self.generation.npackages = npackages
+        self.generation.selfabsorption = selfabsorption
+        self.generation.transient_heating = transient_heating
 
     # -----------------------------------------------------------------
 
@@ -421,7 +465,7 @@ class ParameterExplorer(FittingComponent):
         self.input_paths = self.input_map_paths
 
         # Determine and set the path to the appropriate wavelength grid file
-        wavelength_grid_path = self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])
+        wavelength_grid_path = self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)
         self.input_paths.append(wavelength_grid_path)
 
         # Get the number of wavelengths
@@ -443,13 +487,13 @@ class ParameterExplorer(FittingComponent):
         log.info("Creating the generation directory")
 
         # Determine the path to the generation directory
-        self.generation_info["Path"] = fs.create_directory_in(self.fit_generations_path, self.generation_name)
+        self.generation.path = fs.create_directory_in(self.fit_generations_path, self.generation_name)
 
         # Determine the path to the generation parameters table
-        self.generation_info["Parameter table path"] = fs.join(self.generation_info["Path"], "parameters.dat")
+        self.generation.parameter_table_path = fs.join(self.generation.path, "parameters.dat")
 
         # Determine the path to the chi squared table
-        self.generation_info["Chi squared table path"] = fs.join(self.generation_info["Path"], "chi_squared.dat")
+        self.generation.chi_squared_table_path = fs.join(self.generation.path, "chi_squared.dat")
 
         # Initialize the parameters table
         self.parameters_table = ParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
@@ -494,10 +538,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
+        log.debug("Setting the number of photon packages to " + str(self.generation.npackages) + " ...")
 
         # Set the number of photon packages per wavelength
-        self.ski_template.setpackages(self.config.npackages)
+        self.ski_template.setpackages(self.generation.npackages)
 
     # -----------------------------------------------------------------
 
@@ -509,10 +553,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
+        log.debug("Enabling dust self-absorption ..." if self.generation.selfabsorption else "Disabling dust self-absorption ...")
 
         # Set dust self-absorption
-        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
+        if self.generation.selfabsorption: self.ski_template.enable_selfabsorption()
         else: self.ski_template.disable_selfabsorption()
 
     # -----------------------------------------------------------------
@@ -525,10 +569,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
+        log.debug("Enabling transient heating ..." if self.generation.transient_heating else "Disabling transient heating ...")
 
         # Set transient heating
-        if self.config.transient_heating: self.ski_template.set_transient_dust_emissivity()
+        if self.generation.transient_heating: self.ski_template.set_transient_dust_emissivity()
         else: self.ski_template.set_grey_body_dust_emissivity()
 
     # -----------------------------------------------------------------
@@ -541,10 +585,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the name of the wavelengths file to " + fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])) + " ...")
+        log.debug("Setting the name of the wavelengths file to " + fs.name(self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + " ...")
 
         # Set the name of the wavelength grid file
-        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation_info["Wavelength grid level"])))
+        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)))
 
     # -----------------------------------------------------------------
 
@@ -556,10 +600,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the dust grid (level " + str(self.generation_info["Dust grid level"]) + ") ...")
+        log.debug("Setting the dust grid (level " + str(self.generation.dust_grid_level) + ") ...")
 
         # Set the dust grid
-        self.ski_template.set_dust_grid(self.dust_grid_for_level(self.generation_info["Dust grid level"]))
+        self.ski_template.set_dust_grid(self.dust_grid_for_level(self.generation.dust_grid_level))
 
     # -----------------------------------------------------------------
 
@@ -605,9 +649,6 @@ class ParameterExplorer(FittingComponent):
             # Get the parallelization
             parallelization = tool.parallelization
 
-            # Get the parallelization scheme for this host
-            #parallelization = Parallelization.for_host(host, self.config.nnodes, self.config.data_parallel)
-
             # Debugging
             log.debug("Parallelization scheme for host " + host.id + ": " + str(parallelization))
 
@@ -646,7 +687,7 @@ class ParameterExplorer(FittingComponent):
             else: plot_path = None
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(self.ski_template, parallelization, host.id, host.cluster_name, self.config.data_parallel, nwavelengths=self.nwavelengths)
+            runtime = estimator.runtime_for(self.ski_template, parallelization, host.id, host.cluster_name, self.config.data_parallel, nwavelengths=self.nwavelengths, plot_path=plot_path)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
@@ -671,7 +712,7 @@ class ParameterExplorer(FittingComponent):
 
         # Set the paths to the directories to contain the launch scripts (job scripts) for the different remote hosts
         # Just use the directory created for the generation
-        for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation_info["Path"])
+        for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation.path)
 
         # Enable screen output logging for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
@@ -710,7 +751,7 @@ class ParameterExplorer(FittingComponent):
             self.ski_template.set_labeled_values(parameter_values)
 
             # Create a directory for this simulation
-            simulation_path = fs.create_directory_in(self.generation_info["Path"], simulation_name)
+            simulation_path = fs.create_directory_in(self.generation.path, simulation_name)
 
             # Create an output directory for this simulation
             simulation_output_path = fs.create_directory_in(simulation_path, "out")
@@ -798,20 +839,8 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Writing generation info ...")
 
-        # Generate a timestamp
-        timestamp = time.timestamp()
-
         # Add an entry to the generations table
-        name = self.generation_info["Generation name"]
-        index = self.generation_info["Generation index"]
-        method = self.generation_info["Method"]
-        wg_level = self.generation_info["Wavelength grid level"]
-        dg_level = self.generation_info["Dust grid level"]
-        nsimulations = self.generation_info["Number of simulations"]
-        npackages = self.generation_info["Number of photon packages"]
-        selfabsorption = self.generation_info["Self-absorption"]
-        transientheating = self.generation_info["Transient heating"]
-        self.generations_table.add_entry(name, index, timestamp, method, wg_level, dg_level, nsimulations, npackages, selfabsorption, transientheating, self.ranges)
+        self.generations_table.add_entry(self.generation, self.ranges)
 
         # Save the table
         self.generations_table.save()
@@ -829,7 +858,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing the parameter values ...")
 
         # Save the parameters table
-        self.parameters_table.saveto(self.generation_info["Parameter table path"])
+        self.parameters_table.saveto(self.generation.parameter_table_path)
 
     # -----------------------------------------------------------------
 
@@ -844,6 +873,6 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing the chi squared table ...")
 
         # Save the chi squared table
-        self.chi_squared_table.saveto(self.generation_info["Chi squared table path"])
+        self.chi_squared_table.saveto(self.generation.chi_squared_table_path)
 
 # -----------------------------------------------------------------

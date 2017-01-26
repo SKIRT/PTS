@@ -28,4 +28,12 @@ definition.add_optional("fitting_remote", "string", "remote host for the fitting
 # Genetic algorithm settings
 definition.add_optional("nsimulations", "positive_integer", "number of simulations per generation")
 
+# Model settings
+definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
+definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
+definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations", False)
+definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations", False)
+definition.add_flag("selfabsorption", "dust self-absorption (None means the initial values are respected)", None)
+definition.add_flag("transient_heating", "transient (non-LTE) dust heating", None)
+
 # -----------------------------------------------------------------

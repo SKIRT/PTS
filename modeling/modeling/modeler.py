@@ -365,6 +365,14 @@ class Modeler(Configurable):
         # Set the number of simulations per generation
         if self.config.nsimulations is not None: explorer.config.nsimulations = self.config.nsimulations
 
+        # Set other settings
+        explorer.config.npackages_factor = self.config.npackages_factor
+        explorer.config.increase_npackages = self.config.increase_npackages
+        explorer.config.refine_wavelengths = self.config.refine_wavelengths
+        explorer.config.refine_dust = self.config.refine_dust
+        explorer.config.selfabsorption = self.config.selfabsorption
+        explorer.config.transient_heating = self.config.transient_heating
+
         # Run the parameter explorer
         explorer.run()
 

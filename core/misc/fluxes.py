@@ -217,7 +217,7 @@ class ObservedFluxCalculator(object):
                     spectral_index_filter = spectral_index(central_frequency)
 
                     # Get the Kbeam factor
-                    kbeam = self.spire.get_kbeam_spectral(fltr, spectral_index_filter, extended=True)
+                    kbeam = self.spire.get_kbeam_spectral(fltr, spectral_index_filter)
 
                     # Multiply the flux density
                     fluxdensity_value *= kbeam

@@ -566,20 +566,52 @@ class ConfigurationDefinition(object):
             letter = self.flags[name].letter
             default = self.flags[name].default
 
-            # Add prefix
-            #if self.prefix is not None: name = self.prefix + "/" + name
-
+            # Default is True
             if default is True:
+
                 name = "not_" + name
                 description = "don't " + description
 
-            if prefix is not None:
-                name = prefix + "/" + name
+                if prefix is not None:
+                    name = prefix + "/" + name
+                    letter = None
+
+                # Add the argument
+                if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
+                else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+
+            # Default is False
+            elif default is False:
+
+                if prefix is not None:
+                    name = prefix + "/" + name
+                    letter = None
+
+                # Add the argument
+                if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
+                else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+
+            # Default is None
+            elif default is None:
+
                 letter = None
 
-            # Add the argument
-            if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
-            else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+                name1 = name
+                description1 = description
+
+                name2 = "not_" + name
+                description2 = "don't " + description
+
+                if prefix is not None:
+                    name1 = prefix + "/" + name1
+                    name2 = prefix + "/" + name2
+
+                # Add 2 arguments to the parser
+                parser.add_argument("--" + name1, action="store_true", help=description1)
+                parser.add_argument("--" + name2, action="store_true", help=description2)
+
+            # Invalid option
+            else: raise ValueError("Invalid option for default of flag '" + name + "': " + str(default))
 
         # Add arguments of sections
         for section_name in self.sections:
@@ -679,15 +711,61 @@ class ConfigurationDefinition(object):
             # Get properties
             default = self.flags[name].default
 
-            if default is True: command_name = "not_" + name
-            else: command_name = name
+            # Default is True
+            if default is True:
 
-            if prefix is not None: argument_name = prefix + "/" + command_name
-            else: argument_name = command_name
+                command_name = "not_" + name
 
-            # Get the value
-            if default is True: settings[name] = not getattr(arguments, argument_name)
-            else: settings[name] = getattr(arguments, argument_name)
+                if prefix is not None: argument_name = prefix + "/" + command_name
+                else: argument_name = command_name
+
+                # Get the value
+                settings[name] = not getattr(arguments, argument_name)
+
+            # Default is False
+            elif default is False:
+
+                command_name = name
+
+                if prefix is not None: argument_name = prefix + "/" + command_name
+                else: argument_name = command_name
+
+                # Get the value
+                settings[name] = getattr(arguments, argument_name)
+
+            # Default is None
+            elif default is None:
+
+                command_name1 = name
+                command_name2 = "not_" + name
+
+                if prefix is not None:
+                    argument_name1 = prefix + "/" + command_name1
+                    argument_name2 = prefix + "/" + command_name2
+                else:
+                    argument_name1 = command_name1
+                    argument_name2 = command_name2
+
+                value1 = getattr(arguments, argument_name1)
+                value2 = getattr(arguments, argument_name2)
+
+                # Argument 1 is True
+                if value1:
+
+                    if value2: raise ValueError("Options '" + argument_name1 + "' and '" + argument_name2 + "' cannot both be enabled because they contradict each other")
+                    settings[name] = True
+
+                # Argument 1 is False
+                else:
+
+                    # Argument 2 is True (this is the negated one!)
+                    if value2: settings[name] = False
+
+                    # Argument 2 is False (so none of both options are specified: use the default of None)
+                    else: settings[name] = None
+
+            # Invalid option
+            else: raise ValueError("Invalid value for default of flag '" + name + "': " + str(default))
 
         # Add the configuration settings of the various sections
         for name in self.sections:

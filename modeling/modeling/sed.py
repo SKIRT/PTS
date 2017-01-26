@@ -19,7 +19,8 @@ from ..fitting.initialization.sed import SEDFittingInitializer
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
 from ..component.sed import get_ski_template, get_observed_sed
-from ...core.basics.range import IntegerRange
+from ...core.basics.range import IntegerRange, QuantityRange
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -54,10 +55,10 @@ class SEDModeler(Modeler):
         # 2. Load the data
         self.load_data()
 
-        # 8. Do the fitting
+        # 3. Do the fitting
         self.fit()
 
-        # 9. Writing
+        # 4. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -187,20 +188,39 @@ class SEDModeler(Modeler):
         # Load the current ski template
         ski = get_ski_template(self.modeling_path)
 
+        # Create a definition
+        definition = ConfigurationDefinition()
+        default_npackages = max(int(1e4), int(ski.packages()/10))
+        definition.add_optional("npackages", "positive_integer", "the number of photon packages per wavelength for the initial generation", default=default_npackages)
+        definition.add_flag("selfabsorption", "enable dust self-absorption", default=ski.dustselfabsorption())
+        definition.add_flag("transient_heating", "enable transient heating", default=ski.transientheating())
+
+        # Add option for the range of the number of wavelengths
+        nwavelengths = ski.nwavelengths()
+        min_nwavelengths = max(int(0.1 * nwavelengths), 45)
+        max_nwavelengths = max(5 * nwavelengths, 5 * min_nwavelengths)
+        default_nwavelengths_range = IntegerRange(min_nwavelengths, max_nwavelengths)
+        definition.add_optional("nwavelengths_range", "integer_range", "range for the number of wavelengths to vary over the generations", default=default_nwavelengths_range)
+        definition.add_optional("ngrids", "positive_integer", "number of wavelength grids to be generated", default=10)
+        definition.add_flag("add_emission_lines", "add additional points to the wavelength grids to sample important dust/gas emission lines", default=False)
+        default_wavelength_range = QuantityRange(ski.minwavelength(), ski.maxwavelength())
+        definition.add_optional("wavelength_range", "quantity_range", "wavelength range for all wavelength grids", default=default_wavelength_range)
+
+        # Create the setter
+        setter = InteractiveConfigurationSetter("Initialization of the ski template", add_cwd=False, add_logging=False)
+        config = setter.run(definition)
+
         # Set fixed settings for the ski model
-        initializer.config.npackages = ski.packages()
-        initializer.config.selfabsorption = ski.dustselfabsorption()
-        initializer.config.transient_heating = ski.transientheating()
+        initializer.config.npackages = config.npackages
+        initializer.config.selfabsorption = config.selfabsorption
+        initializer.config.transient_heating = config.transient_heating
 
         # Set options for the wavelength grids
-        nwavelengths = ski.nwavelengths()
-        min_nwavelengths = max(int(0.1 * nwavelengths), 20)
-        max_nwavelengths = nwavelengths
-        initializer.config.wg.npoints_range = IntegerRange(min_nwavelengths, max_nwavelengths)
-        initializer.config.wg.ngrids = 5
-        initializer.config.wg.add_emission_lines = False
-        initializer.config.wg.min_wavelength = ski.minwavelength()
-        initializer.config.wg.max_wavelength = ski.maxwavelength()
+        initializer.config.wg.npoints_range = config.nwavelengths_range
+        initializer.config.wg.ngrids = config.ngrids
+        initializer.config.wg.add_emission_lines = config.add_emission_lines
+        initializer.config.wg.min_wavelength = config.wavelength_range.min
+        initializer.config.wg.max_wavelength = config.wavelength_range.max
 
         # OPTIONS FOR THE DUST GRID NOT RELEVANT FOR SED MODELING (YET)
 

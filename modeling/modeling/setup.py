@@ -18,7 +18,7 @@ from ...core.tools.logging import log
 from ...magic.tools.catalogs import get_ngc_name, get_hyperleda_name
 from ...core.tools import filesystem as fs
 from ..component.component import get_config_file_path
-from ..component.sed import get_sed_file_path, get_ski_template_path
+from ..component.sed import get_observed_sed_file_path, get_ski_template_path
 from ...core.basics.configuration import Configuration, ConfigurationDefinition, InteractiveConfigurationSetter
 from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
@@ -386,7 +386,7 @@ class ModelingSetupTool(Configurable):
         log.info("Writing the input SED ...")
 
         # Determine the path
-        path = get_sed_file_path(self.modeling_path)
+        path = get_observed_sed_file_path(self.modeling_path)
 
         # Save the SED
         self.sed.saveto(path)
