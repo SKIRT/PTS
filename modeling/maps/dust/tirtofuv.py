@@ -17,7 +17,6 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy import constants
 
 # Import the relevant PTS classes and modules
@@ -26,6 +25,7 @@ from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....magic.core.frame import Frame
+from ....core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -38,7 +38,7 @@ galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.d
 # -----------------------------------------------------------------
 
 speed_of_light = constants.c
-solar_luminosity = 3.846e26 * Unit("W")
+solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 
@@ -202,7 +202,7 @@ class TIRtoFUVMapMaker(MapsComponent):
 
         ## Convert the FUV map from Lsun to W/m2
 
-        assert self.frames["GALEX FUV"].unit == Unit("Lsun")
+        assert self.frames["GALEX FUV"].unit == "Lsun"
 
         ## Convert the TIR map from Lsun to W / m2
 

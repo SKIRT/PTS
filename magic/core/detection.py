@@ -23,7 +23,6 @@ from photutils import find_peaks
 from photutils import detect_sources
 from photutils import detect_threshold
 from astropy.coordinates import Angle
-from astropy import units as u
 from astropy.convolution import convolve, convolve_fft
 
 # Import the relevant PTS classes and modules
@@ -228,7 +227,7 @@ class Detection(object):
         if "radius" in image.metadata: radius = float(image.metadata["radius"])
         elif "radius_x" in image.metadata: radius = PixelStretch(float(image.metadata["radius_x"]), float(image.metadata["radius_y"]))
         else: RuntimeError("Radius information is missing in metadata")
-        angle = Angle(float(image.metadata["angle"]), u.Unit("deg"))
+        angle = Angle(float(image.metadata["angle"]), "deg")
         factor = float(image.metadata["factor"])
         if "peak_x" in image.metadata: peak = PixelCoordinate(float(image.metadata["peak_x"]), float(image.metadata["peak_y"]))
         else: peak = None

@@ -224,20 +224,19 @@ class FitModelAnalyser(FittingComponent):
 
         # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
         # search the one corresponding to the "earth" instrument
-        table_name = self.object_name + "_earth"
-        if table_name not in self.flux_calculator.tables: raise RuntimeError("Could not find a flux-density table for the 'earth' instrument")
+        mock_sed_name = self.object_name + "_earth"
+        if mock_sed_name not in self.flux_calculator.mock_seds: raise RuntimeError("Could not find a mock observation SED for the 'earth' instrument")
 
-        # Get the table
-        table = self.flux_calculator.tables[table_name]
+        # Get the mock SED
+        mock_sed = self.flux_calculator.mock_seds[mock_sed_name]
 
         # Loop over the entries in the fluxdensity table (SED) derived from the simulation
-        for i in range(len(table)):
+        for i in range(len(mock_sed)):
 
-            #observatory = table["Observatory"][i]
-            instrument = table["Instrument"][i]
-            band = table["Band"][i]
-            wavelength = table["Wavelength"][i]
-            fluxdensity = table["Flux"][i]
+            # Get instrument, band and flux density
+            instrument = mock_sed["Instrument"][i]
+            band = mock_sed["Band"][i]
+            fluxdensity = mock_sed["Photometry"][i]
 
             # Find the corresponding flux in the SED derived from observation
             observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
@@ -364,7 +363,7 @@ class FitModelAnalyser(FittingComponent):
         path = fs.join(self.simulation.analysis.misc.path, "differences.dat")
 
         # Save the differences table
-        tables.write(self.differences, path)
+        self.differences.saveto(path)
 
     # -----------------------------------------------------------------
 

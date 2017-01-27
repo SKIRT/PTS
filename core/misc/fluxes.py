@@ -21,13 +21,13 @@ from astropy.units import spectral_density, spectral
 from astropy import constants
 
 # Import the relevant PTS classes and modules
-from ..tools import tables
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.filter import Filter
 from ..data.sed import SED
 from ...magic.misc.spire import SPIRE
 from ..basics.unit import parse_unit as u
+from ..data.sed import ObservedSED
 
 # -----------------------------------------------------------------
 
@@ -65,8 +65,8 @@ class ObservedFluxCalculator(object):
         # The filters for which the fluxes should be calculated
         self.filters = None
 
-        # The flux tables for the different output SEDs
-        self.tables = dict()
+        # The output observed SEDs
+        self.mock_seds = dict()
 
         # The SPIRE instance
         self.spire = SPIRE()
@@ -159,25 +159,20 @@ class ObservedFluxCalculator(object):
             # Debugging
             log.debug("Calculating the observed fluxes for the " + sed_name + " SED ...")
 
-            # Create a flux table for this SED
-            names = ["Observatory", "Instrument", "Band", "Wavelength", "Flux"]
-            dtypes = ["S10", "S10", "S10", "f8", "f8"]
-            data = [[], [], [], [], []]
-            table = tables.new(data, names, dtypes=dtypes)
-            table["Wavelength"].unit = "micron"
-            table["Flux"].unit = "Jy"
+            # Create an observed SED for the mock fluxes
+            mock_sed = ObservedSED(photometry_unit="Jy")
 
-            # Load the simulated SED
-            sed = SED.from_skirt(sed_path)
+            # Load the modelled SED
+            model_sed = SED.from_skirt(sed_path)
 
             # Initialize lists
             bb_frequencies = []
             bb_fluxdensities = []
 
             # Get the wavelengths and flux densities
-            wavelengths = sed.wavelengths("micron", asarray=True)
+            wavelengths = model_sed.wavelengths("micron", asarray=True)
             fluxdensities = []
-            for wavelength, fluxdensity_jy in zip(sed.wavelengths("micron"), sed.photometry("Jy")):
+            for wavelength, fluxdensity_jy in zip(model_sed.wavelengths("micron"), model_sed.photometry("Jy")):
 
                 # 2 different ways should be the same:
                 #fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
@@ -222,11 +217,11 @@ class ObservedFluxCalculator(object):
                     # Multiply the flux density
                     fluxdensity_value *= kbeam
 
-                # Add an entry to the flux table
-                table.add_row([fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), fluxdensity_value])
+                # Add a point to the mock SED
+                mock_sed.add_point(fltr, fluxdensity_value * u("Jy"))
 
-            # Add the complete table to the dictionary (with the SKIRT SED name as key)
-            self.tables[sed_name] = table
+            # Add the complete SED to the dictionary (with the SKIRT SED name as key)
+            self.mock_seds[sed_name] = mock_sed
 
     # -----------------------------------------------------------------
 
@@ -239,16 +234,32 @@ class ObservedFluxCalculator(object):
         """
 
         # Inform the user
-        log.info("Writing the observed flux table ...")
+        log.info("Writing ...")
+
+        # Write the mock SEDs
+        self.write_mock_seds(output_path)
+
+    # -----------------------------------------------------------------
+
+    def write_mock_seds(self, output_path):
+
+        """
+        This function ...
+        :param output_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the mock observed SED ...")
 
         # Loop over the different flux tables
-        for name in self.tables:
+        for name in self.mock_seds:
 
             # Determine the path to the output flux table
             path = fs.join(output_path, name + "_fluxes.dat")
 
             # Write out the flux table
-            tables.write(self.tables[name], path)
+            self.mock_seds[name].saveto(path)
 
 # -----------------------------------------------------------------
 

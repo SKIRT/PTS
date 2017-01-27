@@ -585,7 +585,7 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the name of the wavelengths file to " + fs.name(self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + " ...")
+        log.debug("Setting the name of the wavelengths file to " + fs.name(self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + ") ...")
 
         # Set the name of the wavelength grid file
         self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)))

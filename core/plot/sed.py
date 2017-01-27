@@ -661,8 +661,24 @@ class SEDPlotter(Configurable):
 
             elif plot_residuals:
 
-                log_model = np.log10(sed.photometry(unit="Jy", add_unit=False))
-                self._main_axis.plot(sed.wavelengths(unit="micron", add_unit=False), log_model, line_styles_models[counter], color=line_colors_models[counter], label=model_label)
+                fluxes = sed.photometry(unit="Jy", add_unit=False)
+                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                log_model = np.log10(fluxes)
+                self._main_axis.plot(wavelengths, log_model, line_styles_models[counter], color=line_colors_models[counter], label=model_label)
+
+                # Get lowest and highest flux and wavelength for this curve
+                lowest = np.min(fluxes)
+                highest = np.max(fluxes)
+                lowest_lambda = np.min(wavelengths)
+                highest_lambda = np.max(wavelengths)
+
+                # Adapt flux range
+                if self._min_flux is None or lowest < self._min_flux: self._min_flux = lowest
+                if self._max_flux is None or highest > self._max_flux: self._max_flux = highest
+
+                # Keep track of the minimal and maximal wavelength
+                if self._min_wavelength is None or lowest_lambda < self._min_wavelength: self._min_wavelength = lowest_lambda
+                if self._max_wavelength is None or highest_lambda > self._max_wavelength: self._max_wavelength = highest_lambda
 
                 if sed.has_errors:
 
@@ -676,6 +692,13 @@ class SEDPlotter(Configurable):
 
                     bottom = np.array(bottom)
                     top = np.array(top)
+
+                    lowest = np.min(bottom)
+                    highest = np.max(top)
+
+                    # Adapt flux range
+                    if self._min_flux is None or lowest < self._min_flux: self._min_flux = lowest
+                    if self._max_flux is None or highest > self._max_flux: self._max_flux = highest
 
                     log_bottom = np.log10(bottom)
                     log_top = np.log10(top)
@@ -687,8 +710,26 @@ class SEDPlotter(Configurable):
 
             else:
 
-                log_model = np.log10(sed.photometry(unit="Jy", add_unit=False))
-                self._main_axis.plot(sed.wavelengths(unit="micron", add_unit=False), log_model, line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+                fluxes = sed.photometry(unit="Jy", add_unit=False)
+                log_model = np.log10(fluxes)
+                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                self._main_axis.plot(wavelengths, log_model, line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
+
+                ## SAME AS ABOVE::
+                # Get lowest and highest flux and wavelength for this curve
+                lowest = np.min(fluxes)
+                highest = np.max(fluxes)
+                lowest_lambda = np.min(wavelengths)
+                highest_lambda = np.max(wavelengths)
+
+                # Adapt flux range
+                if self._min_flux is None or lowest < self._min_flux: self._min_flux = lowest
+                if self._max_flux is None or highest > self._max_flux: self._max_flux = highest
+
+                # Keep track of the minimal and maximal wavelength
+                if self._min_wavelength is None or lowest_lambda < self._min_wavelength: self._min_wavelength = lowest_lambda
+                if self._max_wavelength is None or highest_lambda > self._max_wavelength: self._max_wavelength = highest_lambda
+                ##
 
                 if sed.has_errors:
 
@@ -701,6 +742,13 @@ class SEDPlotter(Configurable):
 
                     bottom = np.array(bottom)
                     top = np.array(top)
+
+                    lowest = np.min(bottom)
+                    highest = np.max(top)
+
+                    # Adapt flux range
+                    if self._min_flux is None or lowest < self._min_flux: self._min_flux = lowest
+                    if self._max_flux is None or highest > self._max_flux: self._max_flux = highest
 
                     log_bottom = np.log10(bottom)
                     log_top = np.log10(top)
