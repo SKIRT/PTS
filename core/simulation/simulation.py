@@ -18,6 +18,7 @@ import os.path
 import types
 import numpy as np
 import importlib
+import warnings
 
 # Import the relevant PTS classes and modules
 from ..tools import serialization
@@ -139,11 +140,20 @@ class SkirtSimulation(object):
         # A name given to the simulation
         self._name = name
 
+        # The simulation file path
+        self.path = None
+
+        # The parallelization properties
+        self.parallelization = None
+
         # The options for analysing the simulation output
         self.analysis = AnalysisOptions()
 
         # The paths to the extra simulation analysers
         self.analyser_paths = []
+
+        # Flag indicating whether this simulation has been analysed or not
+        self.analysed = False
 
     ## This function returns whether the simulation requires input
     @property
@@ -589,9 +599,77 @@ class SkirtSimulation(object):
         # Return the list of classes
         return classes
 
-    ## Saving a local simulation object does nothing
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the simulation object from file
+        simulation = serialization.load(path)
+
+        # Set the path of the simulation file
+        simulation.path = path
+
+        # Return the simulation object
+        return simulation
+
+    # -----------------------------------------------------------------
+
+    def to_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Serialize and dump the simulation object
+        serialization.dump(self, path, method="pickle")
+
+        # Set the simulation file path
+        self.path = path
+
+    # -----------------------------------------------------------------
+
     def save(self):
-        pass
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether a path is defined for the simulation file
+        if self.path is None:
+            warnings.warn("Not saving this local simulation object")
+            return
+
+        # Save to the original path
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Set the new path
+        self.path = path
+
+        # Set the _parameters to None to avoid an error when trying to pickle the SkiFile instance
+        self._parameters = None
+
+        # Serialize and dump the simulation object
+        serialization.dump(self, self.path, method="pickle")
 
 # -----------------------------------------------------------------
 
@@ -620,9 +698,6 @@ class RemoteSimulation(SkirtSimulation):
         self.host_id = None
         self.cluster_name = None
 
-        # The simulation file path
-        self.path = None
-
         # Basic properties
         self.id = None
         self.remote_ski_path = None
@@ -633,9 +708,6 @@ class RemoteSimulation(SkirtSimulation):
 
         # Options for retrieval
         self.retrieve_types = None
-
-        # The parallelization properties
-        self.parallelization = None
 
         # Options for removing remote or local input and output
         self.remove_remote_input = True                 # After retrieval
@@ -648,29 +720,6 @@ class RemoteSimulation(SkirtSimulation):
 
         # Flag indicating whether this simulation has been retrieved or not
         self.retrieved = False
-
-        # Flag indicating whether this simulation has been analysed or not
-        self.analysed = False
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_file(cls, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Load the simulation object from file
-        simulation = serialization.load(path)
-
-        # Set the path of the simulation file
-        simulation.path = path
-
-        # Return the simulation object
-        return simulation
 
     # -----------------------------------------------------------------
 
@@ -695,22 +744,6 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
-    def to_file(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Serialize and dump the simulation object
-        serialization.dump(self, path, method="pickle")
-
-        # Set the simulation file path
-        self.path = path
-
-    # -----------------------------------------------------------------
-
     def save(self):
 
         """
@@ -723,24 +756,5 @@ class RemoteSimulation(SkirtSimulation):
 
         # Save to the original path
         self.saveto(self.path)
-
-    # -----------------------------------------------------------------
-
-    def saveto(self, path):
-
-        """
-        This function ...
-        :param path:
-        :return:
-        """
-
-        # Set the new path
-        self.path = path
-
-        # Set the _parameters to None to avoid an error when trying to pickle the SkiFile instance
-        self._parameters = None
-
-        # Serialize and dump the simulation object
-        serialization.dump(self, self.path, method="pickle")
 
 # -----------------------------------------------------------------

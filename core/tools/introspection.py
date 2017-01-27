@@ -109,6 +109,13 @@ def pts_version():
 
 # -----------------------------------------------------------------
 
+def pts_update_date():
+    command = "stat -f '%Sm' $(git rev-parse --show-toplevel)/.git/FETCH_HEAD"
+    output = subprocess.check_output(command, cwd=pts_package_dir, shell=True)
+    return output.split("\n")[0]
+
+# -----------------------------------------------------------------
+
 def has_account(service):
     filepath = fs.join(pts_user_accounts_dir, service + ".txt")
     return fs.is_file(filepath)

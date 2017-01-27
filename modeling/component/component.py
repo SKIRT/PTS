@@ -182,7 +182,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return self.observed_sed.flux_for_filter(fltr, unit=unit, add_unit=add_unit)
+        return self.observed_sed.photometry_for_filter(fltr, unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 

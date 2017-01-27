@@ -152,13 +152,13 @@ class FitModelAnalyser(FittingComponent):
         # 5. Calculate the chi squared for this model
         self.calculate_chi_squared()
 
-        # Load the chi squared table
+        # 6. Load the chi squared table
         self.load_chi_squared_table()
 
-        # Update the status of the generation if necessary
+        # 7. Update the status of the generation if necessary
         self.update_generation()
 
-        # 6. Write
+        # 8. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -240,7 +240,7 @@ class FitModelAnalyser(FittingComponent):
             fluxdensity = table["Flux"][i]
 
             # Find the corresponding flux in the SED derived from observation
-            observed_fluxdensity = self.observed_sed.flux_for_band(instrument, band, unit="Jy").value
+            observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
 
             # Find the corresponding flux error in the SED derived from observation
             observed_fluxdensity_error = self.observed_sed.error_for_band(instrument, band, unit="Jy").average.to("Jy").value
@@ -281,7 +281,7 @@ class FitModelAnalyser(FittingComponent):
         log.info("Calculating the chi squared value for this model ...")
 
         # Calculate the degrees of freedom
-        dof = len(self.observed_sed.table) - 3. - 1.  # number of data points - number of fitted parameters - 1
+        dof = len(self.observed_sed) - 3. - 1.  # number of data points - number of fitted parameters - 1
 
         # The (reduced) chi squared value is the sum of all the terms (for each band),
         # divided by the number of degrees of freedom

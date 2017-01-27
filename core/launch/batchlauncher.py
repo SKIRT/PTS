@@ -965,6 +965,9 @@ class BatchLauncher(Configurable):
             # Perform the simulation locally
             simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()))
 
+            # Set the parallelization scheme
+            simulation.parallelization = parallelization_item
+
             # Set the analysis options
             simulation.set_analysis_options(analysis_options)
 

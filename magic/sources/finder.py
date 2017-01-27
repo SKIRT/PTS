@@ -154,7 +154,7 @@ class GalaxyTable(SmartTable):
             fltr = Filter(name.split(" flux")[0])
 
             # Get flux
-            flux = galaxy.sed.flux_for_filter(fltr)
+            flux = galaxy.sed.photometry_for_filter(fltr)
 
             # Add the flux to the values
             values.append(flux)
@@ -245,7 +245,7 @@ class StarTable(SmartTable):
                 fltr = Filter(name.split(" flux")[0])
 
                 # Get flux
-                flux = star.sed.flux_for_filter(fltr)
+                flux = star.sed.photometry_for_filter(fltr)
 
                 # Add the flux to the values
                 values.append(flux)

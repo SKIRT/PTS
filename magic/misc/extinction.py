@@ -155,11 +155,11 @@ class GalacticExtinction(object):
         """
 
         # Loop over all entries
-        for i in range(len(sed.table)):
+        for i in range(len(sed)):
 
             # Get the filter name
-            instrument = sed.table["Instrument"][i]
-            band = sed.table["Band"][i]
+            instrument = sed["Instrument"][i]
+            band = sed["Band"][i]
             filter_name = instrument + " " + band
 
             # Get the extinction
@@ -167,8 +167,8 @@ class GalacticExtinction(object):
 
             # Correct the flux value (and error) for galactic extinction
             correction_factor = 10 ** (0.4 * extinction)
-            sed.table["Flux"][i] *= correction_factor
-            sed.table["Error-"][i] *= correction_factor
-            sed.table["Error+"][i] *= correction_factor
+            sed["Flux"][i] *= correction_factor
+            sed["Error-"][i] *= correction_factor
+            sed["Error+"][i] *= correction_factor
 
 # -----------------------------------------------------------------

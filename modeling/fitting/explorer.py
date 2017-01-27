@@ -153,11 +153,11 @@ class ParameterExplorer(FittingComponent):
         # 9. Estimate the runtimes for the different remote hosts
         if self.uses_schedulers: self.estimate_runtimes()
 
-        # 10. Launch the simulations for different parameter values
-        self.launch()
-
         # 11. Writing
         self.write()
+
+        # 10. Launch the simulations for different parameter values
+        self.launch()
 
     # -----------------------------------------------------------------
 
