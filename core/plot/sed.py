@@ -126,6 +126,30 @@ class SEDPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nmodels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.models)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nobservations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.observations)
+
+    # -----------------------------------------------------------------
+
     def add_sed(self, sed, label, residuals=True, ghost=False):
 
         """
@@ -260,7 +284,7 @@ class SEDPlotter(Configurable):
         # Inform the user
         log.info("Making the SED plot ...")
 
-        if len(self.models) == 0: self.plot_no_models()
+        if self.nmodels == 0: self.plot_no_models()
         else: self.plot_with_models()
 
     # -----------------------------------------------------------------
@@ -273,7 +297,7 @@ class SEDPlotter(Configurable):
         """
 
         # One observation or more observations
-        if len(self.observations) == 1: self.plot_one_observation()
+        if self.nobservations == 1: self.plot_one_observation()
         else: self.plot_more_observations()
 
     # -----------------------------------------------------------------
@@ -461,8 +485,8 @@ class SEDPlotter(Configurable):
         :return:
         """
 
-        if len(self.observations) == 0: self.plot_only_models()
-        elif len(self.observations) == 1: self.plot_one_observation_with_models()
+        if self.nobservations == 0: self.plot_only_models()
+        elif self.nobservations == 1: self.plot_one_observation_with_models()
         else: self.plot_more_observations_with_models()
 
     # -----------------------------------------------------------------
@@ -627,6 +651,8 @@ class SEDPlotter(Configurable):
 
         # Add model SEDs
         for model_label, sed, plot_residuals, ghost in self.models:
+
+            if self.nmodels == 1: model_label = "model"
 
             if ghost:
 

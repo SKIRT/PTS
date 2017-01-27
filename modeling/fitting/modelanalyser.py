@@ -21,7 +21,49 @@ from .component import FittingComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import tables, time
-from .tables import ChiSquaredTable
+from ...core.basics.table import SmartTable
+
+# -----------------------------------------------------------------
+
+class FluxDifferencesTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(FluxDifferencesTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Instrument", str, None, "Instrument")
+        self.add_column_info("Band", str, None, "Band")
+        self.add_column_info("Flux difference", float, None, "Flux difference")
+        self.add_column_info("Relative difference", float, None, "Relative flux difference")
+        self.add_column_info("Chi squared term", float, None, "Chi squared term")
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, instrument, band, difference, relative_difference, chi_squared_term):
+
+        """
+        This function ...
+        :param instrument:
+        :param band:
+        :param difference:
+        :param relative_difference:
+        :param chi_squared_term:
+        :return:
+        """
+
+        self.add_row([instrument, band, difference, relative_difference, chi_squared_term])
 
 # -----------------------------------------------------------------
 
@@ -163,10 +205,7 @@ class FitModelAnalyser(FittingComponent):
         self.weights = tables.from_file(self.weights_table_path)
 
         # Initialize the differences table
-        names = ["Instrument", "Band", "Flux difference", "Relative difference", "Chi squared term"]
-        data = [[], [], [], [], []]
-        dtypes = ["S5", "S7", "float64", "float64", "float64"]
-        self.differences = tables.new(data, names, dtypes=dtypes)
+        self.differences = FluxDifferencesTable()
 
         # Set the name of the generation
         self.generation_name = fs.name(fs.directory_of(self.simulation.base_path))
@@ -185,7 +224,7 @@ class FitModelAnalyser(FittingComponent):
 
         # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
         # search the one corresponding to the "earth" instrument
-        table_name = self.galaxy_name + "_earth"
+        table_name = self.object_name + "_earth"
         if table_name not in self.flux_calculator.tables: raise RuntimeError("Could not find a flux-density table for the 'earth' instrument")
 
         # Get the table
@@ -227,7 +266,7 @@ class FitModelAnalyser(FittingComponent):
             chi_squared_term = weight * difference ** 2 / observed_fluxdensity_error ** 2
 
             # Add an entry to the differences table
-            self.differences.add_row([instrument, band, difference, relative_difference, chi_squared_term])
+            self.differences.add_entry(instrument, band, difference, relative_difference, chi_squared_term)
 
     # -----------------------------------------------------------------
 

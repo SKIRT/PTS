@@ -237,24 +237,8 @@ class RemoteSynchronizer(Configurable):
             # Run the analyser on the simulation
             self.analyser.run(simulation=simulation)
 
-            # Loop over the 'extra' analyser classes that are defined for this simulation
-            for analyser_class in simulation.analyser_classes:
-
-                # Create an instance of the analyser class
-                analyser = analyser_class.for_simulation(simulation)
-
-                # Run the analyser, giving the standard simulation analyser as an argument
-                analyser.run(self.analyser)
-
-            # Clear the standard simulation analyser
+            # Clear the simulation analyser
             self.analyser.clear()
-
-            # Indicate that this simulation has been analysed
-            simulation.analysed = True
-            simulation.save()
-
-            # If requested, remove the local output directory
-            if simulation.remove_local_output: fs.remove_directory(simulation.output_path)
 
     # -----------------------------------------------------------------
 

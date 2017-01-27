@@ -65,6 +65,18 @@ class RemotesConfigurable(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.remotes) > 0
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """

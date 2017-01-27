@@ -59,7 +59,7 @@ class Deployer(RemotesConfigurable):
         if self.config.pts: self.install_or_update_pts()
 
         # 4. Check versions
-        if self.config.check: self.check_versions()
+        if self.config.check and self.has_remotes: self.check_versions()
 
     # -----------------------------------------------------------------
 
@@ -90,7 +90,7 @@ class Deployer(RemotesConfigurable):
         if self.config.local: self.install_or_update_skirt_locally()
 
         # Remotely
-        self.install_or_update_skirt_remotely()
+        if self.has_remotes: self.install_or_update_skirt_remotely()
 
     # -----------------------------------------------------------------
 
@@ -183,7 +183,7 @@ class Deployer(RemotesConfigurable):
         if self.config.local and not introspection.is_pts_developer(): self.update_pts_locally()
 
         # Remotely
-        self.install_or_update_pts_remotely()
+        if self.has_remotes: self.install_or_update_pts_remotely()
 
     # -----------------------------------------------------------------
 

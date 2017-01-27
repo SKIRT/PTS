@@ -142,7 +142,7 @@ class SEDModeler(Modeler):
         # If some generations have finished, fit the SED
         if generations.has_finished: self.fit_sed()
 
-        # IF all generations have finished, explore new generation of models
+        # If all generations have finished, explore new generation of models
         if generations.all_finished: self.explore()
 
     # -----------------------------------------------------------------

@@ -154,3 +154,20 @@ def print_centered_around(text, ch, length=50, prefix=""):
     print(prefix + result)
 
 # -----------------------------------------------------------------
+
+def print_centered_around_border(text, ch, length=50, prefix=""):
+
+    """
+    This function ...
+    :param text:
+    :param ch:
+    :param length:
+    :param prefix:
+    :return:
+    """
+
+    without_border = center_text_around(text, " ", length=length-2)
+    result = center_text_around(without_border, ch, length=length)
+    print(prefix + result)
+
+# -----------------------------------------------------------------

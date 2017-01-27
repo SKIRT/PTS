@@ -153,26 +153,46 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         # Inform the user
         log.info("Adjusting the ski file parameters ...")
 
-        # 1. Set the number of photon packages
+        # 1. Set the instrument
+        self.set_instrument()
+
+        # 2. Set the number of photon packages
         self.ski.setpackages(self.config.npackages)
 
-        # 2. Set the name of the wavelength grid file
+        # 3. Set the name of the wavelength grid file
         self.ski.set_file_wavelength_grid("wavelengths.txt")
 
-        # 3. Set parameter values
+        # 4. Set parameter values
         self.set_initial_parameter_values()
 
-        # 4. Set dust emissivity
+        # 5. Set dust emissivity
         self.set_dust_emissivity()
 
-        # 5. Set all-cells dust library
+        # 6. Set all-cells dust library
         self.ski.set_allcells_dust_lib()
 
-        # 6. Dust self-absorption
+        # 7. Dust self-absorption
         self.set_selfabsorption()
 
-        # 7. Disable all writing options
+        # 8. Disable all writing options
         self.ski.disable_all_writing_options()
+
+    # -----------------------------------------------------------------
+
+    def set_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the instrument ...")
+
+        instrument_names = self.ski.get_instrument_names()
+        if len(instrument_names) > 1: raise ValueError("The ski file can only have one instrument")
+        old_name = instrument_names[0]
+        self.ski.set_instrument_name(old_name, "earth")
 
     # -----------------------------------------------------------------
 

@@ -18,6 +18,8 @@ from ...core.tools import formatting as fmt
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
 from ..component.galaxy import load_preparation_statistics
+from ..component.component import load_fitting_configuration
+from ..fitting.component import get_generations_table
 
 # -----------------------------------------------------------------
 
@@ -138,9 +140,28 @@ class InfoShower(ModelingComponent):
         :return:
         """
 
-        print("Reference fluxes (for the SED fitting): ")
+        print("Reference fluxes (for the SED fitting):")
         print("")
         for filter_name in self.fitting_configuration.filters: print(" - " + filter_name)
+        print("")
+
+        fitting_configuration = load_fitting_configuration(self.config.path)
+
+        print("Free model parameters:")
+        print("")
+        for name in fitting_configuration.free_parameters: print(" - " + name + ": " + fitting_configuration.descriptions[name])
+        print("")
+
+        print("Parameter ranges:")
+        print("")
+        for name in fitting_configuration.free_parameters: print(" - " + name + ": " + str(fitting_configuration[name + "_range"]))
+        print("")
+
+        generations_table = get_generations_table(self.config.path)
+
+        print("Generations:")
+        print("")
+        for name in generations_table.generation_names: print(" - " + name)
         print("")
 
 # -----------------------------------------------------------------
