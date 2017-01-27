@@ -11,15 +11,17 @@
 
 # Import standard modules
 import math
+import copy
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit, CompositeUnit, spectral, Quantity
+from astropy.units import Unit, UnitBase, CompositeUnit, spectral, Quantity
 from astropy import constants
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ...magic.basics.pixelscale import Pixelscale
+from .quantity import PhotometricQuantity, parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -501,8 +503,160 @@ class PhotometricUnit(CompositeUnit):
             # Analyse the unit
             self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, self.distance_unit, self.solid_angle_unit = analyse_unit(unit)
 
+            # If the wavelength unit is not None or the frequency unit is not None, we have a spectral density
+            if self.wavelength_unit is not None: self.density = True
+            if self.frequency_unit is not None: self.density = True
+
         # Call the constructor of the base class
         super(PhotometricUnit, self).__init__(unit.scale, unit.bases, unit.powers)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
+    def __pow__(self, p):
+
+        """
+        This function ...
+        :param p:
+        :return:
+        """
+
+        # If the power is one, return a copy of this photometric unit
+        if p == 1: return self.copy()
+
+        # Not a photometric unit anymore
+        else: return CompositeUnit(1, [self], [p])
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, other):
+
+        """
+        This function ...
+        :param m:
+        :return:
+        """
+
+        # If other is a string
+        if isinstance(other, basestring): other = parse_unit(other)
+
+        # Divided by another unit
+        if isinstance(other, UnitBase):
+
+            # If the other unit is dimensionless
+            if other == "": return self.copy()
+
+            # If the other unit is dimensionless with a certain scale
+            elif other.physical_type == "dimensionless" and other.scale != 1: return PhotometricUnit(CompositeUnit(self.scale / other.scale, self.bases, self.powers), density=self.is_spectral_density)
+
+            # If we have a spectral density and there is an inverse frequency and/or inverse wavelength in the other unit, we can never get a PhometricUnit again
+            if self.is_spectral_density and (contains_inverse_frequency(other) or contains_inverse_wavelength(other)): return CompositeUnit(1, [self, other], [1, -1], _error_check=False)
+
+            # Else, re-evaluate everything
+            else: return parse_unit(CompositeUnit(1, [self, other], [1, -1], _error_check=False))
+
+        # Divided by a quantity
+        elif hasattr(other, "unit"):
+
+            # If the unit of the other quantity is dimensionless
+            if other.unit == "": return PhotometricQuantity(other.value, self.copy())
+
+            # If the unit of the other quantity is dimensionless with a certain scale
+            elif other.unit.physical_type == "dimensionless" and other.unit.scale != 1:
+                return PhotometricQuantity(other.value, PhotometricUnit(CompositeUnit(self.scale / other.unit.scale, self.bases, self.powers), density=self.is_spectral_density))
+
+            # If we have a spectral density and there is an inverse frequency and/or inverse wavelength in the other unit, we can never get a PhotometricQuantity
+            if self.is_spectral_density and (contains_inverse_frequency(other.unit) or contains_inverse_wavelength(other.unit)): return Quantity(other.value, CompositeUnit(1, [self, other.unit], [1, -1], _error_check=False))
+
+            # Else, re-evaluate everything
+            else: return parse_quantity(Quantity(other.value, CompositeUnit(1, [self, other], [1, -1], _error_check=False)))
+
+        # Divided by a number
+        else: return PhotometricQuantity(1./other, self)
+
+    # -----------------------------------------------------------------
+
+    def l__rdiv__(self, m):
+
+        """
+        This function ...
+        :param m:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    __truediv__ = __div__
+
+    # -----------------------------------------------------------------
+
+    #__rtruediv__ = __rdiv__
+
+    # -----------------------------------------------------------------
+
+    def l__mul__(self, m):
+
+        """
+        This function ...
+        :param m:
+        :return:
+        """
+
+        if isinstance(m, (bytes, six.text_type)):
+            m = Unit(m)
+
+        if isinstance(m, UnitBase):
+            if m.is_unity():
+                return self
+            elif self.is_unity():
+                return m
+            return CompositeUnit(1, [self, m], [1, 1], _error_check=False)
+
+        # Cannot handle this as Unit, re-try as Quantity.
+        try:
+            from .quantity import Quantity
+            return Quantity(1, self) * m
+        except TypeError:
+            return NotImplemented
+
+    # -----------------------------------------------------------------
+
+    def l__rmul__(self, m):
+
+        """
+        This function ...
+        :param m:
+        :return:
+        """
+
+        if isinstance(m, (bytes, six.text_type)):
+            return Unit(m) * self
+
+        # Cannot handle this as Unit.  Here, m cannot be a Quantity,
+        # so we make it into one, fasttracking when it does not have a unit
+        # for the common case of <array> * <unit>.
+        try:
+            from .quantity import Quantity
+            if hasattr(m, 'unit'):
+                result = Quantity(m)
+                result *= self
+                return result
+            else:
+                return Quantity(m, self)
+        except TypeError:
+            return NotImplemented
 
     # -----------------------------------------------------------------
 
@@ -514,6 +668,7 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
+        # Try to parse as a photometric unit
         try: other = PhotometricUnit(other)
         except ValueError: raise ValueError("The other unit is not a photometric unit")
 
@@ -627,13 +782,7 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
-        if self.wavelength_unit != "":
-            assert self.frequency_unit == ""
-            return True
-        elif self.frequency_unit != "":
-            return True
-        elif self.density: return True
-        else: return False
+        return self.density
 
     # -----------------------------------------------------------------
 
@@ -675,8 +824,7 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
-        if self.wavelength_unit == "" and self.frequency_unit == "":
-            return self.density
+        if self.wavelength_unit == "" and self.frequency_unit == "": return self.density
         else: return False
 
     # -----------------------------------------------------------------
@@ -969,3 +1117,22 @@ class PhotometricUnit(CompositeUnit):
             return factor
 
 # -----------------------------------------------------------------
+
+def contains_inverse_frequency(unit):
+
+    """
+    This function ...
+    """
+
+# -----------------------------------------------------------------
+
+def contains_inverse_wavelength(unit):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+# -----------------------------------------------------------------
+

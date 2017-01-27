@@ -80,3 +80,77 @@ lightcyan_background = "\033[106m"
 white_background = "\033[107m"
 
 # -----------------------------------------------------------------
+
+def center_text_around(text, ch, length=50):
+
+    """
+    This function ...
+    :param text:
+    :param ch:
+    :param length:
+    :return:
+    """
+
+    spaced_text = '%s' % text
+    result = spaced_text.center(length, ch)
+    return result
+
+# -----------------------------------------------------------------
+
+def print_empty():
+
+    """
+    This function ...
+    :return:
+    """
+
+    print("")
+
+# -----------------------------------------------------------------
+
+def print_filled(ch, length=50, prefix=""):
+
+    """
+    This function ...
+    :param ch:
+    :param length:
+    :param prefix:
+    :return:
+    """
+
+    result = ch * length
+    print(prefix + result)
+
+# -----------------------------------------------------------------
+
+def print_border(ch, length=50, prefix=""):
+
+    """
+    This function ...
+    :param ch:
+    :param length:
+    :param prefix:
+    :return:
+    """
+
+    text = " " * (length - 2)
+    result = center_text_around(text, ch, length)
+    print(prefix + result)
+
+# -----------------------------------------------------------------
+
+def print_centered_around(text, ch, length=50, prefix=""):
+
+    """
+    This function ...
+    :param text:
+    :param ch:
+    :param length:
+    :param prefix:
+    :return:
+    """
+
+    result = center_text_around(text, ch, length)
+    print(prefix + result)
+
+# -----------------------------------------------------------------

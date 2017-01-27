@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.convolution import Gaussian2DKernel
 
 # Import the relevant PTS classes and modules
@@ -34,9 +33,9 @@ from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..tools import plotting
-from ...core.basics.map import Map
 from ..basics.stretch import PixelStretch
 from ...core.basics.table import SmartTable
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -58,12 +57,12 @@ class PointSourceTable(SmartTable):
         super(PointSourceTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("RA", float, "deg", "right ascension")
-        self.add_column_info("DEC", float, "deg", "declination")
+        self.add_column_info("RA", float, u("deg"), "right ascension")
+        self.add_column_info("DEC", float, u("deg"), "declination")
         self.add_column_info("Detected", bool, None, "Has source detected")
-        self.add_column_info("Flux", float, "Jy", "flux for the point source")
-        self.add_column_info("Flux error", float, "Jy", "error on the flux value")
-        self.add_column_info("FWHM", float, "arcsec", "FWHM of the point source")
+        self.add_column_info("Flux", float, u("Jy"), "flux for the point source")
+        self.add_column_info("Flux error", float, u("Jy"), "error on the flux value")
+        self.add_column_info("FWHM", float, u("arcsec"), "FWHM of the point source")
 
     # -----------------------------------------------------------------
 
@@ -1206,11 +1205,11 @@ class PointSourceFinder(Configurable):
 
         # Determine the default FWHM and return it
         if self.config.fwhm.measure == "max":
-            return max(fwhm_values) * Unit("arcsec") * self.config.fwhm.scale_factor
+            return max(fwhm_values) * u("arcsec") * self.config.fwhm.scale_factor
         elif self.config.fwhm.measure == "mean":
-            return np.mean(fwhm_values) * Unit("arcsec") * self.config.fwhm.scale_factor
+            return np.mean(fwhm_values) * u("arcsec") * self.config.fwhm.scale_factor
         elif self.config.fwhm.measure == "median":
-            return np.median(fwhm_values) * Unit("arcsec") * self.config.fwhm.scale_factor
+            return np.median(fwhm_values) * u("arcsec") * self.config.fwhm.scale_factor
         else: raise ValueError("Unkown measure for determining the default FWHM")
 
     # -----------------------------------------------------------------

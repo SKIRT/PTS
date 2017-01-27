@@ -24,6 +24,7 @@ from ...core.tools.logging import log
 from ...core.basics.table import SmartTable
 from ..core.mask import Mask
 from ..basics.coordinate import SkyCoordinate
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -45,11 +46,11 @@ class ExtendedSourceTable(SmartTable):
         super(ExtendedSourceTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.add_column_info("RA", float, "deg", "right ascension"),
-        self.add_column_info("DEC", float, "deg", "declination"),
+        self.add_column_info("RA", float, u("deg"), "right ascension"),
+        self.add_column_info("DEC", float, u("deg"), "declination"),
         self.add_column_info("Detected", bool, None, "Has source detected"),
-        self.add_column_info("Flux", float, "Jy", "flux for the point source"),
-        self.add_column_info("Flux error", float, "Jy", "error on the flux value")
+        self.add_column_info("Flux", float, u("Jy"), "flux for the point source"),
+        self.add_column_info("Flux error", float, u("Jy"), "error on the flux value")
 
     # -----------------------------------------------------------------
 

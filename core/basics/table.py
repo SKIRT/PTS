@@ -21,6 +21,7 @@ from astropy.table import Table, MaskedColumn
 
 # Import the relevant PTS classes and modules
 from .unit import PhotometricUnit
+from .unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -72,6 +73,23 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def column_unit(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        if self[column_name].unit is None: return None
+
+        # Construct unit
+        if column_name in self.meta["density"]: density = True
+        else: density = False
+        return u(self[column_name].unit, density=density)
+
+    # -----------------------------------------------------------------
+
     def setup(self):
 
         """
@@ -91,6 +109,11 @@ class SmartTable(Table):
             # Add column
             col = MaskedColumn(data=data, name=name, dtype=dtype, unit=unit)
             self.add_column(col)
+
+            # Set whether this column is a spectral density
+            if isinstance(unit, PhotometricUnit) and unit.density:
+                if "density" not in self.meta: self.meta["density"] = []
+                self.meta["density"].append(name)
 
     # -----------------------------------------------------------------
 
@@ -126,10 +149,13 @@ class SmartTable(Table):
             else: raise ValueError("Did not recognize the dtype of column '" + name + "'")
 
             # Get unit of the column
-            unit = table[name].unit
+            unit = table.column_unit(name)
 
             # Add column info
             table.add_column_info(name, simple_dtype, unit, None)
+
+            # Initialize "density" meta
+            if "density" not in table.meta: table.meta["density"] = []
 
         # Return the table
         return table

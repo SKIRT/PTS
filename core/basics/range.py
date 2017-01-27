@@ -183,17 +183,37 @@ class Range(object):
         """
 
         if fancy:
-            ticksize = best_tick_log(self.max/self.min, npoints)
-            values = [round_to_1(self.min)] * npoints
-            for i in range(1, npoints):
-                new_value = values[i-1] * ticksize
-                if new_value > self.max: break
-                else: values[i] = new_value
-            values = np.array(values)
+
+            values = []
+            new_npoints = npoints
+
+            while len(values) < 0.8 * npoints:
+
+                #new_npoints = int(new_npoints * 1.2)
+                #values = [round_to_1(self.min)] * new_npoints
+
+                if len(values) > 0:
+                    factor = npoints / len(values)
+                    new_npoints = int(new_npoints * factor)
+                values = [round_to_1(self.min)] * new_npoints
+
+                #print(new_npoints)
+                ticksize = best_tick_log(self.max / self.min, new_npoints)
+
+                for i in range(1, new_npoints):
+                    new_value = values[i-1] * ticksize
+                    if new_value > self.max: break
+                    else: values[i] = new_value
+                values = np.array(values)
+                values = sorted(list(set(values)))
+
+                #print(values)
+
+                # DOESNT WORK, JUST BREAK AFTER THE FIRST
+                break
+
         else: values = np.logspace(self.log_min, self.log_max, npoints, endpoint=self.inclusive)
         if self.invert: values = np.flipud(values)
-
-        values = sorted(list(set(values)))
 
         if as_list: return list(values)
         else: return values
@@ -634,17 +654,14 @@ def best_tick_log(largest, maxnticks):
 
     minimum_ticksize = math.pow(largest, 1./maxnticks)
     magnitude = math.floor(minimum_ticksize)
-
     residual = math.pow(minimum_ticksize, 1./magnitude)
-
     if residual > 5:
         tick = 10*magnitude
     elif residual > 2:
         tick = 5**magnitude
     elif residual > 1:
         tick = 2**magnitude
-    else:
-        tick = magnitude
+    else: tick = magnitude
 
     # Return
     return tick

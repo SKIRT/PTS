@@ -32,6 +32,7 @@ from ..data.transmission import TransmissionCurve
 from ..basics.emissionlines import EmissionLines
 from ..basics.filter import identifiers, Filter
 from ..basics.range import RealRange
+from ..basics.plot import Plot
 
 # -----------------------------------------------------------------
 
@@ -87,6 +88,9 @@ class TransmissionPlotter(Configurable):
         self.colormap = "rainbow"  # or "nipy_spectral"
         self.format = None
         self.transparent = False
+
+        # The plot
+        self.plt = None
 
     # -----------------------------------------------------------------
 
@@ -194,6 +198,9 @@ class TransmissionPlotter(Configurable):
         if "output" in kwargs: self.output = kwargs.pop("output")
         else: self.output = self.config.output
 
+        # Initialize the plot
+        self.plt = Plot()
+
     # -----------------------------------------------------------------
 
     def clear(self):
@@ -297,7 +304,6 @@ class TransmissionPlotter(Configurable):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
@@ -365,19 +371,8 @@ class TransmissionPlotter(Configurable):
             title = "\n".join(wrap(self.title, 60))
             plt.suptitle(self.title, fontsize=self.config.plot.title_fontsize)
 
-        # Format the axis ticks and create a grid
-        ticks = RealRange(min_wavelength, max_wavelength).log(len(self.curves)*2, fancy=True)
-        ax.set_xticks(ticks)
-        ax.set_xticklabels(ticks)
-
-        # Tick formatter
-        #ax.xaxis.set_major_formatter(FormatStrFormatter('%d'))
-        ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
-        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
-
-        # Set ticks fontsize
-        plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
-        plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=self.config.plot.ticks_fontsize)
+        # Set the ticks
+        set_ticks(ax, self.config.plot, RealRange(min_wavelength, max_wavelength), len(self.curves) * 2)
 
         # Set grid
         set_grid(self.config.plot)
@@ -395,6 +390,9 @@ class TransmissionPlotter(Configurable):
         # Finish the plot
         self.finish_plot()
 
+        # Save the plot
+        #self.plt.saveto(self.output)
+
     # -----------------------------------------------------------------
 
     def finish_plot(self):
@@ -403,8 +401,6 @@ class TransmissionPlotter(Configurable):
         This function ...
         :return:
         """
-
-        # plt.tight_layout()
 
         # Debugging
         if type(self.output).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
@@ -482,6 +478,31 @@ def add_legend(ax, config, legend_title=None):
 
     # Set fontsize
     plt.setp(legend.get_title(), fontsize=str(config.legend_title_fontsize))
+
+# -----------------------------------------------------------------
+
+def set_ticks(ax, config, x_range, nxticks):
+
+    """
+    This function ...
+    :param config:
+    :param x_range:
+    :param nxticks:
+    :return:
+    """
+
+    # Format the axis ticks and create a grid
+    ticks = x_range.log(nxticks, fancy=True)
+    ax.set_xticks(ticks)
+    ax.set_xticklabels(ticks)
+
+    # Tick formatter
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+
+    # Set ticks fontsize
+    plt.setp(ax.get_xticklabels(), rotation='horizontal', fontsize=config.ticks_fontsize)
+    plt.setp(ax.get_yticklabels(), rotation='horizontal', fontsize=config.ticks_fontsize)
 
 # -----------------------------------------------------------------
 

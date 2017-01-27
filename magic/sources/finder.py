@@ -36,6 +36,7 @@ from ..object.star import Star
 from ...core.data.sed import ObservedSED
 from ...core.basics.filter import Filter
 from ...core.basics.curve import FilterCurve
+from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -123,7 +124,7 @@ class GalaxyTable(SmartTable):
             for fltr in filters:
 
                 column_name = str(fltr) + " flux"
-                self.add_column_info(column_name, float, "Jy", str(fltr) + " flux density")
+                self.add_column_info(column_name, float, u("Jy"), str(fltr) + " flux density")
 
     # -----------------------------------------------------------------
 
@@ -199,13 +200,13 @@ class StarTable(SmartTable):
             for fltr in filters:
 
                 column_name = str(fltr) + " FWHM"
-                self.add_column_info(column_name, float, "arcsec", str(fltr) + " FWHM")
+                self.add_column_info(column_name, float, u("arcsec"), str(fltr) + " FWHM")
 
             # Loop over the filters
             for fltr in filters:
 
                 column_name = str(fltr) + " flux"
-                self.add_column_info(column_name, float, "Jy", str(fltr) + " flux density")
+                self.add_column_info(column_name, float, u("Jy"), str(fltr) + " flux density")
 
     # -----------------------------------------------------------------
 

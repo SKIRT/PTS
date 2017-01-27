@@ -12,11 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import copy
+
 # Import astronomical modules
 from astropy.units import Quantity
-
-# Import the relevant PTS classes and modules
-from .unit import stringify_unit, represent_unit, parse_unit
 
 # -----------------------------------------------------------------
 
@@ -28,6 +28,8 @@ def parse_quantity(argument, density=False):
     :param density:
     :return:
     """
+
+    from .unit import parse_unit
 
     # NEW IMPLEMENTATION
     units = ""
@@ -54,6 +56,8 @@ def stringify_quantity(quantity):
     :return:
     """
 
+    from .unit import stringify_unit
+
     # Stringify the unit
     unit_type, unit_string = stringify_unit(quantity.unit)
 
@@ -76,25 +80,83 @@ def represent_quantity(quantity):
     :return:
     """
 
+    from .unit import represent_unit
     return repr(quantity.value) + " " + represent_unit(quantity.unit)
 
 # -----------------------------------------------------------------
 
-# NOT OPERATIONAL YET
 class PhotometricQuantity(Quantity):
     
     """
     This class ...
     """
     
-    def __new__(cls, value, unit=None, dtype=None, copy=True, order=None,
-                subok=False, ndmin=0):
+    def __new__(cls, value, unit):
         
         """
         The constructor ...
+        :param value:
+        :param unit:
         """
 
         # Call the constructor of the base class
-        return super(PhotometricQuantity, cls).__new__(value, unit, dtype, copy, order, subok, ndmin)
+        quantity = super(PhotometricQuantity, cls).__new__(value, unit)
+
+        # Set photometric unit, the base class (Quantity) converts the unit back to an ordinary Unit in the __new__ function above
+        quantity.unit = unit
+
+        # Return the new quantity
+        return quantity
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
+    def to(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # Get properties
+        unit = args[0]
+        density = kwargs.pop("density", False)
+        wavelength = kwargs.pop("wavelength", None)
+        frequency = kwargs.pop("frequency", None)
+        distance = kwargs.pop("distance", None)
+        solid_angle = kwargs.pop("solid_angle", None)
+        fltr = kwargs.pop("fltr", None)
+        pixelscale = kwargs.pop("pixelscale", None)
+        equivalencies = kwargs.pop("equivalencies", None)
+
+        # If equivalencies are specified, use the implementation of the base class
+        if equivalencies is not None:
+
+            # Re-evaluate whether it is a photometric quantity or not by passing a stringified version to the parser
+            return parse_quantity(represent_quantity(Quantity.to(self, unit, equivalencies=equivalencies)))
+
+        # Import
+        from .unit import PhotometricUnit
+
+        # Parse the new unit
+        unit = PhotometricUnit(unit, density=density)
+
+        # Determine conversion factor
+        factor = self.unit.conversion_factor(unit, density=density, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
+
+        # Return new quantity
+        return PhotometricQuantity(self.value * factor, unit)
 
 # -----------------------------------------------------------------

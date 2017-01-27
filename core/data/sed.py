@@ -26,6 +26,7 @@ from ..basics.filter import Filter
 from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
 from ..basics.unit import parse_unit as u
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -148,19 +149,23 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_skirt(cls, path, skiprows=0, contribution="total"):
+    def from_skirt(cls, path, skiprows=0, contribution="total", unit=None):
 
         """
         This function ...
         :param path:
         :param skiprows:
         :param contribution:
+        :param unit: define the unit for the photometry for the SED
         :return:
         """
 
         # SEDInstrument:
         # column 1: lambda (micron)
         # column 2: total flux; lambda*F_lambda (W/m2)
+        # of:
+        # column 1: lambda (micron)
+        # column 2: total flux; F_nu (Jy)
 
         # From FullInstrument:
         # column 1: lambda (micron)
@@ -176,51 +181,75 @@ class SED(WavelengthCurve):
         # sed.table.rename_column("col1", "Wavelength")
         # sed.table.rename_column("col2", "Flux")
 
-        if contribution == "total": columns = (0, 1)
-        elif contribution == "direct": columns = (0, 2)
-        elif contribution == "scattered": columns = (0, 3)
-        elif contribution == "dust": columns = (0, 4)
-        elif contribution == "dustscattered": columns = (0, 5)
-        elif contribution == "transparent": columns = (0, 6)
-        else: raise ValueError("Wrong value for 'contribution': should be 'total', 'direct', 'scattered', 'dust', 'dustscattered' or 'transparent'")
+        # Keep track of the units of the different columns
+        units = []
 
-        wavelength_column, flux_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+        # Read the SED file header
+        for line in fs.read_lines(path):
 
-        #sed.table = tables.new([wavelength_column, flux_column], ["Wavelength", "Flux"])
-        #sed.table["Wavelength"].unit = Unit("micron")
+            # We are no longer at the header
+            if not line.startswith("#"): break
 
-        jansky_column = []
+            # Split the line to get the column index and the unit
+            first, second = line.split(":")
 
-        for i in range(len(wavelength_column)):
+            # Get column info
+            index = int(first.split("column ")[1]) - 1
+            name = second.split(";")[0].split("(")[0]
+            mathematical = second.split(";")[1].split("(")[0].strip() if len(second.split(";")) > 1 else None
+            unit_string = second.split("(")[1].split(")")[0]
+            density = mathematical.startswith("lambda*") or mathematical.startswith("nu*") if mathematical is not None else False
+            unit = u(unit_string, density=density)
+
+            # Add the unit
+            assert index == len(units)
+            units.append(unit)
+
+        # Define index of different columns
+        contributions_index = dict()
+        contributions_index["total"] = 1
+        contributions_index["direct"] = 2
+        contributions_index["scattered"] = 3
+        contributions_index["dust"] = 4
+        contributions_index["dustscattered"] = 5
+        contributions_index["transparent"] = 6
+
+        # Load the column data
+        if contribution not in contributions_index: raise ValueError("Wrong value for 'contribution': should be 'total', 'direct', 'scattered', 'dust', 'dustscattered' or 'transparent'")
+        columns = (0, contributions_index[contribution])
+        wavelength_column, photometry_column = np.loadtxt(path, dtype=float, unpack=True, skiprows=skiprows, usecols=columns)
+
+        # Get column units
+        wavelength_unit = units[0]
+        photometry_unit = units[contributions_index[contribution]]
+        if unit is None: unit = photometry_unit
+
+        #jansky_column = []
+        #for i in range(len(wavelength_column)):
 
             # Get the flux density in W / m2 and the wavelength in micron
-            neutral_fluxdensity = flux_column[i] * PhotometricUnit("W/m2")
-            wavelength = wavelength_column[i] * u("micron")
+            #neutral_fluxdensity = flux_column[i] * PhotometricUnit("W/m2")
+            #wavelength = wavelength_column[i] * u("micron")
 
             # Convert to Jansky (2 methods give same result)
             # jansky_ = unitconversion.neutral_fluxdensity_to_jansky(neutral_fluxdensity, wavelength)
-            jansky = (neutral_fluxdensity / wavelength.to("Hz", equivalencies=spectral())).to("Jy").value
+            #jansky = (neutral_fluxdensity / wavelength.to("Hz", equivalencies=spectral())).to("Jy").value
 
             # Add the fluxdensity in Jansky to the new column
-            jansky_column.append(jansky)
-
-        # Add the flux column in Jansky
-        #sed.table.remove_column("Flux")
-        #sed.table["Flux"] = jansky_column
-        #sed.table["Flux"].unit = "Jy"
+            #jansky_column.append(jansky)
 
         # Create a new SED
-        sed = cls(photometry_unit="Jy")
+        sed = cls(photometry_unit=unit)
 
         # Add the entries
         for index in range(len(wavelength_column)):
 
             # Get values
-            wavelength = wavelength_column[index] * u("micron")
-            flux = jansky_column[index] * PhotometricUnit("Jy")
+            wavelength = wavelength_column[index] * wavelength_unit
+            photometry = photometry_column[index] * photometry_unit
 
             # Add point
-            sed.add_point(wavelength, flux)
+            sed.add_point(wavelength, photometry)
 
         # Return the SED
         return sed

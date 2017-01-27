@@ -60,8 +60,8 @@ class Curve(SmartTable):
         if not from_astropy:
 
             # Set the column info
-            self.column_info.append((x_name, float, str(x_unit), x_description))
-            self.column_info.append((y_name, float, str(y_unit), y_description))
+            self.column_info.append((x_name, float, x_unit, x_description))
+            self.column_info.append((y_name, float, y_unit, y_description))
 
             # Set x name and y name
             self.x_name = x_name

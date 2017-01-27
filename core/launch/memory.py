@@ -17,6 +17,7 @@ from ..basics.table import SmartTable
 from ..tools import tables, time
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from ..tools.logging import log
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -59,12 +60,12 @@ class MemoryTable(SmartTable):
         self.add_column_info("Transient heating", bool, None, "transient (non-LTE) heating enabled")
         self.add_column_info("Data-parallel", bool, None, "data parallelization enabled")
         self.add_column_info("Number of pixels", int, None, "total number of spatial pixels for all instruments")
-        self.add_column_info("Total peak memory", float, "GB", "peak memory usage during total simulation")
-        self.add_column_info("Setup peak memory", float, "GB", "peak memory usage during setup")
-        self.add_column_info("Stellar emission peak memory", float, "GB", "peak memory usage during stellar emission")
-        self.add_column_info("Spectra calculation peak memory", float, "GB", "peak memory usage during spectra calculation")
-        self.add_column_info("Dust emission peak memory", float, "GB", "peak memory usage during dust emission")
-        self.add_column_info("Writing peak memory", float, "GB", "peak memory usage during writing")
+        self.add_column_info("Total peak memory", float, u("Gbyte"), "peak memory usage during total simulation")
+        self.add_column_info("Setup peak memory", float, u("Gbyte"), "peak memory usage during setup")
+        self.add_column_info("Stellar emission peak memory", float, u("Gbyte"), "peak memory usage during stellar emission")
+        self.add_column_info("Spectra calculation peak memory", float, u("Gbyte"), "peak memory usage during spectra calculation")
+        self.add_column_info("Dust emission peak memory", float, u("Gbyte"), "peak memory usage during dust emission")
+        self.add_column_info("Writing peak memory", float, u("Gbyte"), "peak memory usage during writing")
 
     # -----------------------------------------------------------------
 

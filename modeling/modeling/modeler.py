@@ -24,6 +24,8 @@ from ...core.launch.synchronizer import RemoteSynchronizer
 from ...core.remote.remote import is_available
 from ...core.prep.deploy import Deployer
 from ...core.remote.host import Host
+from ...core.tools import formatting as fmt
+from ...core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -66,7 +68,7 @@ class Modeler(Configurable):
         """
 
         if self.config.local: return []
-        elif self.config.remote is not None: return [self.config.remote]
+        elif self.config.remotes is not None: return self.config.remotes
         elif self.modeling_config.host_ids is None: return []
         else: return self.modeling_config.host_ids
 
@@ -81,7 +83,7 @@ class Modeler(Configurable):
         """
 
         if self.config.fitting_local: return []
-        elif self.config.fitting_remote is not None: return [self.config.fitting_remote]
+        elif self.config.fitting_remotes is not None: return self.config.fitting_remotes
         elif self.modeling_config.fitting_host_ids is None: return []
         else: return self.modeling_config.fitting_host_ids
 
@@ -265,6 +267,9 @@ class Modeler(Configurable):
         # Call the setup function of the base class
         super(Modeler, self).setup(**kwargs)
 
+        # Give welcome message
+        welcome()
+
         # Set the path to the modeling directory
         self.modeling_path = self.config.path
 
@@ -441,5 +446,28 @@ class Modeler(Configurable):
 
         # Inform the user
         log.info("Writing ...")
+
+# -----------------------------------------------------------------
+
+def welcome(width=50, prefix="    "):
+
+    """
+    This function ...
+    :param width:
+    :param prefix:
+    :return:
+    """
+
+    fmt.print_empty()
+    fmt.print_filled("#", prefix=prefix, length=width)
+    fmt.print_border("#", prefix=prefix, length=width)
+    fmt.print_centered_around("Welcome to PTS/Modeling", "#", prefix=prefix, length=width)
+    fmt.print_centered_around("Author: Sam Verstocken", "#", prefix=prefix, length=width)
+    fmt.print_centered_around("PTS version: " + introspection.pts_version(), "#", prefix=prefix, length=width)
+    fmt.print_border("#", prefix=prefix, length=width)
+    fmt.print_centered_around("© Astronomical Observatory, Ghent University", "#", prefix=prefix, length=width)
+    fmt.print_border("#", prefix=prefix, length=width)
+    fmt.print_filled("#", prefix=prefix, length=width)
+    fmt.print_empty()
 
 # -----------------------------------------------------------------

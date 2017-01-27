@@ -72,7 +72,7 @@ class SEDModelingComponent(ModelingComponent):
         self.sed_path = get_observed_sed_file_path(self.config.path)
 
         # Set the SED plot path
-        self.sed_plot_path = fs.join(self.config.path, "sed.pdf")
+        self.sed_plot_path = get_sed_plot_path(self.config.path)
 
         # Set the ski template path
         self.ski_path = get_ski_template_path(self.config.path)
@@ -99,6 +99,18 @@ def get_observed_sed(modeling_path):
     """
 
     return ObservedSED.from_file(get_observed_sed_file_path(modeling_path))
+
+# -----------------------------------------------------------------
+
+def get_sed_plot_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "sed.pdf")
 
 # -----------------------------------------------------------------
 

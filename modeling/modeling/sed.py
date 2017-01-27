@@ -18,7 +18,7 @@ from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.sed import SEDFittingInitializer
 from ..fitting.component import get_generations_table
 from .modeler import Modeler
-from ..component.sed import get_ski_template, get_observed_sed
+from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path
 from ...core.basics.range import IntegerRange, QuantityRange
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from ...core.plot.sed import SEDPlotter
@@ -109,7 +109,7 @@ class SEDModeler(Modeler):
         plotter.add_sed(sed, "Observations")
 
         # Run the plotter
-        plotter.run()
+        plotter.run(output=get_sed_plot_path(self.modeling_path))
 
         # Mark the end and save the history file
         self.history.mark_end()

@@ -21,9 +21,9 @@ definition.add_flag("check_versions", "check versions of SKIRT and PTS where nec
 
 # Advanced settings
 definition.add_flag("local", "keep computationaly heavy computations local")
-definition.add_optional("remote", "string", "remote host for computationally heavy computations (overrule the modeling configuration)", choices=find_host_ids())
+definition.add_optional("remotes", "string_list", "remote hosts for computationally heavy computations (overrule the modeling configuration)", choices=find_host_ids())
 definition.add_flag("fitting_local", "launch the simulations as part of the fitting locally (overrule the modeling configuration")
-definition.add_optional("fitting_remote", "string", "remote host for the fitting (overrule the modeling configuration)", choices=find_host_ids())
+definition.add_optional("fitting_remotes", "string_list", "remote hosts for the fitting (overrule the modeling configuration)", choices=find_host_ids())
 
 # Genetic algorithm settings
 definition.add_optional("nsimulations", "positive_integer", "number of simulations per generation")
