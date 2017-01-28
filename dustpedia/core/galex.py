@@ -24,7 +24,6 @@ from astropy.io.fits import open as open_fits
 from astropy.wcs import WCS
 from astropy.convolution.kernels import Tophat2DKernel
 from astropy.convolution import convolve_fft
-from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -460,7 +459,8 @@ class GALEXMosaicMaker(Configurable):
         with ParallelTarget(filter_galex_tiles, self.config.nprocesses) as target:
 
             # Loop over the bands
-            for band in self.config.bands: target(self.ngc_name, self.download_observations_paths[band], ra, dec, width_deg, temp_raw_path, band_dict)
+            # galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_path, band_dict
+            for band in self.config.bands: target(self.ngc_name, self.download_observations_paths[band], self.cutout_center, self.cutout_width, band)
 
     # -----------------------------------------------------------------
 
@@ -484,11 +484,18 @@ class GALEXMosaicMaker(Configurable):
         #for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path,
         #                                            band_dict)
 
-        # Parallel execution
-        with ParallelTarget(clean_galex_tile, self.config.nprocesses) as target:
+        # Loop over the bands
+        for band in self.config.bands:
 
-            # raw_file, working_path, temp_path_band, temp_reproject_path, band_dict
-            for raw_file in raw_files: target(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
+            # Debugging
+            log.debug("Cleaning GALEX " + band + " tiles ...")
+
+            # Parallel execution
+            with ParallelTarget(clean_galex_tile, self.config.nprocesses) as target:
+
+                # raw_file, working_path, temp_path_band, temp_reproject_path, band_dict
+                #for raw_file in raw_files: target(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
+                for path in fs.files_in_path(self.download_observations_paths[band]): target(path)
 
     # -----------------------------------------------------------------
 
@@ -529,6 +536,9 @@ class GALEXMosaicMaker(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting exposure times ...")
+
         # Create a dictionary for the exposure times for each image
         exposure_times = dict()
 
@@ -540,7 +550,7 @@ class GALEXMosaicMaker(Configurable):
         for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains=filename_ends,
                                            returns=["path", "name"]):
             # Open the header
-            header = fits.getheader(path)
+            header = getheader(path)
 
             # Search for the exposure time
             exp_time = get_total_exposure_time(header)
@@ -557,6 +567,9 @@ class GALEXMosaicMaker(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Reprojecting ...")
 
         # Reproject image and weight prior to coaddition
         montage.commands.mImgtbl(temp_reproject_path, metatable_path, corners=True)
@@ -918,7 +931,7 @@ def nuv_or_fuv(path):
 
 # -----------------------------------------------------------------
 
-def filter_galex_tiles(galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_path, band_dict):
+def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
 
     """
     This function ...
@@ -929,11 +942,21 @@ def filter_galex_tiles(galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_pat
     new_overlap_path = fs.join(tiles_path, "overlap_circle.dat")
 
     # Get overlapping file paths
-    overlapping_file_paths = mosaicing.generate_overlapping_filenames(meta_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width_deg) * (2.0 ** 0.5))
+    ra = center.ra.to("deg").value
+    dec = center.dec.to("deg").value
+    width = width.to("deg").value
+    overlapping_file_paths = mosaicing.generate_overlapping_file_paths(meta_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width) * (2.0 ** 0.5))
 
     # Check
-    if len(overlapping_file_paths.shape) == 0: overlapping_file_paths = [overlapping_file_paths.tolist()]
-    for overlapping_file_path in overlapping_file_paths: fs.copy_file(overlapping_file_path, temp_raw_path)
+    #if len(overlapping_file_paths.shape) == 0: overlapping_file_paths = [overlapping_file_paths.tolist()]
+    #for overlapping_file_path in overlapping_file_paths: fs.copy_file(overlapping_file_path, temp_raw_path)
+
+    # NEW: FILTER IN-PLACE
+    for path in fs.files_in_path(tiles_path):
+        if path in overlapping_file_paths: continue
+        else: fs.remove_file(path)
+
+    temp_raw_path = tiles_path
 
     # Uncompress .fits.gz files
     # [os.system('gunzip '+ listfile) for listfile in os.listdir(raw_in_temp_dir)]
@@ -953,7 +976,7 @@ def filter_galex_tiles(galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_pat
 
         # Locate pixel coords
         in_wcs = WCS(in_header)
-        location_pix = in_wcs.wcs_world2pix(np.array([[np.float(ra.to("deg").value), np.float(dec.to("deg").value)]]), 0)[0]
+        location_pix = in_wcs.wcs_world2pix(np.array([[np.float(ra), np.float(dec)]]), 0)[0]
         pix_i, pix_j = location_pix[1], location_pix[0]
 
         # Evalulate coverage at location, and proceed accordingly
@@ -961,24 +984,23 @@ def filter_galex_tiles(galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_pat
             continue
         try:
             image_slice = in_image[pix_i - 10:pix_i + 11, pix_j - 10:pix_j + 11]
-        except:
-            continue
+        except: continue
         if np.where(image_slice > 0)[0].shape[0] > 0:
             coverage = True
 
     # No coverage
-    if not coverage: raise RuntimeError('No GALEX ' + band_dict['band_long'] + ' coverage for ' + galaxy_name)
+    if not coverage: raise RuntimeError('No GALEX ' + band + ' coverage for ' + galaxy_name)
 
     # Return ...
-    return raw_files
+    #return raw_files
 
 # -----------------------------------------------------------------
 
-def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict):
+def clean_galex_tile(raw_file_path, working_path, temp_path_band, temp_reproject_path, band_dict):
 
     """
     Function to clean GALEX tiles and create exposure maps
-    :param raw_file:
+    :param path: raw file path
     :param working_path:
     :param temp_path_band:
     :param temp_reproject_path:
@@ -986,29 +1008,32 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     :return:
     """
 
+    raw_file_name = fs.name(raw_file_path)
+
     # Inform the user ...
-    log.info("Cleaning map " + raw_file + " ...")
-    log.info(" - raw_file = " + raw_file)
-    log.info(" - working_path = " + working_path)
-    log.info(" - temp_path_band = " + temp_path_band)
-    log.info(" - temp_reproject_path = " + temp_reproject_path)
-    log.info(" - band_dict = " + str(band_dict))
+    log.info("Cleaning map " + raw_file_path + " ...")
+    #log.info(" - raw_file = " + raw_file)
+    #log.info(" - working_path = " + working_path)
+    #log.info(" - temp_path_band = " + temp_path_band)
+    #log.info(" - temp_reproject_path = " + temp_reproject_path)
+    #log.info(" - band_dict = " + str(band_dict))
 
     # Response and background paths for this band
-    response_path = fs.join(working_path, "response", band_dict['band_long'])
-    background_path = fs.join(working_path, "background", band_dict['band_long'])
+    #response_path = fs.join(working_path, "response", band_dict['band_long'])
+    #background_path = fs.join(working_path, "background", band_dict['band_long'])
 
     temp_raw_path = fs.join(temp_path_band, "raw")
 
     # Read in image
-    in_fitsdata = open_fits(fs.join(temp_raw_path, raw_file))
+    #raw_file_path = fs.join(temp_raw_path, raw_file)
+    in_fitsdata = open_fits(raw_file_path)
     in_image = in_fitsdata[0].data
     in_header = in_fitsdata[0].header
     in_fitsdata.close()
     out_image = in_image.copy()
 
     # Load and align response map
-    rr_path = fs.join(response_path, raw_file.replace('-int.fits','-rr.fits'))
+    rr_path = fs.join(response_path, raw_file_name.replace('-int.fits','-rr.fits'))
     rr_fitsdata = open_fits(rr_path)
     rr_image = rr_fitsdata[0].data
     rr_zoom = np.float(out_image.shape[0]) / np.float(rr_image.shape[0])
@@ -1018,7 +1043,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     out_image[ np.where( rr_image <= 1E-10 ) ] = np.NaN
 
     # Load and align sky background map
-    bg_path = fs.join(background_path, raw_file.replace('-int.fits','-skybg.fits'))
+    bg_path = fs.join(background_path, raw_file_name.replace('-int.fits','-skybg.fits'))
     bg_fitsdata = open_fits(bg_path)
     bg_image = bg_fitsdata[0].data
     bg_zoom = np.float(out_image.shape[0]) / np.float(bg_image.shape[0])
@@ -1059,7 +1084,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     # Save cleaned image
     out_hdu = PrimaryHDU(data=out_image, header=in_header)
     out_hdulist = HDUList([out_hdu])
-    out_hdulist.writeto(fs.join(temp_raw_path, raw_file), clobber=True)
+    out_hdulist.writeto(fs.join(temp_raw_path, raw_file_name), clobber=True)
 
     # Create convolved version of map, for later use in background-matching
     """
@@ -1074,7 +1099,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     conv_image = convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True) #, interpolate_nan=True, normalize_kernel=True)
 
     # Write
-    temp_convolve_image_path = fs.join(temp_convolve_path, raw_file)                  ## NEW
+    temp_convolve_image_path = fs.join(temp_convolve_path, raw_file_name)                  ## NEW
     if fs.is_file(temp_convolve_image_path): fs.remove_file(temp_convolve_image_path) ## NEW
     writeto(temp_convolve_image_path, conv_image, in_header)
 
@@ -1085,7 +1110,7 @@ def clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path
     exp_hdulist = HDUList([exp_hdu])
 
     # Write
-    temp_reproject_image_path = fs.join(temp_reproject_path, raw_file.replace('.fits','.wgt.fits'))  ## NEW
+    temp_reproject_image_path = fs.join(temp_reproject_path, raw_file_name.replace('.fits','.wgt.fits'))  ## NEW
     if fs.is_file(temp_reproject_image_path): fs.remove_file(temp_reproject_image_path)              ## NEW
     exp_hdulist.writeto(temp_reproject_image_path)
 

@@ -906,7 +906,7 @@ class FittingComponent(ModelingComponent):
         """
 
         # Generations exist
-        if len(self.generations_table) > 0: return self.generations_table["Number of photon packages"]
+        if len(self.generations_table) > 0: return self.generations_table["Number of photon packages"][-1]
 
         # Initial value
         else: return self.ski_template.packages()

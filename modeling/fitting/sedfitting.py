@@ -202,7 +202,7 @@ class SEDFitter(FittingComponent):
                 probabilities = np.exp(-0.5 * chi_squared_values)
 
                 # Create the probabilities table
-                probabilities_table = ModelProbabilitiesTable(self.free_parameter_labels, self.parameter_units)
+                probabilities_table = ModelProbabilitiesTable(parameters=self.free_parameter_labels, units=self.parameter_units)
 
                 # Add the entries to the model probabilities table
                 for i in range(len(chi_squared_table)):
@@ -405,7 +405,7 @@ class SEDFitter(FittingComponent):
         for label in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[label] + " parameter ...")
+            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[label] + " ...")
 
             # Write the table of probabilities for this parameter
             self.distributions[label].saveto(self.get_parameter_distribution_path(label))

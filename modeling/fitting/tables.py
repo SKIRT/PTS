@@ -755,16 +755,16 @@ class ModelProbabilitiesTable(SmartTable):
         if not from_astropy:
 
             # Add simulation name column
-            self.column_info.append(("Simulation name", str, None, "name of the simulation"))
+            self.add_column_info("Simulation name", str, None, "name of the simulation")
 
             # Loop over the parameters
             for label in parameters:
 
                 unit = units[label] if label in units else None
-                self.column_info.append((label, float, unit, "value for " + label))
+                self.add_column_info(label, float, unit, "value for " + label)
 
             # Add column for the probabilities
-            self.column_info.append(("Probability", float, None, "model probability"))
+            self.add_column_info("Probability", float, None, "model probability")
 
     # -----------------------------------------------------------------
 
@@ -792,9 +792,12 @@ class ModelProbabilitiesTable(SmartTable):
         """
         This function ...
         :param simulation_name:
+        :param parameter_values:
         :param probability:
         :return:
         """
+
+        if len(self.colnames) == 0: self.setup()
 
         # Set the values
         values = [simulation_name]
