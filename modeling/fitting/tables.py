@@ -435,6 +435,30 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def remove_last_entry(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.remove_row(len(self)-1)
+
+    # -----------------------------------------------------------------
+
+    def remove_entry(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        index = tables.find_index(self, generation_name, "Generation name")
+        self.remove_row(index)
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, generation_info, ranges):
 
         """
@@ -580,7 +604,8 @@ class ParametersTable(SmartTable):
 
         for name in self.colnames:
             if name == "Simulation name": continue
-            values[name] = self[name][index] * self[name].unit
+            if self.column_unit(name) is None: values[name] = self[name][index]
+            else: values[name] = self[name][index] * self.column_unit(name)
 
         # Return the values
         return values

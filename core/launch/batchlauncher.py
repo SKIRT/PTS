@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import traceback
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -568,10 +569,10 @@ class BatchLauncher(Configurable):
         simulations = self.launch()
 
         # 4. Retrieve the simulations that are finished
-        self.retrieve()
+        self.try_retrieving()
 
         # 5. Analyse the output of the retrieved simulations
-        self.analyse()
+        self.try_analysing()
 
         # 6. Return the simulations that are just scheduled
         return simulations
@@ -963,23 +964,33 @@ class BatchLauncher(Configurable):
             logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item, local=True)
 
             # Perform the simulation locally
-            simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()))
+            try:
 
-            # Set the parallelization scheme
-            simulation.parallelization = parallelization_item
+                # Run the simulation
+                simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()))
 
-            # Set the analysis options
-            simulation.set_analysis_options(analysis_options)
+                # Set the parallelization scheme
+                simulation.parallelization = parallelization_item
 
-            # Add analyser classes
-            if self.config.analysers is not None:
-                for class_path in self.config.analysers: simulation.add_analyser(class_path)
+                # Set the analysis options
+                simulation.set_analysis_options(analysis_options)
 
-            # Add the simulation to the list
-            simulations.append(simulation)
+                # Add analyser classes
+                if self.config.analysers is not None:
+                    for class_path in self.config.analysers: simulation.add_analyser(class_path)
 
-            # Also add the simulation directly to the list of simulations to be analysed
-            self.simulations.append(simulation)
+                # Add the simulation to the list
+                simulations.append(simulation)
+
+                # Also add the simulation directly to the list of simulations to be analysed
+                self.simulations.append(simulation)
+
+            except Exception:
+
+                log.error("Launching simulation '" + name + "' failed:")
+                traceback.print_exc()
+                log.error("Cancelling following simulations in the queue ...")
+                break
 
         # Return the list of simulations
         return simulations
@@ -1036,35 +1047,44 @@ class BatchLauncher(Configurable):
                 logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
 
                 # Queue the simulation
-                simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
-                                                 scheduling_options=scheduling_options, remote_input_path=remote_input_path,
-                                                 analysis_options=analysis_options, emulate=self.config.emulate)
-                simulations_remote.append(simulation)
+                try:
 
-                # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
-                # hyperthreading would be enabled if the user provided the parallelization_item when adding the
-                # simulation to the queue
-                simulation.parallelization = parallelization_item
+                    simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
+                                                     scheduling_options=scheduling_options, remote_input_path=remote_input_path,
+                                                     analysis_options=analysis_options, emulate=self.config.emulate)
+                    simulations_remote.append(simulation)
 
-                # If the input directory is shared between the different simulations
-                if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
+                    # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
+                    # hyperthreading would be enabled if the user provided the parallelization_item when adding the
+                    # simulation to the queue
+                    simulation.parallelization = parallelization_item
 
-                ## SET OPTIONS
+                    # If the input directory is shared between the different simulations
+                    if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
 
-                # Remove remote files
-                simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
-                simulation.remove_remote_output = not self.config.keep
-                simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
+                    ## SET OPTIONS
 
-                # Retrieval
-                simulation.retrieve_types = self.config.retrieve_types
+                    # Remove remote files
+                    simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
+                    simulation.remove_remote_output = not self.config.keep
+                    simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
 
-                # Add analyser classes
-                if self.config.analysers is not None:
-                    for class_path in self.config.analysers: simulation.add_analyser(class_path)
+                    # Retrieval
+                    simulation.retrieve_types = self.config.retrieve_types
 
-                # Save the simulation object
-                simulation.save()
+                    # Add analyser classes
+                    if self.config.analysers is not None:
+                        for class_path in self.config.analysers: simulation.add_analyser(class_path)
+
+                    # Save the simulation object
+                    simulation.save()
+
+                except Exception:
+
+                    log.error("Adding simulation '" + name + "' to the queue failed:")
+                    traceback.print_exc()
+                    log.error("Cancelling following simulations in the queue for remote host '" + remote.host_id + "' ...")
+                    break
 
             # Determine queue name (name of the screen session or the remote simulation queue)
             queue_name = time.unique_name("batch_launcher")
@@ -1157,6 +1177,20 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def try_retrieving(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        try: self.retrieve()
+        except Exception, err:
+            log.error("Retrieving simulations failed:")
+            traceback.print_exc()
+
+    # -----------------------------------------------------------------
+
     def retrieve(self):
 
         """
@@ -1176,6 +1210,20 @@ class BatchLauncher(Configurable):
             # Get a list of the simulations that have been succesfully retrieved and add the corresponding
             # simulation objects to the list
             self.simulations += remote.retrieve()
+
+    # -----------------------------------------------------------------
+
+    def try_analysing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        try: self.analyse()
+        except Exception, err:
+            log.error("Analysing finished simulations failed:")
+            traceback.print_exc()
 
     # -----------------------------------------------------------------
 

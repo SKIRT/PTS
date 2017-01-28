@@ -62,7 +62,7 @@ class GenerationInfo(object):
         self.transient_heating = kwargs.pop("transient_heating", None)
 
         self.path = kwargs.pop("path", None)
-        self.parameter_table_path = kwargs.pop("parameter_table_path", None)
+        self.parameters_table_path = kwargs.pop("parameters_table_path", None)
         self.chi_squared_table_path = kwargs.pop("chi_squared_table_path", None)
 
 # -----------------------------------------------------------------
@@ -490,7 +490,7 @@ class ParameterExplorer(FittingComponent):
         self.generation.path = fs.create_directory_in(self.fit_generations_path, self.generation_name)
 
         # Determine the path to the generation parameters table
-        self.generation.parameter_table_path = fs.join(self.generation.path, "parameters.dat")
+        self.generation.parameters_table_path = fs.join(self.generation.path, "parameters.dat")
 
         # Determine the path to the chi squared table
         self.generation.chi_squared_table_path = fs.join(self.generation.path, "chi_squared.dat")
@@ -742,11 +742,6 @@ class ParameterExplorer(FittingComponent):
             # Create a unique name for this combination of parameter values
             simulation_name = time.unique_name()
 
-            # For the luminosity of SpectralLuminosityNormalization components, convert to W/m
-            #for label in parameter_values:
-            #    if label == "fuv_young" or label == "fuv_ionizing" or label == "i1_old":
-            #        parameter_values[label] = parameter_values[label].to("W/m").value
-
             # Set the parameter values in the ski file template
             self.ski_template.set_labeled_values(parameter_values)
 
@@ -761,7 +756,7 @@ class ParameterExplorer(FittingComponent):
             self.ski_template.saveto(ski_path)
 
             # Create the SKIRT simulation definition
-            definition = SingleSimulationDefinition(ski_path, simulation_output_path, self.input_paths)
+            definition = SingleSimulationDefinition(ski_path, simulation_output_path, self.input_paths, name=simulation_name)
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
@@ -776,11 +771,73 @@ class ParameterExplorer(FittingComponent):
             # Set scheduling options (for the different remote hosts with a scheduling system)
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
+            # Debugging
+            log.debug("Adding entry to the parameters table with:")
+            log.debug(" - Simulation name: " + simulation_name)
+            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
+
             # Add an entry to the parameters table
             self.parameters_table.add_entry(simulation_name, parameter_values)
 
-        # Run the launcher, schedules the simulations
+            # Save the parameters table
+            self.parameters_table.save()
+
+        # Run the launcher, launches the simulations and retrieves and analyses finished simulations
         simulations = self.launcher.run()
+
+        # Check the number of simulations that were effectively launched
+        if self.nmodels != len(simulations):
+
+            # No simulations were launched
+            if len(simulations) == 0:
+
+                log.error("No simulations could be launched: removing generation")
+                log.error("Try again later")
+
+                log.error("Cleaning up generation and quitting ...")
+
+                # Remove this generation from the generations table
+                self.generations_table.remove_entry(self.generation_name)
+                self.generations_table.save()
+
+                # Remove the generation directory
+                fs.remove_directory(self.generation.path)
+
+                # Quit
+                exit()
+
+            # Less simulations were launched
+            elif len(simulations) < self.nmodels:
+
+                launched_simulation_names = [simulation.name for simulation in simulations]
+                if None in launched_simulation_names: raise RuntimeError("Some or all simulation don't have a name defined")
+
+                log.error("Launching a simulation for the following models failed:")
+                log.error("")
+
+                # Loop over all simulations in the parameters table
+                failed_indices = []
+                for index, simulation_name in enumerate(self.parameters_table.simulation_names):
+
+                    # This simulation is OK
+                    if simulation_name in launched_simulation_names: continue
+
+                    log.error("Model #" + str(index))
+                    log.error("")
+                    parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
+                    for label in parameter_values: log.error(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
+                    log.error("")
+
+                    failed_indices.append(index)
+
+                log.error("Removing corresponding entries from the model parameters table ...")
+
+                # Remove rows and save
+                self.parameters_table.remove_rows(failed_indices)
+                self.parameters_table.save()
+
+            # Unexpected
+            else: raise RuntimeError("Unexpected error where nsmulations > nmodels")
 
     # -----------------------------------------------------------------
 
@@ -818,13 +875,13 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the generation info
+        # 1. Write the generation info
         self.write_generation()
 
-        # Write the parameters table
+        # 2. Write the parameters table
         self.write_parameters()
 
-        # Write the (empty) chi squared table
+        # 3. Write the (empty) chi squared table
         self.write_chi_squared()
 
     # -----------------------------------------------------------------
@@ -855,10 +912,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the parameter values ...")
+        log.info("Writing the model parameters table ...")
 
         # Save the parameters table
-        self.parameters_table.saveto(self.generation.parameter_table_path)
+        self.parameters_table.saveto(self.generation.parameters_table_path)
 
     # -----------------------------------------------------------------
 

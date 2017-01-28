@@ -15,12 +15,14 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 from abc import ABCMeta
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..tools import parsing
 from ..tools.logging import log
 from ..tools import formatting as fmt
 from ..tools.stringify import stringify
+from .map import Map
 
 # -----------------------------------------------------------------
 
@@ -42,6 +44,54 @@ class SimplePropertyComposite(object):
 
         # The path
         self._path = None
+
+        # The descriptions
+        self._descriptions = dict()
+
+        # The parsing types
+        self._ptypes = dict()
+
+        # The sections
+        self._sections = OrderedDict()
+
+    # -----------------------------------------------------------------
+
+    def add_property(self, name, ptype, description, default_value=None):
+
+        """
+        This function ...
+        :param name:
+        :param ptype:
+        :param description:
+        :param default_value:
+        :return:
+        """
+
+        # Set the attribute with the default value
+        setattr(self, name, default_value)
+
+        # Set the ptype
+        self._ptypes[name] = ptype
+
+        # Set the description
+        self._descriptions[name] = description
+
+    # -----------------------------------------------------------------
+
+    def add_section(self, name, description):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :return:
+        """
+
+        # Set an attribute that is a Map
+        setattr(self, name, Map())
+
+        # Set the description
+        self._descriptions[name] = description
 
     # -----------------------------------------------------------------
 

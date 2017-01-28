@@ -165,10 +165,11 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def simulations(self):
+    def simulations(self, simulation_names=None):
 
         """
         This function ...
+        :param simulation_names:
         :return:
         """
 
@@ -196,7 +197,8 @@ class SkirtArguments(object):
 
                     # Create the simulation and add it to the list
                     filepath = fs.join(dirpath, filename)
-                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out, ski_path=filepath))
+                    simulation_name = simulation_names[filepath] if simulation_names is not None and filepath in simulation_names else None
+                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out, ski_path=filepath, name=simulation_name))
 
         # Check whether the ski pattern is ought to represent only one particular simulation
         if self.single:

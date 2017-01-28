@@ -669,16 +669,16 @@ class SEDPlotter(Configurable):
                 # Get lowest and highest flux and wavelength for this curve
                 lowest = np.min(fluxes)
                 highest = np.max(fluxes)
-                lowest_lambda = np.min(wavelengths)
-                highest_lambda = np.max(wavelengths)
+                #lowest_lambda = np.min(wavelengths)
+                #highest_lambda = np.max(wavelengths)
 
                 # Adapt flux range
                 if self._min_flux is None or lowest < self._min_flux: self._min_flux = lowest
                 if self._max_flux is None or highest > self._max_flux: self._max_flux = highest
 
                 # Keep track of the minimal and maximal wavelength
-                if self._min_wavelength is None or lowest_lambda < self._min_wavelength: self._min_wavelength = lowest_lambda
-                if self._max_wavelength is None or highest_lambda > self._max_wavelength: self._max_wavelength = highest_lambda
+                #if self._min_wavelength is None or lowest_lambda < self._min_wavelength: self._min_wavelength = lowest_lambda
+                #if self._max_wavelength is None or highest_lambda > self._max_wavelength: self._max_wavelength = highest_lambda
 
                 if sed.has_errors:
 
@@ -719,16 +719,16 @@ class SEDPlotter(Configurable):
                 # Get lowest and highest flux and wavelength for this curve
                 lowest = np.min(fluxes)
                 highest = np.max(fluxes)
-                lowest_lambda = np.min(wavelengths)
-                highest_lambda = np.max(wavelengths)
+                #lowest_lambda = np.min(wavelengths)
+                #highest_lambda = np.max(wavelengths)
 
                 # Adapt flux range
                 if self._min_flux is None or lowest < self._min_flux: self._min_flux = lowest
                 if self._max_flux is None or highest > self._max_flux: self._max_flux = highest
 
                 # Keep track of the minimal and maximal wavelength
-                if self._min_wavelength is None or lowest_lambda < self._min_wavelength: self._min_wavelength = lowest_lambda
-                if self._max_wavelength is None or highest_lambda > self._max_wavelength: self._max_wavelength = highest_lambda
+                #if self._min_wavelength is None or lowest_lambda < self._min_wavelength: self._min_wavelength = lowest_lambda
+                #if self._max_wavelength is None or highest_lambda > self._max_wavelength: self._max_wavelength = highest_lambda
                 ##
 
                 if sed.has_errors:

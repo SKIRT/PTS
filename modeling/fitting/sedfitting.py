@@ -123,7 +123,7 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Getting the parameter values of the best model for the finished generations (if not already done)")
+        log.info("Getting the parameter values of the best model for the finished generations (if not already done) ...")
 
         # Loop over the finished generations
         for generation_name in self.finished_generations:

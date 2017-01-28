@@ -22,6 +22,7 @@ from .definition import SimulationDefinition
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
+from .definition import SingleSimulationDefinition
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -138,6 +139,10 @@ class SkirtExec:
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
     def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False):
 
+        # The simulation names for different ski pats
+        simulation_names = dict()
+
+        # Simulation definition
         if isinstance(definition_or_arguments, SimulationDefinition):
 
             # The logging options cannot be None
@@ -146,6 +151,10 @@ class SkirtExec:
             # Create the arguments
             arguments = SkirtArguments.from_definition(definition_or_arguments, logging_options, parallelization, emulate=emulate)
 
+            # Set simulation name
+            if isinstance(definition_or_arguments, SingleSimulationDefinition): simulation_names[definition_or_arguments.ski_path] = definition_or_arguments.name
+
+        # Arguments are passed to the function
         elif isinstance(definition_or_arguments, SkirtArguments): arguments = definition_or_arguments
         else: raise ValueError("Invalid argument: should be simulation definition or SKIRT arguments instance")
 
@@ -174,7 +183,7 @@ class SkirtExec:
         else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
         # Return the list of simulations so that their results can be followed up
-        return arguments.simulations()
+        return arguments.simulations(simulation_names=simulation_names)
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
