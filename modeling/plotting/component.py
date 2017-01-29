@@ -12,17 +12,24 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta, abstractmethod
+
 # Import the relevant PTS classes and modules
-from ..component.galaxy import GalaxyModelingComponent
+from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class PlottingComponent(GalaxyModelingComponent):
+class PlottingComponent(ModelingComponent):
     
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -46,44 +53,6 @@ class PlottingComponent(GalaxyModelingComponent):
         self.plot_maps_path = None
         self.plot_fitting_path = None
         self.plot_analysis_path = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def features(cls):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return cls.plot_functions.keys()
-
-    # -----------------------------------------------------------------
-
-    def run(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # 1. Call the setup function
-        self.setup(**kwargs)
-
-        # Check which features should be plotted
-        if self.config.features is None: features_to_plot = self.features()
-        else: features_to_plot = self.config.features
-
-        # Plot the features
-        for feature in features_to_plot:
-
-            # Call the load function (if necessary)
-            if feature in self.load_functions: self.load_functions[feature](self)
-
-            # Call the plot function
-            self.plot_functions[feature](self)
 
     # -----------------------------------------------------------------
 
@@ -120,5 +89,46 @@ class PlottingComponent(GalaxyModelingComponent):
 
         # Set the path to the plot/analysis directory
         self.plot_analysis_path = fs.create_directory_in(self.plot_path, "analysis")
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 2. Load the data to be plotted
+        self.load()
+
+        # 3. Plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def load(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
 
 # -----------------------------------------------------------------

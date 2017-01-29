@@ -49,6 +49,23 @@ class Instrument(SimplePropertyComposite):
 
     __metaclass__ = ABCMeta
 
+    # -----------------------------------------------------------------
+
+    def __init__(self):
+
+        """
+        This function ...
+        """
+
+        # Call the constructor of the base class
+        super(Instrument, self).__init__()
+
+        # Define properties
+        self.add_property("distance", "quantity", "distance", None)
+        self.add_property("inclination", "angle", "inclination", None)
+        self.add_property("azimuth", "angle", "azimuth", None)
+        self.add_property("position_angle", "angle", "position angle", None)
+
 # -----------------------------------------------------------------
 
 class SEDInstrument(Instrument):
@@ -57,24 +74,19 @@ class SEDInstrument(Instrument):
     This class ...
     """
 
-    def __init__(self, distance, inclination, azimuth, position_angle):
+    def __init__(self, **kwargs):
 
         """
         This function ...
-        :param distance:
-        :param inclination:
-        :param azimuth:
-        :param position_angle:
+        :param **kwargs:
         :return:
         """
 
         # Call the constructor of the base class
         super(SEDInstrument, self).__init__()
 
-        self.distance = distance
-        self.inclination = inclination
-        self.azimuth = azimuth
-        self.position_angle = position_angle
+        # Set values
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -87,7 +99,7 @@ class SEDInstrument(Instrument):
         :return:
         """
 
-        return cls(projection.distance, projection.inclination, projection.azimuth, projection.position_angle)
+        return cls(distance=projection.distance, inclination=projection.inclination, azimuth=projection.azimuth, position_angle=projection.position_angle)
 
 # -----------------------------------------------------------------
 
@@ -97,35 +109,26 @@ class FrameInstrument(Instrument):
     This class ...
     """
 
-    def __init__(self, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y):
+    def __init__(self, **kwargs):
 
         """
         This function ...
-        :param distance:
-        :param inclination:
-        :param azimuth:
-        :param position_angle:
-        :param field_x:
-        :param field_y:
-        :param pixels_x:
-        :param pixels_y:
-        :param center_x:
-        :param center_y:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
         super(FrameInstrument, self).__init__()
 
-        self.distance = distance
-        self.inclination = inclination
-        self.azimuth = azimuth
-        self.position_angle = position_angle
-        self.field_x = field_x
-        self.field_y = field_y
-        self.pixels_x = pixels_x
-        self.pixels_y = pixels_y
-        self.center_x = center_x
-        self.center_y = center_y
+        # Define properties
+        self.add_property("field_x", "quantity", "x field")
+        self.add_property("field_y", "quantity", "y field")
+        self.add_property("pixels_x", "positive_integer", "x pixels")
+        self.add_property("pixels_y", "positive_integer", "y pixels")
+        self.add_property("center_x", "quantity", "x center")
+        self.add_property("center_y", "quantity", "y center")
+
+        # Set values
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -138,9 +141,10 @@ class FrameInstrument(Instrument):
         :return:
         """
 
-        return cls(projection.distance, projection.inclination, projection.azimuth, projection.position_angle,
-                   projection.field_x_physical, projection.field_y_physical, projection.pixels_x, projection.pixels_y,
-                   projection.center_x, projection.center_y)
+        return cls(distance=projection.distance, inclination=projection.inclination, azimuth=projection.azimuth,
+                   position_angle=projection.position_angle, field_x=projection.field_x_physical,
+                   field_y=projection.field_y_physical, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
+                   center_x=projection.center_x, center_y=projection.center_y)
 
 # -----------------------------------------------------------------
 
@@ -150,36 +154,27 @@ class SimpleInstrument(Instrument):
     This class ...
     """
 
-    def __init__(self, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y):
+    def __init__(self, **kwargs):
 
         """
         This function ...
-        :param distance:
-        :param inclination:
-        :param azimuth:
-        :param position_angle:
-        :param field_x:
-        :param field_y:
-        :param pixels_x:
-        :param pixels_y:
-        :param center_x:
-        :param center_y:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
         super(SimpleInstrument, self).__init__()
 
-        self.distance = distance
-        self.inclination = inclination
-        self.azimuth = azimuth
-        self.position_angle = position_angle
-        self.field_x = field_x
-        self.field_y = field_y
-        self.pixels_x = pixels_x
-        self.pixels_y = pixels_y
-        self.center_x = center_x
-        self.center_y = center_y
+        # Define properties
+        self.add_property("field_x", "quantity", "x field")
+        self.add_property("field_y", "quantity", "y field")
+        self.add_property("pixels_x", "positive_integer", "x pixels")
+        self.add_property("pixels_y", "positive_integer", "y pixels")
+        self.add_property("center_x", "quantity", "x center")
+        self.add_property("center_y", "quantity", "y center")
+
+        # Set values
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -192,8 +187,10 @@ class SimpleInstrument(Instrument):
         :return:
         """
 
-        return cls(projection.distance, projection.inclination, projection.azimuth, projection.position_angle, projection.field_x_physical,
-                   projection.field_y_physical, projection.pixels_x, projection.pixels_y, projection.center_x, projection.center_y)
+        return cls(distance=projection.distance, inclination=projection.inclination, azimuth=projection.azimuth,
+                   position_angle=projection.position_angle, field_x=projection.field_x_physical,
+                   field_y=projection.field_y_physical, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
+                   center_x=projection.center_x, center_y=projection.center_y)
 
 # -----------------------------------------------------------------
 
@@ -203,36 +200,27 @@ class FullInstrument(Instrument):
     This class ...
     """
 
-    def __init__(self, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y):
+    def __init__(self, **kwargs):
 
         """
         This function ...
-        :param distance:
-        :param inclination:
-        :param azimuth:
-        :param position_angle:
-        :param field_x:
-        :param field_y:
-        :param pixels_x:
-        :param pixels_y:
-        :param center_x:
-        :param center_y:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
         super(FullInstrument, self).__init__()
 
-        self.distance = distance
-        self.inclination = inclination
-        self.azimuth = azimuth
-        self.position_angle = position_angle
-        self.field_x = field_x
-        self.field_y = field_y
-        self.pixels_x = pixels_x
-        self.pixels_y = pixels_y
-        self.center_x = center_x
-        self.center_y = center_y
+        # Define properties
+        self.add_property("field_x", "quantity", "x field")
+        self.add_property("field_y", "quantity", "y field")
+        self.add_property("pixels_x", "positive_integer", "x pixels")
+        self.add_property("pixels_y", "positive_integer", "y pixels")
+        self.add_property("center_x", "quantity", "x center")
+        self.add_property("center_y", "quantity", "y center")
+
+        # Set values
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -245,8 +233,9 @@ class FullInstrument(Instrument):
         :return:
         """
 
-        return cls(projection.distance, projection.inclination, projection.azimuth, projection.position_angle,
-                   projection.field_x_physical, projection.field_y_physical, projection.pixels_x, projection.pixels_y,
-                   projection.center_x, projection.center_y)
+        return cls(distance=projection.distance, inclination=projection.inclination, azimuth=projection.azimuth,
+                   position_angle=projection.position_angle, field_x=projection.field_x_physical,
+                   field_y=projection.field_y_physical, pixels_x=projection.pixels_x, pixels_y=projection.pixels_y,
+                   center_x=projection.center_x, center_y=projection.center_y)
 
 # -----------------------------------------------------------------

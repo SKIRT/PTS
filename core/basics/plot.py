@@ -68,6 +68,7 @@ class Plot(object):
 
         # Setup the figure
         self.figure = plt.figure(figsize=size)
+        plt.clf()
         self.ax = self.figure.gca()
 
         # The plot path
@@ -75,7 +76,7 @@ class Plot(object):
 
         # Properties
         self.add_borders = False
-        self.transparent = True
+        self.transparent = False
         self.format = None
 
     # -----------------------------------------------------------------

@@ -26,6 +26,7 @@ from .map import Map
 from ..tools import parsing, stringify
 from ..tools import filesystem as fs
 from ..tools.logging import log
+from .composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
@@ -826,22 +827,55 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def import_section_from_properties(self, name, description, cls):
+    def import_section_from_composite_class(self, name, description, cls):
+
+        """
+        This funtion ...
+        """
+
+        # First create 'default' instance
+        instance = cls()
+        self.import_section_from_properties(name, description, instance)
+
+    # -----------------------------------------------------------------
+
+    def import_section_from_properties(self, name, description, instance):
 
         """
         This function creates a configuration section from a SimplePropertyComposite-derived class
         :param name:
         :param description:
-        :param composite:
+        :param instance:
         :return:
         """
 
-        #prefix = name
+        default_values = vars(instance)
 
-        default_values = vars(cls())
+        # Add empty section
+        self.add_section(name, description)
 
-        # Add the section
-        #self.sections[name]
+        # Loop over the properties
+        for pname in default_values:
+
+            default_value = default_values[pname]
+
+            # Section
+            if isinstance(default_value, SimplePropertyComposite):
+
+                # Recursive call to this function
+                pdescription = instance._descriptions[pname]
+                self.sections[name].import_section_from_properties(pname, pdescription, default_value)
+
+            else:
+
+                # Get the type, description and the choices
+                ptype = instance._types[pname]
+                pdescription = instance._descriptions[pname]
+                choices = instance._choices[pname]
+
+                # Add to the definition
+                if ptype == "boolean": self.sections[name].add_flag(pname, pdescription, default_value)
+                else: self.sections[name].add_optional(pname, ptype, pdescription, default_value, choices=choices)
 
     # -----------------------------------------------------------------
 

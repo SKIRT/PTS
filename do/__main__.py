@@ -39,6 +39,9 @@ from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time
 from pts.do.commandline import show_all_available, show_possible_matches
+from pts.modeling.welcome import welcome as welcome_modeling
+from pts.magic.welcome import welcome as welcome_magic
+from pts.dustpedia.welcome import welcome as welcome_dustpedia
 
 # -----------------------------------------------------------------
 
@@ -143,6 +146,11 @@ elif len(table_matches) == 1 and len(matches) == 0:
     sys.argv[0] = fs.join(introspection.pts_root_dir, module_path.replace(".", "/") + ".py") # this is actually not necessary (and not really correct, it's not like we are calling the module where the class is..)
     del sys.argv[1] # but this is important
 
+    # Welcome message
+    if subproject == "modeling": welcome_modeling()
+    elif subproject == "magic": welcome_magic()
+    elif subproject == "dustpedia": welcome_dustpedia()
+
     # Get the class of the configurable of which an instance has to be created
     module = importlib.import_module(module_path)
     try: cls = getattr(module, class_name)
@@ -151,7 +159,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
 
     # Import things
     from pts.core.tools import logging
-    from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
+    from pts.core.basics.configuration import ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
 
     ## GET THE CONFIGURATION DEFINITION
 

@@ -267,9 +267,6 @@ class Modeler(Configurable):
         # Call the setup function of the base class
         super(Modeler, self).setup(**kwargs)
 
-        # Give welcome message
-        welcome()
-
         # Set the path to the modeling directory
         self.modeling_path = self.config.path
 
@@ -446,29 +443,5 @@ class Modeler(Configurable):
 
         # Inform the user
         log.info("Writing ...")
-
-# -----------------------------------------------------------------
-
-def welcome(width=50, prefix="    "):
-
-    """
-    This function ...
-    :param width:
-    :param prefix:
-    :return:
-    """
-
-    fmt.print_empty()
-    fmt.print_filled("#", prefix=prefix, length=width)
-    fmt.print_border("#", prefix=prefix, length=width)
-    fmt.print_centered_around_border("Welcome to PTS/Modeling", "#", prefix=prefix, length=width)
-    fmt.print_centered_around_border("Author: Sam Verstocken", "#", prefix=prefix, length=width)
-    fmt.print_centered_around_border("PTS version: " + introspection.pts_version(), "#", prefix=prefix, length=width)
-    fmt.print_centered_around_border("Last update: " + introspection.pts_update_date(), "#", prefix=prefix, length=width)
-    fmt.print_border("#", prefix=prefix, length=width)
-    fmt.print_centered_around_border("© Astronomical Observatory, Ghent University", "#", prefix=prefix, length=width)
-    fmt.print_border("#", prefix=prefix, length=width)
-    fmt.print_filled("#", prefix=prefix, length=width)
-    fmt.print_empty()
 
 # -----------------------------------------------------------------

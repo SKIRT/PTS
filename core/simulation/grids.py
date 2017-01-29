@@ -47,6 +47,26 @@ class DustGrid(SimplePropertyComposite):
 
     __metaclass__ = ABCMeta
 
+    # -----------------------------------------------------------------
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(DustGrid, self).__init__()
+
+        # Define properties
+        self.add_property("min_x", "quantity", "minimum x")
+        self.add_property("max_x", "quantity", "maximum x")
+        self.add_property("min_y", "quantity", "minimum y")
+        self.add_property("max_y", "quantity", "maximum y")
+        self.add_property("min_z", "quantity", "minimum z")
+        self.add_property("max_z", "quantity", "maximum z")
+        self.add_property("write", "boolean", "write grid", True)
+
 # -----------------------------------------------------------------
 
 class BinaryTreeDustGrid(DustGrid):
@@ -55,47 +75,28 @@ class BinaryTreeDustGrid(DustGrid):
     This class ...
     """
 
-    def __init__(self, min_x, max_x, min_y, max_y, min_z, max_z, write=True, min_level=6, max_level=30,
-                 search_method="Neighbor", sample_count=100, max_optical_depth=0, max_mass_fraction=1e-6,
-                 max_dens_disp_fraction=0, direction_method="Alternating"):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
-        :param min_x:
-        :param max_x:
-        :param min_y:
-        :param max_y:
-        :param min_z:
-        :param max_z:
-        :param write:
-        :param min_level:
-        :param max_level:
-        :param search_method:
-        :param sample_count:
-        :param max_optical_depth:
-        :param max_mass_fraction:
-        :param max_dens_disp_fraction:
-        :param direction_method:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
         super(BinaryTreeDustGrid, self).__init__()
 
-        self.min_x = min_x
-        self.max_x = max_x
-        self.min_y = min_y
-        self.max_y = max_y
-        self.min_z = min_z
-        self.max_z = max_z
-        self.write = write
-        self.min_level = min_level
-        self.max_level = max_level
-        self.search_method = search_method
-        self.sample_count = sample_count
-        self.max_optical_depth = max_optical_depth
-        self.max_mass_fraction = max_mass_fraction
-        self.max_dens_disp_fraction = max_dens_disp_fraction
-        self.direction_method = direction_method
+        # Define properties
+        self.add_property("min_level", "positive_integer", "minimum level", 6)
+        self.add_property("max_level", "positive_integer", "maximum level", 30)
+        self.add_property("search_method", "string", "search method", "Neighbor", choices=["Neighbor", "TopDown", "Bookkeeping"])
+        self.add_property("sample_count", "positive_integer", "number of samples", 100)
+        self.add_property("max_optical_depth", "real", "maximum optical depth", 0)
+        self.add_property("max_mass_fraction", "real", "maximum mass fraction", 1e-6)
+        self.add_property("max_dens_disp_fraction", "real", "maximum density dispersion fraction", 0)
+        self.add_property("direction_method", "string", "direction method", "Alternating", choices=["Alternating"])
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -105,47 +106,28 @@ class OctTreeDustGrid(DustGrid):
     This class ...
     """
 
-    def __init__(self, min_x, max_x, min_y, max_y, min_z, max_z, write=True, min_level=2, max_level=6,
-                 search_method="Neighbor", sample_count=100, max_optical_depth=0, max_mass_fraction=1e-6,
-                 max_dens_disp_fraction=0, barycentric=False):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
-        :param min_x:
-        :param max_x:
-        :param min_y:
-        :param max_y:
-        :param min_z:
-        :param max_z:
-        :param write:
-        :param min_level:
-        :param max_level:
-        :param search_method:
-        :param sample_count:
-        :param max_optical_depth:
-        :param max_mass_fraction:
-        :param max_dens_disp_fraction:
-        :param barycentric:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
         super(OctTreeDustGrid, self).__init__()
 
-        self.min_x = min_x
-        self.max_x = max_x
-        self.min_y = min_y
-        self.max_y = max_y
-        self.min_z = min_z
-        self.max_z = max_z
-        self.write = write
-        self.min_level = min_level
-        self.max_level = max_level
-        self.search_method = search_method
-        self.sample_count = sample_count
-        self.max_optical_depth = max_optical_depth
-        self.max_mass_fraction = max_mass_fraction
-        self.max_dens_disp_fraction = max_dens_disp_fraction
-        self.barycentric = barycentric
+        # Define properties
+        self.add_property("min_level", "positive_integer", "minimum level", 2)
+        self.add_property("max_level", "positive_integer", "maximum level", 6)
+        self.add_property("search_method", "string", "search method", "Neighbor", choices=["Neighbor", "TopDown", "Bookkeeping"])
+        self.add_property("sample_count", "positive_integer", "number of samples", 100)
+        self.add_property("max_optical_depth", "real", "maximum optical depth", 0)
+        self.add_property("max_mass_fraction", "real", "maximum mass fraction", 1e-6)
+        self.add_property("max_dens_disp_fraction", "real", "maximum density dispersion fraction", 0)
+        self.add_property("barycentric", "boolean", "barycentric", False)
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -155,38 +137,24 @@ class CartesianDustGrid(DustGrid):
     This class ...
     """
 
-    def __init__(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1., write=True):
+    def __init__(self, *kwargs):
 
         """
         The constructor ...
-        :param min_x:
-        :param max_x:
-        :param min_y:
-        :param max_y:
-        :param min_z:
-        :param max_z:
-        :param x_bins:
-        :param y_bins:
-        :param z_bins:
-        :param mesh_type:
-        :param ratio:
-        :param write:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
         super(CartesianDustGrid, self).__init__()
 
-        self.min_x = min_x
-        self.max_x = max_x
-        self.min_y = min_y
-        self.max_y = max_y
-        self.min_z = min_z
-        self.max_z = max_z
-        self.x_bins = x_bins
-        self.y_bins = y_bins
-        self.z_bins = z_bins
-        self.mesh_type = mesh_type
-        self.ratio = ratio
-        self.write = write
+        # Define properties
+        self.add_property("x_bins", "positive_integer", "number of x bins")
+        self.add_property("y_bins", "positive_integer", "number of y bins")
+        self.add_property("z_bins", "positive_integer", "number of z bins")
+        self.add_property("mesh_type", "string", "mesh type", "linear")
+        self.add_property("ratio", "real", "ratio", 1.)
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------

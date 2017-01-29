@@ -97,6 +97,9 @@ class SmartTable(Table):
         :return:
         """
 
+        # Setup has already been called
+        if len(self.colnames) != 0: return
+
         # Create the table names and types lists
         for entry in self.column_info:
 

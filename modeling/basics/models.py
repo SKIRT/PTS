@@ -65,22 +65,27 @@ class SersicModel3D(Model):
     This function ...
     """
 
-    def __init__(self, effective_radius, index, y_flattening=1., z_flattening=1., azimuth=Angle(0.0, "deg"), tilt=Angle(0.0, "deg")):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
         super(SersicModel3D, self).__init__()
 
-        self.effective_radius = effective_radius
-        self.index = index
-        self.y_flattening = y_flattening
-        self.z_flattening = z_flattening
-        self.azimuth = azimuth
-        self.tilt = tilt
+        # Define properties
+        self.add_property("effective_radius", "quantity", "effective radius")
+        self.add_property("index", "integer", "sersic index")
+        self.add_property("y_flattening", "real", "flattening along y direction", 1.)
+        self.add_property("z_flattening", "real", "flattening along z direction", 1.)
+        self.add_property("azimuth", "angle", "azimuth angle", Angle(0.0, "deg"))
+        self.add_property("tilt", "angle", "tilt angle", Angle(0.0, "deg"))
+
+        # Set properties
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -134,7 +139,8 @@ class SersicModel3D(Model):
         else: raise ValueError("Incorrect value for 'azimuth_or_tilt'")
 
         # Create a new Sersic model and return it
-        return cls(effective_radius, index, y_flattening, z_flattening, azimuth, tilt)
+        return cls(effective_radius=effective_radius, index=index, y_flattening=y_flattening, z_flattening=z_flattening,
+                   azimuth=azimuth, tilt=tilt)
 
 # -----------------------------------------------------------------
 
@@ -144,23 +150,27 @@ class ExponentialDiskModel3D(Model):
     This function ...
     """
 
-    def __init__(self, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0, tilt=0):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
         super(ExponentialDiskModel3D, self).__init__()
 
-        # Set the properties
-        self.radial_scale = radial_scale
-        self.axial_scale = axial_scale
-        self.radial_truncation = radial_truncation
-        self.axial_truncation = axial_truncation
-        self.inner_radius = inner_radius
-        self.tilt = tilt
+        # Define properties
+        self.add_property("radial_scale", "quantity", "radial scale")
+        self.add_property("axial_scale", "quantity", "axial scale")
+        self.add_property("radial_truncation", "real", "radial truncation", 0)
+        self.add_property("axial_truncation", "real", "axial truncation", 0)
+        self.add_property("inner_radius", "real", "inner radius", 0)
+        self.add_property("tilt", "angle", "tilt", Angle(0.0, "deg"))
+
+        # Set properties
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -190,7 +200,7 @@ class ExponentialDiskModel3D(Model):
         tilt = Angle(90., "deg") - tilt
 
         # Create a new exponential disk model and return it
-        return cls(radial_scale, axial_scale, tilt=tilt)
+        return cls(radial_scale=radial_scale, axial_scale=axial_scale, tilt=tilt)
 
 # -----------------------------------------------------------------
 
@@ -200,10 +210,11 @@ class DeprojectionModel3D(Model):
     This class ...
     """
 
-    def __init__(self, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -214,15 +225,19 @@ class DeprojectionModel3D(Model):
         # inclination: 0 deg to 90 deg
         # center in pixel coordinates!
 
-        self.filename = filename
-        self.pixelscale = pixelscale
-        self.position_angle = position_angle
-        self.inclination = inclination
-        self.x_size = x_size
-        self.y_size = y_size
-        self.x_center = x_center
-        self.y_center = y_center
-        self.scale_height = scale_height
+        # Define the properties
+        self.add_property("filename", "string", "name of the input FITS file")
+        self.add_property("pixelscale", "quantity", "pixelscale of the FITS image")
+        self.add_property("position_angle", "angle", "position angle")
+        self.add_property("inclination", "angle", "inclination")
+        self.add_property("x_size", "positive_integer", "number of x pixels")
+        self.add_property("y_size", "positive_integer", "number of y pixels")
+        self.add_property("x_center", "real", "x center in image coordinates")
+        self.add_property("y_center", "real", "y center in image coordinates")
+        self.add_property("scale_height", "quantity", "scale height")
+
+        # Set the properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -434,12 +449,16 @@ class SersicModel2D(Model):
         # Call the constructor of the base class
         super(SersicModel2D, self).__init__()
 
-        self.rel_contribution = kwargs.pop("rel_contribution", None)
-        self.fluxdensity = kwargs.pop("fluxdensity", None)
-        self.axial_ratio = kwargs.pop("axial_ratio", None)
-        self.position_angle = kwargs.pop("position_angle", None)  # (degrees ccw from North)
-        self.effective_radius = kwargs.pop("effective_radius", None)
-        self.index = kwargs.pop("index", None)
+        # Define properties
+        self.add_property("rel_contribution", "real", "relative contribution")
+        self.add_property("fluxdensity", "quantity", "flux density")
+        self.add_property("axial_ratio", "real", "axial ratio")
+        self.add_property("position_angle", "angle", "position angle") # (degrees ccw from North)
+        self.add_property("effective_radius", "quantity", "effective radius")
+        self.add_property("index", "integer", "sersic index")
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -458,11 +477,15 @@ class ExponentialDiskModel2D(Model):
         # Call the constructor of the base class
         super(ExponentialDiskModel2D, self).__init__()
 
-        self.rel_contribution = kwargs.pop("relative_contribution", None)
-        self.fluxdensity = kwargs.pop("fluxdensity", None)
-        self.axial_ratio = kwargs.pop("axial_ratio", None)
-        self.position_angle = kwargs.pop("position_angle", None) # (degrees ccw from North)
-        self.mu0 = kwargs.pop("mu0", None)
-        self.scalelength = kwargs.pop("scalelength", None)
+        # Define properties
+        self.add_property("rel_contribution", "real", "relative contribution")
+        self.add_property("fluxdensity", "quantity", "flux density")
+        self.add_property("axial_ratio", "real", "axial ratio")
+        self.add_property("position_angle", "angle", "position_angle") # (degrees ccw from North)
+        self.add_property("mu0", "quantity", "surface brightness at center")
+        self.add_property("scalelength", "quantity", "scale length")
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------

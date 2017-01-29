@@ -5,9 +5,15 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.remote.host import find_host_ids
+# -----------------------------------------------------------------
+#  Package initialization file
+# -----------------------------------------------------------------
 
-
+## \package pts.modeling.plotting.fitting TO DO
+#
+# This package ...
+#
 
 # -----------------------------------------------------------------
+
+# Import classes to make them available at the level of this subpackage

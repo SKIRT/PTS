@@ -33,19 +33,21 @@ from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
+def get_features(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+# -----------------------------------------------------------------
+
 class AnalysisPlotter(PlottingComponent, AnalysisComponent):
     
     """
     This class...
     """
-
-    # The load functions
-    load_functions = dict()
-
-    # The plot functions
-    plot_functions = dict()
-
-    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 

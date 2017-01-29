@@ -199,7 +199,7 @@ class TransmissionPlotter(Configurable):
         else: self.output = self.config.output
 
         # Initialize the plot
-        self.plt = Plot()
+        self.plt = Plot(self.config.plot.figsize)
 
     # -----------------------------------------------------------------
 
@@ -310,10 +310,6 @@ class TransmissionPlotter(Configurable):
         # Inform the user
         log.info("Plotting the transmission plot ...")
 
-        # Create the figure
-        self._figure = plt.figure(figsize=self.config.plot.figsize)
-        plt.clf()
-
         # Set axes limits
         plt.xlim(self.min_wavelength, self.max_wavelength)
         plt.ylim(self.min_transmission, self.max_transmission*1.05)
@@ -387,30 +383,10 @@ class TransmissionPlotter(Configurable):
         # Add the legend
         add_legend(ax, self.config.plot, "Filters")
 
-        # Finish the plot
-        self.finish_plot()
-
         # Save the plot
-        #self.plt.saveto(self.output)
-
-    # -----------------------------------------------------------------
-
-    def finish_plot(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        if type(self.output).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
-        elif self.output is None: log.debug("Showing the transmission plot ...")
-        else: log.debug("Saving the transmission plot to " + str(self.output) + " ...")
-
-        # Save the figure
-        if self.output is not None: plt.savefig(self.output, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
-        else: plt.show()
-        plt.close()
+        if self.output is None: self.plt.show()
+        else: self.plt.saveto(self.output)
+        self.plt.close()
 
 # -----------------------------------------------------------------
 

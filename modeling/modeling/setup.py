@@ -24,7 +24,6 @@ from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
 from ...core.data.sed import ObservedSED
 from ...core.simulation.skifile import LabeledSkiFile
-from .modeler import welcome
 
 # -----------------------------------------------------------------
 
@@ -102,9 +101,6 @@ class ModelingSetupTool(Configurable):
         This function ...
         :return:
         """
-
-        # Show welcome message
-        welcome()
 
         # Call the setup function of the base class
         super(ModelingSetupTool, self).setup()

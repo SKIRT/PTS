@@ -6,15 +6,17 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.modeling.plotting.analysis import get_features
-from pts.modeling.config.plot import definition
+from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.fitting.component import get_generation_names
 from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
+# Create the configuration
+definition = ConfigurationDefinition(log_path="log", config_path="config")
+
 # Add settings
-features = get_features(fs.cwd())
-definition.pos_optional["features"].choices = features
-definition.pos_optional["features"].default = features.keys()
+definition.add_positional_optional("features", "string_list", "features to be plotted")
+definition.add_positional_optional("generation", "string", "generation for which to plot the features", choices=get_generation_names(fs.cwd()))
 
 # -----------------------------------------------------------------

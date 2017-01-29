@@ -61,11 +61,14 @@ class PreparationStatistics(SimplePropertyComposite):
         # Call the constructor of the base class
         super(PreparationStatistics, self).__init__()
 
-        # Get properties
-        self.convolution_filter = kwargs.pop("convolution_filter")
-        self.rebinning_filter = kwargs.pop("rebinning_filter")
-        self.not_rebinned = kwargs.pop("not_rebinned")
-        self.not_convolved = kwargs.pop("not_convolved")
+        # Define properties
+        self.add_property("convolution_filter", "filter", "convolution filter")
+        self.add_property("rebinning_filter", "filter", "rebinning filter")
+        self.add_property("not_rebinned", "string_list", "images that are not rebinned")
+        self.add_property("not_convolved", "string_list", "images that are not convolved")
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 

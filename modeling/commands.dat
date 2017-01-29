@@ -33,14 +33,14 @@ analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Ana
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residual images
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
-plot_data | plot_data | plotting.data.DataPlotter | arguments | Make plots of the data
-plot_preparation | plot_preparation | plotting.preparation.PreparationPlotter | arguments | Make plots of the preparation step
-plot_decomposition | plot_decomposition | plotting.decomposition.DecompositionPlotter | arguments | Make plots of the decomposition step
-plot_truncation | plot_truncation | plotting.truncation.TruncationPlotter | arguments | Make plots of the truncation step
-plot_photometry | plot_photometry | plotting.photometry.PhotometryPlotter | arguments | Make plots of the photometry step
-plot_maps | plot_maps | plotting.maps.MapsPlotter | arguments | Make plots of the map making step
+plot_data | plot_data | plotting.data.DataPlotter | interactive | Make plots of the data
+plot_preparation | plot_preparation | plotting.preparation.PreparationPlotter | interactive | Make plots of the preparation step
+plot_decomposition | plot_decomposition | plotting.decomposition.DecompositionPlotter | interactive | Make plots of the decomposition step
+plot_truncation | plot_truncation | plotting.truncation.TruncationPlotter | interactive | Make plots of the truncation step
+plot_photometry | plot_photometry | plotting.photometry.PhotometryPlotter | interactive | Make plots of the photometry step
+plot_maps | plot_maps | plotting.maps.MapsPlotter | interactive | Make plots of the map making step
 plot_fitting | plot_fitting | plotting.fitting.FittingPlotter | interactive | Make plots of the fitting step
-plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | arguments | Make plots of the analysis step
+plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | interactive | Make plots of the analysis step
 fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
 fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
 make_movie | -- | show.movie.MovieMaker | arguments | Make a movie from the galaxy model
