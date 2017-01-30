@@ -115,11 +115,11 @@ class SimplePropertyComposite(object):
         :return:
         """
 
-        print(name)
-
         if name.startswith("_"):
-            print("here")
-            super(SimplePropertyComposite, self).__setattr__(name, value)
+
+            #super(SimplePropertyComposite, self).__setattr__(name, value)
+            #return
+            self.__dict__[name] = value
             return
 
         if value is None: pass
@@ -136,7 +136,9 @@ class SimplePropertyComposite(object):
             except ValueError: raise ValueError("The value given is of the wrong type: '" + ptype + "', must be '" + the_type + "'")
 
         # Actually set the attribute
-        super(SimplePropertyComposite, self).__setattr__(name, value)
+        #super(SimplePropertyComposite, self).__setattr__(name, value)
+
+        self.__dict__[name] = value
 
     # -----------------------------------------------------------------
 
