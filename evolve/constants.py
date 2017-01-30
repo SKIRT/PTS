@@ -60,7 +60,7 @@ CDefScaleBoltzStart = 40.0
 # - Population Defaults
 CDefPopSortType = sortType["scaled"]
 CDefPopMinimax = minimaxType["maximize"]
-from pts.evolve.scaling import LinearScaling
+from .scaling import LinearScaling
 CDefPopScale = LinearScaling
 
 # - GA Engine defaults
