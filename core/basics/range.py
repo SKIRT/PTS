@@ -54,7 +54,7 @@ class Range(object):
     This class ...
     """
     
-    def __init__(self, min_value, max_value, inclusive=True, invert=False):
+    def __init__(self, min_value, max_value, inclusive=True, invert=False, rearrange=False):
         
         """
         The constructor ...
@@ -65,6 +65,15 @@ class Range(object):
 
         self._min = min_value
         self._max = max_value
+
+        # Check whether min and max are in the right order
+        if self._max < self._min:
+            if rearrange:
+                oldmin = self._min
+                self._min = self._max
+                self._max = oldmin
+            else: raise ValueError("Minimum value should be lower than maximum value")
+
         self.inclusive = inclusive
         self.invert = invert
 
@@ -286,7 +295,7 @@ class IntegerRange(Range):
     This class ...
     """
 
-    def __init__(self, min_value, max_value, inclusive=True, invert=False):
+    def __init__(self, min_value, max_value, inclusive=True, invert=False, rearrange=False):
 
         """
         This function ...
@@ -294,13 +303,14 @@ class IntegerRange(Range):
         :param max_value:
         :param inclusive:
         :param invert:
+        :param rearrange:
         """
 
         assert isinstance(min_value, int)
         assert isinstance(max_value, int)
 
         # Call the constructor of the base class
-        super(IntegerRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert)
+        super(IntegerRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert, rearrange=rearrange)
 
     # -----------------------------------------------------------------
 
@@ -361,20 +371,22 @@ class RealRange(Range):
     This class ...
     """
 
-    def __init__(self, min_value, max_value, inclusive=True, invert=False):
+    def __init__(self, min_value, max_value, inclusive=True, invert=False, rearrange=False):
 
         """
         The constructor ...
         :param min_value:
         :param max_value:
         :param inclusive:
+        :param invert:
+        :param rearrange:
         """
 
         assert isinstance(min_value, float)
         assert isinstance(max_value, float)
 
         # Call the constructor of the base class
-        super(RealRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert)
+        super(RealRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert, rearrange=rearrange)
 
     # -----------------------------------------------------------------
 
@@ -408,7 +420,7 @@ class QuantityRange(Range):
     This function ...
     """
 
-    def __init__(self, min_value, max_value, unit=None, inclusive=True, invert=False):
+    def __init__(self, min_value, max_value, unit=None, inclusive=True, invert=False, rearrange=False):
 
         """
         This function ...
@@ -417,6 +429,7 @@ class QuantityRange(Range):
         :param unit:
         :param inclusive:
         :param invert:
+        :param rearrange:
         """
 
         # Convert everything so that min_value and max_value are floats in the same unit, and so that 'unit' is the corresponding Unit
@@ -437,7 +450,7 @@ class QuantityRange(Range):
         else: raise ValueError("min_value and max_value must be either both quantities or both floats (with unit specified seperately)")
 
         # Call the constructor of the base class
-        super(QuantityRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert)
+        super(QuantityRange, self).__init__(min_value, max_value, inclusive=inclusive, invert=invert, rearrange=rearrange)
 
         # Set the unit
         self.unit = unit
@@ -528,6 +541,20 @@ class QuantityRange(Range):
 
         # Return the result (list or quantity)
         return result
+
+    # -----------------------------------------------------------------
+
+    def to(self, unit, equivalencies=None):
+
+        """
+        This function ...
+        :param unit:
+        :param equivalencies:
+        :return:
+        """
+
+        # Rearrange is allowed because it is possible that the old min becomes the new max (eg. frequency -> wavelength)
+        return QuantityRange(self.min.to(unit, equivalencies=equivalencies), self.max.to(unit, equivalencies=equivalencies), rearrange=True)
 
     # -----------------------------------------------------------------
 

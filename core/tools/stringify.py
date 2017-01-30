@@ -21,7 +21,8 @@ from astropy.units import UnitBase, Quantity
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from ..basics.filter import Filter
+from ..filter.broad import BroadBandFilter
+from ..filter.narrow import NarrowBandFilter
 from ..basics.range import RealRange, IntegerRange, QuantityRange
 from ..basics.unit import stringify_unit
 from ..basics.quantity import stringify_quantity
@@ -113,7 +114,8 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     elif isinstance(value, QuantityRange): return "quantity_range", repr(value)
     elif isinstance(value, SkyCoordinate): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif isinstance(value, SkyStretch): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-    elif isinstance(value, Filter): return "filter", str(value)
+    elif isinstance(value, NarrowBandFilter): return "narrow_band_filter", str(value)
+    elif isinstance(value, BroadBandFilter): return "broad_band_filter", str(value)
     else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------

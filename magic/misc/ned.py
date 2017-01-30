@@ -27,7 +27,8 @@ from astroquery import nasa_ads as ads
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import parse_filter, BroadBandFilter
+from ...core.filter.filter import parse_filter
+from ...core.filter.narrow import NarrowBandFilter
 from ...core.basics.configurable import Configurable
 from ...core.tools import formatting as fmt
 
@@ -165,7 +166,7 @@ class NED(Configurable):
         for band, year, bibcode, url in images:
 
             if band is None: fltr = None
-            elif "Ha" in band or "H-alpha" in band or "H_alph" in band: fltr = BroadBandFilter("Ha")
+            elif "Ha" in band or "H-alpha" in band or "H_alph" in band: fltr = NarrowBandFilter("Ha")
             else:
 
                 try: fltr = parse_filter(band)

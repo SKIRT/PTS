@@ -23,7 +23,9 @@ from astropy.coordinates import Angle
 from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
-from ..basics.filter import identifiers, parse_filter, BroadBandFilter, NarrowBandFilter
+from ..filter.broad import identifiers, BroadBandFilter
+from ..filter.narrow import NarrowBandFilter
+from ..filter.filter import parse_filter
 from ..basics.errorbar import ErrorBar
 from ..basics.unit import PhotometricUnit, parse_unit
 from ..basics.quantity import parse_quantity

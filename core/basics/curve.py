@@ -18,7 +18,7 @@ from scipy import interpolate
 # Import the relevant PTS classes and modules
 from .table import SmartTable
 from ..tools import tables
-from .filter import Filter
+from ..filter.filter import Filter
 from .unit import parse_unit as u
 
 # -----------------------------------------------------------------
@@ -60,8 +60,8 @@ class Curve(SmartTable):
         if not from_astropy:
 
             # Set the column info
-            self.column_info.append((x_name, float, x_unit, x_description))
-            self.column_info.append((y_name, float, y_unit, y_description))
+            self.add_column_info(x_name, float, x_unit, x_description)
+            self.add_column_info(y_name, float, y_unit, y_description)
 
             # Set x name and y name
             self.x_name = x_name

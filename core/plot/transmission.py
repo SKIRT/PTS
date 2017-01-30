@@ -30,7 +30,8 @@ from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..data.transmission import TransmissionCurve
 from ..basics.emissionlines import EmissionLines
-from ..basics.filter import identifiers, parse_filter
+from ..filter.filter import parse_filter
+from ..filter.broad import identifiers
 from ..basics.range import RealRange
 from ..basics.plot import Plot
 
@@ -74,6 +75,7 @@ class TransmissionPlotter(Configurable):
 
         # The wavelengths
         self.wavelengths = []
+        self.wavelength_labels = dict()
 
         # The axis limits
         self._min_wavelength = None
@@ -120,16 +122,20 @@ class TransmissionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_wavelength(self, wavelength):
+    def add_wavelength(self, wavelength, label=None):
 
         """
         This function ...
         :param wavelength:
+        :param label:
         :return:
         """
 
         # Add the wavelength
         self.wavelengths.append(wavelength)
+
+        # Set the label if a label is given
+        if label is not None: self.wavelength_labels[len(self.wavelengths)-1] = label
 
     # -----------------------------------------------------------------
 
@@ -143,7 +149,7 @@ class TransmissionPlotter(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Make the plot
+        # 2. Make the plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -352,8 +358,10 @@ class TransmissionPlotter(Configurable):
             counter += 1
 
         # Plot the wavelengths
-        for wavelength in self.wavelengths:
-            plt.axvline(wavelength.to("micron").value, color="0.8")
+        for index, wavelength in enumerate(self.wavelengths):
+
+            label = self.wavelength_labels[index] if index in self.wavelength_labels else None
+            plt.axvline(wavelength.to("micron").value, color="0.8", label=label)
 
         # Get axes
         ax = plt.gca()

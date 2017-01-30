@@ -24,3 +24,4 @@ plot_transmission | -- | plot.transmission.TransmissionPlotter | arguments | Plo
 *run_queue | -- | remote.runner.QueueRunner | arguments | Run a particular simulation queue (intended to be run on a remote system)
 generate_wavelength_grids | -- | prep.wavelengthgrids.WavelengthGridGenerator | arguments | Generate wavelength grids
 generate_dust_grids | -- | prep.dustgrids.DustGridGenerator | arguments | Generate dust grids
+filters | -- | filter.show.FilterShower | arguments | Show the narrow- and broad band filters defined in PTS

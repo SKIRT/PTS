@@ -5,9 +5,9 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.filter Working with wavelength filters (or bands).
+## \package pts.core.basics.filter.broad Contains the BroadBandFilter class.
 #
-# An instance of the Filter class in this module represents a particular wavelength band, including its response or
+# An instance of the BroadBandFilter class in this module represents a particular wavelength band, including its response or
 # transmission curve, and allows integrating a given spectrum over the band. A filter instance can be constructed from
 # one of the provided resource files describing specific instruments or standard wavelength bands. Alternatively,
 # a filter can be created with a uniform transmission curve over a certain wavelength range.
@@ -15,7 +15,6 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-from abc import ABCMeta
 import os
 import os.path
 import sys
@@ -26,9 +25,10 @@ from lxml import etree
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from .map import Map
+from ..basics.map import Map
 from ..tools import strings
 from ..tools.strings import str_from_real_or_integer
+from .filter import Filter
 
 # -----------------------------------------------------------------
 
@@ -78,7 +78,6 @@ identifiers["IRAS.12mu"] = Map(instruments=["IRAS"], wavelength="12 micron")
 identifiers["IRAS.25mu"] = Map(instruments=["IRAS"], wavelength="25 micron")
 identifiers["IRAS.60mu"] = Map(instruments=["IRAS"], wavelength="60 micron")
 identifiers["IRAS.100mu"] = Map(instruments=["IRAS"], wavelength="100 micron")
-identifiers["Halpha"] = Map(bands=["Ha", "H alpha", "H-alpha", "H-a", "Halpha", "H_alpha", "Mosaic Halpha", "H_alph", "H-alph"])
 identifiers["Swift.UVOT.Uband"] = Map(observatories=["Swift"], instruments=["UVOT"], bands=["U"])
 identifiers["Swift.UVOT.Bband"] = Map(observatories=["Swift"], instruments=["UVOT"], bands=["B"])
 identifiers["Swift.UVOT.Vband"] = Map(observatories=["Swift"], instruments=["UVOT"], bands=["V"])
@@ -156,9 +155,7 @@ def get_filter_description(spec):
     description = "the "
 
     if "bands" in identifier: description += identifier.bands[0] + " "
-    elif "channel" in identifier:
-        print(identifier.channel)
-        description += strings.num_to_ith(identifier.channel) + " "
+    elif "channel" in identifier: description += strings.num_to_ith(identifier.channel) + " "
     description += "band "
 
     if "wavelength" in identifier and "frequency" in identifier:
@@ -344,158 +341,7 @@ def generate_all_aliases():
 
     for spec in identifiers:
         for alias in generate_aliases(identifiers[spec]):
-            #print(spec, alias)
             yield spec, alias
-
-# -----------------------------------------------------------------
-
-def parse_filter(string, name=None):
-
-    """
-    This function ...
-    :param string:
-    :param name:
-    :return:
-    """
-
-    if isinstance(string, Filter): return string.copy()
-
-    try: fltr = BroadBandFilter(string, name=name)
-    except ValueError:
-        try: fltr = NarrowBandFilter(string, name=name)
-        except ValueError: raise ValueError("Could not parse the string '" + string + "' as a filter")
-
-    # Return the filter
-    return fltr
-
-# -----------------------------------------------------------------
-#  Filter class
-# -----------------------------------------------------------------
-
-class Filter(object):
-
-    """
-    This class ...
-    """
-
-    __metaclass__ = ABCMeta
-
-    # -----------------------------------------------------------------
-
-    def __init__(self, filter_id, description, true_filter):
-
-        """
-        This function ...
-        :param filter_id:
-        :param description:
-        :param true_filter:
-        """
-
-        # Set attributes
-        self._FilterID = filter_id
-        self._Description = description
-        self.true_filter = true_filter
-
-    # -----------------------------------------------------------------
-
-    def filterID(self):
-
-        """
-        This fucntion returns a unique identifer for the filter
-        :return:
-        """
-
-        return self._FilterID
-
-    # -----------------------------------------------------------------
-
-    def description(self):
-
-        """
-        This function returns a human-readable description for the filter.
-        :return:
-        """
-
-        return self._Description
-
-    # -----------------------------------------------------------------
-
-    @property
-    def name(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        if self.true_filter: return self._FilterID.split("/")[1]
-        else: return self._FilterID.split("_")[0]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def observatory(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        if self.true_filter: return self._FilterID.split("/")[0]
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def instrument(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        if self.true_filter: return self._FilterID.split("/")[1].split(".")[0]
-        else: return None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def band(self):
-
-        """
-        This property ...
-        :return:
-        """
-
-        if self.true_filter: return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
-        elif self._FilterID.startswith("Uniform"): return None
-        else: return self._FilterID.split("_")[0]
-
-# -----------------------------------------------------------------
-
-class NarrowBandFilter(Filter):
-
-    """
-    An instance of the NarrowBandFilter class represents a narrow band filter around a certain wavelength.
-    """
-
-    def __init__(self, filterspec, name=None):
-
-        """
-        This function ...
-        :param filterspec:
-        :param name:
-        """
-
-        filter_id = None
-        description = None
-        true_filter = True
-
-        # Call the constructor of the base class
-        super(NarrowBandFilter, self).__init__(filter_id, description, true_filter)
-
-        # The wavelength
-        self.wavelength = None
 
 # -----------------------------------------------------------------
 
@@ -786,7 +632,7 @@ class BroadBandFilter(Filter):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def mean(self):
-        from .unit import parse_unit as u
+        from ..basics.unit import parse_unit as u
         return self.meanwavelength() * u("micron")
 
     ## This function returns the effective wavelength for the filter, in micron.
@@ -797,7 +643,7 @@ class BroadBandFilter(Filter):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def effective(self):
-        from .unit import parse_unit as u
+        from ..basics.unit import parse_unit as u
         return self.effectivewavelength() * u("micron") if self._WavelengthEff is not None else None
 
     ## This function returns the minimum wavelength for the filter, in micron.
@@ -808,7 +654,7 @@ class BroadBandFilter(Filter):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def min(self):
-        from .unit import parse_unit as u
+        from ..basics.unit import parse_unit as u
         return self.minwavelength() * u("micron")
 
     ## This function returns the maximum wavelength for the filter, in micron.
@@ -819,7 +665,7 @@ class BroadBandFilter(Filter):
     #  function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def max(self):
-        from .unit import parse_unit as u
+        from ..basics.unit import parse_unit as u
         return self.maxwavelength() * u("micron")
 
     ## This function returns the center wavelength for the filter, in micron. The center wavelength is
@@ -832,7 +678,7 @@ class BroadBandFilter(Filter):
     #  support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def center(self):
-        from .unit import parse_unit as u
+        from ..basics.unit import parse_unit as u
         return self.centerwavelength() * u("micron")
 
     ## This function returns the pivot wavelength for the filter, in micron. The pivot wavelength is defined
@@ -851,7 +697,7 @@ class BroadBandFilter(Filter):
     #  support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def pivot(self):
-        from .unit import parse_unit as u
+        from ..basics.unit import parse_unit as u
         return self.pivotwavelength() * u("micron")
 
     ## This function returns the effective bandwith, in micron.
@@ -860,7 +706,7 @@ class BroadBandFilter(Filter):
 
     @property
     def bandwidth(self):
-        from .unit import parse_unit as u
+        from ..basics.unit import parse_unit as u
         return self.effective_bandwidth() * u("micron") if self._EffWidth is not None else None
 
     # ---------- Integrating --------------------------------------
@@ -889,6 +735,7 @@ class BroadBandFilter(Filter):
     #   array where the last dimension has the same length as \em wavelengths.
     #   The returned result will have the shape of \em densities minus the last (or only) dimension.
     def convolve(self, wavelengths, densities):
+
         # define short names for the involved wavelength grids
         wa = wavelengths
         wb = self._Wavelengths
@@ -905,14 +752,13 @@ class BroadBandFilter(Filter):
         T = np.exp(np.interp(np.log(w), np.log(wb), _log(self._Transmission), left=0., right=0.))
 
         # perform the integration
-        if self._PhotonCounter:
-            return np.trapz(x=w, y=w*F*T) / self._IntegratedTransmission
-        else:
-            return np.trapz(x=w, y=F*T) / self._IntegratedTransmission
+        if self._PhotonCounter: return np.trapz(x=w, y=w*F*T) / self._IntegratedTransmission
+        else: return np.trapz(x=w, y=F*T) / self._IntegratedTransmission
 
     ## This function calculates and returns the integrated value for a given spectral energy distribution over the
     #  filter's wavelength range,
     def integrate(self, wavelengths, densities):
+
         # define short names for the involved wavelength grids
         wa = wavelengths
         wb = self._Wavelengths
@@ -953,7 +799,7 @@ def load_planck(filterspec):
 
     # Import Astropy stuff
     from astropy.units import spectral
-    from .unit import parse_unit as u
+    from ..basics.unit import parse_unit as u
 
     this_path = os.path.dirname(os.path.abspath(__file__))
     core_path = os.path.dirname(this_path)
@@ -1008,7 +854,7 @@ def load_alma(filterspec, pwv=0.2):
 
     # Import Astropy stuff
     from astropy.units import spectral
-    from .unit import parse_unit as u
+    from ..basics.unit import parse_unit as u
 
     this_path = os.path.dirname(os.path.abspath(__file__))
     core_path = os.path.dirname(this_path)
