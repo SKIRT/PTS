@@ -127,12 +127,25 @@ class DustPediaDataProcessing(object):
 
     # -----------------------------------------------------------------
 
-    def get_header_for_galaxy(self, galaxy_name, instrument):
+    def get_pixelscale_for_instrument(self, instrument):
+
+        """
+        This function ...
+        :param instrument:
+        :return:
+        """
+
+        return dustpedia_final_pixelsizes[instrument]
+
+    # -----------------------------------------------------------------
+
+    def get_header_for_galaxy(self, galaxy_name, instrument, returns="header"):
 
         """
         This function ...
         :param galaxy_name:
         :param instrument
+        :param returns:
         :return:
         """
 
@@ -143,7 +156,7 @@ class DustPediaDataProcessing(object):
         pixelscale = dustpedia_final_pixelsizes[instrument]
 
         # Get the header
-        return mosaicing.make_header(ra, dec, width, pixelscale)
+        return mosaicing.make_header(ra, dec, width, pixelscale, returns=returns)
 
     # -----------------------------------------------------------------
 

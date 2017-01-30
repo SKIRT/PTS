@@ -21,11 +21,10 @@ from astropy.table import Table
 from astropy.io.fits import Header
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from ...magic.core.image import Image
 from ...core.tools.logging import log
+from ...core.tools import terminal
 
 # -----------------------------------------------------------------
 
@@ -137,10 +136,14 @@ def get_field_table(cutout_center, cutout_width, band):
 
 # -----------------------------------------------------------------
 
-def make_header(ra, dec, width, pix_size):
+def make_header(ra, dec, width, pix_size, returns="header"):
 
     """
     This function ...
+    :param ra:
+    :param dec:
+    :param pix_size:
+    :param returns:
     :return:
     """
 
@@ -161,7 +164,11 @@ def make_header(ra, dec, width, pix_size):
     montage.commands.mHdr(str(ra) + ' ' + str(dec), width, header_path, pix_size=pix_size)
 
     # Load the header
-    return Header.fromtextfile(header_path)
+    if returns == "header": return Header.fromtextfile(header_path)
+    elif returns == "path": return header_path
+    elif returns == ["header", "path"]: return Header.fromtextfile(header_path), header_path
+    elif returns == ["path", "header"]: return header_path, Header.fromtextfile(header_path)
+    else: raise ValueError("Invalid option for 'returns'")
 
 # -----------------------------------------------------------------
 
@@ -200,5 +207,54 @@ def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_wi
 
     # Return the meta path and overlap path
     return meta_path, overlap_path
+
+# -----------------------------------------------------------------
+
+def reproject(input_path, output_path, metatable_path, header_path):
+
+    """
+    This function ...
+    :return:
+    """
+
+    proj_stats_path = fs.join(input_path, "Proj_Stats.txt")
+    montage.commands.mProjExec(metatable_path, header_path, output_path, proj_stats_path,
+                               raw_dir=input_path, debug=False, exact=True, whole=False)
+
+    # WHOLE IS IMPORTANT HERE
+    # WE ACTUALLY DON'T WANT TO REPROJECT TO THE EXACT PIXELGRID DEFINED BY THE HEADER HERE,
+    # BUT RATHER CUT OFF THE ORIGINAL MAPS WHERE THEY ARE OUTSIDE OF THE FIELD OF VIEW OF THE HEADER DEFINED AREA
+    # SO NO ADDING OF NEW PIXELS IS DONE TO HAVE THE EXACT PIXELGRID DEFINED BY THE HEADER
+    # THIS IS PRESUMABLY DONE JUST TO MAKE THE SWARPING MORE EFFICIENT ??
+
+# -----------------------------------------------------------------
+
+def mosaic(working_path, band, center, width_pixels):
+
+    """
+    This function ...
+    :param working_path:
+    :param band:
+    :param center:
+    :return:
+    """
+
+    # Change directories
+    old_cwd = fs.change_cwd(working_path)
+
+    # Determine command string
+    swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME ' + band + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
+
+    #os.system(swarp_command_string)
+    terminal.execute(swarp_command_string)
+
+    # Change back to the original working directory
+    fs.change_cwd(old_cwd)
+
+    # Swarp result path
+    swarp_result_path = fs.join(working_path, band + "_SWarp.fits")
+
+    # Return the path to the resulting mosaic
+    return swarp_result_path
 
 # -----------------------------------------------------------------

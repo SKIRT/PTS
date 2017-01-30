@@ -43,6 +43,7 @@ from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 # -----------------------------------------------------------------
 
 galex_bands = ["NUV", "FUV"]
+band_short = {"NUV": "nd", "FUV": "fd"}
 
 # -----------------------------------------------------------------
 
@@ -84,6 +85,15 @@ class GALEXMosaicMaker(Configurable):
         self.download_response_paths = dict()
         self.download_background_paths = dict()
         self.download_counts_paths = dict()
+        self.convolve_paths = dict()
+        self.reproject_paths = dict()
+        self.swarp_paths = dict()
+
+        self.noise_paths = dict()
+        self.converted_paths = dict()
+        self.rebinned_paths = dict()
+        self.mosaic_paths = dict()
+
         self.response_paths = dict()
         self.background_paths = dict()
         self.counts_paths = dict()
@@ -96,6 +106,7 @@ class GALEXMosaicMaker(Configurable):
 
         # The rebin header and WCS
         self.rebin_header = None
+        self.rebin_header_path = None
         self.rebin_wcs = None
 
         # The mosaic frames and error maps
@@ -103,6 +114,9 @@ class GALEXMosaicMaker(Configurable):
         self.mosaics_swarp = dict()
         self.error_maps = dict()
         self.relative_error_maps = dict()
+
+        # Create a dictionary for the exposure times for each image
+        self.exposure_times = dict()
 
     # -----------------------------------------------------------------
 
@@ -142,9 +156,6 @@ class GALEXMosaicMaker(Configurable):
 
         # 9. Mosaic
         self.mosaic()
-
-        # 10. Finish
-        self.finish()
 
         # 11. Show
         self.show()
@@ -217,6 +228,15 @@ class GALEXMosaicMaker(Configurable):
             download_counts_path = fs.create_directory_in(download_path, "counts")
 
             # Create directories
+            convolve_path = fs.create_directory(path, "convolve")
+            reproject_path = fs.create_directory_in(path, "reproject")
+            swarp_path = fs.create_directory_in(path, "swarp")
+
+            noise_path = fs.create_directory_in(path, "noise")
+            converted_path = fs.create_directory_in(path, "converted")
+            rebinned_path = fs.create_directory_in(path, "rebinned")
+            mosaic_path = fs.create_directory_in(path, "mosaic")
+
             response_path = fs.create_directory_in(path, "response")
             background_path = fs.create_directory_in(path, "background")
             counts_path = fs.create_directory_in(path, "counts")
@@ -227,6 +247,15 @@ class GALEXMosaicMaker(Configurable):
             self.download_response_paths[band] = download_response_path
             self.download_background_paths[band] = download_background_path
             self.download_counts_paths[band] = download_counts_path
+            self.convolve_paths[band] = convolve_path
+            self.reproject_paths[band] = reproject_path
+            self.swarp_paths[band] = swarp_path
+
+            self.noise_paths[band] = noise_path
+            self.converted_paths[band] = converted_path
+            self.rebinned_paths[band] = rebinned_path
+            self.mosaic_paths[band] = mosaic_path
+
             self.response_paths[band] = response_path
             self.background_paths[band] = background_path
             self.counts_paths[band] = counts_path
@@ -263,7 +292,7 @@ class GALEXMosaicMaker(Configurable):
         log.info("Creating the header and WCS for the mosaic ...")
 
         # Get the target header
-        self.rebin_header = self.dpdp.get_header_for_galaxy(self.ngc_name, "GALEX")
+        self.rebin_header, self.rebin_header_path = self.dpdp.get_header_for_galaxy(self.ngc_name, "GALEX", returns=["header", "path"])
 
         # Create WCS
         self.rebin_wcs = CoordinateSystem(self.rebin_header)
@@ -474,28 +503,23 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Cleaning GALEX tiles ...")
 
-        # CLEAN GALEX TILES
-        #clean_galex_tiles(raw_files, id_string, nprocesses, working_path, temp_path_band, temp_reproject_path, band_dict)
-
-        # Loop over raw tiles, creating exposure maps, and cleaning images to remove null pixels (also, creating convolved maps for later background fitting)
-        #log.info('Cleaning ' + str(len(raw_files)) + ' raw maps for ' + id_string + " ...")
-
-        # CLEAN
-        #for raw_file in raw_files: clean_galex_tile(raw_file, working_path, temp_path_band, temp_reproject_path,
-        #                                            band_dict)
-
         # Loop over the bands
         for band in self.config.bands:
 
             # Debugging
             log.debug("Cleaning GALEX " + band + " tiles ...")
 
+            response_path = self.download_response_paths[band]
+            convolve_path = self.convolve_paths[band]
+            background_path = self.download_background_paths[band]
+            reproject_path = self.reproject_paths[band]
+
             # Parallel execution
             with ParallelTarget(clean_galex_tile, self.config.nprocesses) as target:
 
-                # raw_file, working_path, temp_path_band, temp_reproject_path, band_dict
-                #for raw_file in raw_files: target(raw_file, working_path, temp_path_band, temp_reproject_path, band_dict)
-                for path in fs.files_in_path(self.download_observations_paths[band]): target(path)
+                # Loop over the raw files
+                # raw_file_path, response_path, convolve_path, background_path, reproject_path
+                for path in fs.files_in_path(self.download_observations_paths[band]): target(path, response_path, convolve_path, background_path, reproject_path, band)
 
     # -----------------------------------------------------------------
 
@@ -509,23 +533,67 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Peforming background-leveling on the observations ...")
 
-        # Count image files, and move to reprojection directory
-        mosaic_count = 0
-        for filename in os.listdir(temp_raw_path):
-            if '.fits' in filename:
-                mosaic_count += 1
-                new_path = fs.join(temp_reproject_path, filename)  ## NEW
-                if fs.is_file(new_path): fs.remove_file(new_path)  ## NEW
-                fs.move_file(filename, temp_reproject_path)
+        target_suffix = "int.fits"
 
-        # If more than one image file, commence background-matching
-        if mosaic_count > 1:
+        # Loop over the bands
+        for band in self.config.bands:
 
-            # Inform the user
-            log.info("Matching background of " + id_string + " maps ...")
+            reproject_path = self.reproject_paths[band]
+            convolve_path = self.convolve_paths[band]
 
-            # ...
-            level_galex_maps(temp_reproject_path, temp_convolve_path, 'int.fits')
+            # Make list of files in target directory that have target suffix
+            allfile_list = os.listdir(reproject_path)
+            fitsfile_list = []
+            for allfile in allfile_list:
+                if target_suffix in allfile:
+                    fitsfile_list.append(allfile)
+
+            #
+            offsets = [None] * len(fitsfile_list)
+            results = [None] * len(fitsfile_list)
+
+            # Parallel execution
+            with ParallelTarget(determine_background_level, self.config.nprocesses) as target:
+
+                # Loop over each file
+                for i in range(len(fitsfile_list)):
+
+                    filename = fitsfile_list[i]
+
+                    # Call the target function
+                    result = target(filename, convolve_path)
+
+                    # Set the result handle
+                    results[i] = result
+
+            level_ref = None
+
+            # For
+            for index in range(len(results)):
+
+                results[index].request()
+                output = results[index].output
+
+                level = output[0]
+
+                if index == 0:
+                    level_ref = level
+                    continue
+
+                average_offset = level_ref - level
+                offsets[index] = average_offset
+
+            # Parallel execution
+            with ParallelTarget(level_galex_map, self.config.nprocesses) as target:
+
+                # Loop over the files
+                for i in range(1, len(fitsfile_list)):
+
+                    filename = fitsfile_list[i]
+                    offset = offsets[i]
+
+                    # Call the target function
+                    target(filename, offset, reproject_path)
 
     # -----------------------------------------------------------------
 
@@ -539,25 +607,29 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Getting exposure times ...")
 
-        # Create a dictionary for the exposure times for each image
-        exposure_times = dict()
+        # Loop over the bands
+        for band in self.config.bands:
 
-        # Determine how the files are named
-        filename_ends = "-" + band_dict['band_short'] + "-int"  # -fd-int for FUV, -nd-int for NUV
-        filename_ends_no_int = "-" + band_dict['band_short']  # -fd for FUV, -nd for NUV
+            # Initialize dictionary
+            self.exposure_times[band] = dict()
 
-        # Get the exposure time for each image
-        for path, name in fs.files_in_path(temp_reproject_path, extension="fits", contains=filename_ends,
-                                           returns=["path", "name"]):
-            # Open the header
-            header = getheader(path)
+            reproject_path = self.reproject_paths[band]
 
-            # Search for the exposure time
-            exp_time = get_total_exposure_time(header)
+            # Determine how the files are named
+            filename_ends = "-" + band_short[band] + "-int"  # -fd-int for FUV, -nd-int for NUV
 
-            # Set the exposure time
-            image_name = name.split(filename_ends)[0]
-            exposure_times[image_name] = exp_time
+            # Get the exposure time for each image
+            for path, name in fs.files_in_path(reproject_path, extension="fits", contains=filename_ends, returns=["path", "name"]):
+
+                # Open the header
+                header = getheader(path)
+
+                # Search for the exposure time
+                exp_time = get_total_exposure_time(header)
+
+                # Set the exposure time
+                image_name = name.split(filename_ends)[0]
+                self.exposure_times[band][image_name] = exp_time
 
     # -----------------------------------------------------------------
 
@@ -571,23 +643,24 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Reprojecting ...")
 
-        # Reproject image and weight prior to coaddition
-        montage.commands.mImgtbl(temp_reproject_path, metatable_path, corners=True)
-        proj_stats_path = fs.join(temp_path_band, id_string + "_Proj_Stats.txt")
-        montage.commands.mProjExec(metatable_path, header_path, temp_swarp_path, proj_stats_path,
-                                   raw_dir=temp_reproject_path, debug=False, exact=True, whole=False)
-        # WHOLE IS IMPORTANT HERE
-        # WE ACTUALLY DON'T WANT TO REPROJECT TO THE EXACT PIXELGRID DEFINED BY THE HEADER HERE,
-        # BUT RATHER CUT OFF THE ORIGINAL MAPS WHERE THEY ARE OUTSIDE OF THE FIELD OF VIEW OF THE HEADER DEFINED AREA
-        # SO NO ADDING OF NEW PIXELS IS DONE TO HAVE THE EXACT PIXELGRID DEFINED BY THE HEADER
-        # THIS IS PRESUMABLY DONE JUST TO MAKE THE SWARPING MORE EFFICIENT ??
+        # Loop over the bands
+        for band in self.config.bands:
 
-        # Rename reprojected files for SWarp
-        for listfile in os.listdir(temp_swarp_path):
-            if '_area.fits' in listfile:
-                os.remove(fs.join(temp_swarp_path, listfile))
-            elif 'hdu0_' in listfile:
-                os.rename(fs.join(temp_swarp_path, listfile), fs.join(temp_swarp_path, listfile.replace('hdu0_', '')))
+            reproject_path = self.reproject_paths[band]
+            swarp_path = self.swarp_paths[band]
+
+            # Generate metatable
+            metatable_path = mosaicing.generate_meta_file(reproject_path)
+
+            # Reproject image and weight prior to coaddition
+            mosaicing.reproject(reproject_path, swarp_path, metatable_path, self.rebin_header_path)
+
+            # Rename reprojected files for SWarp
+            for listfile in os.listdir(swarp_path):
+                if '_area.fits' in listfile:
+                    os.remove(fs.join(swarp_path, listfile))
+                elif 'hdu0_' in listfile:
+                    os.rename(fs.join(swarp_path, listfile), fs.join(swarp_path, listfile.replace('hdu0_', '')))
 
     # -----------------------------------------------------------------
 
@@ -619,32 +692,32 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Making mosaics with SWARP ...")
 
+        pixelscale = self.dpdp.get_pixelscale_for_instrument("GALEX")
+
         # Parallel execution
-        output = dict()
+        results = dict()
         with ParallelTarget(mosaic_with_swarp, self.config.nprocesses) as target:
 
-            # Loop over the bands
-            for band in self.config.bands: output[band] = mosaic_with_swarp(id_string, width_deg, pix_size, temp_swarp_path, ra_deg, dec_deg)
+            # Loop over the bands and execute
+            for band in self.config.bands: results[band] = target(band, self.cutout_width, pixelscale, self.swarp_paths[band], self.cutout_center)
 
         # Loop over bands, LOAD SWARP RESULT, PRESUMABLY IN COUNTS/S
         for band in self.config.bands:
 
-            swarp_result_path = output[band][0]
+            output = results[band].request()
+            swarp_result_path = output[0]
 
             # Load the resulting frame
             out_image = Frame.from_file(swarp_result_path)
             out_image.unit = "count/s"
 
+            # Overwrite invalid data
             out_image[out_image == 0] = np.NaN
             out_image[out_image < -1E3] = np.NaN
             out_image[out_image <= 1E-8] = 0
 
             # Set the mosaic
             self.mosaics_swarp[band] = out_image
-
-            # Write the swarped image
-            #swarp_output_path = fs.join(output_path, id_string + "_swarp.fits")
-            #out_image.saveto(swarp_output_path)
 
     # -----------------------------------------------------------------
 
@@ -658,23 +731,28 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Making mosaic with PTS ...")
 
+        image_names_bands = dict()
+
         # Loop over the bands
         for band in self.config.bands:
 
             # Get list of images
-            self.get_images_for_mosaic(band)
+            image_names = self.get_images_for_mosaic(band)
 
-            # Create directories
-            temp_noise_path, temp_converted_path, temp_rebinned_path, temp_mosaic_path = self.create_directories_for_mosaic(band)
+            # Make noise map
+            self.make_noise(band, image_names)
 
-            # The path to the directory with all the tiles in counts for the current band (FUV or NUV)
-            counts_path_band = fs.join(working_path, "counts", band_dict["band_long"])
+            # Convert
+            self.convert_to_count_s_sr(band, image_names)
 
-        self.make_noise()
+            # Rebin
+            self.rebin_for_mosaic(band, image_names)
 
-        self.convert_to_count_s_sr()
+            # Set the image names
+            image_names_bands[band] = image_names
 
-        self.rebin_for_mosaic()
+        # Combine
+        self.combine(image_names_bands)
 
     # -----------------------------------------------------------------
 
@@ -688,8 +766,12 @@ class GALEXMosaicMaker(Configurable):
         # The list of image names to be used for the mosaic
         image_names_for_mosaic = []
 
+        swarp_path = self.swarp_paths[band]
+
+        filename_ends = "-" + band_short[band] + "-int"
+
         # Loop over the files in the temp_swarp_path directory, where the tiles from temp_reproject_path are _peakand saved to
-        for filename in os.listdir(temp_swarp_path):
+        for filename in os.listdir(swarp_path):
 
             # SKIP WEIGHT FILES
             if not filename.endswith("-int.fits"): continue
@@ -700,102 +782,153 @@ class GALEXMosaicMaker(Configurable):
             # Add the image name to the list
             image_names_for_mosaic.append(image_name)
 
+        return image_names_for_mosaic
+
     # -----------------------------------------------------------------
 
-    def create_directories_for_mosaic(self, band):
+    def make_noise(self, band, image_names):
 
         """
         This function ...
+        :param band:
+        :param image_names:
         :return:
         """
 
         # Inform the user
-        log.info("Creating temporary directories ...")
+        log.info("Making noise maps for the " + band + " ...")
 
-        # Create a directory for the noise maps in counts per second
-        temp_noise_path = fs.create_directory_in(temp_path_band, "noise")
+        # The path to the directory with all the tiles in counts for the current band (FUV or NUV)
+        counts_path = self.download_counts_paths[band]
+        noise_path = self.noise_paths[band]
 
-        # Temp directory for the images and poisson noise maps in count/s/sr
-        temp_converted_path = fs.create_directory_in(temp_path_band, "converted")
+        # Execute in parallel
+        with ParallelTarget(make_noise_map_in_cps, self.config.nprocesses) as target:
 
-        # REBINNED in counts per second PER SR
-        temp_rebinned_path = fs.create_directory_in(temp_path_band, "rebinned")
+            # Inform the user
+            log.info("Creating maps of the poisson noise for each GALEX tile in counts per second ...")
 
-        # MOSAICING
-        temp_mosaic_path = fs.create_directory_in(temp_path_band, "mosaic")
+            # Loop over the file names
+            for image_name in image_names:
 
-        # RESULT AFTER MOSAICING AND BACK TO COUNTS/S
-        # temp_result_path = fs.create_directory_in(temp_path_band, "result")
+                # Get the exposure time
+                exposure_time = self.exposure_times[band][image_name]
 
-        return temp_noise_path, temp_converted_path, temp_rebinned_path, temp_mosaic_path
+                # Make noise maps in count/s
+                # band, image_name, counts_path_band, temp_noise_path, exposure_time
+                target(band, image_name, counts_path, noise_path, exposure_time)
 
     # -----------------------------------------------------------------
 
-    def make_noise(self):
+    def convert_to_count_s_sr(self, band, image_names):
 
         """
         This function ...
+        :param band:
+        :param image_names:
         :return:
         """
 
         # Inform the user
-        log.info("Making noise maps ...")
+        log.info("Converting to counts/s/sr for the " + band + "...")
 
-        # Make noise maps in count/s
-        make_noise_maps_in_cps(band_dict, image_names_for_mosaic, counts_path_band, temp_noise_path, exposure_times)
+        # Paths
+        reproject_path = self.reproject_paths[band]
+        noise_path = self.noise_paths[band]
+        converted_path = self.converted_paths[band]
+
+        # Parallel execution
+        with ParallelTarget(convert_frame_and_error_map_to_per_solid_angle, self.config.nprocesses) as target:
+
+            # DO THE UNIT CONVERSION
+            for image_name in image_names:
+
+                # Convert to counts/s/sr
+                # band, image_name, temp_reproject_path, temp_noise_path, temp_converted_path
+                target(band, image_name, reproject_path, noise_path, converted_path)
 
     # -----------------------------------------------------------------
 
-    def convert_to_count_s_sr(self):
+    def rebin_for_mosaic(self, band, image_names):
 
         """
         This function ...
+        :param band:
+        :param image_names:
         :return:
         """
 
         # Inform the user
-        log.info("Converting to counts/s/sr ...")
+        log.info("Rebinning frames for mosaic for the " + band + " ...")
 
-        # Convert to counts/s/sr
-        convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_mosaic, temp_reproject_path,
-                                                         temp_noise_path, temp_converted_path)
+        # Get paths
+        reproject_path = self.reproject_paths[band]
+        converted_path = self.converted_paths[band]
+        rebinned_path = self.rebinned_paths[band]
+
+        # Parallel execution
+        with ParallelTarget(rebin_frame_and_error_map, self.config.nprocesses) as target:
+
+            # Loop over all FITS files
+            for path, name in fs.files_in_path(converted_path, extension="fits", returns=["path", "name"]):
+
+                # Rebin frames and error maps
+                target(path, rebinned_path, self.rebin_header_path)
+
+        # Inform the user
+        log.info("Rebinning weight maps ...")
+
+        # Parallel execution
+        with ParallelTarget(rebin_weight_map, self.config.nprocesses) as target:
+
+            # Loop over the image_names
+            for image_name in image_names:
+
+                # Rebin the weight maps
+                target(band, image_name, reproject_path, rebinned_path, self.rebin_header_path)
 
     # -----------------------------------------------------------------
 
-    def rebin_for_mosaic(self):
+    def combine(self, image_names_bands):
 
         """
         This function ...
+        :param image_names_bands:
         :return:
         """
 
-        # Rebin frames and error maps
-        rebin_frames_and_error_maps(temp_converted_path, temp_rebinned_path, header_path, metatable_path,
-                                    proj_stats_path)
+        # Inform the user
+        log.info("Combining the maps ...")
 
-        # Rebin the weight maps
-        rebin_weight_maps(band_dict, image_names_for_mosaic, temp_reproject_path, temp_rebinned_path, header_path)
+        results = dict()
 
-        for band in self.config.bands:
+        # Parallel execution
+        with ParallelTarget(combine_frames_and_error_maps, self.config.nprocesses) as target:
 
-            with ParallelTarget() as target:
+            # Loop over the bands
+            for band in self.config.bands:
 
+                rebinned_path = self.rebinned_paths[band]
+                mosaic_path = self.mosaic_paths[band]
 
+                # image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs
+                # RETURNS: mosaic_frame_path, mosaic_errors_path
+                result = target(image_names_bands[band], rebinned_path, mosaic_path, self.rebin_header_path)
 
-    # -----------------------------------------------------------------
-
-    def finish(self):
-
-        """
-        This function ...
-        :return:
-        """
+                results[band] = result
 
         # Inform the user
         log.info("Finishing ...")
 
-        # Loop over the bands
+        # Load the mosaics
         for band in self.config.bands:
+
+            results[band].request()
+            output = results[band].output
+
+            mosaic_path, error_path = output[0], output[1]
+            mosaic = Frame.from_file(mosaic_path)
+            errors = Frame.from_file(error_path)
 
             # SOME THINGS
             mosaic[mosaic.data == 0] = np.NaN
@@ -808,6 +941,8 @@ class GALEXMosaicMaker(Configurable):
             relerrors.replace_nans(0.0)  # set NaN values (because mosaic was zero) to zero
 
             # Set
+            self.mosaics[band] = mosaic
+            self.error_maps[band] = errors
             self.relative_error_maps[band] = relerrors
 
     # -----------------------------------------------------------------
@@ -859,7 +994,8 @@ class GALEXMosaicMaker(Configurable):
 
             # Determine path
             id_string = self.ngc_name + "_SDSS_" + band
-            path = fs.join(output_path, id_string + ".fits")
+            #path = fs.join(output_path, id_string + ".fits")
+            path = self.output_path_file(id_string + ".fits")
 
             # Save mosaic frame as FITS file
             self.mosaics[band].saveto(path)
@@ -881,7 +1017,8 @@ class GALEXMosaicMaker(Configurable):
 
             # Determine path
             id_string = self.ngc_name + "_SDSS_" + band
-            path = fs.join(output_path, id_string + "_errors.fits")
+            #path = fs.join(output_path, id_string + "_errors.fits")
+            path = self.output_path_file(id_string + ".fits")
 
             # Save error map as FITS file
             self.error_maps[band].saveto(path)
@@ -903,7 +1040,8 @@ class GALEXMosaicMaker(Configurable):
 
             # Determine path
             id_string = self.ngc_name + "_SDSS_" + band
-            path = fs.join(output_path, id_string + "_relerrors.fits")
+            #path = fs.join(output_path, id_string + "_relerrors.fits")
+            path = self.output_path_file(id_string + ".fits")
 
             # Save relative error map as FITS file
             self.relative_error_maps[band].saveto(path)
@@ -996,15 +1134,15 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
 
 # -----------------------------------------------------------------
 
-def clean_galex_tile(raw_file_path, working_path, temp_path_band, temp_reproject_path, band_dict):
+def clean_galex_tile(raw_file_path, response_path, convolve_path, background_path, reproject_path):
 
     """
     Function to clean GALEX tiles and create exposure maps
-    :param path: raw file path
-    :param working_path:
-    :param temp_path_band:
-    :param temp_reproject_path:
-    :param band_dict:
+    :param raw_file_path: raw file path
+    :param response_path:
+    :param convolve_path:
+    :param background_path:
+    :param reproject_path:
     :return:
     """
 
@@ -1012,17 +1150,10 @@ def clean_galex_tile(raw_file_path, working_path, temp_path_band, temp_reproject
 
     # Inform the user ...
     log.info("Cleaning map " + raw_file_path + " ...")
-    #log.info(" - raw_file = " + raw_file)
-    #log.info(" - working_path = " + working_path)
-    #log.info(" - temp_path_band = " + temp_path_band)
-    #log.info(" - temp_reproject_path = " + temp_reproject_path)
-    #log.info(" - band_dict = " + str(band_dict))
 
-    # Response and background paths for this band
-    #response_path = fs.join(working_path, "response", band_dict['band_long'])
-    #background_path = fs.join(working_path, "background", band_dict['band_long'])
-
-    temp_raw_path = fs.join(temp_path_band, "raw")
+    # Create subdirectories
+    #temp_raw_path = fs.create_directory_in(temp_path_band, "raw")
+    #temp_convolve_path = fs.create_directory_in(temp_path_band, "convolve")
 
     # Read in image
     #raw_file_path = fs.join(temp_raw_path, raw_file)
@@ -1084,7 +1215,8 @@ def clean_galex_tile(raw_file_path, working_path, temp_path_band, temp_reproject
     # Save cleaned image
     out_hdu = PrimaryHDU(data=out_image, header=in_header)
     out_hdulist = HDUList([out_hdu])
-    out_hdulist.writeto(fs.join(temp_raw_path, raw_file_name), clobber=True)
+    #out_hdulist.writeto(fs.join(temp_raw_path, raw_file_name), clobber=True)
+    out_hdulist.writeto(raw_file_path, clobber=True)
 
     # Create convolved version of map, for later use in background-matching
     """
@@ -1093,13 +1225,11 @@ def clean_galex_tile(raw_file_path, working_path, temp_path_band, temp_reproject
     else:
     """
 
-    temp_convolve_path = fs.join(temp_path_band, "convolve")
-
     kernel = Tophat2DKernel(10)
     conv_image = convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True) #, interpolate_nan=True, normalize_kernel=True)
 
     # Write
-    temp_convolve_image_path = fs.join(temp_convolve_path, raw_file_name)                  ## NEW
+    temp_convolve_image_path = fs.join(convolve_path, raw_file_name)                  ## NEW
     if fs.is_file(temp_convolve_image_path): fs.remove_file(temp_convolve_image_path) ## NEW
     writeto(temp_convolve_image_path, conv_image, in_header)
 
@@ -1110,7 +1240,7 @@ def clean_galex_tile(raw_file_path, working_path, temp_path_band, temp_reproject
     exp_hdulist = HDUList([exp_hdu])
 
     # Write
-    temp_reproject_image_path = fs.join(temp_reproject_path, raw_file_name.replace('.fits','.wgt.fits'))  ## NEW
+    temp_reproject_image_path = fs.join(reproject_path, raw_file_name.replace('.fits','.wgt.fits'))  ## NEW
     if fs.is_file(temp_reproject_image_path): fs.remove_file(temp_reproject_image_path)              ## NEW
     exp_hdulist.writeto(temp_reproject_image_path)
 
@@ -1133,142 +1263,132 @@ def level_chi_squared(level_params, image):
 
 # -----------------------------------------------------------------
 
-def level_galex_maps(fitsfile_dir, convfile_dir, target_suffix):
+def determine_background_level(filename, convolve_path):
 
     """
     original name: GALEX_Zero
     Set a set of maps to the same level
-    :param fitsfile_dir:
-    :param convfile_dir:
-    :param target_suffix:
+    :return:
+    """
+
+    convfile_dir = convolve_path
+
+    # Read in corresponding map from directory containing convolved images
+    conv_filepath = fs.join(convfile_dir, filename)
+    fitsdata_conv = open_fits(conv_filepath)
+    image_conv = fitsdata_conv[0].data
+    fitsdata_conv.close()
+
+    # Fit to level of image; save if first image, otherwise calculate appropriate offset
+    level_params = lmfit.Parameters()
+
+    #level_params.add('level', value=np.nanmedian(image_conv), vary=True) ## FOR NUMPY VERSION 1.9.0 AND ABOVE
+    image_conv_nonans = image_conv[np.logical_not(np.isnan(image_conv))]
+    level_params.add('level', value=np.median(image_conv_nonans), vary=True) # BELOW NUMPY VERSION 1.9.0
+    #
+
+    image_conv_clipped = chrisfuncs.SigmaClip(image_conv, tolerance=0.005, median=False, sigma_thresh=3.0)[2]
+    level_result = lmfit.minimize(level_chi_squared, level_params, args=(image_conv_clipped.flatten(),))
+    level = level_result.params['level'].value
+
+    return level
+
+# -----------------------------------------------------------------
+
+def level_galex_map(filename, average_offset, reproject_path):
+
+    """
+    This fcuntion ...
+    :param filename:
+    :param average_offset:
+    :param reproject_path
     :return:
     """
 
     # Inform the user
-    log.info("Inside the 'level_galex_maps' function with:")
-    log.info(" - fitsfile_dir = " + fitsfile_dir)
-    log.info(" - convfile_dir = " + convfile_dir)
-    log.info(" - target_suffix = " + target_suffix)
+    log.info("Matching background of map " + filename + " ...")
 
-    # Make list of files in target directory that have target suffix
-    allfile_list = os.listdir(fitsfile_dir)
-    fitsfile_list = []
-    for allfile in allfile_list:
-        if target_suffix in allfile:
-            fitsfile_list.append(allfile)
+    fitsfile_dir = reproject_path
 
-    # Loop over each file
-    for i in range(0, len(fitsfile_list)):
+    #print 'Applying offset of '+str(average_offset)+' to '+fitsfile_list[i]
 
-        # Inform the user
-        log.info('Matching background of map ' + fitsfile_list[i] + " ...")
+    """
+    # Save floor and peak values
+    floor_value = np.nanmin(image_conv)
+    peak_value = chrisfuncs.SigmaClip( image_conv, tolerance=0.00025, median=False, sigma_thresh=3.0)[1]
+    floor_value_list.append(floor_value)
+    peak_value_list.append(peak_value)
+    if i==0:
+        floor_value_ref = floor_value
+        peak_value_ref = peak_value
+        continue
 
-        # Read in corresponding map from directory containing convolved images
-        fitsdata_conv = open_fits(convfile_dir + '/' + fitsfile_list[i])
-        image_conv = fitsdata_conv[0].data
-        fitsdata_conv.close()
+    # Calculate offsets
+    floor_offset = floor_value_ref - floor_value
+    peak_offset = peak_value_ref - peak_value
+    average_offset = peak_offset#np.mean([ floor_offset, peak_offset ])
+    """
 
-        # Fit to level of image; save if first image, otherwise calculate appropriate offset
-        level_params = lmfit.Parameters()
+    # Read in unconvolved file, and apply offset
+    fitsdata_in = open_fits(fitsfile_dir + '/' + filename)
+    image_in = fitsdata_in[0].data
+    header_in = fitsdata_in[0].header
+    fitsdata_in.close()
+    image_out = image_in + average_offset
+    #print 'Map mean of '+fitsfile_list[i]+' changed from '+str(np.nanmean(image_in))+' to '+str(np.nanmean(image_out))
 
-        #level_params.add('level', value=np.nanmedian(image_conv), vary=True) ## FOR NUMPY VERSION 1.9.0 AND ABOVE
-        image_conv_nonans = image_conv[np.logical_not(np.isnan(image_conv))]
-        level_params.add('level', value=np.median(image_conv_nonans), vary=True) # BELOW NUMPY VERSION 1.9.0
-        #
-
-        image_conv_clipped = chrisfuncs.SigmaClip(image_conv, tolerance=0.005, median=False, sigma_thresh=3.0)[2]
-        level_result = lmfit.minimize(level_chi_squared, level_params, args=(image_conv_clipped.flatten(),))
-        level = level_result.params['level'].value
-        if i==0:
-            level_ref = level
-            continue
-        average_offset = level_ref - level
-        #print 'Applying offset of '+str(average_offset)+' to '+fitsfile_list[i]
-
-        """
-        # Save floor and peak values
-        floor_value = np.nanmin(image_conv)
-        peak_value = chrisfuncs.SigmaClip( image_conv, tolerance=0.00025, median=False, sigma_thresh=3.0)[1]
-        floor_value_list.append(floor_value)
-        peak_value_list.append(peak_value)
-        if i==0:
-            floor_value_ref = floor_value
-            peak_value_ref = peak_value
-            continue
-
-        # Calculate offsets
-        floor_offset = floor_value_ref - floor_value
-        peak_offset = peak_value_ref - peak_value
-        average_offset = peak_offset#np.mean([ floor_offset, peak_offset ])
-        """
-
-        # Read in unconvolved file, and apply offset
-        fitsdata_in = open_fits(fitsfile_dir+'/'+fitsfile_list[i])
-        image_in = fitsdata_in[0].data
-        header_in = fitsdata_in[0].header
-        fitsdata_in.close()
-        image_out = image_in + average_offset
-        #print 'Map mean of '+fitsfile_list[i]+' changed from '+str(np.nanmean(image_in))+' to '+str(np.nanmean(image_out))
-
-        # Save corrected file
-        image_out_hdu = PrimaryHDU(data=image_out, header=header_in)
-        image_out_hdulist = HDUList([image_out_hdu])
-        image_out_hdulist.writeto(fitsfile_dir+'/'+fitsfile_list[i], clobber=True)
+    # Save corrected file
+    image_out_hdu = PrimaryHDU(data=image_out, header=header_in)
+    image_out_hdulist = HDUList([image_out_hdu])
+    image_out_hdulist.writeto(fitsfile_dir + '/' + filename, clobber=True)
 
 # -----------------------------------------------------------------
 
-def make_noise_maps_in_cps(band_dict, image_names_for_mosaic, counts_path_band, temp_noise_path, exposure_times):
+def make_noise_map_in_cps(band, image_name, counts_path_band, temp_noise_path, exposure_time):
 
     """
     This function ...
-    :param band_dict:
-    :param image_names_for_mosaic:
+    :param band:
+    :param image_name:
     :param counts_path_band:
     :param temp_noise_path:
-    :param exposure_times:
+    :param exposure_time:
     :return:
     """
 
-    # Inform the user
-    log.info("Creating maps of the poisson noise for each GALEX tile in counts per second ...")
+    # Get the path to the file in counts
+    counts_filepath = fs.join(counts_path_band, image_name + "-" + band_short[band] + "-cnt.fits")
 
-    # Loop over the file names
-    for image_name in image_names_for_mosaic:
+    # Load the counts map
+    counts_frame = Frame.from_file(counts_filepath)
+    counts_frame.unit = "ct"
 
-        # Get the path to the file in counts
-        counts_filepath = fs.join(counts_path_band, image_name + "-" + band_dict["band_short"] + "-cnt.fits")
+    # Calculate the poisson frame
+    poisson = Frame(np.sqrt(counts_frame.data))   # calculate the poisson error (in counts) in every pixel
+    poisson.wcs = counts_frame.wcs
+    poisson.unit = "ct"
 
-        # Load the counts map
-        counts_frame = Frame.from_file(counts_filepath)
-        counts_frame.unit = "ct"
+    # Get the exposure time in seconds
+    #exposure_time = exposure_times[image_name]
 
-        # Calculate the poisson frame
-        poisson = Frame(np.sqrt(counts_frame.data))   # calculate the poisson error (in counts) in every pixel
-        poisson.wcs = counts_frame.wcs
-        poisson.unit = "ct"
+    # Convert the poisson frame to counts/second
+    poisson /= exposure_time
+    poisson.unit = "ct/s"
 
-        # Get the exposure time in seconds
-        exposure_time = exposure_times[image_name]
+    # Determine the path to the poisson noise map in counts per second
+    new_path = fs.join(temp_noise_path, image_name + ".fits")
 
-        # Convert the poisson frame to counts/second
-        poisson /= exposure_time
-        poisson.unit = "ct/s"
-
-        # Determine the path to the poisson noise map in counts per second
-        new_path = fs.join(temp_noise_path, image_name + ".fits")
-
-        # Save the poisson noise map in counts per second
-        poisson.saveto(new_path)
+    # Save the poisson noise map in counts per second
+    poisson.saveto(new_path)
 
 # -----------------------------------------------------------------
 
-def convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_mosaic, temp_reproject_path,
-                                                     temp_noise_path, temp_converted_path):
+def convert_frame_and_error_map_to_per_solid_angle(band, image_name, temp_reproject_path, temp_noise_path, temp_converted_path):
 
     """
     This function ...
-    :param band_dict:
-    :param image_names_for_mosaic:
+    :param band:
+    :param image_name:
     :param temp_reproject_path:
     :param temp_noise_path:
     :param temp_converted_path:
@@ -1278,64 +1398,58 @@ def convert_frames_and_error_maps_to_per_solid_angle(band_dict, image_names_for_
     # Inform the user
     log.info("Converting the units to luminosity per solid angle ...")
 
-    # Determine how the files are named
-    filename_ends = "-" + band_dict['band_short'] + "-int"  # -fd-int for FUV, -nd-int for NUV
-    filename_ends_no_int = "-" + band_dict['band_short']    # -fd for FUV, -nd for NUV
+    # Debugging
+    log.debug("Converting " + image_name + " frame and error map to count / s / sr...")
 
-    # DO THE UNIT CONVERSION
-    for image_name in image_names_for_mosaic:
+    # Determine ...
+    filename_ends = "-" + band_short[band] + "-int"  # -fd-int for FUV, -nd-int for NUV
 
-        # Debugging
-        log.debug("Converting " + image_name + " frame and error map to count / s / sr...")
+    # Determine the full path to the tile in temp_reproject_path
+    filepath = fs.join(temp_reproject_path, image_name + filename_ends + ".fits")
 
-        # Determine the full path to the tile in temp_reproject_path
-        filepath = fs.join(temp_reproject_path, image_name + filename_ends + ".fits")
+    # Load the frame
+    frame = Frame.from_file(filepath)
+    frame.unit = "count/s"
 
-        # Load the frame
-        frame = Frame.from_file(filepath)
-        frame.unit = "count/s"
+    # NUMBER OF SR PER PIXEL
+    pixelsr = frame.pixelarea.to("sr").value
 
-        # NUMBER OF SR PER PIXEL
-        pixelsr = frame.pixelarea.to("sr").value
+    # CONVERT FRAME
+    frame /= pixelsr  # IN COUNTS PER SECOND PER SR NOW
+    frame.unit = "count/(s*sr)" # set new unit
 
-        # CONVERT FRAME
-        frame /= pixelsr  # IN COUNTS PER SECOND PER SR NOW
-        frame.unit = "count/(s*sr)" # set new unit
+    # Determine the full path to the poisson noise map for this tile
+    poisson_filepath = fs.join(temp_noise_path, image_name + ".fits")
 
-        # Determine the full path to the poisson noise map for this tile
-        poisson_filepath = fs.join(temp_noise_path, image_name + ".fits")
+    # Load the poisson noise frame
+    poisson = Frame.from_file(poisson_filepath)
+    # the unit should be set already to count/s
 
-        # Load the poisson noise frame
-        poisson = Frame.from_file(poisson_filepath)
-        # the unit should be set already to count/s
+    # normally, this shouldn't be necessary
+    poisson_pixelsr = poisson.pixelarea.to("sr").value
+    assert np.isclose(pixelsr, poisson_pixelsr)
 
-        # normally, this shouldn't be necessary
-        poisson_pixelsr = poisson.pixelarea.to("sr").value
-        assert np.isclose(pixelsr, poisson_pixelsr)
+    # CONVERT ERROR MAP TO COUNTS PER SECOND PER SR
+    poisson /= pixelsr  # IN COUNTS PER SECOND PER SR NOW
+    poisson.unit = "count/(s*sr)" # set new unit
 
-        # CONVERT ERROR MAP TO COUNTS PER SECOND PER SR
-        poisson /= pixelsr  # IN COUNTS PER SECOND PER SR NOW
-        poisson.unit = "count/(s*sr)" # set new unit
+    # SAVE THE TILE IN COUNTS/S/SR
+    frame_path = fs.join(temp_converted_path, image_name + ".fits")
+    frame.saveto(frame_path)
 
-        # SAVE THE TILE IN COUNTS/S/SR
-        frame_path = fs.join(temp_converted_path, image_name + ".fits")
-        frame.saveto(frame_path)
-
-        # SAVE THE ERROR MAP OF THE TILE IN COUNTS/S/SR
-        errors_path = fs.join(temp_converted_path, image_name + "_error.fits")
-        poisson.saveto(errors_path)
+    # SAVE THE ERROR MAP OF THE TILE IN COUNTS/S/SR
+    errors_path = fs.join(temp_converted_path, image_name + "_error.fits")
+    poisson.saveto(errors_path)
 
 # -----------------------------------------------------------------
 
-def rebin_frames_and_error_maps(temp_converted_path, temp_rebinned_path, header_path, metatable_path, proj_stats_path):
+def rebin_frame_and_error_map(filepath, temp_rebinned_path, header_path):
 
     """
     This function ...
-    :param temp_converted_path:
+    :param filepath:
     :param temp_rebinned_path:
     :param header_path:
-    :param metatable_path:
-    :param proj_stats_path:
     :return:
     """
 
@@ -1350,75 +1464,74 @@ def rebin_frames_and_error_maps(temp_converted_path, temp_rebinned_path, header_
     rebin_wcs = CoordinateSystem(rebin_header)
 
     # Loop over all FITS files
-    for path, name in fs.files_in_path(temp_converted_path, extension="fits", returns=["path", "name"]):
+    #for path, name in fs.files_in_path(temp_converted_path, extension="fits", returns=["path", "name"]):
 
-        # Load the image
-        frame = Frame.from_file(path)
+    filename = fs.strip_extension(fs.name(filepath))
 
-        # Rebin
-        frame.rebin(rebin_wcs)
+    # Load the image
+    frame = Frame.from_file(filepath)
 
-        # Determine the new path
-        new_path = fs.join(temp_rebinned_path, name + ".fits")
+    # Rebin
+    frame.rebin(rebin_wcs)
 
-        # Save
-        frame.saveto(new_path)
+    # Determine the new path
+    new_path = fs.join(temp_rebinned_path, filename + ".fits")
+
+    # Save
+    frame.saveto(new_path)
 
 # -----------------------------------------------------------------
 
-def rebin_weight_maps(band_dict, image_names_for_mosaic, temp_reproject_path, temp_rebinned_path, header_path):
+def rebin_weight_map(band, image_name, temp_reproject_path, temp_rebinned_path, header_path):
 
     """
     This function ...
-    :param band_dict:
-    :param image_names_for_mosaic:
+    :param band:
+    :param image_name:
     :param temp_reproject_path:
     :param temp_rebinned_path:
     :param header_path:
     :return:
     """
 
-    # Inform the user
-    log.info("Rebinning weight maps ...")
-
     # Determine how the files are named
-    filename_ends = "-" + band_dict['band_short'] + "-int"  # -fd-int for FUV, -nd-int for NUV
-    filename_ends_no_int = "-" + band_dict['band_short']  # -fd for FUV, -nd for NUV
+    filename_ends = "-" + band_short[band] + "-int"  # -fd-int for FUV, -nd-int for NUV
 
     # GET REBIN WCS
     rebin_header = Header.fromtextfile(header_path)
     rebin_wcs = CoordinateSystem(rebin_header)
 
-    # Loop over the image_names
-    for image_name in image_names_for_mosaic:
+    # Determine the path to the weight map
+    weight_path = fs.join(temp_reproject_path, image_name + filename_ends + ".wgt.fits")
 
-        # Determine the path to the weight map
-        weight_path = fs.join(temp_reproject_path, image_name + filename_ends + ".wgt.fits")
+    # Load the weight map
+    weights = Frame.from_file(weight_path)
 
-        # Load the weight map
-        weights = Frame.from_file(weight_path)
+    # Rebin
+    weights.rebin(rebin_wcs)
 
-        # Rebin
-        weights.rebin(rebin_wcs)
+    # Determine the new path
+    new_path = fs.join(temp_rebinned_path, image_name + "_weight.fits")
 
-        # Determine the new path
-        new_path = fs.join(temp_rebinned_path, image_name + "_weight.fits")
-
-        # Save
-        weights.saveto(new_path)
+    # Save
+    weights.saveto(new_path)
 
 # -----------------------------------------------------------------
 
-def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs):
+def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, header_path):
 
     """
     This function ...
     :param image_names_for_mosaic:
     :param temp_rebinned_path:
     :param temp_mosaic_path:
-    :param wcs:
+    :param header_path:
     :return:
     """
+
+    # GET REBIN WCS
+    rebin_header = Header.fromtextfile(header_path)
+    wcs = CoordinateSystem(rebin_header)
 
     primary_frames = []
     error_frames = []
@@ -1480,35 +1593,32 @@ def combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, te
     mosaic_errormap.saveto(mosaic_error_path)
 
     # Return the mosaic and the mosaic error map in counts/s
-    return mosaic_frame, mosaic_errormap
+    #return mosaic_frame, mosaic_errormap
+
+    return mosaic_path, mosaic_error_path
 
 # -----------------------------------------------------------------
 
-def mosaic_with_swarp(id_string, width_deg, pix_size, temp_swarp_path, ra_deg, dec_deg):
+def mosaic_with_swarp(band, width, pix_size, swarp_path, center):
 
     """
     This function ...
+    :param band:
+    :param width:
+    :param pix_size:
+    :param swarp_path:
+    :param center:
     :return:
     """
 
     # Use SWarp to co-add images weighted by their error maps
-    log.info("Co-adding " + id_string + " maps ...")
+    log.info("Co-adding GALEX " + band + " maps ...")
 
     # Determine image width in pixels
-    image_width_pixels = str(int((float(width_deg) * 3600.) / pix_size))
+    image_width_pixels = str(int((float(width.to("deg").value) * 3600.) / pix_size))
 
-    # Change directories
-    os.chdir(temp_swarp_path)
-
-    # EXECUTE SWARP
-    swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME ' + id_string + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
-    os.system(swarp_command_string)
-
-    # Swarp result path
-    swarp_result_path = fs.join(temp_swarp_path, id_string + "_SWarp.fits")
-
-    # Return the path to the resulting mosaic
-    return swarp_result_path
+    # Do the mosaicing with Swarp
+    return mosaicing.mosaic(swarp_path, band, center, image_width_pixels)
 
 # -----------------------------------------------------------------
 
@@ -1563,20 +1673,5 @@ def rebin_batch_with_montage(in_path, out_path, metatable_path, header_path, pro
             if remove_area: os.remove(fs.join(out_path, listfile)) # remove area if requested
         elif 'hdu0_' in listfile:
             os.rename(fs.join(out_path, listfile), fs.join(out_path, listfile.replace('hdu0_', '')))
-
-# -----------------------------------------------------------------
-
-def mosaic_pts_for_band():
-
-    """
-    This function ...
-    :return:
-    """
-
-
-
-    # DO THE COMBINING
-    mosaic, errors = combine_frames_and_error_maps(image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path,
-                                                   self.rebin_wcs)
 
 # -----------------------------------------------------------------
