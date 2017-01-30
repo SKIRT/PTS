@@ -16,7 +16,8 @@ from pts.core.launch.options import AnalysisOptions, LoggingOptions
 definition.add_flag("recursive", "look for ski files recursively")
 
 # Settings for the remote
-definition.add_optional("remotes", "string_list", "remote host IDs to use", choices=find_host_ids(), default=find_host_ids())
+if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "remote host IDs to use", choices=find_host_ids(), default=find_host_ids())
+else: definition.add_fixed("remotes", "remote hosts", [])
 
 # Parallelization options
 definition.add_optional("nnodes", "integer", "number of computing nodes to be used (for remote hosts that use a scheduling system, for other remotes the current load of the system will be probed)")
