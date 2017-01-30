@@ -23,7 +23,7 @@ from astropy.io import fits
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .frame import Frame
-from .io import get_frame_names, get_mask_names, get_plane_names
+from .fits import get_frame_names, get_mask_names, get_plane_names
 from ...core.tools.logging import log
 from .datacube import DataCube
 from .image import Image
