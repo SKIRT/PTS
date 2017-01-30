@@ -110,14 +110,14 @@ class AnalysisOptions(Options):
 
         # Extraction
         self.add_section("extraction", "options for extractin data from the simulation's log files")
-        self.extraction.add_property("path", "directory_path", "extraction directory", None)
+        self.extraction.add_property("path", "string", "extraction directory", None)
         self.extraction.add_property("progress", "boolean", "extract information about the progress in the different simulation phases", False)
         self.extraction.add_property("timeline", "boolean", "extract timeline information for the different simulation phases on the different processes", False)
         self.extraction.add_property("memory", "boolean", "extract information about the memory usage during the simulation", False)
 
         # Plotting
         self.add_section("plotting", "options for plotting simulation output")
-        self.plotting.add_property("path", "directory_path", "plotting directory", None)
+        self.plotting.add_property("path", "string", "plotting directory", None)
         self.plotting.add_property("format", "string", "image format for the plots", "pdf", choices=["pdf", "png"])
         self.plotting.add_property("progress", "boolean", "make plots of the progress of the simulation phases as a function of time", False)
         self.plotting.add_property("timeline", "boolean", "plot the timeline for the different processes", False)
@@ -128,7 +128,7 @@ class AnalysisOptions(Options):
 
         # Misc
         self.add_section("misc", "settings for creating data of various types from the simulation output")
-        self.misc.add_property("path", "directory_path", "misc output directory", None)
+        self.misc.add_property("path", "string", "misc output directory", None)
         self.misc.add_property("rgb", "boolean", "make RGB images from the simulated datacube(s)", False)
         self.misc.add_property("wave", "boolean", "make a wavelength movie through the simulated datacube(s)", False)
         self.misc.add_property("fluxes", "boolean", "calculate observed fluxes from the SKIRT output SEDs", False)
@@ -145,11 +145,11 @@ class AnalysisOptions(Options):
         self.add_property("memory_table_path", "file_path", "path of the memory table", None)
 
         # Properties relevant for simulations part of a scaling test
-        self.add_property("scaling_path", "directory_path", "scaling directory path", None)
+        self.add_property("scaling_path", "string", "scaling directory path", None)
         self.add_property("scaling_run_name", "string", "name of scaling run", None)
 
         # Properties relevant for simulations part of radiative transfer modeling
-        self.add_property("modeling_path", "directory_path", "modeling directory path", None)
+        self.add_property("modeling_path", "string", "modeling directory path", None)
 
         # Set options
         self.set_options(kwargs)

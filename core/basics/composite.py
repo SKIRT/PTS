@@ -153,8 +153,6 @@ class SimplePropertyComposite(object):
         :return:
         """
 
-        print(properties)
-
         # Loop over all the options defined in the 'options' dictionary
         for name in properties:
 
