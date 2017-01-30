@@ -95,11 +95,11 @@ class Updater(Configurable):
             self.remote = Remote()
             self.remote.setup(self.config.host_id)
 
+            # Fix configuration files
+            self.remote.fix_configuration_files()
+
         # Local
         else: log.info("No remote host is specified, will be updating locally ...")
-
-        # Fix configuration files
-        self.remote.fix_configuration_files()
 
     # -----------------------------------------------------------------
 
