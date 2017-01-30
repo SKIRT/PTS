@@ -78,6 +78,8 @@ class SimplePropertyComposite(object):
         # Set the ptype
         self._ptypes[name] = ptype
 
+        print(self._ptypes)
+
         # Set the description
         self._descriptions[name] = description
 
@@ -120,6 +122,7 @@ class SimplePropertyComposite(object):
             #super(SimplePropertyComposite, self).__setattr__(name, value)
             #return
             self.__dict__[name] = value
+            print(self.__dict__)
             return
 
         if value is None: pass
