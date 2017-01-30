@@ -46,17 +46,27 @@ class SimplePropertyComposite(object):
         # The path
         self._path = None
 
+        print("1", self.__dict__)
+
         # The descriptions
         self._descriptions = dict()
+
+        print("2", self.__dict__)
 
         # The parsing types
         self._ptypes = dict()
 
+        print("3", self.__dict__)
+
         # The choices
         self._choices = dict()
 
+        print("4", self.__dict__)
+
         # The sections
         self._sections = OrderedDict()
+
+        print("5", self.__dict__)
 
     # -----------------------------------------------------------------
 
@@ -77,8 +87,6 @@ class SimplePropertyComposite(object):
 
         # Set the ptype
         self._ptypes[name] = ptype
-
-        print(self._ptypes)
 
         # Set the description
         self._descriptions[name] = description
@@ -122,7 +130,6 @@ class SimplePropertyComposite(object):
             #super(SimplePropertyComposite, self).__setattr__(name, value)
             #return
             self.__dict__[name] = value
-            print(self.__dict__)
             return
 
         if value is None: pass
@@ -133,7 +140,7 @@ class SimplePropertyComposite(object):
             ptype, string = stringify(value)
 
             # Try converting the string back to the type it actually needs to be
-            the_type = self._types[name]
+            the_type = self._ptypes[name]
             parsing_function = getattr(parsing, the_type)
             try: value = parsing_function(string)
             except ValueError: raise ValueError("The value given is of the wrong type: '" + ptype + "', must be '" + the_type + "'")
