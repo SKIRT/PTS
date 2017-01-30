@@ -858,6 +858,8 @@ class ConfigurationDefinition(object):
         # Loop over the properties
         for pname in default_values:
 
+            if pname.startswith("_"): continue
+
             default_value = default_values[pname]
 
             # Section
@@ -870,7 +872,7 @@ class ConfigurationDefinition(object):
             else:
 
                 # Get the type, description and the choices
-                ptype = instance._types[pname]
+                ptype = instance._ptypes[pname]
                 pdescription = instance._descriptions[pname]
                 choices = instance._choices[pname]
 

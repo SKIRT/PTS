@@ -46,27 +46,17 @@ class SimplePropertyComposite(object):
         # The path
         self._path = None
 
-        print("1", self.__dict__)
-
         # The descriptions
         self._descriptions = dict()
-
-        print("2", self.__dict__)
 
         # The parsing types
         self._ptypes = dict()
 
-        print("3", self.__dict__)
-
         # The choices
         self._choices = dict()
 
-        print("4", self.__dict__)
-
         # The sections
         self._sections = OrderedDict()
-
-        print("5", self.__dict__)
 
     # -----------------------------------------------------------------
 
@@ -171,7 +161,7 @@ class SimplePropertyComposite(object):
                 if isinstance(getattr(self, name), SimplePropertyComposite):
 
                     assert isinstance(properties[name], dict)  # dict, or Map (is derived from dict)
-                    getattr(self, name).set_items(properties[name])
+                    getattr(self, name).set_properties(properties[name])
 
                 # If it is a simple variable, just use setattr to set the attribute of this class
                 else: setattr(self, name, properties[name])
