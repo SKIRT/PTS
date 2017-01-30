@@ -33,6 +33,7 @@ from ...core.tools import network
 
 # -----------------------------------------------------------------
 
+if not fs.is_directory(introspection.pts_ext_dir): fs.create_directory(introspection.pts_ext_dir)
 psfs_path = fs.join(introspection.pts_ext_dir, "psfs")
 if not fs.is_directory(psfs_path): fs.create_directory(psfs_path)
 
