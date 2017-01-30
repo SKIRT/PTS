@@ -115,7 +115,10 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        print(name)
+
         if name.startswith("_"):
+            print("here")
             super(SimplePropertyComposite, self).__setattr__(name, value)
             return
 
