@@ -115,6 +115,8 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        if name.startswith("_"): super(SimplePropertyComposite, self).__setattr__(name, value)
+
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
         else:
