@@ -397,7 +397,7 @@ class Filter(object):
     This class ...
     """
 
-    __metaclass__ = ABCM
+    __metaclass__ = ABCMeta
 
     # -----------------------------------------------------------------
 
