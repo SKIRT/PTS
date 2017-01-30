@@ -15,14 +15,11 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.units import spectral
-
 # Import the relevant PTS classes and modules
 from ..basics.curve import WavelengthCurve, FilterCurve
 from ..basics.unit import PhotometricUnit
 from ..tools import tables
-from ..basics.filter import Filter
+from ..basics.filter import BroadBandFilter
 from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
 from ..basics.unit import parse_unit as u
@@ -544,7 +541,7 @@ class ObservedSED(FilterCurve):
             band = instrument_band.split("_")[1]
 
             # Create filter
-            fltr = Filter(instrument + " " + band)
+            fltr = BroadBandFilter(instrument + " " + band)
 
             # Get filter properties
             observatory = fltr.observatory

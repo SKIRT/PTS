@@ -20,7 +20,7 @@ import pyfits
 from scipy.ndimage.filters import gaussian_filter
 
 from ..core.tools import archive as arch
-from ..core.basics.filter import Filter
+from ..core.basics.filter import BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -54,10 +54,10 @@ def _loadfilters():
     if len(_filters) == 0:
         # standard filters
         for filterspec in _filterspecs:
-            _filters[filterspec] = Filter(filterspec)
+            _filters[filterspec] = BroadBandFilter(filterspec)
         # uniform filters
         for filterspec,wavemin,wavemax in _uniformfilters:
-            _filters[filterspec] = Filter((wavemin,wavemax))
+            _filters[filterspec] = BroadBandFilter((wavemin,wavemax))
 
 # -----------------------------------------------------------------
 
@@ -131,7 +131,7 @@ def makeinfofile(skirtrun):
     contmask = ((wavelengths>=wcont1) & (wavelengths<=wline1)) | ((wavelengths>=wline2) & (wavelengths<=wcont2))
 
     # create uniform filter over the wavelength range of the H-alpha emission peak
-    halpha_filter = Filter((0.6500,0.6631))     # limits so that pivot wavelength coincides with peak
+    halpha_filter = BroadBandFilter((0.6500,0.6631))     # limits so that pivot wavelength coincides with peak
     # create a mask that removes the H-alpha emission peak from the continuum emission
     halpha_mask = np.abs(wavelengths-0.6565)>0.0010
 

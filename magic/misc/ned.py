@@ -27,7 +27,7 @@ from astroquery import nasa_ads as ads
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import Filter
+from ...core.basics.filter import parse_filter, BroadBandFilter
 from ...core.basics.configurable import Configurable
 from ...core.tools import formatting as fmt
 
@@ -120,7 +120,7 @@ class NED(Configurable):
                 if splitted[0].startswith("NGC_"):
                     band = splitted[0].split("NGC_")[1][5:]
                     try:
-                        filter = Filter(band)
+                        filter = parse_filter(band)
                         splitted = [self.config.galaxy, None, band, splitted[1]]
                     except: pass
 
@@ -165,10 +165,10 @@ class NED(Configurable):
         for band, year, bibcode, url in images:
 
             if band is None: fltr = None
-            elif "Ha" in band or "H-alpha" in band or "H_alph" in band: fltr = Filter("Ha")
+            elif "Ha" in band or "H-alpha" in band or "H_alph" in band: fltr = BroadBandFilter("Ha")
             else:
 
-                try: fltr = Filter(band)
+                try: fltr = parse_filter(band)
                 except ValueError: fltr = None
 
             #print(fltr, year, bibcode, url)
@@ -336,7 +336,7 @@ class NED(Configurable):
         :return:
         """
 
-        names = sorted(self.images.keys(), key=lambda key: Filter(key).pivotwavelength())
+        names = sorted(self.images.keys(), key=lambda key: parse_filter(key).pivot)
         return names
 
 # -----------------------------------------------------------------

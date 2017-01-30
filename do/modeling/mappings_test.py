@@ -20,7 +20,7 @@ import numpy as np
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.filter import Filter
+from pts.core.basics.filter import BroadBandFilter
 from pts.core.simulation.execute import SkirtExec
 from pts.modeling.core.mappings import Mappings
 from pts.core.data.sed import SED
@@ -63,7 +63,7 @@ log.start("Starting mappings_test ...")
 
 # -----------------------------------------------------------------
 
-fuv_filter = Filter("FUV")
+fuv_filter = BroadBandFilter("FUV")
 fuv_wavelength = fuv_filter.pivot
 
 # -----------------------------------------------------------------

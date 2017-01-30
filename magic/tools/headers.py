@@ -20,7 +20,7 @@ import numpy as np
 from astropy import coordinates
 
 # Import the relevant PTS classes and modules
-from ...core.basics.filter import Filter
+from ...core.basics.filter import parse_filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
@@ -161,13 +161,13 @@ def get_filter(name, header=None):
         # Get a name describing the filter
         if "FILTER" in header:
             try:
-                filter = Filter(header["FILTER"])
+                filter = parse_filter(header["FILTER"])
                 return filter
             except ValueError: pass
             filterid += " " + get_string(header['FILTER']).lower()
         if "FLTRNM" in header:
             try:
-                filter = Filter(header["FLTRNM"])
+                filter = parse_filter(header["FLTRNM"])
                 return filter
             except ValueError: pass
             filterid += " " + get_string(header['FLTRNM']).lower()
@@ -382,14 +382,14 @@ def get_filter(name, header=None):
             else: name = None
 
             # Create a custom filter around the wavelength
-            fltr = Filter((lower, upper), name=name)
+            fltr = parse_filter((lower, upper), name=name)
 
         else: fltr = None
 
     else:
 
         # Create the filter
-        fltr = Filter(final_filter_name)
+        fltr = parse_filter(final_filter_name)
 
         # Inform the user
         log.debug("Filter was identified as " + str(fltr))

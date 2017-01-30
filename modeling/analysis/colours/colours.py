@@ -22,7 +22,7 @@ from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
 from ....magic.plot.imagegrid import ResidualImageGridPlotter
 from ....core.basics.distribution import Distribution
-from ....core.basics.filter import Filter
+from ....core.basics.filter import BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -131,7 +131,7 @@ class ColourAnalyser(ColourAnalysisComponent):
         for key in keys:
 
             # Get the corresponding filter
-            fltr = Filter(filter_names[key])
+            fltr = BroadBandFilter(filter_names[key])
 
             # Get the observed image for this filter
             frame = self.dataset.get_frame_for_filter(fltr)

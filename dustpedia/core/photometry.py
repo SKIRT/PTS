@@ -12,10 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import requests
-from lxml import html
-
 # Import astronomical modules
 from astropy.table import Table
 
@@ -24,7 +20,7 @@ from ...core.tools.logging import log
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
-from ...core.basics.filter import Filter
+from ...core.basics.filter import parse_filter
 from ...core.data.sed import ObservedSED
 from .sample import DustPediaSample
 
@@ -109,7 +105,7 @@ class DustPediaPhotometry(object):
 
             if colname.endswith("_err") or colname.endswith("_flag"): continue
 
-            fltr = Filter(colname)
+            fltr = parse_filter(colname)
 
             self.aperture_filters[colname] = fltr
 
@@ -120,7 +116,7 @@ class DustPediaPhotometry(object):
             if colname in non_flux_columns: continue
             if colname.endswith("_err") or colname.endswith("_flag"): continue
 
-            fltr = Filter(colname)
+            fltr = parse_filter(colname)
 
             self.iras_filters[colname] = fltr
 
@@ -131,7 +127,7 @@ class DustPediaPhotometry(object):
             if colname in non_flux_columns: continue
             if colname.endswith("_err") or colname.endswith("_flag"): continue
 
-            fltr = Filter(colname)
+            fltr = parse_filter(colname)
 
             self.planck_filters[colname] = fltr
 

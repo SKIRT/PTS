@@ -15,6 +15,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+from abc import ABCMeta
 import os
 import os.path
 import sys
@@ -366,11 +367,159 @@ def generate_all_aliases():
             yield spec, alias
 
 # -----------------------------------------------------------------
+
+def parse_filter(string, name=None):
+
+    """
+    This function ...
+    :param string:
+    :param name:
+    :return:
+    """
+
+    if isinstance(string, Filter): return string.copy()
+
+    try: fltr = BroadBandFilter(string, name=name)
+    except ValueError:
+        try: fltr = NarrowBandFilter(string, name=name)
+        except ValueError: raise ValueError("Could not parse the string '" + string + "' as a filter")
+
+    # Return the filter
+    return fltr
+
+# -----------------------------------------------------------------
 #  Filter class
 # -----------------------------------------------------------------
 
-## An instance of the Filter class represents a particular wavelength band, including its response or transmission
-# curve and some basic properties such as its mean and pivot wavelengths. The class provides a function to
+class Filter(object):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCM
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, filter_id, description, true_filter):
+
+        """
+        This function ...
+        :param filter_id:
+        :param description:
+        :param true_filter:
+        """
+
+        # Set attributes
+        self._FilterID = filter_id
+        self._Description = description
+        self.true_filter = true_filter
+
+    # -----------------------------------------------------------------
+
+    def filterID(self):
+
+        """
+        This fucntion returns a unique identifer for the filter
+        :return:
+        """
+
+        return self._FilterID
+
+    # -----------------------------------------------------------------
+
+    def description(self):
+
+        """
+        This function returns a human-readable description for the filter.
+        :return:
+        """
+
+        return self._Description
+
+    # -----------------------------------------------------------------
+
+    @property
+    def name(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        if self.true_filter: return self._FilterID.split("/")[1]
+        else: return self._FilterID.split("_")[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observatory(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        if self.true_filter: return self._FilterID.split("/")[0]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def instrument(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        if self.true_filter: return self._FilterID.split("/")[1].split(".")[0]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def band(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        if self.true_filter: return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
+        elif self._FilterID.startswith("Uniform"): return None
+        else: return self._FilterID.split("_")[0]
+
+# -----------------------------------------------------------------
+
+class NarrowBandFilter(Filter):
+
+    """
+    An instance of the NarrowBandFilter class represents a narrow band filter around a certain wavelength.
+    """
+
+    def __init__(self, filterspec, name=None):
+
+        """
+        This function ...
+        :param filterspec:
+        :param name:
+        """
+
+        filter_id = None
+        description = None
+        true_filter = True
+
+        # Call the constructor of the base class
+        super(NarrowBandFilter, self).__init__(filter_id, description, true_filter)
+
+        # The wavelength
+        self.wavelength = None
+
+# -----------------------------------------------------------------
+
+## An instance of the BroadBandFilter class represents a particular wavelength bandpass, including its response or
+# transmission curve and some basic properties such as its mean and pivot wavelengths. The class provides a function to
 # integrate a given spectrum over the band. A filter instance can be constructed by name from one of
 # the provided resource files describing specific instruments or standard wavelength bands. Alternatively,
 # a filter can be created with a uniform transmission curve over a certain wavelength range.
@@ -378,7 +527,7 @@ def generate_all_aliases():
 # The precise formalae involved in the integration over the filter and the calculation of the pivot wavelength
 # depend on whether the instrument counts photons (photon counter) or measures energy (bolometer).
 #
-class Filter(object):
+class BroadBandFilter(Filter):
 
     # ---------- Constructing -------------------------------------
 
@@ -421,8 +570,11 @@ class Filter(object):
             # Load properties
             wavelengths, transmissions, instrument, frequency_string = load_planck(filterspec)
 
-            self._FilterID = "Planck/" + instrument + "." + frequency_string
-            self._Description = instrument + " " + frequency_string
+            # Determine ID and description
+            filter_id = "Planck/" + instrument + "." + frequency_string
+            description = instrument + " " + frequency_string
+
+            true_filter = True
 
             # Initialize
             self._initialize2(wavelengths, transmissions)
@@ -433,10 +585,12 @@ class Filter(object):
             # Load
             wavelengths, transmissions = load_alma(filterspec)
 
-            # Set properties
+            # Determine ID and description
             identifier = identifiers[filterspec]
-            self._FilterID = "ALMA/ALMA." + str(identifier.channel)
-            self._Description = "ALMA " + str(identifier.channel)
+            filter_id = "ALMA/ALMA." + str(identifier.channel)
+            description = "ALMA " + str(identifier.channel)
+
+            true_filter = True
 
             # Initialize
             self._initialize2(wavelengths, transmissions)
@@ -445,7 +599,7 @@ class Filter(object):
         elif isinstance(filterspec, types.StringTypes):
 
             # Load
-            min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filterid, description, \
+            min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filter_id, description, \
             eff_width, photon_counter, wavelengths, transmissions = load_svo(filterspec)
 
             # Set properties
@@ -454,12 +608,12 @@ class Filter(object):
             self._WavelengthCen = center_wavelength
             self._WavelengthMean = mean_wavelength
             self._WavelengthEff = eff_wavelength
-            self._FilterID = filterid
-            self._Description = description
             self._EffWidth = eff_width
             self._Wavelengths = wavelengths
             self._Transmission = transmissions
             self._PhotonCounter = photon_counter
+
+            true_filter = True
 
             # Initialize
             self._initialize1()
@@ -472,15 +626,21 @@ class Filter(object):
             self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
             self._WavelengthMean = self._WavelengthCen
             self._WavelengthEff = self._WavelengthCen
-            self._FilterID = name + "_[{},{}]".format(self._WavelengthMin,self._WavelengthMax)
-            self._Description = name + " filter in range [{},{}]".format(self._WavelengthMin,self._WavelengthMax)
             self._Wavelengths = np.array((self._WavelengthMin,self._WavelengthMax))
             self._Transmission = np.ones((2,))
             self._PhotonCounter = False
             self._IntegratedTransmission = self._WavelengthMax - self._WavelengthMin
             self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
             self._EffWidth = self._WavelengthMax - self._WavelengthMin
-            self.true_filter = False
+
+            true_filter = False
+
+            # Determine filter ID and description
+            filter_id = name + "_[{},{}]".format(self._WavelengthMin, self._WavelengthMax)
+            description = name + " filter in range [{},{}]".format(self._WavelengthMin, self._WavelengthMax)
+
+        # Call the constructor of the base class
+        super(BroadBandFilter, self).__init__(filter_id, description, true_filter)
 
     # -----------------------------------------------------------------
 
@@ -513,6 +673,11 @@ class Filter(object):
 
     def _initialize1(self):
 
+        """
+        This function ...
+        :return:
+        """
+
         # calculate the pivot wavelength
         if self._PhotonCounter:
             integral1 = np.trapz(x=self._Wavelengths, y=self._Transmission * self._Wavelengths)
@@ -522,9 +687,6 @@ class Filter(object):
             integral2 = np.trapz(x=self._Wavelengths, y=self._Transmission / (self._Wavelengths ** 2))
         self._IntegratedTransmission = integral1
         self._WavelengthPivot = np.sqrt(integral1 / integral2)
-
-        # Is true filter
-        self.true_filter = True
 
     # -----------------------------------------------------------------
 
@@ -562,8 +724,6 @@ class Filter(object):
         self._WavelengthPivot = np.sqrt(integral1 / integral2)
 
         self._EffWidth = None
-
-        self.true_filter = True
 
     # ---------- Special functions --------------------------------------
 
@@ -632,39 +792,10 @@ class Filter(object):
         elif self.name == "SPIRE.PLW_ext": return "SPIRE_500"
         else: raise ValueError("The band " + self.name + " is not defined for the Aniano set of kernels")
 
-    @property
-    def name(self):
-        if self.true_filter: return self._FilterID.split("/")[1]
-        else: return self._FilterID.split("_")[0]
-
-    @property
-    def observatory(self):
-        if self.true_filter: return self._FilterID.split("/")[0]
-        else: return None
-
-    @property
-    def instrument(self):
-        if self.true_filter: return self._FilterID.split("/")[1].split(".")[0]
-        else: return None
-
-    @property
-    def band(self):
-        if self.true_filter: return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
-        elif self._FilterID.startswith("Uniform"): return None
-        else: return self._FilterID.split("_")[0]
-
     ## This function returns the filter in string format ('instrument' 'band')
     def __str__(self):
         if self.true_filter: return self.instrument + " " + self.band
         else: return self.name
-
-    ## This function returns a unique identifier for the filter.
-    def filterID(self):
-        return self._FilterID
-
-    ## This function returns a human-readable description for the filter.
-    def description(self):
-        return self._Description
 
     ## This function returns the mean wavelength for the filter, in micron.
     def meanwavelength(self):

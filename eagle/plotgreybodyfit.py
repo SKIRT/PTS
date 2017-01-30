@@ -22,7 +22,7 @@ import numpy as np
 
 # import pts modules
 from ..core.tools import archive as arch
-from ..core.basics.filter import Filter
+from ..core.basics.filter import BroadBandFilter
 from ..core.basics.greybody import GreyBody, kappa350_Cortese
 
 # ----------------------------------------------------------------------
@@ -66,7 +66,7 @@ def plotgreybodyfit(skirtrun):
         if not line.startswith("#"):
             key,dummy,value = line.split(None, 2)
             info[key] = float(value)
-    waves = np.array( [ Filter(fs).pivotwavelength() for fs in ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")] )
+    waves = np.array( [ BroadBandFilter(fs).pivotwavelength() for fs in ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")] )
     fluxes = np.array(( info['instr_xy_fluxdensity_pacs_red_continuum'],
                         info['instr_xy_fluxdensity_spire_psw_continuum'],
                         info['instr_xy_fluxdensity_spire_pmw_continuum'],

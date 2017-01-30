@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 from .collections import CollectionData, log_if_positive, divide_if_positive, log_divide_if_positive
 from ..core.simulation.units import SkirtUnits
-from ..core.basics.filter import Filter
+from ..core.basics.filter import BroadBandFilter
 from . import config
 
 # -----------------------------------------------------------------
@@ -158,10 +158,10 @@ axistypes = {
     # Star-formation-rate predictions from observations (see Kennicutt-Evans 2012 table 1)
     'logSFR.NUV': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{NUV})\,[M_\odot\,\mathrm{year}^{-1}]$",
         lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_galex_nuv,cd.setup_distance_instrument,'erg/s/Hz') \
-                  * c / (1e-6*Filter("GALEX.NUV").pivotwavelength())) - 43.17 ),
+                  * c / (1e-6*BroadBandFilter("GALEX.NUV").pivotwavelength())) - 43.17 ),
     'logSFR.24': ( r"$\log_{10}(\mathrm{SFR}_{24\mu\mathrm{m}})\,[M_\odot\,\mathrm{year}^{-1}]$",
         lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_mips_24,cd.setup_distance_instrument,'erg/s/Hz') \
-                * c / (1e-6*Filter("MIPS.24").pivotwavelength())) - 42.69 ),
+                * c / (1e-6*BroadBandFilter("MIPS.24").pivotwavelength())) - 42.69 ),
     'logSFR.TIR': ( r"$\log_{10}(\mathrm{SFR}_\mathrm{TIR})\,[M_\odot\,\mathrm{year}^{-1}]$",
         lambda: log_if_positive(units.luminosityforflux(cd.instr_fluxdensity_uniform_3_1100,cd.setup_distance_instrument,'W/micron',
                     wavelength=np.sqrt(3*1100))*(1100-3)*1e7) - 43.41 ),

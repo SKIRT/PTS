@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..core.mappings import Mappings
-from ...core.basics.filter import Filter
+from ...core.basics.filter import BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -68,7 +68,7 @@ class Model(object):
         fuv_luminosity = self.parameter_values["fuv_ionizing"]
 
         # Get the FUV pivot wavelength
-        fuv_wavelength = Filter("GALEX FUV").pivot
+        fuv_wavelength = BroadBandFilter("GALEX FUV").pivot
 
         # Get the SFR
         sfr = Mappings.sfr_for_luminosity(metallicity, compactness, pressure, covering_factor, fuv_luminosity, fuv_wavelength)
@@ -96,7 +96,7 @@ class Model(object):
         fuv_luminosity = self.parameter_values["fuv_ionizing"]
 
         # Get the FUV pivot wavelength
-        fuv_wavelength = Filter("GALEX FUV").pivot
+        fuv_wavelength = BroadBandFilter("GALEX FUV").pivot
 
         # Get the dust mass
         dust_mass = Mappings.dust_mass_for_luminosity(metallicity, compactness, pressure, covering_factor, fuv_luminosity, fuv_wavelength)

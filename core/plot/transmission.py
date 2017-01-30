@@ -30,7 +30,7 @@ from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..data.transmission import TransmissionCurve
 from ..basics.emissionlines import EmissionLines
-from ..basics.filter import identifiers, Filter
+from ..basics.filter import identifiers, parse_filter
 from ..basics.range import RealRange
 from ..basics.plot import Plot
 
@@ -180,7 +180,7 @@ class TransmissionPlotter(Configurable):
         # No curves
         if len(self.curves) == 0:
             for spec in identifiers:
-                fltr = Filter(spec)
+                fltr = parse_filter(spec)
                 curve = TransmissionCurve.from_filter(fltr)
                 self.add_transmission_curve(curve, fltr.description())
 

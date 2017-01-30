@@ -19,7 +19,7 @@ import numpy as np
 
 from . import config
 from .database import Database
-from ..core.basics.filter import Filter
+from ..core.basics.filter import BroadBandFilter
 from ..core.basics.greybody import Bnu, GreyBody, kappa350_Cortese, kappa350_Zubko
 
 # ----------------------------------------------------------------------
@@ -202,7 +202,7 @@ class CollectionData:
     # of the specified flux type (default is 'limited'), using beta=2 and kappa=kappa350_Cortese
     def dust_temperature_and_mass_from_grey_body_fit(self, fluxtype='limited'):
         # get the Herschel 160, 250, 350, 500 wavelengths
-        waves = np.array( [ Filter(fs).pivotwavelength() for fs in ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")] )
+        waves = np.array( [ BroadBandFilter(fs).pivotwavelength() for fs in ("Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW")] )
         sigmas = np.array(( 3,1,1,3 ))      # pacs is less sensitive; longer wavelength fluxes are harder to measure
 
         # get the Herschel 160, 250, 350, 500 datapoints

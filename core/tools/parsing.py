@@ -23,7 +23,7 @@ from astropy.coordinates import Angle
 from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
-from ..basics.filter import Filter, identifiers
+from ..basics.filter import identifiers, parse_filter, BroadBandFilter, NarrowBandFilter
 from ..basics.errorbar import ErrorBar
 from ..basics.unit import PhotometricUnit, parse_unit
 from ..basics.quantity import parse_quantity
@@ -766,7 +766,7 @@ def filter(argument):
     :return:
     """
 
-    return Filter(argument)
+    return parse_filter(argument)
 
 # -----------------------------------------------------------------
 
@@ -782,6 +782,30 @@ def filter_list(argument):
 
 # -----------------------------------------------------------------
 
+def broad_band_filter(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return BroadBandFilter(argument)
+
+# -----------------------------------------------------------------
+
+def narrow_band_filter(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return NarrowBandFilter(argument)
+
+# -----------------------------------------------------------------
+
 def lazy_filter_list(argument):
 
     """
@@ -793,18 +817,18 @@ def lazy_filter_list(argument):
     filters = []
     for arg in string_list(argument):
         try:
-            fltr = Filter(arg)
+            fltr = parse_filter(arg)
             filters.append(fltr)
         except ValueError:
             for spec in identifiers:
                 identifier = identifiers[spec]
                 if "instruments" in identifier:
                     if arg in identifier.instruments:
-                        filters.append(Filter(spec))
+                        filters.append(parse_filter(spec))
                         continue # this filter matches
                 if "observatories" in identifier:
                     if arg in identifier.observatories:
-                        filters.append(Filter(spec))
+                        filters.append(parse_filter(spec))
                         continue # this filter matches
 
     # Return the list of filters

@@ -141,6 +141,41 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._filter
+
+    # -----------------------------------------------------------------
+
+    @filter.setter
+    def filter(self, fltr):
+
+        """
+        This function ...
+        """
+
+        self._filter = parse_filter(fltr)
+
+    # -----------------------------------------------------------------
+
     def __getitem__(self, item):
 
         """

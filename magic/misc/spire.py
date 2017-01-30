@@ -20,7 +20,7 @@ from scipy.interpolate import interp1d
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from ...core.basics.filter import Filter
+from ...core.basics.filter import BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -52,9 +52,9 @@ class SPIRE(object):
         """
 
         # Create the SPIRE filters
-        self.psw = Filter("SPIRE PSW")
-        self.pmw = Filter("SPIRE PMW")
-        self.plw = Filter("SPIRE PLW")
+        self.psw = BroadBandFilter("SPIRE PSW")
+        self.pmw = BroadBandFilter("SPIRE PMW")
+        self.plw = BroadBandFilter("SPIRE PLW")
 
         # BASED ON TEMPERATURE
         # --------------------

@@ -34,7 +34,7 @@ from .list import GalaxyList, StarList
 from ..object.galaxy import Galaxy
 from ..object.star import Star
 from ...core.data.sed import ObservedSED
-from ...core.basics.filter import Filter
+from ...core.basics.filter import BroadBandFilter
 from ...core.basics.curve import FilterCurve
 from ...core.basics.unit import parse_unit as u
 
@@ -151,7 +151,7 @@ class GalaxyTable(SmartTable):
             if not name.endswith("flux"): continue
 
             # Filter
-            fltr = Filter(name.split(" flux")[0])
+            fltr = BroadBandFilter(name.split(" flux")[0])
 
             # Get flux
             flux = galaxy.sed.photometry_for_filter(fltr)
@@ -233,7 +233,7 @@ class StarTable(SmartTable):
             if name.endswith("FWHM"):
 
                 # Filter
-                fltr = Filter(name.split(" FWHM")[0])
+                fltr = BroadBandFilter(name.split(" FWHM")[0])
 
                 fwhm = star.fwhms[name]
 
@@ -242,7 +242,7 @@ class StarTable(SmartTable):
             elif name.endswith("flux"):
 
                 # Filter
-                fltr = Filter(name.split(" flux")[0])
+                fltr = BroadBandFilter(name.split(" flux")[0])
 
                 # Get flux
                 flux = star.sed.photometry_for_filter(fltr)
@@ -1026,8 +1026,8 @@ class SourceFinder(Configurable):
 
             # Check whether it can be identified as a star
 
-            fuv = Filter("FUV")
-            nuv = Filter("NUV")
+            fuv = BroadBandFilter("FUV")
+            nuv = BroadBandFilter("NUV")
 
             # Check the FUV-NUV colour
             fuv_nuv_colour = sed.colour(fuv, nuv)
@@ -1055,9 +1055,9 @@ class SourceFinder(Configurable):
             # in the field. A second, colour-based, criterion disentangled the
             # background galaxies from the HII regions:
 
-            irac_i1 = Filter("IRAC I1")
-            irac_i3 = Filter("IRAC I3")
-            irac_i4 = Filter("IRAC I4")
+            irac_i1 = BroadBandFilter("IRAC I1")
+            irac_i3 = BroadBandFilter("IRAC I3")
+            irac_i4 = BroadBandFilter("IRAC I4")
 
             # 0.29 < F5.8 / F8 < 0.85
             # F3.6 / F5.8 < 1.58

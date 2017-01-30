@@ -25,7 +25,7 @@ from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from .sample import DustPediaSample
-from ...core.basics.filter import Filter
+from ...core.basics.filter import parse_filter
 from ...core.tools import network
 from ...core.tools import progress
 
@@ -398,7 +398,7 @@ class DustPediaDatabase(object):
 
             # Get the filter
             fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
-            fltr = Filter(fltr_string)
+            fltr = parse_filter(fltr_string)
 
             # Add the filter
             filters.append(fltr)

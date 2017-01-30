@@ -17,7 +17,7 @@ from collections import defaultdict
 from textwrap import wrap
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.filter import Filter, identifiers, generate_aliases
+from pts.core.basics.filter import BroadBandFilter, identifiers, generate_aliases
 from pts.core.tools import formatting as fmt
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 from pts.core.tools import stringify
@@ -66,7 +66,7 @@ for label in sorted(categorized.keys(), key=lambda x: identifiers.keys().index(c
     for spec in categorized[label]:
 
         # Load the filter
-        fltr = Filter(spec)
+        fltr = BroadBandFilter(spec)
 
         print("   " + fmt.green + fmt.bold + spec + fmt.reset)
         if not config.short:

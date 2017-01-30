@@ -18,7 +18,7 @@ from astropy import constants
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..tools import filesystem as fs
-from ..basics.filter import Filter
+from ..basics.filter import parse_filter
 from ...magic.core.kernel import ConvolutionKernel
 from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
@@ -227,7 +227,7 @@ class ObservedImageMaker(object):
             log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
-            fltr = Filter(filter_name)
+            fltr = parse_filter(filter_name)
 
             # Add the filter to the list
             self.filters[filter_name] = fltr

@@ -20,7 +20,7 @@ from astropy.units import spectral
 from ...core.data.sed import ObservedSED
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import Filter
+from ...core.basics.filter import parse_filter
 from ...core.tools.logging import log
 from ...core.basics.errorbar import ErrorBar
 from ...dustpedia.data.seds import SEDFetcher as DustPediaSEDFetcher
@@ -104,7 +104,7 @@ class SEDFetcher(Configurable):
 
         # Create a dictionary of filters
         keys = ["Ha", "FUV", "NUV", "U", "B", "V", "R", "J", "H", "K", "IRAS 12", "IRAS 25", "IRAS 60", "IRAS 100", "I1", "I2", "I3", "I4", "MIPS 24", "MIPS 70", "MIPS 160", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
-        for key in keys: self.filters[key] = Filter(key)
+        for key in keys: self.filters[key] = parse_filter(key)
 
         # Get the NGC name
         self.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)

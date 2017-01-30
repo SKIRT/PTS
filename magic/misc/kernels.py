@@ -24,7 +24,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import archive
-from ...core.basics.filter import Filter
+from ...core.basics.filter import parse_filter
 from ...core.basics.unit import parse_unit
 
 # -----------------------------------------------------------------
@@ -168,8 +168,8 @@ class AnianoKernels(object):
         :return:
         """
 
-        if isinstance(from_filter, basestring): from_filter = Filter(from_filter)
-        if isinstance(to_filter, basestring): to_filter = Filter(to_filter)
+        if isinstance(from_filter, basestring): from_filter = parse_filter(from_filter)
+        if isinstance(to_filter, basestring): to_filter = parse_filter(to_filter)
 
         # For variable FWHM of input image
         if str(from_filter) in variable_fwhms: # Is SDSS

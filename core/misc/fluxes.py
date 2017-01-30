@@ -23,7 +23,7 @@ from astropy import constants
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..tools.logging import log
-from ..basics.filter import Filter
+from ..basics.filter import BroadBandFilter
 from ..data.sed import SED
 from ...magic.misc.spire import SPIRE
 from ..basics.unit import parse_unit as u
@@ -127,7 +127,7 @@ class ObservedFluxCalculator(object):
             log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
-            fltr = Filter(filter_name)
+            fltr = BroadBandFilter(filter_name)
 
             # Add the filter to the list
             self.filters.append(fltr)

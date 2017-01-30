@@ -22,7 +22,7 @@ from ...core.tools import filesystem as fs
 from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
 from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
 from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
-from ...core.basics.filter import Filter
+from ...core.basics.filter import parse_filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.unit import parse_unit as u
@@ -79,7 +79,7 @@ def import_necessary_modules(session):
     session.import_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
     session.import_package("archive", from_name="pts.core.tools")
     session.import_package("parsing", from_name="pts.core.tools")
-    session.import_package("Filter", from_name="pts.core.basics.filter")
+    session.import_package("BroadBandFilter", from_name="pts.core.basics.filter")
 
 # -----------------------------------------------------------------
 
@@ -373,10 +373,24 @@ class RemoteFrame(object):
         """
 
         # Get the filter
-        fltr = Filter(self.session.get_string("str(" + self.label + ".filter)"))
+        fltr = parse_filter(self.session.get_string("str(" + self.label + ".filter)"))
 
         # Return the filter
         return fltr
+
+    # -----------------------------------------------------------------
+
+    @filter.setter
+    def filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Set the filter
+        self.session.send_line(self.label + ".filter = )
 
     # -----------------------------------------------------------------
 
@@ -1721,7 +1735,7 @@ class RemoteDataCube(RemoteImage):
         self.session.send_line("filters = []")
 
         # Reconstruct the list of filters remotely
-        for fltr in filters: self.session.send_line("filters.append(Filter('" + str(fltr) + "'))")
+        for fltr in filters: self.session.send_line("filters.append(BroadBand('" + str(fltr) + "'))")
 
         # Initialize a list with remoteframes
         remoteframes = []

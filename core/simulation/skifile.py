@@ -21,7 +21,7 @@ import warnings
 
 # Import the relevant PTS classes and modules
 from .units import SkirtUnits
-from ..basics.filter import Filter
+from ..basics.filter import parse_filter, Filter
 from ..tools import archive as arch
 from ..tools import filesystem as fs
 from ..tools.stringify import str_from_bool, str_from_angle
@@ -1273,7 +1273,7 @@ class SkiFile:
         elif normalization.tag == "LuminosityStellarCompNormalization":
 
             # Return the luminosity and the corresponding band
-            return self.get_quantity(normalization, "luminosity"), Filter(normalization.get("band"))
+            return self.get_quantity(normalization, "luminosity"), parse_filter(normalization.get("band"))
 
         elif normalization.tag == "SpectralLuminosityStellarCompNormalization":
 

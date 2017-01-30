@@ -27,7 +27,7 @@ from ...core.basics.errorbar import ErrorBar
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import time
-from ...core.basics.filter import Filter
+from ...core.basics.filter import BroadBandFilter
 from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------
@@ -563,7 +563,7 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     log.info("[convolution with " + fltrname + " filter] Loading filter ...")
 
     # Resurrect the filter
-    fltr = Filter(fltrname)
+    fltr = BroadBandFilter(fltrname)
 
     log.info("[convolution with " + fltrname + " filter] Loading wavelength grid ...")
 

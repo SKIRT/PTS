@@ -23,7 +23,7 @@ from astropy.units import Unit
 from ...core.basics.configurable import Configurable
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import Filter
+from ...core.basics.filter import BroadBandFilter, parse_filter
 from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
 
@@ -295,7 +295,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return map(Filter, self.fitting_filter_names)
+        return map(parse_filter, self.fitting_filter_names)
 
     # -----------------------------------------------------------------
 
@@ -383,7 +383,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter("GALEX FUV")
+        return BroadBandFilter("GALEX FUV")
 
     # -----------------------------------------------------------------
 
@@ -395,7 +395,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter("IRAC I1")
+        return BroadBandFilter("IRAC I1")
 
     # -----------------------------------------------------------------
 
@@ -407,7 +407,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter("Pacs 160")
+        return BroadBandFilter("Pacs 160")
 
     # -----------------------------------------------------------------
 
@@ -419,7 +419,7 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return Filter("SPIRE PSW")
+        return BroadBandFilter("SPIRE PSW")
 
     # -----------------------------------------------------------------
 

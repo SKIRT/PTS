@@ -26,7 +26,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
-from pts.core.basics.filter import Filter
+from pts.core.basics.filter import BroadBandFilter
 from pts.core.remote.python import RemotePythonSession
 from pts.core.basics.unit import parse_unit as u
 
@@ -167,7 +167,7 @@ wavelength_unit = "micron"
 datacube.to_wavelength_density(new_unit, wavelength_unit)
 
 # Created observed images
-filters = [Filter(filter_name) for filter_name in sorted_filter_names]
+filters = [BroadBandFilter(filter_name) for filter_name in sorted_filter_names]
 
 # Do the filter convolution
 frames = datacube.convolve_with_filters(filters, nprocesses=config.nprocesses)
