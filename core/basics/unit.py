@@ -504,8 +504,8 @@ class PhotometricUnit(CompositeUnit):
             self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, self.distance_unit, self.solid_angle_unit = analyse_unit(unit)
 
             # If the wavelength unit is not None or the frequency unit is not None, we have a spectral density
-            if self.wavelength_unit is not None: self.density = True
-            if self.frequency_unit is not None: self.density = True
+            if self.wavelength_unit is not None or self.wavelength_unit == "": self.density = True
+            if self.frequency_unit is not None or self.frequency_unit == "": self.density = True
 
         # Call the constructor of the base class
         super(PhotometricUnit, self).__init__(unit.scale, unit.bases, unit.powers)
