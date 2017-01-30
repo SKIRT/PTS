@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import warnings
 import numpy as np
 from types import NoneType
 
@@ -26,6 +25,7 @@ from ..basics.filter import Filter
 from ..basics.range import RealRange, IntegerRange, QuantityRange
 from ..basics.unit import stringify_unit
 from ..basics.quantity import stringify_quantity
+from . import types
 
 # -----------------------------------------------------------------
 
@@ -96,11 +96,11 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     from pts.magic.basics.coordinate import SkyCoordinate
     from pts.magic.basics.stretch import SkyStretch
 
-    if is_boolean_type(value): return "boolean", str_from_bool(value)
-    elif is_integer_type(value):
+    if types.is_boolean_type(value): return "boolean", str_from_bool(value)
+    elif types.is_integer_type(value):
         if scientific: return "integer", "{:.0e}".format(value).replace("+", "").replace("e0", "e")
         else: return "integer", str(value)
-    elif is_real_type(value):
+    elif types.is_real_type(value):
         if scientific: return "real", ("{:." + str(decimal_places) + "e}").format(value).replace("+", "").replace("e0", "e")
         else: return "real", repr(value)
     elif isinstance(value, basestring): return "string", value
@@ -141,41 +141,5 @@ def str_from_angle(angle):
     """
 
     return "angle", repr(angle.value) + " " + str(angle.unit).replace(" ", "")
-
-# -----------------------------------------------------------------
-
-def is_boolean_type(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    return isinstance(value, bool) or isinstance(value, np.bool)
-
-# -----------------------------------------------------------------
-
-def is_integer_type(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    return isinstance(value, int) or isinstance(value, np.int32) or isinstance(value, np.int64) or isinstance(value, np.uint32) or isinstance(value, np.uint64)
-
-# -----------------------------------------------------------------
-
-def is_real_type(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    return isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64)
 
 # -----------------------------------------------------------------

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import re
 from string import ascii_lowercase
 from .lists import interleave
+from . import types
 
 # -----------------------------------------------------------------
 
@@ -162,14 +163,14 @@ def quantity_combinations(quantity):
     """
 
     result = []
-    result.append(str(quantity.value) + " " + str(quantity.unit))
-    result.append(str(quantity.value) + str(quantity.unit))
-    result.append(str(quantity.value))
+    result.append(str_from_real_or_integer(quantity.value) + " " + str(quantity.unit))
+    result.append(str_from_real_or_integer(quantity.value) + str(quantity.unit))
+    result.append(str_from_real_or_integer(quantity.value))
 
     if quantity.unit == "micron":
 
-        result.append(str(quantity.value) + "mu")
-        result.append(str(quantity.value) + "um")
+        result.append(str_from_real_or_integer(quantity.value) + "mu")
+        result.append(str_from_real_or_integer(quantity.value) + "um")
 
     return result
 
@@ -286,5 +287,23 @@ def num_to_ith(num):
     if last_digit == '2': return value + 'nd'
     if last_digit == '3': return value + 'rd'
     return value + 'th'
+
+# -----------------------------------------------------------------
+
+def str_from_real_or_integer(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if types.is_integer_type(value): return str(value)
+    elif types.is_real_type(value):
+
+        if int(value) == value: return str(int(value))
+        else: return repr(value)
+
+    else: raise ValueError("Value must be real or integer")
 
 # -----------------------------------------------------------------

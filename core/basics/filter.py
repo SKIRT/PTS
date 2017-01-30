@@ -28,6 +28,7 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from .map import Map
 from ..tools import strings
+from ..tools.strings import str_from_real_or_integer
 
 # -----------------------------------------------------------------
 
@@ -271,12 +272,12 @@ def generate_aliases(identifier):
     # Combinations of instrument with channel
     if "channel" in identifier and "instruments" in identifier:
         for instrument in strings.case_combinations_list(identifier.instruments):
-            for string in generate_from_two_parts(instrument, str(identifier.channel)): yield string
+            for string in generate_from_two_parts(instrument, str_from_real_or_integer(identifier.channel)): yield string
 
     # Combinations of observatory with channel
     if "channel" in identifier and "observatories" in identifier:
         for instrument in strings.case_combinations_list(identifier.observatories):
-            for string in generate_from_two_parts(instrument, str(identifier.channel)): yield string
+            for string in generate_from_two_parts(instrument, str_from_real_or_integer(identifier.channel)): yield string
 
     # Combinations of observatory with band
     if "observatories" in identifier and "bands" in identifier:
@@ -306,19 +307,9 @@ def generate_aliases(identifier):
         wavelength = parsing.quantity(identifier.wavelength)
 
         for observatory in identifier.observatories:
-
-            yield observatory + " " + str(wavelength.value) + " " + str(wavelength.unit)
-            yield observatory + " " + str(wavelength.value) + str(wavelength.unit)
-            yield observatory + "_" + str(wavelength.value)
-            yield observatory + "-" + str(wavelength.value)
-            yield "the " + observatory + " " + str(wavelength.value) + " band"
-            yield "the " + observatory + " " + str(wavelength.value) + " " + str(wavelength.unit) + " band"
-            yield "the " + observatory + " " + str(wavelength.value) + str(wavelength.unit) + " band"
-
-            if wavelength.unit == "micron":
-
-                yield observatory + str(wavelength.value) + "mu"
-                yield observatory + str(wavelength.value) + "um"
+            for wavelength_string in strings.quantity_combinations(wavelength):
+                for string in generate_from_two_parts(observatory, wavelength_string): yield string
+                for string in generate_from_two_parts("the " + observatory, wavelength_string + " band"): yield string
 
     # Combinations of instrument and frequency
     if "frequency" in identifier and "instruments" in identifier:
@@ -327,14 +318,9 @@ def generate_aliases(identifier):
         frequency = parsing.quantity(identifier.frequency)
 
         for instrument in identifier.instruments:
-
-            for string in generate_from_two_parts(instrument, str(frequency.value)): yield string
-            for string in generate_from_two_parts(instrument, str(frequency.value) + " " + str(frequency.unit)): yield string
-            for string in generate_from_two_parts(instrument, str(frequency.value) + str(frequency.unit)): yield string
-
-            for string in generate_from_two_parts("the " + instrument, str(frequency.value) + " band"): yield string
-            for string in generate_from_two_parts("the " + instrument, str(frequency.value) + " " + str(frequency.unit) + " band"): yield string
-            for string in generate_from_two_parts("the " + instrument, str(frequency.value) + str(frequency.unit) + " band"): yield string
+            for frequency_string in strings.quantity_combinations(frequency):
+                for string in generate_from_two_parts(instrument, frequency_string): yield string
+                for string in generate_from_two_parts("the " + instrument, frequency_string + " band"): yield string
 
     # Combinations of observatory and frequency
     if "observatories" in identifier and "frequency" in identifier:
@@ -343,14 +329,9 @@ def generate_aliases(identifier):
         frequency = parsing.quantity(identifier.frequency)
 
         for observatory in identifier.observatories:
-
-            for string in generate_from_two_parts(observatory, str(frequency.value)): yield string
-            for string in generate_from_two_parts(observatory, str(frequency.value) + " " + str(frequency.unit)): yield string
-            for string in generate_from_two_parts(observatory, str(frequency.value) + str(frequency.unit)): yield string
-
-            for string in generate_from_two_parts("the " + observatory, str(frequency.value) + " band"): yield string
-            for string in generate_from_two_parts("the " + observatory, str(frequency.value) + " " + str(frequency.unit) + " band"): yield string
-            for string in generate_from_two_parts("the " + observatory, str(frequency.value) + str(frequency.unit) + " band"): yield string
+            for frequency_string in strings.quantity_combinations(frequency):
+                for string in generate_from_two_parts(observatory, frequency_string): yield string
+                for string in generate_from_two_parts("the " + observatory, frequency_string + " band"): yield string
 
 # -----------------------------------------------------------------
 
