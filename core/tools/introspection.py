@@ -111,8 +111,10 @@ def pts_version():
 
 def pts_update_date():
     command = "stat -f '%Sm' $(git rev-parse --show-toplevel)/.git/FETCH_HEAD"
-    output = subprocess.check_output(command, cwd=pts_package_dir, shell=True)
-    return output.split("\n")[0]
+    try:
+        output = subprocess.check_output(command, cwd=pts_package_dir, shell=True)
+        return output.split("\n")[0]
+    except subprocess.CalledProcessError: return None
 
 # -----------------------------------------------------------------
 

@@ -10,6 +10,7 @@
 #  In the module :mod:`Consts`, you will find those defaults settings. You are encouraged to see the constants,
 #  but not to change directly on the module, there are methods for this.
 #
+#
 
 # -----------------------------------------------------------------
 
