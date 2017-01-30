@@ -136,6 +136,8 @@ class SEDModeler(Modeler):
         # Load the generations table
         generations = get_generations_table(self.modeling_path)
 
+        print(generations.all_finished)
+
         # If some generations have not finished, check the status of and retrieve simulations
         if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
 

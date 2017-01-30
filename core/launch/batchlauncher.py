@@ -927,10 +927,10 @@ class BatchLauncher(Configurable):
         simulations = []
 
         # Launch locally
-        simulations += self.launch_local()
+        if len(self.local_queue) > 0: simulations += self.launch_local()
 
         # Launch remotely
-        simulations += self.launch_remote()
+        if self.nremotes > 0: simulations += self.launch_remote()
 
         # Return the simulations
         return simulations
@@ -951,7 +951,7 @@ class BatchLauncher(Configurable):
         simulations = []
 
         # Loop over the simulation in the queue for this remote host
-        for _ in range(len(self.local_queue)):
+        for index in range(len(self.local_queue)):
 
             # Get the last item from the queue (it is removed)
             definition, name, analysis_options_item = self.local_queue.pop()
@@ -966,8 +966,14 @@ class BatchLauncher(Configurable):
             # Perform the simulation locally
             try:
 
+                # Inform the user
+                log.info("Launching simulation " + str(index+1) + " of " + str(len(self.local_queue)) + " in the local queue ...")
+
                 # Run the simulation
                 simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()))
+
+                # Success
+                log.success("Finished simulation " + str(index+1))
 
                 # Set the parallelization scheme
                 simulation.parallelization = parallelization_item

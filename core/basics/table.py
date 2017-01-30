@@ -378,6 +378,8 @@ class SmartTable(Table):
                 elif coltype.startswith("int"): new_values.append(0)
                 else: raise ValueError("Unknown column type: " + coltype)
 
+        print("MASK", mask)
+
         # Add the row
         super(SmartTable, self).add_row(new_values, mask=mask)
 
