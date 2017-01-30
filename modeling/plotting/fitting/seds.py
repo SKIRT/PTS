@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.plotting.fitting.chisquared Contains the ChiSquaredPlotter class.
+## \package pts.modeling.plotting.fitting.seds Contains the SEDsPlotter class.
 
 # -----------------------------------------------------------------
 
@@ -172,7 +172,7 @@ class SEDsPLotter(FittingPlottingComponent):
 
     # -----------------------------------------------------------------
 
-    def plot_seds(self):
+    def plot(self):
 
         """
         This function ...
@@ -221,7 +221,7 @@ class SEDsPLotter(FittingPlottingComponent):
             plotter.add_sed(self.observed_sed, "observation")
 
             # Determine the path to the SED plot file
-            path = fs.join(self.plot_fitting_path, "model_seds_" + generation_name + ".pdf")
+            path = fs.join(self.plot_fitting_seds_path, "model_seds_" + generation_name + ".pdf")
 
             # Run the plotter
             plotter.run(title=self.object_name, output=path)
@@ -246,6 +246,7 @@ class SEDsPLotter(FittingPlottingComponent):
 
             # Loop over the contributions
             for contribution in self.sed_contributions[generation_name]:
+
                 # Add the simulated SED to the plotter
                 plotter.add_sed(self.sed_contributions[generation_name][contribution], contribution,
                                 residuals=(contribution == "total"))
@@ -254,7 +255,7 @@ class SEDsPLotter(FittingPlottingComponent):
             plotter.add_sed(self.observed_sed, "observation")
 
             # Determine the path to the SED plot file
-            path = fs.join(self.plot_fitting_path, "sed_contributions_" + generation_name + ".pdf")
+            path = fs.join(self.plot_fitting_seds_path, "sed_contributions_" + generation_name + ".pdf")
 
             # Run the plotter
             plotter.run(output=path, title=self.object_name)

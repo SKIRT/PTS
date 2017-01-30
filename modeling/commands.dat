@@ -39,7 +39,7 @@ plot_decomposition | plot_decomposition | plotting.decomposition.DecompositionPl
 plot_truncation | plot_truncation | plotting.truncation.TruncationPlotter | interactive | Make plots of the truncation step
 plot_photometry | plot_photometry | plotting.photometry.PhotometryPlotter | interactive | Make plots of the photometry step
 plot_maps | plot_maps | plotting.maps.MapsPlotter | interactive | Make plots of the map making step
-plot_fitting | plot_fitting | plotting.fitting.FittingPlotter | interactive | Make plots of the fitting step
+plot_fitting | plot_fitting | plotting.fitting.plotter.FittingPlotter | interactive | Make plots of the fitting step
 plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | interactive | Make plots of the analysis step
 fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
 fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy

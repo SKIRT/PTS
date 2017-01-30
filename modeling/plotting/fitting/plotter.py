@@ -28,6 +28,7 @@ from .seds import SEDsPLotter
 from .images import ImagesPlotter
 from .geometries import GeometriesPlotter
 from ....core.tools.logging import log
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -61,7 +62,7 @@ def get_features(modeling_path):
 
 # -----------------------------------------------------------------
 
-class FittingPlotter(PlottingComponent, FittingComponent):
+class FittingPlotter(Configurable):
     
     """
     This class...
@@ -76,8 +77,10 @@ class FittingPlotter(PlottingComponent, FittingComponent):
         """
 
         # Call the constructor of the base classes
-        PlottingComponent.__init__(self, config)
-        FittingComponent.__init__(self, config)
+        #PlottingComponent.__init__(self, config)
+        #FittingComponent.__init__(self, config)
+
+        super(FittingPlotter, self).__init__(config)
 
     # -----------------------------------------------------------------
 

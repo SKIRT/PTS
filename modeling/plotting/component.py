@@ -131,4 +131,6 @@ class PlottingComponent(ModelingComponent):
         :return:
         """
 
+        pass
+
 # -----------------------------------------------------------------

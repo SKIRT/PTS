@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..component import PlottingComponent
 from ...fitting.component import FittingComponent
+from ....core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -55,21 +56,18 @@ class FittingPlottingComponent(PlottingComponent, FittingComponent):
         """
 
         # Call the setup function of the base classes
-        PlottingComponent.setup(**kwargs)
-        FittingComponent.setup(**kwargs)
+        PlottingComponent.setup(self, **kwargs)
+        FittingComponent.setup(self, **kwargs)
 
-        # Directory for plotting the wavelength grids
-        self.plot_fitting_wavelength_grids_path = fs.create_directory_in(self.plot_fitting_path, "wavelength grids")
-
-        # Directory for plotting the dust grids
-        self.plot_fitting_dust_grids_path = fs.create_directory_in(self.plot_fitting_path, "dust grids")
-
-        #
-        self.plot_fitting_generations_path = fs.create_directory_in(self.plot_fitting_path, "generations")
-
-        # Directory for plotting probability distributions
+        # Make paths
+        self.plot_fitting_chisquared_path = fs.create_directory_in(self.plot_fitting_path, "chi squared")
         self.plot_fitting_distributions_path = fs.create_directory_in(self.plot_fitting_path, "distributions")
-
-
+        self.plot_fitting_wavelength_grids_path = fs.create_directory_in(self.plot_fitting_path, "wavelength grids")
+        self.plot_fitting_dust_grids_path = fs.create_directory_in(self.plot_fitting_path, "dust grids")
+        self.plot_fitting_celldistributions_path = fs.create_directory_in(self.plot_fitting_path, "dust cell distributions")
+        self.plot_fitting_runtimes_path = fs.create_directory_in(self.plot_fitting_path, "runtimes")
+        self.plot_fitting_seds_path = fs.create_directory_in(self.plot_fitting_path, "seds")
+        self.plot_fitting_images_path = fs.create_directory_in(self.plot_fitting_path, "images")
+        self.plot_fitting_geometries_path = fs.create_directory_in(self.plot_fitting_path, "geometries")
 
 # -----------------------------------------------------------------
