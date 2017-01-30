@@ -36,7 +36,7 @@ subtypes["real"] = ["fraction", "positive_real", "negative_real"]
 subtypes["string"] = ["file_path"]
 subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
 subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
-subtypes["photometric density unit"] = []
+subtypes["photometric_density_unit"] = []
 
 # -----------------------------------------------------------------
 

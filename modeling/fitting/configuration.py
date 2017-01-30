@@ -233,12 +233,7 @@ class FittingConfigurer(FittingComponent):
 
                 # Don't ask for units for dimensionless quantities
                 if parameter_type == "dimless": definition.add_fixed(name, name + " has no unit (dimensionless)", None)
-                else:
-                    print(parameter_type)
-                    print(default_units)
-                    print(unit_parsing_type(parameter_type))
-                    print(default_units[parameter_type])
-                    definition.add_optional(name, unit_parsing_type(parameter_type), "unit of the '" + name + "' parameter", default=default_units[parameter_type])
+                else: definition.add_optional(name, unit_parsing_type(parameter_type), "unit of the '" + name + "' parameter", default=default_units[parameter_type])
 
             # Create configuration setter
             setter = InteractiveConfigurationSetter("Parameter units", add_cwd=False, add_logging=False)
