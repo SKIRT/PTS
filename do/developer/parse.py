@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import collections
 
 # Import the relevant PTS classes and modules
+from pts.core.tools.logging import log
 from pts.core.tools import parsing
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
@@ -37,13 +38,14 @@ config = setter.run(definition)
 parsing_function = getattr(parsing, config.parsing_type)
 
 # Parse
-result = parsing_function(config.string)
+try: result = parsing_function(config.string)
+except ValueError:
+    log.error("The string could not be parsed into this property")
+    exit()
 
 # Show result
 if isinstance(result, collections.Iterable):
-
     for item in result: print(str(item))
-
 else: print(str(result))
 
 # -----------------------------------------------------------------

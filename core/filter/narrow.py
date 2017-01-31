@@ -290,7 +290,7 @@ class NarrowBandFilter(Filter):
 
         if self.instrument is not None: return self.instrument + " " + self.band
         elif self.observatory is not None: return self.observatory + " " + self.band
-        elif self.name is not None: return self.name + " " + self.band
+        #elif self.name is not None: return self.name + " " + self.band
         else: return self.band
 
     # -----------------------------------------------------------------
