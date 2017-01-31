@@ -21,7 +21,8 @@ import warnings
 import numpy as np
 
 # Import astronomical modules
-import pyfits
+try: import pyfits
+except ImportError: import astropy.io.fits as pyfits
 
 # Import the relevant PTS classes and modules
 from ..basics.rgbimage import RGBImage

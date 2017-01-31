@@ -27,6 +27,7 @@ from ..tools import network, archive
 from ..tools import terminal
 from ..tools import git
 from ..tools import parallelization
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -118,11 +119,11 @@ class Installer(Configurable):
             self.remote = Remote()
             self.remote.setup(self.config.host_id)
 
+            # Fix configuration files
+            self.remote.fix_configuration_files()
+
         # Local
         else: log.info("No remote host is specified, will be installing locally ...")
-
-        # Fix configuration files
-        self.remote.fix_configuration_files()
 
     # -----------------------------------------------------------------
 
@@ -1064,29 +1065,20 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        # Inform the user
-        log.info("Creating the directory structure ...")
+        # Give warning
+        log.warning("You are asking to install PTS locally, but you are already using PTS at the moment")
 
-        # Set paths
-        self.pts_root_path = fs.join(fs.home(), "PTS")
-        self.pts_package_path = fs.join(self.pts_root_path, "pts")
+        # Ask to proceed with installing python environment and dependencies
+        definition = ConfigurationDefinition()
+        definition.add_flag("proceed", "Proceed by installing a clean Python 2 environment for PTS and automatically installing all dependencies?", False)
+        setter = InteractiveConfigurationSetter("Install PTS local", add_logging=False, add_cwd=False)
+        config = setter.run(definition, prompt_optional=True)
 
-        # Check if already present
-        if fs.is_directory(self.pts_root_path):
-            if self.config.force: fs.remove_directory(self.pts_root_path)
-            else: raise RuntimeError("PTS is already installed (or partly present)")
-
-        # Make the root directory
-        fs.create_directory(self.pts_root_path)
-
-        # Create the other directories
-        for name in pts_directories:
-
-            # Determine path
-            path = fs.join(self.pts_root_path, name)
-
-            # Create the directory
-            fs.create_directory(path)
+        # Proceed or quit
+        if config.proceed: log.info("Proceeding ...")
+        else:
+            log.info("Quitting ...")
+            exit()
 
     # -----------------------------------------------------------------
 
@@ -1133,13 +1125,13 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Installing PTS locally ...")
 
-        # Get a python distribution
+        # 1. Get a python distribution
         self.get_python_distribution_local()
 
-        # Get PTS
+        # 2. Get PTS
         self.get_pts_local()
 
-        # Get PTS dependencies
+        # 3. Get PTS dependencies
         self.get_dependencies_local()
 
     # -----------------------------------------------------------------
@@ -1152,35 +1144,37 @@ class PTSInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Getting a Python distribution on the remote host ...")
+        log.info("Getting a Anaconda Python 2 distribution locally ...")
 
-        if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
-        else:
+        #
+        #if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
+        #else:
 
-            # Mac
-            if self.remote.is_macos:
+        # Mac
+        if self.remote.is_macos:
 
-                # Add conda path to .profile
-                profile_path = fs.join(self.remote.home_directory, ".profile")
+            # Add conda path to .profile
+            profile_path = fs.join(self.remote.home_directory, ".profile")
 
-                # ...
+            # ...
 
-            # Linux
-            elif self.remote.is_linux:
+        # Linux
+        elif self.remote.is_linux:
 
-                conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
+            conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
 
-                # Download anaconda
-                # self.remote.download(miniconda_linux_url, conda_installer_path)
+            # Download anaconda
+            # self.remote.download(miniconda_linux_url, conda_installer_path)
 
-                if not self.remote.is_file(conda_installer_path):
-                    # Download the installer
-                    self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
+            if not self.remote.is_file(conda_installer_path):
 
-                # ...
+                # Download the installer
+                self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
 
-            # Other
-            else: raise NotImplementedError("OS must be Linux or MacOS")
+            # ...
+
+        # Other
+        else: raise NotImplementedError("OS must be Linux or MacOS")
 
     # -----------------------------------------------------------------
 
@@ -1327,57 +1321,58 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Getting a Python distribution on the remote host ...")
 
-        if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
-        else:
+        #if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
+        #else:
 
-            # MacOS
-            if self.remote.is_macos:
+        # MacOS
+        if self.remote.is_macos:
 
-                # Add conda path to .profile
-                profile_path = fs.join(self.remote.home_directory, ".profile")
+            # Add conda path to .profile
+            profile_path = fs.join(self.remote.home_directory, ".profile")
 
-                # ...
+            # ...
 
-            # Linux
-            elif self.remote.is_linux == "Linux":
+        # Linux
+        elif self.remote.is_linux == "Linux":
 
-                conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
+            conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
 
-                # Download anaconda
-                #self.remote.download(miniconda_linux_url, conda_installer_path)
+            # Download anaconda
+            #self.remote.download(miniconda_linux_url, conda_installer_path)
 
-                if not self.remote.is_file(conda_installer_path):
+            if not self.remote.is_file(conda_installer_path):
 
-                    # Download the installer
-                    self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
+                # Download the installer
+                self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
 
-                #conda_installer_path = fs.join(self.remote.home_directory, fs.name(miniconda_linux_url))
+            #conda_installer_path = fs.join(self.remote.home_directory, fs.name(miniconda_linux_url))
 
-                # Run the installer
-                #self.remote.execute("sh " + conda_installer_path, show_output=True)
+            # Run the installer
+            #self.remote.execute("sh " + conda_installer_path, show_output=True)
 
-                conda_installation_path = fs.join(self.remote.home_directory, "miniconda")
+            conda_installation_path = fs.join(self.remote.home_directory, "miniconda")
 
-                if not self.remote.is_directory(conda_installation_path):
+            if not self.remote.is_directory(conda_installation_path):
 
-                    command = "bash " + conda_installer_path + " -b -p " + conda_installation_path
-                    self.remote.execute(command, show_output=log.is_debug())
+                command = "bash " + conda_installer_path + " -b -p " + conda_installation_path
+                self.remote.execute(command, show_output=log.is_debug())
 
-                conda_bin_path = fs.join(conda_installation_path, "bin")
-                self.conda_executable_path = fs.join(conda_bin_path, "conda")
-                self.conda_pip_path = fs.join(conda_bin_path, "pip")
-                self.conda_python_path = fs.join(conda_bin_path, "python")
+            conda_bin_path = fs.join(conda_installation_path, "bin")
+            self.conda_executable_path = fs.join(conda_bin_path, "conda")
+            self.conda_pip_path = fs.join(conda_bin_path, "pip")
+            self.conda_python_path = fs.join(conda_bin_path, "python")
 
-                # Debugging
-                log.debug("Adding the conda executables to the PATH ...")
+            # Debugging
+            log.debug("Adding the conda executables to the PATH ...")
 
-                # Add conda bin path to bashrc / profile
-                comment = "For Miniconda, added by PTS (Python Toolkit for SKIRT)"
-                # Run the export command also in the current shell, so that the conda commands can be found
-                self.remote.add_to_environment_variable("PATH", conda_bin_path, comment=comment, shell=True)
+            # Add conda bin path to bashrc / profile
+            comment = "For Miniconda, added by PTS (Python Toolkit for SKIRT)"
 
-            # Other
-            else: raise NotImplementedError("OS must be MacOS or Linux")
+            # Run the export command also in the current shell, so that the conda commands can be found
+            self.remote.add_to_environment_variable("PATH", conda_bin_path, comment=comment, shell=True)
+
+        # Other
+        else: raise NotImplementedError("OS must be MacOS or Linux")
 
     # -----------------------------------------------------------------
 
