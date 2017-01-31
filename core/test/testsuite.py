@@ -23,7 +23,8 @@ import time
 import datetime
 import numpy as np
 import multiprocessing
-import pyfits
+try: import pyfits
+except ImportError: import astropy.io.fits as pyfits
 
 # Import the relevant PTS classes and modules
 from ..simulation.execute import SkirtExec

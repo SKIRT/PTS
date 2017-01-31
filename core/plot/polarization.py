@@ -14,7 +14,8 @@
 
 # Import standard modules
 import numpy as np
-import pyfits
+try: import pyfits
+except ImportError: import astropy.io.fits as pyfits
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines

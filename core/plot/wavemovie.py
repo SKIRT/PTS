@@ -24,7 +24,8 @@ if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
-import pyfits
+try: import pyfits
+except ImportError: import astropy.io.fits as pyfits
 
 # Import the relevant PTS classes and modules
 from ..basics.moviefile import MovieFile
