@@ -24,7 +24,7 @@ from ..preparation.component import PreparationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
-from ...magic.core.io import get_frame_names
+from ...magic.core.fits import get_frame_names
 from ...magic.basics.mask import Mask, get_mask_names
 from ...magic.region.list import PixelRegionList
 from ...magic.plot.imagegrid import StandardImageGridPlotter

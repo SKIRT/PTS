@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import os
+import warnings
 import sys
 import imp
 import inspect
@@ -65,26 +66,32 @@ pts_root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(i
 # The path to the PTS package directory (PTS/pts)
 pts_package_dir = os.path.join(pts_root_dir, "pts")
 
+# -----------------------------------------------------------------
+
+# CREATION OF PTS DIRECTORIES EXTERNAL TO THE REPOSITORY
+
 # The path to the PTS run directory (PTS/run)
-pts_run_dir = os.path.join(pts_root_dir, "run")
+pts_run_dir = fs.create_directory_in(pts_root_dir, "run")
 
 # The path to the PTS user directory (PTS/user)
-pts_user_dir = os.path.join(pts_root_dir, "user")
+pts_user_dir = fs.create_directory_in(pts_root_dir, "user")
 
 # The path to the PTS ext directory (PTS/ext)
-pts_ext_dir = os.path.join(pts_root_dir, "ext")
+pts_ext_dir = fs.create_directory_in(pts_root_dir, "ext")
 
 # The path to the PTS temp directory (PTS/temp)
-pts_temp_dir = os.path.join(pts_root_dir, "temp")
+pts_temp_dir = fs.create_directory_in(pts_root_dir, "temp")
 
 # The path to the PTS user/hosts directory
-pts_user_hosts_dir = os.path.join(pts_user_dir, "hosts")
+pts_user_hosts_dir = fs.create_directory_in(pts_user_dir, "hosts")
 
 # The path to the PTS user/accounts directory
-pts_user_accounts_dir = os.path.join(pts_user_dir, "accounts")
+pts_user_accounts_dir = fs.create_directory_in(pts_user_dir, "accounts")
 
 # The path to the PTS user/config directory
-pts_user_config_dir = os.path.join(pts_user_dir, "config")
+pts_user_config_dir = fs.create_directory_in(pts_user_dir, "config")
+
+# -----------------------------------------------------------------
 
 # The path to the PTS do directory containing launchable scripts (PTS/pts/do)
 pts_do_dir = os.path.join(pts_package_dir, "do")
@@ -104,12 +111,24 @@ def pts_dat_dir(subproject): return os.path.join(pts_package_dir, subproject, "d
 # -----------------------------------------------------------------
 
 def pts_version():
+
+    """
+    This function ...
+    :return:
+    """
+
     label = subprocess.check_output(["git", "describe", "--tags"], cwd=pts_package_dir)
     return label[:-1]
 
 # -----------------------------------------------------------------
 
 def pts_update_date():
+
+    """
+    This function ...
+    :return:
+    """
+
     command = "stat -f '%Sm' $(git rev-parse --show-toplevel)/.git/FETCH_HEAD"
     try:
         output = subprocess.check_output(command, cwd=pts_package_dir, shell=True)
@@ -119,12 +138,26 @@ def pts_update_date():
 # -----------------------------------------------------------------
 
 def has_account(service):
+
+    """
+    This function ...
+    :param service:
+    :return:
+    """
+
     filepath = fs.join(pts_user_accounts_dir, service + ".txt")
     return fs.is_file(filepath)
 
 # -----------------------------------------------------------------
 
 def get_account(service):
+
+    """
+    This function ...
+    :param service:
+    :return:
+    """
+
     import numpy as np
     filepath = fs.join(pts_user_accounts_dir, service + ".txt")
     username, password = np.loadtxt(filepath, dtype=str)
@@ -1210,7 +1243,10 @@ def get_modules(import_statement, script_path, debug=False):
 
         subpackage_path = fs.join(subpackage_dir, after_dots.replace(".", "/"))
 
-        for name in imported: which.append(which_module(subpackage_path, name))
+        for name in imported:
+
+            module_path = which_module(subpackage_path, name)
+            if module_path is not None: which.append(module_path)
 
     # Absolute import of a pts class or module
     elif splitted[1].startswith("pts"):
@@ -1221,7 +1257,9 @@ def get_modules(import_statement, script_path, debug=False):
         for part in parts:
             subpackage_dir = os.path.join(subpackage_dir, part)
 
-        for name in imported: which.append(which_module(subpackage_dir, name))
+        for name in imported:
+            module_path = which_module(subpackage_dir, name)
+            if module_path is not None: which.append(module_path)
 
     # MPL toolkits
     elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
@@ -1263,7 +1301,10 @@ def which_module(subpackage, name):
         #print("  " + subpackage + ":")
         return os.path.join(subpackage, "__init__.py")
 
-    else: raise ValueError("Don't know how to get further with " + subpackage + " and " + name)
+    else: #raise ValueError("Don't know how to get further with " + subpackage + " and " + name)
+
+        warnings.warn("Incorrect import: " + name + " from " + subpackage)
+        return None
 
 # -----------------------------------------------------------------
 
