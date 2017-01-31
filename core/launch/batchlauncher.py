@@ -222,10 +222,83 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        total_in_queue = 0
-        total_in_queue += len(self.local_queue)
-        for host_id in self.host_ids: total_in_queue += self.in_queue_for_host(host_id)
-        return total_in_queue
+        # Return the total number of simulations in the queues
+        return self.in_local_queue + self.in_remote_queues
+
+    # -----------------------------------------------------------------
+
+    @property
+    def in_local_queue(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.local_queue)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def in_remote_queues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        total = 0
+        for host_id in self.host_ids: total += self.in_remote_queue(host_id)
+        return total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_queued_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.in_local_queue > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_queued_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.in_remote_queues > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_queued_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.in_remote_queue(host_id) > 0
+
+    # -----------------------------------------------------------------
+
+    def in_remote_queue(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        self.in_queue_for_host(host_id)
 
     # -----------------------------------------------------------------
 
@@ -927,10 +1000,10 @@ class BatchLauncher(Configurable):
         simulations = []
 
         # Launch locally
-        if len(self.local_queue) > 0: simulations += self.launch_local()
+        if self.has_queued_local: simulations += self.launch_local()
 
         # Launch remotely
-        if self.nremotes > 0: simulations += self.launch_remote()
+        if self.has_queued_remote: simulations += self.launch_remote()
 
         # Return the simulations
         return simulations
@@ -951,7 +1024,8 @@ class BatchLauncher(Configurable):
         simulations = []
 
         # Loop over the simulation in the queue for this remote host
-        for index in range(len(self.local_queue)):
+        total_queued = len(self.local_queue)
+        for index in range(total_queued):
 
             # Get the last item from the queue (it is removed)
             definition, name, analysis_options_item = self.local_queue.pop()
@@ -967,7 +1041,7 @@ class BatchLauncher(Configurable):
             try:
 
                 # Inform the user
-                log.info("Launching simulation " + str(index+1) + " of " + str(len(self.local_queue)) + " in the local queue ...")
+                log.info("Launching simulation " + str(index+1) + " out of " + str(total_queued) + " in the local queue ...")
 
                 # Run the simulation
                 simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()))
@@ -1032,7 +1106,8 @@ class BatchLauncher(Configurable):
             simulations_remote = []
 
             # Loop over the simulation in the queue for this remote host
-            for _ in range(len(self.queues[remote.host_id])):
+            total_queued_host = len(self.queues[remote.host_id])
+            for index in range(total_queued_host):
 
                 # Get the last item from the queue (it is removed)
                 definition, name, analysis_options_item = self.queues[remote.host_id].pop()
@@ -1055,10 +1130,17 @@ class BatchLauncher(Configurable):
                 # Queue the simulation
                 try:
 
+                    # Inform the user
+                    log.info("Adding simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id + " ...")
+
+                    # Add to the queue
                     simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
                                                      scheduling_options=scheduling_options, remote_input_path=remote_input_path,
                                                      analysis_options=analysis_options, emulate=self.config.emulate)
                     simulations_remote.append(simulation)
+
+                    # Success
+                    log.success("Added simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id)
 
                     # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
                     # hyperthreading would be enabled if the user provided the parallelization_item when adding the
@@ -1085,6 +1167,7 @@ class BatchLauncher(Configurable):
                     # Save the simulation object
                     simulation.save()
 
+                # Exception was raised
                 except Exception:
 
                     log.error("Adding simulation '" + name + "' to the queue failed:")

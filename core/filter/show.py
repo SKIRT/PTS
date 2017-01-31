@@ -15,14 +15,11 @@ from __future__ import absolute_import, division, print_function
 from collections import defaultdict
 from textwrap import wrap
 
-# Import astronomical modules
-from astropy.units import spectral
-
 # Import the relevant PTS classes and modules
 from .broad import BroadBandFilter
 from .broad import identifiers as broad_identifiers
 from .broad import generate_aliases as broad_generate_aliases
-from .narrow import NarrowBandFilter, defines_wavelength
+from .narrow import NarrowBandFilter, defines_wavelength, wavelengths_for_spec, wavelength_range_for_spec
 from .narrow import identifiers as narrow_identifiers
 from .narrow import generate_aliases as narrow_generate_aliases
 from ..tools import formatting as fmt
@@ -67,15 +64,15 @@ class FilterShower(Configurable):
         """
 
         # 1. call the setup fucntion
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Categorize
         self.categorize()
 
-        # 2. Show
+        # 3. Show
         if self.config.show: self.show()
 
-        # 3. Plot
+        # 4. Plot
         if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
@@ -100,11 +97,14 @@ class FilterShower(Configurable):
         :return:
         """
 
-        # Categorize the broad bands
-        self.categorize_broad()
+        # Inform the user
+        log.info("Categorizing ...")
 
         # Categorize the narrow bands
-        self.categorize_narrow()
+        if "narrow" in self.config.types: self.categorize_narrow()
+
+        # Categorize the broad bands
+        if "broad" in self.config.types: self.categorize_broad()
 
     # -----------------------------------------------------------------
 
@@ -162,17 +162,11 @@ class FilterShower(Configurable):
         # Inform the user
         log.info("Showing the filters ...")
 
-        print("")
-        print("NARROW BAND FILTERS")
-        print("")
+        # Show narrow band filters
+        if "narrow" in self.config.types: self.show_narrow()
 
-        self.show_narrow()
-
-        print("")
-        print("BROAD BAND FILTERS")
-        print("")
-
-        self.show_broad()
+        # Show broad band filters
+        if "broad" in self.config.types: self.show_broad()
 
     # -----------------------------------------------------------------
 
@@ -182,6 +176,11 @@ class FilterShower(Configurable):
         This function ...
         :return:
         """
+
+        print("")
+        print("NARROW BAND FILTERS")
+        print("-------------------")
+        print("")
 
         for label in sorted(self.narrow.keys(), key=lambda x: narrow_identifiers.keys().index(self.narrow[x][0])):
 
@@ -193,7 +192,7 @@ class FilterShower(Configurable):
 
                 identifier = narrow_identifiers[spec]
 
-                if defines_wavelength(identifier):
+                if defines_wavelength(spec):
 
                     # Load the filter
                     fltr = NarrowBandFilter(spec)
@@ -203,9 +202,7 @@ class FilterShower(Configurable):
                 else:
 
                     wavelength = None
-                    if "wavelength_range" in identifier: wavelength_range = parsing.quantity_range(identifier.wavelength_range)
-                    elif "frequency_range" in identifier: wavelength_range = parsing.quantity_range(identifier.frequency_range).to("micron", equivalencies=spectral())
-                    else: raise ValueError("Wavelength range or frequency range is not defined for filter spec " + spec)
+                    wavelength_range = wavelength_range_for_spec(spec)
 
                 print("   " + fmt.green + fmt.bold + spec + fmt.reset)
 
@@ -231,6 +228,11 @@ class FilterShower(Configurable):
         This function ...
         :return:
         """
+
+        print("")
+        print("BROAD BAND FILTERS")
+        print("------------------")
+        print("")
 
         # Loop over the labels
         for label in sorted(self.broad.keys(), key=lambda x: broad_identifiers.keys().index(self.broad[x][0])):
@@ -272,6 +274,10 @@ class FilterShower(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Plotting the transmission curves and narrow bands ...")
+
+        # Create the transmission plotter
         plotter = TransmissionPlotter()
 
         # Loop over the filters
@@ -291,10 +297,8 @@ class FilterShower(Configurable):
             # Loop over the filters
             for spec in self.narrow[label]:
 
-                fltr = NarrowBandFilter(spec)
-
-                # Loop over the filters
-                plotter.add_wavelength(fltr.wavelength)
+                # Add the wavelengths
+                for wavelength_label, wavelength in wavelengths_for_spec(spec).items(): plotter.add_wavelength(wavelength, label=wavelength_label)
 
         # Run the plotter
         plotter.run()

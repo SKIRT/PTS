@@ -31,7 +31,8 @@ from ..basics.configurable import Configurable
 from ..data.transmission import TransmissionCurve
 from ..basics.emissionlines import EmissionLines
 from ..filter.filter import parse_filter
-from ..filter.broad import identifiers
+from ..filter.broad import BroadBandFilter
+from ..filter.narrow import NarrowBandFilter
 from ..basics.range import RealRange
 from ..basics.plot import Plot
 
@@ -108,6 +109,37 @@ class TransmissionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def add_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Parse the filter
+        fltr = parse_filter(fltr)
+
+        # Broad band filter
+        if isinstance(fltr, BroadBandFilter):
+
+            # Create transmission curve
+            curve = TransmissionCurve.from_filter(fltr)
+
+            # Add the transmission curve
+            self.add_transmission_curve(curve, fltr.description())
+
+        # Narrow band filter
+        elif isinstance(fltr, NarrowBandFilter):
+
+            # Add wavelength
+            self.add_wavelength(fltr.wavelength, fltr.description())
+
+        # Invalid
+        else: raise ValueError("A Filter object must be passed")
+
+    # -----------------------------------------------------------------
+
     def add_transmission_curve(self, transmission_curve, label):
 
         """
@@ -165,30 +197,31 @@ class TransmissionPlotter(Configurable):
         # Call the setup function of the base class
         super(TransmissionPlotter, self).setup(**kwargs)
 
-        # Load the images (from config or input kwargs)
+        # Check kwargs input
         if "curves" in kwargs: self.curves = kwargs.pop("curves")
         if "filters" in kwargs:
-            for fltr in kwargs.pop("filters"):
-                curve = TransmissionCurve.from_filter(fltr)
-                self.add_transmission_curve(curve, fltr.description())
+            for fltr in kwargs.pop("filters"): self.add_filter(fltr)
         elif self.config.filters is not None:
-            for fltr in self.config.filters:
-                curve = TransmissionCurve.from_filter(fltr)
-                self.add_transmission_curve(curve, fltr.description())
+            for fltr in self.config.filters: self.add_filter(fltr)
 
         # Add emission lines
         if self.config.emission:
             emission_lines = EmissionLines()
             for line in emission_lines:
                 center = line.center * Unit("micron")
-                self.add_wavelength(center)
+                self.add_wavelength(center, label=line.label)
 
-        # No curves
-        if len(self.curves) == 0:
-            for spec in identifiers:
-                fltr = parse_filter(spec)
-                curve = TransmissionCurve.from_filter(fltr)
-                self.add_transmission_curve(curve, fltr.description())
+        # Add wavelengths from kwargs
+        if "wavelengths" in kwargs:
+            wavelengths = kwargs.pop("wavelengths")
+            if isinstance(wavelengths, dict):
+                for label in wavelengths: self.add_wavelength(wavelengths[label], label=label)
+            else:
+                for wavelength in wavelengths: self.add_wavelength(wavelength)
+        # Wavelengths are specified in the configuration
+        elif self.config.wavelengths is not None:
+            for wavelength in self.config.wavelengths:
+                self.add_wavelength(wavelength)
 
         # Set properties
         if "title" in kwargs: self.title = kwargs.pop("title")

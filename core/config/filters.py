@@ -10,6 +10,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # Create config
 definition = ConfigurationDefinition()
+definition.add_positional_optional("types", "string_list", "show only narrow or broad band filters", choices=["narrow", "broad"], default=["narrow", "broad"])
 definition.add_flag("show", "show", True)
 definition.add_flag("short", "short: only show the filter names", letter="s")
 definition.add_flag("aliases", "show aliases", letter="a")

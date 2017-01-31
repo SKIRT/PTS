@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.config.plot import definition as plot_definition
+from pts.core.filter.broad import identifiers, BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -15,7 +16,8 @@ from pts.core.config.plot import definition as plot_definition
 definition = ConfigurationDefinition()
 
 # Add positional optional
-definition.add_positional_optional("filters", "lazy_filter_list", "filters for which to plot the transmission")
+definition.add_positional_optional("filters", "lazy_filter_list", "broad band filters for which to plot the transmission and narrow band filters to plot as lines", map(BroadBandFilter, identifiers.keys()))
+definition.add_positional_optional("wavelengths", "quantity_list", "wavelengths to plot as lines on the transmission curves")
 
 # Add flags
 definition.add_flag("emission", "add emission lines")

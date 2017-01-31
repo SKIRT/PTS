@@ -82,15 +82,69 @@ def generate_aliases_ranges():
 
 # -----------------------------------------------------------------
 
-def defines_wavelength(identifier):
+def defines_wavelength(spec):
 
     """
     This function ...
-    :param identifier:
+    :param spec:
     :return:
     """
 
+    identifier = identifiers[spec]
     return "wavelength" in identifier
+
+# -----------------------------------------------------------------
+
+def wavelength_range_for_spec(spec):
+
+    """
+    This function ...
+    :param spec:
+    :return:
+    """
+
+    # Import
+    from ..tools import parsing
+
+    identifier = identifiers[spec]
+
+    # Parse the wavelength range
+    if "wavelength_range" in identifier: wavelength_range = parsing.quantity_range(identifier.wavelength_range)
+    elif "frequency_range" in identifier: wavelength_range = parsing.quantity_range(identifier.frequency_range).to("micron", equivalencies=spectral())
+    else: raise ValueError("Wavelength range or frequency range is not defined for filter spec " + spec)
+
+    # Return the wavelength range
+    return wavelength_range
+
+# -----------------------------------------------------------------
+
+def wavelengths_for_spec(spec):
+
+    """
+    This function ...
+    :param spec:
+    :return:
+    """
+
+    # Import statements
+    from ..basics.quantity import parse_quantity
+
+    wavelengths = dict()
+
+    identifier = identifiers[spec]
+    if defines_wavelength(spec): wavelengths[spec] = parse_quantity(identifier.wavelength)
+    else:
+        # Get the wavelength range
+        wavelength_range = wavelength_range_for_spec(spec)
+
+        # Add the minimum and maximum wavelength
+        min_wavelength = wavelength_range.min
+        max_wavelength = wavelength_range.max
+        wavelengths[spec + " min"] = min_wavelength
+        wavelengths[spec + " max"] = max_wavelength
+
+    # Return the wavelengths
+    return wavelengths
 
 # -----------------------------------------------------------------
 
@@ -171,7 +225,8 @@ class NarrowBandFilter(Filter):
 
         if isinstance(filterspec, basestring):
 
-            self.wavelength = parse_quantity(identifiers[filterspec].wavelength)
+            wavelength = identifiers[filterspec].wavelength
+            self.wavelength = parse_quantity(wavelength)
             self._name = filterspec
 
             filter_id = self._name

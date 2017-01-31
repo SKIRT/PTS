@@ -715,6 +715,13 @@ def best_tick2(largest, max_nticks):
 # -----------------------------------------------------------------
 
 def round_to_1(x):
+
+    """
+    This function ...
+    :param x:
+    :return:
+    """
+
     return round(x, -int(math.floor(math.log10(abs(x)))))
 
 # -----------------------------------------------------------------

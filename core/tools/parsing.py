@@ -808,6 +808,34 @@ def narrow_band_filter(argument):
 
 # -----------------------------------------------------------------
 
+def broad_band_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    filters = []
+    for item in string_list(argument): filters.append(broad_band_filter(item))
+    return filters
+
+# -----------------------------------------------------------------
+
+def narrow_band_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    filters = []
+    for item in string_list(argument): filters.append(narrow_band_filter(item))
+    return filters
+
+# -----------------------------------------------------------------
+
 def lazy_filter_list(argument):
 
     """
