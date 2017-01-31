@@ -21,7 +21,7 @@ import warnings
 
 # Import the relevant PTS classes and modules
 from .units import SkirtUnits
-from ..basics.filter import parse_filter, Filter
+from ..filter.filter import parse_filter, Filter
 from ..tools import archive as arch
 from ..tools import filesystem as fs
 from ..tools.stringify import str_from_bool, str_from_angle

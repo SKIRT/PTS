@@ -23,7 +23,7 @@ from astropy import constants
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..tools.logging import log
-from ..basics.filter import BroadBandFilter
+from ..filter.broad import BroadBandFilter
 from ..data.sed import SED
 from ...magic.misc.spire import SPIRE
 from ..basics.unit import parse_unit as u

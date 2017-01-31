@@ -237,7 +237,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
         self.launcher.config.analysis.plotting.seds = True    # Plot the output SEDs
         self.launcher.config.analysis.plotting.reference_seds = [self.observed_sed_path]  # the path to the reference SED (for plotting the simulated SED against the reference points)
-        self.launcher.config.analysis.plotting.format = "png"  # plot in PNG format so that an animation can be made from the fit SEDs
+        self.launcher.config.analysis.plotting.format = "pdf"  # plot format
 
         ## Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory

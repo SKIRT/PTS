@@ -20,7 +20,7 @@ import numpy as np
 from astropy import coordinates
 
 # Import the relevant PTS classes and modules
-from ...core.basics.filter import parse_filter
+from ...core.filter.filter import parse_filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale

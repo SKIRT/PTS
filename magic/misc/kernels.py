@@ -24,7 +24,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import archive
-from ...core.basics.filter import parse_filter
+from ...core.filter.filter import parse_filter
 from ...core.basics.unit import parse_unit
 
 # -----------------------------------------------------------------

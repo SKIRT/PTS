@@ -20,7 +20,7 @@ from astropy.units import spectral
 from ...core.data.sed import ObservedSED
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import parse_filter
+from ...core.filter.filter import parse_filter
 from ...core.tools.logging import log
 from ...core.basics.errorbar import ErrorBar
 from ...dustpedia.data.seds import SEDFetcher as DustPediaSEDFetcher

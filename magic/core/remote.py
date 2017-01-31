@@ -22,7 +22,7 @@ from ...core.tools import filesystem as fs
 from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
 from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
 from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
-from ...core.basics.filter import parse_filter
+from ...core.filter.filter import parse_filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.unit import parse_unit as u
@@ -390,7 +390,7 @@ class RemoteFrame(object):
         """
 
         # Set the filter
-        self.session.send_line(self.label + ".filter = )
+        self.session.send_line(self.label + ".filter = '" + str(fltr) + "'")
 
     # -----------------------------------------------------------------
 

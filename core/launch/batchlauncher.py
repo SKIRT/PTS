@@ -277,7 +277,6 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
     def has_queued_remote(self, host_id):
 
         """

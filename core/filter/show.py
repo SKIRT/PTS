@@ -29,7 +29,6 @@ from pts.core.data.transmission import TransmissionCurve
 from pts.core.basics.quantity import represent_quantity
 from ..basics.configurable import Configurable
 from ..tools.logging import log
-from ..tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -178,8 +177,7 @@ class FilterShower(Configurable):
         """
 
         print("")
-        print("NARROW BAND FILTERS")
-        print("-------------------")
+        print(fmt.bold + fmt.blue + "NARROW BAND FILTERS" + fmt.reset)
         print("")
 
         for label in sorted(self.narrow.keys(), key=lambda x: narrow_identifiers.keys().index(self.narrow[x][0])):
@@ -230,8 +228,7 @@ class FilterShower(Configurable):
         """
 
         print("")
-        print("BROAD BAND FILTERS")
-        print("------------------")
+        print(fmt.bold + fmt.blue + "BROAD BAND FILTERS" + fmt.reset)
         print("")
 
         # Loop over the labels

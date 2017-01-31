@@ -19,7 +19,7 @@ import numpy as np
 from ..basics.curve import WavelengthCurve, FilterCurve
 from ..basics.unit import PhotometricUnit
 from ..tools import tables
-from ..basics.filter import BroadBandFilter
+from ..filter.broad import BroadBandFilter
 from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
 from ..basics.unit import parse_unit as u

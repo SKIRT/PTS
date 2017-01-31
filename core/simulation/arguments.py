@@ -228,6 +228,7 @@ class SkirtArguments(object):
         # If the input consists of a list of paths, check whether they represent files in the same directory
         if isinstance(self.input_path, list):
 
+            # Determine the single directory where the input is placed
             dir_path = None
             for path in self.input_path:
                 this_dir_path = fs.directory_of(path)

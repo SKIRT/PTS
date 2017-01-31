@@ -25,7 +25,7 @@ from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from .sample import DustPediaSample
-from ...core.basics.filter import parse_filter
+from ...core.filter.filter import parse_filter
 from ...core.tools import network
 from ...core.tools import progress
 

@@ -27,7 +27,7 @@ from ...core.basics.errorbar import ErrorBar
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import time
-from ...core.basics.filter import BroadBandFilter
+from ...core.filter.broad import BroadBandFilter
 from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------

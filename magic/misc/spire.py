@@ -20,7 +20,7 @@ from scipy.interpolate import interp1d
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from ...core.basics.filter import BroadBandFilter
+from ...core.filter.broad import BroadBandFilter
 
 # -----------------------------------------------------------------
 

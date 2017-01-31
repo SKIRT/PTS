@@ -19,7 +19,6 @@ from abc import ABCMeta
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-#from ..component.galaxy import GalaxyModelingComponent
 from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
@@ -31,6 +30,7 @@ from ..basics.instruments import load_instrument
 from ..core.model import Model
 from ...core.simulation.grids import load_grid
 from ...core.simulation.skifile import SkiFile
+from ...core.simulation.simulation import SkirtSimulation
 
 # -----------------------------------------------------------------
 
@@ -1269,5 +1269,96 @@ def get_ski_file_for_simulation(modeling_path, generation_name, simulation_name)
 
     # Load and return the ski file
     return SkiFile(ski_path)
+
+# -----------------------------------------------------------------
+
+def get_generation_path(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    fit_generations_path = fs.join(modeling_path, "fit", "generations")
+    return fs.join(fit_generations_path, generation_name)
+
+# -----------------------------------------------------------------
+
+def get_simulation_paths(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    return fs.directories_in_path(get_generation_path(modeling_path, generation_name))
+
+# -----------------------------------------------------------------
+
+def get_fit_wavelength_grids_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "fit", "wavelength grids")
+
+# -----------------------------------------------------------------
+
+def get_simulations(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    # Initialize list of simulations
+    simulations = []
+
+    # Detemrine object name
+    object_name = fs.name(modeling_path)
+
+    # Loop over the simulation directories
+    for simulation_path in get_simulation_paths(modeling_path, generation_name):
+
+        # Get name
+        simulation_name = fs.name(simulation_path)
+
+        # Determine paths
+        ski_path = fs.join(simulation_path, object_name + ".ski")
+        prefix = fs.strip_extension(fs.name(ski_path))
+
+        # Open the ski file
+        ski = SkiFile(ski_path)
+
+        # Set input file paths
+        input_filenames = ski.input_files
+        input_paths = []
+        maps_path = fs.join(modeling_path, "maps")
+        wavelength_grids_path = get_fit_wavelength_grids_path(modeling_path)
+        for filename in input_filenames:
+            if filename.endswith(".fits"): filepath = fs.join(maps_path, filename)
+            else: filepath = fs.join(wavelength_grids_path, filename)
+            input_paths.append(filepath)
+
+        # Set output path
+        output_path = fs.join(simulation_path, "out")
+
+        # Create SkirtSimulation instance
+        simulation = SkirtSimulation(prefix, input_paths, output_path, ski_path, name=simulation_name)
+
+        # Add the simulation to the list
+        simulations.append(simulation)
+
+    # Return the simulations
+    return simulations
 
 # -----------------------------------------------------------------

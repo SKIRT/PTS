@@ -20,7 +20,7 @@ from ...core.tools.logging import log
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
-from ...core.basics.filter import parse_filter
+from ...core.filter.filter import parse_filter
 from ...core.data.sed import ObservedSED
 from .sample import DustPediaSample
 

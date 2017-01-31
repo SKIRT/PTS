@@ -23,7 +23,8 @@ from astropy.units import Unit
 from ...core.basics.configurable import Configurable
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ...core.basics.filter import BroadBandFilter, parse_filter
+from ...core.filter.broad import BroadBandFilter
+from ...core.filter.filter import parse_filter
 from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
 
@@ -148,9 +149,11 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Do imports
         from .sed import get_observed_sed as get_sed_other
         from .galaxy import get_observed_sed as get_sed_galaxy
 
+        # Return the observed SED
         if self.modeling_type == "galaxy": return get_sed_galaxy(self.config.path)
         else: return get_sed_other(self.config.path)
 
@@ -164,9 +167,11 @@ class ModelingComponent(Configurable):
         :return:
         """
 
+        # Do imports
         from .sed import get_observed_sed_file_path as get_path_other
         from .galaxy import get_observed_sed_file_path as get_path_galaxy
 
+        # Return the observed sed
         if self.modeling_type == "galaxy": return get_path_galaxy(self.config.path)
         else: return get_path_other(self.config.path)
 

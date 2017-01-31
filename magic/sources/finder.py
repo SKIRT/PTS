@@ -34,7 +34,7 @@ from .list import GalaxyList, StarList
 from ..object.galaxy import Galaxy
 from ..object.star import Star
 from ...core.data.sed import ObservedSED
-from ...core.basics.filter import BroadBandFilter
+from ...core.filter.broad import BroadBandFilter
 from ...core.basics.curve import FilterCurve
 from ...core.basics.unit import parse_unit as u
 

@@ -9,6 +9,9 @@
 
 # -----------------------------------------------------------------
 
+# Import astronomical modules
+from astropy.units import spectral
+
 # Import the relevant PTS classes and modules
 from .filter import Filter
 from ..basics.map import Map
