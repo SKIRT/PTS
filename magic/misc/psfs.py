@@ -12,13 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import urllib
-import requests
-from lxml import html
-from collections import OrderedDict
-from scipy import ndimage
-
 # Import astronomical modules
 from astropy.units import Unit
 
@@ -26,9 +19,6 @@ from astropy.units import Unit
 from ..core.kernel import ConvolutionKernel
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
-from ...core.tools import archive
-from ...core.basics.filter import Filter
 from ...core.tools import network
 
 # -----------------------------------------------------------------

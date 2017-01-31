@@ -22,7 +22,7 @@ from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
 from ....magic.plot.imagegrid import ResidualImageGridPlotter
 from ....core.basics.distribution import Distribution
-from ....core.basics.filter import BroadBandFilter
+from ....core.filter.broad import BroadBandFilter
 
 # -----------------------------------------------------------------
 

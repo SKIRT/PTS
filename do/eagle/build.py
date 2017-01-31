@@ -163,7 +163,7 @@ if vistype=='particles':
 # build RGB images
 if vistype=='rgbimages':
     from pts.core.plot.rgbimages import makeintegratedrgbimages
-    from pts.core.basics.filter import BroadBandFilter
+    from pts.core.filter.broad import BroadBandFilter
     print "Building RGB images for {} SKIRT-runs".format(len(skirtruns))
     filterR = BroadBandFilter('SDSS.i')
     filterG = BroadBandFilter('SDSS.r')

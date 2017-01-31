@@ -19,7 +19,7 @@ import numpy as np
 
 from . import config
 from .database import Database
-from ..core.basics.filter import BroadBandFilter
+from ..core.filter.broad import BroadBandFilter
 from ..core.basics.greybody import Bnu, GreyBody, kappa350_Cortese, kappa350_Zubko
 
 # ----------------------------------------------------------------------

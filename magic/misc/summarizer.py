@@ -12,14 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from collections import defaultdict
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.tools import introspection
-from ...core.basics.filter import Filter
 from ...core.basics.configurable import Configurable
 from ...core.tools import formatting as fmt
 from ..core.image import Image

@@ -20,7 +20,7 @@ import numpy as np
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.filter import BroadBandFilter
+from pts.core.filter.broad import BroadBandFilter
 from pts.core.simulation.execute import SkirtExec
 from pts.modeling.core.mappings import Mappings
 from pts.core.data.sed import SED
@@ -28,7 +28,7 @@ from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.map import Map
 from pts.core.basics.configuration import load_mapping
 from pts.modeling.basics.properties import GalaxyProperties
-from pts.modeling.fitting.initialization import spectral_factor_hz_to_micron
+#from pts.modeling.fitting.initialization import spectral_factor_hz_to_micron
 from pts.core.basics.range import QuantityRange
 from pts.core.plot.sed import SEDPlotter
 from pts.core.simulation.wavelengthgrid import WavelengthGrid

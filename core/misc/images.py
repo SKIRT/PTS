@@ -18,7 +18,7 @@ from astropy import constants
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..tools import filesystem as fs
-from ..basics.filter import parse_filter
+from ..filter.filter import parse_filter
 from ...magic.core.kernel import ConvolutionKernel
 from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem

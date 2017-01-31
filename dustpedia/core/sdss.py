@@ -32,7 +32,7 @@ from ...magic.core.image import Image
 from ...core.tools import network
 from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.tools import mosaicing
-from ...core.basics.filter import Filter
+from ...core.filter.broad import BroadBandFilter
 from ...core.tools import formatting as fmt
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...core.tools.parallelization import ParallelTarget
@@ -647,7 +647,7 @@ class SDSSMosaicMaker(Configurable):
         for band in self.config.bands:
 
             # Construct filter
-            fltr = Filter.sdss(band)
+            fltr = BroadBandFilter.sdss(band)
 
             print(fmt.green + fmt.bold + str(fltr.description()))
             print("")

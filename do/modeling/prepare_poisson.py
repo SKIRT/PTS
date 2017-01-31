@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.filter import Filter
+from pts.core.filter.broad import BroadBandFilter
 from pts.magic.core.frame import Frame
 from pts.magic.core.remote import RemoteFrame
 from pts.magic.basics.coordinatesystem import CoordinateSystem
@@ -98,7 +98,7 @@ for path in paths:
     galaxy_name, instrument, band, _ = name.split("_")
 
     # Create the filter
-    fltr = Filter.from_instrument_and_band(instrument, band)
+    fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
 
     # Load the frame
     poisson = Frame.from_file(path)

@@ -22,7 +22,6 @@ from telarchive import archive_search
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.filter import Filter
 
 # -----------------------------------------------------------------
 

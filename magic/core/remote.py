@@ -79,7 +79,7 @@ def import_necessary_modules(session):
     session.import_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
     session.import_package("archive", from_name="pts.core.tools")
     session.import_package("parsing", from_name="pts.core.tools")
-    session.import_package("BroadBandFilter", from_name="pts.core.basics.filter")
+    session.import_package("parse_filter", from_name="pts.core.filter.filter")
 
 # -----------------------------------------------------------------
 

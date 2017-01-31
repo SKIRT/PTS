@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 from .collections import CollectionData, log_if_positive, divide_if_positive, log_divide_if_positive
 from ..core.simulation.units import SkirtUnits
-from ..core.basics.filter import BroadBandFilter
+from ..core.filter.broad import BroadBandFilter
 from . import config
 
 # -----------------------------------------------------------------

@@ -22,7 +22,7 @@ import numpy as np
 
 # import pts modules
 from ..core.tools import archive as arch
-from ..core.basics.filter import BroadBandFilter
+from ..core.filter.broad import BroadBandFilter
 from ..core.basics.greybody import GreyBody, kappa350_Cortese
 
 # ----------------------------------------------------------------------

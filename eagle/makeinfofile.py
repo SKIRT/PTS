@@ -20,7 +20,7 @@ import pyfits
 from scipy.ndimage.filters import gaussian_filter
 
 from ..core.tools import archive as arch
-from ..core.basics.filter import BroadBandFilter
+from ..core.filter.broad import BroadBandFilter
 
 # -----------------------------------------------------------------
 

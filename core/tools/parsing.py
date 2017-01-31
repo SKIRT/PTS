@@ -905,6 +905,81 @@ def lazy_filter_list(argument):
 
 # -----------------------------------------------------------------
 
+def lazy_broad_band_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    filters = []
+    for arg in string_list(argument):
+
+        try:
+            # Try to parse the filter
+            fltr = BroadBandFilter(arg)
+            filters.append(fltr)
+
+        except ValueError:
+
+            # Try matching with broad bands
+            for spec in broad_band_identifiers:
+
+                identifier = broad_band_identifiers[spec]
+
+                if "instruments" in identifier:
+                    if arg in identifier.instruments:
+                        filters.append(BroadBandFilter(spec))
+                        continue  # this filter matches
+                if "observatories" in identifier:
+                    if arg in identifier.observatories:
+                        filters.append(BroadBandFilter(spec))
+                        continue  # this filter matches
+
+    # Return the filters
+    return filters
+
+# -----------------------------------------------------------------
+
+def lazy_narrow_band_filter_list(argument):
+
+    """
+    This fucntion ...
+    :param argument:
+    :return:
+    """
+
+    filters = []
+    for arg in string_list(argument):
+
+        try:
+            # Try to parse the filter
+            fltr = NarrowBandFilter(arg)
+            filters.append(fltr)
+
+        except ValueError:
+
+            # Try matching with narrow bands defined by wavelength ranges
+            for spec, alias in generate_aliases_ranges():
+
+                if alias not in argument: continue
+
+                # Get wavelength range
+                wavelength_range = wavelength_range_for_spec(spec)
+
+                # Create two filters, one for the minimum and one for the maximum wavelength
+                fltr_min = NarrowBandFilter(wavelength_range.min, name=alias + " min")
+                fltr_max = NarrowBandFilter(wavelength_range.max, name=alias + " max")
+
+                filters.append(fltr_min)
+                filters.append(fltr_max)
+
+    # Return the filters
+    return filters
+
+# -----------------------------------------------------------------
+
 def pixelcoordinate(argument):
 
     """

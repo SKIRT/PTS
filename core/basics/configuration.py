@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
-import inspect
 from abc import ABCMeta, abstractmethod
 from types import NoneType
 import sys

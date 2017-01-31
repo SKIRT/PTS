@@ -15,7 +15,6 @@
 # Import standard modules
 import numpy as np
 import math
-import time
 
 # Use an interactive back-end that supports animation
 import matplotlib

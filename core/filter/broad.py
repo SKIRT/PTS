@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.filter.broad Contains the BroadBandFilter class.
+## \package pts.core.filter.broad Contains the BroadBandFilter class.
 #
 # An instance of the BroadBandFilter class in this module represents a particular wavelength band, including its response or
 # transmission curve, and allows integrating a given spectrum over the band. A filter instance can be constructed from

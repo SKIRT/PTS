@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.filter.narrow Contains the NarrowBandFilter class.
+## \package pts.core.filter.narrow Contains the NarrowBandFilter class.
 
 # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.filter.filter Contains the Filter class.
+## \package pts.core.filter.filter Contains the Filter class.
 
 # -----------------------------------------------------------------
 
