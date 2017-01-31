@@ -218,19 +218,6 @@ def is_sdss_2mass_or_johnson(identifier):
 
 # -----------------------------------------------------------------
 
-def generate_from_two_parts(part_a, part_b):
-
-    """
-    This function ...
-    :param part_a:
-    :param part_b:
-    :return:
-    """
-
-    for between in [" ", "-", ".", "_"]: yield part_a + between + part_b
-
-# -----------------------------------------------------------------
-
 def generate_aliases(identifier):
 
     """
@@ -254,7 +241,7 @@ def generate_aliases(identifier):
     if "system" in identifier and "bands" in identifier:
 
         for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
-            for string in generate_from_two_parts(identifier.system, band): yield string
+            for string in strings.generate_from_two_parts(identifier.system, band): yield string
 
     # Combinations of instrument with band
     if "instruments" in identifier and "bands" in identifier:
@@ -262,19 +249,19 @@ def generate_aliases(identifier):
         for instrument in strings.case_combinations_list(identifier.instruments):
             for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
-                for string in generate_from_two_parts(instrument, band): yield string
-                for string in generate_from_two_parts("the " + instrument, band + "-band"): yield string
-                for string in generate_from_two_parts("the " + instrument, band + " band"): yield string
+                for string in strings.generate_from_two_parts(instrument, band): yield string
+                for string in strings.generate_from_two_parts("the " + instrument, band + "-band"): yield string
+                for string in strings.generate_from_two_parts("the " + instrument, band + " band"): yield string
 
     # Combinations of instrument with channel
     if "channel" in identifier and "instruments" in identifier:
         for instrument in strings.case_combinations_list(identifier.instruments):
-            for string in generate_from_two_parts(instrument, str_from_real_or_integer(identifier.channel)): yield string
+            for string in strings.generate_from_two_parts(instrument, str_from_real_or_integer(identifier.channel)): yield string
 
     # Combinations of observatory with channel
     if "channel" in identifier and "observatories" in identifier:
         for instrument in strings.case_combinations_list(identifier.observatories):
-            for string in generate_from_two_parts(instrument, str_from_real_or_integer(identifier.channel)): yield string
+            for string in strings.generate_from_two_parts(instrument, str_from_real_or_integer(identifier.channel)): yield string
 
     # Combinations of observatory with band
     if "observatories" in identifier and "bands" in identifier:
@@ -282,9 +269,9 @@ def generate_aliases(identifier):
         for observatory in strings.case_combinations_list(identifier.observatories):
             for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
-                for string in generate_from_two_parts(observatory, band): yield string
-                for string in generate_from_two_parts("the " + observatory, band + "-band"): yield string
-                for string in generate_from_two_parts("the " + observatory, band + "-band"): yield string
+                for string in strings.generate_from_two_parts(observatory, band): yield string
+                for string in strings.generate_from_two_parts("the " + observatory, band + "-band"): yield string
+                for string in strings.generate_from_two_parts("the " + observatory, band + "-band"): yield string
 
     # Combinations of instrument and wavelength
     if "wavelength" in identifier and "instruments" in identifier:
@@ -294,8 +281,8 @@ def generate_aliases(identifier):
 
         for instrument in strings.case_combinations_list(identifier.instruments):
             for wavelength_string in strings.quantity_combinations(wavelength):
-                for string in generate_from_two_parts(instrument, wavelength_string): yield string
-                for string in generate_from_two_parts("the " + instrument, wavelength_string + " band"): yield string
+                for string in strings.generate_from_two_parts(instrument, wavelength_string): yield string
+                for string in strings.generate_from_two_parts("the " + instrument, wavelength_string + " band"): yield string
 
     # Combinations of observatory with wavelength
     if "observatories" in identifier and "wavelength" in identifier:
@@ -305,8 +292,8 @@ def generate_aliases(identifier):
 
         for observatory in identifier.observatories:
             for wavelength_string in strings.quantity_combinations(wavelength):
-                for string in generate_from_two_parts(observatory, wavelength_string): yield string
-                for string in generate_from_two_parts("the " + observatory, wavelength_string + " band"): yield string
+                for string in strings.generate_from_two_parts(observatory, wavelength_string): yield string
+                for string in strings.generate_from_two_parts("the " + observatory, wavelength_string + " band"): yield string
 
     # Combinations of instrument and frequency
     if "frequency" in identifier and "instruments" in identifier:
@@ -316,8 +303,8 @@ def generate_aliases(identifier):
 
         for instrument in identifier.instruments:
             for frequency_string in strings.quantity_combinations(frequency):
-                for string in generate_from_two_parts(instrument, frequency_string): yield string
-                for string in generate_from_two_parts("the " + instrument, frequency_string + " band"): yield string
+                for string in strings.generate_from_two_parts(instrument, frequency_string): yield string
+                for string in strings.generate_from_two_parts("the " + instrument, frequency_string + " band"): yield string
 
     # Combinations of observatory and frequency
     if "observatories" in identifier and "frequency" in identifier:
@@ -327,8 +314,8 @@ def generate_aliases(identifier):
 
         for observatory in identifier.observatories:
             for frequency_string in strings.quantity_combinations(frequency):
-                for string in generate_from_two_parts(observatory, frequency_string): yield string
-                for string in generate_from_two_parts("the " + observatory, frequency_string + " band"): yield string
+                for string in strings.generate_from_two_parts(observatory, frequency_string): yield string
+                for string in strings.generate_from_two_parts("the " + observatory, frequency_string + " band"): yield string
 
 # -----------------------------------------------------------------
 
@@ -466,8 +453,10 @@ class BroadBandFilter(Filter):
             filter_id = name + "_[{},{}]".format(self._WavelengthMin, self._WavelengthMax)
             description = name + " filter in range [{},{}]".format(self._WavelengthMin, self._WavelengthMax)
 
+        self.true_filter = true_filter
+
         # Call the constructor of the base class
-        super(BroadBandFilter, self).__init__(filter_id, description, true_filter)
+        super(BroadBandFilter, self).__init__(filter_id, description)
 
     # -----------------------------------------------------------------
 
@@ -623,6 +612,31 @@ class BroadBandFilter(Filter):
     def __str__(self):
         if self.true_filter: return self.instrument + " " + self.band
         else: return self.name
+
+    @property
+    def name(self):
+
+        if self.true_filter: return self._FilterID.split("/")[1]
+        else: return self._FilterID.split("_")[0]
+
+    @property
+    def observatory(self):
+
+        if self.true_filter: return self._FilterID.split("/")[0]
+        else: return None
+
+    @property
+    def instrument(self):
+
+        if self.true_filter: return self._FilterID.split("/")[1].split(".")[0]
+        else: return None
+
+    @property
+    def band(self):
+
+        if self.true_filter: return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
+        elif self._FilterID.startswith("Uniform"): return None
+        else: return self._FilterID.split("_")[0]
 
     ## This function returns the mean wavelength for the filter, in micron.
     def meanwavelength(self):

@@ -36,7 +36,31 @@ subtypes["real"] = ["fraction", "positive_real", "negative_real"]
 subtypes["string"] = ["file_path"]
 subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
 subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
-subtypes["photometric_density_unit"] = []
+
+related_types = []
+related_types.append(["integer", "positive_integer", "negative_integer"])
+related_types.append(["real", "fraction", "positive_real", "negative_real"])
+related_types.append(["string", "file_path", "directory_path"])
+related_types.append(["quantity", "photometric_quantity", "photometric_density_quantity"])
+related_types.append(["unit", "photometric_unit", "photometric_density_unit"])
+related_types.append(["filter", "narrow_band_filter", "broad_band_filter"])
+related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band_list"])
+
+# -----------------------------------------------------------------
+
+def are_related_types(type_a, type_b):
+
+    """
+    This function ...
+    :param type_a:
+    :param type_b:
+    :return:
+    """
+
+    for lst in related_types:
+        if type_a in lst and type_b in lst: return True
+
+    return False
 
 # -----------------------------------------------------------------
 
@@ -939,7 +963,8 @@ class ConfigurationDefinition(object):
             if convert_default: default = get_real_value(default, real_type)
             else: # check default
                 default_type, default_string = stringify.stringify(default)
-                if default_type != user_type and user_type not in subtypes[default_type]:
+                #if default_type != user_type and user_type not in subtypes[default_type]:
+                if default_type != user_type and not are_related_types(default_type, user_type):
                     raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add
@@ -972,7 +997,8 @@ class ConfigurationDefinition(object):
             if convert_default: default = get_real_value(default, real_type)
             else: # check default
                 default_type, default_string = stringify.stringify(default)
-                if default_type != user_type and user_type not in subtypes[default_type]:
+                #if default_type != user_type and user_type not in subtypes[default_type]:
+                if default_type != user_type and not are_related_types(default_type, user_type):
                     raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add

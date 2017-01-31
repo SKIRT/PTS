@@ -50,19 +50,17 @@ class Filter(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, filter_id, description, true_filter):
+    def __init__(self, filter_id, description):
 
         """
         This function ...
         :param filter_id:
         :param description:
-        :param true_filter:
         """
 
         # Set attributes
         self._FilterID = filter_id
         self._Description = description
-        self.true_filter = true_filter
 
     # -----------------------------------------------------------------
 
@@ -88,7 +86,7 @@ class Filter(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @abstractproperty
     def name(self):
 
         """
@@ -96,12 +94,11 @@ class Filter(object):
         :return:
         """
 
-        if self.true_filter: return self._FilterID.split("/")[1]
-        else: return self._FilterID.split("_")[0]
+        pass
 
     # -----------------------------------------------------------------
 
-    @property
+    @abstractproperty
     def observatory(self):
 
         """
@@ -109,12 +106,11 @@ class Filter(object):
         :return:
         """
 
-        if self.true_filter: return self._FilterID.split("/")[0]
-        else: return None
+        pass
 
     # -----------------------------------------------------------------
 
-    @property
+    @abstractproperty
     def instrument(self):
 
         """
@@ -122,12 +118,11 @@ class Filter(object):
         :return:
         """
 
-        if self.true_filter: return self._FilterID.split("/")[1].split(".")[0]
-        else: return None
+        pass
 
     # -----------------------------------------------------------------
 
-    @property
+    @abstractproperty
     def band(self):
 
         """
@@ -135,9 +130,7 @@ class Filter(object):
         :return:
         """
 
-        if self.true_filter: return self._FilterID.split("/")[1].split(".")[1].replace("_ext", "")
-        elif self._FilterID.startswith("Uniform"): return None
-        else: return self._FilterID.split("_")[0]
+        pass
 
     # -----------------------------------------------------------------
 
@@ -219,9 +212,7 @@ class Filter(object):
         :return:
         """
 
-        from .range import QuantityRange
+        from ..basics.range import QuantityRange
         return QuantityRange(self.min, self.max)
-
-# -----------------------------------------------------------------
 
 # -----------------------------------------------------------------

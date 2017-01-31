@@ -17,12 +17,11 @@
 
 # -----------------------------------------------------------------
 
-__all__ = ["Consts", "Crossovers", "DBAdapters", "FunctionSlot",
-           "G1DBinaryString", "G1DList", "G2DBinaryString",
-           "G2DList", "GAllele", "GenomeBase", "GPopulation",
-           "SimpleGeneticAlgorithm", "GTree", "Initializators",
-           "Migration", "Mutators", "Network", "Scaling", "Selectors",
-           "Statistics", "Util"]
+__all__ = ["constants", "crossovers", "dbadapters", "functionslot",
+           "genomes", "allele", "genome", "population",
+           "engine", "tree", "initializators",
+           "migration", "mutators", "network", "scaling", "selectors",
+           "statistics", "utils"]
 
 __version__ = '0.6'
 __author__ = 'Christian S. Perone'

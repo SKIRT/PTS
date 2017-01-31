@@ -36,6 +36,7 @@ def generate_aliases(identifier):
 
     # Just the band
     if "bands" in identifier:
+
         for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
             yield band
@@ -43,18 +44,31 @@ def generate_aliases(identifier):
             yield "the " + band + "-band"
             yield band + " band"
 
-    if "observatories" in identifiers:
+    if "observatories" in identifier:
 
         if "bands" in identifier:
 
             for observatory in strings.case_combinations_list(identifier.observatories):
                 for band in strings.case_combinations_list(identifier.bands):
-                    yield observatory + " " + band
+                    for string in strings.generate_from_two_parts(observatory, band): yield string
 
         else:
 
             for observatory in strings.case_combinations_list(identifier.observatories):
                 yield observatory
+
+    if "instruments" in identifier:
+
+        if "bands" in identifier:
+
+            for instrument in strings.case_combinations_list(identifier.instruments):
+                for band in strings.case_combinations_list(identifier.bands):
+                    for string in strings.generate_from_two_parts(instrument, band): yield string
+
+        else:
+
+            for instrument in strings.case_combinations_list(identifier.instruments):
+                yield instrument
 
 # -----------------------------------------------------------------
 
@@ -199,10 +213,13 @@ class NarrowBandFilter(Filter):
         """
 
         from astropy.units import Quantity
-        from ..basics.quantity import represent_quantity, parse_quantity
+        from ..basics.quantity import parse_quantity
+        from ..basics.unit import represent_unit
 
-        true_filter = False
+        observatory = None
+        instrument = None
 
+        # String is passed
         if isinstance(filterspec, basestring):
 
             # Find exact match
@@ -210,7 +227,6 @@ class NarrowBandFilter(Filter):
                 for spec, alias in generate_aliases_no_ranges():
                     if filterspec == alias:
                         filterspec = spec
-                        true_filter = True
                         break
 
                 # Break not encountered
@@ -218,34 +234,112 @@ class NarrowBandFilter(Filter):
 
                     for spec, alias in generate_aliases_ranges():
                         if alias in filterspec:
+                            identifier = identifiers[spec]
                             filterspec = parse_quantity(filterspec.split(alias)[1]) # get wavelength
+                            observatory = identifier.observatories[0] if "observatories" in identifier else None
+                            instrument = identifier.instruments[0] if "instruments" in identifier else None
                             name = alias
-                            true_filter = True
                             break
 
                     # Break not encountered
                     else:  raise ValueError("Could not recognize the filter: " + filterspec)
 
+        # String is converted to a valid filterspec
         if isinstance(filterspec, basestring):
 
-            wavelength = identifiers[filterspec].wavelength
+            identifier = identifiers[filterspec]
+            wavelength = identifier.wavelength
+
+            self._observatory = identifier.observatories[0] if "observatories" in identifier else None
+            self._instrument = identifier.instruments[0] if "instruments" in identifier else None
+            self._band = identifier.bands[0] if "bands" in identifier else None
+
             self.wavelength = parse_quantity(wavelength)
             self._name = filterspec
 
             filter_id = self._name
             description = get_filter_description(filterspec)
 
+        # String is converted to a wavelength and a name or was a wavelength to begin with
         else:
 
-            if not isinstance(self.wavelength, Quantity): raise ValueError("Narrow band filter specification should be identifier (string) or wavelength (quantity)")
             self.wavelength = filterspec
+            if not isinstance(self.wavelength, Quantity): raise ValueError("Narrow band filter specification should be identifier (string) or wavelength (quantity)")
             self._name = name
 
+            wavelength_as_string = strings.str_from_real_or_integer(self.wavelength.value) + " " + represent_unit(self.wavelength.unit)
+
+            self._observatory = observatory
+            self._instrument = instrument
+            self._band = wavelength_as_string
+
             filter_id = self._name
-            description = "Filter at a wavelength of " + represent_quantity(self.wavelength)
+            description = "Filter at a wavelength of " + wavelength_as_string
 
         # Call the constructor of the base class
-        super(NarrowBandFilter, self).__init__(filter_id, description, true_filter)
+        super(NarrowBandFilter, self).__init__(filter_id, description)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.instrument is not None: return self.instrument + " " + self.band
+        elif self.observatory is not None: return self.observatory + " " + self.band
+        elif self.name is not None: return self.name + " " + self.band
+        else: return self.band
+
+    # -----------------------------------------------------------------
+
+    @property
+    def name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observatory(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self._observatory
+
+    # -----------------------------------------------------------------
+
+    @property
+    def instrument(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self._instrument
+
+    # -----------------------------------------------------------------
+
+    @property
+    def band(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self._band
 
     # -----------------------------------------------------------------
 

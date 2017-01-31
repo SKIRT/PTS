@@ -307,3 +307,43 @@ def str_from_real_or_integer(value):
     else: raise ValueError("Value must be real or integer")
 
 # -----------------------------------------------------------------
+
+def generate_from_two_parts(part_a, part_b, connectors=(" ", "-", ".", "_")):
+
+    """
+    This function ...
+    :param part_a:
+    :param part_b:
+    :param connectors:
+    :return:
+    """
+
+    for connector in connectors: yield part_a + connector + part_b
+
+# -----------------------------------------------------------------
+
+def find_first_digit(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    index = re.search("\d", string)
+    return index
+
+# -----------------------------------------------------------------
+
+def find_last_digit(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    index = re.search("\d", string[::-1])
+    return len(string) - 1 - index
+
+# -----------------------------------------------------------------

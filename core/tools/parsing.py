@@ -23,8 +23,9 @@ from astropy.coordinates import Angle
 from ..basics.range import IntegerRange, RealRange, QuantityRange
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
-from ..filter.broad import identifiers, BroadBandFilter
-from ..filter.narrow import NarrowBandFilter
+from ..filter.broad import BroadBandFilter
+from ..filter.broad import identifiers as broad_band_identifiers
+from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
 from ..filter.filter import parse_filter
 from ..basics.errorbar import ErrorBar
 from ..basics.unit import PhotometricUnit, parse_unit
@@ -325,6 +326,20 @@ def quantity_tuple(argument):
         a, b = map(quantity, argument.split(","))
         return a, b
     except: raise ValueError("Tuple must be of format a unit_a, b unit_b")
+
+# -----------------------------------------------------------------
+
+def quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    quantities = []
+    for item in string_list(argument): quantities.append(quantity(item))
+    return quantities
 
 # -----------------------------------------------------------------
 
@@ -846,20 +861,44 @@ def lazy_filter_list(argument):
 
     filters = []
     for arg in string_list(argument):
+
         try:
+
+            # Try to parse the filter
             fltr = parse_filter(arg)
             filters.append(fltr)
+
+        # If parsing directly failes
         except ValueError:
-            for spec in identifiers:
-                identifier = identifiers[spec]
+
+            # Try matching with broad bands
+            for spec in broad_band_identifiers:
+
+                identifier = broad_band_identifiers[spec]
+
                 if "instruments" in identifier:
                     if arg in identifier.instruments:
-                        filters.append(parse_filter(spec))
+                        filters.append(BroadBandFilter(spec))
                         continue # this filter matches
                 if "observatories" in identifier:
                     if arg in identifier.observatories:
-                        filters.append(parse_filter(spec))
+                        filters.append(BroadBandFilter(spec))
                         continue # this filter matches
+
+            # Try matching with narrow bands defined by wavelength ranges
+            for spec, alias in generate_aliases_ranges():
+
+                if alias not in argument: continue
+
+                # Get wavelength range
+                wavelength_range = wavelength_range_for_spec(spec)
+
+                # Create two filters, one for the minimum and one for the maximum wavelength
+                fltr_min = NarrowBandFilter(wavelength_range.min, name=alias + " min")
+                fltr_max = NarrowBandFilter(wavelength_range.max, name=alias + " max")
+
+                filters.append(fltr_min)
+                filters.append(fltr_max)
 
     # Return the list of filters
     return filters
