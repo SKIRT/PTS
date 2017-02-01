@@ -57,6 +57,7 @@ class ParallelTarget(object):
 
         # Initialize the process pool
         self.pool = Pool(processes=self.nprocesses)
+        return self
 
     # -----------------------------------------------------------------
 

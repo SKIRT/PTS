@@ -18,10 +18,17 @@ cwds = []
 
 # -----------------------------------------------------------------
 
+# Settings for 'setup'
 settings_setup = dict()
 settings_setup["type"] = "other"
 settings_setup["name"] = "SN1987A"
 settings_setup["fitting_host_ids"] = None
+settings.append(settings_setup)
+
+# Settings for 'model_sed'
+settings_model = dict()
+settings_model["ngenerations"] = "4"
+settings.append(settings_model)
 
 # -----------------------------------------------------------------
 

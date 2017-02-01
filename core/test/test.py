@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -23,7 +24,7 @@ class PTSTest(object):
     This class ...
     """
 
-    def __init__(self, name, description, setup_function, test_function):
+    def __init__(self, name, description, setup_function, test_function, output_path):
 
         """
         This function ...
@@ -38,6 +39,7 @@ class PTSTest(object):
         self.description = description
         self.setup_function = setup_function
         self.test_function = test_function
+        self.output_path = output_path
 
         # The runnable components
         self.components = []
@@ -50,10 +52,10 @@ class PTSTest(object):
         This function ...
         """
 
-        # Setup
+        # 1. Call the setup function
         self.setup()
 
-        # Show info
+        # 2. Show info
         self.info()
 
         # Perform
@@ -67,6 +69,9 @@ class PTSTest(object):
 
         # Write
         self.write()
+
+        # Clear
+        self.clear()
 
     # -----------------------------------------------------------------
 
@@ -161,5 +166,16 @@ class PTSTest(object):
 
         # Inform the user
         log.info("")
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fs.remove_directory(self.output_path)
 
 # -----------------------------------------------------------------

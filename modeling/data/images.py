@@ -165,7 +165,7 @@ class ImageFetcher(DataComponent):
 
             # Download the image
             url = self.dustpedia_image_urls[origin][name]
-            self.database.download_file(url, path)
+            self.database.download_file(url, path, progress_bar=log.is_debug())
 
     # -----------------------------------------------------------------
 

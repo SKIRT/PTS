@@ -1814,7 +1814,7 @@ def add_settings_from_dict(config, definition, dictionary):
             # TODO: check type?
 
             # Check with choices
-            if choices is not None:
+            if value is not None and choices is not None:
                 choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
                 if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
 
@@ -1840,7 +1840,7 @@ def add_settings_from_dict(config, definition, dictionary):
             # TODO: check type?
 
             # Check with choices
-            if choices is not None:
+            if value is not None and choices is not None:
                 choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
                 if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
 

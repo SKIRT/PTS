@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import imp
 import importlib
+from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -90,7 +91,7 @@ class PTSTestSuite(Configurable):
         self.test_names = dict()
 
         # The tests
-        self.tests = dict()
+        self.tests = defaultdict(list)
 
     # -----------------------------------------------------------------
 
@@ -298,7 +299,7 @@ class PTSTestSuite(Configurable):
                 test_function = test_module.test
 
                 # Create Test instance
-                test = PTSTest(name, description, setup_function, test_function)
+                test = PTSTest(name, description, setup_function, test_function, temp_path)
 
                 # Loop over the commands
                 for command, setting_dict, cwd in zip(commands, settings, cwds):
@@ -361,6 +362,9 @@ class PTSTestSuite(Configurable):
                     # Ambigious command
                     else: raise ValueError("The command '" + command + "' is ambigious")
 
+                # Add the test to the suite
+                self.tests[subproject].append(test)
+
     # -----------------------------------------------------------------
 
     def run_tests(self):
@@ -373,8 +377,21 @@ class PTSTestSuite(Configurable):
         # Inform the user
         log.info("Running the tests ...")
 
-        # Loop over the tests and perform them
-        for test in self.tests: test.perform()
+        # Loop over the subprojects
+        for subproject in self.tests:
+
+            # Inform the user
+            log.info("Running tests for " + subproject + " subproject ...")
+
+            # Loop over the tests and perform them
+            counter = 0
+            for test in self.tests[subproject]:
+
+                # Debugging
+                log.debug("Performing test " + str(counter+1) + " of " + str(len(self.tests[subproject])))
+
+                # Perform
+                test.perform()
 
     # -----------------------------------------------------------------
 
