@@ -28,19 +28,7 @@ from ...core.prep.deploy import Deployer
 from ..fitting.component import get_generations_table, get_ngenerations, has_unevaluated_generations, has_unfinished_generations, get_unevaluated_generations
 from ...core.remote.moderator import PlatformModerator
 from ...core.tools import stringify
-
-# -----------------------------------------------------------------
-
-def repeat(target, ntimes):
-
-    """
-    This function ...
-    :param target:
-    :param ntimes:
-    :return:
-    """
-
-    for _ in range(ntimes): target()
+from ...core.tools.loops import repeat
 
 # -----------------------------------------------------------------
 

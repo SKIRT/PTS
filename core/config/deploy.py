@@ -27,4 +27,7 @@ definition.add_flag("check", "check versions after deployment", True)
 # Add optional
 definition.add_optional("pts_on", "string_list", "hosts on which PTS should be installed (None means all)", choices=find_host_ids())
 
+# Dangerous stuff!
+definition.add_flag("clean", "do a completely clean install (remove existing installations)")
+
 # -----------------------------------------------------------------

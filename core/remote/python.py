@@ -335,7 +335,7 @@ class RemotePythonSession(object):
         self.send_line(name)
 
         # Wait for some time
-        time.wait(5)
+        time.wait(10)
 
         # Get output
         lines = []

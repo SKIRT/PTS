@@ -13,8 +13,9 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import re
-from string import ascii_lowercase
+import operator
+import itertools
+from functools import partial
 
 # -----------------------------------------------------------------
 

@@ -5,23 +5,24 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.developer.check_imports Check import statements.
+## \package pts.core.tools.loops Functions related to loops.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import importlib
-
-# Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
-from pts.core.tools import introspection
-from pts.core.tools import filesystem as fs
-
 # -----------------------------------------------------------------
 
+def repeat(target, ntimes):
 
+    """
+    This function ...
+    :param target:
+    :param ntimes:
+    :return:
+    """
+
+    for _ in range(ntimes): target()
 
 # -----------------------------------------------------------------

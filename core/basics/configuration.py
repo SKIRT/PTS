@@ -2077,9 +2077,17 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # Only one choice
         else:
 
-            # Inform the user
-            log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
-            value = choices[0]
+            if real_type.__name__.endswith("_list"):  # list-type setting
+
+                # Inform the user
+                log.info("Only one option: automatically using a list of this value '[" + str(choices[0]) + "]' for " + name)
+                value = [choices[0]]
+
+            else:
+
+                # Inform the user
+                log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                value = choices[0]
 
         # Set the value
         config[name] = value

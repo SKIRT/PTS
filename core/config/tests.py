@@ -16,5 +16,10 @@ definition = ConfigurationDefinition()
 
 # Add optional
 definition.add_positional_optional("subprojects", "string_list", "update on a remote system", subprojects_with_tests())
+definition.add_positional_optional("tests", "string_list", "test(s) to perform (when one subproject is specified)")
+
+# Add flags
+definition.add_flag("show", "show results")
+definition.add_flag("write", "write results")
 
 # -----------------------------------------------------------------

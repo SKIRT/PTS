@@ -238,7 +238,7 @@ class PlatformModerator(object):
             if host_id is not None: host_ids.add(host_id)
 
         # Loop over the names in 'ensemble'
-        for name in self.ensemble: host_ids |= self.host_ids_for_ensemble(name)
+        for name in self.ensemble: host_ids |= set(self.host_ids_for_ensemble(name))
 
         # Return the list of host IDs
         return list(host_ids)

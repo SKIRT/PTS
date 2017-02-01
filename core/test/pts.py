@@ -12,12 +12,17 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import importlib
+import imp
+
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
+from .imports import ImportsChecker
 
 # -----------------------------------------------------------------
 
@@ -71,6 +76,15 @@ class PTSTestSuite(Configurable):
         # Call the constructor of the base class
         super(PTSTestSuite, self).__init__(config)
 
+        # The import statements checker
+        self.checker = None
+
+        # The test names
+        self.test_names = dict()
+
+        # The tests
+        self.tests = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -85,16 +99,67 @@ class PTSTestSuite(Configurable):
         self.setup(**kwargs)
 
         # 2. Prompt for which test has to be executed
-        self.prompt()
+        if not self.test_names_for_all_subprojects: self.prompt()
 
-        # Test the import statements
-        self.test_imports()
+        # 3. Check the import statements
+        self.check_imports()
 
-        # Load tests
+        # 4. Load tests
         self.load_tests()
 
-        # Run tests
+        # 5. Run tests
         self.run_tests()
+
+        # 6. Show
+        if self.config.show: self.show()
+
+        # 7. Write
+        if self.config.write: self.write()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def test_names_for_all_subprojects(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for subproject in self.config.subprojects:
+
+            if subproject not in self.test_names: return False
+            elif len(self.test_names[subproject]) == 0: return False
+
+        # No problems encountered
+        return True
+
+    # -----------------------------------------------------------------
+
+    def has_test_names(self, subproject):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return subproject in self.test_names and len(self.test_names[subproject]) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def subprojects_without_test_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        subprojects = []
+        for subproject in self.config.subprojects:
+            if self.has_test_names(subproject): continue
+            subprojects.append(subproject)
+        return subprojects
 
     # -----------------------------------------------------------------
 
@@ -109,6 +174,29 @@ class PTSTestSuite(Configurable):
         # Call the setup function of the base class
         super(PTSTestSuite, self).setup(**kwargs)
 
+        # Tests are specified
+        if "tests" in kwargs:
+            tests = kwargs.pop("tests")
+            assert isinstance(tests, dict)
+            self.test_names = tests
+
+        # Check whether the specific tests that have been defined exist
+        if self.config.tests is not None:
+
+            # Check whether only one subproject has been specified
+            if len(self.config.subprojects) > 1: raise ValueError("Can only specify tests when the number of specified subprojects is 1")
+
+            # Get the test names
+            subproject = self.config.subprojects[0]
+            subproject_tests = tests_for_subproject(subproject)
+
+            # Check
+            for test in self.config.tests:
+                if test not in subproject_tests: raise ValueError("Test '" + test + "' for the " + subproject + " subproject does not exist")
+
+            # Set the test names
+            self.test_names[subproject] = self.config.tests
+
     # -----------------------------------------------------------------
 
     def prompt(self):
@@ -118,20 +206,30 @@ class PTSTestSuite(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Prompting for test names ...")
+
         # Create definition
         definition = ConfigurationDefinition()
 
         # Loop over the specified subprojects
         for subproject in self.config.subprojects:
+            if self.has_test_names(subproject): continue
             definition.add_required(subproject + "_tests", "string_list", "test to perform from the " + subproject + " subproject", choices=tests_for_subproject(subproject))
 
         # Get config
         setter = InteractiveConfigurationSetter("subproject_tests", add_logging=False, add_cwd=False)
         config = setter.run(definition, prompt_optional=False)
 
+        # Set the tests
+        for subproject in self.subprojects_without_test_names:
+
+            # Get tests
+            self.test_names[subproject] = config[subproject + "_tests"]
+
     # -----------------------------------------------------------------
 
-    def test_imports(self):
+    def check_imports(self):
 
         """
         This function ...
@@ -139,31 +237,13 @@ class PTSTestSuite(Configurable):
         """
 
         # Inform the user
-        log.info("Testing the validity of import statements ...")
+        log.info("Checking the validity of import statements ...")
 
-    # -----------------------------------------------------------------
-
-    def test_external_imports(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Testing external import statements ...")
-
-    # -----------------------------------------------------------------
-
-    def test_internal_imports(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Testing internal import statements ...")
+        # Create and run the imports checker
+        self.checker = ImportsChecker()
+        self.checker.config.show = False
+        self.checker.config.write = False
+        self.checker.run()
 
     # -----------------------------------------------------------------
 
@@ -177,6 +257,36 @@ class PTSTestSuite(Configurable):
         # Inform the user
         log.info("Loading the tests ...")
 
+        print(self.test_names)
+
+        # Loop over the subprojects
+        for subproject in self.test_names:
+
+            # Tests path for subproject
+            tests_path = fs.join(introspection.pts_subproject_dir(subproject), "tests")
+
+            # Loop over the test names
+            for name in self.test_names[subproject]:
+
+                # Determine the test path
+                path = fs.join(tests_path, name)
+
+                # Find file with name test.py
+                filepath = fs.join(path, "test.py")
+                #pythonic_path = filepath.split("PTS/")[1].replace("/", ".")[:-3]
+
+                # Load the python file
+                #test_module = importlib.import_module(pythonic_path)
+
+                # Load the test module
+                print(filepath)
+                test_module = imp.load_source(name, filepath)
+
+                commands = test_module.commands
+                settings = test_module.settings
+                setup_function = test_module.setup
+                test_function = test_module.test
+
     # -----------------------------------------------------------------
 
     def run_tests(self):
@@ -188,5 +298,44 @@ class PTSTestSuite(Configurable):
 
         # Inform the user
         log.info("Running the tests ...")
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing results ...")
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write report
+        self.write_report()
+
+    # -----------------------------------------------------------------
+
+    def write_report(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing report ...")
 
 # -----------------------------------------------------------------
