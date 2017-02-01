@@ -95,7 +95,7 @@ class SEDFetcher(DataComponent):
         log.info("Fetching the SEDs ...")
 
         # Run the SED fetcher
-        self.fetcher.run()
+        self.fetcher.run(ngc_name=self.ngc_name)
 
         # Get the seds
         self.seds = self.fetcher.seds

@@ -107,7 +107,8 @@ class SEDFetcher(Configurable):
         for key in keys: self.filters[key] = parse_filter(key)
 
         # Get the NGC name
-        self.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)
+        if "ngc_name" in kwargs: self.ngc_name = kwargs.pop("ngc_name")
+        else: self.ngc_name = catalogs.get_ngc_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -192,7 +193,7 @@ class SEDFetcher(Configurable):
         dustpedia.config.write = False
 
         # Run
-        dustpedia.run()
+        dustpedia.run(ngc_name=self.ngc_name)
 
         # Get the SED
         sed = dustpedia.sed

@@ -82,7 +82,8 @@ class SEDFetcher(Configurable):
         super(SEDFetcher, self).setup(**kwargs)
 
         # Get the NGC ID
-        self.ngc_name = self.sample.get_name(self.config.galaxy_name)
+        if "ngc_name" in kwargs: self.ngc_name = kwargs.pop("ngc_name")
+        else: self.ngc_name = self.sample.get_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
