@@ -180,7 +180,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the GALEX images ...")
 
         # Fetch the GALEX data from the DustPedia archive
-        #self.fetch_from_dustpedia("GALEX")
+        self.fetch_from_dustpedia("GALEX")
 
         # Create the configuration dictionary
         config_dict = dict()

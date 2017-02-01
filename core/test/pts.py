@@ -350,7 +350,6 @@ class PTSTestSuite(Configurable):
 
                         # Set working directory (output directory)
                         output_path = fs.absolute_path(fs.join(temp_path, cwd))
-                        if not fs.is_directory(output_path): fs.create_directory(output_path)
                         config.path = output_path
 
                         # Create the class instance, configure it with the configuration settings

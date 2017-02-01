@@ -236,14 +236,18 @@ def mosaic(working_path, band, center, width_pixels):
     :param working_path:
     :param band:
     :param center:
+    :param width_pixels:
     :return:
     """
+
+    ra_deg = center.ra.to("deg").value
+    dec_deg = center.dec.to("deg").value
 
     # Change directories
     old_cwd = fs.change_cwd(working_path)
 
     # Determine command string
-    swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME ' + band + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + image_width_pixels + ',' + image_width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
+    swarp_command_string = 'swarp *int.fits -IMAGEOUT_NAME ' + band + '_SWarp.fits -WEIGHT_SUFFIX .wgt.fits -CENTER_TYPE MANUAL -CENTER ' + str(ra_deg) + ',' + str(dec_deg) + ' -COMBINE_TYPE WEIGHTED -COMBINE_BUFSIZE 2048 -IMAGE_SIZE ' + width_pixels + ',' + width_pixels + ' -MEM_MAX 4096 -NTHREADS 4 -RESCALE_WEIGHTS N  -RESAMPLE N -SUBTRACT_BACK N -VERBOSE_TYPE QUIET -VMEM_MAX 4095 -WEIGHT_TYPE MAP_WEIGHT'
 
     #os.system(swarp_command_string)
     terminal.execute(swarp_command_string)

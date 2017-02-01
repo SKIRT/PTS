@@ -194,8 +194,10 @@ class SDSSMosaicMaker(Configurable):
         log.info("Creating directories ...")
 
         # Root path
-        self.root_path = fs.join(fs.home(), time.unique_name("SDSS_" + self.config.galaxy_name))
-        fs.create_directory(self.root_path)
+        #self.root_path = fs.join(fs.home(), time.unique_name("SDSS_" + self.config.galaxy_name))
+        #fs.create_directory(self.root_path)
+
+        self.root_path = self.config.path
 
         # Loop over the bands
         for band in self.config.bands:

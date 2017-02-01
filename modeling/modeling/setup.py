@@ -124,7 +124,7 @@ class ModelingSetupTool(Configurable):
         log.info("Creating the modeling directory ...")
 
         # Check whether a directory with this name is already present
-        if fs.is_directory(self.modeling_path): raise ValueError("A directory with the name '" + self.config.name + "' already exists in the current working directory")
+        if fs.is_directory(self.modeling_path): raise ValueError("A directory with the name '" + self.config.name + "' already exists in the current working directory (" + self.modeling_path + ")")
 
         # Create the directory
         fs.create_directory(self.modeling_path)
