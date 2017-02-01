@@ -1,0 +1,5 @@
+# PTS SED fitting parameter file
+luminosity dimless -- 100 1000
+dustmass mass Msun 0.3 5
+grainsize grainsize micron 0.1 5
+fsil dimless -- 0.1 100

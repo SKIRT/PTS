@@ -22,7 +22,7 @@ import os.path
 import filecmp
 
 # Import the relevant PTS classes and modules
-from pts.core.test.testsuite import equalfiles
+from pts.core.test.skirt import equalfiles
 
 # -----------------------------------------------------------------
 

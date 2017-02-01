@@ -18,6 +18,7 @@ import sys
 import shutil
 import platform
 import subprocess
+import datetime
 
 # Import the relevant PTS classes and modules
 from . import time
@@ -970,5 +971,27 @@ def append_lines(filepath, lines):
 
     with open(filepath, 'a') as fh:
         for line in lines: fh.write(line + "\n")
+
+# -----------------------------------------------------------------
+
+def creation_date(filepath):
+
+    """
+    Try to get the date that a file was created, falling back to when it was
+    last modified if that isn't possible.
+    See http://stackoverflow.com/a/39501288/1709587 for explanation.
+    """
+
+    if platform.system() == 'Windows': seconds = os.path.getctime(filepath)
+    else:
+        stat = os.stat(filepath)
+        try: seconds = stat.st_birthtime
+        except AttributeError:
+            # We're probably on Linux. No easy way to get creation dates here,
+            # so we'll settle for when its content was last modified.
+            seconds = stat.st_mtime
+
+    # Return datetime object
+    return datetime.datetime.fromtimestamp(seconds)
 
 # -----------------------------------------------------------------

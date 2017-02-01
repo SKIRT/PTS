@@ -40,13 +40,14 @@ def exists(url):
 
 # -----------------------------------------------------------------
 
-def download_and_decompress_file(url, path, remove=True):
+def download_and_decompress_file(url, path, remove=True, overwrite=False):
 
     """
     This function ...
     :param url:
     :param path:
     :param remove:
+    :param overwrite:
     :return:
     """
 
@@ -54,18 +55,19 @@ def download_and_decompress_file(url, path, remove=True):
     if not fs.is_directory(path): raise ValueError("Second argument must be an existing directory")
 
     # Download the file and decompress
-    filepath = download_file(url, path)
+    filepath = download_file(url, path, overwrite=overwrite)
     decompressed_filepath = archive.decompress_file_in_place(filepath, remove=remove)
     return decompressed_filepath
 
 # -----------------------------------------------------------------
 
-def download_file(url, path):
+def download_file(url, path, overwrite=False):
 
     """
     This function ...
     :param url
     :param path:
+    :param overwrite:
     :return:
     """
 
@@ -74,6 +76,11 @@ def download_file(url, path):
 
     # Determine the local path to the file
     filepath = fs.join(path, filename) if fs.is_directory(path) else path
+
+    # Check filepath
+    if fs.is_file(filepath):
+        if overwrite: fs.remove_file(filepath)
+        else: raise IOError("File is already present: " + filepath)
 
     # Debugging
     log.debug("Downloading '" + filename + "' to '" + path + "' ...")
@@ -87,7 +94,7 @@ def download_file(url, path):
 
 # -----------------------------------------------------------------
 
-def download_and_decompress_files(urls, path, remove=True):
+def download_and_decompress_files(urls, path, remove=True, overwrite=False):
 
     """
     This function ...
@@ -101,7 +108,7 @@ def download_and_decompress_files(urls, path, remove=True):
     log.debug("Downloading the files to '" + path + "' ...")
 
     # Download the files
-    paths = download_files(urls, path)
+    paths = download_files(urls, path, overwrite=overwrite)
 
     # Debugging
     log.debug("Decompressing the files ...")
@@ -114,12 +121,13 @@ def download_and_decompress_files(urls, path, remove=True):
 
 # -----------------------------------------------------------------
 
-def download_files(urls, path):
+def download_files(urls, path, overwrite=False):
 
     """
     This function ...
     :param urls:
     :param path:
+    :param overwrite:
     :return:
     """
 
@@ -133,6 +141,11 @@ def download_files(urls, path):
 
         filename = fs.name(url)
         filepath = fs.join(path, filename)
+
+        # Check if the file is present
+        if fs.is_file(filepath):
+            if overwrite: fs.remove_file(filepath)
+            else: raise IOError("File is already present: " + filepath)
 
         # Debugging
         log.debug("Downloading '" + filename + "' to '" + path + "' ... (" + str(index+1) + " of " + str(count) + ")")

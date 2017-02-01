@@ -31,6 +31,7 @@ from ..core.model import Model
 from ...core.simulation.grids import load_grid
 from ...core.simulation.skifile import SkiFile
 from ...core.simulation.simulation import SkirtSimulation
+from .tables import ModelProbabilitiesTable
 
 # -----------------------------------------------------------------
 
@@ -1174,6 +1175,20 @@ def get_generations_table(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_ngenerations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Get the table
+    generations_table = get_generations_table(modeling_path)
+    return generations_table.ngenerations
+
+# -----------------------------------------------------------------
+
 def get_chi_squared_table(modeling_path, generation_name):
 
     """
@@ -1299,6 +1314,19 @@ def get_simulation_paths(modeling_path, generation_name):
 
 # -----------------------------------------------------------------
 
+def get_simulation_names(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    return [fs.name(path) for path in get_simulation_paths(modeling_path, generation_name)]
+
+# -----------------------------------------------------------------
+
 def get_fit_wavelength_grids_path(modeling_path):
 
     """
@@ -1360,5 +1388,69 @@ def get_simulations(modeling_path, generation_name):
 
     # Return the simulations
     return simulations
+
+# -----------------------------------------------------------------
+
+def has_unfinished_generations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+# -----------------------------------------------------------------
+
+def get_model_probabilities_table(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    path = fs.join(modeling_path, "fit", "prob", "generations", generation_name + ".dat")
+    return ModelProbabilitiesTable.from_file(path)
+
+# -----------------------------------------------------------------
+
+def is_evaluated(modeling_path, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param generation_name:
+    :return:
+    """
+
+    # Get the probabilities table
+    prob_table = get_model_probabilities_table(modeling_path, generation_name)
+
+    # Loop over all the simulation names of the generation
+    for simulation_name in get_simulation_names(modeling_path, generation_name):
+        if not prob_table.has_simulation(simulation_name): return False
+
+    # No simulation encountered that was not evaluated -> OK
+    return True
+
+# -----------------------------------------------------------------
+
+def has_unevaluated_generations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Loop over the generations
+    for generation_name in get_generation_names(modeling_path):
+
+        # If at least one generation is not evaluated, return False
+        if not is_evaluated(modeling_path, generation_name): return False
+
+    # No generation was encountered that was not completely evaluated
+    return True
 
 # -----------------------------------------------------------------

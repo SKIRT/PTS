@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.sed import SEDFittingInitializer
-from ..fitting.component import get_generations_table
 from .modeler import Modeler
 from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path
 from ...core.basics.range import IntegerRange, QuantityRange
@@ -114,38 +113,6 @@ class SEDModeler(Modeler):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
-
-    # -----------------------------------------------------------------
-
-    def fit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Fitting radiative transfer models to the data ...")
-
-        # Configure the fitting
-        if "configure_fit" not in self.history: self.configure_fit()
-
-        # Initialize the fitting
-        if "initialize_fit_sed" not in self.history: self.initialize_fit()
-
-        # Load the generations table
-        generations = get_generations_table(self.modeling_path)
-
-        print(generations.all_finished)
-
-        # If some generations have not finished, check the status of and retrieve simulations
-        if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
-
-        # If some generations have finished, fit the SED
-        if generations.has_finished: self.fit_sed()
-
-        # If all generations have finished, explore new generation of models
-        if generations.all_finished: self.explore()
 
     # -----------------------------------------------------------------
 

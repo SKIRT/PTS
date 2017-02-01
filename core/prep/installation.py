@@ -1146,35 +1146,42 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Getting a Anaconda Python 2 distribution locally ...")
 
-        #
-        #if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
-        #else:
+        # Determine path to profile file
+        profile_path = introspection.shell_configuration_path()
 
-        # Mac
-        if self.remote.is_macos:
+        # Determine installer path
+        installer_path = fs.join(fs.home(), "conda.sh")
 
-            # Add conda path to .profile
-            profile_path = fs.join(self.remote.home_directory, ".profile")
-
-            # ...
-
-        # Linux
-        elif self.remote.is_linux:
-
-            conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
-
-            # Download anaconda
-            # self.remote.download(miniconda_linux_url, conda_installer_path)
-
-            if not self.remote.is_file(conda_installer_path):
-
-                # Download the installer
-                self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
-
-            # ...
-
-        # Other
+        # Download the installer
+        if self.remote.is_macos: network.download_file(miniconda_macos_url, installer_path, overwrite=True)
+        elif self.remote.is_linux: network.download_file(miniconda_linux_url, installer_path, overwrite=True)
         else: raise NotImplementedError("OS must be Linux or MacOS")
+
+        # Determine the conda installation directory
+        conda_installation_path = fs.join(self.remote.home_directory, "miniconda")
+
+        # Check if not present
+        if fs.is_directory(conda_installation_path): raise RuntimeError("Miniconda is already installed in '" + conda_installation_path + "'")
+
+        # Run the installation script
+        command = "bash " + conda_installer_path + " -b -p " + conda_installation_path
+        self.remote.execute(command, show_output=log.is_debug())
+
+        # CREATE A PYTHON ENVIRONMENT FOR PTS
+
+        conda_bin_path = fs.join(conda_installation_path, "bin")
+        self.conda_executable_path = fs.join(conda_bin_path, "conda")
+        self.conda_pip_path = fs.join(conda_bin_path, "pip")
+        self.conda_python_path = fs.join(conda_bin_path, "python")
+
+        # Debugging
+        log.debug("Adding the conda executables to the PATH ...")
+
+        # Add conda bin path to bashrc / profile
+        comment = "For Miniconda, added by PTS (Python Toolkit for SKIRT)"
+
+        # Run the export command also in the current shell, so that the conda commands can be found
+        self.remote.add_to_environment_variable("PATH", conda_bin_path, comment=comment, shell=True)
 
     # -----------------------------------------------------------------
 

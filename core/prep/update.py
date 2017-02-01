@@ -161,10 +161,8 @@ class Updater(Configurable):
         """
 
         # Test locally or remotely
-        #if self.remote is None: self.test_local()
-        #else: self.test_remote()
-
-        pass
+        if self.remote is None: self.test_local()
+        else: self.test_remote()
 
     # -----------------------------------------------------------------
 

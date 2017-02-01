@@ -85,6 +85,32 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_configured_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "configure_fit" in self
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_initialized_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "initialize_fit_sed" in self: return True
+        elif "initialize_fit_galaxy" in self: return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
     def mark_end(self):
 
         """

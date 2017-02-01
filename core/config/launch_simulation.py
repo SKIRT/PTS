@@ -5,9 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-from pts.core.config.simulation.analysis import definition as analysis_definition
-from pts.core.config.simulation.logging import definition as logging_definition
-from pts.core.config.simulation.launch import definition
+# Import the relevant PTS classes and modules
+from pts.core.config.launch import definition
 from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
@@ -27,11 +26,5 @@ definition.add_positional_optional("remote", "string", "the remote host on which
 definition.add_optional("cluster", "string", "the name of the cluster", letter="c")
 definition.add_optional("parallel", "integer_tuple", "the parallelization scheme (processes, threads)", letter="p")
 definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
-
-# Logging options
-definition.import_section("logging", "logging options", logging_definition)
-
-# Analysis
-definition.import_section("analysis", "analysis options", analysis_definition)
 
 # -----------------------------------------------------------------

@@ -44,7 +44,14 @@ retrieve_type_choices["trho"] = "theoretical dust density"
 retrieve_type_choices["convergence"] = "convergence file"
 definition.add_optional("retrieve_types", "string_list", "types of output files that have to be retrieved/retained (None means everything)", choices=retrieve_type_choices)
 
+# Special things
 definition.add_flag("dry", "dry run (don't actually launch the simulations)", False)
 definition.add_flag("attached", "launch the simulations in attached mode (only works if remotes without scheduling system are used)")
+
+# Logging options
+definition.import_section_from_composite_class("logging", "logging options", LoggingOptions)
+
+# Analysis options
+definition.import_section_from_composite_class("analysis", "simulation analysis options", AnalysisOptions)
 
 # -----------------------------------------------------------------

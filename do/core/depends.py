@@ -129,6 +129,7 @@ if arguments.script is None:
                 for name in dependencies_for_this[dependency]:
                     dependencies[dependency].add(name)
 
+    # No subprojects are specified, list all PTS dependencies
     else: dependencies = introspection.get_all_dependencies()
 
 # If a script name is given

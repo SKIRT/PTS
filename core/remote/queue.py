@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.python Contains the RemotePythonSession class.
+## \package pts.core.remote.queue Contains the SimulationQueue class.
 
 # -----------------------------------------------------------------
 

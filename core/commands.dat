@@ -25,3 +25,4 @@ plot_transmission | -- | plot.transmission.TransmissionPlotter | arguments | Plo
 generate_wavelength_grids | -- | prep.wavelengthgrids.WavelengthGridGenerator | arguments | Generate wavelength grids
 generate_dust_grids | -- | prep.dustgrids.DustGridGenerator | arguments | Generate dust grids
 filters | -- | filter.show.FilterShower | arguments | Show the narrow- and broad band filters defined in PTS
+tests | -- | test.pts.PTSTestSuite | interactive | Run PTS tests

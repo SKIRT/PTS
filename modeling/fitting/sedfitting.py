@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import tables, time
+from ...core.tools import time
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
@@ -110,6 +110,7 @@ class SEDFitter(FittingComponent):
         # The directory with the probability tables for all finished generations
         self.prob_generations_path = fs.create_directory_in(self.fit_prob_path, "generations")
 
+        # For each finished generation, determine the path to the probability table
         for generation_name in self.finished_generations:
             path = fs.join(self.prob_generations_path, generation_name + ".dat")
             self.prob_generations_table_paths[generation_name] = path

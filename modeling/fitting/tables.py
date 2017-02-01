@@ -203,6 +203,18 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def ngenerations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self)
+
+    # -----------------------------------------------------------------
+
+    @property
     def parameter_labels(self):
 
         """
@@ -784,6 +796,18 @@ class ModelProbabilitiesTable(SmartTable):
             labels.append(name)
 
         return labels
+
+    # -----------------------------------------------------------------
+
+    def has_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        return simulation_name in self["Simulation name"]
 
     # -----------------------------------------------------------------
 

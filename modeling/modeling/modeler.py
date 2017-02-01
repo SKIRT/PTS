@@ -13,6 +13,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta, abstractmethod
+
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
@@ -21,11 +24,9 @@ from ..fitting.explorer import ParameterExplorer
 from ..fitting.sedfitting import SEDFitter
 from ..component.component import load_modeling_history, get_config_file_path, load_modeling_configuration
 from ...core.launch.synchronizer import RemoteSynchronizer
-from ...core.remote.remote import is_available
 from ...core.prep.deploy import Deployer
-from ...core.remote.host import Host
-from ...core.tools import formatting as fmt
-from ...core.tools import introspection
+from ..fitting.component import get_generations_table, get_ngenerations, has_unevaluated_generations, has_unfinished_generations
+from ...core.remote.moderator import PlatformModerator
 
 # -----------------------------------------------------------------
 
@@ -34,6 +35,10 @@ class Modeler(Configurable):
     """
     This class ...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 
@@ -51,90 +56,11 @@ class Modeler(Configurable):
         # The modeling configuration
         self.modeling_config = None
 
-        # Host ids of the available hosts
-        self.available_host_ids = set()
+        # Platform moderator
+        self.moderator = None
 
         # The modeling history
         self.history = None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def allowed_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.config.local: return []
-        elif self.config.remotes is not None: return self.config.remotes
-        elif self.modeling_config.host_ids is None: return []
-        else: return self.modeling_config.host_ids
-
-    # -----------------------------------------------------------------
-
-    @property
-    def allowed_fitting_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.config.fitting_local: return []
-        elif self.config.fitting_remotes is not None: return self.config.fitting_remotes
-        elif self.modeling_config.fitting_host_ids is None: return []
-        else: return self.modeling_config.fitting_host_ids
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_allowed_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.allowed_host_ids) > 0
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_allowed_fitting_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.allowed_fitting_host_ids) > 0
-
-    # -----------------------------------------------------------------
-
-    @property
-    def configured_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.modeling_config.host_ids is None: return []
-        else: return self.modeling_config.host_ids
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_configured_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return len(self.configured_host_ids) > 0
 
     # -----------------------------------------------------------------
 
@@ -163,99 +89,6 @@ class Modeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
-    def host_id(self):
-
-        """
-        This function returns the ID of the host used for the computationaly heavy stuff
-        :return:
-        """
-
-        if self.allowed_host_ids is None: return None
-
-        # Loop over the preferred hosts
-        for host_id in self.allowed_host_ids:
-            if not self.config.check_hosts or host_id in self.available_host_ids: return host_id
-
-        # No host avilable
-        return None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fitting_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        host_ids = []
-
-        # Loop over the specified hosts
-        for host_id in self.allowed_fitting_host_ids:
-            if not self.config.check_hosts or host_id in self.available_host_ids: host_ids.append(host_id)
-
-        # Return the list of host IDs
-        return host_ids
-
-    # -----------------------------------------------------------------
-
-    @property
-    def all_host_ids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        host_ids = set()
-
-        # Add main host ID
-        if self.host_id is not None: host_ids.add(self.host_id)
-
-        # Add fitting host ids, if they are available
-        for host_id in self.fitting_host_ids: host_ids.add(host_id)
-
-        # Return the list of host IDs
-        return list(host_ids)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fitting_host_ids_non_schedulers(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        host_ids = []
-        for host_id in self.fitting_host_ids:
-            host = Host(host_id)
-            if host.scheduler: continue
-            else: host_ids.append(host_id)
-        return host_ids
-
-    # -----------------------------------------------------------------
-
-    @property
-    def fitting_host_ids_schedulers(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        host_ids = []
-        for host_id in self.fitting_host_ids:
-            host = Host(host_id)
-            if not host.scheduler: continue
-            else: host_ids.append(host_id)
-        return host_ids
-
-    # -----------------------------------------------------------------
-
     def setup(self, **kwargs):
 
         """
@@ -274,8 +107,11 @@ class Modeler(Configurable):
         if not fs.is_file(get_config_file_path(self.modeling_path)): raise ValueError("The current working directory is not a radiative transfer modeling directory (the configuration file is missing)")
         else: self.modeling_config = load_modeling_configuration(self.modeling_path)
 
-        # Find which hosts are available
-        if self.config.check_hosts: self.find_available_hosts()
+        # Set execution platforms
+        self.set_platforms()
+
+        # Check the number of generations
+        if self.config.ngenerations > 1 and self.moderator.any_remote: raise ValueError("When remote execution is enabled, the number of generations per run can only be one")
 
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
@@ -285,7 +121,7 @@ class Modeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def find_available_hosts(self):
+    def set_platforms(self):
 
         """
         This function ...
@@ -293,26 +129,25 @@ class Modeler(Configurable):
         """
 
         # Inform the user
-        log.info("Finding available hosts ...")
+        log.info("Determining execution platforms ...")
 
-        # Find available hosts from host_ids list
-        for host_id in self.allowed_host_ids:
-            if is_available(host_id):
-                log.debug("Host '" + host_id + "' is available")
-                self.available_host_ids.add(host_id)
-            else: log.debug("Host '" + host_id + "' is not available")
+        # Setup the platform moderator
+        self.moderator = PlatformModerator()
 
-        # Find available hosts from fitting.host_ids list
-        for host_id in self.allowed_fitting_host_ids:
-            if self.allowed_host_ids is not None and host_id in self.allowed_host_ids: continue
-            if is_available(host_id):
-                log.debug("Host '" + host_id + "' is available")
-                self.available_host_ids.add(host_id)
-            else: log.debug("Host '" + host_id + "' is not available")
+        # Set platform(s) for fitting (simulations)
+        if self.config.fitting_local: self.moderator.add_local("fitting")
+        elif self.config.fitting_remotes is not None: self.moderator.add_ensemble("fitting", self.config.fitting_remotes)
+        elif self.modeling_config.fitting_host_ids is None: self.moderator.add_local("fitting")
+        else: self.moderator.add_ensemble("fitting", self.modeling_config.fitting_host_ids)
 
-        # No available host in the list of preferred host ids
-        if (self.has_allowed_host_ids or self.has_allowed_fitting_host_ids) and len(self.available_host_ids) == 0:
-            raise RuntimeError("None of the preferred hosts are available at this moment")
+        # Other computations
+        if self.config.local: self.moderator.add_local("other")
+        elif self.config.remotes is not None: self.moderator.add_single("other", self.config.remotes)
+        elif self.modeling_config.host_ids is None: self.moderator.add_local("other")
+        else: self.moderator.add_single("other", self.modeling_config.host_ids)
+
+        # Run the moderator
+        self.moderator.run()
 
     # -----------------------------------------------------------------
 
@@ -330,20 +165,92 @@ class Modeler(Configurable):
         deployer = Deployer()
 
         # Set the host ids
-        deployer.config.host_ids = self.all_host_ids
+        deployer.config.host_ids = self.moderator.all_host_ids
 
         # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
         # that have a scheduling system to launch the pts run_queue command)
-        pts_host_ids = []
-        if self.host_id is not None: pts_host_ids.append(self.host_id)
-        for host_id in self.fitting_host_ids_schedulers: pts_host_ids.append(host_id)
-        deployer.config.pts_on = pts_host_ids
+        deployer.config.pts_on = self.moderator.all_host_ids
 
         # Set
         deployer.config.check = self.config.check_versions
 
         # Run the deployer
         deployer.run()
+
+    # -----------------------------------------------------------------
+
+    def fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fitting radiative transfer models to the data ...")
+
+        # Configure the fitting
+        if not self.history.has_configured_fit: self.configure_fit()
+
+        # Initialize the fitting
+        if not self.history.has_initialized_fit: self.initialize_fit()
+
+        # If finishing the generation is requested
+        if self.config.finish: self.finish()
+        else:
+            # Advance the fitting with a new generations
+            while get_ngenerations(self.modeling_path) < self.config.ngenerations: self.advance()
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def configure_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def initialize_fit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def advance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Advancing the fitting ...")
+
+        # Load the generations table
+        generations = get_generations_table(self.modeling_path)
+
+        # If some generations have not finished, check the status of and retrieve simulations
+        if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
+
+        # If some generations have finished, fit the SED
+        if generations.has_finished and has_unevaluated_generations(self.modeling_path): self.fit_sed()
+
+        # If all generations have finished, explore new generation of models
+        if generations.all_finished: self.explore()
+
+        # Do SED fitting after the exploration step if it has been performed locally (simulations are done, evaluation can be done directly)
+        if self.moderator.single_is_local("fitting"): self.finish()
 
     # -----------------------------------------------------------------
 
@@ -412,7 +319,7 @@ class Modeler(Configurable):
         explorer.config.path = self.modeling_path
 
         # Set the remote host IDs
-        explorer.config.remotes = self.fitting_host_ids
+        explorer.config.remotes = self.moderator.host_ids_for_ensemble("fitting")
 
         # Set the number of simulations per generation
         if self.config.nsimulations is not None: explorer.config.nsimulations = self.config.nsimulations
@@ -431,6 +338,36 @@ class Modeler(Configurable):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def finish(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Evaluating last generation ...")
+
+        # Check the current number of generations
+        current_ngenerations = get_ngenerations(self.modeling_path)
+        if current_ngenerations <= 1: raise RuntimeError("Need at least one generation after the initial generation to finish the fitting")
+
+        # Check if there are unfinished generations
+        has_unfinished = has_unfinished_generations(self.modeling_path)
+        if has_unfinished: log.warning("There are unfinished generations, but evaluting finished simulations anyway ...")
+
+        # Check if there are unevaluated generations
+        if not has_unevaluated_generations(self.modeling_path):
+            log.success("All generations have already been evaluated")
+
+        # Do the SED fitting step
+        self.fit_sed()
+
+        # Success
+        if not has_unfinished: log.success("Succesfully evaluted all generations")
 
     # -----------------------------------------------------------------
 

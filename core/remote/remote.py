@@ -1419,13 +1419,23 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download_from_url_to(self, url, filepath, show_output=True):
+    def download_from_url_to(self, url, filepath, show_output=True, overwrite=False):
 
         """
         This function ...
+        :param url:
+        :param filepath:
+        :param show_output:
+        :param overwrite:
         :return:
         """
 
+        # Check
+        if self.is_file(filepath):
+            if overwrite: fs.remove_file(filepath)
+            else: raise IOError("File already exists: " + filepath)
+
+        # Execute the download command
         command = "wget " + url + " -O " + filepath
         self.execute(command, show_output=show_output)
 

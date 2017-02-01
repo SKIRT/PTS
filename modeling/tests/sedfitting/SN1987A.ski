@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1" producer="SkirtMakeUp v7.4 (git 824-c615de9 built on Dec 19 2016 at 11:15:00)" time="2017-01-18T12:05:39">
+    <PanMonteCarloSimulation packages="1e5" minWeightReduction="1e4" minScattEvents="0" scattBias="0.5" continuousScattering="false">
+        <random type="Random">
+            <Random seed="4357"/>
+        </random>
+        <units type="Units">
+            <StellarUnits fluxOutputStyle="Frequency"/>
+        </units>
+        <instrumentSystem type="InstrumentSystem">
+            <InstrumentSystem>
+                <instruments type="Instrument">
+                    <SEDInstrument instrumentName="s" distance="49970 pc" inclination="0 deg" azimuth="0 deg" positionAngle="0 deg"/>
+                </instruments>
+            </InstrumentSystem>
+        </instrumentSystem>
+        <wavelengthGrid type="PanWavelengthGrid">
+            <LogWavelengthGrid writeWavelengths="false" minWavelength="0.1 micron" maxWavelength="1000 micron" points="61"/>
+        </wavelengthGrid>
+        <stellarSystem type="StellarSystem">
+            <StellarSystem emissionBias="0.5">
+                <components type="StellarComp">
+                    <PanStellarComp>
+                        <geometry type="Geometry">
+                            <PointGeometry/>
+                        </geometry>
+                        <sed type="StellarSED">
+                            <BlackBodySED temperature="7000 K"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="[luminosity:100]"/>
+                        </normalization>
+                    </PanStellarComp>
+                </components>
+            </StellarSystem>
+        </stellarSystem>
+        <dustSystem type="PanDustSystem">
+            <PanDustSystem sampleCount="100" writeConvergence="true" writeDensity="true" writeDepthMap="true" writeQuality="false" writeCellProperties="false" writeCellsCrossed="false" emissionBias="0.5" emissionBoost="1" selfAbsorption="true" cycles="0" writeEmissivity="false" writeTemperature="true" writeISRF="false">
+                <dustDistribution type="DustDistribution">
+                    <CompDustDistribution>
+                        <components type="DustComp">
+                            <DustComp>
+                                <geometry type="Geometry">
+                                    <ShellGeometry minRadius="5013.440332 AU" maxRadius="25067.20166 AU" expon="2"/>
+                                </geometry>
+                                <mix type="DustMix">
+                                    <ConfigurableDustMix writeMix="true" writeMeanMix="true" writeSize="true">
+                                        <populations type="DustMixPopulation">
+                                            <DustMixPopulation subPops="1">
+                                                <composition type="GrainComposition">
+                                                    <TrustGraphiteGrainComposition/>
+                                                </composition>
+                                                <sizeDistribution type="GrainSizeDistribution">
+                                                    <SingleGrainSizeDistribution factor="1" size="[grainsize:0.1 micron]"/>
+                                                </sizeDistribution>
+                                            </DustMixPopulation>
+                                            <DustMixPopulation subPops="1">
+                                                <composition type="GrainComposition">
+                                                    <TrustSilicateGrainComposition/>
+                                                </composition>
+                                                <sizeDistribution type="GrainSizeDistribution">
+                                                    <SingleGrainSizeDistribution factor="[fsil:1]" size="[grainsize:0.1 micron]"/>
+                                                </sizeDistribution>
+                                            </DustMixPopulation>
+                                        </populations>
+                                    </ConfigurableDustMix>
+                                </mix>
+                                <normalization type="DustCompNormalization">
+                                    <DustMassDustCompNormalization dustMass="[dustmass:1 Msun]"/>
+                                </normalization>
+                            </DustComp>
+                        </components>
+                    </CompDustDistribution>
+                </dustDistribution>
+                <dustGrid type="DustGrid">
+                    <Sphere1DDustGrid writeGrid="false" maxR="25067.20166 AU">
+                        <meshR type="Mesh">
+                            <PowMesh numBins="200" ratio="10"/>
+                        </meshR>
+                    </Sphere1DDustGrid>
+                </dustGrid>
+                <dustEmissivity type="DustEmissivity">
+                    <GreyBodyDustEmissivity/>
+                </dustEmissivity>
+                <dustLib type="DustLib">
+                    <Dim1DustLib entries="500"/>
+                </dustLib>
+            </PanDustSystem>
+        </dustSystem>
+    </PanMonteCarloSimulation>
+</skirt-simulation-hierarchy>

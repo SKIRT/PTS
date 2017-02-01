@@ -7,8 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.remote.host import find_host_ids
-from pts.core.config.simulation.launch import definition
-from pts.core.launch.options import AnalysisOptions, LoggingOptions
+from pts.core.config.launch import definition
 
 # -----------------------------------------------------------------
 
@@ -31,12 +30,6 @@ definition.add_optional("group_walltime", "real", "preferred walltime per job of
 # The timing and memory table
 definition.add_optional("timing_table_path", "file_path", "path to the timing table")
 definition.add_optional("memory_table_path", "file_path", "path to the memory table")
-
-# Logging options
-definition.import_section_from_composite_class("logging", "logging options", LoggingOptions)
-
-# Analysis options
-definition.import_section_from_composite_class("analysis", "simulation analysis options", AnalysisOptions)
 
 # The analyser classes
 definition.add_optional("analysers", "string_list", "analyser classes for the simulations")
