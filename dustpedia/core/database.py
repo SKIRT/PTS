@@ -461,7 +461,7 @@ class DustPediaDatabase(object):
                 get_link = url
                 break
 
-        self.download_file(get_link, path)
+        self.download_file(get_link, path, progress_bar=log.is_debug())
 
     # -----------------------------------------------------------------
 
@@ -485,7 +485,7 @@ class DustPediaDatabase(object):
             image_path = fs.join(path, image_name)
 
             # Download this image
-            self.download_file(url, image_path)
+            self.download_file(url, image_path, progress_bar=log.is_debug())
 
     # -----------------------------------------------------------------
 

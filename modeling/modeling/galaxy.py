@@ -167,6 +167,9 @@ class GalaxyModeler(Modeler):
         # Call the setup function of the base class
         super(GalaxyModeler, self).setup()
 
+        # Check whether a remote is available for the heavy computations
+        if self.moderator.host_id_for_single("other") is None: raise RuntimeError("The desired remote(s) for heavy computations are currently unavailable")
+
     # -----------------------------------------------------------------
 
     def get_data(self):
@@ -259,7 +262,7 @@ class GalaxyModeler(Modeler):
         """
 
         # Inform the user
-        log.info("Getting the galaxy images ...")
+        log.info("Getting the galaxy images (this can take a while) ...")
 
         # Create the configuration
         config = dict()

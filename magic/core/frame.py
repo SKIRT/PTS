@@ -39,6 +39,7 @@ from ...core.tools import archive
 from ..basics.vector import Pixel
 from ...core.basics.unit import PhotometricUnit
 from ...core.basics.unit import parse_unit as u
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -795,7 +796,7 @@ class Frame(NDDataArray):
         """
 
         # Return the pivot wavelength of the frame's filter, if defined
-        if self.filter is not None: return self.filter.effectivewavelength() * u("micron")
+        if self.filter is not None: return self.filter.effective
         else: return self._wavelength # return the wavelength (if defined, is None otherwise)
 
     # -----------------------------------------------------------------

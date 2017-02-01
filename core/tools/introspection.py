@@ -146,9 +146,13 @@ def pts_update_date():
     # Try getting the time of the last pull
     try:
 
-        command = "stat -f '%Sm' $(git rev-parse --show-toplevel)/.git/FETCH_HEAD"
-        output = subprocess.check_output(command, cwd=pts_package_dir, shell=True)
-        return output.split("\n")[0]
+        if is_macos():
+
+            command = "stat -f '%Sm' $(git rev-parse --show-toplevel)/.git/FETCH_HEAD"
+            output = subprocess.check_output(command, cwd=pts_package_dir, shell=True)
+            return output.split("\n")[0]
+
+        else: return "update date unknown" # TODO: fix this
 
     # git pull has not been performed probably, this is a fresh clone
     except subprocess.CalledProcessError:
@@ -241,9 +245,10 @@ def python_version_long():
     child.expect(pexpect.EOF)
 
     distribution_and_version = output[0].split("|")[0].strip()
-    architecture = output[0].split("|")[1].strip()
-
-    return distribution_and_version + " " + architecture
+    if "|" in output[0]:
+        architecture = output[0].split("|")[1].strip()
+        return distribution_and_version + " " + architecture
+    else: return distribution_and_version
 
 # -----------------------------------------------------------------
 

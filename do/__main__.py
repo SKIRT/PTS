@@ -140,7 +140,6 @@ elif len(table_matches) == 1 and len(matches) == 0:
     module_path, class_name = class_path.rsplit('.', 1)
 
     configuration_method_table = tables[subproject]["Configuration method"][index]
-
     subproject_path = introspection.pts_subproject_dir(subproject)
 
     sys.argv[0] = fs.join(introspection.pts_root_dir, module_path.replace(".", "/") + ".py") # this is actually not necessary (and not really correct, it's not like we are calling the module where the class is..)

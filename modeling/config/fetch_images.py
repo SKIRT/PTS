@@ -12,7 +12,7 @@ from ...core.remote.host import find_host_ids
 # -----------------------------------------------------------------
 
 # Add required settings
-definition.add_required("remote", "string", "remote host to use for creating the GALEX and SDSS data", choices=find_host_ids())
+definition.add_required("remote", "string", "remote host to use for creating the GALEX and SDSS data", choices=find_host_ids(schedulers=False))
 
 # Add flags
 definition.add_flag("errors", "also download the error frames from the DustPedia archive")

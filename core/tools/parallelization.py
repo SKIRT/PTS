@@ -22,6 +22,7 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from . import introspection
 from . import terminal
+from .logging import log
 
 # -----------------------------------------------------------------
 
@@ -75,12 +76,18 @@ class ParallelTarget(object):
 
     # -----------------------------------------------------------------
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, traceback):
 
         """
         This function ...
         :return:
         """
+
+        # Error occured
+        if exc_type is not None:
+            log.error("A " + str(exc_type) + " occured")
+            log.error(str(exc_value))
+            print(traceback)
 
         # Close and join the process pool
         self.pool.close()

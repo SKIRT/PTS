@@ -185,11 +185,11 @@ class Remote(object):
 
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
-            #self.ssh.logout()
             self.ssh = pxssh.pxssh()
             try: self.login(login_timeout)
             except HostDownException:
                 log.warning("Could not connect to the remote host")
+                self.ssh = pxssh.pxssh()
                 return False
 
         # Swap cluster
@@ -823,6 +823,57 @@ class Remote(object):
 
         if self.has_lmod: self.load_python_module()
         return self.python_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def python_version_long(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.custom_python_version_long("python")
+
+    # -----------------------------------------------------------------
+
+    def custom_python_version_long(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Launch interactive python session
+        self.ssh.sendline(path)
+        self.ssh.expect(">>>")
+        output = self.ssh.before.split("\r\n")[1:-1]
+
+        # Close python again
+        self.ssh.sendline("exit()")
+        self.ssh.prompt()
+
+        # Get distribution and version, and architecture
+        distribution_and_version = output[0].split("|")[0].split("(")[0].strip()
+        if "|" in output[0]:
+            # Compose version string with architecture
+            architecture = output[0].split("|")[1].strip()
+            return distribution_and_version + " " + architecture
+        else: return distribution_and_version
+
+    # -----------------------------------------------------------------
+
+    @property
+    def python_version_short(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.version_of(self.python_path)
 
     # -----------------------------------------------------------------
 

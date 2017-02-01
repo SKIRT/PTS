@@ -108,8 +108,6 @@ class VersionChecker(RemotesConfigurable):
             # Load Qt module, find the qmake path
             qmake_path = remote.find_and_load_qmake()
 
-            # print(qmake_path)
-
             # Get qmake version
             qmake_version = remote.version_of(qmake_path) if qmake_path is not None else None
 
@@ -117,7 +115,7 @@ class VersionChecker(RemotesConfigurable):
             python_path = remote.find_and_load_python()
 
             # Get python version
-            python_version = remote.version_of(python_path)
+            python_version = remote.custom_python_version_long(python_path)
 
             # Get SKIRT and PTS version
             skirt_version = remote.skirt_version
@@ -139,6 +137,9 @@ class VersionChecker(RemotesConfigurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Showing versions ...")
 
         print("")
         print(fmt.bold + fmt.green + "SKIRT" + fmt.reset + ":")

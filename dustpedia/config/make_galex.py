@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.dustpedia.core.galex import galex_bands
 
 # -----------------------------------------------------------------
 
@@ -15,6 +16,7 @@ definition = ConfigurationDefinition()
 
 # Galaxy name
 definition.add_required("galaxy_name", "string", "the name of the galaxy")
+definition.add_optional("bands", "string_list", "the bands (NUV/FUV)", choices=galex_bands, default=galex_bands)
 
 # Output
 definition.add_optional("output", "string", "the name of the output directory", default="out")

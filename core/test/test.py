@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the relevant PTS classes and modules
+from ..tools.logging import log
+
 # -----------------------------------------------------------------
 
 class PTSTest(object):
@@ -20,11 +23,24 @@ class PTSTest(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, name, description, setup_function, test_function):
 
         """
         This function ...
+        :param name:
+        :param description:
+        :param setup_function:
+        :param test_function:
         """
+
+        # Properties of this test
+        self.name = name
+        self.description = description
+        self.setup_function = setup_function
+        self.test_function = test_function
+
+        # The runnable components
+        self.components = []
 
     # -----------------------------------------------------------------
 
@@ -36,6 +52,9 @@ class PTSTest(object):
 
         # Setup
         self.setup()
+
+        # Show info
+        self.info()
 
         # Perform
         self.perform()
@@ -51,12 +70,40 @@ class PTSTest(object):
 
     # -----------------------------------------------------------------
 
+    def add_component(self, component):
+
+        """
+        This function ...
+        :param component:
+        :return:
+        """
+
+        self.components.append(component)
+
+    # -----------------------------------------------------------------
+
     def setup(self):
 
         """
         This function ...
         :return:
         """
+
+        # Execute setup function
+        self.setup_function()
+
+    # -----------------------------------------------------------------
+
+    def info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print("PTS TEST")
+        print(self.name)
+        print(self.description)
 
     # -----------------------------------------------------------------
 
@@ -67,6 +114,18 @@ class PTSTest(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Performing the test ...")
+
+        # Loop over the components, invoke their run function
+        for component in self.components:
+
+            # Debugging
+            log.debug("Executing component '" + component.name + "' ...")
+
+            # Run
+            component.run()
+
     # -----------------------------------------------------------------
 
     def check(self):
@@ -75,6 +134,9 @@ class PTSTest(object):
         This function ...
         :return:
         """
+
+        # Execute test function
+        self.test_function()
 
     # -----------------------------------------------------------------
 
@@ -85,6 +147,9 @@ class PTSTest(object):
         :return:
         """
 
+        # Inform the user
+        log.info("")
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -93,5 +158,8 @@ class PTSTest(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("")
 
 # -----------------------------------------------------------------
