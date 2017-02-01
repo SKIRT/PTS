@@ -322,7 +322,7 @@ class FitModelAnalyser(FittingComponent):
         # Get the number of entries in the chi squared table
         nfinished_simulations = len(self.chi_squared_table)
 
-        # if this is the last simulation
+        # If this is the last simulation
         if nsimulations == nfinished_simulations + 1:
 
             # Update the generations table

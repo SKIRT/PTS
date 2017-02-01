@@ -312,7 +312,7 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def finished_generations(self):
 
         """
@@ -333,6 +333,40 @@ class FittingComponent(ModelingComponent):
         """
 
         return self.generations_table.is_finished(generation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unevaluated_finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # INitialize list
+        names = []
+
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
+
+            # Get the probabilities table
+            prob_table = get_model_probabilities_table(self.config.path, generation_name)
+
+            # If table doesn't exist yet
+            if prob_table is None: names.append(generation_name)
+
+            # Loop over all the simulation names of the generation
+            for simulation_name in self.get_simulations_in_generation(generation_name):
+
+                if not prob_table.has_simulation(simulation_name):
+                    names.append(generation_name)
+                    break
+
+            else: pass # break is not encountered for this generation
+
+        # Return the generation names
+        return names
 
     # -----------------------------------------------------------------
 
@@ -1399,6 +1433,10 @@ def has_unfinished_generations(modeling_path):
     :return:
     """
 
+    # Open the generations table
+    table = get_generations_table(modeling_path)
+    return table.has_unfinished
+
 # -----------------------------------------------------------------
 
 def get_model_probabilities_table(modeling_path, generation_name):
@@ -1411,7 +1449,8 @@ def get_model_probabilities_table(modeling_path, generation_name):
     """
 
     path = fs.join(modeling_path, "fit", "prob", "generations", generation_name + ".dat")
-    return ModelProbabilitiesTable.from_file(path)
+    if fs.is_file(path): return ModelProbabilitiesTable.from_file(path)
+    else: return None
 
 # -----------------------------------------------------------------
 
@@ -1427,12 +1466,59 @@ def is_evaluated(modeling_path, generation_name):
     # Get the probabilities table
     prob_table = get_model_probabilities_table(modeling_path, generation_name)
 
+    if prob_table is None:
+        #print("prob table is None")
+        return False
+
     # Loop over all the simulation names of the generation
     for simulation_name in get_simulation_names(modeling_path, generation_name):
-        if not prob_table.has_simulation(simulation_name): return False
+        #print(simulation_name, prob_table.has_simulation(simulation_name))
+        if not prob_table.has_simulation(simulation_name):
+            #print("here")
+            return False
 
     # No simulation encountered that was not evaluated -> OK
     return True
+
+# -----------------------------------------------------------------
+
+def get_evaluated_generations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    generation_names = []
+
+    # Loop over the generations
+    for generation_name in get_generation_names(modeling_path):
+
+        if is_evaluated(modeling_path, generation_name): generation_names.append(generation_name)
+
+    # Return the generation names
+    return generation_names
+
+# -----------------------------------------------------------------
+
+def get_unevaluated_generations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    generation_names = []
+
+    # Loop over the generations
+    for generation_name in get_generation_names(modeling_path):
+
+        if not is_evaluated(modeling_path, generation_name): generation_names.append(generation_name)
+
+    # Return the generation names
+    return generation_names
 
 # -----------------------------------------------------------------
 
@@ -1448,9 +1534,9 @@ def has_unevaluated_generations(modeling_path):
     for generation_name in get_generation_names(modeling_path):
 
         # If at least one generation is not evaluated, return False
-        if not is_evaluated(modeling_path, generation_name): return False
+        if not is_evaluated(modeling_path, generation_name): return True
 
     # No generation was encountered that was not completely evaluated
-    return True
+    return False
 
 # -----------------------------------------------------------------

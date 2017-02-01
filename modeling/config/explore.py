@@ -31,7 +31,7 @@ definition.add_positional_optional("generation_method", "string", "the model gen
 # Optional parameters
 if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", default=find_host_ids(schedulers=False), choices=find_host_ids(schedulers=False))
 else: definition.add_fixed("remotes", "remote hosts", [])
-definition.add_optional("nsimulations", "integer", "the number of simulations to launch in one batch/generation", 100)
+definition.add_optional("nsimulations", "even_positive_integer", "the number of simulations to launch in one batch/generation", 100)
 definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 

@@ -26,7 +26,7 @@ definition.add_flag("fitting_local", "launch the simulations as part of the fitt
 definition.add_optional("fitting_remotes", "string_list", "remote hosts for the fitting (overrule the modeling configuration)", choices=find_host_ids())
 
 # Genetic algorithm settings
-definition.add_optional("nsimulations", "positive_integer", "number of simulations per generation")
+definition.add_optional("nsimulations", "even_integer", "number of simulations per generation")
 definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)
 definition.add_flag("finish", "don't launch a new generation but finish evaluating all previous runs")
 

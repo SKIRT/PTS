@@ -37,8 +37,6 @@ class GeneticModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GeneticModelGenerator, self).__init__(config)
 
-        # -- Attributes --
-
         # The genetic algorithm engine
         self.engine = None
 

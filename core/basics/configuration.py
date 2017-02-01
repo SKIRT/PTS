@@ -37,7 +37,7 @@ subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
 subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
 
 related_types = []
-related_types.append(["integer", "positive_integer", "negative_integer"])
+related_types.append(["integer", "positive_integer", "negative_integer", "even_integer", "even_positive_integer", "even_negative_integer", "odd_integer", "odd_positive_integer", "odd_negative_integer"])
 related_types.append(["real", "fraction", "positive_real", "negative_real"])
 related_types.append(["string", "file_path", "directory_path"])
 related_types.append(["quantity", "photometric_quantity", "photometric_density_quantity"])

@@ -871,11 +871,12 @@ class GAEngine(object):
         new_population = GPopulation(self.internalPop)
         log.debug("Population was cloned.")
 
-        size_iterate = len(self.internalPop)
+        #size_iterate = len(self.internalPop)
+        size_iterate = self.internalPop.popSize
 
         # Odd population size
-        if size_iterate % 2 != 0:
-            size_iterate -= 1
+        if size_iterate % 2 != 0: raise ValueError("The population size cannot be odd")
+            #size_iterate -= 1
 
         crossover_empty = self.select(popID=self.currentGeneration).crossover.isEmpty()
 

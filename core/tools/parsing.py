@@ -113,6 +113,89 @@ def negative_integer(argument):
 
 # -----------------------------------------------------------------
 
+def even_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = integer(argument)
+    if value % 2 != 0: raise ValueError("Integer is not even")
+    return value
+
+# -----------------------------------------------------------------
+
+def even_positive_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = positive_integer(argument)
+    if value % 2 != 0: raise ValueError("Integer is not even")
+
+# -----------------------------------------------------------------
+
+def even_negative_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = negative_integer(argument)
+    if value % 2 != 0: raise ValueError("Integer is not even")
+    return value
+
+# -----------------------------------------------------------------
+
+def odd_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = integer(argument)
+    if value % 2 == 0: raise ValueError("Integer is not odd")
+    return value
+
+# -----------------------------------------------------------------
+
+def odd_positive_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = positive_integer(argument)
+    if value % 2 == 0: raise ValueError("Integer is not odd")
+    return value
+
+# -----------------------------------------------------------------
+
+def odd_negative_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = negative_integer(argument)
+    if value % 2 == 0: raise ValueError("Integer is not odd")
+    return value
+
+# -----------------------------------------------------------------
+
 def real(argument):
 
     """

@@ -25,8 +25,9 @@ from ..fitting.sedfitting import SEDFitter
 from ..component.component import load_modeling_history, get_config_file_path, load_modeling_configuration
 from ...core.launch.synchronizer import RemoteSynchronizer
 from ...core.prep.deploy import Deployer
-from ..fitting.component import get_generations_table, get_ngenerations, has_unevaluated_generations, has_unfinished_generations
+from ..fitting.component import get_generations_table, get_ngenerations, has_unevaluated_generations, has_unfinished_generations, get_unevaluated_generations
 from ...core.remote.moderator import PlatformModerator
+from ...core.tools import stringify
 
 # -----------------------------------------------------------------
 
@@ -260,6 +261,10 @@ class Modeler(Configurable):
         # If some generations have not finished, check the status of and retrieve simulations
         if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
 
+        # Debugging
+        if generations.has_finished: log.debug("There are finished generations: " + stringify.stringify(generations.finished_generations)[1])
+        if has_unevaluated_generations(self.modeling_path): log.debug("There are unevaluated generations: " + stringify.stringify(get_unevaluated_generations(self.modeling_path))[1])
+
         # If some generations have finished, fit the SED
         if generations.has_finished and has_unevaluated_generations(self.modeling_path): self.fit_sed()
 
@@ -384,7 +389,7 @@ class Modeler(Configurable):
         self.fit_sed()
 
         # Success
-        if not has_unfinished: log.success("Succesfully evaluted all generations")
+        if not has_unfinished: log.success("Succesfully evaluated all generations")
 
     # -----------------------------------------------------------------
 
