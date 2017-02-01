@@ -276,6 +276,8 @@ class NarrowBandFilter(Filter):
             filter_id = self._name
             description = "Filter at a wavelength of " + wavelength_as_string
 
+        self.spec = filterspec
+
         # Call the constructor of the base class
         super(NarrowBandFilter, self).__init__(filter_id, description)
 

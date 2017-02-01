@@ -49,7 +49,7 @@ identifiers["IRAC.I3"] = Map(observatories=["Spitzer"], instruments=["IRAC"], ba
 identifiers["IRAC.I4"] = Map(observatories=["Spitzer"], instruments=["IRAC"], bands=["I4"], channel=4, wavelength="8.0 micron")
 identifiers["WISE.W1"] = Map(instruments=["WISE"], bands=["W1"], channel=1, wavelength="3.4 micron")
 identifiers["WISE.W2"] = Map(instruments=["WISE"], bands=["W2"], channel=2, wavelength="4.6 micron")
-identifiers["WISE.W3"] = Map(instruments=["WISE"], bands=["W3"], channel=3, wavelength="11 micron")
+identifiers["WISE.W3"] = Map(instruments=["WISE"], bands=["W3"], channel=3, wavelength="12 micron")
 identifiers["WISE.W4"] = Map(instruments=["WISE"], bands=["W4"], channel=4, wavelength="22 micron")
 identifiers["MIPS.24mu"] = Map(observatories=["Spitzer"], instruments=["MIPS"], wavelength="24 micron")
 identifiers["MIPS.70mu"] = Map(observatories=["Spitzer"], instruments=["MIPS"], wavelength="70 micron")
@@ -454,6 +454,7 @@ class BroadBandFilter(Filter):
             description = name + " filter in range [{},{}]".format(self._WavelengthMin, self._WavelengthMax)
 
         self.true_filter = true_filter
+        self.spec = filterspec
 
         # Call the constructor of the base class
         super(BroadBandFilter, self).__init__(filter_id, description)

@@ -29,6 +29,7 @@ from pts.core.data.transmission import TransmissionCurve
 from pts.core.basics.quantity import represent_quantity
 from ..basics.configurable import Configurable
 from ..tools.logging import log
+from ..tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -117,19 +118,27 @@ class FilterShower(Configurable):
         # Inform the user
         log.info("Categorizing broad band filters ...")
 
-        # Categorize
-        for spec in broad_identifiers:
+        if self.config.matching is not None:
 
-            identifier = broad_identifiers[spec]
-            if "instruments" in identifier:
-                if "observatories" in identifier:
-                    self.broad[identifier.observatories[0] + " " + identifier.instruments[0]].append(spec)
-                else: self.broad[identifier.instruments[0]].append(spec)
-            elif "observatories" in identifier:
-                self.broad[identifier.observatories[0]].append(spec)
-            elif "system" in identifier:
-                self.broad[identifier.system].append(spec)
-            else: self.broad[spec].append(spec)
+            filters = parsing.lazy_broad_band_filter_list(self.config.matching)
+            #self.broad[self.config.matching] = filters
+            for fltr in filters: self.broad[fltr.spec].append(fltr.spec)
+
+        else:
+
+            # Categorize
+            for spec in broad_identifiers:
+
+                identifier = broad_identifiers[spec]
+                if "instruments" in identifier:
+                    if "observatories" in identifier:
+                        self.broad[identifier.observatories[0] + " " + identifier.instruments[0]].append(spec)
+                    else: self.broad[identifier.instruments[0]].append(spec)
+                elif "observatories" in identifier:
+                    self.broad[identifier.observatories[0]].append(spec)
+                elif "system" in identifier:
+                    self.broad[identifier.system].append(spec)
+                else: self.broad[spec].append(spec)
 
     # -----------------------------------------------------------------
 
@@ -143,11 +152,16 @@ class FilterShower(Configurable):
         # Inform the user
         log.info("Categorizing narrow band filters ...")
 
-        # Categorize
-        for spec in narrow_identifiers:
+        if self.config.matching is not None:
 
-            #identifiers = narrow_identifiers[spec]
-            self.narrow[spec].append(spec)
+            filters = parsing.lazy_narrow_band_filter_list(self.config.matching)
+            #self.narrow[self.config.matching] = filters
+            for fltr in filters: self.narrow[fltr.spec].append(fltr.spec)
+
+        else:
+
+            # Categorize
+            for spec in narrow_identifiers: self.narrow[spec].append(spec)
 
     # -----------------------------------------------------------------
 
@@ -180,6 +194,7 @@ class FilterShower(Configurable):
         print(fmt.bold + fmt.blue + "NARROW BAND FILTERS" + fmt.reset)
         print("")
 
+        #for label in sorted(self.narrow.keys(), key=lambda x: narrow_identifiers.keys().index(self.narrow[x][0])):
         for label in sorted(self.narrow.keys(), key=lambda x: narrow_identifiers.keys().index(self.narrow[x][0])):
 
             print(fmt.yellow + fmt.bold + label + fmt.reset)
