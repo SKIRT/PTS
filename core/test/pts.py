@@ -17,6 +17,22 @@ from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
+
+# -----------------------------------------------------------------
+
+def subprojects_with_tests():
+
+    """
+    This function ...
+    :return:
+    """
+
+    subprojects = []
+    for subproject in introspection.subprojects:
+        tests_path = fs.join(introspection.pts_subproject_dir(subproject), "tests")
+        if fs.is_directory(tests_path) and not fs.is_empty(tests_path): subprojects.append(subproject)
+    return subprojects
 
 # -----------------------------------------------------------------
 
@@ -33,7 +49,7 @@ def tests_for_subproject(subproject):
     tests_path = fs.join(subproject_path, "tests")
 
     # If directory doesn't exist, return empty list for the tests
-    if fs.is_directory(tests_path): return []
+    if not fs.is_directory(tests_path): return []
     else: return fs.directories_in_path(tests_path, returns="name")
 
 # -----------------------------------------------------------------
@@ -71,6 +87,15 @@ class PTSTestSuite(Configurable):
         # 2. Prompt for which test has to be executed
         self.prompt()
 
+        # Test the import statements
+        self.test_imports()
+
+        # Load tests
+        self.load_tests()
+
+        # Run tests
+        self.run_tests()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -93,15 +118,75 @@ class PTSTestSuite(Configurable):
         :return:
         """
 
+        # Create definition
+        definition = ConfigurationDefinition()
 
+        # Loop over the specified subprojects
+        for subproject in self.config.subprojects:
+            definition.add_required(subproject + "_tests", "string_list", "test to perform from the " + subproject + " subproject", choices=tests_for_subproject(subproject))
+
+        # Get config
+        setter = InteractiveConfigurationSetter("subproject_tests", add_logging=False, add_cwd=False)
+        config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
-    def test(self):
+    def test_imports(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Testing the validity of import statements ...")
+
+    # -----------------------------------------------------------------
+
+    def test_external_imports(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Testing external import statements ...")
+
+    # -----------------------------------------------------------------
+
+    def test_internal_imports(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Testing internal import statements ...")
+
+    # -----------------------------------------------------------------
+
+    def load_tests(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the tests ...")
+
+    # -----------------------------------------------------------------
+
+    def run_tests(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Running the tests ...")
 
 # -----------------------------------------------------------------

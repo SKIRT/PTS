@@ -357,7 +357,7 @@ class FitModelAnalyser(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the table with the flux-density differences for the current model ...")
+        log.info("Writing the table with the flux density differences for the current model ...")
 
         # Determine the path to the differences table
         path = fs.join(self.simulation.analysis.misc.path, "differences.dat")

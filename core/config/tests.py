@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.tools import introspection
+from pts.core.test.pts import subprojects_with_tests
 
 # -----------------------------------------------------------------
 
@@ -15,6 +15,6 @@ from pts.core.tools import introspection
 definition = ConfigurationDefinition()
 
 # Add optional
-definition.add_positional_optional("subproject", "string_list", "update on a remote system", introspection.subprojects)
+definition.add_positional_optional("subprojects", "string_list", "update on a remote system", subprojects_with_tests())
 
 # -----------------------------------------------------------------

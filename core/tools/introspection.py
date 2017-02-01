@@ -929,6 +929,57 @@ def is_std_lib(module):
 
 # -----------------------------------------------------------------
 
+def get_internal_imports():
+
+    """
+    This function ...
+    :return:
+    """
+
+    imports = dict()
+
+    # Loop over all python files in the PTS repository
+    for filepath, filename in fs.files_in_path(pts_package_dir, extension="py", returns=["path", "name"], recursive=True):
+
+        # Get the import lines for this file and set them
+        import_lines = get_internal_imports_file(filepath)
+        imports[filepath] = import_lines
+
+    # Return the dictionary
+    return imports
+
+# -----------------------------------------------------------------
+
+def get_internal_imports_file(filepath):
+
+    """
+    This function ...
+    :return:
+    """
+
+    import_lines = []
+
+    # Loop over the lines
+    for line in fs.read_lines(filepath):
+
+        # Look for an 'import yyy' or 'from yyy import zzz' statement
+        if not (line.startswith("import ") or (line.startswith("from ") and "import" in line)): continue
+
+        # Set absolute import
+        if "absolute_import" in line:
+            has_absolute_import = True
+            continue
+
+        splitted = line.split()
+
+        if splitted[1].startswith("pts") or splitted[1].startswith("."):
+            import_lines.append(line)
+
+    # Return the lines
+    return import_lines
+
+# -----------------------------------------------------------------
+
 def get_internal_dependencies(debug=False):
 
     """
@@ -940,67 +991,24 @@ def get_internal_dependencies(debug=False):
     # Create an empty dictionary
     modules = defaultdict(set)
 
-    # Loop over all python files in the PTS repository
-    for filepath, filename in fs.files_in_path(pts_package_dir, extension="py", returns=["path", "name"], recursive=True):
+    # Get internal imports for all files
+    import_lines = get_internal_imports()
 
-        #has_absolute_import = False
+    # Loop over the python files
+    for filepath in import_lines:
+
         modules_file = set()
 
-        internal_import_lines = []
-
-        # Read the lines of the script file
-        for line in open(filepath, 'r'):
-
-            # If the "HIDE_DEPENDS" keyword is encountered, skip this file
-            #if "HIDE_DEPENDS" in line: break
-
-            # Look for an 'import yyy' or 'from yyy import zzz' statement
-            if line.startswith("import ") or (line.startswith("from ") and "import" in line):
-
-                #print(line)
-
-                # Set absolute import
-                if "absolute_import" in line:
-                    has_absolute_import = True
-                    continue
-
-                # Get the name of the module
-                #module = line.split()[1].split(".")[0]
-
-                splitted = line.split()
-
-                if splitted[1].startswith("pts") or splitted[1].startswith("."):
-                    internal_import_lines.append(line)
-
-                # Skip "pts"
-                #if module = "pts": continue
-
-                # Skip "mpl_toolkits"
-                #if module == "mpl_toolkits": continue
-
-                # Add the module name to the list
-                #if module: modules_file.add(module)
+        internal_import_lines = import_lines[filepath]
 
         # Loop over the lines where something internally is imported
         for line in internal_import_lines:
 
             # Get the path to the modules that are being imported in the current line
-            internal_module_paths = get_modules(line, filepath, debug=debug)
+            internal_module_paths = get_modules(line, filepath)
 
-            for module_path in internal_module_paths:
-
-                #print(module_path)
-
-                # Check if the imported module refers to a PTS module or an external package
-                #if module.startswith("/"):  # a PTS module
-
-                #    if module in encountered_internal_modules: continue
-                #    else:
-                #        encountered_internal_modules.add(module)
-                #        add_dependencies(dependencies, module, encountered_internal_modules,
-                #                         prefix=prefix + "  ", debug=debug)
-
-                modules_file.add(module_path)
+            # Add the modules
+            for module_path in internal_module_paths: modules_file.add(module_path)
 
         # Set the modules
         modules[filepath] = modules_file
@@ -1118,7 +1126,7 @@ def add_dependencies(dependencies, script_path, encountered_internal_modules, pr
     for line in import_lines:
 
         # Get the path to the modules that are being imported in the current line
-        modules = get_modules(line, script_path, debug=debug)
+        modules = get_modules(line, script_path)
 
         for module in modules:
 
@@ -1186,15 +1194,18 @@ def is_present_package(package):
 
 # -----------------------------------------------------------------
 
-def get_modules(import_statement, script_path, debug=False):
+def get_modules(import_statement, script_path, return_unresolved=False, debug=False):
 
     """
     This function ...
     :param import_statement:
     :param script_path:
+    :param return_unresolved:
     :param debug:
     :return:
     """
+
+    unresolved = []
 
     if "," in import_statement:
 
@@ -1229,9 +1240,6 @@ def get_modules(import_statement, script_path, debug=False):
                 if fr2 != fr: raise RuntimeError("Cannot proceed: " + fr2 + " is not equal to " + fr)
                 if wh2 is not None: imported.append(wh2.strip())
 
-            #print(fr)
-            #print(imported)
-
             splitted = ["from", fr]
 
     else:
@@ -1241,9 +1249,8 @@ def get_modules(import_statement, script_path, debug=False):
         if len(splitted) <= 2: imported = []
         else: imported = [splitted[3]]
 
-    which = []
-
-    #print(imported)
+    #which = []
+    which = defaultdict(set)
 
     # Check if this line denotes a relative import statement
     if splitted[1].startswith("."):
@@ -1258,13 +1265,15 @@ def get_modules(import_statement, script_path, debug=False):
             subpackage_dir = fs.directory_of(subpackage_dir)
 
         subpackage_name = after_dots.split(".")[0]
-
         subpackage_path = fs.join(subpackage_dir, after_dots.replace(".", "/"))
 
         for name in imported:
 
+            #if debug: print(name)
             module_path = which_module(subpackage_path, name)
-            if module_path is not None: which.append(module_path)
+            if debug: print(subpackage_path, name, ":", module_path)
+            if module_path is not None: which[module_path].add(name)
+            else: unresolved.append((subpackage_path, name))
 
     # Absolute import of a pts class or module
     elif splitted[1].startswith("pts"):
@@ -1277,7 +1286,9 @@ def get_modules(import_statement, script_path, debug=False):
 
         for name in imported:
             module_path = which_module(subpackage_dir, name)
-            if module_path is not None: which.append(module_path)
+            if debug: print(subpackage_dir, name, ":", module_path)
+            if module_path is not None: which[module_path].add(name)
+            else: unresolved.append((subpackage_dir, name))
 
     # MPL toolkits
     elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
@@ -1291,9 +1302,16 @@ def get_modules(import_statement, script_path, debug=False):
         # Get the name of the module
         module = splitted[1].split(".")[0]
 
-        which.append(module)
+        imported_names = []
+        if len(splitted) > 2 and splitted[2] == "import":
+            for name in imported: imported_names.append(name)
+        else: imported_names = ["__init__"]
 
-    return which
+        for name in imported_names: which[module].add(name)
+
+    # Return the list of modules
+    if return_unresolved: return which, unresolved
+    else: return which
 
 # -----------------------------------------------------------------
 
@@ -1306,18 +1324,14 @@ def which_module(subpackage, name):
     :return:
     """
 
-    if "," in name: print(name)
+    # Find file
     if name.islower() and fs.is_file(fs.join(subpackage, name + ".py")): return fs.join(subpackage, name + ".py")
 
-    elif fs.is_file(subpackage + ".py"):
+    #
+    elif fs.is_file(subpackage + ".py"): return subpackage + ".py"
 
-        #print("  " + subpackage + ".py")
-        return subpackage + ".py"
-
-    elif fs.is_file(fs.join(subpackage, "__init__.py")):
-
-        #print("  " + subpackage + ":")
-        return fs.join(subpackage, "__init__.py")
+    # Init file
+    elif fs.is_file(fs.join(subpackage, "__init__.py")): return fs.join(subpackage, "__init__.py")
 
     else: #raise ValueError("Don't know how to get further with " + subpackage + " and " + name)
 

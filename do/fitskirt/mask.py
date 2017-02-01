@@ -29,6 +29,8 @@ import sys
 from matplotlib.path import Path
 from itertools import product
 
+from . import testwieee
+
 # Main function, this part actually runs when routine is called
 def main():
 	
