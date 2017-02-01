@@ -163,14 +163,19 @@ def quantity_combinations(quantity):
     """
 
     result = []
-    result.append(str_from_real_or_integer(quantity.value) + " " + str(quantity.unit))
-    result.append(str_from_real_or_integer(quantity.value) + str(quantity.unit))
-    result.append(str_from_real_or_integer(quantity.value))
 
-    if quantity.unit == "micron":
+    for value_string in number_representations(quantity.value):
 
-        result.append(str_from_real_or_integer(quantity.value) + "mu")
-        result.append(str_from_real_or_integer(quantity.value) + "um")
+        result.append(value_string + " " + str(quantity.unit))
+        result.append(value_string + str(quantity.unit))
+        result.append(value_string)
+
+        if quantity.unit == "micron":
+
+            result.append(value_string + "mu")
+            result.append(value_string + "um")
+            result.append(value_string + " mu")
+            result.append(value_string + " um")
 
     return result
 
@@ -287,6 +292,24 @@ def num_to_ith(num):
     if last_digit == '2': return value + 'nd'
     if last_digit == '3': return value + 'rd'
     return value + 'th'
+
+# -----------------------------------------------------------------
+
+def number_representations(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    strings = set()
+
+    strings.add(str(value))
+    strings.add(repr(value))
+    strings.add(str_from_real_or_integer(value))
+
+    return list(strings)
 
 # -----------------------------------------------------------------
 

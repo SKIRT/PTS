@@ -1319,7 +1319,7 @@ class SEDFetcher(Configurable):
         n2_flux_error = table["e_FNII"][galaxy_index] * u("aW/m2")
 
         ha_filter = self.filters["Ha"]
-        ha_wavelength = ha_filter.centerwavelength() * u("micron")
+        ha_wavelength = ha_filter.center
         ha_frequency = ha_wavelength.to("Hz", equivalencies=spectral())
 
         # Calculate flux density
