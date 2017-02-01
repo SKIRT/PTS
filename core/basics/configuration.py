@@ -1988,48 +1988,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
             choice_descriptions = choices if isinstance(choices, dict) else None
         else: choices_list = choice_descriptions = None
 
-        if choices is not None:
-
-            if real_type.__name__.endswith("_list"): # list-type setting
-
-                log.info("Choose one or more of the following options (separated only by commas)")
-
-                for index, label in enumerate(choices_list):
-                    choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
-
-                value = None # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-                    # Get the numbers of the choice
-                    answer = raw_input("   : ")
-                    try:
-                        indices = parsing.integer_list(answer)
-                        value = [choices_list[index] for index in indices] # value is a list
-                        break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
-            else:
-
-                log.info("Choose one of the following options")
-
-                for index, label in enumerate(choices_list):
-                    choice_description = ""
-                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
-
-                value = None  # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-
-                    # Get the number of the choice
-                    answer = raw_input("   : ")
-                    try:
-                        index = parsing.integer(answer)
-                        value = choices_list[index]
-                        break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
-        else:
+        # No choices
+        if choices is None:
 
             if real_type.__name__.endswith("_list"):  # list-type setting
 
@@ -2071,6 +2031,55 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         value = real_type(answer)
                         break
                     except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+        # More than one choice
+        elif len(choices) > 1:
+
+            if real_type.__name__.endswith("_list"): # list-type setting
+
+                log.info("Choose one or more of the following options (separated only by commas)")
+
+                for index, label in enumerate(choices_list):
+                    choice_description = ""
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = None # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    # Get the numbers of the choice
+                    answer = raw_input("   : ")
+                    try:
+                        indices = parsing.integer_list(answer)
+                        value = [choices_list[index] for index in indices] # value is a list
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            else:
+
+                log.info("Choose one of the following options")
+
+                for index, label in enumerate(choices_list):
+                    choice_description = ""
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = None  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+
+                    # Get the number of the choice
+                    answer = raw_input("   : ")
+                    try:
+                        index = parsing.integer(answer)
+                        value = choices_list[index]
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+        # Only one choice
+        else:
+
+            # Inform the user
+            log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+            value = choices[0]
 
         # Set the value
         config[name] = value
