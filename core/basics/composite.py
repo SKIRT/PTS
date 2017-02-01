@@ -132,6 +132,9 @@ class SimplePropertyComposite(object):
             if string == "None": value = None
             else:
 
+                # Check
+                if name not in self._ptypes: raise AttributeError("A " + self.__class__.__name__ + " object has no attribute '" + name + "'")
+
                 # Try converting the string back to the type it actually needs to be
                 the_type = self._ptypes[name]
                 parsing_function = getattr(parsing, the_type)
@@ -294,7 +297,7 @@ class SimplePropertyComposite(object):
                 if name.startswith("_"): continue
 
                 dtype, value = stringify(getattr(self, name))
-                actual_dtype = self._types[name]
+                actual_dtype = self._ptypes[name]
                 print(name + ":", value + " [" + actual_dtype + "]", file=fh)
 
         # Update the path

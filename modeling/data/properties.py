@@ -27,7 +27,6 @@ from .component import DataComponent
 from ..preparation import unitconversion
 from ...core.basics.errorbar import ErrorBar
 from ...magic.basics.coordinate import SkyCoordinate
-from ...magic.tools import catalogs
 from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
 from ...dustpedia.core.database import DustPediaDatabase, get_account
@@ -132,7 +131,7 @@ class PropertyFetcher(DataComponent):
         """
 
         # Get the NGC name of the galaxy
-        self.properties.ngc_name = catalogs.get_ngc_name(self.galaxy_name)
+        self.properties.ngc_name = self.ngc_name
 
     # -----------------------------------------------------------------
 
@@ -150,7 +149,7 @@ class PropertyFetcher(DataComponent):
         self.info = self.database.get_galaxy_info(self.ngc_name_nospaces)
 
         # Get the HYPERLEDA (or DustPedia) name
-        self.properties.hyperleda_name = catalogs.get_hyperleda_name(self.galaxy_name)
+        self.properties.hyperleda_name = self.hyperleda_name
 
     # -----------------------------------------------------------------
 
@@ -206,7 +205,7 @@ class PropertyFetcher(DataComponent):
         table = result[0]
 
         # Galaxy name for S4G catalog
-        self.properties.galaxy_name = table["Name"][0]
+        self.properties.name = table["Name"][0]
 
         # Galaxy center from decomposition (?)
         ra_center = table["_RAJ2000"][0]
@@ -235,26 +234,27 @@ class PropertyFetcher(DataComponent):
         asymptotic_ab_magnitude_i1_error = table["e__3.6_"][0]
         asymptotic_ab_magnitude_i2_error = table["e__4.5_"][0]
 
-        self.properties.i1_mag = asymptotic_ab_magnitude_i1
-        self.properties.i1_mag_error = asymptotic_ab_magnitude_i1_error
-        self.properties.i2_mag = asymptotic_ab_magnitude_i2
-        self.properties.i2_mag_error = asymptotic_ab_magnitude_i2_error
+        # I CAN ADD THESE ATTRIBUTES BACK TO THE GALAXYPROPERTIES CLASS IF I WANT
+        #self.properties.i1_mag = asymptotic_ab_magnitude_i1
+        #self.properties.i1_mag_error = asymptotic_ab_magnitude_i1_error
+        #self.properties.i2_mag = asymptotic_ab_magnitude_i2
+        #self.properties.i2_mag_error = asymptotic_ab_magnitude_i2_error
 
-        self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * u("Jy")
-        i1_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i1_mag + self.properties.i1_mag_error) * u("Jy")
-        i1_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i1_mag - self.properties.i1_mag_error) * u("Jy")
-        i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.properties.i1_fluxdensity)
-        self.properties.i1_error = i1_error.average
+        #self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * u("Jy")
+        #i1_fluxdensity_lower = unitconversion.ab_to_jansky(
+        #    self.properties.i1_mag + self.properties.i1_mag_error) * u("Jy")
+        #i1_fluxdensity_upper = unitconversion.ab_to_jansky(
+        #    self.properties.i1_mag - self.properties.i1_mag_error) * u("Jy")
+        #i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.properties.i1_fluxdensity)
+        #self.properties.i1_error = i1_error.average
 
-        self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * u("Jy")
-        i2_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i2_mag + self.properties.i2_mag_error) * u("Jy")
-        i2_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i2_mag - self.properties.i2_mag_error) * u("Jy")
-        i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.properties.i2_fluxdensity)
-        self.properties.i2_error = i2_error.average
+        #self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * u("Jy")
+        #i2_fluxdensity_lower = unitconversion.ab_to_jansky(
+        #    self.properties.i2_mag + self.properties.i2_mag_error) * u("Jy")
+        #i2_fluxdensity_upper = unitconversion.ab_to_jansky(
+        #    self.properties.i2_mag - self.properties.i2_mag_error) * u("Jy")
+        #i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.properties.i2_fluxdensity)
+        #self.properties.i2_error = i2_error.average
 
         # Other ...
         # absolute_magnitude_i1 = table["M3.6"][0]

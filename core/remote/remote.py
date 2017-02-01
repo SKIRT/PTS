@@ -62,7 +62,12 @@ def active_keys():
     :return:
     """
 
-    output = subprocess.check_output(["ssh-add", "-L"])
+    try:
+        output = subprocess.check_output(["ssh-add", "-L"])
+    except subprocess.CalledProcessError as e:
+        #log.error(e.output)
+        #exit()
+        return []
 
     names = []
     for line in output.split("\n"):
@@ -75,11 +80,13 @@ def active_keys():
 
 # -----------------------------------------------------------------
 
-def add_key(name):
+def add_key(name, password=None, show_output=False):
 
     """
     This function ...
     :param name:
+    :param password:
+    :param show_output:
     :return:
     """
 
@@ -87,16 +94,31 @@ def add_key(name):
     key_path = fs.absolute_path(fs.join("~/.ssh", name))
     if not fs.is_file(key_path): raise ValueError("The key '" + name + "' does not exist in the .ssh directory")
 
-    # Add the key
-    subprocess.call(["ssh-add", key_path])
+    command = ["ssh-add", key_path]
+    command_string =  " ".join(command)
 
-    # password is asked:
-    # Create the pexpect child instance
-    #child = pexpect.spawn("ssh-add " + key_path, timeout=30)
-    #password = "tokiotokio"
-    #if password is not None:
-    #    child.expect([': '])
-    #    child.sendline(password)
+    # Password can be asked or not
+    child = pexpect.spawn(command_string)
+
+    # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
+    # Otherwise, assure that the logfile is set to 'None'
+    if show_output: child.logfile = sys.stdout
+    else: child.logfile = None
+
+    index = child.expect([pexpect.EOF, name + ":"])
+
+    if index == 1:
+
+        if password is None: raise RuntimeError("Password is asked but none is passed to this function")
+
+        # Send the password
+        child.sendline(password)
+
+        # Expect EOF
+        child.expect(pexpect.EOF)
+
+    # Set the log file back to 'None'
+    child.logfile = None
 
 # -----------------------------------------------------------------
 
@@ -155,7 +177,7 @@ class Remote(object):
 
         # Check if key is active
         if self.host.key is not None:
-            if self.host.key not in active_keys(): add_key(self.host.key)
+            if self.host.key not in active_keys(): add_key(self.host.key, self.host.key_password)
 
         # Make the connection
         try: self.login(login_timeout)

@@ -236,7 +236,7 @@ class S4G(Configurable):
         table = result[0]
 
         # Galaxy name for S4G catalog
-        self.properties.galaxy_name = table["Name"][0]
+        self.properties.name = table["Name"][0]
 
         # Galaxy center from decomposition (?)
         ra_center = table["_RAJ2000"][0]

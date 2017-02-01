@@ -98,6 +98,7 @@ class DustPediaDatabase(object):
 
         # If the login failed, raise an error
         if not self.connected: raise RuntimeError("Login failed")
+        else: log.success("Succesfully connected to the DustPedia database")
 
     # -----------------------------------------------------------------
 

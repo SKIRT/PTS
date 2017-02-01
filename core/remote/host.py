@@ -171,6 +171,7 @@ class Host(object):
         self.vpn = config.vpn # mapping
         self.port = config.port
         self.key = config.key
+        self.key_password = config.key_password
 
     # -----------------------------------------------------------------
 
