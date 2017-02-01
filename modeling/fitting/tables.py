@@ -245,6 +245,19 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def last_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self) > 0: return self["Generation name"][-1]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
     def genetic_generations(self):
 
         """

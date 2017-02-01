@@ -597,36 +597,6 @@ class GalaxyModeler(Modeler):
 
     # -----------------------------------------------------------------
 
-    def fit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Fitting radiative transfer models to the data ...")
-
-        # Configure the fitting
-        if "configure_fit" not in self.history: self.configure_fit()
-
-        # Initialize the fitting
-        if "initialize_fit_galaxy" not in self.history: self.initialize_fit()
-
-        # Load the generations table
-        generations = get_generations_table(self.modeling_path)
-
-        # If some generations have not finished, check the status of and retrieve simulations
-        if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
-
-        # If some generations have finished, fit the SED
-        if generations.has_finished: self.fit_sed()
-
-        # IF all generations have finished, explore new generation of models
-        if generations.all_finished: self.explore()
-
-    # -----------------------------------------------------------------
-
     def configure_fit(self):
 
         """

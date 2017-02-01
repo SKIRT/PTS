@@ -30,6 +30,19 @@ from ...core.remote.moderator import PlatformModerator
 
 # -----------------------------------------------------------------
 
+def repeat(target, ntimes):
+
+    """
+    This function ...
+    :param target:
+    :param ntimes:
+    :return:
+    """
+
+    for _ in range(ntimes): target()
+
+# -----------------------------------------------------------------
+
 class Modeler(Configurable):
 
     """
@@ -187,7 +200,7 @@ class Modeler(Configurable):
         """
 
         # Inform the user
-        log.info("Fitting radiative transfer models to the data ...")
+        log.info("Fitting radiative transfer models ...")
 
         # Configure the fitting
         if not self.history.has_configured_fit: self.configure_fit()
@@ -197,9 +210,9 @@ class Modeler(Configurable):
 
         # If finishing the generation is requested
         if self.config.finish: self.finish()
-        else:
-            # Advance the fitting with a new generations
-            while get_ngenerations(self.modeling_path) < self.config.ngenerations: self.advance()
+
+        # Advance the fitting with a new generations
+        else: repeat(self.advance, self.config.ngenerations)
 
     # -----------------------------------------------------------------
 
@@ -235,10 +248,14 @@ class Modeler(Configurable):
         """
 
         # Inform the user
-        log.info("Advancing the fitting ...")
+        log.info("Advancing the fitting with a new generation ...")
 
         # Load the generations table
         generations = get_generations_table(self.modeling_path)
+
+        # Debugging
+        if generations.last_generation_name is not None: log.debug("Previous generation: " + generations.last_generation_name)
+        else: log.debug("Will be launching the initial generation ...")
 
         # If some generations have not finished, check the status of and retrieve simulations
         if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()

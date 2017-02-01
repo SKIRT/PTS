@@ -7,6 +7,7 @@
 
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import filesystem as fs
+from pts.core.launch.options import LoggingOptions, AnalysisOptions
 
 # -----------------------------------------------------------------
 

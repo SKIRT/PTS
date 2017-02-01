@@ -19,6 +19,7 @@ from scipy import interpolate
 from .table import SmartTable
 from ..tools import tables
 from ..filter.filter import Filter
+from ..filter.broad import BroadBandFilter
 from .unit import parse_unit as u
 
 # -----------------------------------------------------------------
@@ -414,7 +415,7 @@ class FilterCurve(WavelengthCurve):
             band = self["Band"][i]
 
             # Create the filter
-            fltr = Filter.from_instrument_and_band(instrument, band)
+            fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
 
             # Add the filter to the list
             filters.append(fltr)

@@ -24,7 +24,6 @@ from ..simulation.definition import SingleSimulationDefinition
 from .options import LoggingOptions
 from .analyser import SimulationAnalyser
 from ..simulation.remote import SkirtRemote
-from ..tools import filesystem as fs
 from ..tools.logging import log
 from .options import SchedulingOptions
 from ..advanced.parallelizationtool import ParallelizationTool
