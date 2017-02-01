@@ -305,8 +305,8 @@ class ObservedSED(FilterCurve):
 
         if error is not None:
             if not isinstance(error, ErrorBar): error = ErrorBar(error)
-            values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), photometry, error.lower, error.upper]
-        else: values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), photometry, None, None]
+            values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, photometry, error.lower, error.upper]
+        else: values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, photometry, None, None]
         self.add_row(values)
 
     # -----------------------------------------------------------------
