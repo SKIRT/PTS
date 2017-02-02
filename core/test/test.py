@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..tools import filesystem as fs
@@ -42,7 +45,8 @@ class PTSTest(object):
         self.output_path = output_path
 
         # The runnable components
-        self.components = []
+        self.components = OrderedDict()
+        self.input_dicts = dict()
 
     # -----------------------------------------------------------------
 
@@ -75,15 +79,18 @@ class PTSTest(object):
 
     # -----------------------------------------------------------------
 
-    def add_component(self, component):
+    def add_component(self, name, component, input_dict=None):
 
         """
         This function ...
+        :param name:
         :param component:
+        :param input_dict:
         :return:
         """
 
-        self.components.append(component)
+        self.components[name] = component
+        if input_dict is not None: self.input_dicts[name] = input_dict
 
     # -----------------------------------------------------------------
 
@@ -123,13 +130,16 @@ class PTSTest(object):
         log.info("Performing the test ...")
 
         # Loop over the components, invoke their run function
-        for component in self.components:
+        for name in self.components:
 
             # Debugging
-            log.debug("Executing component '" + component.name + "' ...")
+            log.debug("Executing component '" + name + "' ...")
 
-            # Run
-            component.run()
+            # Get input
+            input_dict = self.input_dicts[name] if name in self.input_dicts else dict()
+
+            # Run with input
+            self.components[name].run(**input_dict)
 
     # -----------------------------------------------------------------
 

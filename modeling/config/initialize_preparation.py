@@ -23,6 +23,7 @@ definition.add_flag("visualise", "make visualisations")
 
 # Remote source detection
 definition.add_optional("remote", "string", "remote host on which to run the source finder", choices=find_host_ids())
+definition.add_flag("attached", "run remotely in attached mode")
 
 # Add section for the source finder
 definition.import_section("sources", "options for the source finder", sources_definition)

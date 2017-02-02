@@ -58,6 +58,30 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.host
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.host_id
+
+    # -----------------------------------------------------------------
+
     def run_detached(self, pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None,
                      keep_remote_output=False, remove_local_output=False):
 
@@ -94,7 +118,7 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run_attached(self, pts_command, config_dict, input_dict=None, return_output_names=None, unpack=False):
+    def run_attached(self, pts_command, config_dict, input_dict=None, return_output_names=None, unpack=False, return_config=False):
 
         """
         This function ...
@@ -103,6 +127,7 @@ class PTSRemoteLauncher(object):
         :param input_dict:
         :param return_output_names:
         :param unpack:
+        :param return_config:
         :return:
         """
 
@@ -231,11 +256,19 @@ class PTSRemoteLauncher(object):
         del python
 
         # Return the output(can be None if return_output_names was None)
-        if output_list is None: return
+        if output_list is None:
+            if return_config: return config
+            else: return None
         if unpack:
-            if len(output_list) == 1: return output_list[0]
-            else: return output_list
-        else: return dict(zip(return_output_names, output_list))
+            if len(output_list) == 1:
+                if return_config: return output_list[0], config
+                else: return output_list[0]
+            else:
+                if return_config: return output_list, config
+                else: return output_list
+        else:
+            if return_config: return dict(zip(return_output_names, output_list)), config
+            else: return dict(zip(return_output_names, output_list))
 
     # -----------------------------------------------------------------
 

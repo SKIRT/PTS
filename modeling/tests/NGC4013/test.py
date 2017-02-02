@@ -7,7 +7,7 @@
 
 # -----------------------------------------------------------------
 
-description = "modeling of the Supernova 1987A with genetic algorithms and 4 free parameters"
+description = "fitting the galaxy NGC4013 using a flattened Sersic profile for the central bulge and a double exponential for the stellar disk and dust disk"
 
 # -----------------------------------------------------------------
 
@@ -22,7 +22,7 @@ cwds = []
 # -----------------------------------------------------------------
 
 commands.append("setup")
-commands.append("model_sed")
+commands.append("model_images")
 
 # -----------------------------------------------------------------
 # SETTINGS

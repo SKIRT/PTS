@@ -66,15 +66,16 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Create the modeling directory
         self.create_directory()
@@ -95,21 +96,27 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(ModelingSetupTool, self).setup()
+        super(ModelingSetupTool, self).setup(**kwargs)
 
         # Set the path to the modeling directory
         self.modeling_path = fs.join(self.config.path, self.config.name)
 
         # Initialize the modeling configuration
         self.modeling_config = Configuration()
+
+        # Get kwargs
+        if "object_config" in kwargs: self.object_config = kwargs.pop("object_config")
+        if "modeling_config" in kwargs: self.modeling_config = kwargs.pop("modeling_config")
+
 
     # -----------------------------------------------------------------
 

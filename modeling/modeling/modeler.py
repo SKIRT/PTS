@@ -330,6 +330,7 @@ class Modeler(Configurable):
 
         # Set the remote host IDs
         explorer.config.remotes = self.moderator.host_ids_for_ensemble("fitting")
+        explorer.config.attached = self.config.fitting_attached
 
         # Set the number of simulations per generation
         if self.config.nsimulations is not None: explorer.config.nsimulations = self.config.nsimulations

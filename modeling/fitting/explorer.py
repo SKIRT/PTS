@@ -208,13 +208,14 @@ class ParameterExplorer(FittingComponent):
 
         # Basic options
         self.launcher.config.shared_input = True                               # The input directories (or files) for the different simulations are shared
-        self.launcher.config.remotes = remote_host_ids                         # the remote host(s) on which to run the simulations
-        self.launcher.config.group_simulations = self.config.group             # group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
-        self.launcher.config.group_walltime = self.config.walltime             # the preferred walltime for jobs of a group of simulations
+        self.launcher.config.remotes = remote_host_ids                         # The remote host(s) on which to run the simulations
+        self.launcher.config.attached = self.config.attached                   # Run remote simulations in attached mode
+        self.launcher.config.group_simulations = self.config.group             # Group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
+        self.launcher.config.group_walltime = self.config.walltime             # The preferred walltime for jobs of a group of simulations
         self.launcher.config.timing_table_path = self.timing_table_path        # The path to the timing table file
         self.launcher.config.memory_table_path = self.memory_table_path        # The path to the memory table file
-        self.launcher.config.cores_per_process = self.config.cores_per_process # the number of cores per process, for non-schedulers
-        self.launcher.config.dry = self.config.dry                             # dry run (don't actually launch simulations)
+        self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
+        self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations)
 
         # Simulation analysis options
 

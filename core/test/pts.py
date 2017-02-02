@@ -292,6 +292,7 @@ class PTSTestSuite(Configurable):
 
                 # Iterate over these:
                 commands = test_module.commands
+                input_dicts = test_module.input_dicts
                 settings = test_module.settings
                 cwds = test_module.cwds
 
@@ -302,7 +303,7 @@ class PTSTestSuite(Configurable):
                 test = PTSTest(name, description, setup_function, test_function, temp_path)
 
                 # Loop over the commands
-                for command, setting_dict, cwd in zip(commands, settings, cwds):
+                for command, input_dict, setting_dict, cwd in zip(commands, input_dicts, settings, cwds):
 
                     # Find matches
                     matches = introspection.find_matches_scripts(command, scripts)
@@ -356,7 +357,7 @@ class PTSTestSuite(Configurable):
                         inst = cls(config)
 
                         # Add component to the test
-                        test.add_component(inst)
+                        test.add_component(command, inst, input_dict)
 
                     # Ambigious command
                     else: raise ValueError("The command '" + command + "' is ambigious")

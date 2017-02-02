@@ -24,6 +24,8 @@ definition.add_flag("local", "keep computationaly heavy computations local")
 definition.add_optional("remotes", "string_list", "remote hosts for computationally heavy computations (overrule the modeling configuration)", choices=find_host_ids())
 definition.add_flag("fitting_local", "launch the simulations as part of the fitting locally (overrule the modeling configuration")
 definition.add_optional("fitting_remotes", "string_list", "remote hosts for the fitting (overrule the modeling configuration)", choices=find_host_ids())
+definition.add_flag("attached", "run remote computations in attached mode")
+definition.add_flag("fitting_attached", "run the simulations remotely in attached mode")
 
 # Genetic algorithm settings
 definition.add_optional("nsimulations", "even_integer", "number of simulations per generation")

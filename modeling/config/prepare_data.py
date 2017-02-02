@@ -24,5 +24,6 @@ definition.add_flag("visualise", "make visualisations")
 
 # Remote preparation
 definition.add_optional("remote", "string", "remote host on which to run the preparation", choices=find_host_ids())
+definition.add_flag("attached", "run remotely in attached mode")
 
 # -----------------------------------------------------------------

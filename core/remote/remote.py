@@ -157,7 +157,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=15, nrows=None, ncols=200):
+    def setup(self, host_id, cluster_name=None, login_timeout=20, nrows=None, ncols=200):
 
         """
         This function ...
@@ -186,7 +186,7 @@ class Remote(object):
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
             self.ssh = pxssh.pxssh()
-            try: self.login(login_timeout)
+            try: self.login(login_timeout * 2) # try now with a timeout that is twice as long
             except HostDownException:
                 log.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
@@ -1217,7 +1217,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def login(self, login_timeout=15):
+    def login(self, login_timeout=20):
 
         """
         This function ...

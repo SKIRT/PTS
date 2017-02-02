@@ -267,6 +267,7 @@ class GalaxyModeler(Modeler):
         # Create the configuration
         config = dict()
         config["remote"] = self.moderator.host_id_for_single("other")
+        config["attached"] = self.config.attached
         config["halpha_url"] = halpha_urls[self.hyperleda_name]
         config["halpha_flux"] = halpha_fluxes[self.hyperleda_name]
 
@@ -323,6 +324,7 @@ class GalaxyModeler(Modeler):
         # Create the configuration
         config = dict()
         config["remote"] = self.moderator.host_id_for_single("other")
+        config["attached"] = self.config.attached
 
         # Create the initializer
         initializer = PreparationInitializer(config)
@@ -355,6 +357,7 @@ class GalaxyModeler(Modeler):
         # Create the configuration
         config = dict()
         config["remote"] = self.moderator.host_id_for_single("other")
+        config["attached"] = self.config.attached
         config["exclude_filters"] = lower_resolution_filters
 
         # Create the data preparer
