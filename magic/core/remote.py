@@ -96,7 +96,7 @@ def set_debug_log_level(session):
 
     # Import logging module and setup logger to DEBUG level
     session.import_package("setup_log", from_name="pts.core.tools.logging")
-    session.send_python_line("setup_log(level='DEBUG')")
+    session.send_line("setup_log(level='DEBUG')")
 
 # -----------------------------------------------------------------
 
@@ -691,13 +691,13 @@ class RemoteFrame(object):
         self.session.send_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
 
         # Prepare the kernel if necessary
-        #self.remote.send_python_line("if not kernel.prepared: kernel.prepare_for(" + self.label + ")")
+        #self.remote.send_line("if not kernel.prepared: kernel.prepare_for(" + self.label + ")")
 
         # Check where the NaNs are at
-        #self.remote.send_python_line("nans_mask = np.isnan(" + self.label + "._data)")
+        #self.remote.send_line("nans_mask = np.isnan(" + self.label + "._data)")
 
         # Assert that the kernel is normalized
-        #self.remote.send_python_line("assert kernel.normalized")
+        #self.remote.send_line("assert kernel.normalized")
 
         # Do the convolution
         #self.remote. .... ETC
@@ -1265,7 +1265,7 @@ class RemoteImage(object):
         label = get_new_label("Frame", self.session)
 
         # Reference the primary frame to the new variable
-        self.session.send_python_line(label + " = " + self.label + ".primary")
+        self.session.send_line(label + " = " + self.label + ".primary")
 
         # Create a new RemoteFrame instance
         newremoteframe = RemoteFrame(label, self.session) # We assume the frame of the remote image is not of a type derived from Frame
@@ -1356,7 +1356,7 @@ class RemoteImage(object):
         :return:
         """
 
-        self.session.send_python_line(self.label + ".unit = '" + str(unit) + "'")
+        self.session.send_line(self.label + ".unit = '" + str(unit) + "'")
 
     # -----------------------------------------------------------------
 

@@ -208,7 +208,7 @@ class PTSRemoteLauncher(object):
 
             ### LOAD THE INPUT DICT REMOTELY
 
-            python.send_python_line("input_dict = dict()")
+            python.send_line("input_dict = dict()")
 
             for name in input_dict:
 
@@ -231,10 +231,10 @@ class PTSRemoteLauncher(object):
         python.import_package("Configuration", from_name="pts.core.basics.configuration")
 
         # Load the config into the remote python session
-        python.send_python_line("config = Configuration.from_file('" + remote_conf_path + "')")
+        python.send_line("config = Configuration.from_file('" + remote_conf_path + "')")
 
         # Create the class instance, configure it with the configuration settings
-        python.send_python_line("inst = cls(config)")
+        python.send_line("inst = cls(config)")
 
         # Run the instance
         if input_dict is not None: python.send_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while

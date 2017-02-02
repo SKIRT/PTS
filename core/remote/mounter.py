@@ -112,11 +112,12 @@ class RemoteMounter(object):
 
     # -----------------------------------------------------------------
 
-    def mount(self, host_id):
+    def mount(self, host_id, path=None):
 
         """
         This function ...
         :param host_id
+        :param path:
         :return:
         """
 
@@ -136,9 +137,8 @@ class RemoteMounter(object):
             if host.key not in active_keys(): add_key(host.key)
 
         # Create directory for remote
-        mount_path = fs.join(pts_remotes_path, host.id)
-        #if not fs.is_directory(path): fs.create_directory(path)
-        fs.create_directory(mount_path)
+        if path is not None: mount_path = fs.create_directory_in(path, host.id)
+        else: mount_path = fs.create_directory_in(pts_remotes_path, host.id)
 
         # Debug flags for sshfs
         debug_flags = "-f -d " if log.is_debug() else ""
