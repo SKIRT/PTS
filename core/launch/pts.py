@@ -100,6 +100,9 @@ class PTSRemoteLauncher(object):
         # Initialize
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
 
+        # Debugging
+        log.debug("Running in detached mode ...")
+
         # Run PTS remotely
         task = self.remote.run_pts(exact_command_name, config, input_dict=input_dict, keep_remote_output=keep_remote_output, remove_local_output=remove_local_output)
 
@@ -136,6 +139,9 @@ class PTSRemoteLauncher(object):
 
         # Initialize
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
+
+        # Debugging
+        log.info("Running in attached mode ...")
 
         # START REMOTE PYTHON SESSION
         python = self.remote.start_python_session()

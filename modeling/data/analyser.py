@@ -94,13 +94,13 @@ class MosaicAnalyser(DataComponent):
         # 3. Load the image as obtained from other source
         self.load_references()
 
-        # Rebin if necessary
+        # 4. Rebin if necessary
         self.rebin()
 
-        # 4. Make directory for each band that has been processed
+        # 5. Make directory for each band that has been processed
         self.make_directories()
 
-        # 5. Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------

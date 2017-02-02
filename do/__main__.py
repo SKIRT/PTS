@@ -109,7 +109,12 @@ matches = introspection.find_matches_scripts(script_name, scripts)
 table_matches = introspection.find_matches_tables(script_name, tables)
 
 # No match
-if len(matches) + len(table_matches) == 0: show_all_available(scripts, tables)
+if len(matches) + len(table_matches) == 0:
+
+    from pts.core.tools import logging
+    log = logging.setup_log()
+    log.error("Unknown command")
+    show_all_available(scripts, tables)
 
 # If there is a unique match in an existing script, return it
 elif len(matches) == 1 and len(table_matches) == 0:

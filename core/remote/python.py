@@ -12,18 +12,13 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import pexpect
+
 # Import the relevant PTS classes and modules
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
 from pts.core.tools.logging import log
-
-# -----------------------------------------------------------------
-
-# attach to named:
-# tmux a -t myname
-
-# kill session:
-# tmux kill-session -t myname
 
 # -----------------------------------------------------------------
 
@@ -47,7 +42,11 @@ class RemotePythonSession(object):
         self.tmux = tmux
 
         # The remote connection
-        self.remote = remote
+        if isinstance(remote, basestring):
+            from .remote import Remote
+            self.remote = Remote()
+            self.remote.setup(remote)
+        else: self.remote = remote
 
         # The path to the out pipe file
         self.out_pipe_filepath = None
@@ -82,7 +81,7 @@ class RemotePythonSession(object):
 
         # Create pipe file
         out_pipe_filename = "out_pipe_" + self.session_id + ".txt"
-        self.out_pipe_filepath = fs.join(self.remote.home_directory, out_pipe_filename)
+        self.out_pipe_filepath = fs.join(self.remote.pts_temp_path, out_pipe_filename)
 
         # Debugging
         log.debug("Creating pipe file '" + self.out_pipe_filepath + "' on remote ...")
@@ -241,6 +240,60 @@ class RemotePythonSession(object):
         remote = Remote()
         remote.setup(host_id)
         return cls(remote, assume_pts=assume_pts)
+
+    # -----------------------------------------------------------------
+
+    def attach(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Attaching to the screen session ...")
+
+        # Tmux or screen
+        if self.tmux: self.remote.execute("tmux a -t " + self.screen_name, expect=">>>")
+        else:
+
+            #self.remote.execute("screen -r " + self.screen_name, expect=">>>")
+
+            self.remote.ssh.sendline("screen -r " + self.screen_name)
+
+            while True:
+
+                index = self.remote.ssh.expect([">>>", pexpect.TIMEOUT])
+                if index == 1: break
+
+    # -----------------------------------------------------------------
+
+    def detach(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Tmux
+        if self.tmux:
+
+            # Send Ctrl+b d to detach
+            self.remote.execute("^B")
+            self.remote.execute("d")
+
+            # Match the prompt
+            self.remote.ssh.prompt()
+
+        # Screen
+        else:
+
+            # Send Ctrl+A d to detach
+            self.remote.ssh.send("^A")
+            self.remote.ssh.send("d")
+
+            # Match the prompt
+            self.remote.ssh.prompt()
 
     # -----------------------------------------------------------------
 
@@ -413,23 +466,48 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
-    def send_line(self, line):
+    def send_line(self, line, show_output=False, timeout=None):
 
         """
         This function ...
         :param line:
+        :param show_output:
+        :param timeout:
         :return:
         """
 
-        return self.execute(line)
+        # Attached or detached
+        if show_output: return self.execute_attached(line, timeout=timeout)
+        else: return self.execute_detached(line, timeout=timeout)
 
     # -----------------------------------------------------------------
 
-    def execute(self, line):
+    def execute_attached(self, line, timeout=None):
 
         """
         This function ...
         :param line:
+        :param timeout:
+        :return:
+        """
+
+        # First attach
+        self.attach()
+
+        # Send the line, show output since that is the reason we executed in attached mode
+        self.remote.execute(line, timeout=timeout, show_output=True, expect=">>>")
+
+        # Detach again
+        self.detach()
+
+    # -----------------------------------------------------------------
+
+    def execute_detached(self, line, timeout=None):
+
+        """
+        This function ...
+        :param line:
+        :param timeout:
         :return:
         """
 
@@ -445,7 +523,7 @@ class RemotePythonSession(object):
         log.debug(send_command)
 
         # Send the line
-        self.remote.execute(send_command, show_output=log.is_debug())
+        self.remote.execute(send_command, show_output=log.is_debug(), timeout=timeout)
 
         # Sleep for a while so that we are sure that the actual python stuff has reached the interactive python session within the screen
         time.wait(5) # in seconds

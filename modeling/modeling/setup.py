@@ -27,6 +27,27 @@ from ...core.simulation.skifile import LabeledSkiFile
 
 # -----------------------------------------------------------------
 
+# Define the galaxy modeling configuration definition
+galaxy_modeling_definition = ConfigurationDefinition()
+galaxy_modeling_definition.add_required("host_ids", "string_list", "remote hosts to use for heavy computations (in order of preference)", choices=find_host_ids(schedulers=False))
+galaxy_modeling_definition.add_required("method", "string", "method to use for the modeling", choices=modeling_methods)
+
+# -----------------------------------------------------------------
+
+# Define the sed modeling configuration definition
+sed_modeling_definition = ConfigurationDefinition()
+sed_modeling_definition.add_required("ski", "file_path", "path/name of the template ski file")
+sed_modeling_definition.add_flag("use_sed_file", "import an SED file produced with PTS (instead of manually entering the flux points)", False)
+
+# -----------------------------------------------------------------
+
+# Define the image modeling configuration definition
+image_modeling_definition = ConfigurationDefinition()
+image_modeling_definition.add_required("ski", "file_path", "path/name of the template ski file")
+image_modeling_definition.add_required("images", "filepath_list", "the observed images to be used as reference", dynamic_list=True)
+
+# -----------------------------------------------------------------
+
 class ModelingSetupTool(Configurable):
 
     """
@@ -81,9 +102,7 @@ class ModelingSetupTool(Configurable):
         self.create_directory()
 
         # 3. Get options
-        if self.config.type == "galaxy": self.set_galaxy_options()
-        elif self.config.type == "other": self.set_other_options()
-        else: raise ValueError("Invalid option for 'type': " + self.config.type)
+        self.get_options()
 
         # 4. load the SED
         if self.config.type == "other": self.load_sed()
@@ -117,7 +136,6 @@ class ModelingSetupTool(Configurable):
         if "object_config" in kwargs: self.object_config = kwargs.pop("object_config")
         if "modeling_config" in kwargs: self.modeling_config = kwargs.pop("modeling_config")
 
-
     # -----------------------------------------------------------------
 
     def create_directory(self):
@@ -138,6 +156,14 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_options(self):
+
+        if self.config.type == "galaxy": self.set_galaxy_options()
+        elif self.config.type == "other": self.set_other_options()
+        else: raise ValueError("Invalid option for 'type': " + self.config.type)
+
+    # -----------------------------------------------------------------
+
     def set_galaxy_options(self):
 
         """
@@ -152,7 +178,7 @@ class ModelingSetupTool(Configurable):
         self.resolve_name()
 
         # Prompt for galaxy settings
-        self.prompt_galaxy()
+        if self.object_config is None: self.prompt_galaxy()
 
         # Create configuration for galaxy modeling
         self.create_galaxy_config()
@@ -193,16 +219,11 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Prompting for options relevant for galaxy modeling ...")
 
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("host_ids", "string_list", "remote hosts to use for heavy computations (in order of preference)", choices=find_host_ids(schedulers=False))
-        definition.add_required("method", "string", "method to use for the modeling", choices=modeling_methods)
-
         # Create configuration setter
         setter = InteractiveConfigurationSetter("galaxy modeling", "options for 3D modeling of a galaxy", add_cwd=False, add_logging=False)
 
         # Create the object config
-        self.object_config = setter.run(definition, prompt_optional=False)
+        self.object_config = setter.run(galaxy_modeling_definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
@@ -238,7 +259,7 @@ class ModelingSetupTool(Configurable):
         log.info("Setting options for modeling the SED of an object ...")
 
         # 1. Prompt for options
-        self.prompt_other()
+        if self.object_config is None: self.prompt_other()
 
         # 2. Create the configuration
         self.create_other_config()
@@ -255,16 +276,11 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Prompting for options relevant for SED modeling ...")
 
-        # Create definition
-        definition = ConfigurationDefinition()
-        definition.add_required("ski", "file_path", "path/name of the template ski file")
-        definition.add_flag("use_sed_file", "import an SED file produced with PTS (instead of manually entering the flux points)", False)
-
         # Create configuration setter
         setter = InteractiveConfigurationSetter("SED modeling", "options for SED modeling of an object", add_cwd=False, add_logging=False)
 
         # Create the object config
-        self.object_config = setter.run(definition, prompt_optional=True)
+        self.object_config = setter.run(sed_modeling_definition, prompt_optional=True)
 
     # -----------------------------------------------------------------
 

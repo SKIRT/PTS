@@ -7,7 +7,7 @@
 
 # -----------------------------------------------------------------
 
-description = "fitting the galaxy NGC4013 using a flattened Sersic profile for the central bulge and a double exponential for the stellar disk and dust disk"
+description = "Fitting the galaxy NGC4013 using a flattened Sersic profile for the central bulge and a double exponential for the stellar disk and dust disk"
 
 # -----------------------------------------------------------------
 
@@ -57,6 +57,9 @@ cwds.append("./NGC4013")
 # -----------------------------------------------------------------
 # SETUP FUNCTION
 # -----------------------------------------------------------------
+
+input_url = "http://www.skirt.ugent.be/downloads/tutorial_NGC4013.tar.gz"
+all_url = "http://www.skirt.ugent.be/downloads/tutorial_NGC4013_complete.tar.gz"
 
 def setup():
 

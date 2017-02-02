@@ -184,7 +184,7 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the GALEX images ...")
 
         # Fetch the GALEX data from the DustPedia archive
-        #self.fetch_from_dustpedia("GALEX")
+        self.fetch_from_dustpedia("GALEX")
 
         local_output_path = fs.create_directories_in(self.data_images_paths["GALEX"], "temp")
 
@@ -244,9 +244,9 @@ class ImageFetcher(DataComponent):
         log.info("Fetching the SDSS images ...")
 
         # Fetch the SDSS data from the DustPedia archive
-        #self.fetch_from_dustpedia("SDSS")
+        self.fetch_from_dustpedia("SDSS")
 
-        local_output_path = fs.create_directories_in(self.data_images_paths["SDSS"], "temp")
+        local_output_path = fs.create_directory_in(self.data_images_paths["SDSS"], "temp")
 
         # Create the configuration dictionary
         config_dict = dict()

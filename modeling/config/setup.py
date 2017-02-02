@@ -11,8 +11,9 @@ from pts.core.remote.host import find_host_ids
 # -----------------------------------------------------------------
 
 types = dict()
-types["galaxy"] = "create a 3D model of a galaxy based on image data"
-types["other"] = "create a model of an other object based on SED data"
+types["galaxy"] = "Create a 3D model of a galaxy based on image data"
+types["sed"] = "Model any object based on observed SED data"
+types["images"] = "Model any object based on observational images and a ski file"
 
 # -----------------------------------------------------------------
 

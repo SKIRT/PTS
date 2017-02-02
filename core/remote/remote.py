@@ -37,6 +37,7 @@ from ..tools import introspection
 from ..tools.introspection import possible_cpp_compilers, possible_mpi_compilers, possible_mpirun_names
 from .python import RemotePythonSession
 from ..basics.unit import parse_unit as u
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -186,7 +187,7 @@ class Remote(object):
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
             self.ssh = pxssh.pxssh()
-            try: self.login(login_timeout * 2) # try now with a timeout that is twice as long
+            try: self.login(login_timeout * 3) # try now with a timeout that is three times as long
             except HostDownException:
                 log.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
@@ -1328,6 +1329,36 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def tmux_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("tmux ls")
+        return output
+
+    # -----------------------------------------------------------------
+
+    def tmux_sessions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary for the sessions
+        sessions = dict()
+
+        # Loop over the output
+        output = self.execute("tmux ls")
+        for line in output:
+
+
+
+    # -----------------------------------------------------------------
+
     def screen_names(self):
 
         """
@@ -1335,12 +1366,17 @@ class Remote(object):
         :return:
         """
 
-        output = self.execute("screen -ls | grep \(")
+        output = self.execute("screen -ls")
 
         # Get the names
         names = []
         for line in output:
-            name = line.split(".")[1].split("(")[0].strip()
+
+            # Skip lines that do not state a session
+            if "(Attached)" not in line and "(Detached)" not in line: continue
+
+            # Get the name
+            name = line.split(".")[1].split("\t")[0]
             names.append(name)
 
         # Return the screen names
@@ -1355,16 +1391,59 @@ class Remote(object):
         :return:
         """
 
-        output = self.execute("screen -ls | grep \(")
+        output = self.execute("screen -ls")
 
         # Get the numbers
         numbers = []
         for line in output:
-            number = int(line.split(".")[0])
+
+            # Skip lines that do not state a session
+            if "(Attached)" not in line and "(Detached)" not in line: continue
+
+            # Get the number
+            number = int(line.split(".")[0].split("\t")[1])
             numbers.append(number)
 
         # Return the screen numbers
         return numbers
+
+    # -----------------------------------------------------------------
+
+    def screen_sessions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("screen -ls")
+
+        # Initialize dictionary
+        screens = dict()
+
+        # Loop over the lines
+        for line in output:
+
+            # Skip lines that do not state a session
+            if "(Attached)" not in line and "(Detached)" not in line: continue
+
+            # Get the name
+            name = line.split(".")[1].split("\t")[0]
+
+            # Get the number
+            number = int(line.split(".")[0].split("\t")[1])
+
+            # Get the timestamp
+            timestamp = line.split("\t")[2][1:-1]
+
+            # Get the state
+            state = line.split("\t")[3][1:-1]
+
+            # Create map and add to the dictionary
+            screens[name] = Map(number=number, timestamp=timestamp, state=state)
+
+        # Return the dictionary
+        return screens
 
     # -----------------------------------------------------------------
 
@@ -1719,14 +1798,21 @@ class Remote(object):
         else: self.ssh.logfile = None
 
         # Retrieve the output if requested
-        if expect is None: matched = self.ssh.prompt(timeout=timeout)
-        else: matched = self.ssh.expect(expect, timeout=timeout)
+        if expect is None:
 
-        # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
-        if contains_extra_eof: matched = self.ssh.prompt()
+            matched = self.ssh.prompt(timeout=timeout)
 
-        # If the command could not be sent, raise an error
-        if not matched and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
+            # If an extra EOF is used before the actual output line (don't ask me why but I encounter this on the HPC UGent infrastructure), do prompt() again
+            if contains_extra_eof: matched = self.ssh.prompt()
+
+            # If the command could not be sent, raise an error
+            if not matched and expect_eof and not contains_extra_eof: raise RuntimeError("The command could not be sent")
+
+        # Check for expected characters
+        else:
+
+            index = self.ssh.expect(expect, timeout=timeout)
+            assert index == 0
 
         # Set the log file back to 'None'
         self.ssh.logfile = None
@@ -1735,12 +1821,12 @@ class Remote(object):
         # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
         if contains_extra_eof:
             splitted = self.ssh.before.replace('\x1b[K', '').split("\r\n")
-            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "")
+            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "").replace("\x08", "")
             if splitted[-1] == "": the_output = splitted[output_start:-1]
             else: the_output = splitted[output_start:]
         else:
             splitted = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")
-            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "")
+            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "").replace("\x08", "")
             if splitted[-1] == "": the_output = splitted[output_start:-1]
             else: the_output = splitted[output_start:]
 
