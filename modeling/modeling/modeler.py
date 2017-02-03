@@ -59,7 +59,7 @@ class Modeler(Configurable):
         self.setup(**kwargs)
 
         # Perform the modeling
-        self.model()
+        self.model(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -119,7 +119,7 @@ class Modeler(Configurable):
 
     # -----------------------------------------------------------------
 
-    def model(self):
+    def model(self, **kwargs):
 
         """
         This function ...
@@ -133,20 +133,21 @@ class Modeler(Configurable):
         log.debug("Modeling type: " + self.modeling_config.modeling_type)
 
         # Galaxy modeling
-        if self.galaxy_modeling: self.model_galaxy()
+        if self.galaxy_modeling: self.model_galaxy(**kwargs)
 
         # SED modeling
-        elif self.sed_modeling: self.model_sed()
+        elif self.sed_modeling: self.model_sed(**kwargs)
 
         # Images modeling
-        elif self.images_modeling: self.model_images()
+        elif self.images_modeling: self.model_images(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def model_galaxy(self):
+    def model_galaxy(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -154,14 +155,15 @@ class Modeler(Configurable):
         modeler = GalaxyModeler(self.config)
 
         # Run the modeler
-        modeler.run()
+        modeler.run(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def model_sed(self):
+    def model_sed(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -169,14 +171,15 @@ class Modeler(Configurable):
         modeler = SEDModeler(self.config)
 
         # Run the modeler
-        modeler.run()
+        modeler.run(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def model_images(self):
+    def model_images(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -184,6 +187,6 @@ class Modeler(Configurable):
         modeler = ImagesModeler(self.config)
 
         # Run the modeler
-        modeler.run()
+        modeler.run(**kwargs)
 
 # -----------------------------------------------------------------

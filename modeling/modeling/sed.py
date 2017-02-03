@@ -20,7 +20,7 @@ from ..fitting.initialization.sed import SEDFittingInitializer
 from .base import ModelerBase
 from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path
 from ...core.basics.range import IntegerRange, QuantityRange
-from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
 from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
@@ -41,17 +41,29 @@ class SEDModeler(ModelerBase):
         # Call the constructor of the base class
         super(SEDModeler, self).__init__(config)
 
+        # Optional configs for the fitting configurer
+        self.parameters_config = None
+        self.descriptions_config = None
+        self.types_config = None
+        self.units_config = None
+        self.ranges_config = None
+        self.filters_config = None
+
+        # Configuration for the fitting initializer
+        self.initialize_config = None
+
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the data
         self.load_data()
@@ -64,15 +76,27 @@ class SEDModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SEDModeler, self).setup()
+        super(SEDModeler, self).setup(**kwargs)
+
+        # Set configs for the fitting configurer
+        if "parameters_config" in kwargs: self.parameters_config = kwargs.pop("parameters_config")
+        if "descriptions_config" in kwargs: self.descriptions_config = kwargs.pop("descriptions_config")
+        if "types_config" in kwargs: self.types_config = kwargs.pop("types_config")
+        if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
+        if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
+        if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
+
+        # Config for the fitting initializer
+        if "initialize_config" in kwargs: self.initialize_config = kwargs.pop("initialize_config")
 
     # -----------------------------------------------------------------
 
@@ -152,7 +176,9 @@ class SEDModeler(ModelerBase):
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        configurer.run()
+        configurer.run(parameters_config=self.parameters_config, descriptions_config=self.descriptions_config,
+                       types_config=self.types_config, units_config=self.units_config, ranges_config=self.ranges_config,
+                       filters_config=self.filters_config)
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -201,8 +227,12 @@ class SEDModeler(ModelerBase):
         definition.add_optional("wavelength_range", "quantity_range", "wavelength range for all wavelength grids", default=default_wavelength_range)
 
         # Create the setter
-        setter = InteractiveConfigurationSetter("Initialization of the ski template", add_cwd=False, add_logging=False)
-        config = setter.run(definition, prompt_optional=True)
+        if self.initialize_config is None:
+            setter = InteractiveConfigurationSetter("Initialization of the ski template", add_cwd=False, add_logging=False)
+            config = setter.run(definition, prompt_optional=True)
+        else:
+            setter = DictConfigurationSetter(self.initialize_config, "Initialization of the ski template")
+            config = setter.run(definition)
 
         # Set fixed settings for the ski model
         initializer.config.npackages = config.npackages

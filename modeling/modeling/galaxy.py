@@ -120,15 +120,16 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the data
         self.get_data()
@@ -156,7 +157,7 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -164,7 +165,7 @@ class GalaxyModeler(ModelerBase):
         """
 
         # Call the setup function of the base class
-        super(GalaxyModeler, self).setup()
+        super(GalaxyModeler, self).setup(**kwargs)
 
         # Check whether a remote is available for the heavy computations
         if self.moderator.host_id_for_single("other") is None: raise RuntimeError("The desired remote(s) for heavy computations are currently unavailable")
@@ -582,7 +583,7 @@ class GalaxyModeler(ModelerBase):
         # Create the configuration
         config = dict()
         config["black_body"] = dict()
-        config["black_body"]["remote"] = self.host_id
+        config["black_body"]["remote"] = self.moderator.host_id_for_single("other")
 
         # Create the dust map maker
         maker = DustMapMaker(config)

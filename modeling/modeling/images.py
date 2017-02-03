@@ -43,15 +43,16 @@ class ImagesModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the data
         self.load_data()
@@ -64,15 +65,16 @@ class ImagesModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(ImagesModeler, self).setup()
+        super(ImagesModeler, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

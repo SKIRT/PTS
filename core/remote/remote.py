@@ -156,6 +156,9 @@ class Remote(object):
         # A regular expression object that strips away special unicode characters, used on the remote console output
         self.ansi_escape = re.compile(r'\x1b[^m]*m')
 
+        # Remember the commands that were executed on the remote host
+        self.commands = []
+
     # -----------------------------------------------------------------
 
     def setup(self, host_id, cluster_name=None, login_timeout=20, nrows=None, ncols=200):
@@ -384,6 +387,9 @@ class Remote(object):
         This function ...
         :return:
         """
+
+        # This remote does not use module system lmod
+        if not self.has_lmod: return
 
         # Inform the user
         log.info("Unloading all modules ...")
@@ -815,15 +821,21 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def find_and_load_python(self):
+    def find_and_load_python(self, return_module=False):
 
         """
         This function ...
+        :param return_module:
         :return:
         """
 
-        if self.has_lmod: self.load_python_module()
-        return self.python_path
+        # Load module
+        if self.has_lmod: module_name = self.load_python_module()
+        else: module_name = None
+
+        # Return
+        if return_module: return self.python_path, module_name
+        else: return self.python_path
 
     # -----------------------------------------------------------------
 
@@ -938,12 +950,15 @@ class Remote(object):
 
         self.load_module(latest_version)  # Load the python module
 
+        return latest_version
+
     # -----------------------------------------------------------------
 
-    def find_and_load_git(self):
+    def find_and_load_git(self, return_module=False):
 
         """
         This function ...
+        :param return_module:
         :return:
         """
 
@@ -965,29 +980,36 @@ class Remote(object):
 
             if latest_module_name is None: raise RuntimeError("Git not available from the modules")
 
+            # load the module
             self.load_module(latest_module_name)
+
+        else: latest_module_name = None
 
         # Get path and version
         git_path = self.find_executable("git")
         git_version = self.version_of("git")
 
         # Return
-        return git_path, git_version
+        if return_module: return git_path, git_version, latest_module_name
+        else: return git_path, git_version
 
     # -----------------------------------------------------------------
 
-    def find_and_load_cpp_compiler(self):
+    def find_and_load_cpp_compiler(self, return_module=False):
 
         """
         This function ...
+        :param return_module:
         :return:
         """
 
         # Load intel compiler toolkit if possible
-        if self.has_lmod: self.load_intel_compiler_toolkit()
+        if self.has_lmod: module_name = self.load_intel_compiler_toolkit()
+        else: module_name = None
 
         # Search for the compiler and return its path
-        return self.cpp_compiler_path
+        if return_module: return self.cpp_compiler_path, module_name
+        else: return self.cpp_compiler_path
 
     # -----------------------------------------------------------------
 
@@ -1003,6 +1025,9 @@ class Remote(object):
         if intel_version is None:
             log.warning("Intel Cluster Toolkit Compiler Edition could not be found")
         elif intel_version not in self.loaded_modules: self.load_module(intel_version) # Load the module
+
+        # Return the module name
+        return intel_version
 
     # -----------------------------------------------------------------
 
@@ -1045,35 +1070,45 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def find_and_load_mpi_compiler(self):
+    def find_and_load_mpi_compiler(self, return_module=False):
 
         """
         This function ...
+        :param return_module:
         :return:
         """
 
-        if self.has_lmod: self.load_intel_compiler_toolkit()
-        return self.mpi_compiler_path
+        if self.has_lmod: module_name = self.load_intel_compiler_toolkit()
+        else: module_name = None
+
+        # Return
+        if return_module: return self.mpi_compiler_path, module_name
+        else: return self.mpi_compiler_path
 
     # -----------------------------------------------------------------
 
-    def find_and_load_qmake(self):
+    def find_and_load_qmake(self, return_module=False):
 
         """
         This function ...
+        :param return_module:
         :return:
         """
 
         # Use modules or not
-        if self.has_lmod: return self._check_qt_remote_lmod()
-        else: return self._check_qt_remote_no_lmod()
+        if self.has_lmod: return self._check_qt_remote_lmod(return_module=return_module)
+        else:
+
+            if return_module: return self._check_qt_remote_no_lmod(), None
+            else: return self._check_qt_remote_no_lmod()
 
     # -----------------------------------------------------------------
 
-    def _check_qt_remote_lmod(self):
+    def _check_qt_remote_lmod(self, return_module=False):
 
         """
         This function ...
+        :param return_module:
         :return:
         """
 
@@ -1094,7 +1129,8 @@ class Remote(object):
         #else: intel_version = qt5_version.split("ictce-")[1].split("-")[0]
 
         # Return the qmake path
-        return qmake_path
+        if return_module: return qmake_path, qt5_version
+        else: return qmake_path
 
     # -----------------------------------------------------------------
 
@@ -1765,6 +1801,33 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def clear_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.commands = []
+
+    # -----------------------------------------------------------------
+
+    def add_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Sent command: "  + command)
+
+        # Add the command
+        self.commands.append(command)
+
+    # -----------------------------------------------------------------
+
     def execute(self, command, output=True, expect_eof=True, contains_extra_eof=False, show_output=False, timeout=None,
                 expect=None, cwd=None, output_start=1):
 
@@ -1791,6 +1854,9 @@ class Remote(object):
 
         # Send the command
         self.ssh.sendline(command)
+
+        # Add the command to the list of commands
+        self.add_command(command)
 
         # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
         # Otherwise, assure that the logfile is set to 'None'
@@ -2818,6 +2884,8 @@ class Remote(object):
 
         # Get the output of the 'which' command
         output = self.execute("which " + name)
+
+        print(output)
 
         if len(output) == 0: return None
         else:

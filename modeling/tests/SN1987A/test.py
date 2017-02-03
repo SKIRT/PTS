@@ -15,6 +15,10 @@ import inspect
 from pts.core.tools import filesystem as fs
 from pts.core.data.sed import ObservedSED
 from pts.core.basics.unit import parse_unit as u
+from pts.core.basics.configuration import Configuration
+from pts.core.simulation.skifile import LabeledSkiFile
+from pts.core.basics.range import QuantityRange, RealRange
+from pts.core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -72,7 +76,8 @@ sed.add_point("ALMA 870mu", 0.0050 * u("Jy"), 0.0010 * u("Jy"))
 
 # Create object config
 object_config = dict()
-object_config["ski"] = fs.join(this_dir_path, "SN1987A.ski")
+ski_path = fs.join(this_dir_path, "SN1987A.ski")
+object_config["ski"] = ski_path
 
 # Create input dict for setup
 input_setup = dict()
@@ -80,8 +85,53 @@ input_setup["object_config"] = object_config
 input_setup["sed"] = sed
 input_dicts.append(input_setup)
 
+# Get free parameter names
+ski = LabeledSkiFile(ski_path)
+free_parameter_names = ski.labels
+
+# Get fitting filter names
+filter_names = sed.filter_names()
+
+# Set descriptions
+descriptions = Map()
+descriptions["luminosity"] = "total luminosity of the SN"
+descriptions["dustmass"] = "total dust mass"
+descriptions["grainsize"] = "dust grain size"
+descriptions["fsil"] = "dust silicate fraction"
+
+# Set types
+types = Map()
+types["luminosity"] = "luminosity"
+types["dustmas"] = "mass"
+types["grainsize"] = "grainsize"
+types["fsil"] = "dimless"
+
+# Set units
+units = Map()
+units["luminosity"] = u("Lsun")
+units["dustmass"] = u("Msun")
+units["grainsize"] = u("micron")
+units["fsil"] = None
+
+# Set ranges
+luminosity_range = QuantityRange(100, 1000, "Lsun")
+dustmass_range = QuantityRange(0.3, 5, "Msun")
+grainsize_range = QuantityRange(0.1, 5, "micron")
+fsil_range = RealRange(0.1, 100)
+
 # Create input dict for model
 input_model = dict()
+input_model["parameters_config"] = Configuration(free_parameters=free_parameter_names)
+input_model["descriptions_config"] = Configuration(descriptions=descriptions)
+input_model["types_config"] = Configuration(types=types)
+input_model["units_config"] = Configuration(units=units)
+input_model["ranges_config"] = Configuration(luminosity_range=luminosity_range, dustmass_range=dustmass_range, grainsize_range=grainsize_range, fsil_range=fsil_range)
+input_model["filters_config"] = Configuration(filters=filter_names)
+
+# Fitting initializer config
+input_model["initialize_config"] = Configuration(npackages=1e4)
+
+# Add dict of input for 'model' command to the list
 input_dicts.append(input_model)
 
 # -----------------------------------------------------------------

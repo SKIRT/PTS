@@ -19,7 +19,7 @@ from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
 from ..config.parameters import definition as parameters_definition
-from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration, combine_configs
 from ..config.parameters import parsing_types_for_parameter_types, unit_parsing_type
 from ..config.parameters import default_units, possible_parameter_types_descriptions
 
@@ -82,22 +82,22 @@ class FittingConfigurer(FittingComponent):
         self.load_input()
 
         # 3. Get the fitting parameters
-        self.get_parameters()
+        self.set_parameters()
 
         # 4. Get parameter descriptions
-        self.get_descriptions()
+        self.set_descriptions()
 
         # 5. Get parameter types
-        self.get_types()
+        self.set_types()
 
         # 6. Get parameter units
-        self.get_units()
+        self.set_units()
 
         # 7. Get the physical parameter ranges
-        self.get_ranges()
+        self.set_ranges()
 
         # 8. Get the fitting filters
-        self.get_filters()
+        self.set_filters()
 
         # 9. Adjust the labels of the template ski file
         self.adjust_labels()
@@ -120,6 +120,14 @@ class FittingConfigurer(FittingComponent):
         # Get the default ranges
         self.default_ranges = kwargs.pop("default_ranges", dict())
 
+        # Get configs as dicts
+        if "parameters_config" in kwargs: self.parameters_config = kwargs.pop("parameters_config")
+        if "descriptions_config" in kwargs: self.descriptions_config = kwargs.pop("descriptions_config")
+        if "types_config" in kwargs: self.types_config = kwargs.pop("types_config")
+        if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
+        if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
+        if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
+
     # -----------------------------------------------------------------
 
     def load_input(self):
@@ -128,6 +136,9 @@ class FittingConfigurer(FittingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the input ...")
 
         # Load the template ski file
         self.load_template()
@@ -149,172 +160,271 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_parameters(self):
+    def set_parameters(self):
 
         """
         This function ...
         :return:
         """
 
-        # The free parameters are specified
+        # Inform the user
+        log.info("Setting the free parameters ...")
+
+        # Load or prompt for the parameters
         if self.config.parameters is not None: self.parameters_config = Configuration(free_parameters=self.config.parameters)
-        else:
-
-            # Create configuration setter
-            setter = InteractiveConfigurationSetter("Free parameters", add_logging=False, add_cwd=False)
-
-            # Create config
-            self.parameters_config = setter.run(parameters_definition, prompt_optional=False)
+        elif isinstance(self.parameters_config, dict): pass
+        else: self.prompt_parameters()
 
     # -----------------------------------------------------------------
 
-    def get_descriptions(self):
+    def prompt_parameters(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Prompting for the free parameters ...")
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("Free parameters", add_logging=False, add_cwd=False)
+
+        # Create config
+        self.parameters_config = setter.run(parameters_definition, prompt_optional=False)
+
+    # -----------------------------------------------------------------
+
+    def set_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter descriptions ...")
+
+        # Load or prompt for the descriptions
         if self.config.descriptions is not None: self.descriptions_config = Configuration(descriptions=self.config.descriptions)
-        else:
-
-            # Create configuration definition
-            definition = ConfigurationDefinition()
-            for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "description of the '" + name + "' parameter")
-
-            # Create the configuration setter
-            setter = InteractiveConfigurationSetter("Parameter descriptions and types", add_cwd=False, add_logging=False)
-
-            # Get the config and set the descriptions configuration
-            config = setter.run(definition, prompt_optional=False)
-            self.descriptions_config = Configuration(descriptions=config)
+        elif isinstance(self.descriptions_config, dict): pass
+        else: self.prompt_descriptions()
 
     # -----------------------------------------------------------------
 
-    def get_types(self):
+    def prompt_descriptions(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Prompting for the parameter descriptions ...")
+
+        # Create configuration definition
+        definition = ConfigurationDefinition()
+        for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "description of the '" + name + "' parameter")
+
+        # Create the configuration setter
+        setter = InteractiveConfigurationSetter("Parameter descriptions", add_cwd=False, add_logging=False)
+
+        # Get the config and set the descriptions configuration
+        config = setter.run(definition, prompt_optional=False)
+        self.descriptions_config = Configuration(descriptions=config)
+
+    # -----------------------------------------------------------------
+
+    def set_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter types ...")
+
+        # load or prompt for the tyopes
         if self.config.types is not None: self.types_config = Configuration(types=self.config.types)
-        else:
-
-            # Create definition
-            definition = ConfigurationDefinition()
-            for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "type of the '" + name + "' parameter", choices=possible_parameter_types_descriptions)
-
-            # Create configuration setter
-            setter = InteractiveConfigurationSetter("Parameter types", add_cwd=False, add_logging=False)
-
-            # Create the config and set the types configuration
-            config = setter.run(definition, prompt_optional=False)
-            self.types_config = Configuration(types=config)
+        elif isinstance(self.types_config, dict): pass
+        else: self.prompt_types()
 
     # -----------------------------------------------------------------
 
-    def get_units(self):
+    def prompt_types(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Prompting for the parameter types ...")
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "type of the '" + name + "' parameter", choices=possible_parameter_types_descriptions)
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("Parameter types", add_cwd=False, add_logging=False)
+
+        # Create the config and set the types configuration
+        config = setter.run(definition, prompt_optional=False)
+        self.types_config = Configuration(types=config)
+
+    # -----------------------------------------------------------------
+
+    def set_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter units ...")
+
+        # load or prompt for the units
         if self.config.units is not None: self.units_config = Configuration(units=self.config.units)
-        else:
-
-            # Create definition
-            definition = ConfigurationDefinition()
-            for name in self.parameters_config.free_parameters:
-
-                # Get the type of quantity for this parameter
-                parameter_type = self.types_config.types[name]
-
-                # Don't ask for units for dimensionless quantities
-                if parameter_type == "dimless": definition.add_fixed(name, name + " has no unit (dimensionless)", None)
-                else: definition.add_optional(name, unit_parsing_type(parameter_type), "unit of the '" + name + "' parameter", default=default_units[parameter_type])
-
-            # Create configuration setter
-            setter = InteractiveConfigurationSetter("Parameter units", add_cwd=False, add_logging=False)
-
-            # Create the config and set the units configuration
-            config = setter.run(definition, prompt_optional=True)
-            self.units_config = Configuration(units=config)
+        elif isinstance(self.units_config, dict): pass
+        else: self.prompt_units()
 
     # -----------------------------------------------------------------
 
-    def get_ranges(self):
+    def prompt_units(self):
 
         """
         This function ...
         :return:
         """
 
-        # If ranges are given
-        if len(self.config.ranges) != 0: #self.ranges_config = self.config.ranges
+        # Inform the user
+        log.info("Prompting for the parameter units ...")
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        for name in self.parameters_config.free_parameters:
+
+            # Get the type of quantity for this parameter
+            parameter_type = self.types_config.types[name]
+
+            # Don't ask for units for dimensionless quantities
+            if parameter_type == "dimless": definition.add_fixed(name, name + " has no unit (dimensionless)", None)
+            else: definition.add_optional(name, unit_parsing_type(parameter_type), "unit of the '" + name + "' parameter", default=default_units[parameter_type])
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("Parameter units", add_cwd=False, add_logging=False)
+
+        # Create the config and set the units configuration
+        config = setter.run(definition, prompt_optional=True)
+        self.units_config = Configuration(units=config)
+
+    # -----------------------------------------------------------------
+
+    def set_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter ranges ...")
+
+        # Ranges are given
+        if len(self.config.ranges) != 0:
 
             self.ranges_config = dict()
             for label in self.config.ranges:
                 self.ranges_config[label + "_range"] = self.config.ranges[label]
 
-        # Ranges are not given
-        else:
-
-            # Create the configuration
-            definition = ConfigurationDefinition(write_config=False)
-
-            # Add the options for the ranges
-            for label in self.parameters_config.free_parameters:
-
-                # Get the unit
-                unit = self.units_config.units[label]
-                #in_units_string = " (in " + unit + ")" if unit is not None else " (dimensionless)"
-                units_info_string = " (don't forget the units!) " if unit is not None else " (dimensionless)"
-
-                # Get the default range
-                default_range = self.default_ranges[label] if label in self.default_ranges else None
-
-                # Get the parsing type
-                parsing_type = parsing_types_for_parameter_types[self.types_config.types[label]]
-
-                # Get the description
-                parameter_description = self.descriptions_config.descriptions[label]
-                description = "range of " + parameter_description + units_info_string
-
-                # Make optional or required depending on whether default is given
-                if default_range is not None: definition.add_optional(label + "_range", parsing_type + "_range", description, default=default_range, convert_default=True)
-                else: definition.add_required(label + "_range", parsing_type + "_range", description)
-
-            # Create configuration setter
-            setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)
-
-            # Create config, get the range for each chosen free parameter
-            self.ranges_config = setter.run(definition, prompt_optional=False)
+        elif isinstance(self.ranges_config, dict): pass
+        else: self.prompt_ranges()
 
     # -----------------------------------------------------------------
 
-    def get_filters(self):
+    def prompt_ranges(self):
 
         """
         This function ...
         :return:
         """
 
-        if self.config.filters is not None: self.filters_config = {"filters": self.config.filters}
-        else:
+        # Inform the user
+        log.info("Prompting for the parameter ranges ...")
 
-            # Create the configuration
-            definition = ConfigurationDefinition(write_config=False)
+        # Create the configuration
+        definition = ConfigurationDefinition(write_config=False)
 
-            # Choose from all the possible filter names
-            definition.add_required("filters", "string_list", "the filters for which to use the observed flux as reference for the fitting procedure", choices=self.sed_filter_names)
+        # Add the options for the ranges
+        for label in self.parameters_config.free_parameters:
 
-            # Create configuration setter
-            setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
+            # Get the unit
+            unit = self.units_config.units[label]
+            #in_units_string = " (in " + unit + ")" if unit is not None else " (dimensionless)"
+            units_info_string = " (don't forget the units!) " if unit is not None else " (dimensionless)"
 
-            # Create config, get the filter choices
-            self.filters_config = setter.run(definition, prompt_optional=False)
+            # Get the default range
+            default_range = self.default_ranges[label] if label in self.default_ranges else None
+
+            # Get the parsing type
+            parsing_type = parsing_types_for_parameter_types[self.types_config.types[label]]
+
+            # Get the description
+            parameter_description = self.descriptions_config.descriptions[label]
+            description = "range of " + parameter_description + units_info_string
+
+            # Make optional or required depending on whether default is given
+            if default_range is not None: definition.add_optional(label + "_range", parsing_type + "_range", description, default=default_range, convert_default=True)
+            else: definition.add_required(label + "_range", parsing_type + "_range", description)
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("free parameter ranges", add_logging=False, add_cwd=False)
+
+        # Create config, get the range for each chosen free parameter
+        self.ranges_config = setter.run(definition, prompt_optional=False)
+
+    # -----------------------------------------------------------------
+
+    def set_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the fitting filters ...")
+
+        # Load or prompt for the filters
+        if self.config.filters is not None: self.filters_config = Configuration(filters=self.config.filters)
+        elif isinstance(self.filters_config, dict): pass
+        else: self.prompt_filters()
+
+    # -----------------------------------------------------------------
+
+    def prompt_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for the filters ...")
+
+        # Create the configuration
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Choose from all the possible filter names
+        definition.add_required("filters", "string_list", "the filters for which to use the observed flux as reference for the fitting procedure", choices=self.sed_filter_names)
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
+
+        # Create config, get the filter choices
+        self.filters_config = setter.run(definition, prompt_optional=False)
 
     # -----------------------------------------------------------------
 
@@ -384,24 +494,5 @@ class FittingConfigurer(FittingComponent):
 
         # Save the ski file template
         self.ski.saveto(self.template_ski_path)
-
-# -----------------------------------------------------------------
-
-def combine_configs(*args):
-
-    """
-    This function ...
-    :param args:
-    :return:
-    """
-
-    # Initialize a new configuration
-    config = Configuration()
-
-    for cfg in args:
-        for label in cfg: config[label] = cfg[label]
-
-    # Return the resulting configuration
-    return config
 
 # -----------------------------------------------------------------

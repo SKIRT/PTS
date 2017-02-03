@@ -23,8 +23,10 @@ import warnings
 
 # Suppress Astropy warnings
 # Import astronomical modules
-#from astropy.utils.exceptions import AstropyWarning
-#warnings.simplefilter('ignore', category=AstropyWarning)
+try:
+    from astropy.utils.exceptions import AstropyWarning
+    warnings.simplefilter('ignore', category=AstropyWarning)
+except ImportError: pass
 
 # -----------------------------------------------------------------
 

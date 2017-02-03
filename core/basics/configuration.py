@@ -47,6 +47,25 @@ related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band
 
 # -----------------------------------------------------------------
 
+def combine_configs(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # Initialize a new configuration
+    config = Configuration()
+
+    for cfg in args:
+        for label in cfg: config[label] = cfg[label]
+
+    # Return the resulting configuration
+    return config
+
+# -----------------------------------------------------------------
+
 def are_related_types(type_a, type_b):
 
     """

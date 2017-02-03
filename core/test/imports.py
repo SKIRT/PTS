@@ -84,6 +84,8 @@ class ImportsChecker(Configurable):
 
                 which, unresolved = introspection.get_modules(line, filepath, return_unresolved=True)
 
+                #print(which)
+
                 # Loop over the modules that were found
                 for module_path in which:
 
@@ -120,12 +122,15 @@ class ImportsChecker(Configurable):
                         continue
 
                     # Loop over the names imported for this module
-                    for name in which[module_path]:
+                    if which[module_path] is not None:
 
-                        ok = hasattr(module, name)
+                        for name in which[module_path]:
+                            ok = hasattr(module, name)
+                            if not ok: log.warning("Name '" + name + "' could not be imported from module '" + pythonic_path + "'")
 
-                        if not ok: log.warning(
-                            "Name '" + name + "' could not be imported from module '" + pythonic_path + "'")
+                if len(unresolved) > 0:
+                    print("Unresolved imports:")
+                    print(unresolved)
 
     # -----------------------------------------------------------------
 

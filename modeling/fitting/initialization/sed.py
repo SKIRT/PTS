@@ -273,8 +273,6 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         # Loop over the observed SED filters
         for fltr in self.fitting_filters:
 
-            print(fltr)
-
             # Get the central wavelength
             wavelength = fltr.centerwavelength() * u("micron")
 

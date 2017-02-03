@@ -28,6 +28,7 @@ from ..tools import terminal
 from ..tools import git
 from ..tools import parallelization
 from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ..remote.modules import Modules
 
 # -----------------------------------------------------------------
 
@@ -605,7 +606,7 @@ class SKIRTInstaller(Installer):
 
         # Check the presence of git:
         # no, loading the latest git version interferes with the intel compiler version on HPC UGent
-        #self.check_git_remote()
+        self.check_git_remote()
 
         # Get the SKIRT code
         self.get_skirt_remote()
@@ -632,25 +633,6 @@ class SKIRTInstaller(Installer):
         # Debugging
         log.debug("The C++ compiler path is '" + self.compiler_path)
         log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
-
-    # -----------------------------------------------------------------
-
-    def check_git_remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Checking the presence of git ...")
-
-        # Find and load git
-        path, version = self.remote.find_and_load_git()
-
-        # Debugging
-        log.debug("The path of the git installation is '" + path)
-        log.debug("The version of git is '" + version + "'")
 
     # -----------------------------------------------------------------
 
@@ -715,6 +697,28 @@ class SKIRTInstaller(Installer):
 
         # Success
         log.success("Qt was succesfully installed")
+
+    # -----------------------------------------------------------------
+
+    def check_git_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of git ...")
+
+        # Find and load git
+        path, version = self.remote.find_and_load_git()
+
+        # Debugging
+        log.debug("The path of the git installation is '" + path)
+        log.debug("The version of git is '" + version + "'")
+
+        # Unload all modules to avoid conflicts with the other modules
+        #self.remote.unload_all_modules()
 
     # -----------------------------------------------------------------
 

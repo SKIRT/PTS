@@ -1251,6 +1251,7 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
 
         splitted = import_statement.split()
 
+        #print(splitted)
         if len(splitted) <= 2: imported = []
         else: imported = [splitted[3]]
 
@@ -1274,10 +1275,18 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
 
         for name in imported:
 
+            #print(subpackage_path)
+
             #if debug: print(name)
             module_path = which_module(subpackage_path, name)
             if debug: print(subpackage_path, name, ":", module_path)
-            if module_path is not None: which[module_path].add(name)
+            if module_path is not None:
+                #print(fs.strip_extension(fs.name(module_path)), name)
+                if fs.strip_extension(fs.name(module_path)) == name: which[module_path] = None
+                else:
+                    if name == "*": name = None
+                    if name == "__version__": name = None
+                    which[module_path].add(name)
             else: unresolved.append((subpackage_path, name))
 
     # Absolute import of a pts class or module
@@ -1292,7 +1301,9 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
         for name in imported:
             module_path = which_module(subpackage_dir, name)
             if debug: print(subpackage_dir, name, ":", module_path)
-            if module_path is not None: which[module_path].add(name)
+            if module_path is not None:
+                if fs.strip_extension(fs.name(module_path)) == name: which[module_path] = None
+                else: which[module_path].add(name)
             else: unresolved.append((subpackage_dir, name))
 
     # MPL toolkits

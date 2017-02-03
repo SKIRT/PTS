@@ -382,6 +382,9 @@ class RealRange(Range):
         :param rearrange:
         """
 
+        if isinstance(min_value, int): min_value = float(min_value)
+        if isinstance(max_value, int): max_value = float(max_value)
+
         assert isinstance(min_value, float)
         assert isinstance(max_value, float)
 
