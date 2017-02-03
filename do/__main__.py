@@ -113,7 +113,7 @@ if len(matches) + len(table_matches) == 0:
 
     from pts.core.tools import logging
     log = logging.setup_log()
-    log.error("Unknown command")
+    log.error("Unknown command: " + script_name)
     show_all_available(scripts, tables)
 
 # If there is a unique match in an existing script, return it
@@ -174,7 +174,8 @@ elif len(table_matches) == 1 and len(matches) == 0:
     #print(configuration_module_path)
 
     #try:
-    configuration_module = importlib.import_module(configuration_module_path)
+    try: configuration_module = importlib.import_module(configuration_module_path)
+    except ImportError: raise RuntimeError("The configuration module for '" + command_name + "' was not found")
     #has_configuration = True
     definition = getattr(configuration_module, "definition")
     #except ImportError:

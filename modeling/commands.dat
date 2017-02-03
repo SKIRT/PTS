@@ -1,9 +1,7 @@
 # Command | Configuration | Class | Configuration method | Description
 setup | -- | modeling.setup.ModelingSetupTool | interactive | Setup a modeling directory for a certain galaxy
-model_galaxy | model | modeling.galaxy.GalaxyModeler | arguments | Perform radiative transfer modeling for a certain galaxy
-model_sed | model | modeling.sed.SEDModeler | arguments | Perform radiative transfer modeling using genetic algorithms on a simple SED
-model_images | model | modeling.images.ImagesModeler | arguments | Performs radiative transfer modeling using genetic algorithms based on observed images
-model_info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
+model | -- | modeling.modeler.Modeler | arguments | Perform radiative transfer modeling
+info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
 fetch_properties | fetch | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
 fetch_seds | fetch_seds | data.seds.SEDFetcher | interactive | Fetch the galaxy SEDs
 fetch_images | fetch_images | data.images.ImageFetcher | interactive | Fetch the images from the DustPedia database

@@ -1353,7 +1353,7 @@ class Remote(object):
 
         # Loop over the output
         output = self.execute("tmux ls")
-        for line in output:
+        #for line in output:
 
 
 

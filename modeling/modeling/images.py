@@ -6,6 +6,7 @@
 # *****************************************************************
 
 ## \package pts.modeling.modeling.sed Contains the ImagesModeler class.
+#  Performs radiative transfer modeling using genetic algorithms based on observed images
 
 # -----------------------------------------------------------------
 
@@ -16,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.sed import SEDFittingInitializer
-from .modeler import Modeler
+from .base import ModelerBase
 from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path
 from ...core.basics.range import IntegerRange, QuantityRange
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
@@ -24,7 +25,7 @@ from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
-class ImagesModeler(Modeler):
+class ImagesModeler(ModelerBase):
 
     """
     This class ...
@@ -71,7 +72,7 @@ class ImagesModeler(Modeler):
         """
 
         # Call the setup function of the base class
-        super(SEDModeler, self).setup()
+        super(ImagesModeler, self).setup()
 
     # -----------------------------------------------------------------
 

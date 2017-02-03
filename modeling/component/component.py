@@ -89,7 +89,7 @@ class ModelingComponent(Configurable):
         self.config_file_path = fs.join(self.config.path, "modeling.cfg")
 
         # Check for the presence of the configuration file
-        if not fs.is_file(self.config_file_path): raise ValueError("The current working directory is not a radiative transfer modeling directory (the configuration file is missing)")
+        if not fs.is_file(self.config_file_path): raise ValueError("The current working directory (" + self.config.path + ") is not a radiative transfer modeling directory (the configuration file is missing)")
 
         # Determine the path to the modeling history file
         self.history_file_path = fs.join(self.config.path, "history.dat")

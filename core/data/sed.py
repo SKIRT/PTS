@@ -24,6 +24,7 @@ from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
 from ..basics.unit import parse_unit as u
 from ..tools import filesystem as fs
+from ..filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -302,6 +303,9 @@ class ObservedSED(FilterCurve):
         :param error:
         :return:
         """
+
+        # Create fltr
+        fltr = parse_filter(fltr)
 
         if error is not None:
             if not isinstance(error, ErrorBar): error = ErrorBar(error)

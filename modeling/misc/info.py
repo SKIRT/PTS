@@ -107,18 +107,22 @@ class InfoShower(ModelingComponent):
         ionizing_stars_path = fs.join(maps_path, "ionizing_stars.fits")
         dust_path = fs.join(maps_path, "dust.fits")
 
-        # Open the old stars map
-        old_stars = Frame.from_file(old_stars_path)
-
-        # Get convolution and rebinning filter
-        convolution_filter = statistics.convolution_filter
-        rebinning_filter = statistics.rebinning_filter
-
         # Print info
         print("Galaxy NGC name: " + self.modeling_configuration.ngc_name)
-        print("Modeling method: " + self.modeling_configuration.modeling_method)
-        print("Model pixelscale: " + str(old_stars.average_pixelscale) + " (" + str(rebinning_filter) + ")")
-        print("Model resolution (FWHM): " + str(old_stars.fwhm) + " (" + str(convolution_filter) + ")")
+        print("Modeling method: " + self.modeling_configuration.method)
+
+        # If preparation statistics are present
+        if statistics is not None:
+
+            # Open the old stars map
+            old_stars = Frame.from_file(old_stars_path)
+
+            # Get convolution and rebinning filter
+            convolution_filter = statistics.convolution_filter
+            rebinning_filter = statistics.rebinning_filter
+
+            print("Model pixelscale: " + str(old_stars.average_pixelscale) + " (" + str(rebinning_filter) + ")")
+            print("Model resolution (FWHM): " + str(old_stars.fwhm) + " (" + str(convolution_filter) + ")")
 
     # -----------------------------------------------------------------
 

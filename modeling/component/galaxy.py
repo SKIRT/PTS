@@ -1161,7 +1161,8 @@ def load_preparation_statistics(modeling_path):
     path = fs.join(prep_path, "statistics.dat")
 
     # Load and return the statistics
-    return PreparationStatistics.from_file(path)
+    if fs.is_file(path): return PreparationStatistics.from_file(path)
+    else: return None
 
 # -----------------------------------------------------------------
 

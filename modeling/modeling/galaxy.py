@@ -5,8 +5,8 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.modeler Contains the GalaxyModeler class, which runs the radiative transfer modelling procedure
-#  for a certain galaxy.
+## \package pts.modeling.modeler Contains the GalaxyModeler class.
+#  Perform radiative transfer modeling for a certain galaxy
 
 # -----------------------------------------------------------------
 
@@ -30,8 +30,7 @@ from ..maps.dust.dust import DustMapMaker
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.galaxy import GalaxyFittingInitializer
 from ...core.basics.range import QuantityRange
-from ..fitting.component import get_generations_table
-from .modeler import Modeler
+from .base import ModelerBase
 from ..config.parameters import units as parameter_units
 from ..config.parameters import default_ranges, types, parameter_descriptions
 from ...core.basics.unit import parse_unit as u
@@ -79,7 +78,7 @@ lower_resolution_filters = ["SPIRE PSW", "SPIRE PMW", "SPIRE PLW", "MIPS 70mu", 
 
 # -----------------------------------------------------------------
 
-class GalaxyModeler(Modeler):
+class GalaxyModeler(ModelerBase):
 
     """
     This class ...

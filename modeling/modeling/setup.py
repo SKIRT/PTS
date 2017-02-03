@@ -19,7 +19,7 @@ from ...magic.tools.catalogs import get_ngc_name, get_hyperleda_name
 from ...core.tools import filesystem as fs
 from ..component.component import get_config_file_path
 from ..component.sed import get_observed_sed_file_path, get_ski_template_path
-from ...core.basics.configuration import Configuration, ConfigurationDefinition, InteractiveConfigurationSetter
+from ...core.basics.configuration import Configuration, ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
 from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
 from ...core.data.sed import ObservedSED
@@ -42,9 +42,9 @@ sed_modeling_definition.add_flag("use_sed_file", "import an SED file produced wi
 # -----------------------------------------------------------------
 
 # Define the image modeling configuration definition
-image_modeling_definition = ConfigurationDefinition()
-image_modeling_definition.add_required("ski", "file_path", "path/name of the template ski file")
-image_modeling_definition.add_required("images", "filepath_list", "the observed images to be used as reference", dynamic_list=True)
+images_modeling_definition = ConfigurationDefinition()
+images_modeling_definition.add_required("ski", "file_path", "path/name of the template ski file")
+images_modeling_definition.add_required("images", "filepath_list", "the observed images to be used as reference", dynamic_list=True)
 
 # -----------------------------------------------------------------
 
@@ -82,6 +82,9 @@ class ModelingSetupTool(Configurable):
         # The observed SED
         self.sed = None
 
+        # The observed images
+        self.images = dict()
+
         # The ski template
         self.ski = None
 
@@ -101,17 +104,50 @@ class ModelingSetupTool(Configurable):
         # 2. Create the modeling directory
         self.create_directory()
 
-        # 3. Get options
-        self.get_options()
+        # 3. Set options
+        self.set_options()
 
-        # 4. load the SED
-        if self.config.type == "other": self.load_sed()
-
-        # 5. Load the ski template
-        if self.config.type == "other": self.load_ski()
+        # 4. Load the input
+        self.load_input()
 
         # 5. Writing
         self.write()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_modeling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.type == "galaxy"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sed_modeling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.type == "sed"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images_modeling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.type == "images"
 
     # -----------------------------------------------------------------
 
@@ -134,7 +170,9 @@ class ModelingSetupTool(Configurable):
 
         # Get kwargs
         if "object_config" in kwargs: self.object_config = kwargs.pop("object_config")
-        if "modeling_config" in kwargs: self.modeling_config = kwargs.pop("modeling_config")
+        #if "modeling_config" in kwargs: self.modeling_config = kwargs.pop("modeling_config")
+        if "sed" in kwargs: self.sed = kwargs.pop("sed")
+        if "images" in kwargs: self.images = kwargs.pop("images")
 
     # -----------------------------------------------------------------
 
@@ -156,15 +194,25 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def get_options(self):
+    def set_options(self):
 
-        if self.config.type == "galaxy": self.set_galaxy_options()
-        elif self.config.type == "other": self.set_other_options()
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting options specific for the modeling type ...")
+
+        # Set options
+        if self.galaxy_modeling: self.set_options_galaxy()
+        elif self.sed_modeling: self.set_options_sed()
+        elif self.images_modeling: self.set_options_images()
         else: raise ValueError("Invalid option for 'type': " + self.config.type)
 
     # -----------------------------------------------------------------
 
-    def set_galaxy_options(self):
+    def set_options_galaxy(self):
 
         """
         This function ...
@@ -178,10 +226,13 @@ class ModelingSetupTool(Configurable):
         self.resolve_name()
 
         # Prompt for galaxy settings
-        if self.object_config is None: self.prompt_galaxy()
+        if isinstance(self.object_config, Configuration): pass
+        elif isinstance(self.object_config, dict): self.set_from_dict_galaxy()
+        elif self.object_config is None: self.prompt_galaxy()
+        else: raise ValueError("Invalid type for 'object_config'")
 
         # Create configuration for galaxy modeling
-        self.create_galaxy_config()
+        self.create_modeling_config_galaxy()
 
     # -----------------------------------------------------------------
 
@@ -209,6 +260,24 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_from_dict_galaxy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading options for galaxy modeling from dictionary ...")
+
+        # Create configuration setter
+        setter = DictConfigurationSetter(self.object_config, "galaxy modeling", "options for 3D modeling of a galaxy", add_cwd=False, add_logging=False)
+
+        # Create the object config
+        self.object_config = setter.run(galaxy_modeling_definition)
+
+    # -----------------------------------------------------------------
+
     def prompt_galaxy(self):
 
         """
@@ -227,7 +296,7 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_galaxy_config(self):
+    def create_modeling_config_galaxy(self):
 
         """
         This function ...
@@ -248,7 +317,7 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_other_options(self):
+    def set_options_sed(self):
 
         """
         This function ...
@@ -258,15 +327,36 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Setting options for modeling the SED of an object ...")
 
-        # 1. Prompt for options
-        if self.object_config is None: self.prompt_other()
+        # Set the config
+        if isinstance(self.object_config, Configuration): pass
+        elif isinstance(self.object_config, dict): self.set_from_dict_sed()
+        elif self.object_config is None: self.prompt_sed()
+        else: raise ValueError("Invalid type for 'object_config'")
 
         # 2. Create the configuration
-        self.create_other_config()
+        self.create_modeling_config_sed()
 
     # -----------------------------------------------------------------
 
-    def prompt_other(self):
+    def set_from_dict_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading options for SED modeling from dictionary ...")
+
+        # Create configuration setter
+        setter = DictConfigurationSetter(self.object_config, "SED modeling", "options for SED modeling of an object", add_cwd=False, add_logging=False)
+
+        # Create the object config
+        self.object_config = setter.run(sed_modeling_definition)
+
+    # -----------------------------------------------------------------
+
+    def prompt_sed(self):
 
         """
         This function ...
@@ -281,6 +371,118 @@ class ModelingSetupTool(Configurable):
 
         # Create the object config
         self.object_config = setter.run(sed_modeling_definition, prompt_optional=True)
+
+    # -----------------------------------------------------------------
+
+    def create_modeling_config_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the modeling configuration ...")
+
+        # Set the settings
+        self.modeling_config.name = self.config.name
+        self.modeling_config.modeling_type = self.config.type
+        self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
+
+    # -----------------------------------------------------------------
+
+    def set_options_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting options for the modeling of an object with images as reference ...")
+
+        # Set the config
+        if isinstance(self.object_config, Configuration): pass
+        elif isinstance(self.object_config, dict): self.set_from_dict_images()
+        elif self.object_config is None: self.prompt_images()
+        else: raise ValueError("Invalid type for 'object_config'")
+
+        # Create the configuration
+        self.create_modeling_config_images()
+
+    # -----------------------------------------------------------------
+
+    def set_from_dict_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading options for images modeling from dictionary ...")
+
+        # Create the setter
+        setter = DictConfigurationSetter(self.object_config, "Images modeling", "options for the modeling of an object with images as reference")
+
+        # Create the object config
+        self.object_config = setter.run(images_modeling_definition)
+
+    # -----------------------------------------------------------------
+
+    def prompt_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for options relevant for images modeling ...")
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("Images modeling", "options for the modeling of an object with images as reference", add_cwd=False, add_logging=False)
+
+        # Create the object config
+        self.object_config = setter.run(images_modeling_definition, prompt_optional=True)
+
+    # -----------------------------------------------------------------
+
+    def create_modeling_config_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the modeling configuration ...")
+
+        # Set the settings
+        self.modeling_config.name = self.config.name
+        self.modeling_config.modeling_type = self.config.type
+        self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
+
+    # -----------------------------------------------------------------
+
+    def load_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ")
+
+        # load the SED
+        if self.sed_modeling and self.sed is None: self.load_sed()
+
+        # Load the ski template
+        if self.sed_modeling or self.images_modeling: self.load_ski()
+
+        # Load the images
+        if self.images_modeling and self.images is None: self.load_images()
 
     # -----------------------------------------------------------------
 
@@ -342,7 +544,7 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_other_config(self):
+    def load_images(self):
 
         """
         This function ...
@@ -350,12 +552,7 @@ class ModelingSetupTool(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the modeling configuration ...")
-
-        # Set the settings
-        self.modeling_config.name = self.config.name
-        self.modeling_config.modeling_type = self.config.type
-        self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
+        log.info("Loading the observed images ...")
 
     # -----------------------------------------------------------------
 
@@ -373,10 +570,13 @@ class ModelingSetupTool(Configurable):
         self.write_config()
 
         # Write the SED
-        if self.config.type == "other": self.write_sed()
+        if self.sed_modeling: self.write_sed()
 
         # Write the ski template
-        if self.config.type == "other": self.write_ski()
+        if self.sed_modeling or self.images_modeling: self.write_ski()
+
+        # Write the images
+        if self.images_modeling: self.write_images()
 
     # -----------------------------------------------------------------
 
@@ -431,5 +631,20 @@ class ModelingSetupTool(Configurable):
 
         # Save the ski template
         self.ski.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Write the images ...")
+
+        # Loop over the images
+        for name in self.images: pass
 
 # -----------------------------------------------------------------
