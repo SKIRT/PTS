@@ -13,12 +13,20 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import warnings
 import numpy as np
 import os.path
 
+# Import the relevant PTS classes and modules
+from ..tools.logging import log
+
 # Use a non-interactive back-end to generate high-quality raster graphics
 import matplotlib
-if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
+with warnings.catch_warnings():
+    warnings.filterwarnings('error')
+    try:
+        if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
+    except Warning as w: log.warning("An failed attempt of setting the Matplotlib backend has been made because it has already been set")
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
