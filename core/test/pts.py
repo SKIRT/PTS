@@ -271,6 +271,9 @@ class PTSTestSuite(Configurable):
             # Tests path for subproject
             tests_path = fs.join(introspection.pts_subproject_dir(subproject), "tests")
 
+            # Inform the user
+            log.info("Loading tests for '" + subproject + "' subproject ...")
+
             # Loop over the test names
             for name in self.test_names[subproject]:
 
@@ -280,6 +283,9 @@ class PTSTestSuite(Configurable):
                 # Determine an output path for the test
                 temp_tests_path = fs.create_directory_in(introspection.pts_temp_dir, "tests")
                 temp_path = fs.create_directory_in(temp_tests_path, time.unique_name(name))
+
+                # Debugging
+                log.debug("Creating temporary directory '" + temp_path + "' for the test '" + name + "' ...")
 
                 # Find file with name test.py
                 filepath = fs.join(test_path, "test.py")

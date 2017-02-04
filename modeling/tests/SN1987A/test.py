@@ -71,8 +71,8 @@ sed.add_point("Pacs 100", 0.0824 * u("Jy"), 0.0045 * u("Jy"))
 sed.add_point("Pacs 160", 0.1530 * u("Jy"), 0.0090 * u("Jy"))
 sed.add_point("SPIRE 250", 0.1107 * u("Jy"), 0.0252 * u("Jy"))
 sed.add_point("SPIRE 350", 0.0693 * u("Jy"), 0.0228 * u("Jy"))
-sed.add_point("ALMA 440mu", 0.0500 * u("Jy"), 0.0150 * u("Jy"))
-sed.add_point("ALMA 870mu", 0.0050 * u("Jy"), 0.0010 * u("Jy"))
+sed.add_point("ALMA 440um", 0.0500 * u("Jy"), 0.0150 * u("Jy"))
+sed.add_point("ALMA 870um", 0.0050 * u("Jy"), 0.0010 * u("Jy"))
 
 # Create object config
 object_config = dict()

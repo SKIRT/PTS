@@ -105,8 +105,8 @@ class WavelengthGridsTable(SmartTable):
         narrow_string = ",".join(narrow_added)
 
         # Add row
-        self.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints,
-                      fixed_npoints, broad_string, narrow_string, len(grid)])
+        self.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, broad_string,
+                      narrow_string, emission_npoints, fixed_npoints, len(grid)])
 
 # -----------------------------------------------------------------
 

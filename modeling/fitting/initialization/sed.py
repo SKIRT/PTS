@@ -274,7 +274,7 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         for fltr in self.fitting_filters:
 
             # Get the central wavelength
-            wavelength = fltr.centerwavelength() * u("micron")
+            wavelength = fltr.center
 
             # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
             spectrum = wavelengths.name_in_spectrum(wavelength)

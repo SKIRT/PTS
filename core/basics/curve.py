@@ -18,7 +18,7 @@ from scipy import interpolate
 # Import the relevant PTS classes and modules
 from .table import SmartTable
 from ..tools import tables
-from ..filter.filter import Filter
+from ..filter.filter import parse_filter
 from ..filter.broad import BroadBandFilter
 from .unit import parse_unit as u
 
@@ -283,7 +283,7 @@ class FilterCurve(WavelengthCurve):
         :return:
         """
 
-        values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivotwavelength(), value]
+        values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, value]
         self.add_row(values)
 
     # -----------------------------------------------------------------
@@ -386,8 +386,8 @@ class FilterCurve(WavelengthCurve):
         for i in range(len(self)):
 
             # Get the instrument and band
-            instrument = self["Instrument"][i]
-            band = self["Band"][i]
+            instrument = str(self["Instrument"][i])
+            band = str(self["Band"][i])
 
             # Add the filter name
             names.append(instrument + " " + band)
@@ -415,7 +415,9 @@ class FilterCurve(WavelengthCurve):
             band = self["Band"][i]
 
             # Create the filter
-            fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+            #fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
+
+            fltr = parse_filter(instrument + " " + band)
 
             # Add the filter to the list
             filters.append(fltr)

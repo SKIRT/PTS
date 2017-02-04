@@ -271,6 +271,10 @@ class NarrowBandFilter(Filter):
 
             self._observatory = observatory
             self._instrument = instrument
+
+            if self._observatory is None and self._instrument is not None: self._observatory = self._instrument
+            if self._instrument is None and self._observatory is not None: self._instrument = self._observatory
+
             self._band = wavelength_as_string
 
             filter_id = self._name

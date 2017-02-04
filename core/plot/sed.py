@@ -1290,7 +1290,10 @@ def find_reference_flux(instrument, band, wavelength, reference_instruments, ref
     :param instrument:
     :param band:
     :param wavelength:
-    :param reference:
+    :param reference_instruments:
+    :param reference_bands:
+    :param reference_wavelengths:
+    :param reference_fluxes:
     :return:
     """
 
