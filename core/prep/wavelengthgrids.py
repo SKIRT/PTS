@@ -23,6 +23,8 @@ from ..basics.configurable import Configurable
 from ..basics.table import SmartTable
 from ..basics.range import QuantityRange
 from ..basics.unit import parse_unit as u
+from ..filter.broad import BroadBandFilter
+from ..filter.narrow import NarrowBandFilter
 
 # -----------------------------------------------------------------
 
@@ -70,13 +72,15 @@ class WavelengthGridsTable(SmartTable):
         self.add_column_info("PAH points", int, None, "number of points in the PAH spectrum (range: " + str(ranges["PAH"]) + ")")
         self.add_column_info("Dust points", int, None, "number of points in the dust spectrum (range: " + str(ranges["dust"]) + ")")
         self.add_column_info("Extension points", int, None, "number of points in the extension spectrum (range: " + str(ranges["extension"]) + ")")
+        self.add_column_info("Broad band filters", str, None, "broad band filters for which the wavelenth range was resampled")
+        self.add_column_info("Narrow band filters", str, None, "narrow band filters for which the wavelength was added")
         self.add_column_info("Emission lines", int, None, "number of emission lines")
         self.add_column_info("Fixed points", int, None, "number of fixed points")
         self.add_column_info("Total points", int, None, "total number of points")
 
     # -----------------------------------------------------------------
 
-    def add_grid(self, grid, subgrid_npoints, emission_npoints, fixed_npoints):
+    def add_grid(self, grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added):
 
         """
         This function ...
@@ -84,6 +88,8 @@ class WavelengthGridsTable(SmartTable):
         :param subgrid_npoints:
         :param emission_npoints:
         :param fixed_npoints:
+        :param broad_resampled:
+        :param narrow_added:
         :return:
         """
 
@@ -94,8 +100,13 @@ class WavelengthGridsTable(SmartTable):
         dust_npoints = subgrid_npoints["dust"] if "dust" in subgrid_npoints else 0
         extension_npoints = subgrid_npoints["extension"] if "extension" in subgrid_npoints else 0
 
+        # Create strings from the filter lists
+        broad_string = ",".join(broad_resampled)
+        narrow_string = ",".join(narrow_added)
+
         # Add row
-        self.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints, fixed_npoints, len(grid)])
+        self.add_row([uv_npoints, optical_npoints, pah_npoints, dust_npoints, extension_npoints, emission_npoints,
+                      fixed_npoints, broad_string, narrow_string, len(grid)])
 
 # -----------------------------------------------------------------
 
@@ -124,6 +135,7 @@ class WavelengthGridGenerator(Configurable):
         self.add_emission_lines = False
         self.min_wavelength = None
         self.max_wavelength = None
+        self.filters = None
 
         # The wavelength grids
         self.grids = []
@@ -171,6 +183,7 @@ class WavelengthGridGenerator(Configurable):
         self.add_emission_lines = kwargs.pop("add_emission_lines", False)
         self.min_wavelength = kwargs.pop("min_wavelength", None)
         self.max_wavelength = kwargs.pop("max_wavelength", None)
+        self.filters = kwargs.pop("filters", None)
 
         # Create the emission lines instance
         self.emission_lines = EmissionLines()
@@ -211,14 +224,14 @@ class WavelengthGridGenerator(Configurable):
         log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
 
         # Create the grid
-        if self.add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, self.emission_lines, self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength)
-        else: grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(npoints, fixed=self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength)
+        if self.add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(npoints, self.emission_lines, self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength, filters=self.filters)
+        else: grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(npoints, fixed=self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength, filters=self.filters)
 
         # Add the grid
         self.grids.append(grid)
 
         # Add entry to the table
-        self.table.add_grid(grid, subgrid_npoints, emission_npoints, fixed_npoints)
+        self.table.add_grid(grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added)
 
     # -----------------------------------------------------------------
 
@@ -279,7 +292,7 @@ class WavelengthGridGenerator(Configurable):
 
 # -----------------------------------------------------------------
 
-def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None, min_wavelength=None, max_wavelength=None):
+def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None, min_wavelength=None, max_wavelength=None, filters=None):
 
     """
     This function ...
@@ -288,6 +301,7 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
     :param fixed:
     :param min_wavelength:
     :param max_wavelength:
+    :param filters:
     :return:
     """
 
@@ -337,9 +351,66 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
         # Add the wavelength points
         wavelengths += wavelengths_subgrid
 
+    # Loop over the filters
+    #broad_resampled = 0
+    #narrow_added = 0
+    broad_resampled = []
+    narrow_added = []
+    if filters is not None:
+
+        # Debugging
+        log.debug("Adding wavelengths for sampling filter bandpasses ...")
+
+        for fltr in filters:
+
+            # Debugging
+            log.debug("Adding wavelength(s) for the " + str(fltr) + " filter ...")
+
+            # Broad band filter: make sure there are at least 10 wavelength points in the range min_wavelength > max_wavelength
+            if isinstance(fltr, BroadBandFilter):
+
+                min_wavelength = fltr.min
+                max_wavelength = fltr.max
+
+                # Check that at least 10 wavelength points sample the range of the filter
+                # Get the indices of the wavelengths that fall within this range in the current list of wavelengths
+                current_indices = [i for i in range(len(wavelengths)) if min_wavelength < wavelengths[i] < max_wavelength]
+
+                # Check if there at least 10
+                if len(current_indices) >= 10: continue
+
+                # Otherwise, delete the current wavelengths and add 10 new ones
+                for index in sorted(current_indices, reverse=True): del wavelengths[index]
+
+                # One more filter for which we have resampled
+                #broad_resampled += 1
+                broad_resampled.append(str(fltr))
+
+                # Generate new wavelengths for sampling the filter range on a logarithmic grid
+                new_wavelengths = fltr.range.log(10, as_list=True)
+
+                # Add the new wavelengths
+                wavelengths += new_wavelengths
+
+            # For a narrow band filter, add the exact wavelength of the filter to the wavelength grid
+            elif isinstance(fltr, NarrowBandFilter):
+
+                # Add the wavelength
+                wavelengths.append(fltr.wavelength)
+
+                # One more filter for which we have added a wavelength
+                #narrow_added += 1
+                narrow_added.append(str(fltr))
+
+            # Unrecognized filter
+            else: raise ValueError("Unrecognized filter object: " + str(fltr))
+
     # Add the emission lines
     emission_npoints = 0
     if emission_lines is not None:
+
+        # Debugging
+        log.debug("Adding the emission lines ...")
 
         # Add the mission lines
         wavelengths = add_emission_lines(wavelengths, emission_lines, min_wavelength, max_wavelength)
@@ -348,8 +419,16 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
     # Add fixed wavelength points
     fixed_npoints = 0
     if fixed is not None:
+
+        # Debugging
+        log.debug("Adding the fixed points to the grid ...")
+
         fixed_npoints = len(fixed)
         for wavelength in fixed:
+
+            # Debugging
+            log.debug("Adding fixed wavelength " + str(wavelength) + " ...")
+
             if min_wavelength is not None and wavelength < min_wavelength: continue
             if max_wavelength is not None and wavelength > max_wavelength: continue
             wavelengths.append(wavelength)
@@ -361,7 +440,7 @@ def create_one_subgrid_wavelength_grid(npoints, emission_lines=None, fixed=None,
     grid = WavelengthGrid.from_wavelengths(wavelengths)
 
     # Return the grid and some information about the subgrids
-    return grid, subgrid_npoints, emission_npoints, fixed_npoints
+    return grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
 
 # -----------------------------------------------------------------
 

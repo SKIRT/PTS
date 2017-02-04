@@ -88,10 +88,10 @@ identifiers["ALMA.3"] = Map(observatories=["ALMA", "APEX"], channel=3)
 identifiers["ALMA.4"] = Map(observatories=["ALMA", "APEX"], channel=4)
 identifiers["ALMA.5"] = Map(observatories=["ALMA", "APEX"], channel=5)
 identifiers["ALMA.6"] = Map(observatories=["ALMA", "APEX"], channel=6)
-identifiers["ALMA.7"] = Map(observatories=["ALMA", "APEX"], channel=7, wavelength="870 micron")
+identifiers["ALMA.7"] = Map(observatories=["ALMA", "APEX"], channel=7)
 identifiers["ALMA.8"] = Map(observatories=["ALMA", "APEX"], channel=8)
-identifiers["ALMA.9"] = Map(observatories=["ALMA", "APEX"], channel=9, wavelength="440 micron")
-identifiers["ALMA.10"] = Map(observatories=["ALMA", "APEX"], channel=10, wavelength="350 micron")
+identifiers["ALMA.9"] = Map(observatories=["ALMA", "APEX"], channel=9)
+identifiers["ALMA.10"] = Map(observatories=["ALMA", "APEX"], channel=10)
 
 # -----------------------------------------------------------------
 

@@ -235,7 +235,7 @@ class NarrowBandFilter(Filter):
                     for spec, alias in generate_aliases_ranges():
                         if alias in filterspec:
                             identifier = identifiers[spec]
-                            filterspec = parse_quantity(filterspec.split(alias)[1]) # get wavelength
+                            filterspec = parse_quantity(filterspec.split(alias)[1], physical_type="length") # get wavelength
                             observatory = identifier.observatories[0] if "observatories" in identifier else None
                             instrument = identifier.instruments[0] if "instruments" in identifier else None
                             name = alias

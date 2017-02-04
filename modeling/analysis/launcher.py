@@ -294,7 +294,8 @@ class AnalysisLauncher(AnalysisComponent):
         fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
 
         # Create the grid
-        grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
+        # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
+        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
 
         # Set the grid
         self.wavelength_grid = grid

@@ -20,12 +20,13 @@ from astropy.units import Quantity
 
 # -----------------------------------------------------------------
 
-def parse_quantity(argument, density=False):
+def parse_quantity(argument, density=False, physical_type=None):
 
     """
     This function ...
     :param argument:
     :param density:
+    :param physical_type:
     :return:
     """
 
@@ -43,8 +44,14 @@ def parse_quantity(argument, density=False):
             argument = argument[:-1]
     if units == "": raise ValueError("Unit is not specified")
 
+    unit = parse_unit(units.strip(), density=density)
+
+    # Check physical type
+    if physical_type is not None:
+        if unit.physical_type != physical_type: raise ValueError("The quantity was not parsed as a quantity of '" + physical_type + "'")
+
     # Create quantity
-    return number * parse_unit(units.strip(), density=density)
+    return number * unit
 
 # -----------------------------------------------------------------
 

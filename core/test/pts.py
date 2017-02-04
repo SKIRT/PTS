@@ -303,11 +303,13 @@ class PTSTestSuite(Configurable):
                 test = PTSTest(name, description, setup_function, test_function, temp_path)
 
                 # Loop over the commands
-                for command, input_dict, setting_dict, cwd in zip(commands, input_dicts, settings, cwds):
+                for command, input_dict, settings_dict, cwd in zip(commands, input_dicts, settings, cwds):
 
                     # Find matches
                     matches = introspection.find_matches_scripts(command, scripts)
                     table_matches = introspection.find_matches_tables(command, tables)
+
+                    output_path = fs.absolute_path(fs.join(temp_path, cwd))
 
                     # Find match
                     if len(matches) + len(table_matches) == 0: raise ValueError("Invalid PTS command: '" + command + "'")
@@ -341,23 +343,24 @@ class PTSTestSuite(Configurable):
                         # print(configuration_module_path)
 
                         # try:
-                        configuration_module = importlib.import_module(configuration_module_path)
+                        #configuration_module = importlib.import_module(configuration_module_path)
                         # has_configuration = True
-                        definition = getattr(configuration_module, "definition")
+                        #definition = getattr(configuration_module, "definition")
 
                         # Parse the configuration
-                        setter = DictConfigurationSetter(setting_dict, name, description=None)
-                        config = setter.run(definition)
+                        #setter = DictConfigurationSetter(setting_dict, name, description=None)
+                        #config = setter.run(definition)
 
                         # Set working directory (output directory)
-                        output_path = fs.absolute_path(fs.join(temp_path, cwd))
-                        config.path = output_path
+                        #config.path = output_path
 
                         # Create the class instance, configure it with the configuration settings
-                        inst = cls(config)
+                        #inst = cls(config)
 
                         # Add component to the test
-                        test.add_component(command, inst, input_dict)
+                        #test.add_component(command, inst, input_dict)
+
+                        test.add_component(command, cls, configuration_module_path, settings_dict, output_path, input_dict)
 
                     # Ambigious command
                     else: raise ValueError("The command '" + command + "' is ambigious")

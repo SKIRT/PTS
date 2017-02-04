@@ -49,6 +49,7 @@ input_replacements["nmaggy"] = nanomaggy_string
 input_replacements["nmgy"] = nanomaggy_string
 input_replacements["nMgy"] = nanomaggy_string
 input_replacements["nanomaggies"] = nanomaggy_string
+input_replacements["um"] = "micron"
 
 # -----------------------------------------------------------------
 

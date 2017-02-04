@@ -24,10 +24,13 @@ from astropy import constants
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..filter.broad import BroadBandFilter
+from ..filter.narrow import NarrowBandFilter
+from ..filter.filter import parse_filter
 from ..data.sed import SED
 from ...magic.misc.spire import SPIRE
 from ..basics.unit import parse_unit as u
 from ..data.sed import ObservedSED
+from ..tools import lists
 
 # -----------------------------------------------------------------
 
@@ -127,7 +130,7 @@ class ObservedFluxCalculator(object):
             log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
-            fltr = BroadBandFilter(filter_name)
+            fltr = parse_filter(filter_name)
 
             # Add the filter to the list
             self.filters.append(fltr)
@@ -196,29 +199,51 @@ class ObservedFluxCalculator(object):
             # Loop over the different filters
             for fltr in self.filters:
 
-                # Debugging
-                log.debug("Calculating the observed flux for the " + str(fltr) + " filter ...")
+                # Broad band filter
+                if isinstance(fltr, BroadBandFilter):
 
-                # Calculate the flux: flux densities must be per wavelength instead of per frequency!
-                fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * u("W / (m2 * micron)")
-                fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value # convert back to Jy
+                    # Debugging
+                    log.debug("Calculating the observed flux for the " + str(fltr) + " filter ...")
 
-                # For SPIRE, also multiply with Kbeam correction factor
-                if fltr.instrument == "SPIRE":
+                    # Calculate the flux: flux densities must be per wavelength instead of per frequency!
+                    fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * u("W / (m2 * micron)")
+                    fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value # convert back to Jy
 
-                    # Calculate the spectral index for the simulated SED at this filter
-                    # Use the central wavelength (frequency)
-                    central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
-                    spectral_index_filter = spectral_index(central_frequency)
+                    # For SPIRE, also multiply with Kbeam correction factor
+                    if fltr.instrument == "SPIRE":
 
-                    # Get the Kbeam factor
-                    kbeam = self.spire.get_kbeam_spectral(fltr, spectral_index_filter)
+                        # Calculate the spectral index for the simulated SED at this filter
+                        # Use the central wavelength (frequency)
+                        central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
+                        spectral_index_filter = spectral_index(central_frequency)
 
-                    # Multiply the flux density
-                    fluxdensity_value *= kbeam
+                        # Get the Kbeam factor
+                        kbeam = self.spire.get_kbeam_spectral(fltr, spectral_index_filter)
 
-                # Add a point to the mock SED
-                mock_sed.add_point(fltr, fluxdensity_value * u("Jy"))
+                        # Multiply the flux density
+                        fluxdensity_value *= kbeam
+
+                    # Add a point to the mock SED
+                    mock_sed.add_point(fltr, fluxdensity_value * u("Jy"))
+
+                # Narrow band filter
+                elif isinstance(fltr, NarrowBandFilter):
+
+                    # Debugging
+                    log.debug("Getting the observed flux for the " + str(fltr) + " filter ...")
+
+                    # Get the index of the wavelength closest to that of the filter
+                    index = lists.find_closest_index(wavelengths, fltr.wavelength.to("micron").value) # wavelengths are in micron
+
+                    # Get the flux density
+                    fluxdensity = fluxdensities[index] * u("W / (m2 * micron)") # flux densities are in W/(m2 * micron)
+                    fluxdensity = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.wavelength)) # now in Jy
+
+                    # Add a point to the mock SED
+                    mock_sed.add_point(fltr, fluxdensity)
+
+                # Unrecognized
+                else: raise ValueError("Unrecognized filter object: " + str(fltr))
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[sed_name] = mock_sed

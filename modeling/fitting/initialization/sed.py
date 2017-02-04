@@ -139,7 +139,7 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
                               add_emission_lines=self.config.wg.add_emission_lines,
                               min_wavelength=self.config.wg.min_wavelength,
-                              max_wavelength=self.config.wg.max_wavelength, fixed=fixed)
+                              max_wavelength=self.config.wg.max_wavelength, fixed=fixed, filters=self.fitting_filters)
 
     # -----------------------------------------------------------------
 

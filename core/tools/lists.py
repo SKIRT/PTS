@@ -41,3 +41,39 @@ def interleave(seqs):
             iters = itertools.cycle(itertools.takewhile(predicate, iters))
 
 # -----------------------------------------------------------------
+
+def find_closest_index(seq, value):
+
+    """
+    This function ...
+    :param seq:
+    :param value:
+    :return:
+    """
+
+    closest_delta = None
+    #closest_delta = float("inf")
+    closest_index = None
+
+    #column_unit = table[column_name].unit
+
+    #value_unit = value.unit if hasattr(value, "unit") else None
+
+    # Check units
+    #if value_unit is not None:
+        #if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
+        #else: value = value.to(column_unit).value # for correct comparison inside loop
+    #elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
+
+    # Loop over all entries in the sequence
+    for i in range(len(seq)):
+
+        delta = abs(seq[i] - value)
+
+        if closest_delta is None or delta < closest_delta:
+            closest_delta = delta
+            closest_index = i
+
+    return closest_index
+
+# -----------------------------------------------------------------

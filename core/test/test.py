@@ -13,11 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import importlib
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..tools import filesystem as fs
+from ..basics.map import Map
+from ..basics.configuration import DictConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -79,7 +82,8 @@ class PTSTest(object):
 
     # -----------------------------------------------------------------
 
-    def add_component(self, name, component, input_dict=None):
+    #def add_component(self, name, component, input_dict=None):
+    def add_component(self, name, cls, configuration_module_path, settings_dict, output_path, input_dict):
 
         """
         This function ...
@@ -89,8 +93,10 @@ class PTSTest(object):
         :return:
         """
 
-        self.components[name] = component
-        if input_dict is not None: self.input_dicts[name] = input_dict
+        #self.components[name] = component
+        #if input_dict is not None: self.input_dicts[name] = input_dict
+
+        self.components[name] = Map(cls=cls, conf_path=configuration_module_path, settings=settings_dict, output_path=output_path, input_dict=input_dict)
 
     # -----------------------------------------------------------------
 
@@ -133,13 +139,42 @@ class PTSTest(object):
         for name in self.components:
 
             # Debugging
+            log.debug("Setting configuration for component '" + name + "' ...")
+
+            configuration_module_path = self.components[name].conf_path
+            output_path = self.components[name].output_path
+            settings_dict = self.components[name].settings
+            cls = self.components[name].cls
+            input_dict = self.components[name].input_dict
+
+            # Change working directory
+            fs.change_cwd(output_path)
+
+            # try:
+            configuration_module = importlib.import_module(configuration_module_path)
+            # has_configuration = True
+            definition = getattr(configuration_module, "definition")
+
+            # Parse the configuration
+            setter = DictConfigurationSetter(settings_dict, name, description=None)
+            config = setter.run(definition)
+
+            # Set working directory (output directory)
+            config.path = output_path
+
+            # Create the class instance, configure it with the configuration settings
+            inst = cls(config)
+
+            # Debugging
             log.debug("Executing component '" + name + "' ...")
 
             # Get input
-            input_dict = self.input_dicts[name] if name in self.input_dicts else dict()
+            #input_dict = self.input_dicts[name] if name in self.input_dicts else dict()
+            #print(input_dict)
 
             # Run with input
-            self.components[name].run(**input_dict)
+            #self.components[name].run(**input_dict)
+            inst.run(**input_dict)
 
     # -----------------------------------------------------------------
 

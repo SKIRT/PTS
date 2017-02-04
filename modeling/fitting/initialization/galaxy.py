@@ -169,7 +169,8 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # Generate the wavelength grids
         self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
                               fixed=fixed, add_emission_lines=self.config.wg.add_emission_lines,
-                              min_wavelength=self.config.wg.min_wavelength, max_wavelength=self.config.wg.max_wavelength)
+                              min_wavelength=self.config.wg.min_wavelength, max_wavelength=self.config.wg.max_wavelength,
+                              filters=self.fitting_filters)
 
     # -----------------------------------------------------------------
 

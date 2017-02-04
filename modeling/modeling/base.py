@@ -201,10 +201,7 @@ class ModelerBase(Configurable):
         if self.config.finish: self.finish()
 
         # Advance the fitting with a new generations
-        else:
-
-            print(self.config.ngenerations)
-            repeat(self.advance, self.config.ngenerations)
+        else: repeat(self.advance, self.config.ngenerations)
 
     # -----------------------------------------------------------------
 

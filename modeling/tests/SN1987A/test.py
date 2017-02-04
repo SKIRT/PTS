@@ -57,7 +57,7 @@ settings.append(settings_setup)
 
 # Settings for 'model_sed'
 settings_model = dict()
-settings_model["ngenerations"] = "4"
+settings_model["ngenerations"] = 4
 settings.append(settings_model)
 
 # -----------------------------------------------------------------
