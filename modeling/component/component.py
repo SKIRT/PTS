@@ -317,6 +317,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def spectral_convolution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.spectral_convolution
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def fitting_filter_names(self):
 
         """
@@ -510,5 +522,18 @@ def load_modeling_history(modeling_path):
 
     # Return the history
     return history
+
+# -----------------------------------------------------------------
+
+def get_spectral_convolution_flag(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    fitting_configuration = load_fitting_configuration(modeling_path)
+    return fitting_configuration.spectral_convolution
 
 # -----------------------------------------------------------------

@@ -481,7 +481,14 @@ class BasicAnalyser(Configurable):
 
         # Create and run a ObservedFluxCalculator object
         self.flux_calculator = ObservedFluxCalculator()
-        self.flux_calculator.run(self.simulation, output_path=self.misc_options.path,
+
+        # Set spectral convolution
+        if self.simulation.from_modeling:
+            from ...modeling.component.component import get_spectral_convolution_flag
+            self.flux_calculator.config.spectral_convolution = get_spectral_convolution_flag(self.simulation.analysis.modeling_path)
+
+        # Run
+        self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
                                  filter_names=self.misc_options.observation_filters,
                                  instrument_names=self.misc_options.observation_instruments)
 
@@ -499,7 +506,14 @@ class BasicAnalyser(Configurable):
 
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
-        self.image_maker.run(self.simulation, output_path=self.misc_options.path,
+
+        # Set spectral convolution
+        if self.simulation.from_modeling:
+            from ...modeling.component.component import get_spectral_convolution_flag
+            self.image_maker.config.spectral_convolution = get_spectral_convolution_flag(self.simulation.analysis.modeling_path)
+
+        # Run
+        self.image_maker.run(simulation=self.simulation, output_path=self.misc_options.path,
                              filter_names=self.misc_options.observation_filters,
                              instrument_names=self.misc_options.observation_instruments,
                              wcs_path=self.misc_options.images_wcs,

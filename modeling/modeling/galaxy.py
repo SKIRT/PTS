@@ -644,7 +644,7 @@ class GalaxyModeler(ModelerBase):
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        configurer.run(default_ranges=default_ranges)
+        configurer.run(default_ranges=default_ranges, settings=self.config.fitting_settings)
 
         # Mark the end and save the history file
         self.history.mark_end()

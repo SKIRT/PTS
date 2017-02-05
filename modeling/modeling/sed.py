@@ -178,7 +178,7 @@ class SEDModeler(ModelerBase):
         # Run the fitting configurer
         configurer.run(parameters_config=self.parameters_config, descriptions_config=self.descriptions_config,
                        types_config=self.types_config, units_config=self.units_config, ranges_config=self.ranges_config,
-                       filters_config=self.filters_config)
+                       filters_config=self.filters_config, settings=self.config.fitting_settings)
 
         # Mark the end and save the history file
         self.history.mark_end()

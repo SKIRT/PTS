@@ -154,7 +154,7 @@ class ImagesModeler(ModelerBase):
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        configurer.run()
+        configurer.run(settings=self.config.fitting_settings)
 
         # Mark the end and save the history file
         self.history.mark_end()

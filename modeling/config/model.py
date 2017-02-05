@@ -32,6 +32,9 @@ definition.add_optional("nsimulations", "even_integer", "number of simulations p
 definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)
 definition.add_flag("finish", "don't launch a new generation but finish evaluating all previous runs")
 
+# Other fitting settings
+definition.add_optional("fitting_settings", "dictionary", "additional settings for the fitting")
+
 # Model settings
 definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
 definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)

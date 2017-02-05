@@ -62,6 +62,9 @@ class FittingConfigurer(FittingComponent):
         self.ranges_config = None
         self.filters_config = None
 
+        # Additional settings
+        self.settings = None
+
         # The final fitting config
         self.fitting_config = None
 
@@ -127,6 +130,9 @@ class FittingConfigurer(FittingComponent):
         if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
         if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
         if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
+
+        # Set settings dict
+        if "settings" in kwargs: self.settings = kwargs.pop("settings")
 
     # -----------------------------------------------------------------
 
@@ -428,6 +434,36 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting additional settings ...")
+
+        # Prompt settings
+        if self.settings is None: self.prompt_settings()
+
+    # -----------------------------------------------------------------
+
+    def prompt_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for additional settings ...")
+
+        # ...
+        self.settings = dict()
+
+    # -----------------------------------------------------------------
+
     def adjust_labels(self):
 
         """
@@ -479,6 +515,9 @@ class FittingConfigurer(FittingComponent):
 
         # Combine configs
         self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config, self.units_config, self.ranges_config, self.filters_config)
+
+        # Set additional settings
+        for label in self.settings: self.fitting_config[label] = self.settings[label]
 
         # Write the configuration
         self.fitting_config.saveto(self.fitting_configuration_path)

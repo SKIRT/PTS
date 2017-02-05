@@ -59,6 +59,7 @@ settings.append(settings_setup)
 settings_model = dict()
 settings_model["ngenerations"] = 4
 settings_model["nsimulations"] = 20
+settings_model["fitting_settings"] = {"spectral_convolution": False}
 settings.append(settings_model)
 
 # -----------------------------------------------------------------
