@@ -27,6 +27,7 @@ from .skifile import SkiFile
 from .logfile import LogFile
 from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
+from .status import SimulationStatus
 
 # -----------------------------------------------------------------
 
@@ -203,6 +204,13 @@ class SkirtSimulation(object):
     @property
     def log_file(self):
         return LogFile(self.outfilepath("log.txt"))
+
+    # -----------------------------------------------------------------
+
+    ## This function returns a SimulationStatus object, that can be refreshed when desired
+    def get_status(self):
+        logpath = self.logfilepath()
+        return SimulationStatus(logpath)
 
     # -----------------------------------------------------------------
 

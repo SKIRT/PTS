@@ -29,6 +29,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ...core.filter.broad import BroadBandFilter
 from ..basics.vector import Pixel
+from ...core.tools import lists
 
 # -----------------------------------------------------------------
 
@@ -421,6 +422,64 @@ class DataCube(Image):
 
         # Return the resulting frame
         return frame
+
+    # -----------------------------------------------------------------
+
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8):
+
+        """
+        This function ...
+        :param filters:
+        :param convolve:
+        :param nprocesses:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting frames for " + str(len(filters)) + " different filters ...")
+
+        frames = []
+        for_convolution = []
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Broad band filter, with spectral convolution
+            if isinstance(fltr, BroadBandFilter) and convolve:
+
+                # Debugging
+                log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
+
+                # Add to list
+                for_convolution.append(fltr)
+
+                # Add placeholder
+                frames.append(None)
+
+            # Broad band filter without spectral convolution or narrow band filter
+            else:
+
+                # Debugging
+                log.debug("Getting the frame for the " + str(fltr) + " filter ...")
+
+                # Get the index of the wavelength closest to that of the filter
+                index = self.get_frame_index_for_wavelength(fltr.pivot)
+
+                # Get the frame
+                frames.append(self.frames[index])
+
+        # Calculate convolved frames
+        convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses)
+
+        # Add the convolved frames
+        for fltr, frame in zip(for_convolution, convolved_frames):
+
+            # Set the frame
+            index = filters.index(fltr)
+            frames[index] = frame
+
+        # Return the list of frames
+        return frames
 
     # -----------------------------------------------------------------
 

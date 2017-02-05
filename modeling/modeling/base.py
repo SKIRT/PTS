@@ -364,7 +364,8 @@ class ModelerBase(Configurable):
 
         # Check the current number of generations
         current_ngenerations = get_ngenerations(self.modeling_path)
-        if current_ngenerations <= 1: raise RuntimeError("Need at least one generation after the initial generation to finish the fitting")
+        #if current_ngenerations <= 1: raise RuntimeError("Need at least one generation after the initial generation to finish the fitting")
+        if current_ngenerations == 0: raise RuntimeError("There are no generations")
 
         # Check if there are unfinished generations
         has_unfinished = has_unfinished_generations(self.modeling_path)

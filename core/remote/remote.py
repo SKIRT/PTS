@@ -2431,6 +2431,7 @@ class Remote(object):
         """
         This function ...
         :param path:
+        :param stream:
         :return:
         """
 
@@ -2442,6 +2443,23 @@ class Remote(object):
 
         # Print the variable to the console, and obtain the output
         for line in self.execute('echo "$($value)"'): yield line
+
+    # -----------------------------------------------------------------
+
+    def read_last_lines(self, path, nlines):
+
+        """
+        This function ...
+        :param path:
+        :param nlines
+        :return:
+        """
+
+        # Execute 'tail'
+        output = self.execute("tail -" + str(nlines) + " " + path)
+
+        # Return the lines
+        return output
 
     # -----------------------------------------------------------------
 
@@ -3884,7 +3902,7 @@ class Remote(object):
                             else:
 
                                 # Get the last two lines of the remote log file
-                                output = self.execute("tail -2 " + log_path)
+                                output = self.read_last_lines(log_path, 2)
                                 last_line = output[1]
 
                                 # Check whether the last line states that the task has finished

@@ -30,6 +30,20 @@ def wait(seconds):
 
 # -----------------------------------------------------------------
 
+def iterate(seconds):
+
+    """
+    This function ...
+    :param seconds:
+    :return:
+    """
+
+    while True:
+        yield now()
+        wait(seconds)
+
+# -----------------------------------------------------------------
+
 def parse(timestamp):
 
     """

@@ -28,6 +28,7 @@ from ..launch.options import SchedulingOptions
 from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments
 from ..basics.handle import ExecutionHandle
+from .status import SimulationStatus
 
 # -----------------------------------------------------------------
 
@@ -1128,7 +1129,7 @@ class SkirtRemote(Remote):
                     if self.is_file(remote_log_file_path):
 
                         # Get the last two lines of the remote log file
-                        output = self.execute("tail -2 " + remote_log_file_path)
+                        output = self.read_last_lines(remote_log_file_path, 2)
 
                         # Get the last line of the actual simulation
                         if len(output) == 0: return "invalid: cannot read log file" #simulation_status = "invalid: cannot read log file"
@@ -1165,6 +1166,9 @@ class SkirtRemote(Remote):
 
             # Get the status
             simulation_status = python_session.get_simple_property(queue_variable_name, "select('name=?', (simulation_name,))[0]['status']")
+
+        # Invalid simulation handle
+        else: raise RuntimeError("Unrecognized simulation handle")
 
         # Return the simulation status
         return simulation_status
@@ -1290,7 +1294,7 @@ class SkirtRemote(Remote):
         if self.is_file(file_path):
 
             # Get the last two lines of the remote log file
-            output = self.execute("tail -2 " + file_path)
+            output = self.read_last_lines(file_path, 2)
 
             # Get the last line of the actual simulation
             if len(output) == 0: return "invalid: cannot read log file"
@@ -1359,7 +1363,7 @@ class SkirtRemote(Remote):
         if self.is_file(file_path):
 
             # Get the last two lines of the remote log file
-            output = self.execute("tail -2 " + file_path)
+            output = self.read_last_lines(file_path, 2)
 
             # Get the last line of the actual simulation
             if len(output) == 0: return "invalid: cannot read log file"
@@ -1391,46 +1395,8 @@ class SkirtRemote(Remote):
         :return:
         """
 
-        output = self.read_lines(file_path)
-
-        phase = None
-        cycle = None
-        progress = None
-
-        for line in output:
-
-            if "Starting setup" in line: phase = "setup"
-            elif "Starting the stellar emission phase" in line: phase = "stellar emission"
-            elif "Launched stellar emission photon packages" in line:
-
-                progress = float(line.split("packages: ")[1].split("%")[0])
-
-            elif "Starting the first-stage dust self-absorption cycle" in line: phase = "self-absorption [stage 1"
-            elif "Launched first-stage dust self-absorption cycle" in line:
-
-                cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                progress = float(line.split("packages: ")[1].split("%")[0])
-
-            elif "Starting the second-stage dust self-absorption cycle" in line: phase = "self-absorption [stage 2"
-            elif "Launched second-stage dust self-absorption cycle" in line:
-
-                cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                progress = float(line.split("packages: ")[1].split("%")[0])
-
-            elif "Starting the last-stage dust self-absorption cycle" in line: phase = "self-absorption [stage 3"
-            elif "Launched last-stage dust self-absorption cycle" in line:
-
-                cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                progress = float(line.split("packages: ")[1].split("%")[0])
-
-            elif "Starting the dust emission phase" in line: phase = "dust emission"
-            elif "Launched dust emission photon packages" in line: progress = float(line.split("packages: ")[1].split("%")[0])
-            elif "Starting writing results" in line: phase = "writing"
-
-        if phase is None: return "running"
-        elif "self-absorption" in phase: return "running: " + str(phase) + ", cycle " + str(cycle) + "] " + str(progress) + "%"
-        elif "stellar emission" in phase or "dust emission" in phase: return "running: " + str(phase) + " " + str(progress) + "%"
-        else: return "running: " + str(phase)
+        # Return string from simulation status
+        return str(SimulationStatus(file_path, self))
 
     # -----------------------------------------------------------------
 

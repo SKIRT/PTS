@@ -461,7 +461,8 @@ class DustPediaDatabase(object):
                 get_link = url
                 break
 
-        self.download_file(get_link, path, progress_bar=log.is_debug())
+        # Download
+        network.download_file(get_link, path, progress_bar=log.is_debug(), stream=True, session=self.session)
 
     # -----------------------------------------------------------------
 
@@ -485,7 +486,7 @@ class DustPediaDatabase(object):
             image_path = fs.join(path, image_name)
 
             # Download this image
-            self.download_file(url, image_path, progress_bar=log.is_debug())
+            network.download_file(url, image_path, progress_bar=log.is_debug(), stream=True, session=self.session)
 
     # -----------------------------------------------------------------
 
@@ -587,39 +588,6 @@ class DustPediaDatabase(object):
 
         # Download the photometry files
         network.download_files(urls, dir_path)
-
-    # -----------------------------------------------------------------
-
-    def download_file(self, link, local_path, progress_bar=False):
-
-        """
-        This function ...
-        :param link:
-        :param local_path:
-        :param progress_bar:
-        :return:
-        """
-
-        # NOTE the stream=True parameter
-        r = self.session.get(link, stream=True)
-
-        if progress_bar:
-
-            with open(local_path, 'wb') as f:
-                total_length = int(r.headers.get('content-length'))
-                for chunk in progress.bar(r.iter_content(chunk_size=1024), expected_size=(total_length / 1024) + 1):
-                    if chunk:
-                        f.write(chunk)
-                        f.flush()
-
-        else:
-
-            # Open the local file, and load the content in it
-            with open(local_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=1024):
-                    if chunk: # filter out keep-alive new chunks
-                        f.write(chunk)
-                        #f.flush() # commented by recommendation from J.F.Sebastian
 
 # -----------------------------------------------------------------
 

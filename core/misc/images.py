@@ -25,6 +25,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.remote import RemoteDataCube
 from ..simulation.wavelengthgrid import WavelengthGrid
 from ..basics.unit import parse_unit as u
+from ..basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -33,13 +34,13 @@ speed_of_light = constants.c
 
 # -----------------------------------------------------------------
 
-class ObservedImageMaker(object):
+class ObservedImageMaker(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
@@ -47,7 +48,7 @@ class ObservedImageMaker(object):
         """
 
         # Call the constructor of the base class
-        super(ObservedImageMaker, self).__init__()
+        super(ObservedImageMaker, self).__init__(config)
 
         # -- Attributes --
 
@@ -69,9 +70,6 @@ class ObservedImageMaker(object):
 
         # The instrument names
         self.instrument_names = None
-
-        # The output path
-        self.output_path = None
 
         # The filters for which the images should be created
         self.filters = dict()
@@ -96,24 +94,16 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
-            kernel_paths=None, unit=None, host_id=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param output_path:
-        :param filter_names:
-        :param instrument_names:
-        :param wcs_path:
-        :param kernel_paths:
-        :param unit:
-        :param host_id:
+        :param kwargs
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, output_path, filter_names, instrument_names, wcs_path, kernel_paths, unit, host_id)
+        self.setup(**kwargs)
 
         # 2. Create the wavelength grid
         self.create_wavelength_grid()
@@ -141,21 +131,26 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
-              kernel_paths=None, unit=None, host_id=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param output_path:
-        :param filter_names:
-        :param instrument_names:
-        :param wcs_path:
-        :param kernel_paths:
-        :param unit:
-        :param host_id:
         :return:
         """
+
+        # Call the setup function of the base class
+        super(ObservedImageMaker, self).setup(**kwargs)
+
+        # simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
+        # kernel_paths=None, unit=None, host_id=None
+        simulation = kwargs.pop("simulation")
+        output_path = kwargs.pop("output_path", None)
+        filter_names = kwargs.pop("filter_names", None)
+        instrument_names = kwargs.pop("instrument_names", None)
+        wcs_path = kwargs.pop("wcs_path", None)
+        kernel_paths = kwargs.pop("kernel_paths", None)
+        unit = kwargs.pop("unit", None)
+        host_id = kwargs.pop("host_id", None)
 
         # Obtain the paths to the 'total' FITS files created by the simulation
         self.fits_paths = simulation.totalfitspaths()
@@ -173,7 +168,7 @@ class ObservedImageMaker(object):
         self.instrument_names = instrument_names
 
         # Set the output path
-        self.output_path = output_path
+        self.config.ouput = output_path
 
         # If a WCS path is defined (a FITS file)
         if wcs_path is not None:
@@ -323,7 +318,7 @@ class ObservedImageMaker(object):
             images = dict()
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
-            frames = self.datacubes[datacube_name].convolve_with_filters(filters)
+            frames = self.datacubes[datacube_name].frames_for_filters(filters, convolve=self.config.spectral_convolution)
 
             # Add the observed images to the dictionary
             for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube

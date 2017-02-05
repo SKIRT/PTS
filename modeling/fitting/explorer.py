@@ -216,6 +216,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.memory_table_path = self.memory_table_path        # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
         self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations)
+        self.launcher.config.progress_bar = True  # show progress bars for local execution
 
         # Simulation analysis options
 

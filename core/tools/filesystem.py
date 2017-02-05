@@ -871,6 +871,19 @@ def read_lines(path):
 
 # -----------------------------------------------------------------
 
+def read_last_lines(path, nlines):
+
+    """
+    This function ...
+    :param path:
+    :param nlines:
+    :return:
+    """
+
+    for line in list(read_lines(path))[-nlines:]: yield line
+
+# -----------------------------------------------------------------
+
 def read_lines_reversed(path, buf_size=8192):
 
     """

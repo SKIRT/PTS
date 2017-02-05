@@ -23,6 +23,7 @@ from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from .definition import SingleSimulationDefinition
+from .status import SimulationStatus
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -137,7 +138,7 @@ class SkirtExec:
         return self.run(arguments, wait=wait, silent=silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
-    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False):
+    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False, progress_bar=False):
 
         # The simulation names for different ski pats
         simulation_names = dict()
@@ -175,12 +176,27 @@ class SkirtExec:
         # Get the command string
         command = arguments.to_command(self._path, mpi_command, scheduler)
 
+        if progress_bar and not wait: raise ValueError("Cannot show progress bar when 'wait' is False")
+
+        if progress_bar: wait = False
+
         # Launch the SKIRT command
         if wait:
             self._process = None
             if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
             else: subprocess.call(command)
         else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+
+        # Show progress bar with progress
+        if progress_bar:
+
+            out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
+            prefix = arguments.prefix
+            log_path = fs.join(out_path, prefix + "_log.txt")
+            status = SimulationStatus(log_path)
+
+            # Show the simulation progress
+            status.show_progress()
 
         # Return the list of simulations so that their results can be followed up
         return arguments.simulations(simulation_names=simulation_names)

@@ -15,7 +15,7 @@ class ExecutionHandle(object):
     This class ...
     """
 
-    def __init__(self, type, value, host_id, remote_screen_output_path=None):
+    def __init__(self, type, value=None, host_id=None, remote_screen_output_path=None):
 
         """
         The constructor ...
@@ -34,6 +34,18 @@ class ExecutionHandle(object):
 
         # Extra information
         self.remote_screen_output_path = remote_screen_output_path
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def local(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return cls("local")
 
     # -----------------------------------------------------------------
 

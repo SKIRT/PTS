@@ -25,6 +25,7 @@ from ..basics.range import QuantityRange
 from ..basics.unit import parse_unit as u
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
+from ..plot.transmission import TransmissionPlotter
 
 # -----------------------------------------------------------------
 
@@ -164,7 +165,10 @@ class WavelengthGridGenerator(Configurable):
         # 3. Show
         if self.config.show: self.show()
 
-        # 4. Write
+        # 4. Plot
+        if self.config.plot: self.plot()
+
+        # 5. Write
         if self.config.write: self.write()
 
     # -----------------------------------------------------------------
@@ -242,7 +246,30 @@ class WavelengthGridGenerator(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Showing the wavelength grids ...")
+
+        # Loop over the grids
+        for grid in self.grids:
+
+            print("Wavelength grid with " + str(len(grid)) + " wavelength points:")
+            print("")
+            print(grid)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the wavelength grids ...")
+
+        plotter = TransmissionPlotter()
 
     # -----------------------------------------------------------------
 

@@ -73,6 +73,19 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def prefix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not fs.is_file(self.ski_pattern): raise RuntimeError("Cannot determine the prefix for the ski pattern '" + self.ski_pattern + "'. Does it define multiple files?")
+        return fs.strip_extension(fs.name(self.ski_pattern))
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_config(cls, config):
 

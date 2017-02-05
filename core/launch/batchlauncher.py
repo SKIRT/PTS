@@ -1043,7 +1043,7 @@ class BatchLauncher(Configurable):
                 log.info("Launching simulation " + str(index+1) + " out of " + str(total_queued) + " in the local queue ...")
 
                 # Run the simulation
-                simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()))
+                simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()), progress_bar=self.config.progress_bar)
 
                 # Success
                 log.success("Finished simulation " + str(index+1))

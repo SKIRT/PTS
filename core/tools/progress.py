@@ -125,13 +125,13 @@ class Bar(object):
 
 def bar(it, label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
         filled_char=BAR_FILLED_CHAR, expected_size=None, every=1):
+
     """Progress iterator. Wrap your iterables with it."""
 
     count = len(it) if expected_size is None else expected_size
 
-    with Bar(label=label, width=width, hide=hide, empty_char=BAR_EMPTY_CHAR,
-             filled_char=BAR_FILLED_CHAR, expected_size=count, every=every) \
-            as bar:
+    with Bar(label=label, width=width, hide=hide, empty_char=empty_char,
+             filled_char=filled_char, expected_size=count, every=every) as bar:
         for i, item in enumerate(it):
             yield item
             bar.show(i + 1)
@@ -139,6 +139,7 @@ def bar(it, label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
 # -----------------------------------------------------------------
 
 def dots(it, label='', hide=None, every=1):
+
     """Progress iterator. Prints a dot for each item being iterated"""
 
     count = 0
@@ -162,6 +163,7 @@ def dots(it, label='', hide=None, every=1):
 # -----------------------------------------------------------------
 
 def mill(it, label='', hide=None, expected_size=None, every=1):
+
     """Progress iterator. Prints a mill while iterating over the items."""
 
     def _mill_char(_i):

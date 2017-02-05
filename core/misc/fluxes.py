@@ -31,24 +31,26 @@ from ...magic.misc.spire import SPIRE
 from ..basics.unit import parse_unit as u
 from ..data.sed import ObservedSED
 from ..tools import lists
+from ..basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class ObservedFluxCalculator(object):
+class ObservedFluxCalculator(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
 
         """
         The constructor ...
+        :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ObservedFluxCalculator, self).__init__()
+        super(ObservedFluxCalculator, self).__init__(config)
 
         # -- Attributes --
 
@@ -76,16 +78,44 @@ class ObservedFluxCalculator(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param output_path:
-        :param filter_names:
-        :param instrument_names:
+        :param kwargs:
         :return:
         """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 2. Create the filters
+        self.create_filters()
+
+        # 3. Calculate the observed fluxes
+        self.calculate()
+
+        # 4. Write the results
+        if self.config.output is not None: self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ObservedFluxCalculator, self).setup(**kwargs)
+
+        #simulation, output_path = None, filter_names = None, instrument_names = None
+        simulation = kwargs.pop("simulation")
+        output_path = kwargs.pop("output_path", None)
+        filter_names = kwargs.pop("filter_names", None)
+        instrument_names = kwargs.pop("instrument_names", None)
 
         # Obtain the paths to the SED files created by the simulation
         self.sed_paths = simulation.seddatpaths()
@@ -99,14 +129,8 @@ class ObservedFluxCalculator(object):
         # Set the instrument names
         self.instrument_names = instrument_names
 
-        # Create the filters
-        self.create_filters()
-
-        # Calculate the observed fluxes
-        self.calculate()
-
-        # Write the results
-        if output_path is not None: self.write(output_path)
+        # Set output path
+        self.config.output = output_path
 
     # -----------------------------------------------------------------
 
@@ -199,11 +223,11 @@ class ObservedFluxCalculator(object):
             # Loop over the different filters
             for fltr in self.filters:
 
-                # Broad band filter
-                if isinstance(fltr, BroadBandFilter):
+                # Broad band filter, with spectral convolution
+                if isinstance(fltr, BroadBandFilter) and self.config.spectral_convolution:
 
                     # Debugging
-                    log.debug("Calculating the observed flux for the " + str(fltr) + " filter ...")
+                    log.debug("Calculating the observed flux for the " + str(fltr) + " filter by convolving spectrally ...")
 
                     # Calculate the flux: flux densities must be per wavelength instead of per frequency!
                     fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * u("W / (m2 * micron)")
@@ -226,35 +250,37 @@ class ObservedFluxCalculator(object):
                     # Add a point to the mock SED
                     mock_sed.add_point(fltr, fluxdensity_value * u("Jy"))
 
-                # Narrow band filter
-                elif isinstance(fltr, NarrowBandFilter):
+                # Broad band filter without spectral convolution or narrow band filter
+                else:
 
                     # Debugging
                     log.debug("Getting the observed flux for the " + str(fltr) + " filter ...")
 
                     # Get the index of the wavelength closest to that of the filter
-                    index = lists.find_closest_index(wavelengths, fltr.wavelength.to("micron").value) # wavelengths are in micron
+                    index = lists.find_closest_index(wavelengths, fltr.pivot.to("micron").value)  # wavelengths are in micron
 
                     # Get the flux density
-                    fluxdensity = fluxdensities[index] * u("W / (m2 * micron)") # flux densities are in W/(m2 * micron)
-                    fluxdensity = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.wavelength)) # now in Jy
+                    fluxdensity = fluxdensities[index] * u("W / (m2 * micron)")  # flux densities are in W/(m2 * micron)
+                    fluxdensity = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot))  # now in Jy
 
                     # Add a point to the mock SED
                     mock_sed.add_point(fltr, fluxdensity)
 
+                # Narrow band filter
+                #elif isinstance(fltr, NarrowBandFilter):
+
                 # Unrecognized
-                else: raise ValueError("Unrecognized filter object: " + str(fltr))
+                #else: raise ValueError("Unrecognized filter object: " + str(fltr))
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[sed_name] = mock_sed
 
     # -----------------------------------------------------------------
 
-    def write(self, output_path):
+    def write(self):
 
         """
         This function ...
-        :param output_path:
         :return:
         """
 
@@ -262,15 +288,14 @@ class ObservedFluxCalculator(object):
         log.info("Writing ...")
 
         # Write the mock SEDs
-        self.write_mock_seds(output_path)
+        self.write_mock_seds()
 
     # -----------------------------------------------------------------
 
-    def write_mock_seds(self, output_path):
+    def write_mock_seds(self):
 
         """
         This function ...
-        :param output_path:
         :return:
         """
 
@@ -281,7 +306,7 @@ class ObservedFluxCalculator(object):
         for name in self.mock_seds:
 
             # Determine the path to the output flux table
-            path = fs.join(output_path, name + "_fluxes.dat")
+            path = self.output_path_file(name + "_fluxes.dat")
 
             # Write out the flux table
             self.mock_seds[name].saveto(path)

@@ -15,10 +15,12 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from subprocess import call, check_output
 import urllib
+import requests
 import httplib
 from . import filesystem as fs
 from .logging import log
 from . import archive
+from . import progress
 
 # -----------------------------------------------------------------
 
@@ -61,13 +63,17 @@ def download_and_decompress_file(url, path, remove=True, overwrite=False):
 
 # -----------------------------------------------------------------
 
-def download_file(url, path, overwrite=False):
+def download_file(url, path, overwrite=False, progress_bar=False, stream=False, chunk_size=1024, session=None):
 
     """
     This function ...
     :param url
     :param path:
     :param overwrite:
+    :param progress_bar:
+    :param stream
+    :param chunk_size:
+    :param session:
     :return:
     """
 
@@ -86,8 +92,39 @@ def download_file(url, path, overwrite=False):
     log.debug("Downloading '" + filename + "' to '" + path + "' ...")
     log.debug("URL: " + url)
 
-    # Download
-    urllib.urlretrieve(url, filepath)
+    # Show progress bar, so stream
+    if progress_bar:
+
+        # Request
+        if session is None: session = requests.session()
+        r = session.get(url, stream=True)
+
+        # Open the local file
+        with open(filepath, 'wb') as f:
+
+            total_length = int(r.headers.get('content-length'))
+            for chunk in progress.bar(r.iter_content(chunk_size=chunk_size), expected_size=(total_length / chunk_size) + 1):
+                if chunk:
+                    f.write(chunk)
+                    f.flush()
+
+    # User wants streaming
+    elif stream:
+
+        # Request
+        if session is None: session = requests.session()
+        r = session.get(url, stream=True)
+
+        # Open the local file, and load the content in it
+        with open(filepath, 'wb') as f:
+
+            for chunk in r.iter_content(chunk_size=chunk_size):
+                if chunk:  # filter out keep-alive new chunks
+                    f.write(chunk)
+                    # f.flush() # commented by recommendation from J.F.Sebastian
+
+    # Regular download
+    else: urllib.urlretrieve(url, filepath)
 
     # Return the file path
     return filepath
