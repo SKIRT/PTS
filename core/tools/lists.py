@@ -42,6 +42,22 @@ def interleave(seqs):
 
 # -----------------------------------------------------------------
 
+def combine_unique(*args):
+
+    """
+    This function ...
+    :return:
+    """
+
+    unique = set()
+
+    # Add
+    for seq in args: unique |= set(seq)
+
+    return list(unique)
+
+# -----------------------------------------------------------------
+
 def find_closest_index(seq, value):
 
     """

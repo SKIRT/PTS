@@ -18,7 +18,7 @@ from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from .configuration import find_command
 
 # -----------------------------------------------------------------
 
@@ -64,67 +64,24 @@ class Configurable(object):
         :param config:
         """
 
-        # If config is specified
-        if config is not None:
+        # Set configuration
+        self.config = self.get_config(config)
 
-            from .configuration import Configuration, ConfigurationDefinition, DictConfigurationSetter
+    # -----------------------------------------------------------------
 
-            if isinstance(config, Configuration): self.config = config
-            elif isinstance(config, dict):
+    @classmethod
+    def get_config(cls, config=None):
 
-                # Find the command
-                command_name, class_name, configuration_module_path, description = find_command(self.__class__)
+        """
+        This function ...
+        :param config:
+        :return:
+        """
 
-                # Get configuration definition
-                if command_name is not None:
-                    # Get definition
-                    definition = get_definition(class_name, configuration_module_path)
-                else: definition = ConfigurationDefinition(write_config=False)
+        from .configuration import get_config_for_class
 
-                # Create the DictConfigurationSetter
-                setter = DictConfigurationSetter(config, command_name, description)
-
-                # Set the configuration
-                self.config = setter.run(definition)
-
-            # Not a valid config argument
-            else: raise ValueError("Config should be Configuration, dictionary or None")
-
-        # Look for the config
-        else:
-
-            # Find the command
-            command_name, class_name, configuration_module_path, description = find_command(self.__class__)
-
-            if command_name is not None:
-
-                # Get definition
-                definition = get_definition(class_name, configuration_module_path)
-
-                ## CREATE THE CONFIGURATION
-
-                from pts.core.basics.configuration import ConfigurationDefinition, PassiveConfigurationSetter
-
-                # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
-                #if configuration_method is None: configuration_method = configuration_method_table
-
-                setter = PassiveConfigurationSetter(class_name, add_logging=False)
-
-                # Create the configuration from the definition
-                self.config = setter.run(definition)
-
-                #log.warning("The object has not been configured yet")
-
-            else:
-
-                from .configuration import ConfigurationDefinition
-                from .configuration import InteractiveConfigurationSetter
-
-                definition = ConfigurationDefinition(write_config=False)
-                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-
-                # Create new config
-                self.config = setter.run(definition, prompt_optional=False)
+        # Get the config
+        return get_config_for_class(cls, config)
 
     # -----------------------------------------------------------------
 
@@ -320,89 +277,5 @@ class HierarchicConfigurable(Configurable):
         """
 
         pass
-
-# -----------------------------------------------------------------
-
-def find_command(cls):
-
-    """
-    This function ...
-    :return:
-    """
-
-    from ..tools import introspection
-
-    tables = introspection.get_arguments_tables()
-    # table_matches = introspection.find_matches_tables(script_name, tables)
-
-    import inspect
-
-    class_name = cls.__name__
-
-    class_path = inspect.getfile(cls).split(".py")[0]
-
-    relative_class_path = class_path.rsplit("pts/")[1]
-
-    relative_class_pts = relative_class_path.replace("/", ".") + "." + class_name
-
-    subproject, relative_class_subproject = relative_class_pts.split(".", 1)
-
-    # print(subproject, relative_class_subproject)
-
-    # exit()
-
-    # Get the correct table
-    table = tables[subproject]
-
-    command_name = None
-    description = None
-    configuration_name = None
-    configuration_module_path = None
-
-    # print(table)
-
-    for i in range(len(table["Path"])):
-
-        # print(table["Path"][i], relative_class_subproject)
-
-        if table["Path"][i] == relative_class_subproject:
-
-            command_name = table["Command"][i]
-            description = table["Description"][i]
-
-            configuration_name = table["Configuration"][i]
-            if configuration_name == "--": configuration_name = command_name
-            configuration_module_path = "pts." + subproject + ".config." + configuration_name
-
-            break
-
-    # Return the command name
-    return command_name, class_name, configuration_module_path, description
-
-# -----------------------------------------------------------------
-
-def get_definition(class_name, configuration_module_path):
-
-    """
-    This function ...
-    :return:
-    """
-
-    import importlib
-
-    # Import things
-    from pts.core.basics.configuration import ConfigurationDefinition
-
-    ## GET THE CONFIGURATION DEFINITION
-    try:
-        configuration_module = importlib.import_module(configuration_module_path)
-        # has_configuration = True
-        definition = getattr(configuration_module, "definition")
-    except ImportError:
-        log.warning("No configuration definition found for the " + class_name + " class")
-        # has_configuration = False
-        definition = ConfigurationDefinition(write_config=False)  # Create new configuration definition
-
-    return definition
 
 # -----------------------------------------------------------------

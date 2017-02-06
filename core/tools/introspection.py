@@ -14,6 +14,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import ABCMeta
 from os import devnull
 import warnings
 import sys
@@ -1507,5 +1508,170 @@ def get_arguments_tables():
 
     # Return the tables
     return tables
+
+# -----------------------------------------------------------------
+
+def skip_module(name, path):
+
+    """
+    This function ...
+    :return:
+    """
+
+    if name == "__init__": return True
+    if name == "__main__": return True
+    if name == "runner": return True
+    if name == "run_queue": return True
+    if name == "enable_qch_mathjax": return True
+    if path.endswith("eagle/config.py"): return True
+    if path.endswith("eagle/collections.py"): return True
+    if path.endswith("eagle/database.py"): return True
+    if path.endswith("eagle/galaxy.py"): return True
+    if path.endswith("eagle/plotresults.py"): return True
+    if path.endswith("eagle/runner.py"): return True
+    if path.endswith("eagle/scheduler.py"): return True
+    if path.endswith("eagle/skirtrun.py"): return True
+    if name == "fit2BB_Md": return True
+
+    return False
+
+# -----------------------------------------------------------------
+
+def all_modules():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Loop over all module files
+    for path, name in fs.files_in_path(pts_package_dir, extension="py", recursive=True, returns=["path", "name"]):
+
+        # Skip?
+        if skip_module(name, path): continue
+
+        # Get subproject
+        subproject = path.split("pts/")[1].split("/")[0]
+
+        is_config = path.split(subproject + "/")[1].split("/")[0] == "config"
+
+        #if subproject != "do" and not is_config:
+
+        if subproject == "do": continue
+        if is_config: continue
+
+        # Load the module, get number of functions
+        relpath = "pts." + path.split("pts/")[1].replace("/", ".")[:-3]
+        # import_name = relpath.split(".")[-1]
+        # relpath = relpath.split("." + import_name)[0]
+        # print(import_name)
+
+        try: module = import_module(relpath)
+        except ImportError: module = None
+
+        # Return module path and the module itself (if it could be imported)
+        yield path, subproject, module
+
+# -----------------------------------------------------------------
+
+def classes_in_module(module):
+
+    """
+    This function ...
+    :param module:
+    :return:
+    """
+
+    md = module.__dict__
+    return [md[c] for c in md if (isinstance(md[c], type) and md[c].__module__ == module.__name__)]
+
+# -----------------------------------------------------------------
+
+def base_classes(cls):
+
+    """
+    This function ...
+    :param cls:
+    :return:
+    """
+
+    return inspect.getmro(cls)[1:]
+
+# -----------------------------------------------------------------
+
+def is_leaf_class(cls, hierarchy):
+
+    """
+    This function ...
+    :param cls:
+    :param hierarchy:
+    :return:
+    """
+
+    for other_cls in hierarchy:
+
+        base_class_list = hierarchy[other_cls]
+
+        if cls in base_class_list: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
+def all_classes():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Loop over all modules
+    for path, subproject, module in all_modules():
+        if module is None: continue
+        #for name, obj in inspect.getmembers(module):
+        #    if inspect.isclass(obj): yield obj
+
+        for cls in classes_in_module(module): yield cls
+
+# -----------------------------------------------------------------
+
+def all_configurable_classes():
+
+    """
+    This function ...
+    :return:
+    """
+
+    from ..basics.configurable import Configurable
+
+    for cls in all_classes():
+        if not issubclass(cls, Configurable): continue
+        yield cls
+
+# -----------------------------------------------------------------
+
+def all_concrete_configurable_classes():
+
+    """
+    This function ...
+    :return:
+    """
+
+    classes = all_configurable_classes()
+
+    # Construct hierarchy
+    hierarchy = dict()
+    for cls in classes:
+        hierarchy[cls] = base_classes(cls)
+
+    for cls in all_configurable_classes():
+
+        #print(cls.__name__, inspect.isabstract(cls))
+
+        #if cls.__metaclass__ == ABCMeta: continue
+        #if inspect.isabstract(cls): continue
+        #yield cls
+
+        if is_leaf_class(cls, hierarchy): yield cls
 
 # -----------------------------------------------------------------

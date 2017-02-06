@@ -54,49 +54,18 @@ nfunctions = 0
 nfunctions_per_subproject = defaultdict(int)
 
 # Loop over all module files
-for path, name in fs.files_in_path(introspection.pts_package_dir, extension="py", recursive=True, returns=["path", "name"]):
-
-    # Skip module initialization files, they are empty anyways
-    if name == "__init__": continue
-    if name == "__main__": continue
-    if name == "run_queue": continue
-    if name == "enable_qch_mathjax": continue
-    if path.endswith("eagle/config.py"): continue
-    if path.endswith("eagle/collections.py"): continue
-    if path.endswith("eagle/database.py"): continue
-    if path.endswith("eagle/galaxy.py"): continue
-    if path.endswith("eagle/plotresults.py"): continue
-    if path.endswith("eagle/runner.py"): continue
-    if path.endswith("eagle/scheduler.py"): continue
-    if path.endswith("eagle/skirtrun.py"): continue
-    if name == "fit2BB_Md": continue
-
-    # Get subproject
-    subproject = path.split("pts/")[1].split("/")[0]
-    nmodules_per_subproject[subproject] += 1
+for path, subproject, module in introspection.all_modules():
 
     nmodules += 1
+    nmodules_per_subproject[subproject] += 1
 
-    is_config = path.split(subproject + "/")[1].split("/")[0] == "config"
+    # Loop over the members
+    for member in getmembers(module):
 
-    #print(is_config)
+        if isfunction(member[1]):
 
-    if subproject != "do" and not is_config:
-
-        # Load the module, get number of functions
-        relpath = "pts." + path.split("pts/")[1].replace("/", ".")[:-3]
-        #import_name = relpath.split(".")[-1]
-        #relpath = relpath.split("." + import_name)[0]
-        #print(import_name)
-        try:
-            for member in getmembers(importlib.import_module(relpath)):
-
-                if isfunction(member[1]):
-
-                    nfunctions += 1
-                    nfunctions_per_subproject[subproject] += 1
-
-        except ImportError: pass
+            nfunctions += 1
+            nfunctions_per_subproject[subproject] += 1
 
     # Open the module file
     with open(path, 'r') as pyfile:

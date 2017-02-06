@@ -19,6 +19,7 @@ import importlib
 from ..tools import introspection
 from ..tools.logging import log
 from ..basics.configurable import Configurable
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -100,23 +101,11 @@ class ImportsChecker(Configurable):
 
                     if pythonic_path.split(subproject + ".")[1].split(".")[0] == "config": continue
 
-                    # Skip module initialization files, they are empty anyways
-                    if pythonic_path.endswith("__init__"): continue
-                    if pythonic_path.endswith("__main__"): continue
-                    if pythonic_path.endswith("run_queue"): continue
-                    if pythonic_path.endswith("enable_qch_mathjax"): continue
-                    if pythonic_path.endswith("eagle.config"): continue
-                    if pythonic_path.endswith("eagle.collections"): continue
-                    if pythonic_path.endswith("eagle.database"): continue
-                    if pythonic_path.endswith("eagle.galaxy"): continue
-                    if pythonic_path.endswith("eagle.plotresults"): continue
-                    if pythonic_path.endswith("eagle.runner"): continue
-                    if pythonic_path.endswith("eagle.scheduler"): continue
-                    if pythonic_path.endswith("eagle.skirtrun"): continue
-                    if pythonic_path.endswith("fit2BB_Md"): continue
+                    # Skip
+                    filename = fs.strip_extension(fs.name(module_path))
+                    if introspection.skip_module(filename, module_path): continue
 
-                    try:
-                        module = importlib.import_module(pythonic_path)
+                    try: module = importlib.import_module(pythonic_path)
                     except ImportError:
                         log.warning("Importing module '" + pythonic_path + "' failed")
                         continue

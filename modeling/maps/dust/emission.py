@@ -41,6 +41,20 @@ class EmissionDustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def requirements(cls, config):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        config = cls.get_config(config)
+        return [str(config.filter)]
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """
@@ -82,7 +96,7 @@ class EmissionDustMapMaker(MapsComponent):
         """
 
         # Make the map
-        self.map = self.dataset.get_frame("Pacs red")
+        self.map = self.dataset.get_frame_for_filter(self.config.filter)
 
     # -----------------------------------------------------------------
 

@@ -114,9 +114,6 @@ class FittingComponent(ModelingComponent):
         # The directory with the probability distributions for the different free parameters
         self.prob_distributions_path = None
 
-        # The paths to the probability distribution tables
-        #self.distribution_table_paths = dict()
-
         # The directory for the posterior / parameter probability distribution tables
         self.prob_parameters_path = None
 

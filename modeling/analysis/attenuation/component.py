@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta
+
 # Import the relevant PTS classes and modules
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
@@ -24,6 +27,10 @@ class AttenuationAnalysisComponent(AnalysisComponent):
     """
     This class...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, config=None):
 

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....core.tools import filesystem as fs
+from .tirtofuv import TIRtoFUVMapMaker
 
 # -----------------------------------------------------------------
 
@@ -48,6 +49,20 @@ class BuatDustMapMaker(MapsComponent):
 
         # Maps/dust/buat path
         self.maps_dust_buat_path = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def requirements(cls, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        config = cls.get_config(config)
+        return TIRtoFUVMapMaker.requirements()
 
     # -----------------------------------------------------------------
 
@@ -154,6 +169,7 @@ class BuatDustMapMaker(MapsComponent):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Writing ...")
 
 # -----------------------------------------------------------------

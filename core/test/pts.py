@@ -112,6 +112,9 @@ class PTSTestSuite(Configurable):
         # 3. Check the import statements
         self.check_imports()
 
+        # Check configurations
+        self.check_configurations()
+
         # 4. Load tests
         self.load_tests()
 
@@ -252,6 +255,17 @@ class PTSTestSuite(Configurable):
         self.checker.config.show = False
         self.checker.config.write = False
         self.checker.run()
+
+    # -----------------------------------------------------------------
+
+    def check_configurations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

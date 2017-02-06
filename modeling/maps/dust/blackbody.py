@@ -111,6 +111,20 @@ class BlackBodyDustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def requirements(cls, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        config = cls.get_config(config)
+        return ["MIPS 24mu", "Pacs 70mu", "Pacs 100mu", "Pacs 160mu", "SPIRE PSW", "SPIRE PMW", "SPIRE PLW"]
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """

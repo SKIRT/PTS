@@ -2431,7 +2431,6 @@ class Remote(object):
         """
         This function ...
         :param path:
-        :param stream:
         :return:
         """
 

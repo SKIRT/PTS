@@ -91,6 +91,19 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @staticmethod
+    def requirements(config):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        return ["MIPS 24mu", "Halpha"]
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """

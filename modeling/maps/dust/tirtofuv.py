@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta, abstractmethod
 import numpy as np
 
 # Import astronomical modules
@@ -48,10 +47,6 @@ class TIRtoFUVMapMaker(MapsComponent):
     This class...
     """
 
-    __metaclass__ = ABCMeta
-
-    # -----------------------------------------------------------------
-
     def __init__(self):
 
         """
@@ -84,6 +79,20 @@ class TIRtoFUVMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def requirements(cls, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        config = cls.get_config(config)
+        return ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """
@@ -94,19 +103,19 @@ class TIRtoFUVMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Load the image frames and errors
+        # 2. Load the image frames and errors
         self.load_frames()
 
-        # Make the FUV map in W/m2 unit
+        # 3. Make the FUV map in W/m2 unit
         self.make_fuv()
 
-        # Make the TIR map in W/m2 unit
+        # 4. Make the TIR map in W/m2 unit
         self.make_tir()
 
-        # Make the TIR to FUV ratio map
+        # 5. Make the TIR to FUV ratio map
         self.make_tir_to_fuv()
 
-        # Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -136,13 +145,11 @@ class TIRtoFUVMapMaker(MapsComponent):
         :return:
         """
 
-        data_names = ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
-
         # Get the galaxy distance
         distance = self.galaxy_properties.distance
 
         # Load all the frames and error maps
-        for name in data_names:
+        for name in self.requirements(self.config):
 
             frame = self.dataset.get_frame(name)
             errors = self.dataset.get_errormap(name)

@@ -696,7 +696,6 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        #return self.dataset.get_wcs(self.reference_image)
         return CoordinateSystem.from_file(self.reference_wcs_path)
 
     # -----------------------------------------------------------------
