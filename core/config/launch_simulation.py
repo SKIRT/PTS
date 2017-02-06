@@ -26,5 +26,6 @@ definition.add_positional_optional("remote", "string", "the remote host on which
 definition.add_optional("cluster", "string", "the name of the cluster", letter="c")
 definition.add_optional("parallel", "integer_tuple", "the parallelization scheme (processes, threads)", letter="p")
 definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
+definition.add_flag("data_parallel", "enable data parallelization", None)
 
 # -----------------------------------------------------------------

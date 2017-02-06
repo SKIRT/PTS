@@ -316,7 +316,7 @@ class SKIRTJobScript(_JobScript):
         threads_per_node = threads_per_core * cores_per_node
 
         # Determine number of processors per process
-        processors_per_process = arguments.parallel.threads / threads_per_node
+        processors_per_process = arguments.parallel.threads / threads_per_core
         assert int(processors_per_process) == processors_per_process
         processors_per_process = int(processors_per_process)
 
