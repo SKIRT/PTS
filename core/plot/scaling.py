@@ -24,7 +24,6 @@ from collections import Callable
 #from types import FunctionType
 from string import ascii_lowercase
 from matplotlib import rc
-from textwrap import wrap
 
 # Import astronomical modules
 from astropy.table import Table
@@ -45,7 +44,7 @@ from ..basics.range import RealRange
 from ..tools import tables
 from ..tools import stringify
 from ..tools.serialization import write_dict, load_dict, write_list, load_list
-from ..tools.strings import alphabet
+from ..tools.strings import alphabet, split_in_lines
 
 # -----------------------------------------------------------------
 
@@ -3016,7 +3015,7 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         if self.config.plot.add_titles:
             title = "Scaling of the " + phase_labels_timing[phase].lower()
-            title = "\n".join(wrap(title, 60))
+            title = split_in_lines(title)
             plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Set file path
@@ -3237,7 +3236,7 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         if self.config.plot.add_titles:
             title = "Speedup of the " + phase_labels_timing[phase].lower()
-            title = "\n".join(wrap(title, 60))
+            title = split_in_lines(title)
             plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Set file path
@@ -3439,7 +3438,7 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         if self.config.plot.add_titles:
             title = "Efficiency of the " + phase_labels_timing[phase].lower()
-            title = "\n".join(wrap(title, 60))
+            title = split_in_lines(title)
             plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine the path
@@ -3644,7 +3643,7 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         if self.config.add_titles:
             title = "Scaling of the total CPU time of the " + phase_labels_timing[phase].lower()
-            title = "\n".join(wrap(title, 60))
+            title = split_in_lines(title)
             plt.title(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path
@@ -3820,7 +3819,7 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         if self.config.plot.add_titles:
             title = "Scaling of the memory usage of the " + phase_names[phase].lower()
-            title = "\n".join(wrap(title, 60))
+            title = split_in_lines(title)
             plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path
@@ -3963,7 +3962,7 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         if self.config.plot.add_titles:
             title = "Scaling of the memory gain of the " + phase_names[phase].lower()
-            title = "\n".join(wrap(title, 60))
+            title = split_in_lines(title)
             plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path
@@ -4093,7 +4092,7 @@ class ScalingPlotter(Configurable):
         # Set the plot title
         if self.config.plot.add_titles:
             title = "Memory scaling for " + phase_names[phase].lower()
-            title = "\n".join(wrap(title, 60))
+            title = split_in_lines(title)
             plt.suptitle(title, fontsize=self.config.plot.title_fontsize)
 
         # Determine file path

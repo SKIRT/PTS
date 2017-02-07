@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from collections import OrderedDict
-from textwrap import wrap
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -23,6 +22,7 @@ from scipy.stats import gaussian_kde
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..basics.scatter import Scatter
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -270,7 +270,7 @@ class Scatter3DPlotter(object):
         ax.set_zlabel(self.z_label)
 
         # Set the title
-        if self.title is not None: plt.suptitle("\n".join(wrap(self.title, 60)))
+        if self.title is not None: plt.suptitle(strings.split_in_lines(self.title))
 
         plt.tight_layout()
 
@@ -407,7 +407,7 @@ class Scatter3DPlotter(object):
         ax.set_ylim(self.z_limits)
 
         # Set the title
-        if self.title is not None: plt.suptitle("\n".join(wrap(self.title, 60)))
+        if self.title is not None: plt.suptitle(strings.split_in_lines(self.title))
 
         plt.tight_layout()
 

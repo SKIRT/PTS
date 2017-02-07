@@ -19,12 +19,14 @@ from scipy.interpolate import interp1d
 from scipy.signal import argrelextrema
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import quad, simps
-from textwrap import wrap
 #import seaborn as sns
 
 # Import astronomical modules
 from astropy.table import Table
 from astropy.modeling import models, fitting
+
+# Import the relevant PTS classes and modules
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -885,7 +887,7 @@ class Distribution(object):
         #sp1.spines['right'].set_color('r')
 
         # Put the title and labels
-        if title is not None: sp1.set_title("\n".join(wrap(title, 60)))
+        if title is not None: sp1.set_title(strings.split_in_lines(title))
         sp1.set_xlabel('Values')
         sp1.set_ylabel('Probability')
 

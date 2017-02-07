@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import imp
-import importlib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -62,7 +61,27 @@ def tests_for_subproject(subproject):
 
 # -----------------------------------------------------------------
 
-scripts = introspection.get_scripts()
+def path_for_test(subproject, name):
+
+    """
+    This function ...
+    :param subproject:
+    :param name:
+    :return:
+    """
+
+    # Determine the path
+    path = fs.join(introspection.pts_subproject_dir(subproject), "tests", name)
+
+    # Check if exists
+    if not fs.is_directory(path): raise ValueError("'" + name + "' is not a test in the '" + subproject + "' subproject")
+
+    # Return the path
+    return path
+
+# -----------------------------------------------------------------
+
+#scripts = introspection.get_scripts()
 tables = introspection.get_arguments_tables()
 
 # -----------------------------------------------------------------
@@ -320,70 +339,27 @@ class PTSTestSuite(Configurable):
                 test_function = test_module.test
 
                 # Create Test instance
-                test = PTSTest(name, description, setup_function, test_function, temp_path)
+                test = PTSTest(name, description, setup_function, test_function, temp_path, self.config.keep)
 
                 # Loop over the commands
                 for command, input_dict, settings_dict, cwd in zip(commands, input_dicts, settings, cwds):
 
-                    # Find matches
-                    matches = introspection.find_matches_scripts(command, scripts)
-                    table_matches = introspection.find_matches_tables(command, tables)
+                    # Find match in the tables of configurable classes
+                    match = introspection.resolve_command_tables(command, tables)
 
+                    # Get info
+                    module_path = match.module_path
+                    class_name = match.class_name
+                    configuration_module_path = match.configuration_module_path
+
+                    # Get the class
+                    cls = introspection.get_class(module_path, class_name)
+
+                    # Determine the output path
                     output_path = fs.absolute_path(fs.join(temp_path, cwd))
 
-                    # Find match
-                    if len(matches) + len(table_matches) == 0: raise ValueError("Invalid PTS command: '" + command + "'")
-                    elif len(matches) == 1 and len(table_matches) == 0: raise NotImplementedError("Not implemented yet")
-                    elif len(table_matches) == 1 and len(matches) == 0:
-
-                        subproject, index = table_matches[0]
-                        command_name = tables[subproject]["Command"][index]
-                        hidden = False
-                        if command_name.startswith("*"):
-                            hidden = True
-                            command_name = command_name[1:]
-                        command_description = tables[subproject]["Description"][index]
-                        class_path_relative = tables[subproject]["Path"][index]
-                        class_path = "pts." + subproject + "." + class_path_relative
-                        module_path, class_name = class_path.rsplit('.', 1)
-
-                        configuration_method_table = tables[subproject]["Configuration method"][index]
-                        subproject_path = introspection.pts_subproject_dir(subproject)
-
-                        # Get the class of the configurable of which an instance has to be created
-                        module = importlib.import_module(module_path)
-                        try: cls = getattr(module, class_name)
-                        except AttributeError:
-                            raise Exception("The class name for the '" + command_name + "' command is incorrectly specified in the 'commands.dat' file of the '" + subproject + "' subproject")
-
-                        configuration_name = tables[subproject]["Configuration"][index]
-                        if configuration_name == "--": configuration_name = command_name
-                        configuration_module_path = "pts." + subproject + ".config." + configuration_name
-
-                        # print(configuration_module_path)
-
-                        # try:
-                        #configuration_module = importlib.import_module(configuration_module_path)
-                        # has_configuration = True
-                        #definition = getattr(configuration_module, "definition")
-
-                        # Parse the configuration
-                        #setter = DictConfigurationSetter(setting_dict, name, description=None)
-                        #config = setter.run(definition)
-
-                        # Set working directory (output directory)
-                        #config.path = output_path
-
-                        # Create the class instance, configure it with the configuration settings
-                        #inst = cls(config)
-
-                        # Add component to the test
-                        #test.add_component(command, inst, input_dict)
-
-                        test.add_component(command, cls, configuration_module_path, settings_dict, output_path, input_dict)
-
-                    # Ambigious command
-                    else: raise ValueError("The command '" + command + "' is ambigious")
+                    # Add the component
+                    test.add_component(command, cls, configuration_module_path, settings_dict, output_path, input_dict)
 
                 # Add the test to the suite
                 self.tests[subproject].append(test)
@@ -413,8 +389,11 @@ class PTSTestSuite(Configurable):
                 # Debugging
                 log.debug("Performing test " + str(counter+1) + " of " + str(len(self.tests[subproject])))
 
-                # Perform
-                test.perform()
+                # Start
+                log.start("Starting test '" + test.name + "' ...")
+
+                # Run the test
+                test.run()
 
     # -----------------------------------------------------------------
 

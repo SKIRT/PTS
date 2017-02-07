@@ -31,6 +31,7 @@ import pip
 
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -1673,5 +1674,115 @@ def all_concrete_configurable_classes():
         #yield cls
 
         if is_leaf_class(cls, hierarchy): yield cls
+
+# -----------------------------------------------------------------
+
+def resolve_command_configurable(command):
+
+    """
+    This function ...
+    :param command:
+    :return:
+    """
+
+    tables = get_arguments_tables()
+    return resolve_command_tables(command, tables)
+
+# -----------------------------------------------------------------
+
+def resolve_command_tables(command, tables):
+
+    """
+    This function ...
+    :param command:
+    :param tables:
+    :return:
+    """
+
+    # Find matches
+    script_name = command
+    table_matches = find_matches_tables(script_name, tables)
+
+    # No match or ambigious command
+    if len(table_matches) == 0: raise ValueError("The command could not be resolved")
+    elif len(table_matches) > 1: raise ValueError("The command is ambigious")
+
+    # Return the match
+    subproject, index = table_matches[0]
+    return resolve_from_match(subproject, tables[subproject], index)
+
+# -----------------------------------------------------------------
+
+def resolve_from_match(subproject, table, index):
+
+    """
+    This function ...
+    :param subproject:
+    :param table:
+    :param index:
+    :return:
+    """
+
+    # Get properties
+    command_name = table["Command"][index]
+    hidden = False
+    if command_name.startswith("*"):
+        hidden = True
+        command_name = command_name[1:]
+    command_description = table["Description"][index]
+    class_path_relative = table["Path"][index]
+    class_path = "pts." + subproject + "." + class_path_relative
+    module_path, class_name = class_path.rsplit('.', 1)
+
+    configuration_method_table = table["Configuration method"][index]
+    # subproject_path = pts_subproject_dir(subproject)
+
+    # Determine the configuration module path
+    configuration_name = table["Configuration"][index]
+    if configuration_name == "--": configuration_name = command_name
+    configuration_module_path = "pts." + subproject + ".config." + configuration_name
+
+    # Return
+    return Map(subproject=subproject, command_name=command_name, hidden=hidden, description=command_description,
+               module_path=module_path, class_name=class_name, configuration_method=configuration_method_table,
+               configuration_module_path=configuration_module_path)
+
+# -----------------------------------------------------------------
+
+def get_class(module_path, class_name):
+
+    """
+    This function ...
+    :param module_path
+    :param class_name:
+    :return:
+    """
+
+    # Get the class of the configurable of which an instance has to be created
+    module = import_module(module_path)
+    try: cls = getattr(module, class_name)
+    except AttributeError:
+        raise Exception("The class '" + class_name + "' could not be found in the module '" + module_path + "'")
+
+    # Return the class
+    return cls
+
+# -----------------------------------------------------------------
+
+def get_configuration_definition(configuration_module_path):
+
+    """
+    This function ...
+    :param configuration_module_path:
+    :return:
+    """
+
+    # Get the configuration module
+    try: configuration_module = import_module(configuration_module_path)
+    except ImportError: raise RuntimeError("The configuration module '" + configuration_module_path + "' was not found")
+    definition = getattr(configuration_module, "definition")
+
+    # Return the definition
+    return definition
 
 # -----------------------------------------------------------------

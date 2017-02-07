@@ -19,6 +19,7 @@ definition.add_positional_optional("subprojects", "string_list", "update on a re
 definition.add_positional_optional("tests", "string_list", "test(s) to perform (when one subproject is specified)")
 
 # Add flags
+definition.add_flag("keep", "keep the output")
 definition.add_flag("show", "show results")
 definition.add_flag("write", "write results")
 

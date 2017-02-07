@@ -7,9 +7,9 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.config.cortese import definition as cortese_definition
-from pts.modeling.config.buat import definition as buat_definition
-from pts.modeling.config.black_body import definition as bb_definition
+from pts.modeling.config.make_dust_cortese import definition as cortese_definition
+from pts.modeling.config.make_dust_buat import definition as buat_definition
+from pts.modeling.config.make_dust_blackbody import definition as bb_definition
 
 # -----------------------------------------------------------------
 

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1" producer="SKIRT v7 (git 109-fbb9c3b-dirty built on Oct 21 2014 at 11:12:56)" time="2014-10-21T16:06:44">
+    <OligoMonteCarloSimulation packages="1e4" continuousScattering="false">
+        <random type="Random">
+            <Random seed="4357"/>
+        </random>
+        <units type="Units">
+            <ExtragalacticUnits fluxOutputStyle="Neutral"/>
+        </units>
+        <instrumentSystem type="InstrumentSystem">
+            <InstrumentSystem>
+                <instruments type="Instrument">
+                    <MultiFrameInstrument instrumentName="lol" distance="18.6 Mpc" inclination="[inclination:90 deg]" azimuth="0 deg" positionAngle="0 deg" writeTotal="false" writeStellarComps="true">
+                        <frames type="InstrumentFrame">
+                            <InstrumentFrame pixelsX="790" extentX="14248 pc" pixelsY="144" extentY="2597 pc"/>
+                            <InstrumentFrame pixelsX="790" extentX="14248 pc" pixelsY="144" extentY="2597 pc"/>
+                        </frames>
+                    </MultiFrameInstrument>
+                </instruments>
+            </InstrumentSystem>
+        </instrumentSystem>
+        <wavelengthGrid type="OligoWavelengthGrid">
+            <OligoWavelengthGrid wavelengths="0.354 micron, 0.475 micron"/>
+        </wavelengthGrid>
+        <stellarSystem type="StellarSystem">
+            <StellarSystem>
+                <components type="StellarComp">
+                    <OligoStellarComp luminosities="1e15, 1e15">
+                        <geometry type="Geometry">
+                            <ExpDiskGeometry radialScale="[stellar_length:4400 pc]" axialScale="[stellar_height:500 pc]" radialTrunc="0 pc" axialTrunc="0 pc"/>
+                        </geometry>
+                    </OligoStellarComp>
+                    <OligoStellarComp luminosities="1e15, 1e15">
+                        <geometry type="Geometry">
+                            <SpheroidalGeometry flattening="[flattening:0.5]">
+                                <geometry type="SpheGeometry">
+                                    <SersicGeometry index="[sersic_index:2.5]" radius="[bulge_radius:2500 pc]"/>
+                                </geometry>
+                            </SpheroidalGeometry>
+                        </geometry>
+                    </OligoStellarComp>
+                </components>
+            </StellarSystem>
+        </stellarSystem>
+        <dustSystem type="OligoDustSystem">
+            <OligoDustSystem sampleCount="100" writeConvergence="false" writeDensity="false" writeDepthMap="false" writeQuality="false" writeCellProperties="false" writeCellsCrossed="false">
+                <dustDistribution type="DustDistribution">
+                    <CompDustDistribution>
+                        <components type="DustComp">
+                            <DustComp>
+                                <geometry type="Geometry">
+                                    <ExpDiskGeometry radialScale="[dust_length:6600 pc]" axialScale="[dust_height:250 pc]" radialTrunc="0 pc" axialTrunc="0 pc"/>
+                                </geometry>
+                                <mix type="DustMix">
+                                    <InterstellarDustMix writeMix="false" writeMeanMix="false"/>
+                                </mix>
+                                <normalization type="DustCompNormalization">
+                                    <DustMassDustCompNormalization dustMass="[dust_mass:4e7 Msun]"/>
+                                </normalization>
+                            </DustComp>
+                        </components>
+                    </CompDustDistribution>
+                </dustDistribution>
+                <dustGridStructure type="DustGridStructure">
+                    <LogPowAxDustGridStructure writeGrid="false" radialInnerExtent="10 pc" radialOuterExtent="25000 pc" radialPoints="250" axialExtent="4000 pc" axialRatio="50" axialPoints="250"/>
+                </dustGridStructure>
+            </OligoDustSystem>
+        </dustSystem>
+    </OligoMonteCarloSimulation>
+</skirt-simulation-hierarchy>

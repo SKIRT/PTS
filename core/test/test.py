@@ -21,6 +21,8 @@ from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..basics.map import Map
 from ..basics.configuration import DictConfigurationSetter
+from ..tools import formatting as fmt
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -30,7 +32,7 @@ class PTSTest(object):
     This class ...
     """
 
-    def __init__(self, name, description, setup_function, test_function, output_path):
+    def __init__(self, name, description, setup_function, test_function, output_path, keep=False):
 
         """
         This function ...
@@ -38,6 +40,7 @@ class PTSTest(object):
         :param description:
         :param setup_function:
         :param test_function:
+        :param keep:
         """
 
         # Properties of this test
@@ -46,6 +49,7 @@ class PTSTest(object):
         self.setup_function = setup_function
         self.test_function = test_function
         self.output_path = output_path
+        self.keep = keep
 
         # The runnable components
         self.components = OrderedDict()
@@ -65,37 +69,37 @@ class PTSTest(object):
         # 2. Show info
         self.info()
 
-        # Perform
+        # 3. Perform
         self.perform()
 
-        # Check
+        # 4. Check
         self.check()
 
-        # Show
+        # 5. Show
         self.show()
 
-        # Write
+        # 6. Write
         self.write()
 
-        # Clear
-        self.clear()
+        # 7. Clear
+        if not self.keep: self.clear()
 
     # -----------------------------------------------------------------
 
-    #def add_component(self, name, component, input_dict=None):
     def add_component(self, name, cls, configuration_module_path, settings_dict, output_path, input_dict):
 
         """
         This function ...
         :param name:
-        :param component:
+        :param cls:
+        :param configuration_module_path:
+        :param settings_dict:
+        :param output_path:
         :param input_dict:
         :return:
         """
 
-        #self.components[name] = component
-        #if input_dict is not None: self.input_dicts[name] = input_dict
-
+        # Add the component to the dictionary
         self.components[name] = Map(cls=cls, conf_path=configuration_module_path, settings=settings_dict, output_path=output_path, input_dict=input_dict)
 
     # -----------------------------------------------------------------
@@ -107,8 +111,11 @@ class PTSTest(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting up the test ...")
+
         # Execute setup function
-        self.setup_function()
+        self.setup_function(self.output_path)
 
     # -----------------------------------------------------------------
 
@@ -119,9 +126,18 @@ class PTSTest(object):
         :return:
         """
 
-        print("PTS TEST")
-        print(self.name)
-        print(self.description)
+        prefix = "    "
+        width = 70
+
+        # Print the info
+        fmt.print_empty()
+        fmt.print_filled("-", prefix=prefix, length=width)
+        fmt.print_border("|", prefix=prefix, length=width)
+        fmt.print_centered_around_border("PTS test '" + self.name + "'", "|", prefix=prefix, length=width)
+        fmt.print_border("|", prefix=prefix, length=width)
+        for line in strings.split_in_lines(self.description, length=40, as_list=True): fmt.print_centered_around_border(line, "|", prefix=prefix, length=width)
+        fmt.print_border("|", prefix=prefix, length=width)
+        fmt.print_empty()
 
     # -----------------------------------------------------------------
 
@@ -150,9 +166,7 @@ class PTSTest(object):
             # Change working directory
             fs.change_cwd(output_path)
 
-            # try:
             configuration_module = importlib.import_module(configuration_module_path)
-            # has_configuration = True
             definition = getattr(configuration_module, "definition")
 
             # Parse the configuration
@@ -168,12 +182,7 @@ class PTSTest(object):
             # Debugging
             log.debug("Executing component '" + name + "' ...")
 
-            # Get input
-            #input_dict = self.input_dicts[name] if name in self.input_dicts else dict()
-            #print(input_dict)
-
             # Run with input
-            #self.components[name].run(**input_dict)
             inst.run(**input_dict)
 
     # -----------------------------------------------------------------
@@ -184,6 +193,9 @@ class PTSTest(object):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Checking the test output ...")
 
         # Execute test function
         self.test_function()
@@ -210,7 +222,7 @@ class PTSTest(object):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Writing ...")
 
     # -----------------------------------------------------------------
 
@@ -221,6 +233,10 @@ class PTSTest(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Removing the output of the " + self.name + " test ...")
+
+        # Remove the entire output directory
         fs.remove_directory(self.output_path)
 
 # -----------------------------------------------------------------

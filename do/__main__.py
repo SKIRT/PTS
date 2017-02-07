@@ -30,7 +30,6 @@
 
 # Import standard modules
 import sys
-import importlib
 import argparse
 import time as _time
 
@@ -38,10 +37,11 @@ import time as _time
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time
-from pts.do.commandline import show_all_available, show_possible_matches
+from pts.do.commandline import show_all_available, show_possible_matches, start_target
 from pts.modeling.welcome import welcome as welcome_modeling
 from pts.magic.welcome import welcome as welcome_magic
 from pts.dustpedia.welcome import welcome as welcome_dustpedia
+from pts.core.basics.configuration import create_configuration
 
 # -----------------------------------------------------------------
 
@@ -128,25 +128,34 @@ elif len(matches) == 1 and len(table_matches) == 0:
     sys.argv[0] = target
     del sys.argv[1]
     print "Executing: " + match[0] + "/" + match[1] + " " + " ".join(sys.argv[1:])
-    exec open(target)
+
+    command_name = match[1]
+
+    # Set target
+    def start(): exec open(target)
+    target = start
+
+    # Start
+    start_target(command_name, target)
 
 # If there is an unique match in a table
 elif len(table_matches) == 1 and len(matches) == 0:
 
+    # Resolve
     subproject, index = table_matches[0]
-    command_name = tables[subproject]["Command"][index]
-    hidden = False
-    if command_name.startswith("*"):
-        hidden = True
-        command_name = command_name[1:]
-    description = tables[subproject]["Description"][index]
-    class_path_relative = tables[subproject]["Path"][index]
-    class_path = "pts." + subproject + "." + class_path_relative
-    module_path, class_name = class_path.rsplit('.', 1)
+    resolved = introspection.resolve_from_match(subproject, tables[subproject], index)
 
-    configuration_method_table = tables[subproject]["Configuration method"][index]
+    # Get properties
+    command_name = resolved.command_name
+    hidden = resolved.hidden
+    description = resolved.description
+    module_path = resolved.module_path
+    class_name = resolved.class_name
+    configuration_method_table = resolved.configuration_method
+    configuration_module_path = resolved.configuration_module_path
     subproject_path = introspection.pts_subproject_dir(subproject)
 
+    # Set
     sys.argv[0] = fs.join(introspection.pts_root_dir, module_path.replace(".", "/") + ".py") # this is actually not necessary (and not really correct, it's not like we are calling the module where the class is..)
     del sys.argv[1] # but this is important
 
@@ -155,54 +164,20 @@ elif len(table_matches) == 1 and len(matches) == 0:
     elif subproject == "magic": welcome_magic()
     elif subproject == "dustpedia": welcome_dustpedia()
 
-    # Get the class of the configurable of which an instance has to be created
-    module = importlib.import_module(module_path)
-    try: cls = getattr(module, class_name)
-    except AttributeError:
-        raise Exception("The class name for the '" + command_name + "' command is incorrectly specified in the 'commands.dat' file of the '" + subproject + "' subproject")
+    # Get the class
+    cls = introspection.get_class(module_path, class_name)
 
     # Import things
     from pts.core.tools import logging
-    from pts.core.basics.configuration import ArgumentConfigurationSetter, InteractiveConfigurationSetter, FileConfigurationSetter
 
-    ## GET THE CONFIGURATION DEFINITION
-
-    configuration_name = tables[subproject]["Configuration"][index]
-    if configuration_name == "--": configuration_name = command_name
-    configuration_module_path = "pts." + subproject + ".config." + configuration_name
-
-    #print(configuration_module_path)
-
-    #try:
-    try: configuration_module = importlib.import_module(configuration_module_path)
-    except ImportError: raise RuntimeError("The configuration module for '" + command_name + "' was not found")
-    #has_configuration = True
-    definition = getattr(configuration_module, "definition")
-    #except ImportError:
-    #    logging.log.warning("No configuration definition found for the " + class_name + " class")
-    #    #has_configuration = False
-    #    definition = ConfigurationDefinition() # Create new configuration definition
-
-    ## CREATE THE CONFIGURATION
+    # Get the configuration definition
+    definition = introspection.get_configuration_definition(configuration_module_path)
 
     # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
     if configuration_method is None: configuration_method = configuration_method_table
 
-    # Create the configuration setter
-    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description)
-    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description)
-    elif configuration_method.startswith("file"):
-        configuration_filepath = configuration_method.split(":")[1]
-        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
-    elif configuration_method == "last":
-        configuration_filepath = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
-        if not fs.is_directory(introspection.pts_user_config_dir): fs.create_directory(introspection.pts_user_config_dir)
-        if not fs.is_file(configuration_filepath): raise RuntimeError("Cannot use rerun (config file not present)")
-        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
-    else: raise ValueError("Invalid configuration method: " + configuration_method)
-
-    # Create the configuration from the definition and from reading the command line arguments
-    config = setter.run(definition)
+    # Create the configuration
+    config = create_configuration(definition, command_name, description, configuration_method)
 
     ## SAVE THE CONFIG
     if config.write_config:
@@ -294,6 +269,12 @@ elif len(table_matches) == 1 and len(matches) == 0:
         history.save()
 
 # Show possible matches if there are more than just one
-else: show_possible_matches(matches, table_matches, tables)
+else:
+
+    # Show error
+    from pts.core.tools import logging
+    log = logging.setup_log()
+    log.error("The command you provided is ambigious. Possible matches:")
+    show_possible_matches(matches, table_matches, tables)
 
 # -----------------------------------------------------------------

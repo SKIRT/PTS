@@ -14,7 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
+from textwrap import wrap
 from string import ascii_lowercase
+
+# Import the relevant PTS classes and modules
 from .lists import interleave
 from . import types
 
@@ -368,5 +371,22 @@ def find_last_digit(string):
 
     index = re.search("\d", string[::-1])
     return len(string) - 1 - index
+
+# -----------------------------------------------------------------
+
+def split_in_lines(string, length=60, as_list=False):
+
+    """
+    This function ...
+    :param length:
+    :param as_list:
+    :return:
+    """
+
+    # Split into list
+    lst = wrap(string, length)
+
+    if as_list: return lst
+    else: return "\n".join(lst)
 
 # -----------------------------------------------------------------

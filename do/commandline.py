@@ -14,11 +14,35 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from operator import itemgetter
+import time as _time
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.tools import formatting as fmt
+
+# -----------------------------------------------------------------
+
+def start_target(command_name, target):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Record starting time
+    start = _time.time()
+
+    # Run
+    target()
+
+    # Record end time
+    end = _time.time()
+    seconds = end - start
+
+    # Succesfully finished
+    #log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
+    print("Finished " + command_name + " in " + str(seconds) + " seconds")
 
 # -----------------------------------------------------------------
 
@@ -30,8 +54,6 @@ def show_all_available(scripts, tables=None):
     :param tables:
     :return:
     """
-
-    print("Available PTS do commands:")
 
     # The list that will contain the info about all the scripts / table commands
     info = []
@@ -116,8 +138,6 @@ def show_possible_matches(matches, table_matches=None, tables=None):
     :param tables:
     :return:
     """
-
-    print("The command you provided is ambiguous. Possible matches:")
 
     # The list that will contain the info about all the scripts / table commands
     info = []

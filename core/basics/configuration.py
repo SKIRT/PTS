@@ -26,6 +26,7 @@ from ..tools import parsing, stringify
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from .composite import SimplePropertyComposite
+from ..tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -44,6 +45,36 @@ related_types.append(["quantity", "photometric_quantity", "photometric_density_q
 related_types.append(["unit", "photometric_unit", "photometric_density_unit"])
 related_types.append(["filter", "narrow_band_filter", "broad_band_filter"])
 related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band_list"])
+
+# -----------------------------------------------------------------
+
+def create_configuration(definition, command_name, description, configuration_method):
+
+    """
+    This function ...
+    :return:
+    """
+
+    ## CREATE THE CONFIGURATION
+
+    # Create the configuration setter
+    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description)
+    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description)
+    elif configuration_method.startswith("file"):
+        configuration_filepath = configuration_method.split(":")[1]
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
+    elif configuration_method == "last":
+        configuration_filepath = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
+        if not fs.is_directory(introspection.pts_user_config_dir): fs.create_directory(introspection.pts_user_config_dir)
+        if not fs.is_file(configuration_filepath): raise RuntimeError("Cannot use rerun (config file not present)")
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
+    else: raise ValueError("Invalid configuration method: " + configuration_method)
+
+    # Create the configuration from the definition and from reading the command line arguments
+    config = setter.run(definition)
+
+    # Return the configuration
+    return config
 
 # -----------------------------------------------------------------
 
