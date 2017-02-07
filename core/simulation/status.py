@@ -17,6 +17,17 @@ from ..tools import filesystem as fs
 from ..tools import time
 from ..tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
 from ..tools.logging import log
+from .logfile import get_last_phase, get_nprocesses, get_simulation_phase
+
+# -----------------------------------------------------------------
+
+phase_descriptions = dict()
+phase_descriptions["setup"] = "setup of the simulation"
+phase_descriptions["stellar"] = "emission of stellar photons"
+phase_descriptions["spectra"] = "calculation of dust emission spectra"
+phase_descriptions["dust"] = "emission of dust photons"
+phase_descriptions["comm"] = "communication"
+phase_descriptions["write"] = "writing results"
 
 # -----------------------------------------------------------------
 
@@ -44,6 +55,12 @@ class SimulationStatus(object):
         # The phase
         self.phase = None
 
+        # The simulation phase
+        self.simulation_phase = None
+
+        # The stage (if applicable)
+        self.stage = None
+
         # The cycle (if applicable)
         self.cycle = None
 
@@ -62,10 +79,35 @@ class SimulationStatus(object):
         :return:
         """
 
-        if self.phase is None: return self.status
-        elif "self-absorption" in self.phase: return "running: " + str(self.phase) + ", cycle " + str(self.cycle) + "] " + str(self.progress) + "%"
-        elif "stellar emission" in self.phase or "dust emission" in self.phase: return "running: " + str(self.phase) + " " + str(self.progress) + "%"
-        else: return "running: " + str(self.phase)
+        string = self.status
+
+        # Add phase
+        if self.phase is not None: string += ": " + phase_descriptions[self.phase]
+
+        # Add simulation phase
+        if self.simulation_phase is not None: string += " in the " + self.simulation_phase.lower() + " phase"
+
+        # Add stage, cycle
+        if self.stage is not None: string += " stage " + str(self.stage + 1)
+        if self.cycle is not None: string += " [cycle " + str(self.cycle) + "]"
+
+        # Add progress
+        if self.progress is not None: string += " " + str(self.progress) + "%"
+
+        # Return the string
+        return string
+
+    # -----------------------------------------------------------------
+
+    @property
+    def running(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status == "running"
 
     # -----------------------------------------------------------------
 
@@ -105,65 +147,64 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    def show_progress(self):
+    def show_progress(self, refresh_time=3):
 
         """
         This function ...
+        :param refresh_time:
         :return:
         """
 
         last_phase = None
+        last_stage = None
         last_cycle = None
         while True:
 
+            # Not yet started
             if self.not_started:
 
                 log.info("Waiting for simulation to start ...")
-                time.wait(5)
+                time.wait(refresh_time)
                 self.refresh()
                 continue
 
+            # Finished: break loop
             if self.finished:
                 log.success("Simulation finished")
                 break
 
+            # Crashed: break loop
             elif self.crashed:
                 log.success("Simulation crashed")
                 break
 
+            # New phase
             elif last_phase is None or self.phase != last_phase:
+
                 last_phase = self.phase
                 if last_phase is None:
-                    time.wait(5)
+                    time.wait(refresh_time)
                     self.refresh()
                     continue
-                else: log.info("Starting " + last_phase + " ...")
+                else:
+                    if self.simulation_phase is not None: log.info("Starting " + phase_descriptions[last_phase] + " in " + self.simulation_phase.lower() + " phase ...")
+                    else: log.info("Starting " + phase_descriptions[last_phase] + " ...")
 
-            # Stellar emission: show progress bar
-            if self.phase == "stellar emission":
-
-                total_length = 100
-
-                # Progress bar
-                with Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                         filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1) as bar:
-                    # Loop
-                    while True:
-                        if self.phase != last_phase: break
-                        if self.progress is None:
-                            bar.show(100)
-                        else:
-                            bar.show(int(self.progress))
-                        time.wait(1)
-                        self.refresh()
-
-            elif "self-absorption" in self.phase:
+            # Self absorption phase
+            if self.phase == "dust" and self.simulation_phase == "DUST SELF-ABSORPTION":
 
                 total_length = 100
+
+                if self.stage is None:
+                    self.refresh_after(1)
+                    continue
+
+                if last_stage is None or self.stage != last_stage:
+                    log.info("Starting stage " + str(self.stage + 1) + " ...")
+                    last_stage = self.stage
 
                 if self.cycle is None:
-                    time.wait(1)
-                    self.refresh()
+                    self.refresh_after(1)
                     continue
 
                 if last_cycle is None or self.cycle != last_cycle:
@@ -173,26 +214,54 @@ class SimulationStatus(object):
 
                     # Progress bar
                     with Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                             filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1) as bar:
+                             filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True) as bar:
 
                         # Loop
                         while True:
 
+                            if self.stage != last_stage: break
                             if self.cycle != last_cycle: break
-                            if self.progress is None:
-                                bar.show(100)
-                            else:
-                                bar.show(int(self.progress))
-                            time.wait(1)
-                            self.refresh()
+                            if self.progress is None: bar.show(100)
+                            else: bar.show(int(self.progress))
+                            self.refresh_after(1)
 
-            else:
+                    self.refresh_after(refresh_time)
 
-                # Wait for 5 seconds
-                time.wait(5)
+                else: self.refresh_after(refresh_time)
 
-                # Refresh
-                self.refresh()
+            # Stellar emission: show progress bar
+            elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
+
+                total_length = 100
+
+                # Progress bar
+                with Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                         filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True) as bar:
+                    # Loop
+                    while True:
+                        if self.phase != last_phase: break
+                        if self.progress is None:
+                            bar.show(100)
+                        else:
+                            bar.show(int(self.progress))
+                        self.refresh_after(1)
+
+            # Still the same phase
+            else: self.refresh_after(refresh_time)
+
+    # -----------------------------------------------------------------
+
+    def refresh_after(self, seconds):
+
+        """
+        This function ...
+        :param seconds:
+        :return:
+        """
+
+        # Wait and refresh
+        time.wait(seconds)
+        self.refresh()
 
     # -----------------------------------------------------------------
 
@@ -206,6 +275,8 @@ class SimulationStatus(object):
         # Clear everything
         self.status = None
         self.phase = None
+        self.simulation_phase = None
+        self.stage = None
         self.cycle = None
         self.progress = None
 
@@ -244,71 +315,134 @@ class SimulationStatus(object):
         # Running
         else:
 
+            # Status is 'running'
             self.status = "running"
 
-            # Loop over the log lines
-            for line in lines:
+            # Get the last phase in the log file
+            last_phase, start_index = get_last_phase(lines)
 
-                if "Starting setup" in line:
+            # Set the phase
+            self.phase = last_phase
 
-                    self.phase = "setup"
-                    self.cycle = None
-                    self.progress = 0.
+            # Get the 'real' simulation phase
+            #start_line = lines[start_index]
+            #simulation_phase = get_simulation_phase(start_line, self.simulation_phase)
 
-                elif "Starting the stellar emission phase" in line:
+            # Set the simulation phase
+            #self.simulation_phase = simulation_phase
 
-                    self.phase = "stellar emission"
-                    self.cycle = None
-                    self.progress = 0.
+            # Get the progress of the stellar emission
+            if self.phase == "stellar":
 
-                elif "Launched stellar emission photon packages" in line:
+                # Set simulation phase
+                self.simulation_phase = "STELLAR EMISSION"
 
-                    self.cycle = None
-                    self.progress = float(line.split("packages: ")[1].split("%")[0])
+                # Loop over the lines in reversed order
+                for line in reversed(lines):
 
-                elif "Starting the first-stage dust self-absorption cycle" in line:
+                    if "Launched stellar emission photon packages" in line:
+                        self.progress = float(line.split("packages: ")[1].split("%")[0])
+                        break
 
-                    self.phase = "self-absorption stage 1"
-                    self.progress = 0.
+                # Set initial value for progress
+                else: self.progress = 0
 
-                elif "Launched first-stage dust self-absorption cycle" in line:
+            # Get the progress of the spectra calculation phase
+            elif self.phase == "spectra":
 
-                    self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                    self.progress = float(line.split("packages: ")[1].split("%")[0])
+                nprocesses = get_nprocesses(lines)
+                total_entries = None
+                entries_per_process = None
 
-                elif "Starting the second-stage dust self-absorption cycle" in line:
+                # Loop over the lines
+                for line in lines[start_index-4:]:
 
-                    self.phase = "self-absorption stage 2"
-                    self.progress = 0.
+                    # Check whether dust self-absorption or dust emission phase
+                    if "Starting the dust self-absorption phase" in line: self.simulation_phase = "DUST SELF-ABSORPTION"
+                    elif "Starting the dust emission phase" in line: self.simulation_phase = "DUST EMISSION"
 
-                elif "Launched second-stage dust self-absorption cycle" in line:
+                    # If this is the log message that marks the very start of the spectra calculation, record the associated time
+                    # If this log message states the total number of library entries that are used, record this number
+                    if "Library entries in use" in line:
 
-                    self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                    self.progress = float(line.split("packages: ")[1].split("%")[0])
+                        #spectra_start = log_file.contents["Time"][i]
 
-                elif "Starting the last-stage dust self-absorption cycle" in line:
+                        # Get the total number of library entries in use and the number of entries per process
+                        total_entries = int(line.split("use: ")[1].split(" out of")[0])
+                        entries_per_process = total_entries / nprocesses
 
-                    self.phase = "self-absorption stage 3"
-                    self.progress = 0.
+                        # Initial value of progress
+                        self.progress = 0.
 
-                elif "Launched last-stage dust self-absorption cycle" in line:
+                    # Get the progress
+                    elif "Calculating emission for" in line:
 
-                    self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
-                    self.progress = float(line.split("packages: ")[1].split("%")[0])
+                        entry = float(line.split()[-1][:-3])
 
-                elif "Starting the dust emission phase" in line:
+                        # Determine the progress
+                        # if self.staggered: fraction = entry / total_entries
+                        # else: fraction = (entry - process * entries_per_process) / entries_per_process
 
-                    self.phase = "dust emission"
-                    self.cycle = None
-                    self.progress= 0.
+                        fraction = entry / total_entries
+                        progress = float(fraction) * 100.
 
-                elif "Launched dust emission photon packages" in line:
+                        # Set the progress
+                        self.progress = progress
 
-                    self.progress = float(line.split("packages: ")[1].split("%")[0])
+            # Get the progress of a dust emission cycle
+            elif self.phase == "dust":
 
-                elif "Starting writing results" in line:
+                # Loop over the lines in reversed order
+                for line in reversed(lines):
 
-                    self.phase = "writing"
-                    self.progress = 0.
+                    if "Launched dust emission photon packages" in line:
+                        self.progress = float(line.split("packages: ")[1].split("%")[0])
+                        self.simulation_phase = "DUST EMISSION"
+                        break
+
+                    elif "Launched last-stage dust self-absorption cycle" in line:
+                        self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+                        self.stage = 2
+                        self.progress = float(line.split("packages: ")[1].split("%")[0])
+                        self.simulation_phase = "DUST SELF-ABSORPTION"
+                        break
+
+                    elif "Starting the last-stage dust self-absorption cycle" in line:
+                        self.cycle = int(line.split("cycle ")[1].split("...")[0])
+                        self.stage = 2
+                        self.progress = 0.
+                        self.simulation_phase = "DUST SELF-ABSORPTION"
+                        break
+
+                    elif "Launched second-stage dust self-absorption cycle" in line:
+                        self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+                        self.stage = 1
+                        self.progress = float(line.split("packages: ")[1].split("%")[0])
+                        self.simulation_phase = "DUST SELF-ABSORPTION"
+                        break
+
+                    elif "Starting the second-stage dust self-absorption cycle" in line:
+                        self.cycle = int(line.split("cycle ")[1].split("...")[0])
+                        self.stage = 1
+                        self.progress = 0.
+                        self.simulation_phase = "DUST SELF-ABSORPTION"
+                        break
+
+                    elif "Launched first-stage dust self-absorption cycle" in line:
+                        self.cycle = int(line.split("cycle ")[1].split(" photon packages")[0])
+                        self.stage = 0
+                        self.progress = float(line.split("packages: ")[1].split("%")[0])
+                        self.simulation_phase = "DUST SELF-ABSORPTION"
+                        break
+
+                    elif "Starting the first-stage dust self-absorption cycle" in line:
+                        self.cycle = int(line.split("cycle ")[1].split("...")[0])
+                        self.stage = 0
+                        self.progress = 0.
+                        self.simulation_phase = "DUST SELF-ABSORPTION"
+                        break
+
+                # No break encountered, set initial value for progress
+                else: self.progress = 0.
 
 # -----------------------------------------------------------------

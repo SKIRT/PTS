@@ -331,9 +331,6 @@ class PTSTestSuite(Configurable):
 
                 # Iterate over these:
                 commands = test_module.commands
-                input_dicts = test_module.input_dicts
-                settings = test_module.settings
-                cwds = test_module.cwds
 
                 setup_function = test_module.setup
                 test_function = test_module.test
@@ -342,10 +339,15 @@ class PTSTestSuite(Configurable):
                 test = PTSTest(name, description, setup_function, test_function, temp_path, self.config.keep)
 
                 # Loop over the commands
-                for command, input_dict, settings_dict, cwd in zip(commands, input_dicts, settings, cwds):
+                for command in commands:
+
+                    the_command = command.command
+                    settings_dict = command.settings
+                    input_dict = command.input_dict
+                    cwd = command.cwd
 
                     # Find match in the tables of configurable classes
-                    match = introspection.resolve_command_tables(command, tables)
+                    match = introspection.resolve_command_tables(the_command, tables)
 
                     # Get info
                     module_path = match.module_path
@@ -359,7 +361,7 @@ class PTSTestSuite(Configurable):
                     output_path = fs.absolute_path(fs.join(temp_path, cwd))
 
                     # Add the component
-                    test.add_component(command, cls, configuration_module_path, settings_dict, output_path, input_dict)
+                    test.add_component(the_command, cls, configuration_module_path, settings_dict, output_path, input_dict)
 
                 # Add the test to the suite
                 self.tests[subproject].append(test)

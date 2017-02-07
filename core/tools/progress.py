@@ -15,6 +15,9 @@ from __future__ import absolute_import
 # Import standard modules
 import sys
 import time
+from datetime import datetime
+
+# -----------------------------------------------------------------
 
 STREAM = sys.stderr
 
@@ -31,6 +34,11 @@ ETA_INTERVAL = 1
 # How many intervals (excluding the current one) to calculate the simple moving
 # average
 ETA_SMA_WINDOW = 9
+
+# -----------------------------------------------------------------
+
+#datefmt="%d/%m/%Y %H:%M:%S"
+datefmt = "%d/%m/%Y %H:%M:%S.%f"
 
 # -----------------------------------------------------------------
 
@@ -52,32 +60,43 @@ class Bar(object):
     # -----------------------------------------------------------------
 
     def __init__(self, label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
-                 filled_char=BAR_FILLED_CHAR, expected_size=None, every=1):
+                 filled_char=BAR_FILLED_CHAR, expected_size=None, every=1, add_datetime=False):
+
         self.label = label
         self.width = width
         self.hide = hide
+
         # Only show bar in terminals by default (better for piping, logging etc.)
         if hide is None:
-            try:
-                self.hide = not STREAM.isatty()
+
+            try: self.hide = not STREAM.isatty()
             except AttributeError:  # output does not support isatty()
                 self.hide = True
+
         self.empty_char =    empty_char
         self.filled_char =   filled_char
         self.expected_size = expected_size
         self.every =         every
+        self.add_datetime = add_datetime
         self.start =         time.time()
         self.ittimes =       []
         self.eta =           0
         self.etadelta =      time.time()
         self.etadisp =       self.format_time(self.eta)
         self.last_progress = 0
-        if (self.expected_size):
-            self.show(0)
+        if self.expected_size: self.show(0)
 
     # -----------------------------------------------------------------
 
     def show(self, progress, count=None):
+
+        """
+        This function ...
+        :param progress:
+        :param count:
+        :return:
+        """
+
         if count is not None:
             self.expected_size = count
         if self.expected_size is None:
@@ -93,10 +112,15 @@ class Bar(object):
                 (self.expected_size - progress)
             self.etadisp = self.format_time(self.eta)
         x = int(self.width * progress / self.expected_size)
+
         if not self.hide:
+
             if ((progress % self.every) == 0 or      # True every "every" updates
                 (progress == self.expected_size)):   # And when we're done
-                STREAM.write(BAR_TEMPLATE % (
+
+                timestamp = datetime.now().strftime(datefmt)[:-3] + "   " if self.add_datetime else ""
+
+                STREAM.write(timestamp + BAR_TEMPLATE % (
                     self.label, self.filled_char * x,
                     self.empty_char * (self.width - x), progress,
                     self.expected_size, self.etadisp))
@@ -105,11 +129,21 @@ class Bar(object):
     # -----------------------------------------------------------------
 
     def done(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         self.elapsed = time.time() - self.start
         elapsed_disp = self.format_time(self.elapsed)
+
         if not self.hide:
+
+            timestamp = datetime.now().strftime(datefmt)[:-3] + "   " if self.add_datetime else ""
+
             # Print completed bar with elapsed time
-            STREAM.write(BAR_TEMPLATE % (
+            STREAM.write(timestamp + BAR_TEMPLATE % (
                 self.label, self.filled_char * self.width,
                 self.empty_char * 0, self.last_progress,
                 self.expected_size, elapsed_disp))

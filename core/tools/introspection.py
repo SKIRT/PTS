@@ -14,7 +14,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+import getpass
 from os import devnull
 import warnings
 import sys
@@ -123,6 +123,17 @@ def pts_config_dir(subproject): return fs.join(pts_package_dir, subproject, "con
 
 # The path to the 'dat' directory for a given PTS subproject
 def pts_dat_dir(subproject): return fs.join(pts_package_dir, subproject, "dat")
+
+# -----------------------------------------------------------------
+
+def username():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return getpass.getuser()
 
 # -----------------------------------------------------------------
 
@@ -1704,7 +1715,7 @@ def resolve_command_tables(command, tables):
     table_matches = find_matches_tables(script_name, tables)
 
     # No match or ambigious command
-    if len(table_matches) == 0: raise ValueError("The command could not be resolved")
+    if len(table_matches) == 0: raise ValueError("The command '" + command + "' could not be resolved")
     elif len(table_matches) > 1: raise ValueError("The command is ambigious")
 
     # Return the match

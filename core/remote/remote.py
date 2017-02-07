@@ -219,7 +219,7 @@ class Remote(object):
         """
 
         # Disconnect from the remote host
-        self.logout()
+        if self.connected: self.logout()
 
     # -----------------------------------------------------------------
 

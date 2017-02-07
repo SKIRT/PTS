@@ -24,6 +24,10 @@ from ..basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
+possible_phases = ["setup", "wait", "comm", "stellar", "spectra", "dust", "write"]
+
+# -----------------------------------------------------------------
+
 class LogFile(object):
 
     """
@@ -1009,6 +1013,42 @@ def get_phase(line, current, previous, previousprevious):
 
 # -----------------------------------------------------------------
 
+def get_last_phase(lines):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # The current phase
+    current_phase = None
+
+    # The phase before that
+    previous_phase = None
+
+    # The phase even before that
+    previousprevious_phase = None
+
+    # The start index of the current phase
+    start_index = 0
+
+    # Loop over the log lines
+    for index, line in enumerate(lines):
+
+        # Remember current phase before checking next line
+        current_phase_before = current_phase
+
+        # Get the simulation phase
+        current_phase, previous_phase, previousprevious_phase = get_phase(line, current_phase, previous_phase, previousprevious_phase)
+
+        # If new phase, set start index
+        if current_phase != current_phase_before: start_index = index
+
+    # Return the current phase
+    return current_phase, start_index
+
+# -----------------------------------------------------------------
+
 def search_start(line):
 
     """
@@ -1134,5 +1174,64 @@ def search_write(line):
     """
 
     return "Starting writing results" in line
+
+# -----------------------------------------------------------------
+
+def get_start_line(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Loop over all the lines
+    for line in lines:
+
+        # Look for the message that indicates the start of the simulation
+        if "Starting simulation" in line: return line
+
+    # Return None if the message could not be found
+    return None
+
+# -----------------------------------------------------------------
+
+def get_nprocesses(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Get line of the log file which states that the simulation is starting
+    start = get_start_line(lines)
+
+    # Read number of processes from "Starting simulation ..." message
+    if "with" in start:
+        processes = int(start.split(' with ')[1].split()[0])
+        return processes
+    else: return 1
+
+# -----------------------------------------------------------------
+
+def get_simulation_phase(line, simulation_phase):
+
+    """
+    This function ...
+    :param line:
+    :param simulation_phase: current simulation phase
+    :return:
+    """
+
+    # Check for marker for the setup phase
+    if "Starting setup..." in line: simulation_phase = "SETUP"
+    elif "Starting the stellar emission phase..." in line: simulation_phase = "STELLAR EMISSION"
+    elif "Starting the dust self-absorption phase..." in line: simulation_phase = "DUST SELF-ABSORPTION"
+    elif "Starting the dust emission phase..." in line: simulation_phase = "DUST EMISSION"
+    elif "Starting writing results..." in line: simulation_phase = "WRITING"
+    else: pass
+
+    return simulation_phase
 
 # -----------------------------------------------------------------

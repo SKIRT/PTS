@@ -30,6 +30,7 @@ from ..advanced.parallelizationtool import ParallelizationTool
 from ..advanced.memoryestimator import MemoryEstimator
 from ..simulation.parallelization import Parallelization
 from .options import AnalysisOptions
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -137,6 +138,9 @@ class SKIRTLauncher(Configurable):
         # Setup the remote execution context
         if self.config.remote is not None: self.remote.setup(self.config.remote, self.config.cluster)
 
+        # Create output directory
+        if self.config.create_output and not fs.is_directory(self.config.output): fs.create_directory(self.config.output)
+
         # Create the logging options
         self.logging_options = LoggingOptions()
         self.logging_options.set_options(self.config.logging)
@@ -227,13 +231,14 @@ class SKIRTLauncher(Configurable):
             total_memory = serial_memory + parallel_memory
 
             # Calculate the maximum number of processes based on the memory requirements
-            processes = int(monitoring.free_memory() / total_memory)
+            free_memory = monitoring.free_memory()
+            processes = int(free_memory / total_memory)
 
             # If there is too little free memory for the simulation, the number of processes will be smaller than one
             if processes < 1:
 
                 # Exit with an error
-                log.error("Not enough memory available to run this simulation")
+                log.error("Not enough memory available to run this simulation: free memory = " + str(free_memory) + ", required memory = " + str(total_memory))
                 exit()
 
         # No MPI available
@@ -403,7 +408,7 @@ class SKIRTLauncher(Configurable):
         log.info("Launching the simulation locally...")
 
         # Run the simulation
-        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True)
+        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True, progress_bar=self.config.progress_bar)
 
         # Set the simulation name
         self.simulation.name = self.definition.prefix

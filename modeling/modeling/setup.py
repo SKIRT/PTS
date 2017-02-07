@@ -174,6 +174,9 @@ class ModelingSetupTool(Configurable):
         if "sed" in kwargs: self.sed = kwargs.pop("sed")
         if "images" in kwargs: self.images = kwargs.pop("images")
 
+        # If is path, load the SED
+        if isinstance(self.sed, basestring): self.sed = ObservedSED.from_file(self.sed)
+
     # -----------------------------------------------------------------
 
     def create_directory(self):

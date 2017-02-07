@@ -11,7 +11,7 @@
         <instrumentSystem type="InstrumentSystem">
             <InstrumentSystem>
                 <instruments type="Instrument">
-                    <SEDInstrument instrumentName="earth" distance="3.63 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="67 deg"/>
+                    <SimpleInstrument instrumentName="earth" distance="3.63 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="67 deg" fieldOfViewX="40039.10068 pc" pixelsX="1024" centerX="0 pc" fieldOfViewY="40039.10068 pc" pixelsY="1024" centerY="0 pc"/>
                 </instruments>
             </InstrumentSystem>
         </instrumentSystem>
@@ -117,18 +117,18 @@
                 <dustGrid type="DustGrid">
                     <CartesianDustGrid writeGrid="true" minX="-2e4 pc" maxX="2e4 pc" minY="-2e4 pc" maxY="2e4 pc" minZ="-500 pc" maxZ="500 pc">
                         <meshX type="MoveableMesh">
-                            <SymPowMesh numBins="50" ratio="25"/>
+                            <SymPowMesh numBins="80" ratio="25"/>
                         </meshX>
                         <meshY type="MoveableMesh">
-                            <SymPowMesh numBins="50" ratio="25"/>
+                            <SymPowMesh numBins="80" ratio="25"/>
                         </meshY>
                         <meshZ type="MoveableMesh">
-                            <SymPowMesh numBins="20" ratio="45"/>
+                            <SymPowMesh numBins="40" ratio="45"/>
                         </meshZ>
                     </CartesianDustGrid>
                 </dustGrid>
                 <dustEmissivity type="DustEmissivity">
-                    <GreyBodyDustEmissivity/>
+                    <TransientDustEmissivity/>
                 </dustEmissivity>
                 <dustLib type="DustLib">
                     <AllCellsDustLib/>

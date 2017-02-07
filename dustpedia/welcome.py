@@ -30,7 +30,7 @@ def welcome(width=50, prefix="    "):
     fmt.print_empty()
     fmt.print_filled("#", prefix=prefix, length=width)
     fmt.print_border("#", prefix=prefix, length=width)
-    fmt.print_centered_around_border("Welcome to PTS/DustPedia", "#", prefix=prefix, length=width)
+    fmt.print_centered_around_border("Welcome to PTS/DustPedia, " + introspection.username(), "#", prefix=prefix, length=width)
     fmt.print_centered_around_border("Author: Sam Verstocken", "#", prefix=prefix, length=width)
     fmt.print_centered_around_border("PTS version: " + introspection.pts_version(), "#", prefix=prefix, length=width)
     fmt.print_centered_around_border("Last update: " + introspection.pts_update_date(), "#", prefix=prefix, length=width)

@@ -23,6 +23,34 @@ from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
+class Command(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, command, description, settings, input_dict, cwd=None):
+
+        """
+        This function ...
+        :param command:
+        :param settings:
+        :param input_dict:
+        :param cwd:
+        """
+
+        # Set working directory
+        if cwd is None: cwd = fs.cwd()
+
+        # Set attributes
+        self.command = command
+        self.description = description
+        self.settings = settings
+        self.input_dict = input_dict
+        self.cwd = cwd
+
+# -----------------------------------------------------------------
+
 def start_target(command_name, target):
 
     """

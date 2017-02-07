@@ -127,7 +127,7 @@ class PTSTest(object):
         """
 
         prefix = "    "
-        width = 70
+        width = 50
 
         # Print the info
         fmt.print_empty()
@@ -137,6 +137,7 @@ class PTSTest(object):
         fmt.print_border("|", prefix=prefix, length=width)
         for line in strings.split_in_lines(self.description, length=40, as_list=True): fmt.print_centered_around_border(line, "|", prefix=prefix, length=width)
         fmt.print_border("|", prefix=prefix, length=width)
+        fmt.print_filled("-", prefix=prefix, length=width)
         fmt.print_empty()
 
     # -----------------------------------------------------------------

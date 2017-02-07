@@ -13,12 +13,12 @@ import inspect
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.data.sed import ObservedSED
 from pts.core.basics.unit import parse_unit as u
 from pts.core.basics.configuration import Configuration
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.range import QuantityRange, RealRange
 from pts.core.basics.map import Map
+from pts.do.commandline import Command
 
 # -----------------------------------------------------------------
 
@@ -31,68 +31,117 @@ description = "determining parameters based on mock observations of a simple spi
 
 # -----------------------------------------------------------------
 
-# Initialize lists
+# Initialize list for the commands
 commands = []
-input_dicts = []
-settings = []
-cwds = []
 
 # -----------------------------------------------------------------
-# COMMANDS
+# SETUP FUNCTION
 # -----------------------------------------------------------------
 
-commands.append("setup")
-commands.append("model")
+def setup(temp_path):
+
+    """
+    This function ...
+    :param temp_path:
+    """
+
+    return
 
 # -----------------------------------------------------------------
-# SETTINGS
+# LAUNCH REFERENCE SIMULATION
 # -----------------------------------------------------------------
 
-# Settings for 'setup'
+# Determine the ski path
+ski_path = fs.join(this_dir_path, "spiral.ski")
+
+# Determine the simulation output path
+simulation_output_path = "ref"
+
+# Settings
+settings_launch = dict()
+settings_launch["ski"] = ski_path
+settings_launch["output"] = simulation_output_path
+settings_launch["create_output"] = True
+
+# Input
+input_launch = dict()
+
+# Construct the command
+launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
+
+# Add the command
+commands.append(launch)
+
+# -----------------------------------------------------------------
+# CREATE THE MOCK SED
+# -----------------------------------------------------------------
+
+# Create simulation
+#prefix = name = "spiral"
+output_path = simulation_output_path
+#simulation = SkirtSimulation(prefix, outpath=output_path, ski_path=ski_path, name=name)
+
+# Settings
+settings_sed = dict()
+settings_sed["spectral_convolution"] = False
+
+# Input
+input_sed = dict()
+input_sed["simulation_output_path"] = simulation_output_path
+input_sed["output_path"] = "."
+
+# Construct the command
+create_sed = Command("observed_fluxes", "create the mock SED", settings_sed, input_sed, cwd=".")
+
+# Add the command
+commands.append(create_sed)
+
+# Determine the path to the mock SED
+mock_sed_path = "spiral_earth_fluxes.dat"
+
+# -----------------------------------------------------------------
+# SETUP THE MODELLING
+# -----------------------------------------------------------------
+
+# Settings
 settings_setup = dict()
 settings_setup["type"] = "sed"
 settings_setup["name"] = "Spiral"
 settings_setup["fitting_host_ids"] = None
-settings.append(settings_setup)
-
-# Settings for 'model_sed'
-settings_model = dict()
-settings_model["ngenerations"] = 4
-settings_model["nsimulations"] = 20
-settings_model["fitting_settings"] = {"spectral_convolution": False}
-settings.append(settings_model)
-
-# -----------------------------------------------------------------
-# INPUT DICTS
-# -----------------------------------------------------------------
-
-# Construct the observed SED
-sed = ObservedSED(photometry_unit="Jy")
-sed.add_point("Pacs 70", 0.0455 * u("Jy"), 0.0034 * u("Jy"))
-sed.add_point("Pacs 100", 0.0824 * u("Jy"), 0.0045 * u("Jy"))
-sed.add_point("Pacs 160", 0.1530 * u("Jy"), 0.0090 * u("Jy"))
-sed.add_point("SPIRE 250", 0.1107 * u("Jy"), 0.0252 * u("Jy"))
-sed.add_point("SPIRE 350", 0.0693 * u("Jy"), 0.0228 * u("Jy"))
-sed.add_point("ALMA 440um", 0.0500 * u("Jy"), 0.0150 * u("Jy"))
-sed.add_point("ALMA 870um", 0.0050 * u("Jy"), 0.0010 * u("Jy"))
 
 # Create object config
 object_config = dict()
-ski_path = fs.join(this_dir_path, "spiral.ski")
 object_config["ski"] = ski_path
 
 # Create input dict for setup
 input_setup = dict()
 input_setup["object_config"] = object_config
-input_setup["sed"] = sed
-input_dicts.append(input_setup)
+input_setup["sed"] = mock_sed_path
+
+# Construct the command
+stp = Command("setup", "setup the modeling", settings_setup, input_setup, cwd=".")
+
+# Add the command
+commands.append(stp)
+
+# -----------------------------------------------------------------
+# PEFORM THE MODELLING
+# -----------------------------------------------------------------
+
+# Settings
+settings_model = dict()
+settings_model["ngenerations"] = 4
+settings_model["nsimulations"] = 20
+settings_model["fitting_settings"] = {"spectral_convolution": False}
+
+# Input
 
 # Get free parameter names
 ski = LabeledSkiFile(ski_path)
 free_parameter_names = ski.labels
 
 # Get fitting filter names
-filter_names = sed.filter_names()
+#filter_names = sed.filter_names()
 
 # Set descriptions
 descriptions = Map()
@@ -128,38 +177,25 @@ input_model["descriptions_config"] = Configuration(descriptions=descriptions)
 input_model["types_config"] = Configuration(types=types)
 input_model["units_config"] = Configuration(units=units)
 input_model["ranges_config"] = Configuration(luminosity_range=luminosity_range, dustmass_range=dustmass_range, grainsize_range=grainsize_range, fsil_range=fsil_range)
-input_model["filters_config"] = Configuration(filters=filter_names)
+#input_model["filters_config"] = Configuration(filters=filter_names)
 
 # Fitting initializer config
 input_model["initialize_config"] = Configuration(npackages=1e4)
 
 # Add dict of input for 'model' command to the list
-input_dicts.append(input_model)
+#input_dicts.append(input_model)
 
-# -----------------------------------------------------------------
-# WORKING DIRECTORIES
-# -----------------------------------------------------------------
+# Construct the command
+command = Command("model", "perform the modelling", settings_model, input_model, "./Spiral")
 
-cwds.append(".")
-cwds.append("./Spiral")
-
-# -----------------------------------------------------------------
-# SETUP FUNCTION
-# -----------------------------------------------------------------
-
-def setup():
-
-    """
-    This function ...
-    """
-
-    return
+# Add the command
+commands.append(command)
 
 # -----------------------------------------------------------------
 # TEST FUNCTION
 # -----------------------------------------------------------------
 
-def test():
+def test(temp_path):
 
     """
     This function ...

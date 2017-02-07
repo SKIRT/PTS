@@ -19,6 +19,7 @@ from pts.core.basics.configuration import Configuration
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.range import QuantityRange, RealRange
 from pts.core.basics.map import Map
+from pts.do.commandline import Command
 
 # -----------------------------------------------------------------
 
@@ -31,40 +32,35 @@ description = "modeling of the Supernova 1987A with genetic algorithms and 4 fre
 
 # -----------------------------------------------------------------
 
-# Initialize lists
+# Initialize list for the commands
 commands = []
-input_dicts = []
-settings = []
-cwds = []
 
 # -----------------------------------------------------------------
-# COMMANDS
+# SETUP FUNCTION
 # -----------------------------------------------------------------
 
-commands.append("setup")
-commands.append("model")
+def setup(temp_path):
+
+    """
+    This function ...
+    :param temp_path:
+    """
+
+    return
 
 # -----------------------------------------------------------------
-# SETTINGS
+# SETUP MODELLING
 # -----------------------------------------------------------------
 
-# Settings for 'setup'
+# Settings
 settings_setup = dict()
 settings_setup["type"] = "sed"
 settings_setup["name"] = "SN1987A"
 settings_setup["fitting_host_ids"] = None
-settings.append(settings_setup)
-
-# Settings for 'model_sed'
-settings_model = dict()
-settings_model["ngenerations"] = 4
-settings_model["nsimulations"] = 20
-settings_model["fitting_settings"] = {"spectral_convolution": False}
-settings.append(settings_model)
 
 # -----------------------------------------------------------------
-# INPUT DICTS
-# -----------------------------------------------------------------
+
+# Input
 
 # Construct the observed SED
 sed = ObservedSED(photometry_unit="Jy")
@@ -85,7 +81,26 @@ object_config["ski"] = ski_path
 input_setup = dict()
 input_setup["object_config"] = object_config
 input_setup["sed"] = sed
-input_dicts.append(input_setup)
+
+# Construct the command
+setup_command = Command("setup", "setup the modelling", settings_setup, input_setup, cwd=".")
+
+# Add the command
+commands.append(setup_command)
+
+# -----------------------------------------------------------------
+# PERFORM MODELLING
+# -----------------------------------------------------------------
+
+# Settings
+settings_model = dict()
+settings_model["ngenerations"] = 4
+settings_model["nsimulations"] = 20
+settings_model["fitting_settings"] = {"spectral_convolution": False}
+
+# -----------------------------------------------------------------
+
+# Input
 
 # Get free parameter names
 ski = LabeledSkiFile(ski_path)
@@ -133,36 +148,21 @@ input_model["filters_config"] = Configuration(filters=filter_names)
 # Fitting initializer config
 input_model["initialize_config"] = Configuration(npackages=1e4)
 
-# Add dict of input for 'model' command to the list
-input_dicts.append(input_model)
+# Construct the command
+model_command = Command("model", "perform the modelling", settings_model, input_model, "./SN1987A")
 
-# -----------------------------------------------------------------
-# WORKING DIRECTORIES
-# -----------------------------------------------------------------
-
-cwds.append(".")
-cwds.append("./SN1987A")
-
-# -----------------------------------------------------------------
-# SETUP FUNCTION
-# -----------------------------------------------------------------
-
-def setup():
-
-    """
-    This function ...
-    """
-
-    return
+# Add the command
+commands.append(model_command)
 
 # -----------------------------------------------------------------
 # TEST FUNCTION
 # -----------------------------------------------------------------
 
-def test():
+def test(temp_path):
 
     """
     This function ...
+    :param temp_path:
     """
 
     return

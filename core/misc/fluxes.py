@@ -32,6 +32,7 @@ from ..basics.unit import parse_unit as u
 from ..data.sed import ObservedSED
 from ..tools import lists
 from ..basics.configurable import Configurable
+from ..simulation.simulation import createsimulations
 
 # -----------------------------------------------------------------
 
@@ -111,8 +112,10 @@ class ObservedFluxCalculator(Configurable):
         # Call the setup function of the base class
         super(ObservedFluxCalculator, self).setup(**kwargs)
 
-        #simulation, output_path = None, filter_names = None, instrument_names = None
-        simulation = kwargs.pop("simulation")
+        # Get properties
+        if "simulation" in kwargs: simulation = kwargs.pop("simulation")
+        elif "simulation_output_path" in kwargs: simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
+        else: raise ValueError("Either 'simulation' or 'simulation_output_path' must be specified")
         output_path = kwargs.pop("output_path", None)
         filter_names = kwargs.pop("filter_names", None)
         instrument_names = kwargs.pop("instrument_names", None)

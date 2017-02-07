@@ -17,6 +17,10 @@ definition.add_required("ski", "file_path", "the name/path of the ski file")
 # Simulation settings
 definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
 
+# Flags
+definition.add_flag("create_output", "create the output directory if it is not yet present")
+definition.add_flag("progress_bar", "use progress bars to show progress (for local simulation or remote simulation in attached mode)", True)
+
 # -----------------------------------------------------------------
 
 # Add positional arguments

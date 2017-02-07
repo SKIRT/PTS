@@ -58,12 +58,11 @@ for subproject in introspection.subprojects:
 
         # Iterate over these:
         commands = test_module.commands
-        input_dicts = test_module.input_dicts
-        settings = test_module.settings
-        cwds = test_module.cwds
 
         # Loop over the commands
-        for command, input_dict, settings_dict, cwd in zip(commands, input_dicts, settings, cwds):
+        for command in commands:
+
+            the_command = command.command
 
             # Find match
             match = introspection.resolve_command_tables(command, tables)
