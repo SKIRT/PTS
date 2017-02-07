@@ -21,6 +21,20 @@ from pts.core.basics.configuration import find_command
 from pts.core.tools import formatting as fmt
 from pts.core.test.pts import tests_for_subproject, path_for_test
 from pts.core.tools import filesystem as fs
+from pts.core.tools import lists
+
+# -----------------------------------------------------------------
+
+# Get arguments tables
+tables = introspection.get_arguments_tables()
+
+# -----------------------------------------------------------------
+
+# Get all configurable classes
+classes = list(introspection.all_concrete_configurable_classes())
+
+# Initialize container
+in_tests = [False] * len(classes)
 
 # -----------------------------------------------------------------
 
@@ -51,8 +65,25 @@ for subproject in introspection.subprojects:
         # Loop over the commands
         for command, input_dict, settings_dict, cwd in zip(commands, input_dicts, settings, cwds):
 
-            # Find matches
-            matches = introspection.find_matches_scripts(command, scripts)
-            table_matches = introspection.find_matches_tables(command, tables)
+            # Find match
+            match = introspection.resolve_command_tables(command, tables)
+
+            # Get the class name
+            cls = introspection.get_class(match.module_path, match.class_name)
+
+            # Find index of class in list of classes
+            index = lists.find_exact_index(classes, cls)
+
+            # Set to True
+            in_tests[index] = True
+
+# -----------------------------------------------------------------
+
+# Report
+for index in range(len(classes)):
+
+    class_name = classes[index].__name__
+    if in_tests[index]: print(fmt.green + class_name + ": in tests" + fmt.reset)
+    else: print(fmt.red + class_name + ": untested" + fmt.reset)
 
 # -----------------------------------------------------------------

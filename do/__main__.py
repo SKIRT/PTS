@@ -133,10 +133,9 @@ elif len(matches) == 1 and len(table_matches) == 0:
 
     # Set target
     def start(): exec open(target)
-    target = start
 
     # Start
-    start_target(command_name, target)
+    start_target(command_name, start)
 
 # If there is an unique match in a table
 elif len(table_matches) == 1 and len(matches) == 0:

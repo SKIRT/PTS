@@ -93,3 +93,16 @@ def find_closest_index(seq, value):
     return closest_index
 
 # -----------------------------------------------------------------
+
+def find_exact_index(seq, value):
+
+    """
+    This function ...
+    :param seq:
+    :param value:
+    :return:
+    """
+
+    return seq.index(value)
+
+# -----------------------------------------------------------------

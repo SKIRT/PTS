@@ -78,7 +78,7 @@ sed.add_point("ALMA 870um", 0.0050 * u("Jy"), 0.0010 * u("Jy"))
 
 # Create object config
 object_config = dict()
-ski_path = fs.join(this_dir_path, "SN1987A.ski")
+ski_path = fs.join(this_dir_path, "spiral.ski")
 object_config["ski"] = ski_path
 
 # Create input dict for setup
