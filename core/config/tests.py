@@ -23,4 +23,7 @@ definition.add_flag("keep", "keep the output")
 definition.add_flag("show", "show results")
 definition.add_flag("write", "write results")
 
+# Advanced
+definition.add_flag("all", "perform all tests for the given subproject")
+
 # -----------------------------------------------------------------

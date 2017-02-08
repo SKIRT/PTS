@@ -33,6 +33,7 @@ definition.add_flag("elitism", "enable elitism", True)
 definition.add_flag("progress_bar", "use a progress bar to show the progress of the evoluation")
 definition.add_flag("show", "show results", True)
 definition.add_flag("write", "write results", True)
+definition.add_flag("plot", "plot results", False)
 
 # Advanced
 definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)

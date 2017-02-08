@@ -44,6 +44,9 @@ class Optimizer(Configurable):
         # The evaluating function
         self.evaluator = None
 
+        # The initializator function
+        self.initializator = None
+
         # The starting genome
         self.genome = None
 
@@ -78,6 +81,9 @@ class Optimizer(Configurable):
         # 5. Write
         if self.config.write: self.write()
 
+        # 6. Plot
+        if self.config.plot: self.plot()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -93,6 +99,9 @@ class Optimizer(Configurable):
 
         # Get evaluator
         if "evaluator" in kwargs: self.evaluator = kwargs.pop("evaluator")
+
+        # Get initializator
+        if "initializator" in kwargs: self.initializator = kwargs.pop("initializator")
 
     # -----------------------------------------------------------------
 
@@ -133,9 +142,11 @@ class Optimizer(Configurable):
         if self.config.round_decimal is not None: self.genome.setParams(rounddecimal=self.config.round_decimal)
 
         # Set initializator
-        if isinstance(self.config.parameter_range, IntegerRange): self.genome.initializator.set(G1DListInitializatorInteger)
-        elif isinstance(self.config.parameter_range, RealRange): self.genome.initializator.set(G1DListInitializatorReal)
-        else: raise ValueError("Invalid parameter range")
+        if self.initializator is not None: self.genome.initializator.set(self.initializator)
+        else:
+            if isinstance(self.config.parameter_range, IntegerRange): self.genome.initializator.set(G1DListInitializatorInteger)
+            elif isinstance(self.config.parameter_range, RealRange): self.genome.initializator.set(G1DListInitializatorReal)
+            else: raise ValueError("Invalid parameter range")
 
         # Set mutator
         if isinstance(self.config.parameter_range, IntegerRange):
@@ -221,7 +232,20 @@ class Optimizer(Configurable):
         :return:
         """
 
+        # Inform the user
         log.info("Writing ...")
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
 
 # -----------------------------------------------------------------
 

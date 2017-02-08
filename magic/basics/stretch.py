@@ -12,8 +12,8 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
+# Import standard modules
+import copy
 
 # Import the relevant PTS classes and modules
 from .vector import Extent
@@ -83,7 +83,7 @@ class Stretch(object):
         :return:
         """
 
-        return deepcopy(self)
+        return copy.deepcopy(self)
 
     # -----------------------------------------------------------------
 

@@ -404,10 +404,12 @@ def analyse_unit(unit):
                     frequency_unit = fu
 
                 if du != "":
+
                     assert distance_unit == ""
                     distance_unit = du
 
                 if su != "":
+
                     assert su == ""
                     solid_angle_unit = su
 
@@ -451,6 +453,8 @@ def analyse_unit(unit):
 
     # Check if wavelength and frequency unit are not both defined
     if wavelength_unit != "" and frequency_unit != "": raise ValueError("Not a photometric unit: found wavelength^-1 and frequency^-1 dimensions")
+
+    if base_unit is None or base_unit == "": raise ValueError("Not a photometric unit: found no unit of energy or luminosity")
 
     # Return
     return scale_factor, base_unit, wavelength_unit, frequency_unit, distance_unit, solid_angle_unit

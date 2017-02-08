@@ -227,6 +227,11 @@ class PTSTestSuite(Configurable):
             # Set the test names
             self.test_names[subproject] = self.config.tests
 
+        # If the 'all' flag has been enabled
+        if self.config.all:
+            for subproject in self.config.subprojects:
+                self.test_names[subproject] = tests_for_subproject(subproject)
+
     # -----------------------------------------------------------------
 
     def prompt(self):
