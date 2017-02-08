@@ -12,6 +12,7 @@
 # Import standard modules
 import math
 import copy
+import warnings
 import numpy as np
 
 # Import astronomical modules
@@ -552,42 +553,26 @@ class PhotometricUnit(CompositeUnit):
         if isinstance(other, basestring): other = parse_unit(other)
 
         # Divided by another unit
-        if isinstance(other, UnitBase):
-
-            # If the other unit is dimensionless
-            if other == "": return self.copy()
-
-            # If the other unit is dimensionless with a certain scale
-            elif other.physical_type == "dimensionless" and other.scale != 1: return PhotometricUnit(CompositeUnit(self.scale / other.scale, self.bases, self.powers), density=self.is_spectral_density)
-
-            # If we have a spectral density and there is an inverse frequency and/or inverse wavelength in the other unit, we can never get a PhometricUnit again
-            if self.is_spectral_density and (contains_inverse_frequency(other) or contains_inverse_wavelength(other)): return CompositeUnit(1, [self, other], [1, -1], _error_check=False)
-
-            # Else, re-evaluate everything
-            else: return parse_unit(CompositeUnit(1, [self, other], [1, -1], _error_check=False))
+        if isinstance(other, UnitBase): return divide_units(self, other)
 
         # Divided by a quantity
         elif hasattr(other, "unit"):
 
-            # If the unit of the other quantity is dimensionless
-            if other.unit == "": return PhotometricQuantity(other.value, self.copy())
+            # Get the new unit
+            new_unit = divide_units(self, other.unit)
 
-            # If the unit of the other quantity is dimensionless with a certain scale
-            elif other.unit.physical_type == "dimensionless" and other.unit.scale != 1:
-                return PhotometricQuantity(other.value, PhotometricUnit(CompositeUnit(self.scale / other.unit.scale, self.bases, self.powers), density=self.is_spectral_density))
+            # Create a quantity
+            quantity = parse_quantity(other.value * new_unit)
 
-            # If we have a spectral density and there is an inverse frequency and/or inverse wavelength in the other unit, we can never get a PhotometricQuantity
-            if self.is_spectral_density and (contains_inverse_frequency(other.unit) or contains_inverse_wavelength(other.unit)): return Quantity(other.value, CompositeUnit(1, [self, other.unit], [1, -1], _error_check=False))
-
-            # Else, re-evaluate everything
-            else: return parse_quantity(Quantity(other.value, CompositeUnit(1, [self, other], [1, -1], _error_check=False)))
+            # Return the quantity
+            return quantity
 
         # Divided by a number
         else: return PhotometricQuantity(1./other, self)
 
     # -----------------------------------------------------------------
 
-    def l__rdiv__(self, m):
+    def __rdiv__(self, other):
 
         """
         This function ...
@@ -595,7 +580,26 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
-        pass
+        # If the other is a string
+        if isinstance(other, basestring): other = parse_unit(other)
+
+        # Another unit divided by this unit
+        if isinstance(other, UnitBase): return divide_units_reverse(self, other)
+
+        # Quantity divided by this unit
+        elif hasattr(other, "unit"):
+
+            # Get the new unit
+            new_unit = divide_units_reverse(self, other)
+
+            # Create a quantity
+            quantity = parse_quantity(other.value * new_unit)
+
+            # Return the quantity
+            return quantity
+
+        # Regular number divided by this unit
+        else: return parse_quantity(Quantity(other, 1./self))
 
     # -----------------------------------------------------------------
 
@@ -603,61 +607,42 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
-    #__rtruediv__ = __rdiv__
+    __rtruediv__ = __rdiv__
 
     # -----------------------------------------------------------------
 
-    def l__mul__(self, m):
+    def __mul__(self, other):
 
         """
         This function ...
-        :param m:
+        :param other:
         :return:
         """
 
-        if isinstance(m, (bytes, six.text_type)):
-            m = Unit(m)
+        # If the other is a string
+        if isinstance(other, basestring): other = parse_unit(other)
 
-        if isinstance(m, UnitBase):
-            if m.is_unity():
-                return self
-            elif self.is_unity():
-                return m
-            return CompositeUnit(1, [self, m], [1, 1], _error_check=False)
+        # This unit is multiplied with another unit
+        if isinstance(other, UnitBase): return multiply_units(self, other)
 
-        # Cannot handle this as Unit, re-try as Quantity.
-        try:
-            from .quantity import Quantity
-            return Quantity(1, self) * m
-        except TypeError:
-            return NotImplemented
+        # This unit is multiplied with a quantity
+        elif hasattr(other, "unit"):
+
+            # Get the new unit
+            new_unit = multiply_units(self, other.unit)
+
+            # Create a quantity
+            quantity = parse_quantity(other.value * new_unit)
+
+            # Return the quantity
+            return quantity
+
+        # Regular number multiplied by this unit
+        else: return PhotometricQuantity(other, self)
 
     # -----------------------------------------------------------------
 
-    def l__rmul__(self, m):
-
-        """
-        This function ...
-        :param m:
-        :return:
-        """
-
-        if isinstance(m, (bytes, six.text_type)):
-            return Unit(m) * self
-
-        # Cannot handle this as Unit.  Here, m cannot be a Quantity,
-        # so we make it into one, fasttracking when it does not have a unit
-        # for the common case of <array> * <unit>.
-        try:
-            from .quantity import Quantity
-            if hasattr(m, 'unit'):
-                result = Quantity(m)
-                result *= self
-                return result
-            else:
-                return Quantity(m, self)
-        except TypeError:
-            return NotImplemented
+    __rmul__ = __mul__
 
     # -----------------------------------------------------------------
 
@@ -1119,11 +1104,107 @@ class PhotometricUnit(CompositeUnit):
 
 # -----------------------------------------------------------------
 
+def is_wavelength(unit):
+
+    """
+    This fucntion ...
+    :return:
+    """
+
+    return unit.physical_type == "length"
+
+# -----------------------------------------------------------------
+
+def is_frequency(unit):
+
+    """
+    This function ...
+    :return:
+    """
+
+    return unit.physical_type == "frequency"
+
+# -----------------------------------------------------------------
+
+def is_time(unit):
+
+    """
+    This function ...
+    :return:
+    """
+
+    return unit.physical_type == "time"
+
+# -----------------------------------------------------------------
+
+def is_inverse_wavelength(unit):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+    if len(unit.bases) != 1: return False
+    return unit.bases[0].physical_type == "length" and unit.powers[0] == -1
+
+# -----------------------------------------------------------------
+
+def is_inverse_frequency(unit):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+    if len(unit.bases) != 1: return False
+    return (unit.bases[0].physical_type == "time" and unit.powers[0] == 1) or (unit.bases[0].physical_type == "frequency" and unit.powers[0] == -1)
+
+# -----------------------------------------------------------------
+
+def contains_wavelength(unit):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Loop over the bases
+    for base, power in zip(unit.bases, unit.powers):
+        if power == 1 and is_wavelength(base): return True
+
+    return False
+
+# -----------------------------------------------------------------
+
+def contains_frequency(unit):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Loop over the bases
+    for base, power in zip(unit.bases, unit.powers):
+        if power == 1 and is_frequency(base): return True
+        if power == -1 and is_time(base): return True
+
+    return False
+
+# -----------------------------------------------------------------
+
 def contains_inverse_frequency(unit):
 
     """
     This function ...
     """
+
+    # Loop over the bases
+    for base, power in zip(unit.bases, unit.powers):
+        if power == 1 and is_time(base): return True
+        if power == -1 and is_frequency(base): return True
+    return False
 
 # -----------------------------------------------------------------
 
@@ -1135,5 +1216,204 @@ def contains_inverse_wavelength(unit):
     :return:
     """
 
+    # Loop over the bases
+    for base, power in zip(unit.bases, unit.powers):
+        if power == -1 and is_wavelength(base): return True
+    return False
+
 # -----------------------------------------------------------------
 
+def make_composite_multiplication(unit_a, unit_b):
+
+    """
+    This function ...
+    :param unit_a:
+    :param unit_b:
+    :return:
+    """
+
+    return CompositeUnit(1, [unit_a, unit_b], [1, 1])
+
+# -----------------------------------------------------------------
+
+def multiply_units(unit_a, unit_b):
+
+    """
+    This function ...
+    :param unit_a:
+    :param unit_b:
+    :return:
+    """
+
+    # If the other unit is dimensionless
+    if unit_b == "": return unit_a.copy()
+
+    # If the other unit is dimensionless with a certain scale
+    elif unit_b.physical_type == "dimensionless" and unit_b.scale != 1: return PhotometricUnit(CompositeUnit(unit_a.scale * unit_b.scale, unit_a.bases, unit_a.powers), density=unit_a.is_spectral_density)
+
+    # Spectral density
+    if unit_a.is_spectral_density:
+
+        # If this is a wavelength density
+        if unit_a.is_wavelength_density:
+
+            # From wavelength spectral density to neutral spectral density
+            if is_wavelength(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
+            elif contains_wavelength(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+            else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
+
+        # If this is a frequency density
+        elif unit_a.is_frequency_density:
+
+            # From frequency spectral density to neutral spectral density
+            if is_frequency(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
+            elif contains_wavelength(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+            else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
+
+        # Neutral density
+        else:
+
+            # From netural
+            if is_inverse_wavelength(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
+            elif is_inverse_frequency(unit_b): return PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=True)
+            elif contains_inverse_wavelength(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+            elif contains_inverse_frequency(unit_b): return parse_unit(make_composite_multiplication(unit_a, unit_b), density=True)
+            else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
+
+    # Not a spectral density
+    else:
+
+        # If unit b is an inverse wavelength
+        if is_inverse_wavelength(unit_b):
+            unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
+            if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+            return unit
+
+        # If unit b is an inverse frequency
+        elif is_inverse_frequency(unit_b):
+            unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
+            if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+            return unit
+
+        # Try parsing as spectral photometric quantity (density=True), but possibly no photometric quantity
+        elif contains_inverse_wavelength(unit_b):
+            unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
+            try:
+                if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+            except AttributeError: pass
+            return unit
+
+        # Try parsing as spectral photometric quantity(density=True), but possibly no photometric quantity
+        elif contains_inverse_frequency(unit_b):
+            unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
+            try:
+                if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
+            except AttributeError: pass
+            return unit
+
+        # Parse regularly
+        else: return parse_unit(make_composite_multiplication(unit_a, unit_b))
+
+# -----------------------------------------------------------------
+
+def make_composite_division(unit_a, unit_b):
+
+    """
+    This function ...
+    :param unit_a:
+    :param unit_b:
+    :return:
+    """
+
+    return CompositeUnit(1, [unit_a, unit_b], [1, -1], _error_check=False)
+
+# -----------------------------------------------------------------
+
+def divide_units(unit_a, unit_b):
+
+    """
+    This function ...
+    :param unit_a:
+    :param unit_b:
+    :return:
+    """
+
+    # If the other unit is dimensionless
+    if unit_b == "": return unit_a.copy()
+
+    # If the other unit is dimensionless with a certain scale
+    elif unit_b.physical_type == "dimensionless" and unit_b.scale != 1: return PhotometricUnit(CompositeUnit(unit_a.scale / unit_b.scale, unit_a.bases, unit_a.powers), density=unit_a.is_spectral_density)
+
+    # If we have a spectral density
+    if unit_a.is_spectral_density:
+
+        # If this is a wavelength density
+        if unit_a.is_wavelength_density:
+
+            if is_inverse_wavelength(unit_b): return PhotometricUnit(make_composite_division(unit_a, unit_b), density=True)
+            elif contains_inverse_wavelength(unit_b): return parse_unit(make_composite_division(unit_a, unit_b), density=True)
+            else: return parse_unit(make_composite_division(unit_a, unit_b))
+
+        # If this is a frequency density
+        if unit_a.is_frequency_density:
+
+            if is_inverse_frequency(unit_b): return PhotometricUnit(make_composite_division(unit_a, unit_b), density=True)
+            elif contains_inverse_frequency(unit_b): return parse_unit(make_composite_division(unit_a, unit_b), density=True)
+            else: return parse_unit(make_composite_division(unit_a, unit_b))
+
+        # If this is a neutral density
+        else:
+
+            if is_wavelength(unit_b): return PhotometricUnit(make_composite_division(unit_a, unit_b), density=True)
+            elif is_frequency(unit_b): return PhotometricUnit(make_composite_division(unit_a, unit_b), density=True)
+            elif contains_wavelength(unit_b): return parse_unit(make_composite_division(unit_a, unit_b), density=True)
+            elif contains_frequency(unit_b): return parse_unit(make_composite_division(unit_a, unit_b), density=True)
+            else: return parse_unit(make_composite_division(unit_a, unit_b))
+
+    # Not a spectral density
+    else:
+
+        # If unit b is a wavelength
+        if is_wavelength(unit_b):
+            unit = PhotometricUnit(make_composite_division(unit_a, unit_b), density=False)
+            if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by division with the unit '" + str(unit_b) + "'. This may not be the intention.")
+            return unit
+
+        # Unit b is a frequency
+        elif is_frequency(unit_b):
+            unit = PhotometricUnit(make_composite_division(unit_a, unit_b), density=False)
+            if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by division with the unit '" + str(unit_b) + "'. This may not be the intention.")
+
+        # Unit b contains a wavelength
+        elif contains_wavelength(unit_b):
+            unit = parse_unit(make_composite_division(unit_a, unit_b), density=False)
+            try:
+                if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by division with unit '" + str(unit_b) + "'. This may not be the intention.")
+            except AttributeError: pass
+            return unit
+
+        elif contains_frequency(unit_b):
+            unit = parse_unit(make_composite_division(unit_a, unit_b), density=False)
+            try:
+                if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by division with unit '" + str(unit_b) + "' . This may not be the intention.")
+            except AttributeError: pass
+            return unit
+
+        # Parse regularly
+        else: return parse_unit(make_composite_division(unit_a, unit_b))
+
+# -----------------------------------------------------------------
+
+def divide_units_reverse(unit_a, unit_b):
+
+    """
+    This function ...
+    :param unit_a:
+    :param unit_b:
+    :return:
+    """
+
+    # Re-evaluate everything, cannot be a photometric quantityb anymore
+    return CompositeUnit(1, [unit_b, unit_a], [1, -1], _error_check=False)
+
+# -----------------------------------------------------------------

@@ -1255,6 +1255,16 @@ class SkiFile:
         # Set the wavelength
         normalization.set("wavelength", represent_quantity(wavelength))
 
+    ## This function returns the wavelength or filter for normalization of the specified stellar component
+    def get_stellar_component_normalization_wavelength_or_filter(self, component_id):
+
+        normalization = self.get_stellar_component_normalization(component_id)
+
+        if normalization.tag == "BolLuminosityStellarCompNormalization": return None
+        elif normalization.tag == "LuminosityStellarCompNormalization": return parse_filter(normalization.get("band"))
+        elif normalization.tag == "SpectralLuminosityStellarCompNormalization": return self.get_quantity(normalization, "wavelength")
+        else: raise ValueError("Unrecognized stellar component normalization: " + normalization.tag)
+
     ## This function returns the luminosity of the stellar component with the specified id,
     #   - if the normalization is by bolometric luminosity, returns (luminosity [as Astropy quantity], None)
     #   - if the normalization is by luminosity in a specific band, returns (luminosity [as Astropy quantity], Filter object)
@@ -1502,6 +1512,50 @@ class SkiFile:
         # Return the geometry element of the stellar component
         return get_unique_element(stellar_component, "geometry")
 
+    ## This function returns the geometry hierarchy of the stellar component with the specified ID
+    def get_stellar_component_geometry_hierarchy_names(self, component_id):
+
+        # Get the stellar component
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # Initialize list for the hierarchy
+        hierarchy = []
+
+        # Fill hierarchy
+        self._fill_geometry_hierarchy(geometry, hierarchy)
+
+        # Return the hierarchy
+        return hierarchy
+
+    ## This function returns the geometry hierarchy of the dust component with the specified ID
+    def get_dust_component_geometry_hierarchy_names(self, component_id):
+
+        # Get the dust component geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Initialize list for the hierarchy
+        hierarchy = []
+
+        # Fill hiearchy
+        self._fill_geometry_hierarchy(geometry, hierarchy)
+
+        # Return the hierarchy
+        return hierarchy
+
+    ## This function ...
+    def _fill_geometry_hierarchy(self, geometry, hierarchy):
+
+        hierarchy.append(geometry.tag)
+
+        # Decorator
+        if geometry.tag.endswith("Decorator"):
+
+            child = get_unique_element(geometry, "geometry")
+            return self._fill_geometry_hierarchy(child, hierarchy)
+
+        # Not a decorator
+        else: return
+
     ## This function returns the geometry of the dust component with the specified id
     def get_dust_component_geometry(self, component_id):
 
@@ -1584,9 +1638,9 @@ class SkiFile:
         parent.remove(geometry)
 
         # Create and add the new geometry
-        attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str_from_angle(position_angle),
+        attrs = {"filename": filename, "pixelScale": represent_quantity(pixelscale), "positionAngle": str_from_angle(position_angle),
                  "inclination": str_from_angle(inclination), "xelements": str(x_size), "yelements": str(y_size),
-                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": str(scale_height)}
+                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": represent_quantity(scale_height)}
         new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
         parent.append(new_geometry)
 
@@ -1603,11 +1657,17 @@ class SkiFile:
         parent.remove(geometry)
 
         # Create and add the new geometry
-        attrs = {"filename": filename, "pixelScale": str(pixelscale), "positionAngle": str_from_angle(position_angle),
+        attrs = {"filename": filename, "pixelScale": represent_quantity(pixelscale), "positionAngle": str_from_angle(position_angle),
                  "inclination": str_from_angle(inclination), "xelements": str(x_size), "yelements": str(y_size),
-                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": str(scale_height)}
+                 "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": represent_quantity(scale_height)}
         new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
         parent.append(new_geometry)
+
+    ## This function returns the geometry of the specified stellar component
+    def get_stellar_component_geometry_object(self, component_id):
+
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
+        pass
 
     ## This function sets the geometry of the specified stellar component.
     def set_stellar_component_geometry(self, component_id, model):
@@ -1684,6 +1744,12 @@ class SkiFile:
 
         # Unsupported model
         else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet. This model is of type " + str(type(model)))
+
+    ## This function returns the geometry of the specified dust component
+    def get_dust_component_geometry_object(self, component_id):
+
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
+        pass
 
     ## This function sets the geometry of the specified dust component
     def set_dust_component_geometry(self, component_id, model):
@@ -2014,10 +2080,100 @@ class SkiFile:
         # Return the dust grid
         return get_unique_element(dust_system, "dustGrid")
 
+    ## This function returns the dust grid as a DustGrid object
+    def get_dust_grid_object(self):
+
+        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
+
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        # Cartesian grid
+        if grid.tag == "CartesianDustGrid":
+
+            write = self.get_boolean(grid, "writeGrid")
+
+            min_x = self.get_quantity(grid, "minX")
+            max_x = self.get_quantity(grid, "maxX")
+            min_y = self.get_quantity(grid, "minY")
+            max_y = self.get_quantity(grid, "maxY")
+            min_z = self.get_quantity(grid, "minZ")
+            max_z = self.get_quantity(grid, "maxZ")
+
+            mesh_x = get_unique_element(grid, "meshX")
+            xbins = int(mesh_x.get("numBins"))
+            xratio = int(mesh_x.get("ratio"))
+
+            mesh_y = get_unique_element(grid, "meshY")
+            ybins = int(mesh_y.get("numBins"))
+            yratio = int(mesh_y.get("ratio"))
+
+            mesh_z = get_unique_element(grid, "meshZ")
+            zbins = int(mesh_z.get("numBins"))
+            zratio = int(mesh_z.get("ratio"))
+
+            # Create and return the grid
+            return CartesianDustGrid(x_bins=xbins, y_bins=ybins, z_bins=zbins, mesh_type="symmetric_power", ratio=xratio,
+                                     min_x=min_x, max_x=max_x, min_y=min_y, max_y=max_y, min_z=min_z, max_z=max_z, write=write)
+
+        elif grid.tag == "BinTreeDustGrid":
+
+            write = self.get_boolean(grid, "writeGrid")
+
+            min_x = self.get_quantity(grid, "minX")
+            max_x = self.get_quantity(grid, "maxX")
+            min_y = self.get_quantity(grid, "minY")
+            max_y = self.get_quantity(grid, "maxY")
+            min_z = self.get_quantity(grid, "minZ")
+            max_z = self.get_quantity(grid, "maxZ")
+
+            min_level = int(grid.get("minLevel"))
+            max_level = int(grid.get("maxLevel"))
+            search_method =  grid.get("searchMethod")
+            sample_count = int(grid.get("sampleCount"))
+            maxoptdepth = float(grid.get("maxOpticalDepth"))
+            maxmassfraction = float(grid.get("maxMassFraction"))
+            maxdensdispfraction = float(grid.get("maxDensDispFraction"))
+            directionmethod = grid.get("directionMethod")
+
+            # Create and return the grid
+            return BinaryTreeDustGrid(min_x=min_x, max_x=max_x, min_y=min_y, max_y=max_y, min_z=min_z, max_z=max_z,
+                                      min_level=min_level, max_level=max_level, search_method=search_method, sample_count=sample_count,
+                                      max_optical_depth=maxoptdepth, max_mass_fraction=maxmassfraction, max_dens_disp_fraction=maxdensdispfraction,
+                                      direction_method=directionmethod)
+
+        elif grid.tag == "OctTreeDustGrid":
+
+            write = self.get_boolean(grid, "writeGrid")
+
+            min_x = self.get_quantity(grid, "minX")
+            max_x = self.get_quantity(grid, "maxX")
+            min_y = self.get_quantity(grid, "minY")
+            max_y = self.get_quantity(grid, "maxY")
+            min_z = self.get_quantity(grid, "minZ")
+            max_z = self.get_quantity(grid, "maxZ")
+
+            min_level = int(grid.get("minLevel"))
+            max_level = int(grid.get("maxLevel"))
+            search_method = grid.get("searchMethod")
+            sample_count = int(grid.get("sampleCount"))
+            maxoptdepth = float(grid.get("maxOpticalDepth"))
+            maxmassfraction = float(grid.get("maxMassFraction"))
+            maxdensdispfraction = float(grid.get("maxDensDispFraction"))
+            barycentric = self.get_boolean(grid, "barycentric")
+
+            # Create and return the grid
+            return OctTreeDustGrid(min_x=min_x, max_x=max_x, min_y=min_y, max_y=max_y, min_z=min_z, max_z=max_z,
+                                   min_level=min_level, max_level=max_level, search_method=search_method, sample_count=sample_count,
+                                   max_optical_depth=maxoptdepth, max_mass_fraction=maxmassfraction, max_dens_disp_fraction=maxdensdispfraction,
+                                   barycentric=barycentric)
+
+        else: raise NotImplementedError("Other grid types not yet supported")
+
     ## This function sets the dust grid
     def set_dust_grid(self, grid):
 
-        from ...modeling.basics.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
+        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
 
         if isinstance(grid, CartesianDustGrid):
 
@@ -2110,8 +2266,7 @@ class SkiFile:
     ## This function sets a binary tree dust grid for the dust system
     def set_binary_tree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
                                   max_level=10, search_method="Neighbor", sample_count=100, max_optical_depth=0,
-                                  max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating",
-                                  assigner="IdenticalAssigner"):
+                                  max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating"):
 
         # Get the dust grid
         grid = self.get_dust_grid()
@@ -2128,7 +2283,6 @@ class SkiFile:
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
                  "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method}
-                 #"assigner": assigner}
         parent.append(parent.makeelement("BinTreeDustGrid", attrs))
 
     ## This function sets the maximal optical depth
@@ -2156,8 +2310,7 @@ class SkiFile:
     ## This function sets an octtree dust grid for the dust system
     def set_octtree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
                               max_level=6, search_method="Neighbor", sample_count=100, max_optical_depth=0,
-                              max_mass_fraction=1e-6, max_dens_disp_fraction=0, barycentric=False,
-                              assigner="IdenticalAssigner"):
+                              max_mass_fraction=1e-6, max_dens_disp_fraction=0, barycentric=False):
 
         # Get the dust grid
         grid = self.get_dust_grid()
@@ -2256,11 +2409,13 @@ class SkiFile:
         azimuth = instrument.azimuth
         position_angle = instrument.position_angle
 
+        # SED instrument
         if isinstance(instrument, SEDInstrument):
 
             # Add the SED instrument to the ski file
             self.add_sed_instrument(name, distance, inclination, azimuth, position_angle)
 
+        # Frame instrument
         elif isinstance(instrument, FrameInstrument):
 
             field_x = instrument.field_x
@@ -2273,6 +2428,7 @@ class SkiFile:
             # Add the simple instrument to the ski file
             self.add_frame_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y)
 
+        # Simple instrument
         elif isinstance(instrument, SimpleInstrument):
 
             field_x = instrument.field_x
@@ -2285,6 +2441,7 @@ class SkiFile:
             # Add the simple instrument to the ski file
             self.add_simple_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y)
 
+        # Full instruemnt
         elif isinstance(instrument, FullInstrument):
 
             field_x = instrument.field_x
@@ -2297,6 +2454,7 @@ class SkiFile:
             # Add the full instrument to the ski file
             self.add_full_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y)
 
+        # Unrecognized instrument
         else: raise ValueError("Instruments other than SimpleInstrument, SEDInstrument and FullInstrument are not yet supported")
 
     ## This function adds a FrameInstrument to the instrument system
@@ -2307,10 +2465,10 @@ class SkiFile:
         instruments = self.get_instruments(as_list=False)
 
         # Make and add the new FrameInstrument
-        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
+        attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle),
-                 "fieldOfViewX": str(field_x), "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x),
-                 "pixelsY": str(pixels_y), "centerX": str(center_x), "centerY": str(center_y)}
+                 "fieldOfViewX": represent_quantity(field_x), "fieldOfViewY": represent_quantity(field_y), "pixelsX": str(pixels_x),
+                 "pixelsY": str(pixels_y), "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y)}
         instruments.append(instruments.makeelement("FrameInstrument", attrs))
 
     ## This function adds a FullInstrument to the instrument system
@@ -2321,10 +2479,10 @@ class SkiFile:
         instruments = self.get_instruments(as_list=False)
 
         # Make and add the new FullInstrument
-        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
+        attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": str(field_x),
-                 "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
-                 "centerX": str(center_x), "centerY": str(center_y), "scatteringLevels": str(scattering_levels)}
+                 "fieldOfViewY": represent_quantity(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
+                 "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y), "scatteringLevels": str(scattering_levels)}
         instruments.append(instruments.makeelement("FullInstrument", attrs))
 
     ## This function adds a SimpleInstrument to the instrument system
@@ -2335,10 +2493,10 @@ class SkiFile:
         instruments = self.get_instruments(as_list=False)
 
         # Make and add the new SimpleInstrument
-        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
-                 "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": str(field_x),
-                 "fieldOfViewY": str(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
-                 "centerX": str(center_x), "centerY": str(center_y)}
+        attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
+                 "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": represent_quantity(field_x),
+                 "fieldOfViewY": represent_quantity(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
+                 "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y)}
         instruments.append(instruments.makeelement("SimpleInstrument", attrs))
 
     ## This function adds an SEDInstrument to the instrument system
@@ -2348,9 +2506,103 @@ class SkiFile:
         instruments = self.get_instruments(as_list=False)
 
         # Make and add the new SEDInstrument
-        attrs = {"instrumentName": name, "distance": str(distance), "inclination": str_from_angle(inclination),
+        attrs = {"instrumentName": name, "distance": represent_quantity(distance), "inclination": str_from_angle(inclination),
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle)}
         instruments.append(instruments.makeelement("SEDInstrument", attrs))
+
+    ## This function returns the instrument object
+    def get_instrument_object(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Import the instrument classes
+        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
+
+        # Get the instrument
+        instrument = self.get_instrument(name)
+
+        # Frame instrument
+        if instrument.tag == "FrameInstrument":
+
+            # Get the instrument properties
+            #name = instrument.get("instrumentName")
+            distance = self.get_quantity(instrument, "distance")
+            inclination = self.get_angle(instrument, "inclination")
+            azimuth = self.get_angle(instrument, "azimuth")
+            pa = self.get_angle(instrument, "positionAngle")
+            fieldx = self.get_quantity(instrument, "fieldOfViewX")
+            fieldy = self.get_quantity(instrument, "fieldOfViewY")
+            pixelsx = instrument.get("pixelsX")
+            pixelsy = instrument.get("pixelsY")
+            centerx = self.get_quantity(instrument, "centerX")
+            centery = self.get_quantity(instrument, "centerY")
+
+            # Create and return the instrument
+            return FrameInstrument(field_x=fieldx, field_y=fieldy, pixels_x=pixelsx, pixels_y=pixelsy, center_x=centerx,
+                                   center_y=centery, distance=distance, inclination=inclination, azimuth=azimuth,
+                                   position_angle=pa)
+
+        # SED instrument
+        elif instrument.tag == "SEDInstrument":
+
+            # Get the instrument properties
+            distance = self.get_quantity(instrument, "distance")
+            inclination = self.get_angle(instrument, "inclination")
+            azimuth = self.get_angle(instrument, "azimuth")
+            pa = self.get_angle(instrument, "positionAngle")
+
+            # Create and return the instrument
+            return SEDInstrument(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=pa)
+
+        # Simple instrument
+        elif instrument.tag == "SimpleInstrument":
+
+            # Get the instrument properties
+            # name = instrument.get("instrumentName")
+            distance = self.get_quantity(instrument, "distance")
+            inclination = self.get_angle(instrument, "inclination")
+            azimuth = self.get_angle(instrument, "azimuth")
+            pa = self.get_angle(instrument, "positionAngle")
+            fieldx = self.get_quantity(instrument, "fieldOfViewX")
+            fieldy = self.get_quantity(instrument, "fieldOfViewY")
+            pixelsx = instrument.get("pixelsX")
+            pixelsy = instrument.get("pixelsY")
+            centerx = self.get_quantity(instrument, "centerX")
+            centery = self.get_quantity(instrument, "centerY")
+
+            # Create and return the instrument
+            return SimpleInstrument(field_x=fieldx, field_y=fieldy, pixels_x=pixelsx, pixels_y=pixelsy, center_x=centerx,
+                                    center_y=centery, distance=distance, inclination=inclination, azimuth=azimuth,
+                                    position_angle=pa)
+
+        # Full instrument
+        elif instrument.tag == "FullInstrument":
+
+            # Get the instrument properties
+            # name = instrument.get("instrumentName")
+            distance = self.get_quantity(instrument, "distance")
+            inclination = self.get_angle(instrument, "inclination")
+            azimuth = self.get_angle(instrument, "azimuth")
+            pa = self.get_angle(instrument, "positionAngle")
+            fieldx = self.get_quantity(instrument, "fieldOfViewX")
+            fieldy = self.get_quantity(instrument, "fieldOfViewY")
+            pixelsx = instrument.get("pixelsX")
+            pixelsy = instrument.get("pixelsY")
+            centerx = self.get_quantity(instrument, "centerX")
+            centery = self.get_quantity(instrument, "centerY")
+            scattlevels = int(instrument.get("scatteringLevels"))
+
+            # Creaet and return the instrument
+            return FullInstrument(field_x=fieldx, field_y=fieldy, pixels_x=pixelsx, pixels_y=pixelsy, center_x=centerx,
+                                  center_y=centery, distance=distance, inclination=inclination, azimuth=azimuth,
+                                  position_angle=pa, scattering_levels=scattlevels)
+
+        # Unrecognized instrument
+        else: raise ValueError("Unrecognized instrument: " + instrument.tag)
 
     ## This function returns the instrument with the specified name
     def get_instrument(self, name):
@@ -2525,6 +2777,8 @@ class SkiFile:
         self.set_quantity(instrument, "fieldOfViewX", x_field)
         self.set_quantity(instrument, "fieldOfViewY", y_field)
 
+    # -----------------------------------------------------------------
+
     ## This (experimental) function converts the ski file structure into a (nested) python dictionary
     def to_dict(self):
         return recursive_dict(self.tree.getroot())
@@ -2537,10 +2791,14 @@ class SkiFile:
 
     ## This function returns the xml tree element with the specified name that is at the base level of the simulation hierarchy
     def get_unique_base_element(self, name):
-
         return get_unique_element(self.tree.getroot(), "//"+name)
 
     # -----------------------------------------------------------------
+
+    ## This function returns the boolean value of a certain parameter of the specified tree elemtn
+    def get_boolean(self, element, name):
+        from ..tools.parsing import boolean
+        return boolean(element.get(name))
 
     ## This function returns the value of a certain parameter of the specified tree element as an Astropy quantity. The
     #  default unit can be specified which is used when the unit is not described in the ski file.
@@ -2551,10 +2809,28 @@ class SkiFile:
         from ..basics.unit import parse_unit
 
         string = element.get(name)
-        quantity = parse_quantity(string)
-        if quantity.unit == "" and default_unit is not None:
-            quantity = quantity * parse_unit(default_unit)
-        return quantity
+        try:
+            quantity = parse_quantity(string)
+            if quantity.unit == "" and default_unit is not None:
+                quantity = quantity * parse_unit(default_unit)
+            return quantity
+        except ValueError:
+            value = float(string)
+            if default_unit is not None: quantity = value * parse_unit(default_unit)
+            else: quantity = value
+            return quantity
+
+    # -----------------------------------------------------------------
+
+    ## This functions returns the value of a certain parameter of the specified tree element as an Astropy Angle.
+    def get_angle(self, element, name, default_unit=None):
+
+        # Import
+        from astropy.coordinates import Angle
+
+        # Parse as quantity and then convert to Angle
+        quantity = self.get_quantity(element, name, default_unit=default_unit)
+        return Angle(quantity.value, quantity.unit)
 
     # -----------------------------------------------------------------
 
@@ -2724,6 +3000,33 @@ class LabeledSkiFile(SkiFile):
 
     # -----------------------------------------------------------------
 
+    def get_labeled_value(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        # Get all elements with this value
+        elements = self.get_labeled_elements(label)
+
+        the_value = None
+
+        # Loop over the elements
+        for element, setting_name in elements:
+
+            # Get the value
+            value = self.get_quantity(element, setting_name)
+
+            if the_value is None: the_value = value
+            elif the_value != value: raise ValueError("The '" + label + "' property has different values throughout the ski file (" + str(value) + " and " + str(the_value) + ")")
+
+        # Return the value
+        return the_value
+
+    # -----------------------------------------------------------------
+
     def get_labeled_values(self):
 
         """
@@ -2770,10 +3073,16 @@ class LabeledSkiFile(SkiFile):
         prop = element.get(name)
         if prop.startswith("[") and prop.endswith("]"): prop = prop[1:-1].split(":")[1]
 
-        quantity = parse_quantity(prop)
-        if quantity.unit == "" and default_unit is not None:
-            quantity = quantity * parse_unit(default_unit)
-        return quantity
+        try:
+            quantity = parse_quantity(prop)
+            if quantity.unit == "" and default_unit is not None:
+                quantity = quantity * parse_unit(default_unit)
+            return quantity
+        except ValueError:
+            value = float(prop)
+            if default_unit is not None: quantity = value * parse_unit(default_unit)
+            else: quantity = value
+            return quantity
 
     # -----------------------------------------------------------------
 

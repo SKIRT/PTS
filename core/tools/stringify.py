@@ -30,11 +30,13 @@ from . import types
 
 # -----------------------------------------------------------------
 
-def stringify(value):
+def stringify(value, scientific=False, decimal_places=2):
 
     """
     This function ...
     :param value:
+    :param scientific:
+    :param decimal_places:
     :return:
     """
 
@@ -80,7 +82,7 @@ def stringify(value):
         return ptype + "_tuple", ",".join(strings)
 
     # All other
-    else: return stringify_not_list(value)
+    else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places)
 
 # -----------------------------------------------------------------
 
@@ -98,12 +100,8 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     from pts.magic.basics.stretch import SkyStretch
 
     if types.is_boolean_type(value): return "boolean", str_from_bool(value)
-    elif types.is_integer_type(value):
-        if scientific: return "integer", "{:.0e}".format(value).replace("+", "").replace("e0", "e")
-        else: return "integer", str(value)
-    elif types.is_real_type(value):
-        if scientific: return "real", ("{:." + str(decimal_places) + "e}").format(value).replace("+", "").replace("e0", "e")
-        else: return "real", repr(value)
+    elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific)
+    elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places)
     elif isinstance(value, basestring): return "string", value
     elif isinstance(value, UnitBase): return stringify_unit(value)
     elif isinstance(value, Quantity): return stringify_quantity(value)
@@ -117,6 +115,35 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     elif isinstance(value, NarrowBandFilter): return "narrow_band_filter", str(value)
     elif isinstance(value, BroadBandFilter): return "broad_band_filter", str(value)
     else: raise ValueError("Unrecognized type: " + str(type(value)))
+
+# -----------------------------------------------------------------
+
+def str_from_integer(integer, scientific=False):
+
+    """
+    This function ...
+    :param integer:
+    :param scientific:
+    :return:
+    """
+
+    if scientific: return "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
+    else: return str(integer)
+
+# -----------------------------------------------------------------
+
+def str_from_real(real, scientific=False, decimal_places=2):
+
+    """
+    This function ...
+    :param real:
+    :param scientific:
+    :param decimal_places:
+    :return:
+    """
+
+    if scientific: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
+    else: return repr(real)
 
 # -----------------------------------------------------------------
 

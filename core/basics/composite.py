@@ -197,6 +197,26 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def get_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        properties = dict()
+        for name in vars(self):
+
+            # Skip internal variables
+            if name.startswith("_"): continue
+
+            # Set property
+            properties[name] = getattr(self, name)
+
+        return properties
+
+    # -----------------------------------------------------------------
+
     def __repr__(self):
 
         """
@@ -208,6 +228,9 @@ class SimplePropertyComposite(object):
 
         # Loop over the variables
         for name in vars(self):
+
+            # Skip internal variables
+            if name.startswith("_"): continue
 
             dtype, value = stringify(getattr(self, name))
             line = " - " + fmt.bold +  name + fmt.reset + ": " + value

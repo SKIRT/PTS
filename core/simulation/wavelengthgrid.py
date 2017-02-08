@@ -19,6 +19,7 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
+from ...core.tools import arrays
 
 # -----------------------------------------------------------------
 
@@ -346,7 +347,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return tables.find_closest_index(self.table, wavelength, column_name="Wavelength")
+        return arrays.find_closest_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -358,7 +359,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return tables.find_closest_above_index(self.table, wavelength, column_name="Wavelength")
+        return arrays.find_closest_above_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -370,7 +371,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return tables.find_closest_below_index(self.table, wavelength, column_name="Wavelength")
+        return arrays.find_closest_below_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -400,8 +401,8 @@ class WavelengthGrid(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self.table["Wavelength"], unit=unit, array_unit=self.table["Wavelength"].unit)
+        else: return arrays.array_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -415,8 +416,8 @@ class WavelengthGrid(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Delta"], unit=unit)
-        else: return tables.column_as_list(self.table["Delta"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self.table["Delta"], unit=unit, array_unit=self.table["Delta"].unit)
+        else: return arrays.array_as_list(self.table["Delta"], unit=unit, add_unit=add_unit, array_unit=self.table["Delta"].unit)
 
     # -----------------------------------------------------------------
 

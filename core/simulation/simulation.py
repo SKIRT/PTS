@@ -65,7 +65,8 @@ def createsimulations(source="", single=False):
     # If a single simulation is expected
     if single:
 
-        if not len(simulations) == 1: raise ValueError("Multiple simulations were found")
+        if len(simulations) == 0: raise ValueError("No simulations were found matching the source '" + str(source) + "'")
+        elif len(simulations) > 1: raise ValueError("Multiple simulations were found for source '" + str(source) + "': " + ", ".join([simulation.prefix + " in " + simulation.output_path for simulation in simulations]))
         else: return simulations[0]
 
     # If multiple simulations are expected

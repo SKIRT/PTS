@@ -137,7 +137,7 @@ class CartesianDustGrid(DustGrid):
     This class ...
     """
 
-    def __init__(self, *kwargs):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...

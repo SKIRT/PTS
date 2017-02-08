@@ -218,6 +218,7 @@ class FullInstrument(Instrument):
         self.add_property("pixels_y", "positive_integer", "y pixels")
         self.add_property("center_x", "quantity", "x center")
         self.add_property("center_y", "quantity", "y center")
+        self.add_property("scattering_levels", "integer", "number of scattering levels", 0) # default=0
 
         # Set values
         self.set_properties(kwargs)

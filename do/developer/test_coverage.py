@@ -21,7 +21,7 @@ from pts.core.basics.configuration import find_command
 from pts.core.tools import formatting as fmt
 from pts.core.test.pts import tests_for_subproject, path_for_test
 from pts.core.tools import filesystem as fs
-from pts.core.tools import lists
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -71,7 +71,7 @@ for subproject in introspection.subprojects:
             cls = introspection.get_class(match.module_path, match.class_name)
 
             # Find index of class in list of classes
-            index = lists.find_exact_index(classes, cls)
+            index = sequences.find_exact_index(classes, cls)
 
             # Set to True
             in_tests[index] = True

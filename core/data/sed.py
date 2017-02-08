@@ -25,6 +25,7 @@ from ...core.basics.errorbar import ErrorBar
 from ..basics.unit import parse_unit as u
 from ..tools import filesystem as fs
 from ..filter.filter import parse_filter
+from ..tools import arrays
 
 # -----------------------------------------------------------------
 
@@ -82,17 +83,18 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry(self, unit=None, asarray=False, add_unit=True):
+    def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None):
 
         """
         This function ...
         :param unit:
         :param asarray:
         :param add_unit:
+        :param conversion_info:
         :return:
         """
 
-        return self.values(unit, asarray, add_unit)
+        return self.values(unit, asarray, add_unit, conversion_info=conversion_info)
 
     # -----------------------------------------------------------------
 
@@ -393,8 +395,8 @@ class ObservedSED(FilterCurve):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self["Error-"], unit=unit)
-        else: return tables.column_as_list(self["Error-"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self["Error-"], unit=unit, array_unit=self.column_unit("Error-"))
+        else: return arrays.array_as_list(self["Error-"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Error-"))
 
     # -----------------------------------------------------------------
 
@@ -408,8 +410,8 @@ class ObservedSED(FilterCurve):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self["Error+"], unit=unit)
-        else: return tables.column_as_list(self["Error+"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self["Error+"], unit=unit, array_unit=self.column_unit("Error+"))
+        else: return arrays.array_as_list(self["Error+"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Error+"))
 
     # -----------------------------------------------------------------
 

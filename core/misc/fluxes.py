@@ -30,7 +30,7 @@ from ..data.sed import SED
 from ...magic.misc.spire import SPIRE
 from ..basics.unit import parse_unit as u
 from ..data.sed import ObservedSED
-from ..tools import lists
+from ..tools import sequences
 from ..basics.configurable import Configurable
 from ..simulation.simulation import createsimulations
 
@@ -57,6 +57,9 @@ class ObservedFluxCalculator(Configurable):
 
         # The simulation prefix
         self.simulation_prefix = None
+
+        # The ski file
+        self.ski = None
 
         # The paths to the SED files produced by SKIRT
         self.sed_paths = None
@@ -126,6 +129,9 @@ class ObservedFluxCalculator(Configurable):
         # Get the simulation prefix
         self.simulation_prefix = simulation.prefix()
 
+        # The ski file
+        self.ski = simulation.ski_file
+
         # Set the filter names
         if filter_names is not None: self.filter_names = filter_names
 
@@ -183,6 +189,12 @@ class ObservedFluxCalculator(Configurable):
             # If a list of instruments is defined an this instrument is not in this list, skip it
             if self.instrument_names is not None and instr_name not in self.instrument_names: continue
 
+            # Set the conversion info
+            conversion_info = dict()
+            conversion_info["distance"] = self.ski.get_instrument_distance(instr_name)
+
+            #print(conversion_info)
+
             # Get the name of the SED
             sed_name = fs.name(sed_path).split("_sed")[0]
 
@@ -202,7 +214,7 @@ class ObservedFluxCalculator(Configurable):
             # Get the wavelengths and flux densities
             wavelengths = model_sed.wavelengths("micron", asarray=True)
             fluxdensities = []
-            for wavelength, fluxdensity_jy in zip(model_sed.wavelengths("micron"), model_sed.photometry("Jy")):
+            for wavelength, fluxdensity_jy in zip(model_sed.wavelengths("micron"), model_sed.photometry("Jy", conversion_info=conversion_info)):
 
                 # 2 different ways should be the same:
                 #fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
@@ -260,7 +272,7 @@ class ObservedFluxCalculator(Configurable):
                     log.debug("Getting the observed flux for the " + str(fltr) + " filter ...")
 
                     # Get the index of the wavelength closest to that of the filter
-                    index = lists.find_closest_index(wavelengths, fltr.pivot.to("micron").value)  # wavelengths are in micron
+                    index = sequences.find_closest_index(wavelengths, fltr.pivot.to("micron").value)  # wavelengths are in micron
 
                     # Get the flux density
                     fluxdensity = fluxdensities[index] * u("W / (m2 * micron)")  # flux densities are in W/(m2 * micron)

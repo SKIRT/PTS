@@ -108,7 +108,7 @@
                                     <ZubkoDustMix writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"/>
                                 </mix>
                                 <normalization type="DustCompNormalization">
-                                    <DustMassDustCompNormalization dustMass="204e5 Msun"/>
+                                    <DustMassDustCompNormalization dustMass="[exp_dustmass:204e5 Msun]"/>
                                 </normalization>
                             </DustComp>
                         </components>

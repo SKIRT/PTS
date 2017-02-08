@@ -19,8 +19,8 @@ from scipy import interpolate
 from .table import SmartTable
 from ..tools import tables
 from ..filter.filter import parse_filter
-from ..filter.broad import BroadBandFilter
 from .unit import parse_unit as u
+from ..tools import arrays
 
 # -----------------------------------------------------------------
 
@@ -230,23 +230,27 @@ class WavelengthCurve(Curve):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self["Wavelength"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"))
+        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"))
 
     # -----------------------------------------------------------------
 
-    def values(self, unit=None, asarray=False, add_unit=True):
+    def values(self, unit=None, asarray=False, add_unit=True, conversion_info=None):
 
         """
         This function ...
         :param unit:
         :param asarray:
         :param add_unit:
+        :param conversion_info:
         :return:
         """
 
-        if asarray: return tables.column_as_array(self[self.value_name], unit=unit)
-        else: return tables.column_as_list(self[self.value_name], unit=unit, add_unit=add_unit)
+        if conversion_info is None: conversion_info = dict()
+        conversion_info["wavelengths"] = self.wavelengths()
+
+        if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info)
+        else: return arrays.array_as_list(self[self.value_name], unit=unit, add_unit=add_unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info)
 
 # -----------------------------------------------------------------
 
@@ -357,7 +361,7 @@ class FilterCurve(WavelengthCurve):
         :return:
         """
 
-        return tables.column_as_list(self["Instrument"])
+        return arrays.array_as_list(self["Instrument"])
 
     # -----------------------------------------------------------------
 
@@ -368,7 +372,7 @@ class FilterCurve(WavelengthCurve):
         :return:
         """
 
-        return tables.column_as_list(self["Band"])
+        return arrays.array_as_list(self["Band"])
 
     # -----------------------------------------------------------------
 

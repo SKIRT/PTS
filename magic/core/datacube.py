@@ -29,7 +29,6 @@ from ...core.tools import filesystem as fs
 from ...core.tools import time
 from ...core.filter.broad import BroadBandFilter
 from ..basics.vector import Pixel
-from ...core.tools import lists
 
 # -----------------------------------------------------------------
 

@@ -31,6 +31,15 @@ description = "determining parameters based on mock observations of a simple spi
 
 # -----------------------------------------------------------------
 
+# Determine the ski path
+ski_path = fs.join(this_dir_path, "spiral.ski")
+
+# Get the initial dust mass of the exponential disk with spiral structure
+ski = LabeledSkiFile(ski_path)
+dust_mass = ski.get_labeled_value("exp_dustmass")
+
+# -----------------------------------------------------------------
+
 # Initialize list for the commands
 commands = []
 
@@ -51,11 +60,8 @@ def setup(temp_path):
 # LAUNCH REFERENCE SIMULATION
 # -----------------------------------------------------------------
 
-# Determine the ski path
-ski_path = fs.join(this_dir_path, "spiral.ski")
-
 # Determine the simulation output path
-simulation_output_path = "ref"
+simulation_output_path = "./ref"
 
 # Settings
 settings_launch = dict()
@@ -145,30 +151,18 @@ free_parameter_names = ski.labels
 
 # Set descriptions
 descriptions = Map()
-descriptions["luminosity"] = "total luminosity of the SN"
-descriptions["dustmass"] = "total dust mass"
-descriptions["grainsize"] = "dust grain size"
-descriptions["fsil"] = "dust silicate fraction"
+descriptions["exp_dustmass"] = "dust mass of the exponential disk with spiral structure"
 
 # Set types
 types = Map()
-types["luminosity"] = "luminosity"
-types["dustmas"] = "mass"
-types["grainsize"] = "grainsize"
-types["fsil"] = "dimless"
+types["exp_dustmass"] = "dust mass"
 
 # Set units
 units = Map()
-units["luminosity"] = u("Lsun")
 units["dustmass"] = u("Msun")
-units["grainsize"] = u("micron")
-units["fsil"] = None
 
-# Set ranges
-luminosity_range = QuantityRange(100, 1000, "Lsun")
-dustmass_range = QuantityRange(0.3, 5, "Msun")
-grainsize_range = QuantityRange(0.1, 5, "micron")
-fsil_range = RealRange(0.1, 100)
+# Set the range of the dust mass
+dustmass_range = QuantityRange(0.1*dust_mass, 100*dust_mass)
 
 # Create input dict for model
 input_model = dict()
@@ -176,7 +170,7 @@ input_model["parameters_config"] = Configuration(free_parameters=free_parameter_
 input_model["descriptions_config"] = Configuration(descriptions=descriptions)
 input_model["types_config"] = Configuration(types=types)
 input_model["units_config"] = Configuration(units=units)
-input_model["ranges_config"] = Configuration(luminosity_range=luminosity_range, dustmass_range=dustmass_range, grainsize_range=grainsize_range, fsil_range=fsil_range)
+input_model["ranges_config"] = Configuration(exp_dustmass_range=dustmass_range)
 #input_model["filters_config"] = Configuration(filters=filter_names)
 
 # Fitting initializer config

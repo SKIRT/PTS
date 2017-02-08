@@ -232,8 +232,6 @@ elif len(table_matches) == 1 and len(matches) == 0:
     # The PTS command has to be executed locally
     else:
 
-        ## SETUP LOGGER
-
         # Determine the log file path
         logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
 
@@ -244,23 +242,11 @@ elif len(table_matches) == 1 and len(matches) == 0:
         log = logging.setup_log(level=level, path=logfile_path)
         log.start("Starting " + command_name + " ...")
 
-        # Record starting time
-        start = _time.time()
-
-        ## DO WHAT HAS TO BE DONE
-
         # Create the class instance, configure it with the configuration settings
         inst = cls(config)
 
-        # Run the instance
-        inst.run()
-
-        # Record end time
-        end = _time.time()
-        seconds = end - start
-
-        # Succesfully finished
-        log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
+        # Start
+        start_target(command_name, inst.run)
 
     # Mark the end of this modeling script
     if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy" and command_name != "model_sed":

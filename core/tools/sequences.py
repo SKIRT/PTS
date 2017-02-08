@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.tools.lists Provides functions for dealing with lists.
+## \package pts.core.tools.sequences Provides functions for dealing with sequences (lists, iterables).
 
 # -----------------------------------------------------------------
 

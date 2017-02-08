@@ -18,7 +18,7 @@ from textwrap import wrap
 from string import ascii_lowercase
 
 # Import the relevant PTS classes and modules
-from .lists import interleave
+from .sequences import interleave
 from . import types
 
 # -----------------------------------------------------------------

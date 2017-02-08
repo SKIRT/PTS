@@ -32,19 +32,27 @@ def parse_quantity(argument, density=False, physical_type=None):
 
     from .unit import parse_unit
 
-    # NEW IMPLEMENTATION
-    units = ""
-    number = 1.0
-    while argument:
-        try:
-            number = float(argument)
-            break
-        except ValueError:
-            units = argument[-1:] + units
-            argument = argument[:-1]
-    if units == "": raise ValueError("Unit is not specified")
+    if isinstance(argument, Quantity):
 
-    unit = parse_unit(units.strip(), density=density)
+        number = argument.value
+        unit = argument.unit
+        unit = parse_unit(unit, density=density)
+
+    else:
+
+        # NEW IMPLEMENTATION
+        units = ""
+        number = 1.0
+        while argument:
+            try:
+                number = float(argument)
+                break
+            except ValueError:
+                units = argument[-1:] + units
+                argument = argument[:-1]
+        if units == "": raise ValueError("Unit is not specified")
+
+        unit = parse_unit(units.strip(), density=density)
 
     # Check physical type
     if physical_type is not None:
@@ -79,16 +87,19 @@ def stringify_quantity(quantity):
 
 # -----------------------------------------------------------------
 
-def represent_quantity(quantity):
+def represent_quantity(quantity, scientific=False, decimal_places=2):
 
     """
     This function ...
     :param quantity:
+    :param scientific:
+    :param decimal_places:
     :return:
     """
 
     from .unit import represent_unit
-    return repr(quantity.value) + " " + represent_unit(quantity.unit)
+    from ..tools.stringify import str_from_real
+    return str_from_real(quantity.value, scientific=scientific, decimal_places=decimal_places) + " " + represent_unit(quantity.unit)
 
 # -----------------------------------------------------------------
 
@@ -106,14 +117,36 @@ class PhotometricQuantity(Quantity):
         :param unit:
         """
 
-        # Call the constructor of the base class
-        quantity = super(PhotometricQuantity, cls).__new__(value, unit)
+        from .unit import PhotometricUnit
+
+        # Create unit
+        if isinstance(unit, basestring): unit = PhotometricUnit(unit)
+
+        # Call constructor of the base class
+        quantity = Quantity.__new__(cls, value, unit)
 
         # Set photometric unit, the base class (Quantity) converts the unit back to an ordinary Unit in the __new__ function above
-        quantity.unit = unit
+        quantity._unit = unit
 
         # Return the new quantity
         return quantity
+
+    # -----------------------------------------------------------------
+
+    @Quantity.unit.setter
+    def unit(self, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+        from .unit import PhotometricUnit
+
+        # Parse as photometric unit
+        unit = PhotometricUnit(argument)
+        self._unit = unit
 
     # -----------------------------------------------------------------
 
@@ -125,6 +158,18 @@ class PhotometricQuantity(Quantity):
         """
 
         return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit.physical_type
 
     # -----------------------------------------------------------------
 
