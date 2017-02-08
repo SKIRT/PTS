@@ -102,6 +102,24 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def reset(self, username, password):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Logout
+        self.logout()
+
+        # Create new session
+        self.session = requests.session()
+
+        # Login
+        self.login(username, password)
+
+    # -----------------------------------------------------------------
+
     def logout(self):
 
         """
@@ -136,6 +154,9 @@ class DustPediaDatabase(object):
         :param parameters:
         :return:
         """
+
+        # Inform the user
+        log.info("Getting the galaxy names ...")
 
         link = page_link_from_parameters(parameters)
 
@@ -265,13 +286,16 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def get_image_urls(self, galaxy_name):
+    def get_image_urls(self, galaxy_name, error_maps=True):
 
         """
         This function ...
         :param galaxy_name:
+        :param error_maps:
         :return:
         """
+
+        #print(self.session.__getstate__())
 
         # Inform the user
         log.info("Getting the URLs of the available images for galaxy '" + galaxy_name + "' ...")
@@ -319,6 +343,9 @@ class DustPediaDatabase(object):
 
                         link = base_link + ee[2]
 
+                        name = fs.name(link)
+                        if "_Error" in name and not error_maps: continue
+
                         image_links.append(link)
 
                     #print()
@@ -327,15 +354,21 @@ class DustPediaDatabase(object):
 
                 column_index += 1
 
+        # Request other page
+        #r = self.session.get(user_link)
+
+        #self.session.prepare_request()
+
         return image_links
 
     # -----------------------------------------------------------------
 
-    def get_image_names(self, galaxy_name):
+    def get_image_names(self, galaxy_name, error_maps=True):
 
         """
         This function ...
         :param galaxy_name:
+        :param error_maps:
         :return:
         """
 
@@ -349,17 +382,19 @@ class DustPediaDatabase(object):
         for url in self.get_image_urls(galaxy_name):
 
             name = url.split("imageName=")[1].split("&instrument")[0]
+            if "_Error" in name and not error_maps: continue
             names.append(name)
 
         return names
 
     # -----------------------------------------------------------------
 
-    def get_image_names_and_urls(self, galaxy_name):
+    def get_image_names_and_urls(self, galaxy_name, error_maps=True):
 
         """
         This function ...
         :param galaxy_name:
+        :param error_maps:
         :return:
         """
 
@@ -370,6 +405,7 @@ class DustPediaDatabase(object):
         for url in self.get_image_urls(galaxy_name):
 
             name = url.split("imageName=")[1].split("&instrument")[0]
+            if "_Error" in name and not error_maps: continue
             urls[name] = url
 
         # Return the dictionary of urls
@@ -386,13 +422,12 @@ class DustPediaDatabase(object):
 
         galaxy_name = self.sample.get_name(galaxy_name)
 
-        names = self.get_image_names(galaxy_name)
+        names = self.get_image_names(galaxy_name, error_maps=False)
 
         filters = []
 
+        # Loop over the image names
         for name in names:
-
-            if "Error" in name: continue
 
             # Skip DSS
             if "DSS" in name and "SDSS" not in name: continue
@@ -466,12 +501,13 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def download_images(self, galaxy_name, path):
+    def download_images(self, galaxy_name, path, error_maps=True):
 
         """
         This function ...
         :param galaxy_name:
         :param path: directory
+        :param error_maps:
         :return:
         """
 
@@ -479,7 +515,7 @@ class DustPediaDatabase(object):
         log.info("Downloading all images for galaxy '" + galaxy_name + "' to '" + path + " ...")
 
         # Loop over the image URLS found for this galaxy
-        for url in self.get_image_urls(galaxy_name):
+        for url in self.get_image_urls(galaxy_name, error_maps=error_maps):
 
             # Determine path
             image_name = url.split("imageName=")[1].split("&instrument")[0]
@@ -566,6 +602,37 @@ class DustPediaDatabase(object):
         table = tables.new(data, names)
 
         return table
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_cutouts_url(self, galaxy_name):
+
+        """
+        This fucntion ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # http://dustpedia.astro.noa.gr/Data/GetImage?imageName=ESO097-013_Thumbnail_Grid.png&mode=photometry
+        url = "http://dustpedia.astro.noa.gr/Data/GetImage?imageName=" + galaxy_name + "_Thumbnail_Grid.png&mode=photometry"
+        return url
+
+    # -----------------------------------------------------------------
+
+    def download_photometry_cutouts(self, galaxy_name, dir_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param dir_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Downloading the photometry cutouts for galaxy '" + galaxy_name + "' ...")
+
+        url = self.get_photometry_cutouts_url(galaxy_name)
+        network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug())
 
     # -----------------------------------------------------------------
 

@@ -125,6 +125,19 @@ def download_file(url, path, overwrite=False, progress_bar=False, stream=False, 
                     # f.flush() # commented by recommendation from J.F.Sebastian
 
     # Regular download
+    elif session is not None:
+
+        # Request
+        if session is None: session = requests.session()
+        r = session.get(url)
+
+        # Open the local file, and load the content in it
+        with open(filepath, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=chunk_size):
+                if chunk:  # filter out keep-alive new chunks
+                    f.write(chunk)
+
+    # Regular download , no session
     else: urllib.urlretrieve(url, filepath)
 
     # Return the file path

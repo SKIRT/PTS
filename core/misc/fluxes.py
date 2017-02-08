@@ -281,12 +281,6 @@ class ObservedFluxCalculator(Configurable):
                     # Add a point to the mock SED
                     mock_sed.add_point(fltr, fluxdensity)
 
-                # Narrow band filter
-                #elif isinstance(fltr, NarrowBandFilter):
-
-                # Unrecognized
-                #else: raise ValueError("Unrecognized filter object: " + str(fltr))
-
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[sed_name] = mock_sed
 
