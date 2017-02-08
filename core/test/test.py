@@ -134,7 +134,7 @@ class PTSTest(object):
         fmt.print_filled("-", prefix=prefix, length=width)
         fmt.print_border("|", prefix=prefix, length=width)
         fmt.print_centered_around_border("PTS test '" + self.name + "'", "|", prefix=prefix, length=width)
-        fmt.print_border("|", prefix=prefix, length=width)
+        fmt.print_centered_around_border("***", "|", prefix=prefix, length=width)
         for line in strings.split_in_lines(self.description, length=40, as_list=True): fmt.print_centered_around_border(line, "|", prefix=prefix, length=width)
         fmt.print_border("|", prefix=prefix, length=width)
         fmt.print_filled("-", prefix=prefix, length=width)
@@ -199,7 +199,7 @@ class PTSTest(object):
         log.info("Checking the test output ...")
 
         # Execute test function
-        self.test_function()
+        self.test_function(self.output_path)
 
     # -----------------------------------------------------------------
 

@@ -1,0 +1,2 @@
+# Command | Configuration | Class | Configuration method | Description
+optimize | -- | optimize.Optimizer | arguments | Optimize a problem with genetic algorithms

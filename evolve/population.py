@@ -42,7 +42,7 @@ try:
    log.debug("You have %d CPU cores, so the multiprocessing state is %s", CPU_COUNT, MULTI_PROCESSING)
 except ImportError:
    MULTI_PROCESSING = False
-   log.debug("You don't have multiprocessing support for your Python version !")
+   log.debug("You don't have multiprocessing support")
 
 # -----------------------------------------------------------------
 
@@ -88,9 +88,9 @@ def multiprocessing_eval_full(ind):
 
 # -----------------------------------------------------------------
 
-class GPopulation(object):
+class Population(object):
 
-    """ GPopulation Class - The container for the population
+    """ Population Class - The container for the population
 
     **Examples**
       Get the population from the :class:`GSimpleGA.GSimpleGA` (GA Engine) instance
@@ -126,9 +126,12 @@ class GPopulation(object):
 
     def __init__(self, genome):
 
-        """ The GPopulation Class creator """
+        """
+        The constructor ...
+        :param genome:
+        """
 
-        if isinstance(genome, GPopulation):
+        if isinstance(genome, Population):
 
             self.oneSelfGenome = genome.oneSelfGenome
             self.internalPop = []
@@ -145,28 +148,29 @@ class GPopulation(object):
 
             self.statted = False
             self.stats = Statistics()
-            return
 
-        # Debugging
-        log.debug("New population instance, %s class genomes", genome.__class__.__name__)
+        else:
 
-        self.oneSelfGenome = genome
-        self.internalPop = []
-        self.internalPopRaw = []
-        self.popSize = 0
-        self.sortType = constants.CDefPopSortType
-        self.sorted = False
-        self.minimax = constants.CDefPopMinimax
-        self.scaleMethod = FunctionSlot("Scale Method")
-        self.scaleMethod.set(constants.CDefPopScale)
-        self.allSlots = [self.scaleMethod]
+            # Debugging
+            log.debug("New population instance, %s class genomes", genome.__class__.__name__)
 
-        self.internalParams = {}
-        self.multiProcessing = (False, False, None)
+            self.oneSelfGenome = genome
+            self.internalPop = []
+            self.internalPopRaw = []
+            self.popSize = 0
+            self.sortType = constants.CDefPopSortType
+            self.sorted = False
+            self.minimax = constants.CDefPopMinimax
+            self.scaleMethod = FunctionSlot("Scale Method")
+            self.scaleMethod.set(constants.CDefPopScale)
+            self.allSlots = [self.scaleMethod]
 
-        # Statistics
-        self.statted = False
-        self.stats = Statistics()
+            self.internalParams = {}
+            self.multiProcessing = (False, False, None)
+
+            # Statistics
+            self.statted = False
+            self.stats = Statistics()
 
     # -----------------------------------------------------------------
 
@@ -210,9 +214,11 @@ class GPopulation(object):
 
     def __repr__(self):
 
-        """ Returns the string representation of the population """
+        """
+        Returns the string representation of the population
+        """
 
-        ret = "- GPopulation\n"
+        ret = "- Population\n"
         ret += "\tPopulation Size:\t %d\n" % (self.popSize,)
         ret += "\tSort Type:\t\t %s\n" % (constants.sortType.keys()[constants.sortType.values().index(self.sortType)].capitalize(),)
         ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
@@ -513,8 +519,10 @@ class GPopulation(object):
         :param args: this params are passed to the evaluation function
         """
 
+        silent = args.pop("silent", False)
+
         # Inform the user
-        log.info("Evaluating the new population ...")
+        if not silent: log.info("Evaluating the new population ...")
 
         # We have multiprocessing
         if self.multiProcessing[0] and MULTI_PROCESSING:
@@ -640,7 +648,7 @@ class GPopulation(object):
 
         """ Return a brand-new cloned population """
 
-        newpop = GPopulation(self.oneSelfGenome)
+        newpop = Population(self.oneSelfGenome)
         self.copy(newpop)
         return newpop
 

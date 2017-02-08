@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Import the relevant PTS classes and modules
-from pts.evolve.engine import GAEngine, RawScoreCriteria
+from pts.evolve.engine import GeneticEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import mutators
 from pts.evolve import initializators
@@ -99,7 +99,7 @@ genome.mutator.set(mutators.G1DListMutatorRealGaussian)
 genome.evaluator.set(chi_squared_function)
 
 # Genetic algorithm instance
-ga = GAEngine(genome)
+ga = GeneticEngine(genome)
 ga.terminationCriteria.set(RawScoreCriteria)
 ga.setMinimax(constants.minimaxType["minimize"])
 ga.setGenerations(5)

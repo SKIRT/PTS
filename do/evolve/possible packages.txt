@@ -148,7 +148,7 @@ def eval_func(chromosome):
 
 # WHAT HAPPENS DURING C0NSTRUCTOR OF GSIMPLEGA:
 
-# self.internalPop  = GPopulation(genome) # internal population is constructed from genome
+# self.internalPop  = Population(genome) # internal population is constructed from genome
 
     # THE CONSTRUCTOR OF GPOPULATION:
 
@@ -177,7 +177,7 @@ def eval_func(chromosome):
 
 # WHAT HAPPENS WHEN EXECUTING .STEP():
 
-# newPop = GPopulation(self.internalPop) # clone population
+# newPop = Population(self.internalPop) # clone population
 # for i in xrange(0, size_iterate, 2):
 
 #     genomeMom = self.select(popID=self.currentGeneration)  # selects one individual from the population

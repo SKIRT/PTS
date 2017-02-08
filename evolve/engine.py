@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.simplega This module contains the GA Engine, the GA Engine class is responsible
+## \package pts.evolve.engine This module contains the GA Engine, the GA Engine class is responsible
 #  for all the evolutionary process. It contains the GA Engine related
 #  functions, like the Termination Criteria functions for convergence analysis, etc.
 #
@@ -46,7 +46,7 @@ from types import BooleanType
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
-from pts.evolve.population import GPopulation
+from pts.evolve.population import Population
 from pts.evolve.functionslot import FunctionSlot
 from pts.evolve.genome import GenomeBase
 from pts.evolve.dbadapters import DBBaseAdapter
@@ -135,22 +135,20 @@ def FitnessStatsCriteria(ga_engine):
 
 # -----------------------------------------------------------------
 
-class GAEngine(object):
+class GeneticEngine(object):
 
     """
-    This class represents the Genetic Algorithm Engine
+    This class represents the Genetic Engine
 
     Example:
-       >>> ga = GAEngine(genome)
+       >>> ga = GeneticEngine(genome)
        >>> ga.selector.set(Selectors.GRouletteWheel)
        >>> ga.setGenerations(120)
        >>> ga.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
 
     :param genome: the :term:`Sample Genome`
     :param interactiveMode: this flag enables the Interactive Mode, the default is True
-
     .. note:: if you use the same random seed, all the runs of algorithm will be the same
-
     """
 
     selector = None
@@ -197,19 +195,23 @@ class GAEngine(object):
     generation.
     """
 
-    def __init__(self, genome, interactiveMode=True):
+    def __init__(self, genome, interactive=True):
 
-        """ Initializator of GSimpleGA """
+        """
+        Initializator of GSimpleGA
+        :param genome:
+        :param interactive:
+        """
 
         #if seed is not None: random.seed(seed) # used to be like this
 
-        if type(interactiveMode) != BooleanType:
+        if type(interactive) != BooleanType:
             utils.raiseException("Interactive Mode option must be True or False", TypeError)
 
         if not isinstance(genome, GenomeBase):
             utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
 
-        self.internalPop = GPopulation(genome)
+        self.internalPop = Population(genome)
         self.nGenerations = constants.CDefGAGenerations
         self.pMutation = constants.CDefGAMutationRate
         self.pCrossover = constants.CDefGACrossoverRate
@@ -227,7 +229,7 @@ class GAEngine(object):
 
         self.time_init = None
         self.max_time = None
-        self.interactiveMode = interactiveMode
+        self.interactiveMode = interactive
         self.interactiveGen = -1
         self.GPMode = False
 
@@ -247,9 +249,10 @@ class GAEngine(object):
                 self.setGPMode(True)
                 break
 
-        log.debug("A GA Engine was created, nGenerations=%d", self.nGenerations)
+        # Debugging
+        log.debug("A genetic algorithm engine was created with " + str(self.nGenerations) + " generations")
 
-        # New
+        # Path of the engine object file
         self.path = None
 
     # -----------------------------------------------------------------
@@ -330,8 +333,7 @@ class GAEngine(object):
     def __call__(self, *args, **kwargs):
 
         """ A method to implement a callable object
-        Example:
-           >>> ga_engine(freq_stats=10)
+        Example: ga_engine(freq_stats=10)
         .. versionadded:: 0.6
            The callable method.
         """
@@ -345,8 +347,7 @@ class GAEngine(object):
     def setParams(self, **args):
 
         """ Set the internal params
-        Example:
-           >>> ga.setParams(gp_terminals=['x', 'y'])
+        Example: ga.setParams(gp_terminals=['x', 'y'])
         :param args: params to save
         ..versionaddd:: 0.6
            Added the *setParams* method.
@@ -359,8 +360,7 @@ class GAEngine(object):
     def getParam(self, key, nvl=None):
 
         """ Gets an internal parameter
-        Example:
-           >>> ga.getParam("gp_terminals")
+        Example: ga.getParam("gp_terminals")
            ['x', 'y']
         :param key: the key of param
         :param nvl: if the key doesn't exist, the nvl will be returned
@@ -430,7 +430,9 @@ class GAEngine(object):
 
     def __repr__(self):
 
-        """ The string representation of the GA Engine """
+        """
+        The string representation of the GA Engine
+        """
 
         minimax_type = constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)]
         ret = "- GSimpleGA\n"
@@ -455,7 +457,8 @@ class GAEngine(object):
 
     def setMultiProcessing(self, flag=True, full_copy=False, max_processes=None):
 
-        """ Sets the flag to enable/disable the use of python multiprocessing module.
+        """
+        Sets the flag to enable/disable the use of python multiprocessing module.
         Use this option when you have more than one core on your CPU and when your
         evaluation function is very slow.
 
@@ -510,7 +513,7 @@ class GAEngine(object):
 
         self.migrationAdapter = migration_adapter
         if self.migrationAdapter is not None:
-            self.migrationAdapter.setGAEngine(self)
+            self.migrationAdapter.set_engine(self)
 
     # -----------------------------------------------------------------
 
@@ -579,6 +582,7 @@ class GAEngine(object):
         Sets the mutation rate, between 0.0 and 1.0
         :param rate: the rate, between 0.0 and 1.0
         """
+
         if (rate > 1.0) or (rate < 0.0):
             utils.raiseException("Mutation rate must be >= 0.0 and <= 1.0", ValueError)
         self.pMutation = rate
@@ -857,7 +861,7 @@ class GAEngine(object):
 
     # -----------------------------------------------------------------
 
-    def generate_new_population(self):
+    def generate_new_population(self, silent=False):
 
         """
         This function ...
@@ -865,10 +869,10 @@ class GAEngine(object):
         """
 
         # Inform the user
-        log.info("Creating generation " + str(self.currentGeneration) + " ...")
+        if not silent: log.info("Creating generation " + str(self.currentGeneration) + " ...")
 
         # Clone the current internal population
-        new_population = GPopulation(self.internalPop)
+        new_population = Population(self.internalPop)
         log.debug("Population was cloned.")
 
         #size_iterate = len(self.internalPop)
@@ -918,29 +922,27 @@ class GAEngine(object):
 
             new_population.internalPop.append(sister)
 
-        # Return the new population
-        #return newPop
-
-        # NEW
+        # Set the new population
         self.new_population = new_population
 
     # -----------------------------------------------------------------
 
-    def step(self):
+    def step(self, silent=False):
 
         """
         This function performs one step in the evolution, i.e. one generation
+        :param silent:
         """
 
         # Inform the user
-        log.info("Performing step in the evolutionary process ...")
+        if not silent: log.info("Performing step in the evolutionary process ...")
 
-        # Generate the new population ## NEW
-        self.generate_new_population()
+        # Generate the new population
+        self.generate_new_population(silent=silent)
 
         # Evaluate
         #print(self.generation_description)
-        self.new_population.evaluate()
+        self.new_population.evaluate(silent=silent)
 
         # Replace population
         self.replace_internal_population()
@@ -962,6 +964,7 @@ class GAEngine(object):
            if total_time > self.max_time:
               return True
 
+        # Return whether the desired number of generations has been reached
         return self.currentGeneration == self.nGenerations
 
     # -----------------------------------------------------------------
@@ -1027,7 +1030,8 @@ class GAEngine(object):
 
     def printStats(self):
 
-        """ Print generation statistics
+        """
+        Print generation statistics
         :rtype: the printed statistics as string
         .. versionchanged:: 0.6
            The return of *printStats* method.
@@ -1068,17 +1072,16 @@ class GAEngine(object):
 
     # -----------------------------------------------------------------
 
-    def evolve(self, freq_stats=0):
+    def evolve(self, freq_stats=0, progress_bar=False):
 
         """ Do all the generations until the termination criteria, accepts
         the freq_stats (default is 0) to dump statistics at n-generation
 
-        Example:
-           >>> ga_engine.evolve(freq_stats=10)
-           (...)
+        Example: ga_engine.evolve(freq_stats=10)
 
         :param freq_stats: if greater than 0, the statistics will be
                            printed every freq_stats generation.
+        :param progress_bar: show progress bar
         :rtype: returns the best individual of the evolution
 
         .. versionadded:: 0.6
@@ -1090,7 +1093,7 @@ class GAEngine(object):
         self.initialize_evolution()
 
         # Do the evolution loop
-        self.evolve_loop(freq_stats)
+        self.evolve_loop(freq_stats, progress_bar=progress_bar)
 
         # Finish evolution, return best individual
         return self.finish_evolution()
@@ -1138,7 +1141,7 @@ class GAEngine(object):
         log.info("Evaluating and sorting the initial population ...")
 
         # Evaluate and sort the internal population
-        self.internalPop.evaluate()
+        self.internalPop.evaluate(silent=True)
         self.sort_internal_population()
 
     # -----------------------------------------------------------------
@@ -1154,17 +1157,41 @@ class GAEngine(object):
 
     # -----------------------------------------------------------------
 
-    def evolve_loop(self, freq_stats):
+    def evolve_loop(self, freq_stats, progress_bar=False):
 
         """
         This function ...
+        :param freq_stats:
+        :param progress_bar:
         :return:
         """
 
-        log.debug("Starting loop over evolutionary algorithm.")
+        # Inform the user ...
+        log.info("Starting the evolutional algorithm ...")
 
-        while True:
-            if not self.evolve_generation(freq_stats): break
+        if progress_bar:
+
+            from ..core.tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
+
+            freq_stats = 10000
+            silent = True
+
+            counter = 1
+
+            # Progress bar
+            with Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR,
+                     filled_char=BAR_FILLED_CHAR, expected_size=self.nGenerations, every=1, add_datetime=True) as bar:
+
+                # Loop
+                while True:
+
+                    bar.show(counter)
+                    if not self.evolve_generation(freq_stats, silent=silent): break
+                    counter += 1
+        else:
+
+            while True:
+                if not self.evolve_generation(freq_stats): break
 
     # -----------------------------------------------------------------
 
@@ -1194,11 +1221,12 @@ class GAEngine(object):
 
     # -----------------------------------------------------------------
 
-    def evolve_generation(self, freq_stats):
+    def evolve_generation(self, freq_stats, silent=False):
 
         """
         This function ...
         :param freq_stats:
+        :param silent:
         :return:
         """
 
@@ -1219,7 +1247,7 @@ class GAEngine(object):
             for it in self.terminationCriteria.applyFunctions(self):
                 stopFlagTerminationCriteria = it
 
-        if freq_stats:
+        if freq_stats and not silent:
             if (self.currentGeneration % freq_stats == 0) or (self.getCurrentGeneration() == 0):
                 self.printStats()
 
@@ -1229,18 +1257,20 @@ class GAEngine(object):
 
         if stopFlagTerminationCriteria:
             log.debug("Evolution stopped by the Termination Criteria !")
-            if freq_stats:
+            if freq_stats and not silent:
                 print("\n\tEvolution stopped by Termination Criteria function !\n")
             return False
 
         if stopFlagCallback:
             log.debug("Evolution stopped by Step Callback function !")
-            if freq_stats:
+            if freq_stats and not silent:
                 print("\n\tEvolution stopped by Step Callback function !\n")
             return False
 
-        if self.step(): return False
+        # Perform step (generation)
+        if self.step(silent=silent): return False
 
+        # Stopping criterion
         return True
 
     # -----------------------------------------------------------------

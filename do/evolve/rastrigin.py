@@ -7,7 +7,7 @@
 
 # -----------------------------------------------------------------
 
-from pts.evolve.engine import GAEngine, RawScoreCriteria
+from pts.evolve.engine import GeneticEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
 from pts.evolve import mutators, initializators
 from pts.evolve import selectors
@@ -35,7 +35,7 @@ def run_main():
    genome.evaluator.set(rastrigin)
 
    # Genetic Algorithm Instance
-   ga = GAEngine(genome)
+   ga = GeneticEngine(genome)
    ga.terminationCriteria.set(RawScoreCriteria)
    ga.setMinimax(constants.minimaxType["minimize"])
    ga.setGenerations(3000)

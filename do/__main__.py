@@ -40,6 +40,7 @@ from pts.core.tools import time
 from pts.do.commandline import show_all_available, show_possible_matches, start_target
 from pts.modeling.welcome import welcome as welcome_modeling
 from pts.magic.welcome import welcome as welcome_magic
+from pts.evolve.welcome import welcome as welcome_evolve
 from pts.dustpedia.welcome import welcome as welcome_dustpedia
 from pts.core.basics.configuration import create_configuration
 
@@ -162,6 +163,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     if subproject == "modeling": welcome_modeling()
     elif subproject == "magic": welcome_magic()
     elif subproject == "dustpedia": welcome_dustpedia()
+    elif subproject == "evolve": welcome_evolve()
 
     # Get the class
     cls = introspection.get_class(module_path, class_name)

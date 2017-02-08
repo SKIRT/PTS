@@ -28,7 +28,7 @@ from ....magic.basics.vector import Pixel
 from ....core.basics.unit import parse_unit as u
 
 # PTS evolution classes and modules
-from ....evolve.engine import GAEngine, RawScoreCriteria
+from ....evolve.engine import GeneticEngine, RawScoreCriteria
 from ....evolve.genomes.list1d import G1DList
 from ....evolve import mutators
 from ....evolve import initializators
@@ -654,7 +654,7 @@ class BlackBodyDustMapMaker(MapsComponent):
         genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
 
         # Create the genetic algorithm engine
-        engine = GAEngine(genome)
+        engine = GeneticEngine(genome)
 
         # Set options for the engine
         engine.terminationCriteria.set(RawScoreCriteria)

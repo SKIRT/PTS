@@ -301,6 +301,25 @@ def quantity_range(argument):
 
 # -----------------------------------------------------------------
 
+def range(argument):
+
+    """
+    Integer, real or quantity range
+    :param argument:
+    :return:
+    """
+
+    try: range = integer_range(argument)
+    except ValueError:
+        try: range = real_range(argument)
+        except ValueError:
+            try: range = quantity_range(argument)
+            except ValueError: raise ValueError("Not a valid range")
+
+    return range
+
+# -----------------------------------------------------------------
+
 def photometric_quantity_range(argument):
 
     """

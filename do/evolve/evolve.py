@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.evolve.engine import GAEngine
+from pts.evolve.engine import GeneticEngine
 from pts.core.tools import filesystem as fs
 from pts.core.tools import tables
 from pts.core.tools import time
@@ -71,7 +71,7 @@ chi_squared = tables.from_file(chi_squared_path, format="ascii.ecsv")
 # -----------------------------------------------------------------
 
 # Load the GA
-ga = GAEngine.from_file(path)
+ga = GeneticEngine.from_file(path)
 
 # Check whether the chi-squared and parameter tables match
 for i in range(len(parameters)):

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....evolve.engine import GAEngine, RawScoreCriteria
+from ....evolve.engine import GeneticEngine, RawScoreCriteria
 from ....evolve.genomes.list1d import G1DList
 from ....evolve import mutators
 from ....evolve import initializators
@@ -68,7 +68,7 @@ class InitialModelGenerator(ModelGenerator):
         #genome.setParams(centers=centers, sigmas=sigmas) # means is a list with the centers of the gaussian function [for each parameter], sigmas is a list with the standard deviations [for each parameter]
 
         # Create the genetic algorithm engine
-        self.engine = GAEngine(genome)
+        self.engine = GeneticEngine(genome)
 
         # Set options for the engine
         self.engine.terminationCriteria.set(RawScoreCriteria)

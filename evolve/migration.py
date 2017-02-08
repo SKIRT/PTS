@@ -47,7 +47,7 @@ class MigrationScheme(object):
         """
 
         self.selector = FunctionSlot("Selector")
-        self.GAEngine = None
+        self.engine = None
         self.nMigrationRate = constants.CDefGenMigrationRate
         self.nIndividuals = constants.CDefMigrationNIndividuals
         self.nReplacement = constants.CDefGenMigrationReplacement
@@ -61,7 +61,7 @@ class MigrationScheme(object):
         Returns true if is time to migrate
         """
 
-        return True if self.GAEngine.getCurrentGeneration() % self.nMigrationRate == 0 else False
+        return True if self.engine.getCurrentGeneration() % self.nMigrationRate == 0 else False
 
     # -----------------------------------------------------------------
 
@@ -152,11 +152,11 @@ class MigrationScheme(object):
 
     # -----------------------------------------------------------------
 
-    def setGAEngine(self, ga_engine):
+    def set_engine(self, ga_engine):
 
       """ Sets the GA Engine handler """
 
-      self.GAEngine = ga_engine
+      self.engine = ga_engine
 
     # -----------------------------------------------------------------
 
@@ -188,10 +188,10 @@ class MigrationScheme(object):
       """
 
       if self.selector.isEmpty():
-         return self.GAEngine.select(popID=self.GAEngine.currentGeneration)
+         return self.engine.select(popID=self.engine.currentGeneration)
       else:
-         for it in self.selector.applyFunctions(self.GAEngine.internalPop,
-                                                popID=self.GAEngine.currentGeneration):
+         for it in self.selector.applyFunctions(self.engine.internalPop,
+                                                popID=self.engine.currentGeneration):
             return it
 
     # -----------------------------------------------------------------
@@ -366,7 +366,7 @@ class WANMigration(MigrationScheme):
       if len(pool) <= 0:
          return
 
-      population = self.GAEngine.get_population()
+      population = self.engine.get_population()
 
       for i in xrange(self.getNumReplacement()):
          if len(pool) <= 0:
@@ -413,9 +413,9 @@ class MPIMigration(MigrationScheme):
         Returns true if is time to migrate
         """
 
-        if self.GAEngine.getCurrentGeneration() == 0: return False
+        if self.engine.getCurrentGeneration() == 0: return False
 
-        if self.GAEngine.getCurrentGeneration() % self.nMigrationRate == 0: return True
+        if self.engine.getCurrentGeneration() % self.nMigrationRate == 0: return True
         else: return False
 
     # -----------------------------------------------------------------
@@ -449,7 +449,7 @@ class MPIMigration(MigrationScheme):
                                          source=self.source,
                                          recvtag=0)
 
-        population = self.GAEngine.get_population()
+        population = self.engine.get_population()
 
         pool = pool_received
         for i in xrange(self.getNumReplacement()):
