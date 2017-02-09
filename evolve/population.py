@@ -25,6 +25,7 @@
 
 # Import standard modules
 from math import sqrt as math_sqrt
+from functools import partial
 
 # Import other evolve modules
 import pts.evolve.constants as constants
@@ -70,20 +71,24 @@ def key_fitness_score(individual):
 
 # -----------------------------------------------------------------
 
-def multiprocessing_eval(ind):
+def multiprocessing_eval(ind, **kwargs):
 
-   """ Internal used by the multiprocessing """
+   """
+   Internal used by the multiprocessing
+   """
 
-   ind.evaluate()
+   ind.evaluate(**kwargs)
    return ind.score
 
 # -----------------------------------------------------------------
 
-def multiprocessing_eval_full(ind):
+def multiprocessing_eval_full(ind, **kwargs):
 
-   """ Internal used by the multiprocessing (full copy)"""
+   """
+   Internal used by the multiprocessing (full copy)
+   """
 
-   ind.evaluate()
+   ind.evaluate(**kwargs)
    return ind
 
 # -----------------------------------------------------------------
@@ -94,30 +99,30 @@ class Population(object):
 
     **Examples**
       Get the population from the :class:`GSimpleGA.GSimpleGA` (GA Engine) instance
-         >>> pop = ga_engine.get_population()
+         pop = ga_engine.get_population()
 
       Get the best fitness individual
-         >>> bestIndividual = pop.bestFitness()
+         bestIndividual = pop.bestFitness()
 
       Get the best raw individual
-         >>> bestIndividual = pop.bestRaw()
+         bestIndividual = pop.bestRaw()
 
       Get the statistics from the :class:`Statistics.Statistics` instance
-         >>> stats = pop.getStatistics()
-         >>> print stats["rawMax"]
+         stats = pop.getStatistics()
+         print stats["rawMax"]
          10.4
 
       Iterate, get/set individuals
-         >>> for ind in pop:
-         >>>   print ind
+         for ind in pop:
+            print ind
          (...)
 
-         >>> for i in xrange(len(pop)):
-         >>>    print pop[i]
+         for i in xrange(len(pop)):
+            print pop[i]
          (...)
 
-         >>> pop[10] = newGenome
-         >>> pop[10].fitness
+         pop[10] = newGenome
+         pop[10].fitness
          12.5
 
     :param genome: the :term:`Sample genome`, or a GPopulation object, when cloning.
@@ -204,7 +209,7 @@ class Population(object):
 
         """ Sets the population minimax
         Example:
-         >>> pop.setMinimax(Consts.minimaxType["maximize"])
+         pop.setMinimax(Consts.minimaxType["maximize"])
         :param minimax: the minimax type
         """
 
@@ -388,7 +393,9 @@ class Population(object):
 
     def sort(self):
 
-        """ Sort the population """
+        """
+        Sort the population
+        """
 
         if self.sorted:
          return
@@ -438,7 +445,7 @@ class Population(object):
 
         """ Sets the sort type
         Example:
-         >>> pop.setSortType(Consts.sortType["scaled"])
+         pop.setSortType(Consts.sortType["scaled"])
         :param sort_type: the Sort Type
         """
 
@@ -448,7 +455,9 @@ class Population(object):
 
     def create(self, **args):
 
-        """ Clone the example genome to fill the population """
+        """
+        Clone the example genome to fill the population
+        """
 
         self.minimax = args["minimax"]
         self.internalPop = [self.oneSelfGenome.clone() for i in xrange(self.popSize)]
@@ -488,38 +497,42 @@ class Population(object):
 
     # -----------------------------------------------------------------
 
-    def initialize(self, **args):
+    def initialize(self, **kwargs):
 
         """
         Initialize all individuals of population,
         this calls the initialize() of individuals
+        :param kwargs: arguemnts passed to the initialize function of the individuals
         """
 
         # Inform the user
         log.info("Initializing the population ...")
 
         if self.oneSelfGenome.getParam("full_diversity", True) and hasattr(self.oneSelfGenome, "compare"):
+
          for i in xrange(len(self.internalPop)):
             curr = self.internalPop[i]
-            curr.initialize(**args)
+            curr.initialize(**kwargs)
             while self.__findIndividual(curr, i):
-               curr.initialize(**args)
-        else:
-         for gen in self.internalPop:
-            gen.initialize(**args)
+               curr.initialize(**kwargs)
 
+        else:
+
+         for gen in self.internalPop:
+            gen.initialize(**kwargs)
+
+        # Clear
         self.clearFlags()
 
     # -----------------------------------------------------------------
 
-    def evaluate(self, **args):
+    def evaluate(self, silent, **kwargs):
 
         """
         Evaluate all individuals in population, calls the evaluate() method of individuals
-        :param args: this params are passed to the evaluation function
+        :param silent:
+        :param kwargs: this params are passed to the evaluation function
         """
-
-        silent = args.pop("silent", False)
 
         # Inform the user
         if not silent: log.info("Evaluating the new population ...")
@@ -533,14 +546,16 @@ class Population(object):
             # Multiprocessing full_copy parameter
             if self.multiProcessing[1]:
 
-                results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
+                #results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
+                results = proc_pool.map(partial(multiprocessing_eval_full, **kwargs), self.internalPop)
                 proc_pool.close()
                 proc_pool.join()
                 for i in xrange(len(self.internalPop)): self.internalPop[i] = results[i]
 
             else:
 
-                results = proc_pool.map(multiprocessing_eval, self.internalPop)
+                #results = proc_pool.map(multiprocessing_eval, self.internalPop)
+                results = proc_pool.map(partial(multiprocessing_eval, **kwargs), self.internalPop)
                 proc_pool.close()
                 proc_pool.join()
                 for individual, score in zip(self.internalPop, results): individual.score = score
@@ -548,15 +563,17 @@ class Population(object):
         else: # No multiprocessing: basically just a loop over evaluate() of the individuals
 
             # Evaluate each individual
-            for ind in self.internalPop: ind.evaluate(**args)
+            for ind in self.internalPop: ind.evaluate(**kwargs)
 
+        # Clear flags
         self.clearFlags()
 
     # -----------------------------------------------------------------
 
     def scale(self, **args):
 
-        """ Scale the population using the scaling method
+        """
+        Scale the population using the scaling method
         :param args: this parameter is passed to the scale method
         """
 
@@ -577,7 +594,9 @@ class Population(object):
 
     def printStats(self):
 
-        """ Print statistics of the current population """
+        """
+        Print statistics of the current population
+        """
 
         message = ""
         if self.sortType == constants.sortType["scaled"]:
@@ -608,9 +627,10 @@ class Population(object):
 
     def getParam(self, key, nvl=None):
 
-        """ Gets an internal parameter
+        """
+        Gets an internal parameter
         Example:
-         >>> population.getParam("tournamentPool")
+         population.getParam("tournamentPool")
          5
         :param key: the key of param
         :param nvl: if the key doesn't exist, the nvl will be returned
@@ -622,9 +642,10 @@ class Population(object):
 
     def setParams(self, **args):
 
-        """ Gets an internal parameter
+        """
+        Sets an internal parameter
         Example:
-         >>> population.setParams(tournamentPool=5)
+         population.setParams(tournamentPool=5)
         :param args: parameters to set
         .. versionadded:: 0.6
          The `setParams` method.
@@ -636,7 +657,9 @@ class Population(object):
 
     def clear(self):
 
-        """ Remove all individuals from population """
+        """
+        Remove all individuals from population
+        """
 
         del self.internalPop[:]
         del self.internalPopRaw[:]
@@ -646,7 +669,9 @@ class Population(object):
 
     def clone(self):
 
-        """ Return a brand-new cloned population """
+        """
+        Return a brand-new cloned population
+        """
 
         newpop = Population(self.oneSelfGenome)
         self.copy(newpop)

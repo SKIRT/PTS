@@ -15,7 +15,10 @@ from pts.core.tools import filesystem as fs
 definition = ConfigurationDefinition()
 
 # Add optional settings
-definition.add_optional("nparameters", "integer", "number of parameters (genes) in the genome", 20)
+definition.add_optional("genome_type", "string", "type of genome", default="list", choices=["list", "binary_string"])
+definition.add_optional("genome_dimension", "positive_integer", "dimension of the genome", default=1, choices=[1, 2])
+definition.add_optional("nparameters", "positive_integer", "number of parameters (genes) of the genome (in the first dimension)", 20)
+definition.add_optional("nparameters2", "positive_integer", "number of parameters of the genome in the second dimension")
 definition.add_optional("nindividuals", "integer", "number of individuals in one generation", 80)
 definition.add_optional("parameter_range", "range", "allowed range of the parameter")
 definition.add_optional("best_raw_score", "real", "best raw score")

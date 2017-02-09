@@ -86,7 +86,7 @@ class PTSTest(object):
 
     # -----------------------------------------------------------------
 
-    def add_component(self, name, cls, configuration_module_path, settings_dict, output_path, input_dict):
+    def add_component(self, name, cls, configuration_module_path, settings_dict, output_path, input_dict, description, finish=None):
 
         """
         This function ...
@@ -96,11 +96,13 @@ class PTSTest(object):
         :param settings_dict:
         :param output_path:
         :param input_dict:
+        :param description:
+        :param finish:
         :return:
         """
 
         # Add the component to the dictionary
-        self.components[name] = Map(cls=cls, conf_path=configuration_module_path, settings=settings_dict, output_path=output_path, input_dict=input_dict)
+        self.components[name] = Map(cls=cls, conf_path=configuration_module_path, settings=settings_dict, output_path=output_path, input_dict=input_dict, description=description, finish=finish)
 
     # -----------------------------------------------------------------
 
@@ -134,7 +136,7 @@ class PTSTest(object):
         fmt.print_filled("-", prefix=prefix, length=width)
         fmt.print_border("|", prefix=prefix, length=width)
         fmt.print_centered_around_border("PTS test '" + self.name + "'", "|", prefix=prefix, length=width)
-        fmt.print_centered_around_border("***", "|", prefix=prefix, length=width)
+        fmt.print_centered_around_border("****", "|", prefix=prefix, length=width)
         for line in strings.split_in_lines(self.description, length=40, as_list=True): fmt.print_centered_around_border(line, "|", prefix=prefix, length=width)
         fmt.print_border("|", prefix=prefix, length=width)
         fmt.print_filled("-", prefix=prefix, length=width)
@@ -158,20 +160,24 @@ class PTSTest(object):
             # Debugging
             log.debug("Setting configuration for component '" + name + "' ...")
 
+            # Get properties of the component
             configuration_module_path = self.components[name].conf_path
             output_path = self.components[name].output_path
             settings_dict = self.components[name].settings
             cls = self.components[name].cls
             input_dict = self.components[name].input_dict
+            description = self.components[name].description
+            finish_function = self.components[name].finish
 
             # Change working directory
             fs.change_cwd(output_path)
 
+            # Get the configuration definition
             configuration_module = importlib.import_module(configuration_module_path)
             definition = getattr(configuration_module, "definition")
 
             # Parse the configuration
-            setter = DictConfigurationSetter(settings_dict, name, description=None)
+            setter = DictConfigurationSetter(settings_dict, name, description=description)
             config = setter.run(definition)
 
             # Set working directory (output directory)
@@ -180,11 +186,14 @@ class PTSTest(object):
             # Create the class instance, configure it with the configuration settings
             inst = cls(config)
 
-            # Debugging
-            log.debug("Executing component '" + name + "' ...")
+            # Inform the user
+            log.info("Executing component '" + name + "': " + description + " ...")
 
             # Run with input
             inst.run(**input_dict)
+
+            # If finish function is defined, call it and pass the instance for which it finishes up
+            if finish_function is not None: finish_function(inst)
 
     # -----------------------------------------------------------------
 

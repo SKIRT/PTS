@@ -33,145 +33,155 @@ class GenomeBase(object):
 
    def __init__(self):
 
-      """
-      Genome Constructor
-      """
+        """
+        Genome Constructor
+        """
 
-      self.evaluator = FunctionSlot("Evaluator")
-      self.initializator = FunctionSlot("Initializator")
-      self.mutator = FunctionSlot("Mutator")
-      self.crossover = FunctionSlot("Crossover")
+        self.evaluator = FunctionSlot("Evaluator")
+        self.initializator = FunctionSlot("Initializator")
+        self.mutator = FunctionSlot("Mutator")
+        self.crossover = FunctionSlot("Crossover")
 
-      self.internalParams = {}
-      self.score = 0.0
-      self.fitness = 0.0
+        self.internalParams = {}
+        self.score = 0.0
+        self.fitness = 0.0
 
    # -----------------------------------------------------------------
 
    def getRawScore(self):
 
-      """
-      Get the Raw Score of the genome
-      :rtype: genome raw score
-      """
+        """
+        Get the Raw Score of the genome
+        :rtype: genome raw score
+        """
 
-      return self.score
+        return self.score
 
    # -----------------------------------------------------------------
 
    def getFitnessScore(self):
 
-      """
-      Get the Fitness Score of the genome
-      :rtype: genome fitness score
-      """
+        """
+        Get the Fitness Score of the genome
+        :rtype: genome fitness score
+        """
 
-      return self.fitness
+        return self.fitness
 
    # -----------------------------------------------------------------
 
    def __repr__(self):
 
-      """String representation of Genome"""
+        """
+        Returns a string representation of Genome
+        """
 
-      allSlots = [self.evaluator, self.initializator, self.mutator,
+        allSlots = [self.evaluator, self.initializator, self.mutator,
                   self.crossover]
 
-      ret = "- GenomeBase\n"
-      ret += "\tScore:\t\t\t %.6f\n" % (self.score,)
-      ret += "\tFitness:\t\t %.6f\n\n" % (self.fitness,)
-      ret += "\tParams:\t\t %s\n\n" % (self.internalParams,)
+        ret = "- GenomeBase\n"
+        ret += "\tScore:\t\t\t %.6f\n" % (self.score,)
+        ret += "\tFitness:\t\t %.6f\n\n" % (self.fitness,)
+        ret += "\tParams:\t\t %s\n\n" % (self.internalParams,)
 
-      for slot in allSlots:
+        for slot in allSlots:
          ret += "\t" + slot.__repr__()
-      ret += "\n"
+        ret += "\n"
 
-      return ret
+        return ret
 
    # -----------------------------------------------------------------
 
    def setParams(self, **args):
 
-      """
-      Set the internal params
-      Example:
-         >>> genome.setParams(rangemin=0, rangemax=100, gauss_mu=0, gauss_sigma=1)
-      .. note:: All the individuals of the population shares this parameters and uses
+        """
+        Set the internal params
+        Example:
+         genome.setParams(rangemin=0, rangemax=100, gauss_mu=0, gauss_sigma=1)
+        .. note:: All the individuals of the population shares this parameters and uses
                 the same instance of this dict.
-      :param args: this params will saved in every chromosome for genetic op. use
-      """
+        :param args: this params will saved in every chromosome for genetic op. use
+        """
 
-      self.internalParams.update(args)
+        self.internalParams.update(args)
 
    # -----------------------------------------------------------------
 
    def getParam(self, key, nvl=None):
 
-      """
-      Gets an internal parameter
-      Example:
-         >>> genome.getParam("rangemax")
+        """
+        Gets an internal parameter
+        Example:
+         genome.getParam("rangemax")
          100
-      .. note:: All the individuals of the population shares this parameters and uses
+        .. note:: All the individuals of the population shares this parameters and uses
                 the same instance of this dict.
-      :param key: the key of param
-      :param nvl: if the key doesn't exist, the nvl will be returned
-      """
+        :param key: the key of param
+        :param nvl: if the key doesn't exist, the nvl will be returned
+        """
 
-      return self.internalParams.get(key, nvl)
+        return self.internalParams.get(key, nvl)
 
    # -----------------------------------------------------------------
 
    def resetStats(self):
 
-      """ Clear score and fitness of genome """
+        """
+        Clear score and fitness of genome
+        """
 
-      self.score = 0.0
-      self.fitness = 0.0
-
-   # -----------------------------------------------------------------
-
-   def evaluate(self, **args):
-
-      """ Called to evaluate genome
-      :param args: this parameters will be passes to the evaluator
-      """
-
-      self.resetStats()
-      for it in self.evaluator.applyFunctions(self, **args):
-         self.score += it
+        self.score = 0.0
+        self.fitness = 0.0
 
    # -----------------------------------------------------------------
 
-   def initialize(self, **args):
+   def evaluate(self, **kwargs):
 
-      """ Called to initialize genome
-      :param args: this parameters will be passed to the initializator
-      """
+        """
+        Evaluate the genome
+        :param kwargs: this parameters will be passes to the evaluator function
+        """
 
-      for it in self.initializator.applyFunctions(self, **args):
-         pass
+        self.resetStats()
+
+        # Call each evalator function, add the score
+        for it in self.evaluator.applyFunctions(self, **kwargs): self.score += it
 
    # -----------------------------------------------------------------
 
-   def mutate(self, **args):
+   def initialize(self, **kwargs):
 
-      """
-      Called to mutate the genome
-      :param args: this parameters will be passed to the mutator
-      :rtype: the number of mutations returned by mutation operator
-      """
+        """
+        Initialize the genome
+        :param kwargs: this parameters will be passed to the initializator
+        """
 
-      nmuts = 0
-      for it in self.mutator.applyFunctions(self, **args):
-         nmuts += it
-      return nmuts
+        # Call each initializator function
+        for it in self.initializator.applyFunctions(self, **kwargs): pass
+
+   # -----------------------------------------------------------------
+
+   def mutate(self, **kwargs):
+
+        """
+        Called to mutate the genome
+        :param kwargs: this parameters will be passed to the mutator function
+        :rtype: the number of mutations returned by mutation operator
+        """
+
+        nmuts = 0
+
+        # Call each mutation function
+        for it in self.mutator.applyFunctions(self, **kwargs): nmuts += it
+
+        return nmuts
 
    # -----------------------------------------------------------------
 
    def copy(self, g):
 
-      """ Copy the current GenomeBase to 'g'
+      """
+      Copy the current GenomeBase to 'g'
       :param g: the destination genome
       .. note:: If you are planning to create a new chromosome representation, you
                 **must** implement this method on your class.
@@ -216,9 +226,14 @@ class G1DBase(GenomeBase):
 
     def __init__(self, size):
 
-      super(G1DBase, self).__init__()
-      self.genomeSize = size
-      self.genomeList = []
+        """
+        The constructor ...
+        :param size:
+        """
+
+        super(G1DBase, self).__init__()
+        self.genomeSize = size
+        self.genomeList = []
 
     # -----------------------------------------------------------------
 
@@ -258,69 +273,91 @@ class G1DBase(GenomeBase):
     # -----------------------------------------------------------------
 
     def __setslice__(self, a, b, val):
+
       """ Sets the slice part of chromosome """
+
       self.genomeList[a:b] = val
 
     # -----------------------------------------------------------------
 
     def __getitem__(self, key):
-      """ Return the specified gene of List """
+
+      """
+      Return the specified gene of List
+      """
+
       return self.genomeList[key]
 
     # -----------------------------------------------------------------
 
     def __setitem__(self, key, value):
-      """ Set the specified value for an gene of List """
+
+      """
+      Set the specified value for an gene of List
+      """
+
       self.genomeList[key] = value
 
     # -----------------------------------------------------------------
 
     def __iter__(self):
-      """ Iterator support to the list """
-      return iter(self.genomeList)
+
+        """
+        Iterator support to the list
+        """
+
+        return iter(self.genomeList)
 
     # -----------------------------------------------------------------
 
     def __len__(self):
-      """ Return the size of the List """
-      return len(self.genomeList)
+
+        """
+        Return the size of the List
+        """
+
+        return len(self.genomeList)
 
     # -----------------------------------------------------------------
 
     def getListSize(self):
-      """ Returns the list supposed size
 
-      .. warning:: this is different from what the len(obj) returns
-      """
-      return self.genomeSize
+        """
+        Returns the list supposed size
+        .. warning:: this is different from what the len(obj) returns
+        """
+
+        return self.genomeSize
 
     # -----------------------------------------------------------------
 
     def resumeString(self):
-      """ Returns a resumed string representation of the Genome """
-      return str(self.genomeList)
+
+        """
+        Returns a resumed string representation of the Genome
+        """
+
+        return str(self.genomeList)
 
     # -----------------------------------------------------------------
 
     def append(self, value):
-      """ Appends an item to the end of the list
 
-      Example:
-         >>> genome.append(44)
+        """
+        Appends an item to the end of the list
+        Example: genome.append(44)
+        :param value: value to be added
+        """
 
-      :param value: value to be added
-
-      """
-      self.genomeList.append(value)
+        self.genomeList.append(value)
 
     # -----------------------------------------------------------------
 
     def remove(self, value):
 
-      """ Removes an item from the list
-      Example:
-         >>> genome.remove(44)
-
+      """
+      Removes an item from the list
+      Example: genome.remove(44)
       :param value: value to be added
       """
 
@@ -330,43 +367,46 @@ class G1DBase(GenomeBase):
 
     def clearList(self):
 
-      """ Remove all genes from Genome """
+        """
+        Remove all genes from Genome
+        """
 
-      del self.genomeList[:]
+        del self.genomeList[:]
 
     # -----------------------------------------------------------------
 
     def copy(self, g):
 
-      """ Copy genome to 'g'
-      Example:
-         >>> genome_origin.copy(genome_destination)
-      :param g: the destination instance
-      """
+        """ Copy genome to 'g'
+        Example:
+         genome_origin.copy(genome_destination)
+        :param g: the destination instance
+        """
 
-      g.genomeSize = self.genomeSize
-      g.genomeList = self.genomeList[:]
+        g.genomeSize = self.genomeSize
+        g.genomeList = self.genomeList[:]
 
     # -----------------------------------------------------------------
 
     def getInternalList(self):
 
-      """ Returns the internal list of the genome
-      ... note:: this method was created to solve performance issues
-      :rtype: the internal list
-      """
+        """ Returns the internal list of the genome
+        ... note:: this method was created to solve performance issues
+        :rtype: the internal list
+        """
 
-      return self.genomeList
+        return self.genomeList
 
     # -----------------------------------------------------------------
 
     def setInternalList(self, lst):
 
-      """ Assigns a list to the internal list of the chromosome
-      :param lst: the list to assign the internal list of the chromosome
-      """
+        """
+        Assigns a list to the internal list of the chromosome
+        :param lst: the list to assign the internal list of the chromosome
+        """
 
-      self.genomeList = lst
+        self.genomeList = lst
 
 # -----------------------------------------------------------------
 

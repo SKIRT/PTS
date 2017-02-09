@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import imp
 from collections import defaultdict
+from types import FunctionType
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -58,6 +59,43 @@ def tests_for_subproject(subproject):
     # If directory doesn't exist, return empty list for the tests
     if not fs.is_directory(tests_path): return []
     else: return fs.directories_in_path(tests_path, returns="name")
+
+# -----------------------------------------------------------------
+
+def tests_and_descriptions_for_subproject(subproject):
+
+    """
+    This function ...
+    :param subproject:
+    :return:
+    """
+
+    # Get test path for subproject
+    subproject_path = introspection.pts_subproject_dir(subproject)
+    tests_path = fs.join(subproject_path, "tests")
+
+    # Return empty dictionary if there are no tests
+    if not fs.is_directory(tests_path): return dict()
+
+    tests = dict()
+
+    # Loop over the tests
+    for path, name in fs.directories_in_path(tests_path, returns=["path", "name"]):
+
+        # Determine path of the test.py file
+        filepath = fs.join(path, "test.py")
+
+        # Load the test module
+        test_module = imp.load_source(name, filepath)
+
+        # Get the description
+        description = test_module.description
+
+        # Add to the tests dictionary
+        tests[name] = description
+
+    # Return the tests dictionary
+    return tests
 
 # -----------------------------------------------------------------
 
@@ -250,7 +288,7 @@ class PTSTestSuite(Configurable):
         # Loop over the specified subprojects
         for subproject in self.config.subprojects:
             if self.has_test_names(subproject): continue
-            definition.add_required(subproject + "_tests", "string_list", "test to perform from the " + subproject + " subproject", choices=tests_for_subproject(subproject))
+            definition.add_required(subproject + "_tests", "string_list", "test to perform from the " + subproject + " subproject", choices=tests_and_descriptions_for_subproject(subproject))
 
         # Get config
         setter = InteractiveConfigurationSetter("subproject_tests", add_logging=False, add_cwd=False)
@@ -347,9 +385,11 @@ class PTSTestSuite(Configurable):
                 for command in commands:
 
                     the_command = command.command
+                    description = command.description
                     settings_dict = command.settings
                     input_dict = command.input_dict
                     cwd = command.cwd
+                    finish = command.finish
 
                     # Find match in the tables of configurable classes
                     match = introspection.resolve_command_tables(the_command, tables)
@@ -366,7 +406,7 @@ class PTSTestSuite(Configurable):
                     output_path = fs.absolute_path(fs.join(temp_path, cwd))
 
                     # Add the component
-                    test.add_component(the_command, cls, configuration_module_path, settings_dict, output_path, input_dict)
+                    test.add_component(the_command, cls, configuration_module_path, settings_dict, output_path, input_dict, description, finish)
 
                 # Add the test to the suite
                 self.tests[subproject].append(test)

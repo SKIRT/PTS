@@ -40,6 +40,7 @@
 from __future__ import division, print_function
 
 # Import standard modules
+from copy import deepcopy
 import numpy as np
 from time import time
 from types import BooleanType
@@ -95,9 +96,7 @@ def ConvergenceCriteria(ga_engine):
 
     """
     Terminate the evolution when the population have converged
-    Example:
-
-       >>> ga_engine.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
+    Example: ga_engine.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
     """
 
     pop = ga_engine.get_population()
@@ -108,8 +107,7 @@ def ConvergenceCriteria(ga_engine):
 def RawStatsCriteria(ga_engine):
 
     """ Terminate the evolution based on the raw stats
-    Example:
-       >>> ga_engine.terminationCriteria.set(GSimpleGA.RawStatsCriteria)
+    Example: ga_engine.terminationCriteria.set(GSimpleGA.RawStatsCriteria)
     """
 
     stats = ga_engine.getStatistics()
@@ -123,8 +121,7 @@ def RawStatsCriteria(ga_engine):
 def FitnessStatsCriteria(ga_engine):
 
     """ Terminate the evoltion based on the fitness stats
-    Example:
-       >>> ga_engine.terminationCriteria.set(GSimpleGA.FitnessStatsCriteria)
+    Example: ga_engine.terminationCriteria.set(GSimpleGA.FitnessStatsCriteria)
     """
 
     stats = ga_engine.getStatistics()
@@ -141,10 +138,10 @@ class GeneticEngine(object):
     This class represents the Genetic Engine
 
     Example:
-       >>> ga = GeneticEngine(genome)
-       >>> ga.selector.set(Selectors.GRouletteWheel)
-       >>> ga.setGenerations(120)
-       >>> ga.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
+    # ga = GeneticEngine(genome)
+    # ga.selector.set(Selectors.GRouletteWheel)
+    # ga.setGenerations(120)
+    # ga.terminationCriteria.set(GSimpleGA.ConvergenceCriteria)
 
     :param genome: the :term:`Sample Genome`
     :param interactiveMode: this flag enables the Interactive Mode, the default is True
@@ -203,14 +200,13 @@ class GeneticEngine(object):
         :param interactive:
         """
 
-        #if seed is not None: random.seed(seed) # used to be like this
-
         if type(interactive) != BooleanType:
             utils.raiseException("Interactive Mode option must be True or False", TypeError)
 
         if not isinstance(genome, GenomeBase):
             utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
 
+        # Initialize things
         self.internalPop = Population(genome)
         self.nGenerations = constants.CDefGAGenerations
         self.pMutation = constants.CDefGAMutationRate
@@ -220,7 +216,7 @@ class GeneticEngine(object):
         self.minimax = constants.minimaxType["maximize"]
         self.elitism = True
 
-        # NEW
+        # The new population
         self.new_population = None
 
         # Adapters
@@ -242,6 +238,9 @@ class GeneticEngine(object):
         self.internalParams = {}
 
         self.currentGeneration = 0
+
+        # Kwargs for the different functions
+        self.kwargs = dict()
 
         # GP Testing
         for classes in constants.CDefGPGenomes:
@@ -306,6 +305,85 @@ class GeneticEngine(object):
         # Set the new path as the current path and save
         self.path = path
         serialization.dump(self, path, protocol=2)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def evaluator_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "evaluator" in self.kwargs: return self.kwargs["evaluator"]
+        else: return dict() # return empty dict
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initializator_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the pre-defined mutator kwargs or create a new dictionary
+        if "initializator" in self.kwargs: kwargs = deepcopy(self.kwargs["initializator"])
+        else: kwargs = dict()
+
+        kwargs["ga_engine"] = self
+
+        # Return the kwargs
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mutator_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the pre-defined mutator kwargs or create a new dictionary
+        if "mutator" in self.kwargs: kwargs = deepcopy(self.kwargs["mutator"])
+        else: kwargs = dict()
+
+        # pmut=self.pMutation, ga_engine=self
+        kwargs["pmut"] = self.pMutation
+        kwargs["ga_engine"] = self
+
+        # Return the kwargs
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crossover_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "crossover" in self.kwargs: return self.kwargs["crossover"]
+        else: return dict()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def callback_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "callback" in self.kwargs: return self.kwargs["callback"]
+        else: return dict() # return empty dict
 
     # -----------------------------------------------------------------
 
@@ -532,6 +610,19 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
+    def set_kwargs(self, target, kwargs):
+
+        """
+        This function ...
+        :param target:
+        :param kwargs:
+        :return:
+        """
+
+        self.kwargs[target] = kwargs
+
+    # -----------------------------------------------------------------
+
     def set_ranges(self, minima, maxima):
 
         """
@@ -564,9 +655,7 @@ class GeneticEngine(object):
 
         """
         Sets the sort type, constants.sortType["raw"]/constants.sortType["scaled"]
-        Example:
-           >>> ga_engine.setSortType(constants.sortType["scaled"])
-
+        Example: ga_engine.setSortType(constants.sortType["scaled"])
         :param sort_type: the Sort Type
         """
 
@@ -727,8 +816,10 @@ class GeneticEngine(object):
 
     def __gp_catch_functions(self, prefix):
 
-        """ Internally used to catch functions with some specific prefix
-        as non-terminals of the GP core """
+        """
+        Internally used to catch functions with some specific prefix
+        as non-terminals of the GP core
+        """
 
         import __main__ as mod_main
 
@@ -766,7 +857,8 @@ class GeneticEngine(object):
         self.internalPop.create(minimax=self.minimax)
 
         # Initialize the population (initializes all individuals of the population)
-        self.internalPop.initialize(ga_engine=self)
+        #self.internalPop.initialize(ga_engine=self)
+        self.internalPop.initialize(**self.initializator_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -884,6 +976,8 @@ class GeneticEngine(object):
 
         crossover_empty = self.select(popID=self.currentGeneration).crossover.isEmpty()
 
+        mutator_kwargs = self.mutator_kwargs
+
         # Loop over the population
         for i in xrange(0, size_iterate, 2):
 
@@ -891,18 +985,20 @@ class GeneticEngine(object):
             genomeDad = self.select(popID=self.currentGeneration)
 
             if not crossover_empty and self.pCrossover >= 1.0:
-                for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2):
+                for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
                     (sister, brother) = it
             else:
                 if not crossover_empty and utils.randomFlipCoin(self.pCrossover):
-                    for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2):
+                    for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
                         (sister, brother) = it
                 else:
                     sister = genomeMom.clone()
                     brother = genomeDad.clone()
 
-            sister.mutate(pmut=self.pMutation, ga_engine=self)
-            brother.mutate(pmut=self.pMutation, ga_engine=self)
+            #sister.mutate(pmut=self.pMutation, ga_engine=self)
+            #brother.mutate(pmut=self.pMutation, ga_engine=self)
+            sister.mutate(**mutator_kwargs)
+            brother.mutate(**mutator_kwargs)
 
             new_population.internalPop.append(sister)
             new_population.internalPop.append(brother)
@@ -913,12 +1009,13 @@ class GeneticEngine(object):
             genomeDad = self.select(popID=self.currentGeneration)
 
             if utils.randomFlipCoin(self.pCrossover):
-                for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1):
+                for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1, **self.crossover_kwargs):
                     (sister, brother) = it
             else:
                 sister = prng.choice([genomeMom, genomeDad])
                 sister = sister.clone()
-                sister.mutate(pmut=self.pMutation, ga_engine=self)
+                #sister.mutate(pmut=self.pMutation, ga_engine=self)
+                sister.mutate(**mutator_kwargs)
 
             new_population.internalPop.append(sister)
 
@@ -942,7 +1039,7 @@ class GeneticEngine(object):
 
         # Evaluate
         #print(self.generation_description)
-        self.new_population.evaluate(silent=silent)
+        self.new_population.evaluate(silent, **self.evaluator_kwargs)
 
         # Replace population
         self.replace_internal_population()
@@ -1011,7 +1108,7 @@ class GeneticEngine(object):
             for i in xrange(self.nElitismReplacement):
 
                 ##re-evaluate before being sure this is the best
-                # self.internalPop.bestRaw(i).evaluate() # IS THIS REALLY NECESSARY ?
+                # self.internalPop.bestRaw(i).evaluate(**self.evaluator_kwargs) # IS THIS REALLY NECESSARY ?
 
                 if self.internalPop.bestRaw(i).score > new_population.bestRaw(i).score:
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
@@ -1021,7 +1118,7 @@ class GeneticEngine(object):
             for i in xrange(self.nElitismReplacement):
 
                 ##re-evaluate before being sure this is the best
-                # self.internalPop.bestRaw(i).evaluate() # IS THIS REALLY NECESSARY ?
+                # self.internalPop.bestRaw(i).evaluate(**self.evaluator_kwargs) # IS THIS REALLY NECESSARY ?
 
                 if self.internalPop.bestRaw(i).score < new_population.bestRaw(i).score:
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
@@ -1089,13 +1186,13 @@ class GeneticEngine(object):
 
         """
 
-        # Initialize
+        # 1. Initialize
         self.initialize_evolution()
 
-        # Do the evolution loop
+        # 2. Do the evolution loop
         self.evolve_loop(freq_stats, progress_bar=progress_bar)
 
-        # Finish evolution, return best individual
+        # 3. Finish evolution, return best individual
         return self.finish_evolution()
 
     # -----------------------------------------------------------------
@@ -1141,7 +1238,7 @@ class GeneticEngine(object):
         log.info("Evaluating and sorting the initial population ...")
 
         # Evaluate and sort the internal population
-        self.internalPop.evaluate(silent=True)
+        self.internalPop.evaluate(True, **self.evaluator_kwargs)
         self.sort_internal_population()
 
     # -----------------------------------------------------------------
@@ -1240,8 +1337,12 @@ class GeneticEngine(object):
             self.internalPop.sort()
 
         if not self.stepCallback.isEmpty():
-            for it in self.stepCallback.applyFunctions(self):
-                stopFlagCallback = it
+            if "callback" in self.kwargs:
+                for it in self.stepCallback.applyFunctions(self, **self.kwargs["callback"]):
+                    stopFlagCallback = it
+            else:
+                for it in self.stepCallback.applyFunctions(self):
+                    stopFlagCallback = it
 
         if not self.terminationCriteria.isEmpty():
             for it in self.terminationCriteria.applyFunctions(self):

@@ -29,7 +29,7 @@ class Command(object):
     This class ...
     """
 
-    def __init__(self, command, description, settings, input_dict, cwd=None):
+    def __init__(self, command, description, settings, input_dict, cwd=None, finish=None):
 
         """
         This function ...
@@ -37,6 +37,7 @@ class Command(object):
         :param settings:
         :param input_dict:
         :param cwd:
+        :param finish:
         """
 
         # Set working directory
@@ -48,6 +49,7 @@ class Command(object):
         self.settings = settings
         self.input_dict = input_dict
         self.cwd = cwd
+        self.finish = finish
 
 # -----------------------------------------------------------------
 
