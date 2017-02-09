@@ -10,9 +10,43 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
+from functools import partial
+
 # Import the relevant PTS classes and modules
 from ..core.tools.logging import log
 from ..core.basics.range import RealRange, IntegerRange
+from ..core.tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
+
+# -----------------------------------------------------------------
+
+def print_generation(ga_engine):
+
+    """
+    This function ...
+    :param ga_engine:
+    :return:
+    """
+
+    #percent = self.currentGeneration * 100 / float(self.nGenerations)
+    #message = "Gen. %d (%.2f%%):" % (self.currentGeneration, percent)
+
+    print("Generation " + str(ga_engine.currentGeneration) + "/" + str(ga_engine.nGenerations))
+
+# -----------------------------------------------------------------
+
+def refresh_progress_bar(ga_engine, **kwargs):
+
+    """
+    This function ...
+    :param ga_engine:
+    :return:
+    """
+
+    bar = kwargs.pop("bar")
+
+    counter = ga_engine.currentGeneration
+    bar.show(counter)
 
 # -----------------------------------------------------------------
 
@@ -29,18 +63,21 @@ def call(settings, input_dict):
     log.info("Calling Pyevolve ...")
 
     # Import pyevolve modules
-    #from pyevolve import logEnable
     from pyevolve.G1DList import G1DList
+    from pyevolve.G2DList import G2DList
+    from pyevolve.G1DBinaryString import G1DBinaryString
+    from pyevolve.G2DBinaryString import G2DBinaryString
     from pyevolve.GSimpleGA import GSimpleGA, RawScoreCriteria
-    from pyevolve import Initializators
-    from pyevolve import Mutators
-    from pyevolve import Consts
-
-    #logEnable(None, "DEBUG")
+    from pyevolve.Initializators import G1DListInitializatorInteger, G1DListInitializatorReal
+    from pyevolve.Mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary, G1DListMutatorRealRange, G1DListMutatorRealGaussian
+    from pyevolve.Consts import minimaxType
 
     # Get the settings
     output = settings["output"]
+    genome_type = settings["genome_type"] if "genome_type" in settings else None
+    genome_dimension = settings["genome_dimension"] if "genome_dimension" in settings else None
     nparameters = settings["nparameters"] if "nparameters" in settings else None
+    nparameters2 = settings["nparameters2"] if "nparameters2" in settings else None
     nindividuals = settings["nindividuals"] if "nindividuals" in settings else None
     parameter_range = settings["parameter_range"] if "parameter_range" in settings else None
     best_raw_score = settings["best_raw_score"] if "best_raw_score" in settings else None
@@ -63,8 +100,40 @@ def call(settings, input_dict):
     crossover = input_dict["crossover"] if "crossover" in input_dict else None
     callback = input_dict["callback"] if "callback" in input_dict else None
 
+    # Get kwargs for the functions
+    evaluator_kwargs = input_dict["evaluator_kwargs"] if "evaluator_kwargs" in input_dict else None
+    initializator_kwargs = input_dict["initializator_kwargs"] if "initializator_kwargs" in input_dict else None
+    mutator_kwargs = input_dict["mutator_kwargs"] if "mutator_kwargs" in input_dict else None
+    crossover_kwargs = input_dict["crossover_kwargs"] if "crossover_kwargs" in input_dict else None
+    callback_kwargs = input_dict["callback_kwargs"] if "callback_kwargs" in input_dict else None
+
+    # Create partial functions with kwargs set
+    if evaluator_kwargs is not None: evaluator = partial(evaluator, **evaluator_kwargs)
+    if initializator is not None and initializator_kwargs is not None: initializator = partial(initializator, **initializator_kwargs)
+    if mutator is not None and mutator_kwargs is not None: mutator = partial(mutator, **mutator)
+    if crossover is not None and crossover_kwargs is not None: crossover = partial(crossover, **crossover)
+    if callback is not None and callback_kwargs is not None: callback = partial(callback, **crossover)
+
     # Create genome instance
-    if genome is not None: genome = G1DList(nparameters)
+    if genome is not None:
+
+        # List genome
+        if genome_type == "list":
+
+            # Create 1D genome
+            if genome_dimension == 1: genome = G1DList(nparameters)
+            elif genome_dimension == 2: genome = G2DList(nparameters, nparameters2)
+            else: raise ValueError("Dimensions > 2 are not supported")
+
+        # Binary string genome
+        elif genome_type == "binary_string":
+
+            # 1D or 2D
+            if genome_dimension == 1: genome = G1DBinaryString(nparameters)
+            elif genome_dimension == 2: genome = G2DBinaryString(nparameters, nparameters2)
+            else: raise ValueError("Dimensions > 2 are not supported")
+
+    # Set genome properties
     if parameter_range is not None: genome.setParams(rangemin=parameter_range.min, rangemax=parameter_range.max)
     if best_raw_score is not None: genome.setParams(bestrawscore=best_raw_score)
     if round_decimal is not None: genome.setParams(rounddecimal=round_decimal)
@@ -72,21 +141,21 @@ def call(settings, input_dict):
     # Set initializator
     if initializator is not None: genome.initializator.set(initializator)
     else:
-        if isinstance(parameter_range, IntegerRange): genome.initializator.set(Initializators.G1DListInitializatorInteger)
-        elif isinstance(parameter_range, RealRange): genome.initializator.set(Initializators.G1DListInitializatorReal)
+        if isinstance(parameter_range, IntegerRange): genome.initializator.set(G1DListInitializatorInteger)
+        elif isinstance(parameter_range, RealRange): genome.initializator.set(G1DListInitializatorReal)
         else: raise ValueError("Invalid parameter range")
 
     # Set mutation method
     if mutator is not None: genome.mutator.set(mutator)
     else:
         if isinstance(parameter_range, IntegerRange):
-            if mutation_method == "range": genome.mutator.set(Mutators.G1DListMutatorIntegerRange)
-            elif mutation_method == "gaussian": genome.mutator.set(Mutators.G1DListMutatorIntegerGaussian)
-            elif mutation_method == "binary": genome.mutator.set(Mutators.G1DListMutatorIntegerBinary)
+            if mutation_method == "range": genome.mutator.set(G1DListMutatorIntegerRange)
+            elif mutation_method == "gaussian": genome.mutator.set(G1DListMutatorIntegerGaussian)
+            elif mutation_method == "binary": genome.mutator.set(G1DListMutatorIntegerBinary)
             else: raise ValueError("Mutation method '" + mutation_method + "' not recognized")
         elif isinstance(parameter_range, RealRange):
-            if mutation_method == "range": genome.mutator.set(Mutators.G1DListMutatorRealRange)
-            elif mutation_method == "gaussian": genome.mutator.set(Mutators.G1DListMutatorRealGaussian)
+            if mutation_method == "range": genome.mutator.set(G1DListMutatorRealRange)
+            elif mutation_method == "gaussian": genome.mutator.set(G1DListMutatorRealGaussian)
             else: raise ValueError("Mutation method '" + mutation_method + "' not valid for genome of real values")
         else: raise ValueError("Invalid parameter range")
 
@@ -99,7 +168,7 @@ def call(settings, input_dict):
     # Genetic Algorithm Instance
     ga = GSimpleGA(genome)
     ga.terminationCriteria.set(RawScoreCriteria)
-    ga.setMinimax(Consts.minimaxType[min_or_max])
+    ga.setMinimax(minimaxType[min_or_max])
     ga.setGenerations(ngenerations)
     if crossover_rate is not None: ga.setCrossoverRate(crossover_rate)
     ga.setPopulationSize(nindividuals)
@@ -111,7 +180,16 @@ def call(settings, input_dict):
     # -----------------------------------------------------------------
 
     # Do the evolution
-    ga.evolve(freq_stats=stats_freq)
+    with Bar(label='', width=32, hide=None, empty_char=BAR_EMPTY_CHAR, filled_char=BAR_FILLED_CHAR, expected_size=ga.nGenerations, every=1, add_datetime=True) as bar:
+
+        # Create partial function for the callback
+        refresh_progress_bar_partial = partial(refresh_progress_bar, **{"bar": bar})
+
+        # Set callback function to print generation
+        ga.stepCallback.set(refresh_progress_bar_partial)
+
+        # Evolve
+        ga.evolve(freq_stats=stats_freq)
 
     # -----------------------------------------------------------------
 

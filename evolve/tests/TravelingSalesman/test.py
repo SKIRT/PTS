@@ -24,6 +24,7 @@ from pts.evolve.genomes.list1d import G1DList
 from pts.evolve.allele import GAlleles, GAlleleList
 from pts.evolve.crossovers import G1DListCrossoverOX
 from pts.evolve.mutators import G1DListMutatorSwap
+from pts.core.basics.animation import Animation
 
 PIL_SUPPORT = None
 try:
@@ -331,6 +332,33 @@ def create_genome(coords):
 
 # -----------------------------------------------------------------
 
+def create_genome_reference(coords):
+
+    """
+    This function creates the genome, but using the original Pyevolve classes
+    :param coords:
+    :return:
+    """
+
+    from pyevolve.GAllele import GAlleles as _GAlleles
+    from pyevolve.GAllele import GAlleleList as _GAlleleList
+    from pyevolve.G1DList import G1DList as _G1DList
+
+    # Set the alleles to the cities numbers
+    setOfAlleles = _GAlleles(homogeneous=True)
+    lst = [i for i in xrange(len(coords))]
+    a = _GAlleleList(lst)
+    setOfAlleles.add(a)
+
+    # Create genome
+    genome = _G1DList(len(coords))
+    genome.setParams(allele=setOfAlleles)
+
+    # Return the genome
+    return genome
+
+# -----------------------------------------------------------------
+
 # For database ...
 #sqlite_adapter = DBAdapters.DBSQLite(identify="tsp", commit_freq=1000, frequency=500)
 
@@ -413,21 +441,34 @@ def finish_optimize(optimizer, **kwargs):
 
     # Determine path
     temp_path = optimizer.config.path
-    filepath = fs.join(temp_path, "tsp_result.png")
+    filepath = fs.join(temp_path, "best.png")
 
+    # Write plot
     if PIL_SUPPORT: write_tour_to_img(coords, best, filepath)
     else: print("No PIL detected, cannot plot the graph !")
+
+    # Create animated gif
+    animation = Animation()
+
+    # Open the images present in the directory
+    for path in fs.files_in_path(temp_path, extension="png", exact_not_name="best"):
+
+        # Add frame to the animation
+        animation.add_frame_from_file(path)
+
+    # Save the animation
+    animation_path = fs.join(temp_path, "animation.gif")
+    animation.saveto(animation_path)
 
 # -----------------------------------------------------------------
 
 # Add the finish_optimize command
-partialized = partial(finish_optimize, **{"coordinates": coords})
-#commands.append(partialized)
+partialized_finish = partial(finish_optimize, **{"coordinates": coords})
 
 # -----------------------------------------------------------------
 
 # Construct the command
-optimize = Command("optimize", "solving the traveling salesman problem", settings_optimize, input_optimize, cwd=".", finish=partialized)
+optimize = Command("optimize", "solving the traveling salesman problem", settings_optimize, input_optimize, cwd=".", finish=partialized_finish)
 
 # Add the command
 commands.append(optimize)
@@ -441,6 +482,13 @@ def test(temp_path):
     """
     This function ...
     """
+
+    # Remove 'callback' from the settings dictionary: we don't want to plot now
+    if "callback" in input_optimize: del input_optimize["callback"]
+
+    # Make new genome, made from the original Pyevolve classes
+    genome = create_genome_reference(coords)
+    input_optimize["genome"] = genome
 
     # Solve the problem with the original Pyevolve implementation
     best = reference.call(settings_optimize, input_optimize)

@@ -22,6 +22,7 @@ definition.add_positional_optional("tests", "string_list", "test(s) to perform (
 definition.add_flag("keep", "keep the output")
 definition.add_flag("show", "show results")
 definition.add_flag("write", "write results")
+definition.add_flag("open_output", "open the output directory after each test for manual inspection")
 
 # Advanced
 definition.add_flag("all", "perform all tests for the given subproject")

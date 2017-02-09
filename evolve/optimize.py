@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from textwrap import wrap
+
 # Import the relevant PTS classes and modules
 from ..core.basics.configurable import Configurable
 from .genomes.list1d import G1DList
@@ -25,6 +28,7 @@ from .engine import GeneticEngine, RawScoreCriteria
 from . import constants
 from ..core.basics.range import RealRange, IntegerRange
 from ..core.tools import formatting as fmt
+from ..core.tools import stringify
 
 # -----------------------------------------------------------------
 
@@ -186,6 +190,7 @@ class Optimizer(Configurable):
                 # Create 1D genome
                 if self.config.genome_dimension == 1: self.genome = G1DList(self.config.nparameters)
                 elif self.config.genome_dimension == 2: self.genome = G2DList(self.config.nparameters, self.config.nparameters2)
+                else: raise ValueError("Dimensions > 2 are not supported")
 
             # Binary string genome
             elif self.config.genome_type == "binary_string":
@@ -193,6 +198,7 @@ class Optimizer(Configurable):
                 # 1D or 2D
                 if self.config.genome_dimension == 1: self.genome = G1DBinaryString(self.config.nparameters)
                 elif self.config.genome_dimension == 2: self.genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
+                else: raise ValueError("Dimensions > 2 are not supported")
 
             # Invalid option
             else: raise ValueError("Genome type must be 'list' or 'binary_string")
@@ -347,7 +353,8 @@ def show_best(best):
 
     print(fmt.yellow + "  Genome:" + fmt.reset)
     print("")
-    for gene in genome: print("    " + str(gene))
+    #for gene in genome: print("    " + str(gene))
+    print("   " + "\n     ".join(wrap(stringify.stringify([gene for gene in genome])[1], 100)))
     print("")
 
     print(fmt.yellow + "  Score: " + fmt.reset + str(score))

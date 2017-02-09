@@ -1264,7 +1264,7 @@ class GeneticEngine(object):
         """
 
         # Inform the user ...
-        log.info("Starting the evolutional algorithm ...")
+        log.info("Starting the evolutionary algorithm ...")
 
         if progress_bar:
 

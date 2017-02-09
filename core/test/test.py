@@ -23,6 +23,7 @@ from ..basics.map import Map
 from ..basics.configuration import DictConfigurationSetter
 from ..tools import formatting as fmt
 from ..tools import strings
+from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -32,7 +33,7 @@ class PTSTest(object):
     This class ...
     """
 
-    def __init__(self, name, description, setup_function, test_function, output_path, keep=False):
+    def __init__(self, name, description, setup_function, test_function, output_path, keep=False, open_output=False):
 
         """
         This function ...
@@ -41,6 +42,7 @@ class PTSTest(object):
         :param setup_function:
         :param test_function:
         :param keep:
+        :param open_output:
         """
 
         # Properties of this test
@@ -50,6 +52,7 @@ class PTSTest(object):
         self.test_function = test_function
         self.output_path = output_path
         self.keep = keep
+        self.open_output = open_output
 
         # The runnable components
         self.components = OrderedDict()
@@ -81,7 +84,10 @@ class PTSTest(object):
         # 6. Write
         self.write()
 
-        # 7. Clear
+        # 7. Open the output directory for inspection
+        if self.open_output: self.open()
+
+        # 8. Clear
         if not self.keep: self.clear()
 
     # -----------------------------------------------------------------
@@ -220,7 +226,7 @@ class PTSTest(object):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Showing ...")
 
     # -----------------------------------------------------------------
 
@@ -233,6 +239,21 @@ class PTSTest(object):
 
         # Inform the user
         log.info("Writing ...")
+
+    # -----------------------------------------------------------------
+
+    def open(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Opening the test output directory ...")
+
+        # Open the output directory
+        fs.open_directory(self.output_path, wait=True)
 
     # -----------------------------------------------------------------
 

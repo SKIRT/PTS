@@ -90,35 +90,51 @@ def touch(path):
 
 # -----------------------------------------------------------------
 
-def open_file(path):
+def open_file(path, wait=False):
 
     """
     This function ...
     :param path:
+    :param wait:
     :return:
     """
 
     # Check if existing
     if not is_file(path): raise ValueError("The file '" + path + "' does not exist")
 
-    if platform.system() == "Darwin": subprocess.Popen(["open", path])
-    else: subprocess.Popen(["xdg-open", path])
+    # Determine command
+    if platform.system() == "Darwin": command = ["open", path]
+    else: command = ["xdg-open", path]
+
+    # Call the command
+    if wait:
+        subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+        time.wait(10)
+    else: subprocess.Popen(command)
 
 # -----------------------------------------------------------------
 
-def open_directory(path):
+def open_directory(path, wait=False):
 
     """
     This function ...
     :param path:
+    :param wait:
     :return:
     """
 
     # Check if existing
-    if not is_directory(path): raise ValueError("The file '" + path + "' does not exist")
+    if not is_directory(path): raise ValueError("The directory '" + path + "' does not exist")
 
-    if platform.system() == "Darwin": subprocess.Popen(["open", path])
-    else: subprocess.Popen(["xdg-open", path])
+    # Determine command
+    if platform.system() == "Darwin": command = ["open", path]
+    else: command = ["xdg-open", path]
+
+    # Call the command
+    if wait:
+        subprocess.call(command, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
+        time.wait(10)
+    else: subprocess.Popen(command)
 
 # -----------------------------------------------------------------
 

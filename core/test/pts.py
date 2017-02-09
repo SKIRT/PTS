@@ -270,6 +270,9 @@ class PTSTestSuite(Configurable):
             for subproject in self.config.subprojects:
                 self.test_names[subproject] = tests_for_subproject(subproject)
 
+        # If the 'open_output' flag is enabled, also enable the 'keep' flag
+        if self.config.open_output: self.config.keep = True
+
     # -----------------------------------------------------------------
 
     def prompt(self):
@@ -379,7 +382,7 @@ class PTSTestSuite(Configurable):
                 test_function = test_module.test
 
                 # Create Test instance
-                test = PTSTest(name, description, setup_function, test_function, temp_path, self.config.keep)
+                test = PTSTest(name, description, setup_function, test_function, temp_path, self.config.keep, self.config.open_output)
 
                 # Loop over the commands
                 for command in commands:

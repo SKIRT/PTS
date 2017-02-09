@@ -68,6 +68,19 @@ class Animation(object):
 
     # -----------------------------------------------------------------
 
+    def add_frame_from_file(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        frame = imageio.imread(path)
+        self.add_frame(frame)
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """

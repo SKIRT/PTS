@@ -234,31 +234,4 @@ class SkirtExec:
     def run_directory(self):
         return os.path.join(self.root_directory, "run")
 
-    ## This function installs SKIRT
-    def install(self, private=False):
-
-        # Determine the path to the home directory
-        home_dir = os.path.expanduser("~")
-
-        # Create the SKIRT directory
-        root_dir = os.path.join(home_dir, "SKIRT")
-        os.mkdir(root_dir)
-
-        # Create the SKIRT run, git and release directories
-        run_dir = os.path.join(root_dir, "run")
-        repo_dir = os.path.join(root_dir, "git")
-        release_dir = os.path.join(root_dir, "release")
-        fs.create_directories(run_dir, repo_dir, release_dir)
-
-        #  Clone the SKIRT repository
-        if private: subprocess.call("git clone git@github.ugent.be:SKIRT/SKIRT.git git", cwd=root_dir)
-
-        else: subprocess.call("git clone https://github.com/SKIRT/SKIRT.git git", cwd=root_dir)
-
-        # Compile the SKIRT code
-        subprocess.call("./makeSKIRT.sh", cwd=repo_dir)
-
-        # Put SKIRT in the PATH environment variable
-        # ...
-
 # -----------------------------------------------------------------
