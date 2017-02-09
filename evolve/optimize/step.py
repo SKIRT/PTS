@@ -27,6 +27,7 @@ from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import filesystem as fs
 from ...core.tools.random import save_state, load_state
 from ...core.basics.configuration import Configuration
+from ..core.dbadapters import DBFileCSV, DBSQLite
 
 # -----------------------------------------------------------------
 
@@ -57,6 +58,9 @@ class StepOptimizer(Configurable):
 
         # The scores of the past generation
         self.scores = None
+
+        # The database
+        self.database = None
 
         # The path
         self.path = None
@@ -95,6 +99,14 @@ class StepOptimizer(Configurable):
 
         # Set the engine
         optimizer.engine = engine
+
+        # Set the database
+        database_path = fs.join(dir_path, "database.csv")
+        optimizer.database = DBFileCSV(filename=database_path)
+
+        #database_path = fs.join(dir_path, "database.db")
+        #optimizer.database = DBSQLite(dbname=database_path)
+        # Opening is done down below
 
         # Set the path
         optimizer.path = dir_path
@@ -176,6 +188,9 @@ class StepOptimizer(Configurable):
         # Inform the user
         log.info("Initializing ...")
 
+        # 1. Initialize databse
+        self.initialize_database()
+
         # 1. Initialize genome
         self.initialize_genome(**kwargs)
 
@@ -184,6 +199,27 @@ class StepOptimizer(Configurable):
 
         # 3. Initialize the evolution (the initial generation)
         self.initialize_evolution()
+
+    # -----------------------------------------------------------------
+
+    def initialize_database(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filepath = fs.join(fs.cwd(), "database.csv")
+
+        # Create database adapter
+        self.database = DBFileCSV(filename=filepath, identify="run_01", frequency=1, reset=True)
+
+        #filepath = fs.join(fs.cwd(), "database.db")
+
+        #self.database = DBSQLite(identify="ex1", resetDB=True)
+        #self.database = DBSQLite(dbname=filepath, identify="ex1", resetDB=True, commit_freq=1, frequency=1)
+
+        #print(self.engine.dbAdapter)
 
     # -----------------------------------------------------------------
 
@@ -302,7 +338,7 @@ class StepOptimizer(Configurable):
         callback = kwargs.pop("callback") if "callback" in kwargs else None
 
         # Get the database adapter function
-        adapter = kwargs.pop("adapter") if "adapter" in kwargs else None
+        #adapter = kwargs.pop("adapter") if "adapter" in kwargs else None
 
         # Get kwargs for the different functions
         evaluator_kwargs = kwargs.pop("evaluator_kwargs") if "evaluator_kwargs" in kwargs else None
@@ -315,7 +351,12 @@ class StepOptimizer(Configurable):
         if callback is not None: self.engine.stepCallback.set(callback)
 
         # Set the database adapter
-        if adapter is not None: self.engine.setDBAdapter(adapter)
+        #if adapter is not None:
+        #    adapter.open(self.engine)
+        #    self.engine.setDBAdapter(adapter)
+
+        self.database.open(self.engine)
+        self.engine.setDBAdapter(self.database)
 
         # Set kwargs
         if evaluator_kwargs is not None: self.engine.set_kwargs("evaluator", evaluator_kwargs)
@@ -353,6 +394,10 @@ class StepOptimizer(Configurable):
 
         # Inform the user
         log.info("Evolve ...")
+
+        # Set the database adapter again
+        self.database.open(self.engine)
+        self.engine.setDBAdapter(self.database)
 
         # Make sure we don't stop unexpectedly, always increment the number of generations we want
         # (it doesn't matter what the value is)
@@ -492,6 +537,9 @@ class StepOptimizer(Configurable):
         # Save the configuration
         self.save_config(dir_path)
 
+        # Save the database
+        self.save_database(dir_path)
+
     # -----------------------------------------------------------------
 
     def save_engine(self, dir_path):
@@ -536,5 +584,18 @@ class StepOptimizer(Configurable):
 
         # Save the configuration
         self.config.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def save_database(self, dir_path):
+
+        """
+        This function ...
+        :param dir_path:
+        :return:
+        """
+
+        #pass
+        self.database.close()
 
 # -----------------------------------------------------------------

@@ -251,7 +251,7 @@ class RemotePythonSession(object):
         """
 
         # Inform the user
-        log.info("Attaching to the screen session ...")
+        log.info("Attaching to the screen session " + self.screen_name + " ...")
 
         # Tmux or screen
         if self.tmux: self.remote.execute("tmux a -t " + self.screen_name, expect=">>>")

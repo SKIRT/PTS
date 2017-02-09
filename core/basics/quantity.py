@@ -157,7 +157,8 @@ class PhotometricQuantity(Quantity):
         :return:
         """
 
-        return copy.deepcopy(self)
+        #return copy.deepcopy(self)
+        return PhotometricQuantity(self.value, self.unit.copy())
 
     # -----------------------------------------------------------------
 

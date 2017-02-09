@@ -501,6 +501,20 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def download_image_from_url(self, url, path):
+
+        """
+        This function ...
+        :param url:
+        :param path:
+        :return:
+        """
+
+        # Download
+        network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+    # -----------------------------------------------------------------
+
     def download_images(self, galaxy_name, path, error_maps=True):
 
         """

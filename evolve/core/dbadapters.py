@@ -204,6 +204,7 @@ class DBFileCSV(DBBaseAdapter):
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       stats = ga_engine.getStatistics()
       generation = ga_engine.getCurrentGeneration()
       line = [self.getIdentify(), generation]
@@ -386,7 +387,7 @@ class DBSQLite(DBBaseAdapter):
 
       """
       if not self.cursorPool:
-         log.debug("Creating new cursor for database...")
+         log.debug("Creating new cursor for database ...")
          self.cursorPool = self.connection.cursor()
          return self.cursorPool
       else:
@@ -742,7 +743,7 @@ class DBMySQLAdapter(DBBaseAdapter):
 
       """
       if not self.cursorPool:
-         log.debug("Creating new cursor for database...")
+         log.debug("Creating new cursor for database ...")
          self.cursorPool = self.connection.cursor()
          return self.cursorPool
       else:

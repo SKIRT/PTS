@@ -167,9 +167,14 @@ class ImageFetcher(DataComponent):
             # Determine the path to the image file
             path = fs.join(self.data_images_paths[origin], name)
 
+            # Check if the image is already present
+            if fs.is_file(path):
+                log.warning("The '" + name + "' image is already present")
+                continue
+
             # Download the image
             url = self.dustpedia_image_urls[origin][name]
-            self.database.download_file(url, path, progress_bar=log.is_debug())
+            self.database.download_image_from_url(url, path)
 
     # -----------------------------------------------------------------
 
@@ -186,7 +191,7 @@ class ImageFetcher(DataComponent):
         # Fetch the GALEX data from the DustPedia archive
         self.fetch_from_dustpedia("GALEX")
 
-        local_output_path = fs.create_directories_in(self.data_images_paths["GALEX"], "temp")
+        local_output_path = fs.create_directory_in(self.data_images_paths["GALEX"], "temp")
 
         # Create the configuration dictionary
         config_dict = dict()

@@ -304,6 +304,9 @@ class GeneticEngine(object):
         # Inform the user
         log.info("Saving the genetic algorithm engine to '" + path + "' ...")
 
+        # Remove db adapter
+        self.dbAdapter = None
+
         # Set the new path as the current path and save
         self.path = path
         serialization.dump(self, path, protocol=2)
@@ -767,7 +770,8 @@ class GeneticEngine(object):
 
     def getDBAdapter(self):
 
-        """ Gets the DB Adapter of the GA Engine
+        """
+        Gets the DB Adapter of the GA Engine
         :rtype: a instance from one of the :mod:`DBAdapters` classes
         """
 
@@ -777,7 +781,8 @@ class GeneticEngine(object):
 
     def setMaxTime(self, seconds):
 
-        """ Sets the maximun evolve time of the GA Engine
+        """
+        Sets the maximun evolve time of the GA Engine
         :param seconds: maximum time in seconds
         """
 
@@ -961,6 +966,11 @@ class GeneticEngine(object):
         This function ...
         :return:
         """
+
+        if self.dbAdapter:
+            #print("HERE")
+            if self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0:
+                self.dumpStatsDB()
 
         # Inform the user
         if not silent: log.info("Creating generation " + str(self.currentGeneration) + " ...")
@@ -1165,7 +1175,9 @@ class GeneticEngine(object):
         Dumps the current statistics to database adapter
         """
 
-        log.debug("Dumping stats to the DB Adapter")
+        # Debugging
+        log.debug("Dumping stats to the DB Adapter ...")
+
         self.internalPop.statistics()
         self.dbAdapter.insert(self)
 
