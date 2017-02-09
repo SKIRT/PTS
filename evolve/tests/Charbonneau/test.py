@@ -103,6 +103,8 @@ def evolve_callback(ga_engine, **kwargs):
 
     #return coords, cm
 
+    pass
+
 # -----------------------------------------------------------------
 
 # Initialize list for the commands

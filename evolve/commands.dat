@@ -1,2 +1,3 @@
 # Command | Configuration | Class | Configuration method | Description
 optimize | -- | optimize.optimize.Optimizer | arguments | Optimize a problem with genetic algorithms
+optimize_steps | optimize | optimize.step.StepOptimizer | arguments | Optimize a problem with genetic algorithms in steps

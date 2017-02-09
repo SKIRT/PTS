@@ -187,9 +187,13 @@ def find_command(cls):
 
     # print(table)
 
+    #print(relative_class_subproject)
+
     for i in range(len(table["Path"])):
 
         # print(table["Path"][i], relative_class_subproject)
+
+        #print(table["Path"][i], relative_class_subproject)
 
         if table["Path"][i] == relative_class_subproject:
 
