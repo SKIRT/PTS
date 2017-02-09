@@ -159,7 +159,7 @@ types["exp_dustmass"] = "dust mass"
 
 # Set units
 units = Map()
-units["dustmass"] = u("Msun")
+units["exp_dustmass"] = u("Msun")
 
 # Set the range of the dust mass
 dustmass_range = QuantityRange(0.1*dust_mass, 100*dust_mass)

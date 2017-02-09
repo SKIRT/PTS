@@ -201,8 +201,6 @@ class FittingComponent(ModelingComponent):
 
         # Initialize the generations table if necessary
         if not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
-            print(self.free_parameter_labels)
-            print(self.parameter_units)
             generations_table = GenerationsTable(parameters=self.free_parameter_labels, units=self.parameter_units)
             generations_table.saveto(self.generations_table_path)
 
