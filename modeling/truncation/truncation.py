@@ -84,10 +84,10 @@ class Truncator(TruncationComponent):
         self.truncate()
 
         # Create the truncation ellipse
-        self.create_ellipse()
+        #self.create_ellipse()
 
         # 4. Create the masks
-        self.create_masks()
+        #self.create_masks()
 
         # 5. Writing
         self.write()
@@ -207,7 +207,8 @@ class Truncator(TruncationComponent):
         log.info("Making truncated images ...")
 
         # Loop over the different scale factors
-        for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        #for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
 
             # Truncate the images with this factor
             truncated = self.make_truncated_images(factor)
@@ -297,56 +298,6 @@ class Truncator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def truncate_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Truncating the images ...")
-
-        # Loop over all the images
-        for image in self.images:
-
-            # Inform the user
-            log.debug("Truncating the " + image.name + " image ...")
-
-            # Inform the user
-            log.debug("Creating mask of truncated pixels ...")
-
-            # Create ellipse in image coordinates from ellipse in sky coordinates for this image
-            ellipse = self.disk_ellipse.to_pixel(image.wcs)
-
-            # Create mask from ellipse
-            inverted_mask = Mask.from_shape(ellipse, image.xsize, image.ysize, invert=True)
-
-            # Get mask of padded (and bad) pixels, for example for WISE, this mask even covers pixels within the elliptical region
-            mask = inverted_mask + image.masks.bad
-            if "padded" in image.masks: mask += image.masks.padded
-
-            # Truncate the primary frame
-            image.frames.primary[mask] = 0.0
-
-            # Truncate the errors frame
-            image.frames.errors[mask] = 0.0
-            image.frames.errors[np.isnan(image.frames.errors)] = 0.0
-
-            # Remove all other frames
-            image.remove_frames_except(["primary", "errors"])
-
-            # Remove all masks
-            image.remove_all_masks()
-
-        # Truncate the bulge and disk images
-        mask = Mask.from_shape(self.disk_ellipse.to_pixel(self.disk.wcs), self.disk.xsize, self.disk.ysize, invert=True)
-        self.disk[mask] = 0.0
-        self.bulge[mask] = 0.0
-        self.model[mask] = 0.0
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -384,8 +335,10 @@ class Truncator(TruncationComponent):
         # Inform the user
         log.info("Writing curves ...")
 
+        # Write signal to noise curves
         self.write_signal_to_noise_curves()
 
+        # Write bad pixel curves
         self.write_bad_pixel_curves()
 
     # -----------------------------------------------------------------

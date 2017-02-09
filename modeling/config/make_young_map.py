@@ -21,7 +21,7 @@ definition.add_flag("remove_holes", "remove holes from the total cutoff mask", T
 
 definition.add_optional("factor_range", "real_range", "range (min,max) of values for the factor that denotes the contribution of the old stellar population to the FUV emission", "0.1,0.4", convert_default=True)
 definition.add_optional("factor_nvalues", "integer", "the number of values for the factor", 4)
-definition.add_optional("best_factor", "real", "the best estimate for the value of the factor", 0.1) # WAS 0.2, then 0.15. 0.1 SEEMS BEST WHEN LOOKING AT HISTOGRAMS!
+#definition.add_optional("best_factor", "real", "the best estimate for the value of the factor", 0.1) # WAS 0.2, then 0.15. 0.1 SEEMS BEST WHEN LOOKING AT HISTOGRAMS!
 
 definition.add_optional("histograms_annulus_range", "real_range", "range (min,max) of the radius (relative to the scalelength) of the area for to make histograms of the pixel values of the corrected FUV maps", "0.065,0.28", convert_default=True)
 definition.add_optional("histograms_nbins", "integer", "the number of bins in the histogram plots", 20)

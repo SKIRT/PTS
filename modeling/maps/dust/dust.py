@@ -91,13 +91,13 @@ class DustMapMaker(MapsComponent):
         if self.config.make_cortese: self.make_cortese()
 
         # Make the final map
-        self.make_map()
+        #self.make_map()
 
         # Make the cutoff mask
         self.make_cutoff_mask()
 
         # Cut-off the map
-        self.cutoff_map()
+        #self.cutoff_map()
 
         # 7. Writing
         self.write()
@@ -309,7 +309,7 @@ class DustMapMaker(MapsComponent):
         self.write_error_maps()
 
         # Write the final dust map
-        self.write_map()
+        #self.write_map()
 
         # Write the significance mask
         self.write_significance_masks()

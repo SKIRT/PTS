@@ -96,13 +96,13 @@ class YoungStellarMapMaker(MapsComponent):
         self.make_distributions()
 
         # 4. Normalize the map
-        self.normalize_map()
+        #self.normalize_map()
 
         # Create the cutoff mask
         self.make_cutoff_mask()
 
         # 5. Cut-off map
-        self.cutoff_map()
+        #self.cutoff_map()
 
         # 5. Writing
         self.write()
@@ -200,7 +200,8 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Making the map of young non-ionizing stars ...")
 
         # Loop over the different colour options
-        for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        #for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
 
             # Calculate the non ionizing young stars map from the FUV data
             non_ionizing_stars = self.make_corrected_fuv_map(factor)
@@ -208,12 +209,12 @@ class YoungStellarMapMaker(MapsComponent):
             # Add the attenuation map to the dictionary
             self.corrected_fuv_maps[factor] = non_ionizing_stars
 
-        best_corrected_fuv_map = self.corrected_fuv_maps[self.config.best_factor].copy()
+        #best_corrected_fuv_map = self.corrected_fuv_maps[self.config.best_factor].copy()
         # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-        best_corrected_fuv_map[best_corrected_fuv_map < 0.0] = 0.0
+        #best_corrected_fuv_map[best_corrected_fuv_map < 0.0] = 0.0
 
         # Set the best estimate of the young stars map
-        self.map = best_corrected_fuv_map
+        #self.map = best_corrected_fuv_map
 
     # -----------------------------------------------------------------
 
@@ -370,7 +371,7 @@ class YoungStellarMapMaker(MapsComponent):
         self.write_24mu_histograms()
 
         # Write the final young stellar map
-        self.write_map()
+        #self.write_map()
 
         # Write the significance mask
         self.write_significance_masks()

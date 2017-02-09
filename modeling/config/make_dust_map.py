@@ -10,6 +10,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.config.make_dust_cortese import definition as cortese_definition
 from pts.modeling.config.make_dust_buat import definition as buat_definition
 from pts.modeling.config.make_dust_blackbody import definition as bb_definition
+from pts.modeling.config.make_dust_emission import definition as emission_definition
 
 # -----------------------------------------------------------------
 
@@ -33,11 +34,12 @@ definition.add_flag("make_buat", "make dust map based on Buat", True)
 definition.add_flag("make_cortese", "make dust map based on Cortese", True)
 
 # Best method
-definition.add_optional("best_method", "string", "the method of which to use the resul as the final dust map", "cortese")
+#definition.add_optional("best_method", "string", "the method of which to use the resul as the final dust map", "cortese")
 
-# Sections
+# Sections: different dust map makers
 definition.import_section("cortese", "options for Cortese dust map maker", cortese_definition)
 definition.import_section("buat", "options for Buat dust map maker", buat_definition)
 definition.import_section("black_body", "options for black body dust map maker", bb_definition)
+definition.import_section("emission", "options for emission dust map maker", emission_definition)
 
 # -----------------------------------------------------------------

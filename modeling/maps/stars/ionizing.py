@@ -72,7 +72,10 @@ class IonizingStellarMapMaker(MapsComponent):
         self.corrected_24mu_distributions = dict()
 
         # The map of ionizing stars
-        self.map = None
+        #self.map = None
+
+        # NEW: THE MAPS OF IONIZING STARS
+        self.maps = dict()
 
         # The path to the maps/ionizing/24mu directory
         self.maps_ionizing_24mu_path = None
@@ -128,13 +131,13 @@ class IonizingStellarMapMaker(MapsComponent):
         self.make_distributions()
 
         # 4. Normalize the map
-        self.normalize_map()
+        #self.normalize_map()
 
         # Make the cutoff mask
         self.make_cutoff_mask()
 
         # 5. Cut-off map
-        self.cutoff_map()
+        #self.cutoff_map()
 
         # 5. Writing
         self.write()
@@ -295,7 +298,8 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Making the map of ionizing stars ...")
 
         # Loop over the different colour options
-        for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        #for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
 
             # Calculate the corrected 24 micron image
             corrected = self.make_corrected_24mu_map(factor)
@@ -303,14 +307,22 @@ class IonizingStellarMapMaker(MapsComponent):
             # Add the attenuation map to the dictionary
             self.corrected_24mu_maps[factor] = corrected
 
-        # Young ionizing stars = Ha + 0.031 x MIPS24_corrected
 
-        best_corrected_24mu_map = self.corrected_24mu_maps[self.config.best_factor].copy()
-        # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-        best_corrected_24mu_map[best_corrected_24mu_map < 0.0] = 0.0
+        # NEW: MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT FACTORS
+        for factor in self.corrected_24mu_maps:
 
-        # Calculate ionizing stars map and ratio
-        ionizing = self.halpha + 0.031 * best_corrected_24mu_map
+            # Young ionizing stars = Ha + 0.031 x MIPS24_corrected
+            best_corrected_24mu_map = self.corrected_24mu_maps[factor]
+
+            # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
+            best_corrected_24mu_map[best_corrected_24mu_map < 0.0] = 0.0
+
+            # Calculate ionizing stars map and ratio
+            ionizing = self.halpha + 0.031 * best_corrected_24mu_map
+
+            # Add the map of ionizing stars
+            self.maps[factor] = ionizing
+
 
         # ionizing_ratio = self.ha / (0.031*mips_young_stars)
 
@@ -332,7 +344,7 @@ class IonizingStellarMapMaker(MapsComponent):
         #ionizing[self.cutoff_masks["Halpha"]] = 0.0
 
         # Set the ionizing stars map
-        self.map = ionizing
+        #self.map = ionizing
 
     # -----------------------------------------------------------------
 
@@ -402,7 +414,9 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Making distributions of the pixel values of the corrected 24 micron maps ...")
 
         # Create mask
-        mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
+        #mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
+
+        # NEW: TODO
 
         # Loop over the different maps
         for factor in self.corrected_24mu_maps:
@@ -493,10 +507,10 @@ class IonizingStellarMapMaker(MapsComponent):
         self.write_24mu_histograms()
 
         # Write the terms in the equation to make the map, normalized
-        self.write_terms()
+        #self.write_terms()
 
         # Write the ionizing stars map
-        self.write_map()
+        #self.write_map()
 
         # Write the significance masks
         self.write_significance_masks()
