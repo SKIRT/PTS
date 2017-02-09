@@ -74,8 +74,8 @@ def call(settings, input_dict):
 
     # Get the settings
     output = settings["output"]
-    genome_type = settings["genome_type"] if "genome_type" in settings else None
-    genome_dimension = settings["genome_dimension"] if "genome_dimension" in settings else None
+    genome_type = settings["genome_type"] if "genome_type" in settings else "list"
+    genome_dimension = settings["genome_dimension"] if "genome_dimension" in settings else 1
     nparameters = settings["nparameters"] if "nparameters" in settings else None
     nparameters2 = settings["nparameters2"] if "nparameters2" in settings else None
     nindividuals = settings["nindividuals"] if "nindividuals" in settings else None
@@ -110,12 +110,12 @@ def call(settings, input_dict):
     # Create partial functions with kwargs set
     if evaluator_kwargs is not None: evaluator = partial(evaluator, **evaluator_kwargs)
     if initializator is not None and initializator_kwargs is not None: initializator = partial(initializator, **initializator_kwargs)
-    if mutator is not None and mutator_kwargs is not None: mutator = partial(mutator, **mutator)
-    if crossover is not None and crossover_kwargs is not None: crossover = partial(crossover, **crossover)
-    if callback is not None and callback_kwargs is not None: callback = partial(callback, **crossover)
+    if mutator is not None and mutator_kwargs is not None: mutator = partial(mutator, **mutator_kwargs)
+    if crossover is not None and crossover_kwargs is not None: crossover = partial(crossover, **crossover_kwargs)
+    if callback is not None and callback_kwargs is not None: callback = partial(callback, **callback_kwargs)
 
     # Create genome instance
-    if genome is not None:
+    if genome is None:
 
         # List genome
         if genome_type == "list":
@@ -132,6 +132,9 @@ def call(settings, input_dict):
             if genome_dimension == 1: genome = G1DBinaryString(nparameters)
             elif genome_dimension == 2: genome = G2DBinaryString(nparameters, nparameters2)
             else: raise ValueError("Dimensions > 2 are not supported")
+
+        # Invalid option
+        else: raise ValueError("Genome type must be 'list' or 'binary_string")
 
     # Set genome properties
     if parameter_range is not None: genome.setParams(rangemin=parameter_range.min, rangemax=parameter_range.max)
