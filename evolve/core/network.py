@@ -29,7 +29,7 @@ from . import constants
 from . import utils
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -38,7 +38,7 @@ def getMachineIP():
    """ Return all the IPs from current machine.
 
    Example:
-      >>> Util.getMachineIP()
+      Util.getMachineIP()
       ['200.12.124.181', '192.168.0.1']
 
    :rtype: a python list with the string IPs

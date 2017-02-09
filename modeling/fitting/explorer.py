@@ -898,8 +898,6 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Writing generation info ...")
 
-        print(self.generations_table)
-
         # Add an entry to the generations table
         self.generations_table.add_entry(self.generation, self.ranges)
 

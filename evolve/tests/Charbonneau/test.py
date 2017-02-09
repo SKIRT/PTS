@@ -10,15 +10,20 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import inspect
+import random
+from math import sqrt
 import numpy as np
-from matplotlib import pyplot as plt
+from functools import partial
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.do.commandline import Command
-from pts.core.basics.range import IntegerRange
 from pts.evolve.core import reference
 from pts.evolve.optimize.optimize import show_best
+from pts.evolve.core.crossovers import G1DListCrossoverOX
+from pts.evolve.core.mutators import G1DListMutatorSwap
+from pts.core.basics.animation import Animation
+from pts.core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -27,108 +32,76 @@ this_dir_path = fs.directory_of(this_path)
 
 # -----------------------------------------------------------------
 
-description = "optimizing the Rosenbrock function, a deceptive function"
+description = "finding the maximum of the function defined by Charbonneau (1995)"
 
 # -----------------------------------------------------------------
 
 # Define properties
-nparameters = 20
-#nparameters = 2
+#nparameters = 20
+nparameters = 2
 nindividuals = 80
-parameter_range = IntegerRange(0, 10)
-best_raw_score = 0.0
-round_decimal = None
-ngenerations = 4000
-mutation_rate = 0.2
-crossover_rate = None
-stats_freq = 200
-mutation_method = "range" # or gaussian, or binary
-min_or_max = "minimize"
+parameter_range = RealRange(0., 1.)
+#best_raw_score = float('inf')
+best_raw_score = 100
+#round_decimal = None
+ngenerations = 1000
+mutation_rate = 0.03
+crossover_rate = 1.0
+stats_freq = 100
+#mutation_method = "range" # or gaussian, or binary
+min_or_max = "maximize"
 
 # -----------------------------------------------------------------
 
-def rosenbrock(xlist):
+def eval_func_xy(x, y):
 
     """
-    This is the Rosenbrock function, a deceptive function
-    :param xlist:
+    This function ...
+    :param x:
+    :param y:
     :return:
     """
 
-    sum1 = 0
-    for x in xrange(1, len(xlist)):
-
-      sum1 += 100.0 * (xlist[x] - xlist[x-1]**2)**2 + (1 - xlist[x-1])**2
-
-    # Return the raw score
-    return sum1
+    # Calculate z and return
+    z = (16 * x * (1. - x) * y * (1. - y) * np.sin(2. * np.pi * x) * np.sin(2. * np.pi * y) )**2
+    return z
 
 # -----------------------------------------------------------------
 
-def add_best_to_plot(ga_engine, **kwargs):
+def eval_func(chromosome, **kwargs):
 
     """
-    This function is called after each step (generation)
+    The evaluation function
+    """
+
+    # Get x and y
+    x = chromosome[0]
+    y = chromosome[1]
+
+    # Return the value of the function
+    return eval_func_xy(x, y)
+
+# -----------------------------------------------------------------
+
+def evolve_callback(ga_engine, **kwargs):
+
+    """
+    This function ...
     :param ga_engine:
-    :return:
-    """
-
-    ax = kwargs.pop("ax")
-
-    best = ga_engine.bestIndividual()
-
-    index = ga_engine.currentGeneration
-
-    if index % 50 != 0: return
-
-    generation_label = "Generation " + str(index)
-
-    x = best.genomeList[0]
-    y = best.genomeList[1]
-
-    color = "#000000"
-
-    # Plot the point
-    ax.plot(x, y, 'o-', color=color, label=generation_label, alpha=0.8, lw=2, markersize=5, mew=1, mec=color, mfc='none')
-
-# -----------------------------------------------------------------
-
-def create_plot():
-
-    """
-    This function ...
-    :return:
-    """
-
-    _, ax = plt.subplots(1, 1)
-
-    # make a contour plot of the rosenbrock function surface.
-    X, Y = np.meshgrid(np.linspace(-1.3, 1.3, 31), np.linspace(-0.9, 1.7, 31))
-    Z = 100 * (Y - X ** 2) ** 2 + (1 - X) ** 2
-    ax.plot([1], [1], 'x', mew=3, markersize=10, color='#111111')
-    ax.contourf(X, Y, Z, np.logspace(-1, 3, 31), cmap='gray_r')
-
-    # Set axes limits
-    ax.set_xlim(-1.3, 1.3)
-    ax.set_ylim(-0.9, 1.7)
-
-    # Return the axes
-    return ax
-
-# -----------------------------------------------------------------
-
-def show_plot(*args, **kwargs):
-
-    """
-    This function ...
-    :param args:
     :param kwargs:
     :return:
     """
 
-    # Show
-    plt.legend(loc='lower right')
-    plt.show()
+    # Get the coords
+    #coords = kwargs.pop("coordinates")
+
+    #if ga_engine.currentGeneration % 10 == 0:
+    #    best = ga_engine.bestIndividual()
+    #    write_tour_to_img(coords, best, "tsp_result_%d.png" % (ga_engine.currentGeneration,))
+    #return False
+
+
+    #return coords, cm
 
 # -----------------------------------------------------------------
 
@@ -159,12 +132,12 @@ settings_optimize["nparameters"] = nparameters
 settings_optimize["nindividuals"] = nindividuals
 settings_optimize["parameter_range"] = parameter_range
 settings_optimize["best_raw_score"] = best_raw_score
-settings_optimize["round_decimal"] = round_decimal
+#settings_optimize["round_decimal"] = round_decimal
 settings_optimize["ngenerations"] = ngenerations
 settings_optimize["mutation_rate"] = mutation_rate
 settings_optimize["crossover_rate"] = crossover_rate
 settings_optimize["stats_freq"] = stats_freq
-settings_optimize["mutation_method"] = mutation_method
+#settings_optimize["mutation_method"] = mutation_method
 settings_optimize["min_or_max"] = min_or_max
 
 # Other
@@ -172,21 +145,55 @@ settings_optimize["progress_bar"] = True
 
 # Input
 input_optimize = dict()
-input_optimize["evaluator"] = rosenbrock
+#input_optimize["genome"] = genome
+input_optimize["evaluator"] = eval_func
+#input_optimize["initializator"] = G1DListTSPInitializator
+input_optimize["mutator"] = G1DListMutatorSwap
+input_optimize["crossover"] = G1DListCrossoverOX
+input_optimize["callback"] = evolve_callback
+#input_optimize["adapter"] = sqlite_adapter
+
+# Create dictionary for extra arguments to the evalutor function
+#input_optimize["evaluator_kwargs"] = {"distances": cm}
+#input_optimize["callback_kwargs"] = {"coordinates": coords}
 
 # -----------------------------------------------------------------
 
-# Create plot
-#ax = create_plot()
+def finish_optimize(optimizer, **kwargs):
 
-# Create callback to plot the best individuals for each generation
-input_optimize["callback"] = add_best_to_plot
-#input_optimize["callback_kwargs"] = {"ax": ax}
+    """
+    This function ...
+    :param optimizer:
+    :param kwargs:
+    :return:
+    """
+
+    # Get the best
+    best = optimizer.best
+
+    # Determine path
+    temp_path = optimizer.config.path
+    filepath = fs.join(temp_path, "best.png")
+
+    # Make plot of best
+
+    # Create animated gif
+    animation = Animation()
+
+    # Open the images present in the directory
+    for path in fs.files_in_path(temp_path, extension="png", exact_not_name="best"):
+
+        # Add frame to the animation
+        animation.add_frame_from_file(path)
+
+    # Save the animation
+    animation_path = fs.join(temp_path, "animation.gif")
+    animation.saveto(animation_path)
 
 # -----------------------------------------------------------------
 
 # Construct the command
-optimize = Command("optimize", "optimize the Rosenbrock function", settings_optimize, input_optimize, cwd=".", finish=show_plot)
+optimize = Command("optimize", "finding the maximum of the function defined by Charbonneau (1995)", settings_optimize, input_optimize, cwd=".", finish=finish_optimize)
 
 # Add the command
 commands.append(optimize)
@@ -200,6 +207,9 @@ def test(temp_path):
     """
     This function ...
     """
+
+    # Remove 'callback' from the settings dictionary: we don't want to plot now
+    #if "callback" in input_optimize: del input_optimize["callback"]
 
     # Solve the problem with the original Pyevolve implementation
     best = reference.call(settings_optimize, input_optimize)

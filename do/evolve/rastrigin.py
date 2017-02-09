@@ -7,11 +7,11 @@
 
 # -----------------------------------------------------------------
 
-from pts.evolve.engine import GeneticEngine, RawScoreCriteria
+from pts.evolve.core.engine import GeneticEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
-from pts.evolve import mutators, initializators
-from pts.evolve import selectors
-from pts.evolve import constants
+from pts.evolve.core import mutators, initializators
+from pts.evolve.core import selectors
+from pts.evolve.core import constants
 import math
 
 # This is the Rastrigin Function, a deception function

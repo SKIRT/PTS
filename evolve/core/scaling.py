@@ -16,7 +16,7 @@ import math
 from . import utils
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 

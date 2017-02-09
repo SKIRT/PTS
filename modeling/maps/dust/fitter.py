@@ -28,11 +28,11 @@ from ....core.basics.range import RealRange, QuantityRange
 from ....core.basics.unit import parse_unit as u
 
 # PTS evolution classes and modules
-from ....evolve.engine import GeneticEngine, RawScoreCriteria
+from ....evolve.core.engine import GeneticEngine, RawScoreCriteria
 from ....evolve.genomes.list1d import G1DList
-from ....evolve import mutators
-from ....evolve import initializators
-from ....evolve import constants
+from ....evolve.core import mutators
+from ....evolve.core import initializators
+from ....evolve.core import constants
 
 # -----------------------------------------------------------------
 

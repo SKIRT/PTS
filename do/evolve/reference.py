@@ -19,11 +19,11 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 # Import the relevant PTS classes and modules
-from pts.evolve.engine import GeneticEngine, RawScoreCriteria
+from pts.evolve.core.engine import GeneticEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
-from pts.evolve import mutators
-from pts.evolve import initializators
-from pts.evolve import constants
+from pts.evolve.core import mutators
+from pts.evolve.core import initializators
+from pts.evolve.core import constants
 from pts.core.tools import filesystem as fs
 from pts.core.tools.random import setup_prng
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter

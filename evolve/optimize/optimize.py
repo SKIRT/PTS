@@ -16,19 +16,19 @@ from __future__ import absolute_import, division, print_function
 from textwrap import wrap
 
 # Import the relevant PTS classes and modules
-from ..core.basics.configurable import Configurable
-from .genomes.list1d import G1DList
-from .genomes.list2d import G2DList
-from .genomes.binarystring1d import G1DBinaryString
-from .genomes.binarystring2d import G2DBinaryString
-from ..core.tools.logging import log
-from .initializators import G1DListInitializatorReal, G1DListInitializatorInteger
-from .mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary, G1DListMutatorRealGaussian, G1DListMutatorRealRange
-from .engine import GeneticEngine, RawScoreCriteria
-from . import constants
-from ..core.basics.range import RealRange, IntegerRange
-from ..core.tools import formatting as fmt
-from ..core.tools import stringify
+from ...core.basics.configurable import Configurable
+from ..genomes.list1d import G1DList
+from ..genomes.list2d import G2DList
+from ..genomes.binarystring1d import G1DBinaryString
+from ..genomes.binarystring2d import G2DBinaryString
+from ...core.tools.logging import log
+from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger
+from ..core.mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary, G1DListMutatorRealGaussian, G1DListMutatorRealRange
+from ..core.engine import GeneticEngine, RawScoreCriteria
+from ..core import constants
+from ...core.basics.range import RealRange, IntegerRange
+from ...core.tools import formatting as fmt
+from ...core.tools import stringify
 
 # -----------------------------------------------------------------
 

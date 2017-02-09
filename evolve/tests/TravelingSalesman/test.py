@@ -18,12 +18,12 @@ from functools import partial
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.do.commandline import Command
-from pts.evolve import reference
-from pts.evolve.optimize import show_best
+from pts.evolve.core import reference
+from pts.evolve.optimize.optimize import show_best
 from pts.evolve.genomes.list1d import G1DList
-from pts.evolve.allele import GAlleles, GAlleleList
-from pts.evolve.crossovers import G1DListCrossoverOX
-from pts.evolve.mutators import G1DListMutatorSwap
+from pts.evolve.core.allele import GAlleles, GAlleleList
+from pts.evolve.core.crossovers import G1DListCrossoverOX
+from pts.evolve.core.mutators import G1DListMutatorSwap
 from pts.core.basics.animation import Animation
 
 PIL_SUPPORT = None

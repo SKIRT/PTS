@@ -47,17 +47,17 @@ from types import BooleanType
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
-from pts.evolve.population import Population
-from pts.evolve.functionslot import FunctionSlot
-from pts.evolve.genome import GenomeBase
-from pts.evolve.dbadapters import DBBaseAdapter
-import pts.evolve.constants as constants
-import pts.evolve.utils as utils
+from pts.evolve.core.population import Population
+from pts.evolve.core.functionslot import FunctionSlot
+from pts.evolve.core.genome import GenomeBase
+from pts.evolve.core.dbadapters import DBBaseAdapter
+import pts.evolve.core.constants as constants
+import pts.evolve.core.utils as utils
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
-from ..core.tools import serialization
-from ..core.tools.random import prng
+from ...core.tools.logging import log
+from ...core.tools import serialization
+from ...core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -67,9 +67,9 @@ def RawScoreCriteria(ga_engine):
     Terminate the evolution using the **bestrawscore** and **rounddecimal**
     parameter obtained from the individual
     Example:
-       >>> genome.setParams(bestrawscore=0.00, rounddecimal=2)
+       genome.setParams(bestrawscore=0.00, rounddecimal=2)
        (...)
-       >>> ga_engine.terminationCriteria.set(GSimpleGA.RawScoreCriteria)
+       >>> ga_engine.terminationCriteria.set(RawScoreCriteria)
     """
 
     ind = ga_engine.bestIndividual()
@@ -106,7 +106,8 @@ def ConvergenceCriteria(ga_engine):
 
 def RawStatsCriteria(ga_engine):
 
-    """ Terminate the evolution based on the raw stats
+    """
+    Terminate the evolution based on the raw stats
     Example: ga_engine.terminationCriteria.set(GSimpleGA.RawStatsCriteria)
     """
 
@@ -120,7 +121,8 @@ def RawStatsCriteria(ga_engine):
 
 def FitnessStatsCriteria(ga_engine):
 
-    """ Terminate the evoltion based on the fitness stats
+    """
+    Terminate the evoltion based on the fitness stats
     Example: ga_engine.terminationCriteria.set(GSimpleGA.FitnessStatsCriteria)
     """
 
@@ -1268,7 +1270,7 @@ class GeneticEngine(object):
 
         if progress_bar:
 
-            from ..core.tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
+            from ...core.tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
 
             freq_stats = 10000
             silent = True

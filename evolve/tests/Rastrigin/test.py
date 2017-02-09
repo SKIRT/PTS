@@ -18,8 +18,8 @@ from matplotlib import pyplot as plt
 from pts.core.tools import filesystem as fs
 from pts.do.commandline import Command
 from pts.core.basics.range import RealRange
-from pts.evolve import reference
-from pts.evolve.optimize import show_best
+from pts.evolve.core import reference
+from pts.evolve.optimize.optimize import show_best
 
 # -----------------------------------------------------------------
 

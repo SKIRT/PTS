@@ -15,11 +15,11 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import tables
 from pts.core.tools import filesystem as fs
-from pts.evolve.engine import GeneticEngine, RawScoreCriteria
+from pts.evolve.core.engine import GeneticEngine, RawScoreCriteria
 from pts.evolve.genomes.list1d import G1DList
-from pts.evolve import mutators
-from pts.evolve import initializators
-from pts.evolve import constants
+from pts.evolve.core import mutators
+from pts.evolve.core import initializators
+from pts.evolve.core import constants
 from pts.core.tools.logging import log
 from pts.core.tools import time
 from pts.core.tools.random import setup_prng, save_state

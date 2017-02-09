@@ -14,11 +14,11 @@
 from pts.evolve import utils
 from pts.evolve import network
 from pts.evolve import constants
-from pts.evolve.functionslot import FunctionSlot
+from pts.evolve.core.functionslot import FunctionSlot
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
-from ..core.tools.random import prng
+from ...core.tools.logging import log
+from ...core.tools.random import prng
 
 try:
    from mpi4py import MPI

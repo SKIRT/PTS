@@ -14,9 +14,9 @@
 from functools import partial
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
-from ..core.basics.range import RealRange, IntegerRange
-from ..core.tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
+from ...core.tools.logging import log
+from ...core.basics.range import RealRange, IntegerRange
+from ...core.tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
 
 # -----------------------------------------------------------------
 

@@ -28,13 +28,13 @@ from math import sqrt as math_sqrt
 from functools import partial
 
 # Import other evolve modules
-import pts.evolve.constants as constants
-import pts.evolve.utils as utils
-from pts.evolve.functionslot import FunctionSlot
-from pts.evolve.statistics import Statistics
+import pts.evolve.core.constants as constants
+import pts.evolve.core.utils as utils
+from pts.evolve.core.functionslot import FunctionSlot
+from pts.evolve.core.statistics import Statistics
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
+from ...core.tools.logging import log
 
 try:
    from multiprocessing import cpu_count, Pool

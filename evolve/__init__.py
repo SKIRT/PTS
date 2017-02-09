@@ -17,13 +17,13 @@
 
 # -----------------------------------------------------------------
 
-__all__ = ["constants", "crossovers", "dbadapters", "functionslot",
-           "genomes", "allele", "genome", "population",
-           "engine", "tree", "initializators",
-           "migration", "mutators", "network", "scaling", "selectors",
-           "statistics", "utils"]
+#__all__ = ["constants", "crossovers", "dbadapters", "functionslot",
+#           "genomes", "allele", "genome", "population",
+#           "engine", "tree", "initializators",
+#           "migration", "mutators", "network", "scaling", "selectors",
+#           "statistics", "utils"]
 
-__version__ = '0.6'
+#__version__ = '0.6'
 __author__ = 'Christian S. Perone'
 
 #from . import constants

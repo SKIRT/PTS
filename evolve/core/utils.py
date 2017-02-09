@@ -14,8 +14,8 @@
 from math import sqrt as math_sqrt
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
-from ..core.tools.random import prng
+from ...core.tools.logging import log
+from ...core.tools.random import prng
 
 # -----------------------------------------------------------------
 
@@ -26,7 +26,7 @@ def randomFlipCoin(p):
     return always False.
 
     Example:
-       >>> Util.randomFlipCoin(1.0)
+       >>> randomFlipCoin(1.0)
        True
 
     :param p: probability, between 0.0 and 1.0
@@ -47,7 +47,7 @@ def listSwapElement(lst, indexa, indexb):
     """ Swaps elements A and B in a list.
     Example:
        >>> l = [1, 2, 3]
-       >>> Util.listSwapElement(l, 1, 2)
+       >>> listSwapElement(l, 1, 2)
        >>> l
        [1, 3, 2]
 
@@ -66,7 +66,7 @@ def list2DSwapElement(lst, indexa, indexb):
     """ Swaps elements A and B in a 2D list (matrix).
     Example:
        >>> l = [ [1,2,3], [4,5,6] ]
-       >>> Util.list2DSwapElement(l, (0,1), (1,1) )
+       >>> list2DSwapElement(l, (0,1), (1,1) )
        >>> l
        [[1, 5, 3], [4, 2, 6]]
 
@@ -86,7 +86,7 @@ def raiseException(message, expt=None):
 
     """ Raise an exception and logs the message.
     Example:
-       >>> Util.raiseException('The value is not an integer', ValueError)
+       >>> raiseException('The value is not an integer', ValueError)
 
     :param message: the message of exception
     :param expt: the exception class
@@ -105,7 +105,7 @@ def cmp_individual_raw(a, b):
 
     """ Compares two individual raw scores
     Example:
-       >>> GPopulation.cmp_individual_raw(a, b)
+       >>> cmp_individual_raw(a, b)
 
     :param a: the A individual instance
     :param b: the B individual instance
@@ -126,9 +126,10 @@ def cmp_individual_raw(a, b):
 
 def cmp_individual_scaled(a, b):
 
-    """ Compares two individual fitness scores, used for sorting population
+    """
+    Compares two individual fitness scores, used for sorting population
     Example:
-       >>> GPopulation.cmp_individual_scaled(a, b)
+       >>> cmp_individual_scaled(a, b)
 
     :param a: the A individual instance
     :param b: the B individual instance
@@ -149,7 +150,8 @@ def cmp_individual_scaled(a, b):
 
 def importSpecial(name):
 
-    """ This function will import the *name* module, if fails,
+    """
+    This function will import the *name* module, if fails,
     it will raise an ImportError exception and a message
 
     :param name: the module name
@@ -389,7 +391,8 @@ class Graph(object):
 
 def G1DListGetEdgesComposite(mom, dad):
 
-    """ Get the edges and the merge between the edges of two G1DList individuals
+    """
+    Get the edges and the merge between the edges of two G1DList individuals
     :param mom: the mom G1DList individual
     :param dad: the dad G1DList individual
     :rtype: a tuple (mom edges, dad edges, merge)
@@ -403,7 +406,8 @@ def G1DListGetEdgesComposite(mom, dad):
 
 def G1DListGetEdges(individual):
 
-    """ Get the edges of a G1DList individual
+    """
+    Get the edges of a G1DList individual
     :param individual: the G1DList individual
     :rtype: the edges dictionary
     """
@@ -428,7 +432,8 @@ def G1DListGetEdges(individual):
 
 def G1DListMergeEdges(eda, edb):
 
-    """ Get the merge between the two individual edges
+    """
+    Get the merge between the two individual edges
     :param eda: the edges of the first G1DList genome
     :param edb: the edges of the second G1DList genome
     :rtype: the merged dictionary

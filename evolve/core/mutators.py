@@ -16,7 +16,7 @@ from . import utils
 from . import tree
 
 # Import the relevant PTS classes and modules
-from ..core.tools.random import prng
+from ...core.tools.random import prng
 
 # -----------------------------------------------------------------
 

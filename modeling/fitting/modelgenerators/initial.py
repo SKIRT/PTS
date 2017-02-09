@@ -14,11 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....evolve.engine import GeneticEngine, RawScoreCriteria
+from ....evolve.core.engine import GeneticEngine, RawScoreCriteria
 from ....evolve.genomes.list1d import G1DList
-from ....evolve import mutators
-from ....evolve import initializators
-from ....evolve import constants
+from ....evolve.core import mutators
+from ....evolve.core import initializators
+from ....evolve.core import constants
 from .generator import ModelGenerator
 from ....core.tools.random import save_state
 

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....evolve.engine import GeneticEngine
+from ....evolve.core.engine import GeneticEngine
 from .generator import ModelGenerator
 from ....core.tools import filesystem as fs
 from ....core.tools.random import save_state, load_state

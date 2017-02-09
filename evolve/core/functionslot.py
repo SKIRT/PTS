@@ -21,7 +21,7 @@ from types import BooleanType
 from . import utils
 
 # Import the relevant PTS classes and modules
-from ..core.tools.random import prng
+from ...core.tools.random import prng
 
 # -----------------------------------------------------------------
 

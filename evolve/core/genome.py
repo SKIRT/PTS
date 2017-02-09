@@ -19,7 +19,7 @@ from .functionslot import FunctionSlot
 from . import utils
 
 # Import the relevant PTS classes and modules
-from ..core.tools.random import prng
+from ...core.tools.random import prng
 
 # -----------------------------------------------------------------
 

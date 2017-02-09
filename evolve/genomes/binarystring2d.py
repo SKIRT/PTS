@@ -27,9 +27,9 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-from ..genome import GenomeBase
-from .. import constants
-from .. import utils
+from ..core.genome import GenomeBase
+from ..core import constants
+from ..core import utils
 
 # -----------------------------------------------------------------
 

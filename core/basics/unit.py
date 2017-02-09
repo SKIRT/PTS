@@ -660,7 +660,8 @@ class PhotometricUnit(CompositeUnit):
 
         # Try to parse as a photometric unit
         try: other = PhotometricUnit(other)
-        except ValueError: raise ValueError("The other unit is not a photometric unit")
+        #except ValueError: raise ValueError("The other unit is not a photometric unit")
+        except ValueError: return False
 
         # Use implementation in base class
         return super(PhotometricUnit, self).__eq__(other)

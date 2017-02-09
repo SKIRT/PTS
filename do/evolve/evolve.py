@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.evolve.engine import GeneticEngine
+from pts.evolve.core.engine import GeneticEngine
 from pts.core.tools import filesystem as fs
 from pts.core.tools import tables
 from pts.core.tools import time
