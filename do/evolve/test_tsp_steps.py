@@ -109,10 +109,3 @@ for _ in range(config.ngenerations):
     del optimizer
 
 # -----------------------------------------------------------------
-
-#print(adapter)
-
-# Close the database
-#adapter.close()
-
-# -----------------------------------------------------------------

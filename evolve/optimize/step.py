@@ -102,7 +102,7 @@ class StepOptimizer(Configurable):
 
         # Set the database
         database_path = fs.join(dir_path, "database.csv")
-        optimizer.database = DBFileCSV(filename=database_path)
+        optimizer.database = DBFileCSV(filename=database_path, reset=False)
 
         #database_path = fs.join(dir_path, "database.db")
         #optimizer.database = DBSQLite(dbname=database_path)
