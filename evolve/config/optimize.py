@@ -30,6 +30,12 @@ definition.add_optional("best_raw_score", "real", "best score for an individual"
 definition.add_optional("rounddecimal", "integer", "round everything to this decimal place")
 definition.add_optional("mutation_method", "string", "mutation method", choices=["range", "gaussian", "binary"])
 definition.add_optional("min_or_max", "string", "minimize or maximize", choices=["minimize", "maximize"])
+definition.add_optional("database_type", "string", "type of database", default="csv", choices=["sqlite", "csv"])
+definition.add_optional("database_identifier", "string", "identifier for this run in the database", default="run_01")
+definition.add_optional("database_frequency", "positive_integer", "frequency of appending to the database (in the number of generations)", 1)
+
+# Other
+definition.add_optional("output", "directory_path", "output directory")
 
 # Flags
 definition.add_flag("elitism", "enable elitism", True)
@@ -37,6 +43,7 @@ definition.add_flag("progress_bar", "use a progress bar to show the progress of 
 definition.add_flag("show", "show results", True)
 definition.add_flag("write", "write results", True)
 definition.add_flag("plot", "plot results", False)
+definition.add_flag("finish", "finish the evolution: set the scores of the last generation but don't generate a new population", False)
 
 # Advanced
 definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)

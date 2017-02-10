@@ -17,9 +17,8 @@
 
 # -----------------------------------------------------------------
 
-#from . import __version__
-
 # Import standard modules
+from abc import ABCMeta, abstractmethod
 import types
 import datetime
 
@@ -33,18 +32,25 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
-class DBBaseAdapter(object):
+class DataBaseAdapter(object):
 
-    """ DBBaseAdapter Class - The base class for all DB Adapters
+    """
+    DataBaseAdapter Class - The base class for all DB Adapters
     If you want to create your own DB Adapter, you must subclass this
     class.
     :param frequency: the the generational dump frequency
-    .. versionadded:: 0.6
-      Added the :class:`DBBaseAdapter` class.
     """
 
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
     def __init__(self, frequency, identify):
-      """ The class constructor """
+
+      """
+      The class constructor
+      """
+
       self.statsGenFreq = frequency
 
       if identify is None:
@@ -98,6 +104,7 @@ class DBBaseAdapter(object):
 
     # -----------------------------------------------------------------
 
+    @abstractmethod
     def open(self, ga_engine):
 
       """ This method is called one time to do the initialization of
@@ -109,7 +116,8 @@ class DBBaseAdapter(object):
 
     # -----------------------------------------------------------------
 
-    def commitAndClose(self):
+    @abstractmethod
+    def commit_and_close(self):
 
       """
       This method is called at the end of the evolution, to closes the
@@ -120,6 +128,7 @@ class DBBaseAdapter(object):
 
     # -----------------------------------------------------------------
 
+    @abstractmethod
     def insert(self, ga_engine):
 
       """
@@ -127,11 +136,11 @@ class DBBaseAdapter(object):
       :param ga_engine: the GA Engine
       """
 
-      utils.raiseException("This method is not implemented on the ABC", NotImplementedError)
+      pass
 
 # -----------------------------------------------------------------
 
-class DBFileCSV(DBBaseAdapter):
+class DBFileCSV(DataBaseAdapter):
 
     """ DBFileCSV Class - Adapter to dump statistics in CSV format
     Inheritance diagram for :class:`DBAdapters.DBFileCSV`:
@@ -140,16 +149,12 @@ class DBFileCSV(DBBaseAdapter):
     Example:
       >>> adapter = DBFileCSV(filename="file.csv", identify="run_01",
                               frequency = 1, reset = True)
-
       :param filename: the CSV filename
       :param identify: the identify of the run
       :param frequency: the generational dump frequency
       :param reset: if True, the file old data will be overwrite with the new
-
-    .. versionadded:: 0.6
-      Removed the stub methods and subclassed the :class:`DBBaseAdapter` class.
-
     """
+
     def __init__(self, filename=constants.CDefCSVFileName, identify=None,
                 frequency=constants.CDefCSVFileStatsGenFreq, reset=True):
 
@@ -164,19 +169,26 @@ class DBFileCSV(DBBaseAdapter):
       self.fHandle = None
       self.reset = reset
 
+    # -----------------------------------------------------------------
+
     def __repr__(self):
+
       """ The string representation of adapter """
+
       ret = "DBFileCSV DB Adapter [File='%s', identify='%s']" % (self.filename, self.getIdentify())
       return ret
 
+    # -----------------------------------------------------------------
+
     def open(self, ga_engine):
-      """ Open the CSV file or creates a new file
 
+      """
+      Open the CSV file or creates a new file
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       if self.csvmod is None:
          log.debug("Loading the csv module...")
          self.csvmod = utils.importSpecial("csv")
@@ -186,15 +198,25 @@ class DBFileCSV(DBBaseAdapter):
       self.fHandle = open(self.filename, open_mode)
       self.csvWriter = self.csvmod.writer(self.fHandle, delimiter=';')
 
+    # -----------------------------------------------------------------
+
     def close(self):
+
       """ Closes the CSV file handle """
+
       log.debug("Closing the CSV file [%s]", self.filename)
       if self.fHandle:
          self.fHandle.close()
 
-    def commitAndClose(self):
+    # -----------------------------------------------------------------
+
+    def commit_and_close(self):
+
       """ Commits and closes """
+
       self.close()
+
+    # -----------------------------------------------------------------
 
     def insert(self, ga_engine):
       """ Inserts the stats into the CSV file
@@ -211,13 +233,13 @@ class DBFileCSV(DBBaseAdapter):
       line.extend(stats.asTuple())
       self.csvWriter.writerow(line)
 
-class DBURLPost(DBBaseAdapter):
+# -----------------------------------------------------------------
+
+class DBURLPost(DataBaseAdapter):
+
    """ DBURLPost Class - Adapter to call an URL with statistics
-
    Inheritance diagram for :class:`DBAdapters.DBURLPost`:
-
    .. inheritance-diagram:: DBAdapters.DBURLPost
-
    Example:
       >>> dbadapter = DBURLPost(url="http://localhost/post.py", identify="test")
 
@@ -237,12 +259,11 @@ class DBURLPost(DBBaseAdapter):
    :param frequency: the generational dump frequency
    :param post: if True, the POST method will be used, otherwise GET will be used.
 
-   .. versionadded:: 0.6
-      Removed the stub methods and subclassed the :class:`DBBaseAdapter` class.
    """
 
    def __init__(self, url, identify=None,
                 frequency=constants.CDefURLPostStatsGenFreq, post=True):
+
       """ The creator of the DBURLPost Class. """
 
       super(DBURLPost, self).__init__(frequency, identify)
@@ -251,22 +272,31 @@ class DBURLPost(DBBaseAdapter):
       self.url = url
       self.post = post
 
+   # -----------------------------------------------------------------
+
    def __repr__(self):
+
       """ The string representation of adapter """
+
       ret = "DBURLPost DB Adapter [URL='%s', identify='%s']" % (self.url, self.getIdentify())
       return ret
 
+   # -----------------------------------------------------------------
+
    def open(self, ga_engine):
-      """ Load the modules needed
 
+      """
+      Load the modules needed
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       if self.urllibmod is None:
          log.debug("Loading urllib module...")
          self.urllibmod = utils.importSpecial("urllib")
+
+   # -----------------------------------------------------------------
 
    def insert(self, ga_engine):
       """ Sends the data to the URL using POST or GET
@@ -289,13 +319,14 @@ class DBURLPost(DBBaseAdapter):
       if response:
          response.close()
 
-class DBSQLite(DBBaseAdapter):
-   """ DBSQLite Class - Adapter to dump data in SQLite3 database format
+# -----------------------------------------------------------------
 
+class DBSQLite(DataBaseAdapter):
+
+   """
+   DBSQLite Class - Adapter to dump data in SQLite3 database format
    Inheritance diagram for :class:`DBAdapters.DBSQLite`:
-
    .. inheritance-diagram:: DBAdapters.DBSQLite
-
    Example:
       >>> dbadapter = DBSQLite(identify="test")
 
@@ -332,19 +363,27 @@ class DBSQLite(DBBaseAdapter):
       self.cursorPool = None
       self.commitFreq = commit_freq
 
+   # -----------------------------------------------------------------
+
    def __repr__(self):
-      """ The string representation of adapter """
+
+      """
+      The string representation of adapter
+      """
+
       ret = "DBSQLite DB Adapter [File='%s', identify='%s']" % (self.dbName, self.getIdentify())
       return ret
 
+   # -----------------------------------------------------------------
+
    def open(self, ga_engine):
+
       """ Open the database connection
-
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       if self.sqlite3mod is None:
          log.debug("Loading sqlite3 module...")
          self.sqlite3mod = utils.importSpecial("sqlite3")
@@ -362,30 +401,50 @@ class DBSQLite(DBBaseAdapter):
       if self.resetIdentify:
          self.resetTableIdentify()
 
-   def commitAndClose(self):
-      """ Commit changes on database and closes connection """
+   # -----------------------------------------------------------------
+
+   def commit_and_close(self):
+
+      """
+      Commit changes on database and closes connection
+      """
+
       self.commit()
       self.close()
 
+   # -----------------------------------------------------------------
+
    def close(self):
+
       """ Close the database connection """
+
       log.debug("Closing database.")
+
       if self.cursorPool:
          self.cursorPool.close()
          self.cursorPool = None
       self.connection.close()
 
+   # -----------------------------------------------------------------
+
    def commit(self):
-      """ Commit changes to database """
+
+      """
+      Commit changes to database
+      """
+
       log.debug("Commiting changes to database.")
       self.connection.commit()
 
-   def getCursor(self):
-      """ Return a cursor from the pool
+   # -----------------------------------------------------------------
 
-      :rtype: the cursor
+   def getCursor(self):
 
       """
+      Return a cursor from the pool
+      :rtype: the cursor
+      """
+
       if not self.cursorPool:
          log.debug("Creating new cursor for database ...")
          self.cursorPool = self.connection.cursor()
@@ -393,12 +452,14 @@ class DBSQLite(DBBaseAdapter):
       else:
          return self.cursorPool
 
+   # -----------------------------------------------------------------
+
    def createStructure(self, stats):
+
       """ Create table using the Statistics class structure
-
       :param stats: the statistics object
-
       """
+
       c = self.getCursor()
       pstmt = "create table if not exists %s(identify text, generation integer, " % (constants.CDefSQLiteDBTable)
       for k, v in stats.items():
@@ -413,8 +474,12 @@ class DBSQLite(DBBaseAdapter):
       c.execute(pstmt)
       self.commit()
 
+   # -----------------------------------------------------------------
+
    def resetTableIdentify(self):
+
       """ Delete all records on the table with the same Identify """
+
       c = self.getCursor()
       stmt = "delete from %s where identify = ?" % (constants.CDefSQLiteDBTable)
       stmt2 = "delete from %s where identify = ?" % (constants.CDefSQLiteDBTablePop)
@@ -429,18 +494,22 @@ class DBSQLite(DBBaseAdapter):
 
       self.commit()
 
+   # -----------------------------------------------------------------
+
    def resetStructure(self, stats):
+
       """ Deletes de current structure and calls createStructure
-
       :param stats: the statistics object
-
       """
+
       log.debug("Reseting structure, droping table and creating new empty table.")
       c = self.getCursor()
       c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTable,))
       c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTablePop,))
       self.commit()
       self.createStructure(stats)
+
+   # -----------------------------------------------------------------
 
    def insert(self, ga_engine):
       """ Inserts the statistics data to database
@@ -471,11 +540,12 @@ class DBSQLite(DBBaseAdapter):
       if (generation % self.commitFreq == 0):
          self.commit()
 
-class DBXMLRPC(DBBaseAdapter):
+# -----------------------------------------------------------------
+
+class DBXMLRPC(DataBaseAdapter):
+
    """ DBXMLRPC Class - Adapter to dump statistics to a XML Remote Procedure Call
-
    Inheritance diagram for :class:`DBAdapters.DBXMLRPC`:
-
    .. inheritance-diagram:: DBAdapters.DBXMLRPC
 
    Example:
@@ -550,18 +620,18 @@ class DBXMLRPC(DBBaseAdapter):
       di.update({"identify": self.getIdentify(), "generation": generation})
       self.proxy.insert(di)
 
-class DBVPythonGraph(DBBaseAdapter):
-   """ The DBVPythonGraph Class - A DB Adapter for real-time visualization using VPython
+# -----------------------------------------------------------------
 
+class DBVPythonGraph(DataBaseAdapter):
+
+   """
+   The DBVPythonGraph Class - A DB Adapter for real-time visualization using VPython
    Inheritance diagram for :class:`DBAdapters.DBVPythonGraph`:
-
    .. inheritance-diagram:: DBAdapters.DBVPythonGraph
-
    .. note:: to use this DB Adapter, you **must** install VPython first.
-
    Example:
-      >>> adapter = DBAdapters.DBVPythonGraph(identify="run_01", frequency = 1)
-      >>> ga_engine.setDBAdapter(adapter)
+      adapter = DBVPythonGraph(identify="run_01", frequency = 1)
+      ga_engine.setDBAdapter(adapter)
 
    :param identify: the identify of the run
    :param genmax: use the generations as max value for x-axis, default False
@@ -572,6 +642,14 @@ class DBVPythonGraph(DBBaseAdapter):
    """
 
    def __init__(self, identify=None, frequency=20, genmax=False):
+
+      """
+      This function ...
+      :param identify:
+      :param frequency:
+      :param genmax:
+      """
+
       super(DBVPythonGraph, self).__init__(frequency, identify)
       self.genmax = genmax
       self.vtkGraph = None
@@ -580,9 +658,12 @@ class DBVPythonGraph(DBBaseAdapter):
       self.curveDev = None
       self.curveAvg = None
 
-   def makeDisplay(self, title_sec, x, y, ga_engine):
-      """ Used internally to create a new display for VPython.
+   # -----------------------------------------------------------------
 
+   def makeDisplay(self, title_sec, x, y, ga_engine):
+
+      """
+      Used internally to create a new display for VPython.
       :param title_sec: the title of the window
       :param x: the x position of the window
       :param y: the y position of the window
@@ -600,12 +681,16 @@ class DBVPythonGraph(DBBaseAdapter):
                                        xmin=0., width=500, height=250, x=x, y=y)
          return disp
 
-   def open(self, ga_engine):
-      """ Imports the VPython module and creates the four graph windows
+   # -----------------------------------------------------------------
 
+   def open(self, ga_engine):
+
+      """ Imports the VPython module and creates the four graph windows
       :param ga_engine: the GA Engine
       """
+
       log.debug("Loading visual.graph (VPython) module...")
+
       if self.vtkGraph is None:
          self.vtkGraph = utils.importSpecial("visual.graph").graph
 
@@ -619,11 +704,14 @@ class DBVPythonGraph(DBBaseAdapter):
       self.curveDev = self.vtkGraph.gcurve(color=self.vtkGraph.color.blue, gdisplay=display_rawdev)
       self.curveAvg = self.vtkGraph.gcurve(color=self.vtkGraph.color.orange, gdisplay=display_rawavg)
 
-   def insert(self, ga_engine):
-      """ Plot the current statistics to the graphs
+   # -----------------------------------------------------------------
 
+   def insert(self, ga_engine):
+
+      """ Plot the current statistics to the graphs
       :param ga_engine: the GA Engine
       """
+
       stats = ga_engine.getStatistics()
       generation = ga_engine.getCurrentGeneration()
 
@@ -632,13 +720,13 @@ class DBVPythonGraph(DBBaseAdapter):
       self.curveDev.plot(pos=(generation, stats["rawDev"]))
       self.curveAvg.plot(pos=(generation, stats["rawAve"]))
 
-class DBMySQLAdapter(DBBaseAdapter):
+# -----------------------------------------------------------------
+
+class DBMySQLAdapter(DataBaseAdapter):
+
    """ DBMySQLAdapter Class - Adapter to dump data in MySql database server
-
    Inheritance diagram for :class:`DBAdapters.DBMySQLAdapter`:
-
    .. inheritance-diagram:: DBAdapters.DBMySQLAdapter
-
    Example:
       >>> dbadapter = DBMySQLAdapter("pyevolve_username", "password", identify="run1")
 
@@ -687,20 +775,25 @@ class DBMySQLAdapter(DBBaseAdapter):
       self.cursorPool = None
       self.commitFreq = commit_freq
 
+   # -----------------------------------------------------------------
+
    def __repr__(self):
+
       """ The string representation of adapter """
       ret = "DBMySQLAdapter DB Adapter [identify='%s', host='%s', username='%s', db='%s']" % (self.getIdentify(),
             self.host, self.user, self.db)
       return ret
 
+   # -----------------------------------------------------------------
+
    def open(self, ga_engine):
+
       """ Open the database connection
-
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       if self.mysqldbmod is None:
          log.debug("Loading MySQLdb module...")
          self.mysqldbmod = utils.importSpecial("MySQLdb")
@@ -718,30 +811,47 @@ class DBMySQLAdapter(DBBaseAdapter):
       if self.resetIdentify:
          self.resetTableIdentify()
 
-   def commitAndClose(self):
-      """ Commit changes on database and closes connection """
+   # -----------------------------------------------------------------
+
+   def commit_and_close(self):
+
+      """
+      Commit changes on database and closes connection
+      """
+
       self.commit()
       self.close()
 
+   # -----------------------------------------------------------------
+
    def close(self):
+
       """ Close the database connection """
+
       log.debug("Closing database.")
+
       if self.cursorPool:
          self.cursorPool.close()
          self.cursorPool = None
       self.connection.close()
 
+   # -----------------------------------------------------------------
+
    def commit(self):
+
       """ Commit changes to database """
+
       log.debug("Commiting changes to database.")
       self.connection.commit()
 
+   # -----------------------------------------------------------------
+
    def getCursor(self):
+
       """ Return a cursor from the pool
-
       :rtype: the cursor
-
       """
+
       if not self.cursorPool:
          log.debug("Creating new cursor for database ...")
          self.cursorPool = self.connection.cursor()
@@ -749,12 +859,14 @@ class DBMySQLAdapter(DBBaseAdapter):
       else:
          return self.cursorPool
 
+   # -----------------------------------------------------------------
+
    def createStructure(self, stats):
+
       """ Create table using the Statistics class structure
-
       :param stats: the statistics object
-
       """
+
       c = self.getCursor()
       pstmt = "create table if not exists %s(identify VARCHAR(80), generation INTEGER, " % (constants.CDefMySQLDBTable)
       for k, v in stats.items():
@@ -769,9 +881,14 @@ class DBMySQLAdapter(DBBaseAdapter):
       c.execute(pstmt)
       self.commit()
 
+   # -----------------------------------------------------------------
+
    def resetTableIdentify(self):
+
       """ Delete all records on the table with the same Identify """
+
       c = self.getCursor()
+
       stmt = "delete from %s where identify = '%s'" % (constants.CDefMySQLDBTable, self.getIdentify())
       stmt2 = "delete from %s where identify = '%s'" % (constants.CDefMySQLDBTablePop, self.getIdentify())
 
@@ -781,18 +898,22 @@ class DBMySQLAdapter(DBBaseAdapter):
 
       self.commit()
 
+   # -----------------------------------------------------------------
+
    def resetStructure(self, stats):
+
       """ Deletes de current structure and calls createStructure
-
       :param stats: the statistics object
-
       """
+
       log.debug("Reseting structure, droping table and creating new empty table.")
       c = self.getCursor()
       c.execute("drop table if exists %s" % (constants.CDefMySQLDBTable,))
       c.execute("drop table if exists %s" % (constants.CDefMySQLDBTablePop,))
       self.commit()
       self.createStructure(stats)
+
+   # -----------------------------------------------------------------
 
    def insert(self, ga_engine):
 

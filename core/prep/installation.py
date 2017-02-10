@@ -547,8 +547,8 @@ class SKIRTInstaller(Installer):
         fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
 
         # Add to path, also execute in current shell to make SKIRT (and FtiSKIRT) visible
-        add_to_environment_variable("PATH", skirt_main_path, comment=comment, in_shell=True)
-        add_to_environment_variable("PATH", fitskirt_main_path, comment=comment, in_shell=True)
+        terminal.add_to_environment_variable("PATH", skirt_main_path, comment=comment, in_shell=True)
+        terminal.add_to_environment_variable("PATH", fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
         self.skirt_path = fs.join(skirt_main_path, "skirt")
@@ -1129,8 +1129,11 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Installing PTS locally ...")
 
-        # 1. Get a python distribution
-        self.get_python_distribution_local()
+        # 1. Get anaconda locally
+        self.get_conda_local()
+
+        # Create python environment
+        self.create_environment_local()
 
         # 2. Get PTS
         self.get_pts_local()
@@ -1140,7 +1143,7 @@ class PTSInstaller(Installer):
 
     # -----------------------------------------------------------------
 
-    def get_python_distribution_local(self):
+    def get_conda_local(self):
 
         """
         This function ...
@@ -1148,7 +1151,7 @@ class PTSInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Getting a Anaconda Python 2 distribution locally ...")
+        log.info("Getting a Conda python distribution locally ...")
 
         # Determine path to profile file
         profile_path = introspection.shell_configuration_path()
@@ -1159,20 +1162,24 @@ class PTSInstaller(Installer):
         # Download the installer
         if self.remote.is_macos: network.download_file(miniconda_macos_url, installer_path, overwrite=True)
         elif self.remote.is_linux: network.download_file(miniconda_linux_url, installer_path, overwrite=True)
-        else: raise NotImplementedError("OS must be Linux or MacOS")
+        else: raise OSError("Your operating system is not supported")
 
         # Determine the conda installation directory
-        conda_installation_path = fs.join(self.remote.home_directory, "miniconda")
+        conda_installation_path = fs.join(fs.home(), "miniconda")
 
         # Check if not present
-        if fs.is_directory(conda_installation_path): raise RuntimeError("Miniconda is already installed in '" + conda_installation_path + "'")
+        if fs.is_directory(conda_installation_path): raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")
 
         # Run the installation script
-        command = "bash " + conda_installer_path + " -b -p " + conda_installation_path
-        self.remote.execute(command, show_output=log.is_debug())
+        #command = "bash " + installer_path + " -b -p " + conda_installation_path
+        #self.remote.execute(command, show_output=log.is_debug())
+
+        options = "-b -p " + conda_installation_path
+
+        # Run the installation script
+        terminal.run_script(installer_path, options, show_output=log.is_debug())
 
         # CREATE A PYTHON ENVIRONMENT FOR PTS
-
         conda_bin_path = fs.join(conda_installation_path, "bin")
         self.conda_executable_path = fs.join(conda_bin_path, "conda")
         self.conda_pip_path = fs.join(conda_bin_path, "pip")
@@ -1182,10 +1189,28 @@ class PTSInstaller(Installer):
         log.debug("Adding the conda executables to the PATH ...")
 
         # Add conda bin path to bashrc / profile
-        comment = "For Miniconda, added by PTS (Python Toolkit for SKIRT)"
+        comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
 
         # Run the export command also in the current shell, so that the conda commands can be found
-        self.remote.add_to_environment_variable("PATH", conda_bin_path, comment=comment, shell=True)
+        #self.remote.add_to_environment_variable("PATH", conda_bin_path, comment=comment, in_shell=True)
+
+
+
+    # -----------------------------------------------------------------
+
+    def create_environment_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating a fresh python environment ...")
+
+        command = "conda create -n python2 python=2.7 anaconda"
+
+
 
     # -----------------------------------------------------------------
 
@@ -1234,9 +1259,9 @@ class PTSInstaller(Installer):
 
         # Add PTS to shell configuration file
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
-        add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
-        define_alias("pts", "python -m pts.do", comment=comment, in_shell=True)
-        define_alias("ipts", "python -im pts.do", comment=comment, in_shell=True)
+        terminal.add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
+        terminal.define_alias("pts", "python -m pts.do", comment=comment, in_shell=True)
+        terminal.define_alias("ipts", "python -im pts.do", comment=comment, in_shell=True)
 
         # Set the path to the main PTS executable
         self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
@@ -1335,18 +1360,28 @@ class PTSInstaller(Installer):
         #if self.remote.in_python_virtual_environment(): self.python_path = self.remote.execute("which python")[0]
         #else:
 
-        # MacOS
-        if self.remote.is_macos:
+        # Determine the path to the installer
+        conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
 
-            # Add conda path to .profile
-            profile_path = fs.join(self.remote.home_directory, ".profile")
 
-            # ...
+
+        #miniconda_macos_url
+
+        # Download the installer
+        if self.remote.is_macos: self.remote.download_from_url_to(miniconda_macos_url, conda_installer_path)
+        elif self.remote.is_linux: self.remote.download_from_url_to(miniconda_linux_url, conda_installer_path)
+        else: raise OSError("Your operating system is not supported")
+
+
+        # Add conda path to .profile
+        profile_path = fs.join(self.remote.home_directory, ".profile")
+
+        # ...
 
         # Linux
-        elif self.remote.is_linux == "Linux":
 
-            conda_installer_path = fs.join(self.remote.home_directory, "conda.sh")
+
+
 
             # Download anaconda
             #self.remote.download(miniconda_linux_url, conda_installer_path)
@@ -1661,64 +1696,6 @@ def find_qmake():
 
     # Return the path
     return latest_qmake_path
-
-# -----------------------------------------------------------------
-
-def add_to_environment_variable(variable_name, value, comment=None, in_shell=False):
-
-    """
-    This function ...
-    :param variable_name:
-    :param value:
-    :param comment:
-    :param in_shell:
-    :return:
-    """
-
-    # Determine command
-    export_command = "export " + variable_name + "=" + value + ":$PATH"
-
-    # Define lines
-    lines = []
-    lines.append("")
-    if comment is not None: lines.append("# " + comment)
-    lines.append(export_command)
-    lines.append("")
-
-    # Add lines
-    fs.append_lines(introspection.shell_configuration_path(), lines)
-
-    # Run export path in the current shell to make variable visible
-    if in_shell: terminal.execute(export_command)
-
-# -----------------------------------------------------------------
-
-def define_alias(name, alias_to, comment=None, in_shell=False):
-
-    """
-    This function ...
-    :param name:
-    :param alias_to:
-    :param comment:
-    :param in_shell:
-    :return:
-    """
-
-    # Generate the command
-    alias_command = 'alias ' + name + '="' + alias_to + '"'
-
-    # Define lines
-    lines = []
-    lines.append("")
-    if comment is not None: lines.append("# " + comment)
-    lines.append(alias_command)
-    lines.append("")
-
-    # Add lines
-    fs.append_lines(introspection.shell_configuration_path(), lines)
-
-    # Execute in shell
-    if in_shell: terminal.execute(alias_command)
 
 # -----------------------------------------------------------------
 

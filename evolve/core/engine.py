@@ -50,7 +50,7 @@ from sys import stdout as sys_stdout
 from pts.evolve.core.population import Population
 from pts.evolve.core.functionslot import FunctionSlot
 from pts.evolve.core.genome import GenomeBase
-from pts.evolve.core.dbadapters import DBBaseAdapter
+from pts.evolve.core.adapters import DataBaseAdapter
 import pts.evolve.core.constants as constants
 import pts.evolve.core.utils as utils
 
@@ -609,8 +609,8 @@ class GeneticEngine(object):
                      Genetic Algorithm.
         """
 
-        if (dbadapter is not None) and (not isinstance(dbadapter, DBBaseAdapter)):
-            utils.raiseException("The DB Adapter must be a DBBaseAdapter subclass", TypeError)
+        if (dbadapter is not None) and (not isinstance(dbadapter, DataBaseAdapter)):
+            utils.raiseException("The DB Adapter must be a DataBaseAdapter subclass", TypeError)
         self.dbAdapter = dbadapter
 
     # -----------------------------------------------------------------
@@ -1318,16 +1318,21 @@ class GeneticEngine(object):
             self.printStats()
             self.printTimeElapsed()
 
+        # Close the DB adapter ==> NO, NOW THIS IS THE RESPONSIBILITY OF THE MODULE THAT CREATES THE DBADAPTER
         if self.dbAdapter:
-            log.debug("Closing the DB Adapter")
-            if not (self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0):
-                self.dumpStatsDB()
-            self.dbAdapter.commitAndClose()
 
-        if self.migrationAdapter:
-            log.debug("Closing the Migration Adapter")
-            self.migrationAdapter.stop()
+            # Inform the user
+            #log.debug("Closing the DB Adapter")
 
+            if not (self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0): self.dumpStatsDB()
+            #self.dbAdapter.commit_and_close()
+
+        # Stop the migration adapter ==> NO, NOW THIS IS THE RESPONSIBILITY OF THE MODULE THAT CREATES IT
+        #if self.migrationAdapter:
+        #    log.debug("Closing the Migration Adapter")
+        #    self.migrationAdapter.stop()
+
+        # Return the best individual
         return self.bestIndividual()
 
     # -----------------------------------------------------------------
@@ -1366,9 +1371,10 @@ class GeneticEngine(object):
             if (self.currentGeneration % freq_stats == 0) or (self.getCurrentGeneration() == 0):
                 self.printStats()
 
-        if self.dbAdapter:
-            if self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0:
-                self.dumpStatsDB()
+        # This is now done in the generate_new_population() function
+        #if self.dbAdapter:
+        #    if self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0:
+        #        self.dumpStatsDB()
 
         if stopFlagTerminationCriteria:
             log.debug("Evolution stopped by the Termination Criteria !")

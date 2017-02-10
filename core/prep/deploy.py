@@ -107,19 +107,28 @@ class Deployer(RemotesConfigurable):
         # Check whether installed
         installed = introspection.skirt_is_present()
 
-        # Not installed: install
-        if not installed:
+        # ALready installed
+        if installed:
+
+            # Clean install
+            if self.config.clean:
+
+                installer  = SKIRTInstaller()
+                installer.config.force = True
+                installer.run()
+
+            # Update, if not SKIRT developer
+            elif not introspection.is_skirt_developer():
+
+                updater = SKIRTUpdater()
+                updater.run()
+
+        # Not installed
+        else:
 
             # Create installer and run it
             installer = SKIRTInstaller()
             installer.run()
-
-        # Installed and not SKIRT developer: update
-        elif not introspection.is_skirt_developer():
-
-            # Create updater and run it
-            updater = SKIRTUpdater()
-            updater.run()
 
     # -----------------------------------------------------------------
 

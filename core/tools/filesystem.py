@@ -23,6 +23,8 @@ import datetime
 # Import the relevant PTS classes and modules
 from . import time
 
+# -----------------------------------------------------------------
+
 # Check if Python 2 or higher
 if (sys.version_info > (3, 0)): PYTHON_2 = False # Python 3 or higher
 else: PYTHON_2 = True # Python 2
@@ -379,6 +381,20 @@ def strip_extension(name_or_path, double=False):
 
 # -----------------------------------------------------------------
 
+def get_extension(name_or_path, double=False):
+
+    """
+    This function ...
+    :param name_or_path:
+    :param double:
+    :return:
+    """
+
+    without_extension = strip_extension(name_or_path, double=double)
+    return name_or_path.split(without_extension + ".")[1]
+
+# -----------------------------------------------------------------
+
 def create_directory(path, recursive=False):
 
     """
@@ -565,6 +581,22 @@ def ls(path=None):
 
     if path is None: path = cwd()
     return os.listdir(path)
+
+# -----------------------------------------------------------------
+
+def extension_of(path, filename):
+
+    """
+    This function ....
+    :param path:
+    :param filename:
+    :return:
+    """
+
+    paths = files_in_path(path, exact_name=filename)
+    if len(paths) == 0: raise IOError("No such file: '" + filename + ''" in '" + path + "'")
+    elif len(paths) > 1: raise IOError("Multiple files with the name '" + filename + "' in '" + path + "'")
+    else: return get_extension(paths[0])
 
 # -----------------------------------------------------------------
 

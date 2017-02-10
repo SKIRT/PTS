@@ -11,9 +11,9 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-from pts.evolve import utils
-from pts.evolve import network
-from pts.evolve import constants
+from pts.evolve.core import utils
+from pts.evolve.core import network
+from pts.evolve.core import constants
 from pts.evolve.core.functionslot import FunctionSlot
 
 # Import the relevant PTS classes and modules
@@ -33,9 +33,9 @@ class MigrationScheme(object):
     """ This is the base class for all migration schemes """
 
     selector = None
+
     """ This is the function slot for the selection method
     if you want to change the default selector, you must do this: ::
-
       migration_scheme.selector.set(Selectors.GRouletteWheel) """
 
     # -----------------------------------------------------------------

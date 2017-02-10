@@ -550,6 +550,9 @@ class PTSUpdater(Updater):
         # Update PTS
         self.pull_local()
 
+        # Update conda
+        self.update_conda_local()
+
         # Update the dependencies
         self.update_dependencies_local()
 
@@ -576,6 +579,17 @@ class PTSUpdater(Updater):
 
     # -----------------------------------------------------------------
 
+    def update_conda_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def update_dependencies_local(self):
 
         """
@@ -596,6 +610,9 @@ class PTSUpdater(Updater):
 
         # Update PTS
         self.pull_remote()
+
+        # Update conda
+        self.update_conda_remote()
 
         # Update the dependencies
         self.update_dependencies_remote()
@@ -660,6 +677,17 @@ class PTSUpdater(Updater):
 
         # Success
         log.success("PTS was successfully updated on remote host " + self.remote.host_id)
+
+    # -----------------------------------------------------------------
+
+    def update_conda_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

@@ -166,7 +166,7 @@ class Configurable(object):
         """
 
         # If 'output' is defined in the config
-        if "output" in self.config:
+        if "output" in self.config and self.config.output is not None:
 
             full_output_path = fs.absolute_or_in(self.config.output, self.config.path)
             if not fs.is_directory(full_output_path): fs.create_directory(full_output_path)

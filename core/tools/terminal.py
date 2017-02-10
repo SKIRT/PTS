@@ -15,7 +15,43 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import sys
 import pexpect
-#import subprocess
+import subprocess
+
+# Import the relevant PTS classes and modules
+from . import filesystem as fs
+from . import introspection
+
+# -----------------------------------------------------------------
+
+def make_executable(filepath):
+
+    """
+    This fucntion ...
+    :param filepath:
+    :return:
+    """
+
+    # Make executable
+    subprocess.call("chmod +rx " + filepath, shell=True)
+
+# -----------------------------------------------------------------
+
+def run_script(filepath, options="", output=True, show_output=False, timeout=None, expect=None, cwd=None):
+
+    """
+    This function ...
+    :param filepath:
+    :param options:
+    :param output:
+    :param show_output:
+    :param timeout:
+    :param expect:
+    :param cwd:
+    :return:
+    """
+
+    make_executable(filepath)
+    return execute("./" + filepath + " " + options, output=output, show_output=show_output, timeout=timeout, expect=expect, cwd=cwd)
 
 # -----------------------------------------------------------------
 
@@ -112,5 +148,63 @@ def execute_lines(*args, **kwargs):
 
     # Return the output
     if output: return child.before.split("\r\n")[1:-1]
+
+# -----------------------------------------------------------------
+
+def add_to_environment_variable(variable_name, value, comment=None, in_shell=False):
+
+    """
+    This function ...
+    :param variable_name:
+    :param value:
+    :param comment:
+    :param in_shell:
+    :return:
+    """
+
+    # Determine command
+    export_command = "export " + variable_name + "=" + value + ":$PATH"
+
+    # Define lines
+    lines = []
+    lines.append("")
+    if comment is not None: lines.append("# " + comment)
+    lines.append(export_command)
+    lines.append("")
+
+    # Add lines
+    fs.append_lines(introspection.shell_configuration_path(), lines)
+
+    # Run export path in the current shell to make variable visible
+    if in_shell: execute(export_command)
+
+# -----------------------------------------------------------------
+
+def define_alias(name, alias_to, comment=None, in_shell=False):
+
+    """
+    This function ...
+    :param name:
+    :param alias_to:
+    :param comment:
+    :param in_shell:
+    :return:
+    """
+
+    # Generate the command
+    alias_command = 'alias ' + name + '="' + alias_to + '"'
+
+    # Define lines
+    lines = []
+    lines.append("")
+    if comment is not None: lines.append("# " + comment)
+    lines.append(alias_command)
+    lines.append("")
+
+    # Add lines
+    fs.append_lines(introspection.shell_configuration_path(), lines)
+
+    # Execute in shell
+    if in_shell: execute(alias_command)
 
 # -----------------------------------------------------------------
