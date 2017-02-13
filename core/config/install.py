@@ -27,4 +27,8 @@ definition.add_flag("force_conda", "force installation of conda and creation of 
 # Add flag
 #definition.add_flag("all_remotes", "update on all remote hosts")
 
+# For PTS:
+definition.add_optional("python_name", "string", "name for the python environment for PTS", "python_pts")
+definition.add_optional("python_version", "string", "version number for python", "2.7")
+
 # -----------------------------------------------------------------

@@ -13,8 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import pexpect
-import subprocess
 from . import introspection
 from . import terminal
 
@@ -26,6 +24,9 @@ def get_hash_remote_repository(url):
     This function ...
     :return:
     """
+
+    # Import here instead at module level to accomodate clean python installs
+    import pexpect
 
     # Check whether the repo is up-to-date
     command = "git ls-remote " + url + " HEAD"
@@ -208,8 +209,8 @@ def get_short_git_version(repo_path, remote=None):
 
         first_part_command = "git rev-list --count HEAD"
         second_part_command = "git describe --dirty --always"
-        first_part = terminal.execute(first_part_command, cwd=repo_path)[0].strip()
-        second_part = terminal.execute(second_part_command, cwd=repo_path)[0].strip()
+        first_part = terminal.execute_no_pexpect(first_part_command, cwd=repo_path)[0].strip()
+        second_part = terminal.execute_no_pexpect(second_part_command, cwd=repo_path)[0].strip()
 
     git_version = first_part + "-" + second_part
 

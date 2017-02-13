@@ -13,9 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from subprocess import call, check_output
+from subprocess import check_output
 import urllib
-import requests
 import httplib
 from . import filesystem as fs
 from .logging import log
@@ -64,6 +63,39 @@ def download_and_decompress_file(url, path, remove=True, overwrite=False, progre
 
 # -----------------------------------------------------------------
 
+def download_file_no_requests(url, path, overwrite=False):
+
+    """
+    This function ...
+    :param url:
+    :param path:
+    :param overwrite:
+    :return:
+    """
+
+    # Get the name of the file
+    filename = fs.name(url)
+
+    # Determine the local path to the file
+    filepath = fs.join(path, filename) if fs.is_directory(path) else path
+
+    # Check filepath
+    if fs.is_file(filepath):
+        if overwrite: fs.remove_file(filepath)
+        else: raise IOError("File is already present: " + filepath)
+
+    # Debugging
+    log.debug("Downloading '" + filename + "' to '" + path + "' ...")
+    log.debug("URL: " + url)
+
+    # Download
+    urllib.urlretrieve(url, filepath)
+
+    # Return the file path
+    return filepath
+
+# -----------------------------------------------------------------
+
 def download_file(url, path, overwrite=False, progress_bar=False, stream=False, chunk_size=1024, session=None):
 
     """
@@ -77,6 +109,9 @@ def download_file(url, path, overwrite=False, progress_bar=False, stream=False, 
     :param session:
     :return:
     """
+
+    # Import here to enable this module to be imported with a clean python install
+    import requests
 
     # Get the name of the file
     filename = fs.name(url)

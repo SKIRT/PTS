@@ -13,7 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import numpy as np
+try:
+    HAS_NP = True
+    import numpy as np
+except ImportError: HAS_NP = False
 
 # -----------------------------------------------------------------
 
@@ -25,7 +28,8 @@ def is_boolean_type(value):
     :return:
     """
 
-    return isinstance(value, bool) or isinstance(value, np.bool)
+    if HAS_NP: return isinstance(value, bool) or isinstance(value, np.bool)
+    else: return isinstance(value, bool)
 
 # -----------------------------------------------------------------
 
@@ -37,7 +41,8 @@ def is_integer_type(value):
     :return:
     """
 
-    return isinstance(value, int) or isinstance(value, np.int32) or isinstance(value, np.int64) or isinstance(value, np.uint32) or isinstance(value, np.uint64)
+    if HAS_NP: return isinstance(value, int) or isinstance(value, np.int32) or isinstance(value, np.int64) or isinstance(value, np.uint32) or isinstance(value, np.uint64)
+    else: return isinstance(value, int)
 
 # -----------------------------------------------------------------
 
@@ -49,6 +54,7 @@ def is_real_type(value):
     :return:
     """
 
-    return isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64)
+    if HAS_NP: return isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64)
+    else: return isinstance(value, float)
 
 # -----------------------------------------------------------------

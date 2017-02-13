@@ -14,22 +14,20 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
-import numpy as np
-
-# Import astronomical modules
-from astropy.coordinates import Angle
+#import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..basics.range import IntegerRange, RealRange, QuantityRange
+#from ..basics.range import IntegerRange, RealRange, QuantityRange # imported below to accomodate clean python installs
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
-from ..filter.broad import BroadBandFilter
-from ..filter.broad import identifiers as broad_band_identifiers
-from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
-from ..filter.filter import parse_filter
-from ..basics.errorbar import ErrorBar
-from ..basics.unit import PhotometricUnit, parse_unit
-from ..basics.quantity import parse_quantity
+# Imported below to accomodate clean python installs
+#from ..filter.broad import BroadBandFilter
+#from ..filter.broad import identifiers as broad_band_identifiers
+#from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+#from ..filter.filter import parse_filter
+#from ..basics.errorbar import ErrorBar
+#from ..basics.unit import PhotometricUnit, parse_unit
+#from ..basics.quantity import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -41,6 +39,7 @@ def integer_array(argument):
     :return:
     """
 
+    import numpy as np
     return np.array(integer_list(argument))
 
 # -----------------------------------------------------------------
@@ -53,6 +52,7 @@ def real_array(argument):
     :return:
     """
 
+    import numpy as np
     return np.array(real_list(argument))
 
 # -----------------------------------------------------------------
@@ -270,6 +270,8 @@ def real_range(argument):
     :return:
     """
 
+    from ..basics.range import IntegerRange, RealRange, QuantityRange
+
     min_value, max_value = real_tuple(argument.replace(">", ","))
     return RealRange(min_value, max_value)
 
@@ -283,6 +285,8 @@ def integer_range(argument):
     :return:
     """
 
+    from ..basics.range import IntegerRange, RealRange, QuantityRange
+
     min_value, max_value = integer_tuple(argument.replace(">", ","))
     return IntegerRange(min_value, max_value)
 
@@ -295,6 +299,8 @@ def quantity_range(argument):
     :param argument:
     :return:
     """
+
+    from ..basics.range import IntegerRange, RealRange, QuantityRange
 
     min_quantity, max_quantity = quantity_tuple(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
@@ -327,6 +333,8 @@ def photometric_quantity_range(argument):
     :param argument:
     :return:
     """
+
+    from ..basics.range import QuantityRange
 
     min_quantity, max_quantity = photometric_quantity_tuple(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
@@ -667,6 +675,8 @@ def unit(argument):
     :return:
     """
 
+    from ..basics.unit import PhotometricUnit, parse_unit
+
     return parse_unit(argument) # can be photometric, but doesn't need to be
 
 # -----------------------------------------------------------------
@@ -679,6 +689,8 @@ def photometric_unit(argument):
     :return:
     """
 
+    from ..basics.unit import PhotometricUnit, parse_unit
+
     return PhotometricUnit(argument)
 
 # -----------------------------------------------------------------
@@ -690,6 +702,8 @@ def photometric_density_unit(argument):
     :param argument:
     :return:
     """
+
+    from ..basics.unit import PhotometricUnit, parse_unit
 
     return PhotometricUnit(argument, density=True)
 
@@ -713,6 +727,8 @@ def quantity(argument):
     (1.0, '')
     """
 
+    from ..basics.quantity import parse_quantity
+
     return parse_quantity(argument)
 
 # -----------------------------------------------------------------
@@ -725,6 +741,8 @@ def photometric_quantity(argument):
     :return:
     """
 
+    from ..basics.quantity import parse_quantity
+
     return parse_quantity(argument)
 
 # -----------------------------------------------------------------
@@ -736,6 +754,8 @@ def photometric_density_quantity(argument):
     :param argument:
     :return:
     """
+
+    from ..basics.quantity import parse_quantity
 
     return parse_quantity(argument, density=True)
 
@@ -775,6 +795,9 @@ def angle(argument, default_unit=None):
         if default_unit is None: raise ValueError("Unit not specified")
         else: units = default_unit
 
+    # Import astronomical modules
+    from astropy.coordinates import Angle
+
     # Create and return the Angle object
     return Angle(number, units)
 
@@ -787,6 +810,8 @@ def errorbar(argument):
     :param argument:
     :return:
     """
+
+    from ..basics.errorbar import ErrorBar
 
     upper = None
     if ">" in argument: lower, upper = quantity_tuple(argument)
@@ -804,6 +829,8 @@ def photometric_errorbar(argument):
     :param argument:
     :return:
     """
+
+    from ..basics.errorbar import ErrorBar
 
     upper = None
     if ">" in argument: lower, upper = photometric_quantity_tuple(argument)
@@ -885,6 +912,11 @@ def filter(argument):
     :return:
     """
 
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+    from ..filter.filter import parse_filter
+
     return parse_filter(argument)
 
 # -----------------------------------------------------------------
@@ -909,6 +941,11 @@ def broad_band_filter(argument):
     :return:
     """
 
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+    from ..filter.filter import parse_filter
+
     return BroadBandFilter(argument)
 
 # -----------------------------------------------------------------
@@ -920,6 +957,11 @@ def narrow_band_filter(argument):
     :param argument:
     :return:
     """
+
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+    from ..filter.filter import parse_filter
 
     return NarrowBandFilter(argument)
 
@@ -960,6 +1002,11 @@ def lazy_filter_list(argument):
     :param argument:
     :return:
     """
+
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+    from ..filter.filter import parse_filter
 
     filters = []
     for arg in string_list(argument):
@@ -1015,6 +1062,11 @@ def lazy_broad_band_filter_list(argument):
     :return:
     """
 
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+    from ..filter.filter import parse_filter
+
     filters = []
     for arg in string_list(argument):
 
@@ -1051,6 +1103,11 @@ def lazy_narrow_band_filter_list(argument):
     :param argument:
     :return:
     """
+
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+    from ..filter.filter import parse_filter
 
     filters = []
     for arg in string_list(argument):

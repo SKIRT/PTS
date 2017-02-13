@@ -172,7 +172,8 @@ elif len(table_matches) == 1 and len(matches) == 0:
     from pts.core.tools import logging
 
     # Get the configuration definition
-    definition = introspection.get_configuration_definition(configuration_module_path)
+    #definition = introspection.get_configuration_definition(configuration_module_path)
+    definition = introspection.get_configuration_definition_pts_not_yet_in_pythonpath(configuration_module_path)
 
     # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
     if configuration_method is None: configuration_method = configuration_method_table

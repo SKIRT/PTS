@@ -664,6 +664,21 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def add_to_path_variable(self, value, comment=None, in_shell=False):
+
+        """
+        This function ...
+        :param value:
+        :param comment:
+        :param in_shell:
+        :return:
+        """
+
+        # add to PATH
+        self.add_to_environment_variable("PATH", value, comment=comment, in_shell=in_shell)
+
+    # -----------------------------------------------------------------
+
     def add_to_environment_variable(self, variable_name, value, comment=None, in_shell=False):
 
         """
@@ -1825,6 +1840,42 @@ class Remote(object):
 
         # Add the command
         self.commands.append(command)
+
+    # -----------------------------------------------------------------
+
+    def make_executable(self, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        :return:
+        """
+
+        # Make executable
+        self.execute("chmod +rx " + filepath)
+
+    # -----------------------------------------------------------------
+
+    def run_script(self, filepath, options, output=True, show_output=False, timeout=None, expect=None):
+
+        """
+        This function ...
+        :param filepath:
+        :param options:
+        :param output:
+        :param show_output:
+        :param timeout:
+        :param expect:
+        :param cwd:
+        :return:
+        """
+
+        # Detemrine directory path and filename
+        dir_path = fs.directory_of(filepath)
+        filename = fs.name(filepath)
+
+        self.make_executable(filepath)
+        return self.execute("./" + filename + " " + options, output=output, show_output=show_output, timeout=timeout, expect=expect, cwd=dir_path)
 
     # -----------------------------------------------------------------
 

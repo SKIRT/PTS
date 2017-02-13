@@ -1797,3 +1797,87 @@ def get_configuration_definition(configuration_module_path):
     return definition
 
 # -----------------------------------------------------------------
+
+def get_configuration_definition_pts_not_yet_in_pythonpath(configuration_module_path):
+
+    """
+    This function ...
+    :param configuration_module_path:
+    :return:
+    """
+
+    name = configuration_module_path.split(".")[-1]
+    relative_import_path = ".".join(configuration_module_path.split("pts.")[1].split(".")[:-1])
+    filepath = fs.join(pts_package_dir, relative_import_path.replace(".", "/"), name + ".py")
+
+    # Load the test module
+    configuration_module = imp.load_source(name, filepath)
+
+    # Get the definition
+    return configuration_module.definition
+
+# -----------------------------------------------------------------
+
+def try_importing_module(path, in_globals=False):
+
+    """
+    This function ...
+    :param path:
+    :param in_globals:
+    :return:
+    """
+
+    import imp
+
+    # Determine the name of the module
+    name = path.split(".")[-1]
+
+    # Internal
+    if "pts" in path:
+
+        # Determine relative import path
+        rel_import_path = path.split("pts.")[1]
+
+        # Determine file path
+        file_path = fs.join(pts_package_dir, rel_import_path.replace(".", "/"), name + ".py")
+
+        # Load the module
+        module = imp.load_source(name, file_path)
+
+    # External
+    else:
+
+        file, filename, (suffix, mode, type) = imp.find_module(path)
+        module = imp.load_module(name, file, filename, (suffix, mode, type))
+
+    # Add the module to the globals
+    if in_globals: globals()[name] = module
+
+    # Return the module
+    return module
+
+# -----------------------------------------------------------------
+
+def try_importing_class(name, path, in_globals=False):
+
+    """
+    This function ...
+    :param name:
+    :param path:
+    :param in_globals:
+    :return:
+    """
+
+    # Import the module
+    module = try_importing_module(path)
+
+    # Get the class
+    cls = getattr(module, name)
+
+    # Add the class to the globals
+    if in_globals: globals()[name] = cls
+
+    # Return the class
+    return cls
+
+# -----------------------------------------------------------------
