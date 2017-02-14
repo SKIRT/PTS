@@ -3,6 +3,7 @@ install_pts | install | prep.installation.PTSInstaller | arguments | Install PTS
 install_skirt | install | prep.installation.SKIRTInstaller | arguments | Install SKIRT locally or remotely
 update_pts | update | prep.update.PTSUpdater | arguments | Update PTS locally or remotely
 update_skirt | update | prep.update.SKIRTUpdater | arguments | Update SKIRT locally or remotely
+uninstall | -- | prep.uninstaller.Uninstaller | arguments | Uninstall SKIRT and/or PTS
 configure_host | -- | prep.hostconfigurer.HostConfigurer | interactive | Configure and add a new host to use with PTS
 scaling | -- | test.scaling.ScalingTest | interactive | Test the scaling of SKIRT on a particular system
 launch_simulation | -- | launch.launcher.SKIRTLauncher | arguments | Launch a SKIRT simulation locally or remotely with the best performance, based on the current load of the system
