@@ -1076,6 +1076,7 @@ class PTSInstaller(Installer):
         # Set root path and pacakge path
         self.pts_root_path = introspection.pts_root_dir
         self.pts_package_path = introspection.pts_package_dir
+        self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
 
         # Force flags are not specified
         #if not (self.config.force or self.config.force_conda):
@@ -1620,7 +1621,8 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Testing the PTS installation ...")
 
-        output = terminal.execute_no_pexpect("pts -h")
+        #output = terminal.execute_no_pexpect("pts -h")
+        output = terminal.execute_no_pexpect(self.pts_path + " -h")
         for line in output:
             if "usage: pts" in line: break
         else:
