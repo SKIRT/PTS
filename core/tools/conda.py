@@ -18,6 +18,7 @@ import sys
 import json
 from subprocess import Popen, PIPE
 from os.path import basename, isdir, join
+from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from . import terminal
@@ -85,22 +86,14 @@ def conda_active_environment(conda_path="conda"):
 
 # -----------------------------------------------------------------
 
-#def _call_conda(extra_args, abspath=True):
 def _call_conda(extra_args, conda_path="conda"):
 
-    # call conda with the list of extra arguments, and return the tuple
-    # stdout, stderr
-
-    #if abspath:
-    #    if sys.platform == 'win32':
-    #        python = join(ROOT_PREFIX, 'python.exe')
-    #        conda  = join(ROOT_PREFIX, 'Scripts', 'conda-script.py')
-    #    else:
-    #        python = join(ROOT_PREFIX, 'bin/python')
-    #        conda  = join(ROOT_PREFIX, 'bin/conda')
-    #    cmd_list = [python, conda]
-    #else: # just use whatever conda is on the path
-    #    cmd_list = ['conda']
+    """
+    This function ...
+    :param extra_args:
+    :param conda_path:
+    :return:
+    """
 
     cmd_list = [conda_path]
     cmd_list.extend(extra_args)
@@ -151,24 +144,6 @@ def _setup_install_commands_from_kwargs(kwargs, keys=tuple()):
             cmd_list.append('--' + key.replace('_', '-'))
 
     return cmd_list
-
-# -----------------------------------------------------------------
-
-#def set_root_prefix(prefix=None):
-
-    #"""
-    #Set the prefix to the root environment (default is /opt/anaconda).
-    #This function should only be called once (right after importing conda_api).
-    #"""
-
-    #global ROOT_PREFIX
-
-    #if prefix:
-    #    ROOT_PREFIX = prefix
-    #else:
-    #    # find some conda instance, and then use info to get 'root_prefix'
-    #    info = _call_and_parse(['info', '--json'], abspath=False)
-    #    ROOT_PREFIX = info['root_prefix']
 
 # -----------------------------------------------------------------
 
@@ -298,6 +273,29 @@ def search(regex=None, spec=None, **kwargs):
 
 # -----------------------------------------------------------------
 
+def available_versions(regex):
+
+    """
+    This function ...
+    :param regex:
+    :return:
+    """
+
+    versions = defaultdict(set)
+
+    results = search(regex)
+
+    for label in results:
+
+        for package_version in results[label]:
+
+            version = package_version["version"]
+            versions[label].add(version)
+
+    return versions
+
+# -----------------------------------------------------------------
+
 def create(name=None, prefix=None, pkgs=None):
 
     """
@@ -338,6 +336,9 @@ def install(name=None, prefix=None, pkgs=None):
     """
     Install packages into an environment either by name or path with a
     specified set of packages
+    :param name:
+    :param prefix:
+    :param pkgs:
     """
 
     if not pkgs or not isinstance(pkgs, (list, tuple)):
@@ -370,6 +371,15 @@ def update(*pkgs, **kwargs):
 
     if not pkgs and not kwargs.get('all'):
         raise TypeError("Must specify at least one package to update, or all=True.")
+
+    if kwargs.get('name') and kwargs.get('path'):
+        raise TypeError('conda remove: At most one of name, path allowed')
+
+    if kwargs.get('name'):
+        cmd_list.extend(['--name', kwargs.pop('name')])
+
+    if kwargs.get('path'):
+        cmd_list.extend(['--prefix', kwargs.pop('path')])
 
     cmd_list.extend(
         _setup_install_commands_from_kwargs(
@@ -519,6 +529,12 @@ def process(name=None, prefix=None, cmd=None, args=None,
 # -----------------------------------------------------------------
 
 def _setup_config_from_kwargs(kwargs):
+
+    """
+    This function ...
+    :param kwargs:
+    :return:
+    """
 
     cmd_list = ['--json', '--force']
 
@@ -670,9 +686,6 @@ def test():
 
     print('sys.version: %r' % sys.version)
     print('sys.prefix : %r' % sys.prefix)
-    #print('conda_api.__version__: %r' % __version__)
-    #print('conda_api.ROOT_PREFIX: %r' % ROOT_PREFIX)
-    #if isdir(ROOT_PREFIX):
     conda_version = get_conda_version()
     print('conda version: %r' % conda_version)
     print('conda info:')
@@ -680,8 +693,6 @@ def test():
     for kv in d.items():
         print('\t%s=%r' % kv)
     assert d['conda_version'] == conda_version
-    #else:
-    #    print('Warning: no such directory: %r' % ROOT_PREFIX)
     print('OK')
 
 # -----------------------------------------------------------------

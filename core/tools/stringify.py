@@ -180,6 +180,20 @@ def str_from_real(real, scientific=False, decimal_places=2):
 
 # -----------------------------------------------------------------
 
+def yes_or_no(boolean, short=False):
+
+    """
+    This function ...
+    :param boolean:
+    :return:
+    """
+
+    answer = "yes" if boolean else "no"
+    if short: return answer[0]
+    else: return answer
+
+# -----------------------------------------------------------------
+
 def str_from_bool(boolean, lower=False):
 
     """

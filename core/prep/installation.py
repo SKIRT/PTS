@@ -18,11 +18,9 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-#from ..remote.remote import Remote
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..tools.logging import log
-#from ..tools import google
 from ..tools import network, archive
 from ..tools import terminal
 from ..tools import git
@@ -1412,19 +1410,17 @@ class PTSInstaller(Installer):
         dependencies = introspection.get_all_dependencies().keys()
         packages = introspection.installed_python_packages()
 
-        print(dependencies)
-
         # Get installation commands
         installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
                                                                                     already_installed, available_packages,
                                                                                     conda_path=self.conda_executable_path,
-                                                                                    pip_path=self.conda_pip_path)
+                                                                                    pip_path=self.conda_pip_path, conda_environment=self.config.python_name)
 
         # Install
         for module in installation_commands:
 
-            # Debugging
-            log.debug("Installing '" + module + "' ...")
+            # Inform the user
+            log.info("Installing '" + module + "' ...")
 
             # Check which command can be used
             command = installation_commands[module]
@@ -1434,7 +1430,7 @@ class PTSInstaller(Installer):
             elif isinstance(command, basestring): log.debug("Installation_command: '" + command + "'")
             else: raise ValueError("Invalid installation command: " + str(command))
 
-            #
+            # Launch the command
             if isinstance(command, list): terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
             elif isinstance(command, basestring): terminal.execute_no_pexpect(command, show_output=log.is_debug())
             else: raise ValueError("Invalid installation command: " + str(command))
@@ -1444,7 +1440,6 @@ class PTSInstaller(Installer):
         # Show installed packages
         if len(installed) > 0:
             log.info("Packages that were installed:")
-            #for module in installed: log.info(" - " + module)
             print("")
             print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
             print("")
@@ -1452,17 +1447,15 @@ class PTSInstaller(Installer):
         # Show not installed packages
         if len(not_installed) > 0:
             log.info("Packages that could not be installed:")
-            #for module in not_installed: log.info(" - " + module)
             print("")
-            print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+            print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    "))
             print("")
 
         # Show already present packages
         if len(already_installed) > 0:
             log.info("Packages that were already present:")
-            #for module in already_installed: log.info(" - " + module)
             print("")
-            print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+            print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    "))
             print("")
 
     # -----------------------------------------------------------------
@@ -1620,7 +1613,7 @@ class PTSInstaller(Installer):
         log.info("Getting the PTS dependencies on the remote host ...")
 
         # Install PTS dependencies
-        get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path)
+        get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path, conda_environment=self.config.python_name)
 
         # Success
         log.success("Succesfully installed the dependencies on the remote host")
@@ -1645,6 +1638,9 @@ class PTSInstaller(Installer):
             log.error("Something is wrong with the PTS installation:")
             for line in output: log.error("   " + line)
 
+        # Success
+        log.success("PTS was succesfully installed")
+
     # -----------------------------------------------------------------
 
     def test_remote(self):
@@ -1663,6 +1659,9 @@ class PTSInstaller(Installer):
         else:
             log.error("Something is wrong with the PTS installation:")
             for line in output: log.error("   " + line)
+
+        # Success
+        log.success("PTS was succesfully installed on the remote host")
 
 # -----------------------------------------------------------------
 
@@ -1715,7 +1714,7 @@ def find_real_name(module_name, available_packages, session=None):
 
 # -----------------------------------------------------------------
 
-def get_installation_commands(dependencies, packages, already_installed, available_packages, session=None, conda_path="conda", pip_path="pip"):
+def get_installation_commands(dependencies, packages, already_installed, available_packages, session=None, conda_path="conda", pip_path="pip", conda_environment=None):
 
     """
     This function ...
@@ -1726,6 +1725,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     :param session:
     :param conda_path:
     :param pip_path:
+    :param conda_environment:
     :return:
     """
 
@@ -1775,7 +1775,8 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         # Installable via conda
         if via is None:
 
-            command = conda_path + " install " + module_name
+            if conda_environment is not None: command = conda_path + " install --name " + conda_environment + " " + module_name
+            else: command = conda_path + " install " + module_name
             if version is not None: command += "=" + version
 
             lines = []
@@ -1851,18 +1852,19 @@ def find_qmake():
 
 # -----------------------------------------------------------------
 
-def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip"):
+def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", conda_environment=None):
 
     """
     This fucntion ...
     :param remote:
     :param conda_path:
     :param pip_path:
+    :param conda_environment:
     :return:
     """
 
     # Get available conda packages
-    output = remote.execute("conda search")
+    output = remote.execute(conda_path + " search")
     available_packages = []
     for line in output:
         if not line.split(" ")[0]: continue
@@ -1870,7 +1872,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip"):
 
     # Get already installed packages
     already_installed = []
-    for line in remote.execute("conda list"):
+    for line in remote.execute(conda_path + " list"):
         if line.startswith("#"): continue
         already_installed.append(line.split(" ")[0])
 
@@ -1881,7 +1883,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip"):
         if essential in already_installed: continue
 
         # NUMPY
-        command = "conda install " + essential
+        command = conda_path + " install " + essential
         lines = []
         lines.append(command)
         lines.append(("Proceed ([y]/n)?", "y"))
@@ -1900,7 +1902,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip"):
     installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
                                                                                 already_installed, available_packages,
                                                                                 session, conda_path=conda_path,
-                                                                                pip_path=conda_path)
+                                                                                pip_path=pip_path, conda_environment=conda_environment)
 
     # Stop the python session
     del session
@@ -1908,24 +1910,41 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip"):
     # Install
     for module in installation_commands:
 
-        # Debugging
-        log.debug("Installing '" + module + "' ...")
+        # Inform the user
+        log.info("Installing '" + module + "' ...")
 
         command = installation_commands[module]
 
+        # Debugging
+        if isinstance(command, list): log.debug("Installation command: '" + command[0] + "'")
+        elif isinstance(command, basestring): log.debug("Installation_command: '" + command + "'")
+        else: raise ValueError("Invalid installation command: " + str(command))
+
+        # Launch the installation command
         if isinstance(command, list): remote.execute_lines(*command, show_output=log.is_debug())
         elif isinstance(command, basestring): remote.execute(command, show_output=log.is_debug())
 
+    from ..tools import stringify
+
     # Show installed packages
-    log.info("Packages that were installed:")
-    for module in installed: log.info(" - " + module)
+    if len(installed) > 0:
+        log.info("Packages that were installed:")
+        print("")
+        print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+        print("")
 
     # Show not installed packages
-    log.info("Packages that could not be installed:")
-    for module in not_installed: log.info(" - " + module)
+    if len(not_installed) > 0:
+        log.info("Packages that could not be installed:")
+        print("")
+        print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    "))
+        print("")
 
     # Show already present packages
-    log.info("Packages that were already present:")
-    for module in already_installed: log.info(" - " + module)
+    if len(already_installed) > 0:
+        log.info("Packages that were already present:")
+        print("")
+        print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    "))
+        print("")
 
 # -----------------------------------------------------------------

@@ -29,3 +29,4 @@ tests | -- | test.pts.PTSTestSuite | arguments | Run PTS tests
 observed_fluxes | -- | misc.fluxes.ObservedFluxCalculator | arguments | Calculate (mock) observed fluxes for certain filters from a simulation
 observed_images | -- | misc.images.ObservedImageMaker | arguments | Calculate (mock) observed images for certain filters from a simulation
 summarize_ski | -- | prep.summarize.SkiSummarizer | arguments | Summarize the contents of a ski file
+depends | -- | prep.dependencies.DependenciesChecker | arguments | Check and show the PTS dependencies
