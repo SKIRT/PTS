@@ -230,7 +230,7 @@ class FilterShower(Configurable):
 
                 if self.config.aliases:
 
-                    print("   " + "\n     ".join(wrap(stringify.stringify(list(narrow_generate_aliases(narrow_identifiers[spec])))[1].replace(",", " :: "), 100)))
+                    print("    " + stringify.stringify_list_fancy(list(narrow_generate_aliases(narrow_identifiers[spec])), 100, " :: ", "    "))
                     print("")
 
     # -----------------------------------------------------------------
@@ -274,7 +274,7 @@ class FilterShower(Configurable):
 
                 if self.config.aliases:
 
-                    print("     " + "\n     ".join(wrap(stringify.stringify(list(broad_generate_aliases(broad_identifiers[spec])))[1].replace(",", " :: "), 100)))
+                    print("    " + stringify.stringify_list_fancy(list(broad_generate_aliases(broad_identifiers[spec])), 100, " :: ", "    "))
                     print("")
 
     # -----------------------------------------------------------------

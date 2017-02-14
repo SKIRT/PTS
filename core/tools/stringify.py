@@ -135,6 +135,22 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
 
 # -----------------------------------------------------------------
 
+def stringify_list_fancy(lst, width=100, delimiter=", ", lines_prefix=""):
+
+    """
+    This function ...
+    :param lst:
+    :param width:
+    :param delimiter:
+    :param lines_prefix:
+    :return:
+    """
+
+    from textwrap import wrap
+    return lines_prefix + ("\n" + lines_prefix).join(wrap(stringify(lst)[1].replace(",", delimiter), width))
+
+# -----------------------------------------------------------------
+
 def str_from_integer(integer, scientific=False):
 
     """

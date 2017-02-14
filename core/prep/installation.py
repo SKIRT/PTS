@@ -1412,6 +1412,8 @@ class PTSInstaller(Installer):
         dependencies = introspection.get_all_dependencies().keys()
         packages = introspection.installed_python_packages()
 
+        print(dependencies)
+
         # Get installation commands
         installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
                                                                                     already_installed, available_packages,
@@ -1437,17 +1439,31 @@ class PTSInstaller(Installer):
             elif isinstance(command, basestring): terminal.execute_no_pexpect(command, show_output=log.is_debug())
             else: raise ValueError("Invalid installation command: " + str(command))
 
+        from ..tools import stringify
+
         # Show installed packages
-        log.info("Packages that were installed:")
-        for module in installed: log.info(" - " + module)
+        if len(installed) > 0:
+            log.info("Packages that were installed:")
+            #for module in installed: log.info(" - " + module)
+            print("")
+            print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+            print("")
 
         # Show not installed packages
-        log.info("Packages that could not be installed:")
-        for module in not_installed: log.info(" - " + module)
+        if len(not_installed) > 0:
+            log.info("Packages that could not be installed:")
+            #for module in not_installed: log.info(" - " + module)
+            print("")
+            print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+            print("")
 
         # Show already present packages
-        log.info("Packages that were already present:")
-        for module in already_installed: log.info(" - " + module)
+        if len(already_installed) > 0:
+            log.info("Packages that were already present:")
+            #for module in already_installed: log.info(" - " + module)
+            print("")
+            print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -1782,8 +1798,8 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         # Add to installed
         installed.append(module_name)
 
-        # Return ...
-        return commands, installed, not_installed
+    # Return ...
+    return commands, installed, not_installed
 
 # -----------------------------------------------------------------
 

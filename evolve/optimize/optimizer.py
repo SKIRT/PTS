@@ -321,8 +321,7 @@ def show_best(best):
 
     print(fmt.yellow + "  Genome:" + fmt.reset)
     print("")
-    #for gene in genome: print("    " + str(gene))
-    print("   " + "\n     ".join(wrap(stringify.stringify([gene for gene in genome])[1], 100)))
+    print(stringify.stringify_list_fancy([gene for gene in genome])[1], 100, ", ", "    ")
     print("")
 
     print(fmt.yellow + "  Score: " + fmt.reset + str(score))
