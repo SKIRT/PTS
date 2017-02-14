@@ -1658,49 +1658,66 @@ class PTSInstaller(Installer):
 
 # -----------------------------------------------------------------
 
-def find_real_name(module_name, available_packages, session=None):
+def find_real_name(module_name, available_packages, real_names, session=None):
 
     """
     This function ...
     :param module_name:
     :param available_packages:
+    :param real_names:
     :param session:
     :return:
     """
 
     if module_name in available_packages: return module_name, None
+    if module_name in real_names: return real_names[module_name], None
 
-    try: from ..tools import google
-    except ImportError: return None, None
+    #try: from ..tools import google
+    #except ImportError:
+    #    log.warning("Could not load 'google' module")
+    #    return None, None
 
     # Look for real module name
-    try: module_url = google.lucky(module_name)
-    except Exception:
-        if session is not None:
-            # use google on the remote end, because there are strange errors when using it on the client end when it has
-            # a VPN connection open
-            module_url = session.get_simple_property("google", "lucky('" + module_name + "')")
-        else: return None, None
+    #try:
+    #    log.debug("Looking for information for module '" + module_name + "' on the web ...")
+    #    module_url = google.lucky(module_name)
+    #except Exception:
+    #    if session is not None:
+    #        # use google on the remote end, because there are strange errors when using it on the client end when it has
+    #        # a VPN connection open
+    #        module_url = session.get_simple_property("google", "lucky('" + module_name + "')")
+    #    else: return None, None
+
+    # Debugging
+    #log.debug("Looking for information for module '" + module_name + "' on webpage '" + module_url + "' ...")
+
+    # Check if the url is on the domain of GitHub
 
     # Search for github.com/ name
-    try: import requests
-    except ImportError: return None, None
+    #try: import requests
+    #except ImportError: return None, None
 
-    session = requests.session()
-    r = session.get(module_url)
-    page_as_string = r.content
+    #session = requests.session()
+    #r = session.get(module_url)
+    #page_as_string = r.content
 
-    if "github.com/" in page_as_string:
+    command = []
 
-        module_name = page_as_string.split("github.com/")[1].split("/")[0]
-        if module_name in available_packages: return module_name, None
-        else: return module_name, "github.com"
+    #if "pip install" in page_as_string:
+    if "pip install" in command:
 
-    if "pip install" in page_as_string:
-
-        module_name = page_as_string.split("pip install ")[1].split(" ")[0]
+        #module_name = page_as_string.split("pip install ")[1].split(" ")[0].split("<")[0]
+        log.debug("Real module name might be '" + module_name + "', available through pip")
         if module_name in available_packages: return module_name, None
         else: return module_name, "pip"
+
+    #if "github.com/" in page_as_string:
+    if "github.com/" in command:
+
+        #module_name = page_as_string.split("github.com/")[1].split("/")[0]
+        log.debug("Real module name might be '" + module_name + "', available on GitHub")
+        if module_name in available_packages: return module_name, None
+        else: return module_name, "github.com"
 
     # Not found
     return None, None
@@ -1725,6 +1742,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     # Get dependency version restrictions
     versions = introspection.get_constricted_versions()
 
+    # Get names of packages for import names
+    real_names = introspection.get_package_names()
+
     installed = []
     not_installed = []
 
@@ -1747,7 +1767,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         if module_name in already_installed: continue
 
         # Find name, check if available
-        module_name, via = find_real_name(module_name, available_packages, session)
+        module_name, via = find_real_name(module_name, available_packages, real_names, session)
 
         # Module is not found
         if module_name is None:

@@ -1,0 +1,3 @@
+sklearn:scikit-learn
+skimage:scikit-image
+bs4:beautifulsoup4

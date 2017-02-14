@@ -109,6 +109,20 @@ def get_constricted_versions():
 
 # -----------------------------------------------------------------
 
+# Path to the names file
+pts_names_path = fs.join(pts_package_dir, "names.txt")
+
+def get_package_names():
+    names = dict()
+    with open(pts_names_path, 'r') as fh:
+        for line in fh:
+            line = line[:-1]
+            import_name, real_name = line.split(":")
+            names[import_name] = real_name
+    return names
+
+# -----------------------------------------------------------------
+
 # The path to the PTS do directory containing launchable scripts (PTS/pts/do)
 pts_do_dir = fs.join(pts_package_dir, "do")
 
@@ -980,6 +994,9 @@ def get_internal_imports_file(filepath):
     # Loop over the lines
     for line in fs.read_lines(filepath):
 
+        # Strip whitespace
+        line = line.strip()
+
         # Look for an 'import yyy' or 'from yyy import zzz' statement
         if not (line.startswith("import ") or (line.startswith("from ") and "import" in line)): continue
 
@@ -1055,7 +1072,9 @@ def get_all_dependencies():
         # Read the lines of the script file
         for line in open(filepath, 'r'):
 
+            # Strip whitespace and end-of-line characters
             line = line[:-1]
+            line = line.strip()
 
             # If the "HIDE_DEPENDS" keyword is encountered, skip this file
             if "HIDE_DEPENDS" in line: break
@@ -1129,6 +1148,9 @@ def add_dependencies(dependencies, script_path, encountered_internal_modules, pr
     # Read the lines of the script file
     import_lines = []
     for line in open(script_path, 'r'):
+
+        # Strip whitespace
+        line = line.strip()
 
         # If the current line does not contain an 'import yyy' or 'from yyy import zzz' statement, skip it
         if not (line.startswith("import ") or (line.startswith("from ") and "import" in line)): continue
