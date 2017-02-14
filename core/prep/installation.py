@@ -1392,7 +1392,7 @@ class PTSInstaller(Installer):
 
         # Get already installed packages
         already_installed = []
-        for line in terminal.execute_no_pexpect(self.conda_executable_path + " list"):
+        for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name):
             if line.startswith("#"): continue
             already_installed.append(line.split(" ")[0])
 
@@ -1865,7 +1865,11 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", cond
 
     # Get already installed packages
     already_installed = []
-    for line in remote.execute(conda_path + " list"):
+
+    # List
+    if conda_environment is not None: list_command = conda_path + " list --name " + conda_environment
+    else: list_command = conda_path + " list"
+    for line in remote.execute(list_command):
         if line.startswith("#"): continue
         already_installed.append(line.split(" ")[0])
 
@@ -1875,8 +1879,9 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", cond
         # Skip installation if it is already present
         if essential in already_installed: continue
 
-        # NUMPY
-        command = conda_path + " install " + essential
+        # Install
+        if conda_environment is not None: command = conda_path + " install " + essential + " --name " + conda_environment
+        else: command = conda_path + " install " + essential
         lines = []
         lines.append(command)
         lines.append(("Proceed ([y]/n)?", "y"))
