@@ -514,13 +514,6 @@ class SKIRTInstaller(Installer):
 
             username, password = introspection.get_account(host)
 
-            # Clone
-            #child = pexpect.spawn(command, timeout=30)
-            #child.expect([':'])
-            #child.sendline(username)
-            #child.expect([':'])
-            #child.sendline(password)
-
             # Set the command lines
             lines = []
             lines.append(command)

@@ -737,6 +737,31 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def remove_aliases_and_variables_with_comment(self, comment):
+
+        """
+        This function ...
+        :param comment:
+        :return:
+        """
+
+        # Lines to keep
+        lines = []
+
+        remove_next = False
+        for line in self.read_lines(self.shell_configuration_path):
+
+            if comment in line: remove_next = True
+            elif remove_next:
+                if line.strip() == "": remove_next = False
+                else: pass
+            else: lines.append(line)
+
+        # Write lines
+        self.write_lines(self.shell_configuration_path, lines)
+
+    # -----------------------------------------------------------------
+
     @property
     def python_path(self):
 
