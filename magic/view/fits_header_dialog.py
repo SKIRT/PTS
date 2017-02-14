@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 import wx
 
 class FITSHeaderDialog(wx.Dialog):

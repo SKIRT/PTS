@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 import wx
 
 textctrl_output_only_background_color = (235, 235, 235)

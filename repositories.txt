@@ -1,0 +1,2 @@
+astropyp https://github.com/fred3m/astropyp
+pyevolve http://pyevolve.sourceforge.net/distribution/0_6rc1/Pyevolve-0.6rc1.tar.gz

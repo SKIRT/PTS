@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 from __future__ import absolute_import
 from .source_panel import SourcePanel
 from .plot_panel import PlotPanel

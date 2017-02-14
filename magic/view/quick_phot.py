@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 import numpy as np
 from astropy.stats import sigma_clipped_stats
 import sys

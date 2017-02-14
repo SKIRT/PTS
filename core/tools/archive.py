@@ -20,9 +20,40 @@ import StringIO
 import shutil
 import gzip
 import bz2
+import subprocess
 
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
+
+# -----------------------------------------------------------------
+
+def decompress_directory_in_place(filepath, remove=False):
+
+    """
+    This function ...
+    :param filepath:
+    :param remove:
+    :return:
+    """
+
+    if filepath.endswith(".tar.gz"):
+
+        # Determine the path of the directory
+        new_path = filepath.split(".tar.gz")[0]
+        #fs.create_directory(new_path)
+        dir_path = fs.directory_of(new_path)
+
+        # Decompress
+        command = "tar -zxvf " + filepath + " --directory " + dir_path
+        subprocess.call(command, shell=True)
+
+    else: raise NotImplementedError("Not implemented yet")
+
+    # Remove the file
+    if remove: fs.remove_file(filepath)
+
+    # Return the new path
+    return new_path
 
 # -----------------------------------------------------------------
 
@@ -40,11 +71,12 @@ def decompress_file_in_place(path, remove=False):
         decompress_bz2(path, new_path)
     elif path.endswith(".gz"):
         new_path = path.rstrip(".gz")
+        if new_path.endswith(".tar"): new_path = new_path.split(".tar")[0]
         decompress_gz(path, new_path)
     elif path.endswith(".zip"):
         new_path = path.rstrip(".zip")
         decompress_zip(path, new_path)
-    else: raise ValueError("Unrecognized archive type (must be bz2, gz or zip)")
+    else: raise ValueError("Unrecognized archive type (must be bz2, gz [or tar.gz] or zip)")
 
     # Remove the original file if requested
     if remove: fs.remove_file(path)

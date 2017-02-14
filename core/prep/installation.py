@@ -1407,7 +1407,9 @@ class PTSInstaller(Installer):
         installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
                                                                                     already_installed, available_packages,
                                                                                     conda_path=self.conda_executable_path,
-                                                                                    pip_path=self.conda_pip_path, conda_environment=self.config.python_name)
+                                                                                    pip_path=self.conda_pip_path,
+                                                                                    conda_environment=self.config.python_name,
+                                                                                    python_path=self.conda_python_path)
 
         # Install
         for module in installation_commands:
@@ -1424,9 +1426,22 @@ class PTSInstaller(Installer):
             else: raise ValueError("Invalid installation command: " + str(command))
 
             # Launch the command
-            if isinstance(command, list): terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
-            elif isinstance(command, basestring): terminal.execute_no_pexpect(command, show_output=log.is_debug())
-            else: raise ValueError("Invalid installation command: " + str(command))
+            import subprocess
+            try:
+                if isinstance(command, list): terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
+                elif isinstance(command, basestring):
+                    if "setup.py" in command:
+                        # special: for python setup.py, we must be in the directory or it won't work
+                        dir_path = fs.directory_of(command.split()[1])
+                        setup_path = fs.join(dir_path, "setup.py")
+                        command.replace(setup_path, "setup.py")
+                        terminal.execute(command, show_output=log.is_debug(), cwd=dir_path)
+                    else: terminal.execute_no_pexpect(command, show_output=log.is_debug())
+                else: raise ValueError("Invalid installation command: " + str(command))
+            except subprocess.CalledProcessError:
+                installed.remove(module)
+                log.warning("Something went wrong installing '" + module + "'")
+                not_installed.append(module)
 
         from ..tools import stringify
 
@@ -1632,7 +1647,7 @@ class PTSInstaller(Installer):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("PTS was succesfully installed")
+        log.success("PTS and its dependencies were succesfully installed")
 
     # -----------------------------------------------------------------
 
@@ -1654,7 +1669,7 @@ class PTSInstaller(Installer):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("PTS was succesfully installed on the remote host")
+        log.success("PTS and its dependencies were succesfully installed on the remote host")
 
 # -----------------------------------------------------------------
 
@@ -1669,8 +1684,8 @@ def find_real_name(module_name, available_packages, real_names, session=None):
     :return:
     """
 
-    if module_name in available_packages: return module_name, None
-    if module_name in real_names: return real_names[module_name], None
+    if module_name in available_packages: return module_name, "conda", None
+    if module_name in real_names: return real_names[module_name], "conda", None
 
     #try: from ..tools import google
     #except ImportError:
@@ -1701,30 +1716,60 @@ def find_real_name(module_name, available_packages, real_names, session=None):
     #r = session.get(module_url)
     #page_as_string = r.content
 
-    command = []
+    #command = []
 
-    #if "pip install" in page_as_string:
-    if "pip install" in command:
+    # if "pip install" in page_as_string:
+    #if "pip install" in command:
 
-        #module_name = page_as_string.split("pip install ")[1].split(" ")[0].split("<")[0]
-        log.debug("Real module name might be '" + module_name + "', available through pip")
-        if module_name in available_packages: return module_name, None
-        else: return module_name, "pip"
+        # module_name = page_as_string.split("pip install ")[1].split(" ")[0].split("<")[0]
+        #log.debug("Real module name might be '" + module_name + "', available through pip")
+        #if module_name in available_packages:
+        #    return module_name, None
+        #else:
+        #    return module_name, "pip"
 
-    #if "github.com/" in page_as_string:
-    if "github.com/" in command:
+    # if "github.com/" in page_as_string:
+    #if "github.com/" in command:
 
-        #module_name = page_as_string.split("github.com/")[1].split("/")[0]
-        log.debug("Real module name might be '" + module_name + "', available on GitHub")
-        if module_name in available_packages: return module_name, None
-        else: return module_name, "github.com"
+        # module_name = page_as_string.split("github.com/")[1].split("/")[0]
+        #log.debug("Real module name might be '" + module_name + "', available on GitHub")
+        #if module_name in available_packages:
+        #    return module_name, None
+        #else:
+        #    return module_name, "github.com"
+
+    # Search on pypi
+    from pts.core.tools.pypi import search
+    results = list(search(module_name))
+    in_pip = False
+    version = None
+    for result in results:
+        if result["name"] == module_name:
+            in_pip = True
+            version = result["version"]
+            break
+    if in_pip: return module_name, "pip", version
+
+    if "_" in module_name:
+
+        new_name = module_name.replace("_", "-")
+        results = list(search(new_name))
+        #print(results)
+        in_pip = False
+        version = None
+        for result in results:
+            if result["name"] == new_name:
+                in_pip = True
+                version = result["version"]
+                break
+        if in_pip: return new_name, "pip", version
 
     # Not found
-    return None, None
+    return None, None, None
 
 # -----------------------------------------------------------------
 
-def get_installation_commands(dependencies, packages, already_installed, available_packages, session=None, conda_path="conda", pip_path="pip", conda_environment=None):
+def get_installation_commands(dependencies, packages, already_installed, available_packages, conda_path="conda", pip_path="pip", python_path="python", easy_install_path="easy_install", conda_environment=None):
 
     """
     This function ...
@@ -1732,9 +1777,10 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     :param packages:
     :param already_installed:
     :param available_packages:
-    :param session:
     :param conda_path:
     :param pip_path:
+    :param python_path:
+    :param easy_install_path:
     :param conda_environment:
     :return:
     """
@@ -1744,6 +1790,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
     # Get names of packages for import names
     real_names = introspection.get_package_names()
+
+    # Get repositories for import names
+    repositories = introspection.get_package_repositories()
 
     installed = []
     not_installed = []
@@ -1765,31 +1814,43 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
         # Check if already installed
         if module_name in already_installed: continue
+        if module_name in real_names and real_names[module_name] in already_installed: continue
 
-        # Find name, check if available
-        module_name, via = find_real_name(module_name, available_packages, real_names, session)
+        # Check if a repository link is defined for this package
+        if module_name in repositories:
 
-        # Module is not found
-        if module_name is None:
-            log.warning("Package '" + module + "' can not be installed")
-            not_installed.append(module)
-            continue
+            via = repositories[module_name]
+            install_module_name = module_name
+            version = None
+
+        else:
+
+            # Find name, check if available
+            install_module_name, via, version = find_real_name(module_name, available_packages, real_names)
+
+            # Module is not found
+            if install_module_name is None:
+
+                log.warning("Package '" + module + "' can not be installed")
+                not_installed.append(module)
+                continue
 
         # Debugging
         log.debug("Checking whether a specific version of the package is required ...")
 
         # Checking the version restriction
-        if module_name in versions: version = versions[module_name]
-        else: version = None
+        if module_name in versions:
+            version = versions[module_name]
+            log.debug("Version '" + version + "' is required")
 
         # Debugging
-        if version is not None: log.debug("Version '" + version + "' is required")
+        log.debug("Determining installation command ...")
 
         # Installable via conda
-        if via is None:
+        if via == "conda":
 
-            if conda_environment is not None: command = conda_path + " install --name " + conda_environment + " " + module_name
-            else: command = conda_path + " install " + module_name
+            if conda_environment is not None: command = conda_path + " install --name " + conda_environment + " " + install_module_name
+            else: command = conda_path + " install " + install_module_name
             if version is not None: command += "=" + version
 
             lines = []
@@ -1800,13 +1861,38 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             commands[module] = lines
 
         # Install with pip
-        elif via.startswith("pip"):
+        elif via == "pip":
 
-            command = pip_path + " install " + module_name
+            command = pip_path + " install " + install_module_name
             if version is not None: command += "==" + version
             commands[module] = command
 
-        # Github: not implemented yet
+        # GitHub url
+        elif "github.com" in via:
+            log.warning("Obtaining packages from a remote repository on GitHub is not supported yet")
+            not_installed.append(module_name)
+            continue
+
+        # Link with source code
+        elif via.startswith("http"):
+
+            # Determine download path
+            from ..tools import time
+            path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name(module_name))
+
+            # Download
+            filepath = network.download_file_no_requests(via, path)
+
+            # Decompress
+            decompress_directory_path = archive.decompress_directory_in_place(filepath, remove=True)
+
+            # Set the installation command
+            #command = easy_install_path + " " + install_module_name
+            setup_path = fs.join(decompress_directory_path, "setup.py")
+            command = python_path + " " + setup_path + " install"
+            commands[module] = command
+
+        # Not recognized
         else: not_installed.append(module)
 
         # Add to installed
@@ -1916,10 +2002,10 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", cond
     # Don't end the python session just yet
 
     # Get installation commands
-    session.import_package("google", from_name="pts.core.tools")
+    #session.import_package("google", from_name="pts.core.tools")
     installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
                                                                                 already_installed, available_packages,
-                                                                                session, conda_path=conda_path,
+                                                                                conda_path=conda_path,
                                                                                 pip_path=pip_path, conda_environment=conda_environment)
 
     # Stop the python session
@@ -1939,8 +2025,21 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", cond
         else: raise ValueError("Invalid installation command: " + str(command))
 
         # Launch the installation command
-        if isinstance(command, list): remote.execute_lines(*command, show_output=log.is_debug())
-        elif isinstance(command, basestring): remote.execute(command, show_output=log.is_debug())
+        try:
+            if isinstance(command, list): remote.execute_lines(*command, show_output=log.is_debug())
+            elif isinstance(command, basestring):
+                if "setup.py" in command:
+                    # special: for python setup.py, we must be in the directory or it won't work
+                    dir_path = fs.directory_of(command.split()[1])
+                    setup_path = fs.join(dir_path, "setup.py")
+                    command.replace(setup_path, "setup.py")
+                    remote.execute(command, show_output=log.is_debug(), cwd=dir_path)
+                else: remote.execute(command, show_output=log.is_debug())
+            else: raise ValueError("Invalid command: " + str(command))
+        except Exception:
+            installed.remove(module)
+            log.warning("Something went wrong installing '" + module + "'")
+            not_installed.append(module)
 
     from ..tools import stringify
 

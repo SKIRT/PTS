@@ -86,7 +86,6 @@ some of the required packages are not yet available in this newer and slightly i
     <TR><TD>rpy2/TD></TR>
     <TR><TD>telarchive/TD></TR>
     <TR><TD>wcsaxes/TD></TR>
-    <TR><TD>wx/TD></TR>
     </TABLE>
 
 To install packages from this list needed for your PTS uses case(s), use "pip":

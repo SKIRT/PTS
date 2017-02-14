@@ -123,6 +123,20 @@ def get_package_names():
 
 # -----------------------------------------------------------------
 
+# path to installation commands file
+pts_repositories_path = fs.join(pts_package_dir, "repositories.txt")
+
+def get_package_repositories():
+    urls = dict()
+    with open(pts_repositories_path, 'r') as fh:
+        for line in fh:
+            line = line[:-1]
+            import_name, url = line.split(" ")
+            urls[import_name] = url
+    return urls
+
+# -----------------------------------------------------------------
+
 # The path to the PTS do directory containing launchable scripts (PTS/pts/do)
 pts_do_dir = fs.join(pts_package_dir, "do")
 
@@ -1103,6 +1117,10 @@ def get_all_dependencies():
                     # Skip 'pylab', imports should be replaced by matplotlib.pyplot anyway
                     if module == "pylab": continue
 
+                    # Skip __main__, __future__
+                    if module == "__main__": continue
+                    if module == "__future__": continue
+
                     # Add the module name to the list
                     if module: modules_file.append(module)
 
@@ -1122,10 +1140,9 @@ def get_all_dependencies():
 
                 if module_name in local_module_names_in_dir: continue
 
-                #if module_name == "constants" or module_name == "genome": print(module_name, filepath, local_module_names_in_dir)
-
                 modules[module_name].add(filepath)
 
+    # Return the modules
     return modules
 
 # -----------------------------------------------------------------

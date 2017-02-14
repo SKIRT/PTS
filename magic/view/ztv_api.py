@@ -18,6 +18,8 @@ from codecs import open  # To use a consistent encoding
 
 # -----------------------------------------------------------------
 
+# HIDE_DEPENDS
+
 class Error(Exception):
     pass
 

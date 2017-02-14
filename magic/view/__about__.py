@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 try:
     from .astropy_helpers_git_helpers import get_git_devstr
     git_devstr = get_git_devstr(False)

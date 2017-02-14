@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 import sys
 import pickle
 from threading import Thread
