@@ -2088,11 +2088,10 @@ class Remote(object):
 
                 # Expect
                 if len(line) == 3 and line[2]:
-                    #index = self.ssh.expect([self.ssh.PROMPT, line[0]]) # this is not working, why?
-                    index = self.ssh.expect(["$", line[0]])
+                    index = self.ssh.expect([self.ssh.PROMPT, "$", line[0]])
                     if index == 0: pass
-                    elif index == 1: self.ssh.sendline(line[1])
-                    #eof = self.ssh.prompt()
+                    elif index == 1: pass
+                    elif index == 2: self.ssh.sendline(line[1])
                 else:
                     self.ssh.expect(line[0], timeout=timeout)
                     self.ssh.sendline(line[1])
@@ -4021,6 +4020,112 @@ class Remote(object):
         """
 
         return self.host.cluster_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_git_branches(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        args = ["git", "branch"]
+        output = self.execute(" ".join(args), cwd=self.pts_package_path)
+
+        branches = []
+        for line in output.split("\n"):
+            if line: branches.append(line.split("* ")[1])
+        return branches
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_git_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        args = ["git", "remote"]
+        output = self.execute(" ".join(args), cwd=self.pts_package_path)
+
+        remotes = []
+        for line in output.split("\n"):
+            if line: remotes.append(line)
+        return remotes
+
+    # -----------------------------------------------------------------
+
+    def pts_git_remote_url(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        #args = ["git", "remote", "show", name]
+        #output = self.execute(" ".join(args), cwd=self.pts_package_path)
+
+        #for line in output.split("\n"):
+        #    if "Fetch URL" in line: return line.split(": ")[1]
+
+        #raise RuntimeError("Remote '" + name + "' not found!")
+
+        from ..tools import git
+        return git.get_url_repository(self, self.pts_package_path, name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt_git_branches(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        args = ["git", "branch"]
+        output = self.execute(" ".join(args), cwd=self.skirt_repo_path)
+
+        branches = []
+        for line in output.split("\n"):
+            if line: branches.append(line.split("* ")[1])
+        return branches
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt_git_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        args = ["git", "remote"]
+        output = self.execute(" ".join(args), cwd=self.skirt_repo_path)
+
+        remotes = []
+        for line in output.split("\n"):
+            if line: remotes.append(line)
+        return remotes
+
+    # -----------------------------------------------------------------
+
+    def skirt_git_remote_url(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        from ..tools import git
+        return git.get_url_repository(self, self.skirt_repo_path, name)
 
     # -----------------------------------------------------------------
 

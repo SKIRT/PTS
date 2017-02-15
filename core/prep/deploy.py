@@ -20,6 +20,7 @@ from .update import SKIRTUpdater, PTSUpdater
 from .installation import SKIRTInstaller, PTSInstaller
 from ..remote.versionchecker import VersionChecker
 from ..remote.configurable import RemotesConfigurable
+from ..tools import git
 
 # -----------------------------------------------------------------
 
@@ -87,7 +88,7 @@ class Deployer(RemotesConfigurable):
         log.info("Installing or updating SKIRT ...")
 
         # Locally
-        if self.config.local: self.install_or_update_skirt_locally()
+        if self.config.local and not introspection.is_skirt_developer(): self.install_or_update_skirt_locally()
 
         # Remotely
         if self.has_remotes: self.install_or_update_skirt_remotely()
@@ -118,10 +119,11 @@ class Deployer(RemotesConfigurable):
 
                 installer = SKIRTInstaller()
                 installer.config.force = True
+                installer.config.repository = "origin"
                 installer.run()
 
             # Update, if not SKIRT developer
-            elif not introspection.is_skirt_developer():
+            else:
 
                 # Debugging
                 log.debug("SKIRT is present, updating ...")
@@ -138,6 +140,7 @@ class Deployer(RemotesConfigurable):
             # Create installer and run it
             installer = SKIRTInstaller()
             installer.config.force = True
+            installer.config.repository = "origin"
             installer.run()
 
     # -----------------------------------------------------------------
@@ -161,15 +164,43 @@ class Deployer(RemotesConfigurable):
             # If installed, update
             if installed:
 
+                # Check origins
+                local_origin_url = introspection.skirt_git_remote_url(self.config.skirt_repo_name)
+                remote_origin_url = remote.skirt_git_remote_url("origin")
+
+                # Decompose
+                host_local, user_or_organization_local, repo_name_local, username_local, password_local = git.decompose_repo_url(local_origin_url)
+                host_remote, user_or_organization_remote, repo_name_remote, username_remote, password_remote = git.decompose_repo_url(remote_origin_url)
+
+                # Compose in simple https to compare whether equal
+                local_simple = git.compose_https(host_local, user_or_organization_local, repo_name_local)
+                remote_simple = git.compose_https(host_remote, user_or_organization_remote, repo_name_remote)
+
+                # Reinstall because of wrong origin
+                if local_simple != remote_simple:
+
+                    # Debugging
+                    log.debug("Local and remote SKIRT repositories do not have the same source")
+                    log.debug("Local original repository for SKIRT: '" + local_simple)
+                    log.debug("Remote original repository for SKIRT: '" + remote_simple)
+                    log.debug("Reinstalling SKIRT on the remote host '" + remote.host_id + "' ...")
+
+                    # Install
+                    installer = SKIRTInstaller()
+                    installer.config.force = True
+                    installer.config.repository = self.config.skirt_repo_name
+                    installer.run(remote=remote)
+
                 # Clean install
                 if self.config.clean:
 
                     # Debugging
-                    log.debug("Peforming clean install of SKIRT on remote host '" + remote.host_id + "' ...")
+                    log.debug("Performing clean install of SKIRT on remote host '" + remote.host_id + "' ...")
 
                     # Installer
                     installer = SKIRTInstaller()
                     installer.config.force = True
+                    installer.config.repository = self.config.skirt_repo_name
                     installer.run(remote=remote)
 
                 else:
@@ -194,7 +225,7 @@ class Deployer(RemotesConfigurable):
 
                 # Set the remote host ID
                 installer.config.force = True   # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
-                installer.config.repository = "origin"
+                installer.config.repository = self.config.skirt_repo_name
 
                 # Run the installer
                 installer.run(remote=remote)
@@ -260,14 +291,43 @@ class Deployer(RemotesConfigurable):
             # If installed, update
             if installed:
 
+                # Check origins
+                local_origin_url = introspection.pts_git_remote_url(self.config.pts_repo_name)
+                remote_origin_url = remote.pts_git_remote_url("origin")
+
+                # Decompose
+                host_local, user_or_organization_local, repo_name_local, username_local, password_local = git.decompose_repo_url(local_origin_url)
+                host_remote, user_or_organization_remote, repo_name_remote, username_remote, password_remote = git.decompose_repo_url(remote_origin_url)
+
+                # Compose in simple https to compare whether equal
+                local_simple = git.compose_https(host_local, user_or_organization_local, repo_name_local)
+                remote_simple = git.compose_https(host_remote, user_or_organization_remote, repo_name_remote)
+
+                # Reinstall because of wrong origin
+                if local_simple != remote_simple:
+
+                    # Debugging
+                    log.debug("Local and remote PTS repositories do not have the same source")
+                    log.debug("Local original repository for PTS: '" + local_simple + "'")
+                    log.debug("Remote original repository for PTS: '" + remote_simple + "'")
+                    log.debug("Reinstalling PTS on the remote host '" + remote.host_id + "' ...")
+
+                    # Install
+                    installer = PTSInstaller()
+                    installer.config.force = True
+                    installer.config.repository = self.config.pts_repo_name
+                    installer.run(remote=remote)
+
                 # Clean install
-                if self.config.clean:
+                elif self.config.clean:
 
                     # Debugging
                     log.debug("Performing a clean install of PTS on remote host '" + remote.host_id + "' ...")
 
+                    # Install
                     installer = PTSInstaller()
                     installer.config.force = True
+                    installer.config.repository = self.config.pts_repo_name
                     installer.run(remote=remote)
 
                 else:
@@ -290,6 +350,7 @@ class Deployer(RemotesConfigurable):
                 # Create installer
                 installer = PTSInstaller()
                 installer.config.force = True
+                installer.config.repository = self.config.pts_repo_name
 
                 # Install
                 installer.run(remote=remote)

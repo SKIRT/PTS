@@ -327,7 +327,10 @@ def is_pts_developer():
     :return:
     """
 
+    from . import git
+
     if len(pts_git_remotes()) > 1: return True
+    elif git.transform_to_simple_https(pts_git_remote_url(pts_git_remotes()[0])) not in [private_pts_https_link, public_pts_https_link]: return True
     else:
 
         output = subprocess.check_output(["git", "status"], cwd=pts_package_dir)
@@ -348,7 +351,10 @@ def is_skirt_developer():
     :return:
     """
 
+    from . import git
+
     if len(skirt_git_remotes()) > 1: return True
+    elif git.transform_to_simple_https(skirt_git_remote_url(skirt_git_remotes()[0])) not in [private_skirt_https_link, public_skirt_https_link]: return True
     else:
 
         output = subprocess.check_output(["git", "status"], cwd=skirt_repo_dir)
@@ -358,7 +364,7 @@ def is_skirt_developer():
             if "modified" in line: return True
             if "deleted" in line: return True
 
-        return output
+        return False
 
 # -----------------------------------------------------------------
 

@@ -1049,6 +1049,7 @@ class PTSInstaller(Installer):
         self.conda_executable_path = None
         self.conda_pip_path = None
         self.conda_python_path = None
+        self.conda_easy_install_path = None
 
         # Path to the PTS executable
         self.pts_path = None
@@ -1314,7 +1315,7 @@ class PTSInstaller(Installer):
         expect = "Proceed ([y]/n)?"
         lines = []
         lines.append(command)
-        lines.append((expect, "y"))
+        lines.append((expect, "y", True))
 
         # Execute the lines
         terminal.execute_lines_expect_clone(*lines)
@@ -1325,6 +1326,7 @@ class PTSInstaller(Installer):
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
         self.conda_python_path = fs.join(environment_bin_path, "python")
+        self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
         # Clear previous things
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
@@ -1353,11 +1355,13 @@ class PTSInstaller(Installer):
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
         self.conda_python_path = fs.join(environment_bin_path, "python")
+        self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
         # Check if paths exist
         assert fs.is_file(self.conda_executable_path)
         assert fs.is_file(self.conda_pip_path)
         assert fs.is_file(self.conda_python_path)
+        assert fs.is_file(self.conda_easy_install_path)
 
     # -----------------------------------------------------------------
 
@@ -1445,7 +1449,8 @@ class PTSInstaller(Installer):
                                                                                     conda_path=self.conda_executable_path,
                                                                                     pip_path=self.conda_pip_path,
                                                                                     conda_environment=self.config.python_name,
-                                                                                    python_path=self.conda_python_path)
+                                                                                    python_path=self.conda_python_path,
+                                                                                    easy_install_path=self.conda_easy_install_path)
 
         # Install
         for module in installation_commands:
@@ -1628,17 +1633,19 @@ class PTSInstaller(Installer):
         # Run the installation script
         self.remote.run_script(installer_path, options, show_output=log.is_debug())
 
-        # CREATE A PYTHON ENVIRONMENT FOR PTS
+        # Set the installation path
+        self.conda_installation_path = conda_installation_path
         conda_bin_path = fs.join(conda_installation_path, "bin")
-        self.conda_executable_path = fs.join(conda_bin_path, "conda")
-        self.conda_pip_path = fs.join(conda_bin_path, "pip")
-        self.conda_python_path = fs.join(conda_bin_path, "python")
+
+        # Set main executable
+        self.conda_main_executable_path = fs.join(self.conda_installation_path, "bin", "conda")
 
         # Debugging
         log.debug("Adding the conda executables to the PATH ...")
 
-        # Add conda bin path to bashrc / profile
+        # Remove previous things
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
+        self.remote.remove_aliases_and_variables_with_comment(comment)
 
         # Run the export command also in the current shell, so that the conda commands can be found
         self.remote.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
@@ -1662,10 +1669,30 @@ class PTSInstaller(Installer):
         expect = "Proceed ([y]/n)?"
         lines = []
         lines.append(command)
-        lines.append((expect, "y"))
+        lines.append((expect, "y", True))
 
         # Execute the commands
         self.remote.execute_lines(*lines)
+
+        # Check whether the environment has been made and the executables are present
+        environment_bin_path = fs.join(self.conda_installation_path, "envs", self.config.python_name, "bin")
+        if not self.remote.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
+        self.conda_executable_path = fs.join(environment_bin_path, "conda")
+        self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_python_path = fs.join(environment_bin_path, "python")
+        self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+
+        # Clear previous things
+        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+        self.remote.remove_aliases_and_variables_with_comment(comment)
+
+        # Add an alias for the PTS python version
+        self.remote.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
+
+        # Add PTS to shell configuration file
+        self.remote.add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
+        self.remote.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+        self.remote.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
     # -----------------------------------------------------------------
 
@@ -1682,11 +1709,13 @@ class PTSInstaller(Installer):
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
         self.conda_python_path = fs.join(environment_bin_path, "python")
+        self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
         # Check if paths exist
         assert self.remote.is_file(self.conda_executable_path)
         assert self.remote.is_file(self.conda_pip_path)
         assert self.remote.is_file(self.conda_python_path)
+        assert self.remote.is_file(self.conda_easy_install_path)
 
     # -----------------------------------------------------------------
 
@@ -1748,7 +1777,9 @@ class PTSInstaller(Installer):
         log.info("Getting the PTS dependencies on the remote host ...")
 
         # Install PTS dependencies
-        get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path, conda_environment=self.config.python_name)
+        get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path,
+                                    python_path=self.conda_python_path, easy_install_path=self.conda_easy_install_path,
+                                    conda_environment=self.config.python_name)
 
         # Success
         log.success("Succesfully installed the dependencies on the remote host")
@@ -1896,7 +1927,9 @@ def find_real_name(module_name, available_packages, real_names, session=None):
 
 # -----------------------------------------------------------------
 
-def get_installation_commands(dependencies, packages, already_installed, available_packages, conda_path="conda", pip_path="pip", python_path="python", easy_install_path="easy_install", conda_environment=None):
+def get_installation_commands(dependencies, packages, already_installed, available_packages, conda_path="conda",
+                              pip_path="pip", python_path="python", easy_install_path="easy_install",
+                              conda_environment=None):
 
     """
     This function ...
@@ -2086,13 +2119,16 @@ def find_qmake():
 
 # -----------------------------------------------------------------
 
-def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", conda_environment=None):
+def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", python_path="python",
+                                easy_install_path="easy_install", conda_environment=None):
 
     """
     This fucntion ...
     :param remote:
     :param conda_path:
     :param pip_path:
+    :param python_path:
+    :param easy_install_path:
     :param conda_environment:
     :return:
     """
@@ -2137,11 +2173,16 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", cond
     # Don't end the python session just yet
 
     # Get installation commands
-    #session.import_package("google", from_name="pts.core.tools")
+    # dependencies, packages, already_installed, available_packages, conda_path="conda",
+    # pip_path="pip", python_path="python", easy_install_path="easy_install",
+    # conda_environment=None
     installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
                                                                                 already_installed, available_packages,
                                                                                 conda_path=conda_path,
-                                                                                pip_path=pip_path, conda_environment=conda_environment)
+                                                                                pip_path=pip_path,
+                                                                                conda_environment=conda_environment,
+                                                                                python_path=python_path,
+                                                                                easy_install_path=easy_install_path)
 
     # Stop the python session
     del session

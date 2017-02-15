@@ -82,17 +82,18 @@ def get_hash_remote_repository(url):
 
 # -----------------------------------------------------------------
 
-def get_url_repository(remote, repo_path):
+def get_url_repository(remote, repo_path, repo_name="origin"):
 
     """
     This function ...
     :param remote:
     :param repo_path:
+    :param repo_name:
     :return:
     """
 
     # Get the url of the repo from which cloned
-    args = ["git", "remote", "show", "origin"]
+    args = ["git", "remote", "show", repo_name]
     show_command = " ".join(args)
 
     # Change cwd
@@ -306,5 +307,18 @@ def compose_https(host, user_or_organization, repo_name, username=None, password
 
     # Return the url
     return url
+
+# -----------------------------------------------------------------
+
+def transform_to_simple_https(url):
+
+    """
+    This function ...
+    :param url:
+    :return:
+    """
+
+    host, user_or_organization, repo_name, username, password = decompose_repo_url(url)
+    return compose_https(host, user_or_organization, repo_name)
 
 # -----------------------------------------------------------------

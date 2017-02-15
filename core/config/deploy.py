@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.remote.host import find_host_ids
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -17,6 +18,10 @@ definition = ConfigurationDefinition()
 # Add optional
 if len(find_host_ids()) > 0: definition.add_optional("host_ids", "string_list", "remote host ids", choices=find_host_ids(), default=find_host_ids())
 else: definition.add_fixed("host_ids", "remote host_ids", [])
+
+# Add optional
+definition.add_optional("pts_repo_name", "string", "PTS repository name to deploy remotely", "origin", choices=introspection.pts_git_remotes())
+definition.add_optional("skirt_repo_name", "string", "SKIRT repository name to deploy remotely", "origin", choices=introspection.skirt_git_remotes())
 
 # Add flags
 definition.add_flag("local", "also deploy locally", True)

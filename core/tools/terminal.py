@@ -313,8 +313,6 @@ def execute_lines(*args, **kwargs):
 
             # Send the command
             child = child.sendline(line)
-            #child.expect()
-            #child.expect("$", timeout=timeout)
 
         # Tuple: something is expected and must be filled in
         elif isinstance(line, tuple):
@@ -322,15 +320,11 @@ def execute_lines(*args, **kwargs):
             # Expect
             if len(line) == 3 and line[2]:
 
-                # index = self.ssh.expect([self.ssh.PROMPT, line[0]]) # this is not working, why?
-                index = child.expect(["$", line[0]], timeout=timeout)
+                index = child.expect([pexpect.EOF, "$", line[0]], timeout=timeout)
                 if index == 0: pass
-                elif index == 1: child.sendline(line[1])
-                # eof = self.ssh.prompt()
+                elif index == 0: pass
+                elif index == 2: child.sendline(line[1])
             else:
-
-                #self.ssh.expect(line[0])
-                #self.ssh.sendline(line[1])
                 child.expect(line[0], timeout=timeout)
                 child.sendline(line[1])
 
