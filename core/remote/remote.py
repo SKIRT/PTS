@@ -189,7 +189,7 @@ class Remote(object):
         except HostDownException:
 
             if one_attempt:
-                log.warning("Could not connect to the remote host")
+                self.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
                 return False
 
@@ -198,7 +198,7 @@ class Remote(object):
             self.ssh = pxssh.pxssh()
             try: self.login(login_timeout * 3) # try now with a timeout that is three times as long
             except HostDownException:
-                log.warning("Could not connect to the remote host")
+                self.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
                 return False
 
@@ -313,6 +313,68 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def info(self, message):
+
+        """
+        This function ...
+        :param message:
+        :return:
+        """
+
+        # Inform the user
+        log.info("[" + self.host_id + "] " + message)
+
+    # -----------------------------------------------------------------
+
+    def debug(self, message):
+
+        """
+        This function ...
+        :param message:
+        :return:
+        """
+
+        # Debugging
+        log.debug("[" + self.host_id + "] " + message)
+
+    # -----------------------------------------------------------------
+
+    def warning(self, message):
+
+        """
+        This function ...
+        :param message:
+        :return:
+        """
+
+        log.warning("[" + self.host_id + "] " + message)
+
+    # -----------------------------------------------------------------
+
+    def error(self, message):
+
+        """
+        This function ...
+        :param message:
+        :return:
+        """
+
+        log.error("[" + self.host_id + "] " + message)
+
+    # -----------------------------------------------------------------
+
+    def success(self, message):
+
+        """
+        This function ...
+        :param message:
+        :return:
+        """
+
+        log.success("[" + self.host_id + "] " + message)
+
+    # -----------------------------------------------------------------
+
     def define_environment_variable(self, name, value):
 
         """
@@ -398,7 +460,7 @@ class Remote(object):
         if not self.has_lmod: return
 
         # Inform the user
-        log.info("Unloading all modules ...")
+        self.info("Unloading all modules ...")
 
         # Module purge
         self.execute("module purge", output=False)
@@ -615,7 +677,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Checking and fixing shell configuration files ...")
+        self.info("Checking and fixing shell configuration files ...")
 
         # On MacOS, don't need fixing
         if self.is_macos: return
@@ -1068,8 +1130,7 @@ class Remote(object):
 
         # Find latest Intel Compiler Toolkit version and load it
         intel_version = self._find_latest_iimpi_version_module()
-        if intel_version is None:
-            log.warning("Intel Cluster Toolkit Compiler Edition could not be found")
+        if intel_version is None: self.warning("Intel Cluster Toolkit Compiler Edition could not be found")
         elif intel_version not in self.loaded_modules: self.load_module(intel_version) # Load the module
 
         # Return the module name
@@ -1295,7 +1356,7 @@ class Remote(object):
         """
 
         # Inform the user
-        log.info("Connecting to vpn service '" + self.host.vpn.service + "' ...")
+        self.info("Connecting to vpn service '" + self.host.vpn.service + "' ...")
 
         # Connect to the VPN service
         self.vpn = VPN(self.host.vpn.service)
@@ -1669,7 +1730,7 @@ class Remote(object):
 
         # Check
         if self.is_file(filepath):
-            if overwrite: fs.remove_file(filepath)
+            if overwrite: self.remove_file(filepath)
             else: raise IOError("File already exists: " + filepath)
 
         # Execute the download command
@@ -1743,7 +1804,7 @@ class Remote(object):
         ###
 
         # Debugging
-        log.debug("Saving the configuration file locally ...")
+        self.debug("Saving the configuration file locally ...")
 
         # Determine path to the temporarily saved local configuration file
         temp_path = tempfile.gettempdir()
@@ -1753,7 +1814,7 @@ class Remote(object):
         config.saveto(temp_conf_path)
 
         # Debugging
-        log.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
+        self.debug("Uploading the configuration file to '" + remote_temp_path + "' ...")
 
         # Upload the config file
         remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
@@ -1787,7 +1848,7 @@ class Remote(object):
         ####
 
         # Debugging
-        log.debug("Creating a script for remote execution ...")
+        self.debug("Creating a script for remote execution ...")
 
         # Determine the path to the remote equivalent of this file
         remote_main_path = fs.join(self.pts_package_path, "do", "__main__.py")
@@ -1811,7 +1872,7 @@ class Remote(object):
         fs.remove_file(temp_script_path)
 
         # Remove the remote temporary directory
-        if keep_remote_output: log.info("Remote output will be placed in '" + remote_output_path + "'")
+        if keep_remote_output: self.info("Remote output will be placed in '" + remote_output_path + "'")
 
         # Create a new Task object
         task = Task(command, config.to_string())
@@ -1870,7 +1931,7 @@ class Remote(object):
         """
 
         # Debugging
-        log.debug("Sent command: "  + command)
+        self.debug("Sent command: "  + command)
 
         # Add the command
         self.commands.append(command)
@@ -2162,7 +2223,7 @@ class Remote(object):
         """
 
         # Debugging
-        log.debug("Removing directory '" + path + "' ...")
+        self.debug("Removing directory '" + path + "' ...")
 
         # Execute the command
         self.execute("rm -rf " + path, output=False)
@@ -2178,7 +2239,7 @@ class Remote(object):
         """
 
         # Debugging
-        log.debug("Removing file '" + path + "' ...")
+        self.debug("Removing file '" + path + "' ...")
 
         # Execute the command
         self.execute("rm " + path, output=False)
@@ -2251,7 +2312,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def directories_in_path(self, path, startswith=None, recursive=False):
+    def directories_in_path(self, path, startswith=None, recursive=False, ignore_hidden=True):
 
         """
         This function ...
@@ -2260,6 +2321,8 @@ class Remote(object):
         :param recursive:
         :return:
         """
+
+        if not ignore_hidden: self.warning("Not ignoring hidden folders is not yet supported")
 
         # List the directories in the provided path
         if recursive:
@@ -2289,14 +2352,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def files_in_path(self, path, recursive=False):
+    def files_in_path(self, path, recursive=False, ignore_hidden=True):
 
         """
         This function ...
         :param path:
         :param recursive:
+        :param ignore_hidden:
         :return:
         """
+
+        if not ignore_hidden: self.warning("Not ignoring hidden files is not yet supported")
 
         # List the files in the provided path
         if recursive:
@@ -2634,7 +2700,7 @@ class Remote(object):
         if new_name is not None: copy_command += new_name
 
         # Debugging
-        log.debug("Copy command: " + copy_command)
+        self.debug("Copy command: " + copy_command)
 
         # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)
@@ -2677,7 +2743,7 @@ class Remote(object):
                 if "not a regular file" in line: raise ValueError(line)
 
             # Debugging: show the output of the scp command
-            log.debug("Copy stdout: " + str(" ".join(lines)))
+            self.debug("Copy stdout: " + str(" ".join(lines)))
 
     # -----------------------------------------------------------------
 
@@ -2736,7 +2802,7 @@ class Remote(object):
         if new_name is not None: copy_command += new_name
 
         # Debugging
-        log.debug("Copy command: " + copy_command)
+        self.debug("Copy command: " + copy_command)
 
         # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)
@@ -2782,7 +2848,7 @@ class Remote(object):
                 if "not a regular file" in line: raise ValueError(line)
 
             # Debugging: show the output of the scp command
-            log.debug("Copy stdout: " + str(" ".join(lines)))
+            self.debug("Copy stdout: " + str(" ".join(lines)))
 
     # -----------------------------------------------------------------
 
@@ -2856,6 +2922,58 @@ class Remote(object):
         path = fs.join(self.conda_installation_path, "bin", "conda")
         if fs.is_file(path): return path
         else: return None
+
+    # -----------------------------------------------------------------
+
+    def is_conda_environment(self, name, conda_path="conda"):
+
+        """
+        This function ...
+        :param name:
+        :param conda_path:
+        :return:
+        """
+
+        return name in self.conda_environments(conda_path=conda_path)
+
+    # -----------------------------------------------------------------
+
+    def conda_environments(self, conda_path="conda"):
+
+        """
+        This function ...
+        :param conda_path:
+        :return:
+        """
+
+        output = self.execute(conda_path + " env list")
+        envs = []
+        for line in output:
+            if line.startswith("#"): continue
+            if line.strip() == "": continue
+            envs.append(line.split()[0])
+        return envs
+
+    # -----------------------------------------------------------------
+
+    def conda_active_environment(self, conda_path="conda"):
+
+        """
+        This function ...
+        :param conda_path:
+        :return:
+        """
+
+        output = self.execute(conda_path + " env list")
+        env = None
+        for line in output:
+            if line.startswith("#"): continue
+            if line.strip() == "": continue
+            splitted = line.split()
+            if splitted[1].strip() == "*":
+                env = splitted[0].strip()
+                break
+        return env
 
     # -----------------------------------------------------------------
 
@@ -3798,6 +3916,22 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def is_empty(self, directory, ignore_hidden=True):
+
+        """
+        This function ...
+        :param directory:
+        :param ignore_hidden:
+        :return:
+        """
+
+        files = self.files_in_path(directory, ignore_hidden=ignore_hidden)
+        directories = self.directories_in_path(directory, ignore_hidden=ignore_hidden)
+
+        return len(files) + len(directories) == 0
+
+    # -----------------------------------------------------------------
+
     def is_directory_alternative(self, path):
 
         """
@@ -4018,9 +4152,9 @@ class Remote(object):
                 if task.local_output_path is not None:
 
                     # Debug info
-                    log.debug("Retrieving the complete remote output directory ...")
-                    log.debug("Local output directory: " + task.local_output_path)
-                    log.debug("Remote output directory: " + task.remote_output_path)
+                    self.debug("Retrieving the complete remote output directory ...")
+                    self.debug("Local output directory: " + task.local_output_path)
+                    self.debug("Remote output directory: " + task.remote_output_path)
 
                     # Check whether the output directory exists; if not, create it
                     if not fs.is_directory(task.local_output_path): fs.create_directory(task.local_output_path)
@@ -4029,7 +4163,7 @@ class Remote(object):
                     self.download(task.remote_output_path, task.local_output_path)
 
                 # Local output path not defined
-                else: log.warning("Local output path not defined: remote PTS task output will not be retrieved (look on the remote filesystem for the results in '" + task.remote_output_path + "')")
+                else: self.warning("Local output path not defined: remote PTS task output will not be retrieved (look on the remote filesystem for the results in '" + task.remote_output_path + "')")
 
                 # Add the retrieved task to the list
                 tasks.append(task)

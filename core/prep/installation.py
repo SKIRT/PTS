@@ -805,7 +805,7 @@ class SKIRTInstaller(Installer):
         output = terminal.execute("skirt -h")
         for line in output:
             if "Welcome to SKIRT" in line:
-                log.succes("SKIRT is working")
+                log.success("SKIRT is working")
                 break
         else:
             log.error("Something is wrong with the SKIRT installation:")
@@ -1139,6 +1139,44 @@ class PTSInstaller(Installer):
 
     # -----------------------------------------------------------------
 
+    def has_valid_conda_environment_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if conda.is_environment(self.config.python_name, self.conda_main_executable_path):
+
+            # Check if the bin dir is present
+            env_path = fs.join(self.conda_installation_path, "envs", self.config.python_name)
+            bin_path = fs.join(env_path, "bin")
+            python_path = fs.join(bin_path, "python")
+
+            if not fs.is_directory(bin_path):
+
+                # Remove the environment
+                fs.remove_directory(env_path)
+                return False
+
+            elif fs.is_empty(bin_path):
+
+                # Remove the environment
+                fs.remove_directory(env_path)
+                return False
+
+            elif not fs.is_file(python_path):
+
+                # Remove the environment
+                fs.remove_directory(env_path)
+                return False
+
+            else: return True
+
+        else: return False
+
+    # -----------------------------------------------------------------
+
     def install_local(self):
 
         """
@@ -1156,8 +1194,8 @@ class PTSInstaller(Installer):
         if not self.has_conda: self.get_conda_local()
 
         # 3. Create python environment
-        if not conda.is_environment(self.config.python_name, self.conda_main_executable_path): self.create_environment_local()
-        else: self.set_environment_paths()
+        if not self.has_valid_conda_environment_local(): self.create_environment_local()
+        else: self.set_environment_paths_local()
 
         # 4. Get PTS
         if self.config.force: self.get_pts_local()
@@ -1188,9 +1226,6 @@ class PTSInstaller(Installer):
             #    print(path)
             conda_path = fs.join(fs.home(), "miniconda", "bin", "conda")
             if fs.is_file(conda_path): conda_executable_path = conda_path
-
-        #print(conda_executable_path)
-        #exit()
 
         # If conda is present
         if conda_executable_path is not None:
@@ -1305,7 +1340,7 @@ class PTSInstaller(Installer):
 
     # -----------------------------------------------------------------
 
-    def set_environment_paths(self):
+    def set_environment_paths_local(self):
 
         """
         This function ...
@@ -1469,6 +1504,43 @@ class PTSInstaller(Installer):
 
     # -----------------------------------------------------------------
 
+    def has_valid_conda_environment_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.remote.is_conda_environment(self.config.python_name, self.conda_main_executable_path):
+
+            # Check if the bin dir is present
+            env_path = fs.join(self.conda_installation_path, "envs", self.config.python_name)
+            bin_path = fs.join(env_path, "bin")
+            python_path = fs.join(bin_path, "python")
+            if not self.remote.is_directory(bin_path):
+
+                # Remove the environment
+                self.remote.remove_directory(env_path)
+                return False
+
+            elif self.remote.is_empty(bin_path):
+
+                # Remove the environment
+                self.remote.remove_directory(env_path)
+                return False
+
+            elif not self.remote.is_file(python_path):
+
+                # Remove the environment
+                self.remote.remove_directory(env_path)
+                return False
+
+            else: return True
+
+        else: return False
+
+    # -----------------------------------------------------------------
+
     def install_remote(self):
 
         """
@@ -1479,17 +1551,49 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Installing PTS remotely ...")
 
+        # Check presence of conda remotely
+        self.check_conda_remote()
+
         # 1. Get the conda python distribution
-        self.get_conda_remote()
+        if not self.has_conda: self.get_conda_remote()
 
         # 2. Create a remote python environment
-        self.create_environment_remote()
+        if not self.has_valid_conda_environment_remote(): self.create_environment_remote()
+        else: self.set_environment_paths_remote()
 
         # 3. Get PTS
         self.get_pts_remote()
 
         # 4. Get PTS dependencies
         self.get_dependencies_remote()
+
+    # -----------------------------------------------------------------
+
+    def check_conda_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of a conda installation on the remote host ...")
+
+        # Find conda path
+        if self.remote.is_executable("conda"): conda_executable_path = self.remote.find_executable("conda")
+        else: conda_executable_path = None
+
+        # Find conda installation in the home directory
+        if conda_executable_path is None:
+            conda_path = fs.join(self.remote.home_directory, "miniconda", "bin", "conda")
+            if self.remote.is_file(conda_path): conda_executable_path = conda_path
+
+        # If conda is present
+        if conda_executable_path is not None:
+
+            self.conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
+            if self.config.force_conda: self.remote.remove_directory(self.conda_installation_path)
+            else: self.conda_main_executable_path = conda_executable_path
 
     # -----------------------------------------------------------------
 
@@ -1515,7 +1619,8 @@ class PTSInstaller(Installer):
         conda_installation_path = fs.join(self.remote.home_directory, "miniconda")
 
         # Check if not present
-        if self.remote.is_directory(conda_installation_path): raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")
+        #if self.remote.is_directory(conda_installation_path):
+        #    raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")
 
         # Set options for installer
         options = "-b -p " + conda_installation_path
@@ -1553,8 +1658,35 @@ class PTSInstaller(Installer):
         # Generate the command
         command = self.conda_main_executable_path + " create -n " + self.config.python_name + " python=" + self.config.python_version
 
-        # Execute the command
-        self.remote.execute(command)
+        # Expect question
+        expect = "Proceed ([y]/n)?"
+        lines = []
+        lines.append(command)
+        lines.append((expect, "y"))
+
+        # Execute the commands
+        self.remote.execute_lines(*lines)
+
+    # -----------------------------------------------------------------
+
+    def set_environment_paths_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set paths
+        environment_bin_path = fs.join(self.conda_installation_path, "envs", self.config.python_name, "bin")
+        if not self.remote.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
+        self.conda_executable_path = fs.join(environment_bin_path, "conda")
+        self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_python_path = fs.join(environment_bin_path, "python")
+
+        # Check if paths exist
+        assert self.remote.is_file(self.conda_executable_path)
+        assert self.remote.is_file(self.conda_pip_path)
+        assert self.remote.is_file(self.conda_python_path)
 
     # -----------------------------------------------------------------
 

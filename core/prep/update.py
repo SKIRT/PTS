@@ -490,7 +490,7 @@ class SKIRTUpdater(Updater):
         output = terminal.execute("skirt -h")
         for line in output:
             if "Welcome to SKIRT" in line:
-                log.succes("SKIRT is working")
+                log.success("SKIRT is working")
                 break
         else:
             log.error("Something is wrong with the SKIRT installation:")
