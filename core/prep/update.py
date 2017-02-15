@@ -24,6 +24,7 @@ from ..tools import introspection
 from .installation import get_installation_commands, find_qmake, build_skirt_on_remote, build_skirt_local, get_pts_dependencies_remote
 from ..tools import git
 from ..tools import terminal
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -230,16 +231,16 @@ class SKIRTUpdater(Updater):
         # Inform the user
         log.info("Updating SKIRT locally ...")
 
-        # Check the compilers (C++ and MPI)
+        # 1. Check the compilers (C++ and MPI)
         self.check_compilers_local()
 
-        # Check Qt installation, find qmake
+        # 2. Check Qt installation, find qmake
         self.check_qt_local()
 
-        # Pull
+        # 3. Pull
         self.pull_local()
 
-        # Build
+        # 4. Build
         if self.rebuild: self.build_local()
 
     # -----------------------------------------------------------------
@@ -260,6 +261,12 @@ class SKIRTUpdater(Updater):
         # Set MPI compiler path
         if self.remote.has_mpi_compiler: self.mpi_compiler_path = self.remote.mpi_compiler_path
 
+        # Debugging
+        if self.compiler_path is not None: log.debug("The C++ compiler path is '" + self.compiler_path)
+        else: log.debug("A C++ compiler is not found")
+        if self.mpi_compiler_path is not None: log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
+        else: log.debug("An MPI compiler is not found")
+
     # -----------------------------------------------------------------
 
     def check_qt_local(self):
@@ -268,6 +275,9 @@ class SKIRTUpdater(Updater):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Checking the presence of Qt locally ...")
 
         # Find qmake path
         self.qmake_path = find_qmake()
@@ -349,6 +359,11 @@ class SKIRTUpdater(Updater):
         self.compiler_path = self.remote.find_and_load_cpp_compiler()
         self.mpi_compiler_path = self.remote.find_and_load_mpi_compiler()
 
+        # Debugging
+        log.debug("The C++ compiler path is '" + self.compiler_path)
+        if self.mpi_compiler_path is not None: log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
+        else: log.debug("An MPI compiler is not found")
+
     # -----------------------------------------------------------------
 
     def check_git_remote(self):
@@ -419,15 +434,6 @@ class SKIRTUpdater(Updater):
             self.git_version = git.get_short_git_version(self.remote.skirt_repo_path, self.remote)
             return
 
-        # FOR SSH:
-        # Git pull
-        #self.remote.ssh.sendline("git pull origin master")
-        #self.remote.ssh.expect(":")
-        # Expect password
-        #if "Enter passphrase for key" in self.remote.ssh.before:
-        #    self.remote.execute(self.config.pubkey_password, show_output=True)
-        #else: self.remote.prompt()
-
         # Set the clone command
         command = "git pull origin master"
 
@@ -496,6 +502,9 @@ class SKIRTUpdater(Updater):
             log.error("Something is wrong with the SKIRT installation:")
             for line in output: log.error("   " + line)
 
+        # Success
+        log.success("SKIRT and its dependencies were succesfully updated")
+
     # -----------------------------------------------------------------
 
     def test_remote(self):
@@ -506,7 +515,7 @@ class SKIRTUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Testing the SKIRT installation ...")
+        log.info("Testing the SKIRT installation on the remote host ...")
 
         output = self.remote.execute("skirt -h")
         for line in output:
@@ -516,6 +525,9 @@ class SKIRTUpdater(Updater):
         else:
             log.error("Something is wrong with the SKIRT installation:")
             for line in output: log.error("   " + line)
+
+        # Success
+        log.success("SKIRT and its dependencies were successfully updated on the remote host")
 
 # -----------------------------------------------------------------
 
@@ -538,6 +550,17 @@ class PTSUpdater(Updater):
         # The git version to which PTS is updated
         self.git_version = None
 
+        # Paths
+        self.conda_installation_path = None
+        self.conda_main_executable_path = None
+        self.conda_executable_path = None
+        self.conda_pip_path = None
+        self.conda_python_path = None
+        self.conda_easy_install_path = None
+
+        # The conda environment
+        self.conda_environment = None
+
     # -----------------------------------------------------------------
 
     def update_local(self):
@@ -547,14 +570,20 @@ class PTSUpdater(Updater):
         :return:
         """
 
-        # Update PTS
+        # Inform the user
+        log.info("Updating PTS and its dependencies locally ...")
+
+        # 1. Update PTS
         self.pull_local()
 
-        # Update conda
-        self.update_conda_local()
+        # 2. Check conda
+        self.check_conda_local()
 
-        # Update the dependencies
-        self.update_dependencies_local()
+        # 3. Update conda
+        if self.config.dependencies: self.update_conda_local()
+
+        # 4. Update the dependencies
+        if self.config.dependencies: self.update_dependencies_local()
 
     # -----------------------------------------------------------------
 
@@ -576,6 +605,20 @@ class PTSUpdater(Updater):
 
         # Call the appropriate git command at the PTS repository directory
         subprocess.call(["git", "pull", "origin", "master"], cwd=pts_git_path)
+
+    # -----------------------------------------------------------------
+
+    def check_conda_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking conda locally ...")
+
+
 
     # -----------------------------------------------------------------
 
@@ -608,14 +651,20 @@ class PTSUpdater(Updater):
         :return:
         """
 
-        # Update PTS
+        # Inform the user
+        log.info("Updating PTS on the remote host ...")
+
+        # 1. Pull
         self.pull_remote()
 
-        # Update conda
-        self.update_conda_remote()
+        # 2. Check conda, get paths
+        self.check_conda_remote()
 
-        # Update the dependencies
-        self.update_dependencies_remote()
+        # 3. Update conda
+        if self.config.dependencies: self.update_conda_remote()
+
+        # 4. Update the dependencies
+        if self.config.dependencies: self.update_dependencies_remote()
 
     # -----------------------------------------------------------------
 
@@ -680,6 +729,66 @@ class PTSUpdater(Updater):
 
     # -----------------------------------------------------------------
 
+    def check_conda_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of a conda installation on the remote host ...")
+
+        # Find conda path
+        if self.remote.is_executable("conda"): conda_executable_path = self.remote.find_executable("conda")
+        else: conda_executable_path = None
+
+        # Find conda installation in the home directory
+        if conda_executable_path is None:
+
+            conda_path = fs.join(self.remote.home_directory, "miniconda", "bin", "conda")
+            if self.remote.is_file(conda_path): conda_executable_path = conda_path
+
+        # If conda is present
+        if conda_executable_path is not None:
+
+            self.conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
+            self.conda_main_executable_path = conda_executable_path
+
+        # Conda not found
+        else: raise RuntimeError("Conda not found")
+
+        # Get environment name
+        pts_alias = self.remote.resolve_alias("pts")
+        #print(pts_alias)
+        pts_python_path = pts_alias.split()[0]
+        if pts_python_path == "python": raise Exception("Cannot determine the conda environment used for pts")
+        else:
+
+            env_path = fs.directory_of(fs.directory_of(pts_python_path))
+            #print(env_path)
+            environment_name = fs.name(env_path)
+            self.conda_environment = environment_name
+
+        #print(self.conda_environment)
+
+        # Set paths
+        environment_bin_path = fs.join(self.conda_installation_path, "envs", self.conda_environment, "bin")
+        #print(environment_bin_path)
+        if not self.remote.is_directory(environment_bin_path): raise RuntimeError("The environment directory is not present")
+        self.conda_executable_path = fs.join(environment_bin_path, "conda")
+        self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_python_path = fs.join(environment_bin_path, "python")
+        self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+
+        # Check if paths exist
+        assert self.remote.is_file(self.conda_executable_path)
+        assert self.remote.is_file(self.conda_pip_path)
+        assert self.remote.is_file(self.conda_python_path)
+        assert self.remote.is_file(self.conda_easy_install_path)
+
+    # -----------------------------------------------------------------
+
     def update_conda_remote(self):
 
         """
@@ -702,23 +811,75 @@ class PTSUpdater(Updater):
         log.info("Updating the PTS dependencies ...")
 
         # Install PTS dependencies
-        get_pts_dependencies_remote(self.remote)
+        # conda_path="conda", pip_path="pip", python_path="python",
+        # easy_install_path="easy_install", conda_environment=None
+        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.conda_executable_path, self.conda_pip_path, self.conda_python_path,
+                                    self.conda_easy_install_path, self.conda_environment)
+
+        # Get dependency version restrictions
+        versions = introspection.get_constricted_versions()
+
+        # Get names of packages for import names
+        real_names = introspection.get_package_names()
+
+        # Get the versions of the packages currently installed
+        conda_versions = self.remote.installed_conda_packages(self.conda_executable_path, self.conda_environment)
+
+        # Loop over the already installed packages and update them if permitted
+        for module_name in not_installed:
+
+            # Check if the module name may be different from the import name
+            if module_name in real_names.values():
+                import_name = real_names.keys()[real_names.values().index(module_name)]
+            else: import_name = module_name
+
+            # Check if there is a version restriction
+            if import_name in versions:
+
+                version = versions[import_name]
+
+                # Debugging
+                log.debug("Package '" + module_name + "' has a version restriction: " + version)
+
+                # Debugging
+                log.debug("Checking version ...")
+
+                # Get installed version
+                installed_version = conda_versions[module_name]
+                if version != installed_version: log.error("The version of the package '" + module_name + "' is " + installed_version + " but it should be " + version)
+
+            # No version restriction: update
+            else:
+
+                # Debugging
+                log.debug("Updating package '" + module_name + "' to the latest version ...")
+
+                # Set command
+                command = self.conda_executable_path + " update " + module_name + " -n " + self.conda_environment
+
+                # Debugging
+                log.debug("Update command: " + command)
+
+                # Launch the command
+                #self.remote.execute(command)
+                self.remote.ssh.sendline(command)
+
+                # Expect the prompt or question
+                while self.remote.ssh.expect([self.remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None) == 1: self.remote.ssh.sendline("y")
+
+            # Determine update command
 
         # Update all packages
-        update_command = "conda update --all"
-        #lines = []
-        #lines.append(update_command)
-        #lines.append(("Proceed ([y]/n)?", "y", True))
-        #self.remote.execute_lines(*lines, show_output=log.is_debug())
+        #update_command = self.conda_executable_path + " update --all"
 
         # Send the command
-        self.remote.ssh.sendline(update_command)
+        #self.remote.ssh.sendline(update_command)
 
         # Expect the prompt or question
-        while self.remote.ssh.expect([self.remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None) == 1: self.remote.ssh.sendline("y")
+        #while self.remote.ssh.expect([self.remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None) == 1: self.remote.ssh.sendline("y")
 
         # Match prompt: already has happend in the evaluation of the latest while loop!
-        #self.remote.ssh.prompt(timeout=None)
+        ##self.remote.ssh.prompt(timeout=None)
 
         # Success
         log.success("Succesfully installed and updated the dependencies on the remote host")
@@ -735,12 +896,16 @@ class PTSUpdater(Updater):
         # Inform the user
         log.info("Testing the PTS installation ...")
 
+        # Test
         output = terminal.execute("pts -h")
         for line in output:
             if "usage: pts" in line: break
         else:
             log.error("Something is wrong with the PTS installation:")
             for line in output: log.error("   " + line)
+
+        # Success
+        log.success("PTS and its dependencies were successfully updated ...")
 
     # -----------------------------------------------------------------
 
@@ -754,12 +919,16 @@ class PTSUpdater(Updater):
         # Inform the user
         log.info("Testing the PTS installation ...")
 
+        # Test
         output = self.remote.execute("pts -h")
         for line in output:
             if "usage: pts" in line: break
         else:
             log.error("Something is wrong with the PTS installation:")
             for line in output: log.error("   " + line)
+
+        # Success
+        log.success("PTS and its dependencies were successfully updated ...")
 
 # -----------------------------------------------------------------
 

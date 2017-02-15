@@ -385,6 +385,20 @@ def add_to_path_variable(value, comment=None, in_shell=False):
 
 # -----------------------------------------------------------------
 
+def add_to_python_path_variable(value, comment=None, in_shell=False):
+
+    """
+    This function ...
+    :param value:
+    :param comment:
+    :param in_shell:
+    :return:
+    """
+
+    add_to_environment_variable("PYTHONPATH", value, comment=comment, in_shell=in_shell)
+
+# -----------------------------------------------------------------
+
 def add_to_environment_variable(variable_name, value, comment=None, in_shell=False):
 
     """
@@ -444,5 +458,129 @@ def define_alias(name, alias_to, comment=None, in_shell=False):
     if in_shell:
         #execute(alias_command) # not always working?
         subprocess.call("source " + introspection.shell_configuration_path(), shell=True)
+
+# -----------------------------------------------------------------
+
+def aliases():
+
+    """
+    This function ...
+    :return:
+    """
+
+    alias_dict = dict()
+
+    output = execute_no_pexpect("alias")
+
+    for line in output:
+
+        first, second = line.split("=")
+
+        alias = first.split("alias ")[1].strip()
+
+        command = second
+        if command.startswith("'") and command.endswith("'"): command = command[1:-1]
+        elif command.startswith('"') and command.endswith('"'): command = command[1:-1]
+
+        alias_dict[alias] = command
+
+    # Return the dictionary
+    return alias_dict
+
+# -----------------------------------------------------------------
+
+def resolve_alias(alias):
+
+    """
+    This function ...
+    :param alias:
+    :return:
+    """
+
+    return aliases()[alias]
+
+# -----------------------------------------------------------------
+
+def paths_in_path_variable():
+
+    """
+    This function ...
+    :return:
+    """
+
+    output = execute_no_pexpect("echo $PATH")
+    assert len(output) == 1
+    return output[0].split(":")
+
+# -----------------------------------------------------------------
+
+def paths_in_python_path_variable():
+
+    """
+    This function ...
+    :return:
+    """
+
+    output = execute_no_pexpect("echo $PYTHONPATH")
+    assert len(output) == 1
+    return output[0].split(":")
+
+# -----------------------------------------------------------------
+
+def remove_from_path_variable(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Lines to keep
+    lines = []
+
+    remove_next = False
+    for line in fs.read_lines(introspection.shell_configuration_path()):
+
+        if path + ":$PATH" in line and line.startswith("export PATH"):
+            if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+            remove_next = True
+        elif remove_next:
+            if line.strip() == "": pass
+            else:
+                lines.append(line)
+                remove_next = False
+        else: lines.append(line)
+
+    # Write lines
+    fs.write_lines(introspection.shell_configuration_path(), lines)
+
+# -----------------------------------------------------------------
+
+def remove_from_python_path_variable(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Lines to keep
+    lines = []
+
+    remove_next = False
+    for line in fs.read_lines(introspection.shell_configuration_path()):
+
+        if path + ":$PYTHONPATH" in line and line.startswith("export PYTHONPATH"):
+            if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+            remove_next = True
+        elif remove_next:
+            if line.strip() == "": pass
+            else:
+                lines.append(line)
+                remove_next = False
+        else: lines.append(line)
+
+    # Write lines
+    fs.write_lines(introspection.shell_configuration_path(), lines)
 
 # -----------------------------------------------------------------

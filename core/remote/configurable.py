@@ -77,6 +77,43 @@ class RemotesConfigurable(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nremotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.remotes)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.nremotes != 1: raise RuntimeError("Do not contain exactly one remote")
+        return self.remotes[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_host_id(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.single_remote.host_id
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """

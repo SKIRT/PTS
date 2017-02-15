@@ -434,6 +434,11 @@ class SKIRTInstaller(Installer):
         # Look for MPI compiler, not necessary
         if introspection.has_mpi_compiler(): self.mpi_compiler_path = introspection.mpi_compiler_path()
 
+        # Debugging
+        log.debug("The C++ compiler path is '" + self.compiler_path)
+        if self.mpi_compiler_path is not None: log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
+        else: log.debug("An MPI compiler is not found")
+
     # -----------------------------------------------------------------
 
     def check_qt_local(self):
@@ -535,10 +540,12 @@ class SKIRTInstaller(Installer):
         comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
         skirt_main_path = fs.join(self.skirt_release_path, "SKIRTmain")
         fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
+        if skirt_main_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(skirt_main_path)
+        if fitskirt_main_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(fitskirt_main_path)
 
         # Add to path, also execute in current shell to make SKIRT (and FtiSKIRT) visible
-        terminal.add_to_environment_variable("PATH", skirt_main_path, comment=comment, in_shell=True)
-        terminal.add_to_environment_variable("PATH", fitskirt_main_path, comment=comment, in_shell=True)
+        terminal.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
+        terminal.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
         self.skirt_path = fs.join(skirt_main_path, "skirt")
@@ -762,9 +769,11 @@ class SKIRTInstaller(Installer):
         fitskirt_main_path = fs.join(self.skirt_release_path, "FitSKIRTmain")
 
         # Add
-        comment = "Added by the Python Toolkit for SKIRT (PTS)"
-        self.remote.add_to_environment_variable("PATH", skirt_main_path, comment=comment, in_shell=True)
-        self.remote.add_to_environment_variable("PATH", fitskirt_main_path, comment=comment, in_shell=True)
+        comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
+        if skirt_main_path in self.remote.paths_in_path_variable: self.remote.remove_from_path_variable(skirt_main_path)
+        if fitskirt_main_path in self.remote.paths_in_path_variable: self.remote.remove_from_path_variable(fitskirt_main_path)
+        self.remote.add_to_path_variable(skirt_main_path, comment=comment, in_shell=True)
+        self.remote.add_to_path_variable(fitskirt_main_path, comment=comment, in_shell=True)
 
         # Set the path to the main SKIRT executable
         self.skirt_path = fs.join(skirt_main_path, "skirt")
@@ -1289,9 +1298,10 @@ class PTSInstaller(Installer):
         # Debugging
         log.debug("Adding the conda executables to the PATH ...")
 
-        # Remove previous things
+        # Clear previous things
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
         terminal.remove_aliases_and_variables_with_comment(comment)
+        if conda_bin_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(conda_bin_path)
 
         # Run the export command also in the current shell, so that the conda commands can be found
         terminal.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
@@ -1331,12 +1341,13 @@ class PTSInstaller(Installer):
         # Clear previous things
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
         terminal.remove_aliases_and_variables_with_comment(comment)
+        if self.pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(self.pts_root_path)
 
         # Add an alias for the PTS python version
         terminal.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
 
         # Add PTS to shell configuration file
-        terminal.add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
+        terminal.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
         terminal.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
         terminal.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
@@ -1593,16 +1604,12 @@ class PTSInstaller(Installer):
             conda_path = fs.join(self.remote.home_directory, "miniconda", "bin", "conda")
             if self.remote.is_file(conda_path): conda_executable_path = conda_path
 
-        print(conda_executable_path)
-
         # If conda is present
         if conda_executable_path is not None:
 
             self.conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
             if self.config.force_conda: self.remote.remove_directory(self.conda_installation_path)
             else: self.conda_main_executable_path = conda_executable_path
-
-        print(self.conda_main_executable_path)
 
     # -----------------------------------------------------------------
 
@@ -1652,7 +1659,8 @@ class PTSInstaller(Installer):
 
         # Remove previous things
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
-        self.remote.remove_aliases_and_variables_with_comment(comment)
+        #self.remote.remove_aliases_and_variables_with_comment(comment)
+        if conda_bin_path in self.remote.paths_in_path_variable: self.remote.remove_from_path_variable(conda_bin_path)
 
         # Run the export command also in the current shell, so that the conda commands can be found
         self.remote.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
@@ -1692,12 +1700,13 @@ class PTSInstaller(Installer):
         # Clear previous things
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
         self.remote.remove_aliases_and_variables_with_comment(comment)
+        if self.pts_root_path in self.remote.paths_in_python_path_variable: self.remote.remove_from_python_path_variable(self.pts_root_path)
 
         # Add an alias for the PTS python version
         self.remote.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
 
         # Add PTS to shell configuration file
-        self.remote.add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
+        self.remote.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
         self.remote.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
         self.remote.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
@@ -1760,13 +1769,7 @@ class PTSInstaller(Installer):
         self.git_version = git.get_short_git_version(self.pts_package_path, self.remote)
 
         # Show the git version
-        log.info("The git version to be installed is '" + self.git_version + "'")
-
-        # Run commands in current shell, so that the pts command can be found
-        comment = "Added by the Python Toolkit for SKIRT (PTS)"
-        self.remote.add_to_environment_variable("PYTHONPATH", self.pts_root_path, comment=comment, in_shell=True)
-        self.remote.define_alias("pts", "python -m pts.do", comment=comment, in_shell=True)
-        self.remote.define_alias("ipts", "python -im pts.do", comment=comment, in_shell=True)
+        log.info("The version that was installed is '" + self.git_version + "'")
 
         # Set the path to the main PTS executable
         self.pts_path = fs.join(self.pts_package_path, "do", "__main__.py")
@@ -1784,7 +1787,7 @@ class PTSInstaller(Installer):
         log.info("Getting the PTS dependencies on the remote host ...")
 
         # Install PTS dependencies
-        get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path,
+        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path,
                                     python_path=self.conda_python_path, easy_install_path=self.conda_easy_install_path,
                                     conda_environment=self.config.python_name)
 
@@ -2024,14 +2027,14 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             lines.append(("Proceed ([y]/n)?", "y"))
 
             # Set the commands
-            commands[module] = lines
+            commands[install_module_name] = lines
 
         # Install with pip
         elif via == "pip":
 
             command = pip_path + " install " + install_module_name
             if version is not None: command += "==" + version
-            commands[module] = command
+            commands[install_module_name] = command
 
         # GitHub url
         elif "github.com" in via:
@@ -2056,13 +2059,13 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             #command = easy_install_path + " " + install_module_name
             setup_path = fs.join(decompress_directory_path, "setup.py")
             command = python_path + " " + setup_path + " install"
-            commands[module] = command
+            commands[install_module_name] = command
 
         # Not recognized
-        else: not_installed.append(module)
+        else: not_installed.append(install_module_name)
 
         # Add to installed
-        installed.append(module_name)
+        installed.append(install_module_name)
 
     # Return ...
     return commands, installed, not_installed
@@ -2148,6 +2151,8 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
 
     # Get already installed packages
     already_installed = []
+
+    #print("Conda environment: " + str(conda_environment))
 
     # List
     if conda_environment is not None: list_command = conda_path + " list --name " + conda_environment
@@ -2245,5 +2250,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
         print("")
         print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    "))
         print("")
+
+    return installed, not_installed, already_installed
 
 # -----------------------------------------------------------------

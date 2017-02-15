@@ -398,11 +398,11 @@ class RemotePythonSession(object):
             lines.append(line)
         lines.reverse()
 
-        #print(lines)
+        print("1", lines)
 
         if len(lines) == 0 or lines[0] == "":
 
-            time.wait(5)
+            time.wait(10)
 
             # Get output
             lines = []
@@ -411,6 +411,8 @@ class RemotePythonSession(object):
                 if line == "[PTS]": break
                 lines.append(line)
             lines.reverse()
+
+        print("2", lines)
 
         # Return the value
         return eval(lines[0])
@@ -872,6 +874,8 @@ class RemotePythonSession(object):
         This function ...
         :return:
         """
+
+        #return
 
         # Using tmux
         if self.tmux:

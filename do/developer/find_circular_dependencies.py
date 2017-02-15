@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.developer.find_circular_dependenceis Find circular dependencies.
+## \package pts.do.developer.find_circular_dependencies Find circular dependencies.
 
 ## THIS SCRIPT DOES NOT WORK YET!
 

@@ -732,6 +732,34 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def paths_in_path_variable(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("echo $PATH")
+        assert len(output) == 1
+        return output[0].split(":")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def paths_in_python_path_variable(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("echo $PYTHONPATH")
+        assert len(output) == 1
+        return output[0].split(":")
+
+    # -----------------------------------------------------------------
+
     def add_to_path_variable(self, value, comment=None, in_shell=False):
 
         """
@@ -744,6 +772,20 @@ class Remote(object):
 
         # add to PATH
         self.add_to_environment_variable("PATH", value, comment=comment, in_shell=in_shell)
+
+    # -----------------------------------------------------------------
+
+    def add_to_python_path_variable(self, value, comment=None, in_shell=False):
+
+        """
+        This function ...
+        :param value:
+        :param comment:
+        :param in_shell:
+        :return:
+        """
+
+        self.add_to_environment_variable("PYTHONPATH", value, comment=comment, in_shell=in_shell)
 
     # -----------------------------------------------------------------
 
@@ -827,6 +869,111 @@ class Remote(object):
 
         # Write lines
         self.write_lines(self.shell_configuration_path, lines)
+
+    # -----------------------------------------------------------------
+
+    def remove_from_path_variable(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Lines to keep
+        lines = []
+
+        remove_next = False
+        for line in self.read_lines(self.shell_configuration_path):
+
+            if path + ":$PATH" in line and line.startswith("export PATH"):
+                if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+                remove_next = True
+            elif remove_next:
+                if line.strip() == "": pass
+                else:
+                    lines.append(line)
+                    remove_next = False
+            else: lines.append(line)
+
+        # Write lines
+        self.write_lines(self.shell_configuration_path, lines)
+
+    # -----------------------------------------------------------------
+
+    def remove_from_python_path_variable(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Lines to keep
+        lines = []
+
+        remove_next = False
+        for line in self.read_lines(self.shell_configuration_path):
+
+            if path + ":$PYTHONPATH" in line and line.startswith("export PYTHONPATH"):
+                if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+                remove_next = True
+            elif remove_next:
+                if line.strip() == "": pass
+                else:
+                    lines.append(line)
+                    remove_next = False
+            else: lines.append(line)
+
+        # Write lines
+        self.write_lines(self.shell_configuration_path, lines)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def aliases(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        alias_dict = dict()
+
+        output = self.execute("alias")
+
+        for line in output:
+
+            splitted = line.split("=")
+
+            if len(splitted) == 2: first, second = splitted[0], splitted[1]
+            else:
+                first = splitted[0]
+                second = "".join(splitted[1:])
+
+            alias = first.split("alias ")[1].strip()
+
+            command = second
+            if command.startswith("'") and command.endswith("'"): command = command[1:-1]
+            elif command.startswith('"') and command.endswith('"'): command = command[1:-1]
+
+            # Set the alias
+            alias_dict[alias] = command
+
+        # Return the dictionary
+        return alias_dict
+
+    # -----------------------------------------------------------------
+
+    def resolve_alias(self, alias):
+
+        """
+        This function ...
+        :param alias:
+        :return:
+        """
+
+        return self.aliases[alias]
 
     # -----------------------------------------------------------------
 
@@ -2989,6 +3136,34 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def installed_conda_packages(self, conda_path="conda", environment_name=None):
+
+        """
+        This function ...
+        :param conda_path:
+        :param environment_name:
+        :return:
+        """
+
+        packages = dict()
+
+        # Execute the conda list command
+        if environment_name is not None: output = self.execute(conda_path + " list -n " + environment_name)
+        else: output = self.execute(conda_path + " list")
+
+        # Loop over the lines
+        for line in output:
+
+            name = line.split()[0].strip()
+            version = line.split()[1].strip()
+
+            packages[name] = version
+
+        # return the dictionary
+        return packages
+
+    # -----------------------------------------------------------------
+
     @property
     def pts_conformity_issues(self):
 
@@ -3115,7 +3290,12 @@ class Remote(object):
         :return:
         """
 
-        if self.has_pts: return self.execute("pts --version")[0]
+        if self.has_pts:
+            output = self.execute("pts --version")
+            for line in output:
+                if "Welcome to PTS" in line: continue
+                return line
+            else: return None
         else: return None
 
     # -----------------------------------------------------------------

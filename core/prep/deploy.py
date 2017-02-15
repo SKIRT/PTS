@@ -129,6 +129,7 @@ class Deployer(RemotesConfigurable):
                 log.debug("SKIRT is present, updating ...")
 
                 updater = SKIRTUpdater()
+                updater.config.dependencies = self.config.update_dependencies
                 updater.run()
 
         # Not installed or not found
@@ -210,6 +211,7 @@ class Deployer(RemotesConfigurable):
 
                     # Create the updater
                     updater = SKIRTUpdater()
+                    updater.config.dependencies = self.config.update_dependencies
 
                     # Run the updater
                     updater.run(remote=remote)
@@ -262,6 +264,7 @@ class Deployer(RemotesConfigurable):
 
         # Create updater and run it
         updater = PTSUpdater()
+        updater.config.dependencies = self.config.update_dependencies
         updater.run()
 
     # -----------------------------------------------------------------
@@ -337,6 +340,7 @@ class Deployer(RemotesConfigurable):
 
                     # Create the updater
                     updater = PTSUpdater()
+                    updater.config.dependencies = self.config.update_dependencies
 
                     # Run the updater
                     updater.run(remote=remote)
@@ -376,33 +380,44 @@ class Deployer(RemotesConfigurable):
 
         # C++ compiler
         log.info("Local C++ compiler version: " + introspection.cpp_compiler_version())
-        log.info("Remote C++ compiler versions:")
-        for host_id in checker.cpp_versions: log.info(" - " + host_id + ": " + checker.cpp_versions[host_id])
+        if self.nremotes == 1 and self.single_host_id in checker.cpp_versions: log.info("Remote C++ compiler version: " + checker.cpp_versions[self.single_host_id])
+        else:
+            log.info("Remote C++ compiler versions:")
+            for host_id in checker.cpp_versions: log.info(" - " + host_id + ": " + checker.cpp_versions[host_id])
 
         # MPI compiler
-        if introspection.has_mpi_compiler():
-            log.info("Local MPI compiler version: " + introspection.mpi_compiler_version())
+        if introspection.has_mpi_compiler(): log.info("Local MPI compiler version: " + introspection.mpi_compiler_version())
+        if self.nremotes == 1 and self.single_host_id in checker.mpi_versions: log.info("Remote MPI compiler version: " + checker.mpi_versions[self.single_host_id])
+        else:
             log.info("Remote MPI compiler versions:")
             for host_id in checker.mpi_versions: log.info(" - " + host_id + ": " + checker.mpi_versions[host_id])
 
         # Qt version
         log.info("Local Qt version: " + introspection.qmake_version())
-        log.info("Remote Qt versions:")
-        for host_id in checker.qt_versions: log.info(" - " + host_id + ": " + checker.qt_versions[host_id])
+        if self.nremotes == 1 and self.single_host_id in checker.qt_versions: log.info("Remote Qt version: " + checker.qt_versions[self.single_host_id])
+        else:
+            log.info("Remote Qt versions:")
+            for host_id in checker.qt_versions: log.info(" - " + host_id + ": " + checker.qt_versions[host_id])
 
         # Python
         log.info("Local Python version: " + introspection.python_version_long())
-        log.info("Remote Python versions:")
-        for host_id in checker.python_versions: log.info(" - " + host_id + ": " + checker.python_versions[host_id])
+        if self.nremotes == 1 and self.single_host_id in checker.python_versions: log.info("Remote Python version: " + checker.python_versions[self.single_host_id])
+        else:
+            log.info("Remote Python versions:")
+            for host_id in checker.python_versions: log.info(" - " + host_id + ": " + checker.python_versions[host_id])
 
         # SKIRT
         log.info("Local SKIRT version: " + introspection.skirt_version())
-        log.info("Remote SKIRT versions:")
-        for host_id in checker.skirt_versions: log.info(" - " + host_id + ": " + checker.skirt_versions[host_id])
+        if self.nremotes == 1 and self.single_host_id in checker.skirt_versions: log.info("Remote SKIRT version: " + checker.skirt_versions[self.single_host_id])
+        else:
+            log.info("Remote SKIRT versions:")
+            for host_id in checker.skirt_versions: log.info(" - " + host_id + ": " + checker.skirt_versions[host_id])
 
         # PTS
         log.info("Local PTS version: " + introspection.pts_version())
-        log.info("Remote PTS versions:")
-        for host_id in checker.pts_versions: log.info(" - " + host_id + ": " + checker.pts_versions[host_id])
+        if self.nremotes == 1 and self.single_host_id in checker.pts_versions: log.info("Remote PTS version: " + checker.pts_versions[self.single_host_id])
+        else:
+            log.info("Remote PTS versions:")
+            for host_id in checker.pts_versions: log.info(" - " + host_id + ": " + checker.pts_versions[host_id])
 
 # -----------------------------------------------------------------
