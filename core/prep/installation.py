@@ -622,7 +622,8 @@ class SKIRTInstaller(Installer):
 
         # Debugging
         log.debug("The C++ compiler path is '" + self.compiler_path)
-        log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
+        if self.mpi_compiler_path is not None: log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
+        else: log.debug("An MPI compiler is not found")
 
     # -----------------------------------------------------------------
 

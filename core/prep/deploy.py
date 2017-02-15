@@ -113,7 +113,7 @@ class Deployer(RemotesConfigurable):
             # Clean install
             if self.config.clean:
 
-                installer  = SKIRTInstaller()
+                installer = SKIRTInstaller()
                 installer.config.force = True
                 installer.run()
 

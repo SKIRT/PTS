@@ -681,7 +681,7 @@ def qmake_version():
     """
 
     # Execute
-    output = subprocess.check_output(qmake_path() + " --version", shell=True)
+    output = subprocess.check_output(qmake_path() + " --version", shell=True).split("\n")[0]
     return output
 
 # -----------------------------------------------------------------

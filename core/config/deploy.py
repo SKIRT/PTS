@@ -23,6 +23,7 @@ definition.add_flag("local", "also deploy locally", True)
 definition.add_flag("skirt", "deploy SKIRT", True)
 definition.add_flag("pts", "deploy PTS", True)
 definition.add_flag("check", "check versions after deployment", True)
+definition.add_flag("one_attempt", "only perform one attempt at connecting to a remote")
 
 # Add optional
 definition.add_optional("pts_on", "string_list", "hosts on which PTS should be installed (None means all)", choices=find_host_ids())

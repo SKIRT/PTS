@@ -110,7 +110,7 @@ class RemotesConfigurable(Configurable):
 
                 # Setup the remote (login)
                 remote = Remote()
-                if not remote.setup(host_id):
+                if not remote.setup(host_id, one_attempt=self.config.one_attempt):
                     log.warning("Remote host '" + host_id + "' is down: skipping")
                     continue
 

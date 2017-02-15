@@ -161,7 +161,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=20, nrows=None, ncols=200):
+    def setup(self, host_id, cluster_name=None, login_timeout=20, nrows=None, ncols=200, one_attempt=False):
 
         """
         This function ...
@@ -170,6 +170,7 @@ class Remote(object):
         :param login_timeout:
         :param nrows:
         :param ncols:
+        :param one_attempt:
         :return:
         """
 
@@ -186,6 +187,11 @@ class Remote(object):
         # Make the connection
         try: self.login(login_timeout)
         except HostDownException:
+
+            if one_attempt:
+                log.warning("Could not connect to the remote host")
+                self.ssh = pxssh.pxssh()
+                return False
 
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
@@ -3282,11 +3288,16 @@ class Remote(object):
         else:
 
             # Use the 'lscpu' command to obtain the total number of CPU's (=hardware threads!)
-            output = self.execute("lscpu | grep '^CPU(s)'")
-            cpus = int(float(output[0].split(":")[1]))
+            #output = self.execute("lscpu | grep '^CPU(s)'")
+            #cpus = int(float(output[0].split(":")[1]))
 
             # Return the number of physical cores
-            return cpus / self.threads_per_core
+            #return cpus / self.threads_per_core
+
+            lines = self.execute("lscpu")
+            for line in lines:
+                if "cpu(s)" in line.lower(): return int(line.split(": ")[1]) / self.threads_per_core
+            raise RuntimeError("Could not determine the number of cores per node")
 
     # -----------------------------------------------------------------
 
@@ -3305,11 +3316,16 @@ class Remote(object):
         else:
 
             # Use the 'lscpu' command to get the number of hardware threads per core
-            output = self.execute("lscpu | grep '^Thread(s) per core'")
-            threads_per_core = int(float(output[0].split(":")[1]))
+            #output = self.execute("lscpu | grep '^Thread(s) per core'")
+            #threads_per_core = int(float(output[0].split(":")[1]))
 
             # Return the amount of hyperthreads or 'hardware' threads per physical core
-            return threads_per_core
+            #return threads_per_core
+
+            lines = self.execute("lscpu")
+            for line in lines:
+                if "thread(s) per core" in line.lower(): return int(line.split(": ")[1])
+            raise RuntimeError("Could not determine the number of hardware threads per core")
 
     # -----------------------------------------------------------------
 
@@ -3328,11 +3344,16 @@ class Remote(object):
         else:
 
             # Use the 'lscpu' command to get the number of NUMA domains
-            output = self.execute("lscpu | grep '^Socket(s):'")
-            nsockets = int(output[0])
+            #output = self.execute("lscpu | grep '^Socket(s):'")
+            #nsockets = int(output[0])
 
             # Return the number of sockets
-            return nsockets
+            #return nsockets
+
+            lines = self.execute("lscpu")
+            for line in lines:
+                if "socket(s)" in line.lower(): return int(line.split(": ")[1])
+            raise RuntimeError("Could not determine the number of sockets per node")
 
     # -----------------------------------------------------------------
 
@@ -3351,11 +3372,15 @@ class Remote(object):
         else:
 
             # Use the 'lscpu' command
-            output = self.execute("lscpu | grep '^Core(s) per socket:'")
-            ncores = int(output[0])
-
+            #output = self.execute("lscpu | grep '^Core(s) per socket:'")
+            #ncores = int(output[0])
             # Return the number of cores per socket
-            return ncores
+            # return ncores
+
+            lines = self.execute("lscpu")
+            for line in lines:
+                if "core(s) per socket" in line.lower(): return int(line.split(": ")[1])
+            raise RuntimeError("Could not determine the number of cores per socket")
 
     # -----------------------------------------------------------------
 
@@ -3374,11 +3399,16 @@ class Remote(object):
         else:
 
             # Use the 'lscpu' command to get the number of NUMA domains
-            output = self.execute("lscpu | grep '^NUMA node(s):'")
-            numa_domains = int(output[0])
+            #output = self.execute("lscpu | grep '^NUMA node(s):'")
+            #numa_domains = int(output[0])
 
             # Return the number of NUMA domains
-            return numa_domains
+            #return numa_domains
+
+            lines = self.execute("lscpu")
+            for line in lines:
+                if "numa node(s)" in line.lower(): return int(line.split(": ")[1])
+            raise RuntimeError("Could not determine the number of NUMA domains")
 
     # -----------------------------------------------------------------
 

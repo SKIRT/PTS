@@ -20,5 +20,6 @@ definition.add_optional("not_remotes", "string_list", "skip these remote hosts",
 
 # Add flag
 definition.add_flag("show", "show the versions on the terminal", True)
+definition.add_flag("one_attempt", "only perform one attempt at connecting to a remote")
 
 # -----------------------------------------------------------------

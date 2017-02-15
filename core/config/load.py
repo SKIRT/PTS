@@ -18,5 +18,6 @@ definition.add_optional("cluster_name", "string", "cluster name")
 
 # Add flags
 definition.add_flag("show", "show the loads", True)
+definition.add_flag("one_attempt", "only perform one attempt at connecting to a remote")
 
 # -----------------------------------------------------------------
