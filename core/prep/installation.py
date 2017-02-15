@@ -1551,7 +1551,7 @@ class PTSInstaller(Installer):
         log.info("Creating a fresh python environment ...")
 
         # Generate the command
-        command = "conda create -n " + self.config.python_name + " python=" + self.config.python_version
+        command = self.conda_main_executable_path + " create -n " + self.config.python_name + " python=" + self.config.python_version
 
         # Execute the command
         self.remote.execute(command)
@@ -1571,12 +1571,6 @@ class PTSInstaller(Installer):
         if self.config.repository is not None: url = introspection.pts_git_remote_url(self.config.repository)
         elif self.config.private: url = introspection.private_pts_https_link
         else: url = introspection.public_pts_https_link
-
-        # Do HPC UGent in a different way because it seems only SSH is permitted and not HTTPS (but we don't want SSH
-        # because of the private/public key thingy, so use a trick
-        # DON'T NEED THIS AFTER ALL! WE CAN JUST ADD THE USERNAME AND PASSWORD TO THE HTTPS LINK AND IT WORKS!
-        #if self.remote.host.name == "login.hpc.ugent.be": self.git_version = get_pts_hpc(self.remote, url, self.pts_root_path, self.pts_package_path)
-        #else:
 
         # Decompose
         host, user_or_organization, repo_name, _, _ = git.decompose_repo_url(url)
@@ -1932,9 +1926,12 @@ def find_qmake():
     # Loop over the qmake paths: SAME IMPLEMENTATION AS IN Remote class -> _check_qt_remote_no_lmod
     for qmake_path in qmake_paths:
 
+        # Debugging
+        log.debug("Found a qmake executable at '" + qmake_path + "'")
+
         # Get the version
         output = terminal.execute(qmake_path + " -v")
-
+        print(output)
         qt_version = output[1].split("Qt version ")[1].split(" in")[0]
 
         if qt_version < "5.2.0": continue  # oldest supported version

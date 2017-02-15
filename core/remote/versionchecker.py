@@ -46,6 +46,8 @@ class VersionChecker(RemotesConfigurable):
         self.skirt_versions = dict()
         self.pts_versions = dict()
         self.conda_versions = dict()
+        self.skirt_issues = dict()
+        self.pts_issues = dict()
 
     # -----------------------------------------------------------------
 
@@ -127,6 +129,10 @@ class VersionChecker(RemotesConfigurable):
             skirt_version = remote.skirt_version
             pts_version = remote.pts_version
 
+            # Get conformity issues
+            pts_issues = remote.pts_conformity_issues
+            skirt_issues = remote.skirt_conformity_issues
+
             # Set versions
             self.os_versions[host_id] = os_version
             if compiler_version is not None: self.cpp_versions[host_id] = compiler_version
@@ -136,6 +142,8 @@ class VersionChecker(RemotesConfigurable):
             if conda_version is not None: self.conda_versions[host_id] = conda_version
             if skirt_version is not None: self.skirt_versions[host_id] = skirt_version
             if pts_version is not None: self.pts_versions[host_id] = pts_version
+            if pts_issues is not None: self.pts_issues[host_id] = pts_issues
+            if skirt_issues is not None: self.skirt_issues[host_id] = skirt_issues
 
     # -----------------------------------------------------------------
 
@@ -223,6 +231,29 @@ class VersionChecker(RemotesConfigurable):
         for host_id in self.host_ids:
             if host_id in self.conda_versions: print(" - " + host_id + ": " + fmt.green + self.conda_versions[host_id] + fmt.reset)
             else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
+        print("")
+
+        # Conform SKIRT installation
+        print(fmt.bold + fmt.blue + "Conformity SKIRT installation" + fmt.reset + ":")
+        print("")
+        if introspection.has_skirt():
+            if introspection.skirt_installation_is_conform(): print(" - local: " + fmt.green + " installation is conform" + fmt.reset)
+            else: print(" - local: " + fmt.red + " installation not conform (" + introspection.skirt_conformity_issues() + ")" + fmt.reset)
+        for host_id in self.host_ids:
+            if host_id not in self.skirt_versions: continue
+            if host_id in self.skirt_issues: print(" - " + host_id + ": " + fmt.red + "installation not conform (" + self.skirt_issues[host_id] + ")" + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.green + "installation conform" + fmt.reset)
+        print("")
+
+        # Conform PTS installation
+        print(fmt.bold + fmt.blue + "Conformity PTS installation" + fmt.reset + ":")
+        print("")
+        if introspection.pts_installation_is_conform(): print(" - local: " + fmt.green + " installation is conform" + fmt.reset)
+        else: print(" - local: " + fmt.red + " installation not conform (" + introspection.pts_conformity_issues() + ")" + fmt.reset)
+        for host_id in self.host_ids:
+            if host_id not in self.pts_versions: continue
+            if host_id in self.pts_issues: print(" - " + host_id + ": " + fmt.red + "installation not conform (" + self.pts_issues[host_id] + ")" + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.green + "installation conform" + fmt.reset)
         print("")
 
 # -----------------------------------------------------------------

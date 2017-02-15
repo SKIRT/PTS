@@ -2827,6 +2827,103 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def conda_installation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        conda_exec_path = self.find_executable("conda")
+
+        if fs.name(fs.directory_of(fs.directory_of(fs.directory_of(conda_exec_path)))) == "envs":
+            return fs.directory_of(fs.directory_of(fs.directory_of(fs.directory_of(conda_exec_path))))
+        else: return fs.directory_of(fs.directory_of(conda_exec_path))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def conda_main_executable_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.conda_installation_path, "bin", "conda")
+        if fs.is_file(path): return path
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_conformity_issues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        issues = []
+
+        pts_root_dir_name = fs.name(self.pts_root_path)
+        if pts_root_dir_name != "PTS": issues.append("PTS root directory is not called 'PTS'")
+        if fs.directory_of(self.pts_root_path) != self.home_directory: issues.append("PTS installation is not located in the home directory")
+
+        if not self.has_conda: issues.append("Conda installation is not present")
+        else:
+
+            installation_path = self.conda_installation_path
+            if fs.name(installation_path) != "miniconda": issues.append("Name of Conda installation directory is not 'miniconda'")
+            if fs.directory_of(installation_path) != self.home_directory: issues.append("Conda not installed in home directory")
+
+        if len(issues) == 0: return None
+        else: return ", ".join(issues)
+
+    # -----------------------------------------------------------------
+
+    def pts_installation_is_conform(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pts_conformity_issues is None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def skirt_conformity_issues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        issues = []
+
+        skirt_root_dir_name = fs.name(self.skirt_root_path)
+        if skirt_root_dir_name != "SKIRT": issues.append("SKIRT root directory is not called 'SKIRT'")
+
+        if fs.directory_of(self.skirt_root_path) != self.home_directory: issues.append("SKIRT installation is not located in the home directory")
+
+        if len(issues) == 0: return None
+        else: return ", ".join(issues)
+
+    # -----------------------------------------------------------------
+
+    def skirt_installation_is_conform(self):
+
+        """
+        This function ...
+        """
+
+        return self.skirt_conformity_issues is None
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_skirt(self):
 
         """
@@ -3287,13 +3384,6 @@ class Remote(object):
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
 
-            # Use the 'lscpu' command to obtain the total number of CPU's (=hardware threads!)
-            #output = self.execute("lscpu | grep '^CPU(s)'")
-            #cpus = int(float(output[0].split(":")[1]))
-
-            # Return the number of physical cores
-            #return cpus / self.threads_per_core
-
             lines = self.execute("lscpu")
             for line in lines:
                 if "cpu(s)" in line.lower(): return int(line.split(": ")[1]) / self.threads_per_core
@@ -3314,13 +3404,6 @@ class Remote(object):
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
-
-            # Use the 'lscpu' command to get the number of hardware threads per core
-            #output = self.execute("lscpu | grep '^Thread(s) per core'")
-            #threads_per_core = int(float(output[0].split(":")[1]))
-
-            # Return the amount of hyperthreads or 'hardware' threads per physical core
-            #return threads_per_core
 
             lines = self.execute("lscpu")
             for line in lines:
@@ -3343,13 +3426,6 @@ class Remote(object):
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
 
-            # Use the 'lscpu' command to get the number of NUMA domains
-            #output = self.execute("lscpu | grep '^Socket(s):'")
-            #nsockets = int(output[0])
-
-            # Return the number of sockets
-            #return nsockets
-
             lines = self.execute("lscpu")
             for line in lines:
                 if "socket(s)" in line.lower(): return int(line.split(": ")[1])
@@ -3371,12 +3447,6 @@ class Remote(object):
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
 
-            # Use the 'lscpu' command
-            #output = self.execute("lscpu | grep '^Core(s) per socket:'")
-            #ncores = int(output[0])
-            # Return the number of cores per socket
-            # return ncores
-
             lines = self.execute("lscpu")
             for line in lines:
                 if "core(s) per socket" in line.lower(): return int(line.split(": ")[1])
@@ -3397,13 +3467,6 @@ class Remote(object):
 
         # If no scheduler is used, the computing node is the actual node we are logged in to
         else:
-
-            # Use the 'lscpu' command to get the number of NUMA domains
-            #output = self.execute("lscpu | grep '^NUMA node(s):'")
-            #numa_domains = int(output[0])
-
-            # Return the number of NUMA domains
-            #return numa_domains
 
             lines = self.execute("lscpu")
             for line in lines:

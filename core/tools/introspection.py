@@ -697,6 +697,58 @@ def has_conda():
 
 # -----------------------------------------------------------------
 
+def conda_installation_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    conda_exec_path = executable_path("conda")
+    if fs.name(fs.directory_of(fs.directory_of(fs.directory_of(conda_exec_path)))) == "envs":
+        return fs.directory_of(fs.directory_of(fs.directory_of(fs.directory_of(conda_exec_path))))
+    else: return fs.directory_of(fs.directory_of(conda_exec_path))
+
+# -----------------------------------------------------------------
+
+def conda_main_executable_path():
+
+    """
+    This function ...
+    :return:
+    """
+
+    path = fs.join(conda_installation_path(), "bin", "conda")
+    if fs.is_file(path): return path
+    else: return None
+
+# -----------------------------------------------------------------
+
+def pts_conformity_issues():
+
+    """
+    This function ...
+    :return:
+    """
+
+    issues = []
+
+    pts_root_dir_name = fs.name(pts_root_dir)
+    if pts_root_dir_name != "PTS": issues.append("PTS root directory is not called 'PTS'")
+    if fs.directory_of(pts_root_dir) != fs.home(): issues.append("PTS installation is not located in the home directory")
+
+    if not has_conda(): issues.append("Conda installation is not present")
+    else:
+
+        installation_path = conda_installation_path()
+        if fs.name(installation_path) != "miniconda": issues.append("Name of Conda installation directory is not 'miniconda'")
+        if fs.directory_of(installation_path) != fs.home(): issues.append("Conda not installed in home directory")
+
+    if len(issues) == 0: return None
+    else: return ", ".join(issues)
+
+# -----------------------------------------------------------------
+
 def pts_installation_is_conform():
 
     """
@@ -704,8 +756,26 @@ def pts_installation_is_conform():
     :return:
     """
 
-    pts_root_dir_name = fs.name(pts_root_dir)
-    return pts_root_dir_name == "PTS"
+    return pts_conformity_issues() is None
+
+# -----------------------------------------------------------------
+
+def skirt_conformity_issues():
+
+    """
+    This function ...
+    :return:
+    """
+
+    issues = []
+
+    skirt_root_dir_name = fs.name(skirt_root_dir)
+    if skirt_root_dir_name != "SKIRT": issues.append("SKIRT root directory is not called 'SKIRT'")
+
+    if fs.directory_of(skirt_root_dir) != fs.home(): issues.append("SKIRT installation is not located in the home directory")
+
+    if len(issues) == 0: return None
+    else: return ", ".join(issues)
 
 # -----------------------------------------------------------------
 
@@ -715,8 +785,7 @@ def skirt_installation_is_conform():
     This function ...
     """
 
-    skirt_root_dir_name = fs.name(skirt_root_dir)
-    return skirt_root_dir_name == "SKIRT"
+    return skirt_conformity_issues() is None
 
 # -----------------------------------------------------------------
 
@@ -892,6 +961,21 @@ def mpi_version():
 
 # -----------------------------------------------------------------
 
+def executable_path(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    try:
+        path = subprocess.check_output(["which", name]).split("\n")[0]
+        return path
+    except subprocess.CalledProcessError: return None
+
+# -----------------------------------------------------------------
+
 def has_skirt():
 
     """
@@ -899,12 +983,7 @@ def has_skirt():
     :return:
     """
 
-    #return is_existing_executable("skirt")
-
-    try:
-        skirt_path = subprocess.check_output(["which", "skirt"]).split("\n")[0]
-        return True
-    except subprocess.CalledProcessError: return False
+    return executable_path("skirt") is not None
 
 # -----------------------------------------------------------------
 

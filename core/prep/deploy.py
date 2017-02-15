@@ -113,6 +113,9 @@ class Deployer(RemotesConfigurable):
             # Clean install
             if self.config.clean:
 
+                # Debugging
+                log.debug("Peforming a clean install of SKIRT ...")
+
                 installer = SKIRTInstaller()
                 installer.config.force = True
                 installer.run()
@@ -120,14 +123,21 @@ class Deployer(RemotesConfigurable):
             # Update, if not SKIRT developer
             elif not introspection.is_skirt_developer():
 
+                # Debugging
+                log.debug("SKIRT is present, updating ...")
+
                 updater = SKIRTUpdater()
                 updater.run()
 
-        # Not installed
+        # Not installed or not found
         else:
+
+            # Debugging
+            log.debug("SKIRT is not found, installing ...")
 
             # Create installer and run it
             installer = SKIRTInstaller()
+            installer.config.force = True
             installer.run()
 
     # -----------------------------------------------------------------
@@ -151,26 +161,39 @@ class Deployer(RemotesConfigurable):
             # If installed, update
             if installed:
 
-                # Debugging
-                log.debug("SKIRT is present on host '" + remote.host_id + "', updating ...")
+                # Clean install
+                if self.config.clean:
 
-                # Create the updater
-                updater = SKIRTUpdater()
+                    # Debugging
+                    log.debug("Peforming clean install of SKIRT on remote host '" + remote.host_id + "' ...")
 
-                # Run the updater
-                updater.run(remote=remote)
+                    # Installer
+                    installer = SKIRTInstaller()
+                    installer.config.force = True
+                    installer.run(remote=remote)
+
+                else:
+
+                    # Debugging
+                    log.debug("SKIRT is present on host '" + remote.host_id + "', updating ...")
+
+                    # Create the updater
+                    updater = SKIRTUpdater()
+
+                    # Run the updater
+                    updater.run(remote=remote)
 
             # If not installed, install
             else:
 
                 # Debugging
-                log.debug("SKIRT is not present on host '" + remote.host_id + "', installing ...")
+                log.debug("SKIRT is not found on host '" + remote.host_id + "', installing ...")
 
                 # Create the installer
                 installer = SKIRTInstaller()
 
                 # Set the remote host ID
-                installer.config.force = True     # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
+                installer.config.force = True   # SKIRT could not be found as an executable, thus remove whatever partial SKIRT installation there is
                 installer.config.repository = "origin"
 
                 # Run the installer
@@ -237,14 +260,26 @@ class Deployer(RemotesConfigurable):
             # If installed, update
             if installed:
 
-                # Debugging
-                log.debug("PTS is present on host '" + remote.host_id + "', updating ...")
+                # Clean install
+                if self.config.clean:
 
-                # Create the updater
-                updater = PTSUpdater()
+                    # Debugging
+                    log.debug("Performing a clean install of PTS on remote host '" + remote.host_id + "' ...")
 
-                # Run the updater
-                updater.run(remote=remote)
+                    installer = PTSInstaller()
+                    installer.config.force = True
+                    installer.run(remote=remote)
+
+                else:
+
+                    # Debugging
+                    log.debug("PTS is present on host '" + remote.host_id + "', updating ...")
+
+                    # Create the updater
+                    updater = PTSUpdater()
+
+                    # Run the updater
+                    updater.run(remote=remote)
 
             # If not installed, install
             else:
@@ -254,6 +289,7 @@ class Deployer(RemotesConfigurable):
 
                 # Create installer
                 installer = PTSInstaller()
+                installer.config.force = True
 
                 # Install
                 installer.run(remote=remote)
