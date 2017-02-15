@@ -474,13 +474,13 @@ class SKIRTInstaller(Installer):
         install_command = "make install"
 
         # Configure
-        terminal.execute(configure_command, cwd=decompress_path)
+        terminal.execute(configure_command, cwd=decompress_path, show_output=log.is_debug())
 
         # Make
-        terminal.execute(make_command, cwd=decompress_path)
+        terminal.execute(make_command, cwd=decompress_path, show_output=log.is_debug())
 
         # Install
-        terminal.execute(install_command, cwd=decompress_path)
+        terminal.execute(install_command, cwd=decompress_path, show_output=log.is_debug())
 
         # Remove the tar.gz file and the temporary directory
         fs.remove_file(path)
@@ -521,9 +521,9 @@ class SKIRTInstaller(Installer):
             lines.append(("':", password))
 
             # Clone the repository
-            terminal.execute_lines(*lines, cwd=self.skirt_root_path)
+            terminal.execute_lines(*lines, cwd=self.skirt_root_path, show_output=log.is_debug())
 
-        else: terminal.execute(command, cwd=self.skirt_root_path)
+        else: terminal.execute(command, cwd=self.skirt_root_path, show_output=log.is_debug())
 
         # Get git version
         self.git_version = git.get_short_git_version(self.skirt_repo_path)
@@ -802,7 +802,7 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Testing the SKIRT installation ...")
 
-        output = terminal.execute("skirt -h")
+        output = terminal.execute("skirt -h", show_output=log.is_debug())
         for line in output:
             if "Welcome to SKIRT" in line:
                 log.success("SKIRT is working")
@@ -823,7 +823,7 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Testing the SKIRT installation ...")
 
-        output = self.remote.execute("skirt -h")
+        output = self.remote.execute("skirt -h", show_output=log.is_debug())
         for line in output:
             if "Welcome to SKIRT" in line:
                 log.success("SKIRT is working")
@@ -867,7 +867,7 @@ def build_skirt_local(skirt_repo_path, qmake_path, git_version):
     fs.write_line(git_version_path, git_version_content)
 
     # Make
-    terminal.execute(make_command, cwd=skirt_repo_path)
+    terminal.execute(make_command, cwd=skirt_repo_path, show_output=log.is_debug())
 
     # Success
     log.success("SKIRT was successfully built")
@@ -903,7 +903,7 @@ def build_skirt_on_remote(remote, skirt_repo_path, qmake_path, git_version):
     git_version_content = 'const char* git_version = " ' + git_version + ' " ;'
     git_version_path = fs.join(skirt_repo_path, "SKIRTmain", "git_version.h")
     write_command = 'echo "' + git_version_content + '" > ' + git_version_path
-    remote.execute(write_command)
+    remote.execute(write_command, show_output=log.is_debug())
 
     # Make
     output = remote.execute(make_command, show_output=log.is_debug(), cwd=skirt_repo_path)
@@ -1318,7 +1318,7 @@ class PTSInstaller(Installer):
         lines.append((expect, "y", True))
 
         # Execute the lines
-        terminal.execute_lines_expect_clone(*lines)
+        terminal.execute_lines_expect_clone(*lines, show_output=log.is_debug())
 
         # Check whether the environment has been made and the executables are present
         environment_bin_path = fs.join(self.conda_installation_path, "envs", self.config.python_name, "bin")
@@ -1398,9 +1398,9 @@ class PTSInstaller(Installer):
             lines.append(("':", password))
 
             # Clone the repository
-            terminal.execute_lines(*lines)
+            terminal.execute_lines(*lines, show_output=log.is_debug())
 
-        else: terminal.execute(command)
+        else: terminal.execute(command, show_output=log.is_debug())
 
         # Get the git version
         self.git_version = git.get_short_git_version(self.pts_package_path)
@@ -1424,7 +1424,7 @@ class PTSInstaller(Installer):
         log.info("Getting the PTS dependencies ...")
 
         # Get available conda packages
-        output = terminal.execute_no_pexpect(self.conda_executable_path + " search")
+        output = terminal.execute_no_pexpect(self.conda_executable_path + " search", show_output=log.is_debug())
         available_packages = []
         for line in output:
             if not line.split(" ")[0]: continue
@@ -1432,7 +1432,7 @@ class PTSInstaller(Installer):
 
         # Get already installed packages
         already_installed = []
-        for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name):
+        for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name, show_output=log.is_debug()):
             if line.startswith("#"): continue
             already_installed.append(line.split(" ")[0])
 
@@ -1593,12 +1593,16 @@ class PTSInstaller(Installer):
             conda_path = fs.join(self.remote.home_directory, "miniconda", "bin", "conda")
             if self.remote.is_file(conda_path): conda_executable_path = conda_path
 
+        print(conda_executable_path)
+
         # If conda is present
         if conda_executable_path is not None:
 
             self.conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
             if self.config.force_conda: self.remote.remove_directory(self.conda_installation_path)
             else: self.conda_main_executable_path = conda_executable_path
+
+        print(self.conda_main_executable_path)
 
     # -----------------------------------------------------------------
 
@@ -1626,6 +1630,9 @@ class PTSInstaller(Installer):
         # Check if not present
         #if self.remote.is_directory(conda_installation_path):
         #    raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")
+
+        # Cleanup leftovers
+        if self.remote.is_directory(conda_installation_path): self.remote.remove_directory(conda_installation_path)
 
         # Set options for installer
         options = "-b -p " + conda_installation_path
@@ -1672,7 +1679,7 @@ class PTSInstaller(Installer):
         lines.append((expect, "y", True))
 
         # Execute the commands
-        self.remote.execute_lines(*lines)
+        self.remote.execute_lines(*lines, show_output=log.is_debug())
 
         # Check whether the environment has been made and the executables are present
         environment_bin_path = fs.join(self.conda_installation_path, "envs", self.config.python_name, "bin")
@@ -1796,8 +1803,7 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Testing the PTS installation ...")
 
-        #output = terminal.execute_no_pexpect("pts -h")
-        output = terminal.execute_no_pexpect(self.pts_path + " -h")
+        output = terminal.execute_no_pexpect(self.pts_path + " -h", show_output=log.is_debug())
         for line in output:
             if "usage: pts" in line: break
         else:
@@ -1819,7 +1825,7 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Testing the PTS installation ...")
 
-        output = self.remote.execute("pts -h")
+        output = self.remote.execute(self.pts_path + " -h", show_output=log.is_debug())
         for line in output:
             if "usage: pts" in line: break
         else:
@@ -2097,7 +2103,7 @@ def find_qmake():
         log.debug("Found a qmake executable at '" + qmake_path + "'")
 
         # Get the version
-        output = terminal.execute(qmake_path + " -v")
+        output = terminal.execute(qmake_path + " -v", show_output=log.is_debug())
         for line in output:
             if "Qt version" in line:
                 qt_version = line.split("Qt version ")[1].split(" in")[0]
@@ -2134,7 +2140,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     """
 
     # Get available conda packages
-    output = remote.execute(conda_path + " search")
+    output = remote.execute(conda_path + " search", show_output=log.is_debug())
     available_packages = []
     for line in output:
         if not line.split(" ")[0]: continue
@@ -2146,7 +2152,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     # List
     if conda_environment is not None: list_command = conda_path + " list --name " + conda_environment
     else: list_command = conda_path + " list"
-    for line in remote.execute(list_command):
+    for line in remote.execute(list_command, show_output=log.is_debug()):
         if line.startswith("#"): continue
         already_installed.append(line.split(" ")[0])
 

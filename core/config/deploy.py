@@ -16,7 +16,7 @@ from pts.core.tools import introspection
 definition = ConfigurationDefinition()
 
 # Add optional
-if len(find_host_ids()) > 0: definition.add_optional("host_ids", "string_list", "remote host ids", choices=find_host_ids(), default=find_host_ids())
+if len(find_host_ids()) > 0: definition.add_positional_optional("host_ids", "string_list", "remote host ids", choices=find_host_ids(), default=find_host_ids())
 else: definition.add_fixed("host_ids", "remote host_ids", [])
 
 # Add optional

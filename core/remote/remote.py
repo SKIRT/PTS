@@ -2074,8 +2074,12 @@ class Remote(object):
         if show_output: self.ssh.logfile = sys.stdout
         else: self.ssh.logfile = None
 
+        #print(args)
+
         # Loop over the lines
         for line in args:
+
+            #print("LINE:", line)
 
             # If string
             if isinstance(line, basestring):
@@ -2088,11 +2092,20 @@ class Remote(object):
 
                 # Expect
                 if len(line) == 3 and line[2]:
-                    index = self.ssh.expect([self.ssh.PROMPT, "$", line[0]])
-                    if index == 0: pass
-                    elif index == 1: pass
-                    elif index == 2: self.ssh.sendline(line[1])
+
+                    # index = self.ssh.expect([self.ssh.PROMPT, "$", line[0]], timeout=timeout)
+                    #index = self.ssh.expect([line[0], "$", self.ssh.PROMPT], timeout=timeout)
+                    index = self.ssh.expect([line[0], self.ssh.PROMPT], timeout=timeout)
+                    #print(index)
+                    if index == 0: self.ssh.sendline(line[1])
+                    else: pass
+
+                    #if index == 0: pass
+                    #elif index == 1: pass
+                    #elif index == 2: self.ssh.sendline(line[1])
+
                 else:
+
                     self.ssh.expect(line[0], timeout=timeout)
                     self.ssh.sendline(line[1])
 
