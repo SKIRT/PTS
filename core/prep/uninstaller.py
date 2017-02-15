@@ -119,8 +119,14 @@ class Uninstaller(Configurable):
             log.warning("SKIRT was not found locally")
             return
 
+        # Debugging
+        log.debug("Removing the SKIRT directory ...")
+
         # Remove the entire directory
         fs.remove_directory(skirt_root_path)
+
+        # Debugging
+        log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
         comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
@@ -144,8 +150,14 @@ class Uninstaller(Configurable):
             log.warning("SKIRT was not found on the remote host")
             return
 
+        # Debugging
+        log.debug("Removing the SKIRT directory ...")
+
         # Remove the entire directory
         self.remote.remove_directory(skirt_root_path)
+
+        # Debugging
+        log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
         comment = "For SKIRT and FitSKIRT, added by PTS (Python Toolkit for SKIRT)"
@@ -181,8 +193,14 @@ class Uninstaller(Configurable):
             log.warning("PTS could not be found locally (which is certainly weird) ...")
             return
 
+        # Debugging
+        log.debug("Removing the PTS directory ...")
+
         # Remove the entire directory
         fs.remove_directory(pts_root_path)
+
+        # Debugging
+        log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
@@ -206,8 +224,14 @@ class Uninstaller(Configurable):
             log.warning("PTS is not present on the remote host")
             return
 
+        # Debugging
+        log.debug("Removing the PTS directory ...")
+
         # Remove the entire directory
         self.remote.remove_directory(pts_root_path)
+
+        # Debugging
+        log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
@@ -243,8 +267,14 @@ class Uninstaller(Configurable):
             log.warning("Conda was not found locally")
             return
 
+        # Debugging
+        log.debug("Removing the Conda directory ...")
+
         # Remove the directory
         fs.remove_directory(installation_path)
+
+        # Debugging
+        log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
@@ -268,8 +298,14 @@ class Uninstaller(Configurable):
             log.warning("Conda was not found on the remote host")
             return
 
+        # Debugging
+        log.debug("Removing the Conda directory ...")
+
         # Remove the directory
         self.remote.remove_directory(installation_path)
+
+        # Debugging
+        log.debug("Removing lines from shell configuration ...")
 
         # Remove lines from shell configuration file
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"

@@ -549,7 +549,7 @@ def operating_system_short():
 
 def operating_system_long():
 
-    """o
+    """
     This function ...
     :return:
     """
@@ -662,6 +662,17 @@ def qmake_is_present():
 
 # -----------------------------------------------------------------
 
+def has_qmake():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return qmake_is_present()
+
+# -----------------------------------------------------------------
+
 def qmake_version():
 
     """
@@ -672,6 +683,17 @@ def qmake_version():
     # Execute
     output = subprocess.check_output(qmake_path() + " --version", shell=True)
     return output
+
+# -----------------------------------------------------------------
+
+def has_conda():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return is_existing_executable("conda")
 
 # -----------------------------------------------------------------
 
@@ -845,11 +867,9 @@ def mpi_compiler_version():
     :return:
     """
 
-    print(mpi_compiler_path())
-
     # Execute
-    output = subprocess.check_output(mpi_compiler_path() + " --version", shell=True)
-    return output
+    output = subprocess.check_output(mpi_compiler_path() + " --version", shell=True).split("\n")
+    return output[0]
 
 # -----------------------------------------------------------------
 
@@ -869,6 +889,22 @@ def mpi_version():
         if "OpenMPI" in line: return "OpenMPI " + line.split(") ")[1]
         elif "Intel" in line: return "Intel MPI " + line.split("Version ")[1].split(" Build")[0]
     return " ".join(output) # unknown MPI version
+
+# -----------------------------------------------------------------
+
+def has_skirt():
+
+    """
+    This function ...
+    :return:
+    """
+
+    #return is_existing_executable("skirt")
+
+    try:
+        skirt_path = subprocess.check_output(["which", "skirt"]).split("\n")[0]
+        return True
+    except subprocess.CalledProcessError: return False
 
 # -----------------------------------------------------------------
 

@@ -2794,6 +2794,33 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def has_conda(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.is_executable("conda")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def conda_version(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_conda: return None
+
+        output = self.execute("conda -V")
+        return output[0]
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_skirt(self):
 
         """
@@ -2834,12 +2861,11 @@ class Remote(object):
         :return:
         """
 
-        #return self.is_executable("pts")
-
         for line in self.execute("pts -v"):
 
             if "command not found" in line: return False
             elif "No module named pts" in line: return False
+            elif "is currently not installed" in line: return False
 
         return True
 
@@ -2979,8 +3005,6 @@ class Remote(object):
 
         # Get the output of the 'which' command
         output = self.execute("which " + name)
-
-        print(output)
 
         if len(output) == 0: return None
         else:

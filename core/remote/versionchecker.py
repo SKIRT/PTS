@@ -17,6 +17,7 @@ from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
 from pts.core.tools.logging import log
 from .configurable import RemotesConfigurable
+from pts.core.tools import conda
 
 # -----------------------------------------------------------------
 
@@ -37,12 +38,14 @@ class VersionChecker(RemotesConfigurable):
         super(VersionChecker, self).__init__(config)
 
         # Versions for each remote host
+        self.os_versions = dict()
         self.python_versions = dict()
         self.cpp_versions = dict()
         self.mpi_versions = dict()
         self.qt_versions = dict()
         self.skirt_versions = dict()
         self.pts_versions = dict()
+        self.conda_versions = dict()
 
     # -----------------------------------------------------------------
 
@@ -94,12 +97,12 @@ class VersionChecker(RemotesConfigurable):
             # Get host ID
             host_id = remote.host_id
 
+            # Get the operating system
+            os_version = remote.operating_system_short
+
             # Loading compilers
             compiler_path = remote.find_and_load_cpp_compiler()
             mpi_compiler_path = remote.find_and_load_mpi_compiler()
-
-            # print(compiler_path)
-            # print(mpi_compiler_path)
 
             # Get C++ compiler and MPI compiler version
             compiler_version = remote.version_of(compiler_path) if compiler_path is not None else None
@@ -117,15 +120,20 @@ class VersionChecker(RemotesConfigurable):
             # Get python version
             python_version = remote.custom_python_version_long(python_path)
 
+            # Get conda version
+            conda_version = remote.conda_version
+
             # Get SKIRT and PTS version
             skirt_version = remote.skirt_version
             pts_version = remote.pts_version
 
             # Set versions
+            self.os_versions[host_id] = os_version
             if compiler_version is not None: self.cpp_versions[host_id] = compiler_version
             if mpi_compiler_version is not None: self.mpi_versions[host_id] = mpi_compiler_version
             if qmake_version is not None: self.qt_versions[host_id] = qmake_version
             if python_version is not None: self.python_versions[host_id] = python_version
+            if conda_version is not None: self.conda_versions[host_id] = conda_version
             if skirt_version is not None: self.skirt_versions[host_id] = skirt_version
             if pts_version is not None: self.pts_versions[host_id] = pts_version
 
@@ -141,64 +149,80 @@ class VersionChecker(RemotesConfigurable):
         # Inform the user
         log.info("Showing versions ...")
 
+        # OS
         print("")
-        print(fmt.bold + fmt.green + "SKIRT" + fmt.reset + ":")
+        print(fmt.bold + fmt.blue + "Operating system" + fmt.reset + ":")
         print("")
-        print(" - local: " + introspection.skirt_version())
-        for host_id in self.host_ids:
-            if host_id in self.skirt_versions:
-                print(" - " + host_id + ": " + self.skirt_versions[host_id])
-            else: print(" - " + host_id + ": not found")
+        print(" - local: " + introspection.operating_system_short())
+        for host_id in self.host_ids: print(" - " + host_id + ": " + self.os_versions[host_id])
         print("")
 
-        print(fmt.bold + fmt.green + "PTS" + fmt.reset + ":")
+        # SKIRT
+        print(fmt.bold + fmt.blue + "SKIRT" + fmt.reset + ":")
         print("")
-        print(" - local: " + introspection.pts_version())
+        if introspection.has_skirt(): print(" - local: " + fmt.green + introspection.skirt_version() + fmt.reset)
+        else: print(" - local: " + fmt.red + "not found" + fmt.reset)
         for host_id in self.host_ids:
-            if host_id in self.pts_versions:
-                print(" - " + host_id + ": " + self.pts_versions[host_id])
-            else:
-                print(" - " + host_id + ": not found")
+            if host_id in self.skirt_versions: print(" - " + host_id + ": " + fmt.green + self.skirt_versions[host_id] + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
         print("")
 
-        print(fmt.bold + fmt.green + "C++ compiler" + fmt.reset + ":")
+        # PTS
+        print(fmt.bold + fmt.blue + "PTS" + fmt.reset + ":")
         print("")
-        print(" - local: " + " ...")
+        print(" - local: " + fmt.green + introspection.pts_version() + fmt.reset)
         for host_id in self.host_ids:
-            if host_id in self.cpp_versions:
-                print(" - " + host_id + ": " + self.cpp_versions[host_id])
-            else:
-                print(" - " + host_id + ": not found")
+            if host_id in self.pts_versions: print(" - " + host_id + ": " + fmt.green + self.pts_versions[host_id] + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
         print("")
 
-        print(fmt.bold + fmt.green + "MPI compiler" + fmt.reset + ":")
+        # C++
+        print(fmt.bold + fmt.blue + "C++ compiler" + fmt.reset + ":")
         print("")
-        print(" - local: " + "...")
+        if introspection.has_cpp_compiler(): print(" - local: " + fmt.green + introspection.cpp_compiler_version() + fmt.reset)
+        else: print(" - local: " + fmt.red + "not found" + fmt.reset)
         for host_id in self.host_ids:
-            if host_id in self.mpi_versions:
-                print(" - " + host_id + ": " + self.mpi_versions[host_id])
-            else:
-                print(" - " + host_id + ": not found")
+            if host_id in self.cpp_versions: print(" - " + host_id + ": " + fmt.green + self.cpp_versions[host_id] + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
         print("")
 
-        print(fmt.bold + fmt.green + "Qmake" + fmt.reset + ":")
+        # MPI
+        print(fmt.bold + fmt.blue + "MPI compiler" + fmt.reset + ":")
         print("")
-        print(" - local: " + "...")
+        if introspection.has_mpi_compiler(): print(" - local: " + fmt.green + introspection.mpi_compiler_version() + fmt.reset)
+        else: print(" - local: " + fmt.red + "not found" + fmt.reset)
         for host_id in self.host_ids:
-            if host_id in self.qt_versions:
-                print(" - " + host_id + ": " + self.qt_versions[host_id])
-            else:
-                print(" - " + host_id + ": not found")
+            if host_id in self.mpi_versions: print(" - " + host_id + ": " + fmt.green + self.mpi_versions[host_id] + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
         print("")
 
-        print(fmt.bold + fmt.green + "Python" + fmt.reset + ":")
+        # Qmake
+        print(fmt.bold + fmt.blue + "Qmake" + fmt.reset + ":")
         print("")
-        print(" - local: " + introspection.python_version_long())
+        if introspection.has_qmake(): print(" - local: " + fmt.green + introspection.qmake_version() + fmt.reset)
+        else: print(" - local: " + fmt.red + "not found" + fmt.reset)
         for host_id in self.host_ids:
-            if host_id in self.python_versions:
-                print(" - " + host_id + ": " + self.python_versions[host_id])
-            else:
-                print(" - " + host_id + ": not found")
+            if host_id in self.qt_versions: print(" - " + host_id + ": " + fmt.green + self.qt_versions[host_id] + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
+        print("")
+
+        # Python
+        print(fmt.bold + fmt.blue + "Python" + fmt.reset + ":")
+        print("")
+        print(" - local: " + fmt.green + introspection.python_version_long() + fmt.reset)
+        for host_id in self.host_ids:
+            if host_id in self.python_versions: print(" - " + host_id + ": " + fmt.green + self.python_versions[host_id] + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
+        print("")
+
+        # Conda
+        print(fmt.bold + fmt.blue + "Conda" + fmt.reset + ":")
+        print("")
+        if introspection.has_conda(): print(" - local: " + fmt.green + conda.get_conda_version() + fmt.reset)
+        else: print(" - local: " + fmt.red + "not found" + fmt.reset)
+        for host_id in self.host_ids:
+            if host_id in self.conda_versions: print(" - " + host_id + ": " + fmt.green + self.conda_versions[host_id] + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.red + "not found" + fmt.reset)
         print("")
 
 # -----------------------------------------------------------------
