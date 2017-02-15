@@ -1923,6 +1923,8 @@ def find_qmake():
 
     latest_qmake_path = None
 
+    latest_version = None
+
     # Loop over the qmake paths: SAME IMPLEMENTATION AS IN Remote class -> _check_qt_remote_no_lmod
     for qmake_path in qmake_paths:
 
@@ -1931,8 +1933,11 @@ def find_qmake():
 
         # Get the version
         output = terminal.execute(qmake_path + " -v")
-        print(output)
-        qt_version = output[1].split("Qt version ")[1].split(" in")[0]
+        for line in output:
+            if "Qt version" in line:
+                qt_version = line.split("Qt version ")[1].split(" in")[0]
+                break
+        else: raise RuntimeError("Qt version could not be determined")
 
         if qt_version < "5.2.0": continue  # oldest supported version
         if "conda" in qmake_path: continue

@@ -1227,8 +1227,11 @@ class Remote(object):
 
             # Get the version
             output = self.execute(qmake_path + " -v")
-
-            qt_version = output[1].split("Qt version ")[1].split(" in")[0]
+            for line in output:
+                if "Qt version" in line:
+                    qt_version = line.split("Qt version ")[1].split(" in")[0]
+                    break
+            else: raise RuntimeError("Qt version could not be determined")
 
             if qt_version < "5.2.0": continue # oldest supported version
             if "conda" in qmake_path: continue
