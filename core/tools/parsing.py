@@ -394,6 +394,21 @@ def filepath_list(argument):
 
 # -----------------------------------------------------------------
 
+def string_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = argument.split(",")
+        return a, b
+    except: raise ValueError("Tuple must be of format a,b")
+
+# -----------------------------------------------------------------
+
 def integer_tuple(argument):
 
     """

@@ -2456,7 +2456,8 @@ class Remote(object):
         :return:
         """
 
-        command = "echo '" + line + "' > " + filepath
+        if "'" in line: command = 'echo "' + line + '" > ' + filepath
+        else: command = "echo '" + line + "' > " + filepath
         self.execute(command, output=False)
 
     # -----------------------------------------------------------------
@@ -2484,7 +2485,8 @@ class Remote(object):
         :return:
         """
 
-        command = "echo '" + line + "' >>" + filepath
+        if "'" in line: command = 'echo "' + line + '" >> ' + filepath
+        else: command = "echo '" + line + "' >> " + filepath
         self.execute(command, output=False)
 
     # -----------------------------------------------------------------

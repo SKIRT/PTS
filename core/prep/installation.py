@@ -1507,7 +1507,7 @@ class PTSInstaller(Installer):
 
         # Download the installer
         if self.remote.is_macos: self.remote.download_from_url_to(miniconda_macos_url, installer_path, overwrite=True)
-        elif self.remote.is_linux: network.download_file(miniconda_linux_url, installer_path, overwrite=True)
+        elif self.remote.is_linux: self.remote.download_from_url_to(miniconda_linux_url, installer_path, overwrite=True)
         else: raise OSError("The operating system on the remote host is not supported")
 
         # Determine the conda installation directory
