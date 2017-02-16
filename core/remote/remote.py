@@ -1927,6 +1927,7 @@ class Remote(object):
 
         # Check
         if self.is_file(filepath):
+
             if overwrite: self.remove_file(filepath)
             else: raise IOError("File already exists: " + filepath)
 
@@ -2414,7 +2415,7 @@ class Remote(object):
         :return:
         """
 
-        output = self.write_line(path, "")
+        self.write_line(path, "")
 
     # -----------------------------------------------------------------
 
@@ -2691,6 +2692,49 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def decompress_directory_in_place(self, filepath, remove=False):
+
+        """
+        This function ...
+        :param filepath:
+        :param remove:
+        :return:
+        """
+
+        # Inform the user
+        self.info("Decompressing '" + filepath + "' ...")
+
+        # tar.gz file
+        if filepath.endswith(".tar.gz"):
+
+            # Determine the path of the directory
+            new_path = filepath.split(".tar.gz")[0]
+
+            # fs.create_directory(new_path)
+            dir_path = fs.directory_of(new_path)
+
+            # Debugging
+            self.debug("New path: '" + new_path + "'")
+            self.debug("Decompressing in directory '" + dir_path + "' ...")
+
+            # Decompress
+            command = "tar -zxvf " + filepath + " --directory " + dir_path
+            log.debug("Decompress command: '" + command + "'")
+
+            # Execute the command
+            self.execute(command)
+
+        # Not implemented
+        else: raise NotImplementedError("Not implemented yet")
+
+        # Remove the file
+        if remove: self.remove_file(filepath)
+
+        # Return the new path
+        return new_path
+
+    # -----------------------------------------------------------------
+
     def decompress_file(self, path, new_path):
 
         """
@@ -2756,7 +2800,10 @@ class Remote(object):
 
         if "'" in line: command = 'echo "' + line + '" > ' + filepath
         else: command = "echo '" + line + "' > " + filepath
-        self.execute(command, output=False)
+        output = self.execute(command, output=False)
+
+        for line in output:
+            if "disk quota exceeded" in line.lower(): raise IOError("Cannot write to the file '" + filepath + "': disk quota exceeded")
 
     # -----------------------------------------------------------------
 

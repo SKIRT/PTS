@@ -95,8 +95,6 @@ class RemotePythonSession(object):
         #self.remote.write_line(self.out_pipe_filepath, "")
         self.remote.touch_alternative(self.out_pipe_filepath)
 
-        #print(self.out_pipe_filepath)
-
     # -----------------------------------------------------------------
 
     @property

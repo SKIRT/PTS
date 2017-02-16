@@ -682,6 +682,10 @@ class SKIRTInstaller(Installer):
                 temp_path = self.remote.scratch_path
                 installation_path = fs.join(self.remote.scratch_path, installation_name)
         else:
+
+            # Debugging
+            log.debug("Installing Qt in the home directory ...")
+
             temp_path = self.remote.home_directory
             installation_path = fs.join(self.remote.home_directory, installation_name)
 
@@ -1761,7 +1765,7 @@ def find_real_name(module_name, available_packages, real_names, session=None):
 
 def get_installation_commands(dependencies, packages, already_installed, available_packages, conda_path="conda",
                               pip_path="pip", python_path="python", easy_install_path="easy_install",
-                              conda_environment=None):
+                              conda_environment=None, remote=None):
 
     """
     This function ...
@@ -1774,6 +1778,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     :param python_path:
     :param easy_install_path:
     :param conda_environment:
+    :param remote:
     :return:
     """
 
@@ -1871,19 +1876,21 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
             # Determine download path
             from ..tools import time
-            path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name(module_name))
+            if remote is not None: path = remote.create_directory_in(remote.pts_temp_path, time.unique_name(module_name))
+            else: path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name(module_name))
 
             # Download
-            filepath = network.download_file_no_requests(via, path)
+            if remote is not None: filepath = remote.download_from_url_to(via, path)
+            else: filepath = network.download_file_no_requests(via, path)
 
             # Debugging
             log.debug("Decompressing the file '" + filepath + "' ...")
 
             # Decompress
-            decompress_directory_path = archive.decompress_directory_in_place(filepath, remove=True)
+            if remote is not None: decompress_directory_path = remote.decompress_directory_in_place(filepath, remove=True)
+            else: decompress_directory_path = archive.decompress_directory_in_place(filepath, remove=True)
 
             # Set the installation command
-            #command = easy_install_path + " " + install_module_name
             setup_path = fs.join(decompress_directory_path, "setup.py")
             command = python_path + " " + setup_path + " install"
             commands[install_module_name] = command
@@ -2025,7 +2032,8 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
                                                                                 pip_path=pip_path,
                                                                                 conda_environment=conda_environment,
                                                                                 python_path=python_path,
-                                                                                easy_install_path=easy_install_path)
+                                                                                easy_install_path=easy_install_path,
+                                                                                remote=remote)
 
     # Stop the python session
     del session
@@ -2171,6 +2179,10 @@ def install_conda_remote(remote):
             installer_path = fs.join(remote.scratch_path, "conda.sh")
             conda_installation_path = fs.join(remote.scratch_path, "miniconda")
     else:
+
+        # Debugging
+        log.debug("Installing Conda in the home directory ...")
+
         installer_path = fs.join(remote.home_directory, "conda.sh")
         conda_installation_path = fs.join(remote.home_directory, "minconda")
 
