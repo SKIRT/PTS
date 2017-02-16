@@ -27,6 +27,7 @@ from .installation import create_conda_environment_local, create_conda_environme
 from ..tools import git
 from ..tools import terminal
 from ..tools import filesystem as fs
+from ..remote.modules import Modules
 
 # -----------------------------------------------------------------
 

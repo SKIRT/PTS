@@ -197,7 +197,7 @@ class Remote(object):
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
             self.ssh = pxssh.pxssh()
-            try: self.login(login_timeout * 3) # try now with a timeout that is three times as long
+            try: self.login(login_timeout * 4) # try now with a timeout that is four times as long
             except HostDownException:
                 self.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
@@ -511,12 +511,13 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def get_module_versions(self, module_name, exact=True):
+    def get_module_versions(self, module_name, exact=True, show_output=False):
 
         """
         This function ...
         :param module_name:
         :param exact:
+        :param show_output:
         :return:
         """
 
@@ -525,7 +526,7 @@ class Remote(object):
 
         #print(command)
         #print(self.ssh.before)
-        output = self.execute(command, show_output=False)
+        output = self.execute(command, show_output=show_output)
 
         versions = []
 
@@ -1368,42 +1369,44 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def find_and_load_qmake(self, return_module=False):
+    def find_and_load_qmake(self, return_module=False, show_output=False):
 
         """
         This function ...
         :param return_module:
+        :param show_output:
         :return:
         """
 
         # Use modules or not
-        if self.has_lmod: return self._check_qt_remote_lmod(return_module=return_module)
+        if self.has_lmod: return self._check_qt_remote_lmod(return_module=return_module, show_output=show_output)
         else:
 
-            if return_module: return self._check_qt_remote_no_lmod(), None
-            else: return self._check_qt_remote_no_lmod()
+            if return_module: return self._check_qt_remote_no_lmod(show_output=show_output), None
+            else: return self._check_qt_remote_no_lmod(show_output=show_output)
 
     # -----------------------------------------------------------------
 
-    def _check_qt_remote_lmod(self, return_module=False):
+    def _check_qt_remote_lmod(self, return_module=False, show_output=False):
 
         """
         This function ...
         :param return_module:
+        :param show_output:
         :return:
         """
 
         # Find latest Qt5 version
-        qt5_version = self._find_latest_qt_version_module()
+        qt5_version = self._find_latest_qt_version_module(show_output=show_output)
 
         # If no version could be found, give an error
         if qt5_version is None: raise RuntimeError("No Intel-compiled version of Qt 5 could be found between the available modules")
 
         # Load the module
-        self.load_module(qt5_version, show_output=False)
+        self.load_module(qt5_version, show_output=show_output)
 
         # Get the qmake path
-        qmake_path = self.find_executable("qmake")
+        qmake_path = self.find_executable("qmake", show_output=show_output)
 
         # Get the Intel compiler version
         #if "intel" in qt5_version: intel_version = qt5_version.split("intel-")[1].split("-")[0]
@@ -1415,10 +1418,11 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def _check_qt_remote_no_lmod(self):
+    def _check_qt_remote_no_lmod(self, show_output=False):
 
         """
         This function ...
+        :param show_output:
         :return:
         """
 
@@ -1427,11 +1431,11 @@ class Remote(object):
 
         # Search for qmake in the home directory
         command = "find " + self.home_directory + "/Qt* -name qmake -type f 2>/dev/null"
-        qmake_paths += self.execute(command)
+        qmake_paths += self.execute(command, show_output=show_output)
 
         # Search for qmake in the /usr/local directory
         command = "find /usr/local/Qt* -name qmake -type f 2>/dev/null"
-        qmake_paths += self.execute(command)
+        qmake_paths += self.execute(command, show_output=show_output)
 
         ## TOO SLOW?
         # Search for Qt directories in the home directory
@@ -1450,7 +1454,7 @@ class Remote(object):
                 #qmake_paths.append(path)
 
         # Check if qmake can be found by running 'which'
-        qmake_path = self.find_executable("qmake")
+        qmake_path = self.find_executable("qmake", show_output=show_output)
         if qmake_path is not None: qmake_paths.append(qmake_path)
 
         latest_version = None
@@ -1461,7 +1465,7 @@ class Remote(object):
         for qmake_path in qmake_paths:
 
             # Get the version
-            output = self.execute(qmake_path + " -v")
+            output = self.execute(qmake_path + " -v", show_output=show_output)
             for line in output:
                 if "Qt version" in line:
                     qt_version = line.split("Qt version ")[1].split(" in")[0]
@@ -1484,20 +1488,21 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def _find_latest_qt_version_module(self):
+    def _find_latest_qt_version_module(self, show_output=False):
 
         """
         This function ...
+        :param show_output:
         :return:
         """
 
         versions = []
 
         # Check 'Qt5' module versions
-        versions += self.get_module_versions("Qt5")
+        versions += self.get_module_versions("Qt5", show_output=show_output)
 
         # Check 'Qt' module versions
-        versions += self.get_module_versions("Qt")
+        versions += self.get_module_versions("Qt", show_output=show_output)
 
         # Get the latest Qt version
         latest_version = None
@@ -1925,15 +1930,32 @@ class Remote(object):
         :return:
         """
 
-        # Check
+        # Is an existing file
         if self.is_file(filepath):
 
             if overwrite: self.remove_file(filepath)
             else: raise IOError("File already exists: " + filepath)
 
-        # Execute the download command
-        command = "wget " + url + " -O " + filepath
-        self.execute(command, show_output=show_output)
+        # Is a directory
+        if self.is_directory(filepath):
+
+            command = "wget " + url
+            self.execute(command, show_output=show_output, cwd=filepath)
+
+            # Determine the path of the downloaded file
+            filename = fs.name(url)
+            filepath = fs.join(filepath, filename)
+            if not self.is_file(filepath): raise RuntimeError("Something went wrong downloading the file '" + url + "' to '" + filepath + "'")
+
+        # Otherwise: assume it is a new file
+        else:
+
+            # Execute the download command
+            command = "wget " + url + " -O " + filepath
+            self.execute(command, show_output=show_output)
+
+        # Return the file path
+        return filepath
 
     # -----------------------------------------------------------------
 
@@ -2652,16 +2674,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def create_directory(self, path):
+    def create_directory(self, path, show_output=False):
 
         """
         This function ...
         :param path:
+        :param show_output:
         :return:
         """
 
         # Create the remote directory
-        self.execute("mkdir " + path, output=False)
+        self.execute("mkdir " + path, output=False, show_output=show_output)
 
     # -----------------------------------------------------------------
 
@@ -2677,17 +2700,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def create_directory_in(self, base_path, name):
+    def create_directory_in(self, base_path, name, show_output=False):
 
         """
         This function ...
         :param base_path:
         :param name:
+        :param show_output:
         :return:
         """
 
         directory_path = fs.join(base_path, name)
-        self.create_directory(directory_path)
+        self.create_directory(directory_path, show_output=show_output)
         return directory_path
 
     # -----------------------------------------------------------------
@@ -2800,7 +2824,7 @@ class Remote(object):
 
         if "'" in line: command = 'echo "' + line + '" > ' + filepath
         else: command = "echo '" + line + "' > " + filepath
-        output = self.execute(command, output=False)
+        output = self.execute(command)
 
         for line in output:
             if "disk quota exceeded" in line.lower(): raise IOError("Cannot write to the file '" + filepath + "': disk quota exceeded")
@@ -3535,16 +3559,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def find_executable(self, name):
+    def find_executable(self, name, show_output=False):
 
         """
         This function ...
         :param name:
+        :param show_output:
         :return:
         """
 
         # Get the output of the 'which' command
-        output = self.execute("which " + name)
+        output = self.execute("which " + name, show_output=show_output)
 
         if len(output) == 0: return None
         else:
@@ -3691,7 +3716,7 @@ class Remote(object):
             return free.value
 
         # No quota: return free memory on the entire disk
-        else: return free
+        else: return self.free_space
 
     # -----------------------------------------------------------------
 

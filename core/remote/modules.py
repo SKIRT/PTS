@@ -106,7 +106,7 @@ class Modules(object):
         self.versions["mpi"] = self.remote.version_of(mpi_compiler_path)
 
         # Unload all modules to avoid conflicts with the other modules
-        #self.remote.unload_all_modules()
+        self.remote.unload_all_modules()
 
     # -----------------------------------------------------------------
 
@@ -180,5 +180,8 @@ class Modules(object):
         self.names["python"] = module
         self.paths["python"] = path
         self.versions["python"] = version
+
+        # Unload all modules to avoid conflicts
+        self.remote.unload_all_modules()
 
 # -----------------------------------------------------------------

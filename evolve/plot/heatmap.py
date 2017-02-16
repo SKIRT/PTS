@@ -14,16 +14,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import matplotlib.pyplot as plt
-import sqlite3
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.basics.plot import Plot
 from ...core.tools import filesystem as fs
+from .plotter import Plotter
 
 # -----------------------------------------------------------------
 
-class HeatMapPlotter(Configurable):
+class HeatMapPlotter(Plotter):
 
     """
     This class ...
@@ -38,12 +38,6 @@ class HeatMapPlotter(Configurable):
 
         # Call the constructor of the base class
         super(HeatMapPlotter, self).__init__(config)
-
-        # The database connection
-        self.database = None
-
-        # The plot
-        self.plot = None
 
     # -----------------------------------------------------------------
 

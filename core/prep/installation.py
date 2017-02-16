@@ -26,6 +26,7 @@ from ..tools import terminal
 from ..tools import git
 from ..tools import conda
 from ..tools import time
+from ..remote.modules import Modules
 
 # -----------------------------------------------------------------
 
@@ -309,8 +310,19 @@ class SKIRTInstaller(Installer):
         self.compiler_path = None
         self.mpi_compiler_path = None
 
+        # Modules
+        self.compiler_module = None
+        self.mpi_compiler_module = None
+
         # The path to the qmake executable corresponding to the most recent Qt installation
         self.qmake_path = None
+
+        # The module for qmake
+        self.qmake_module = None
+
+        # Path and module for git
+        self.git_path = None
+        self.git_module = None
 
         # Path to SKIRT root directory
         self.skirt_root_path = None
@@ -326,6 +338,9 @@ class SKIRTInstaller(Installer):
 
         # Git version of SKIRT to be installed
         self.git_version = None
+
+        # The modules
+        self.modules = None
 
     # -----------------------------------------------------------------
 
@@ -599,11 +614,8 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing SKIRT remotely ...")
 
-        # Check the compilers (C++ and MPI)
-        self.check_compilers_remote()
-
-        # Check Qt installation
-        self.check_qt_remote()
+        # Check the modules
+        self.check_modules_remote()
 
         # Install Qt if necessary
         if not self.has_qt: self.install_qt_remote()
@@ -620,6 +632,30 @@ class SKIRTInstaller(Installer):
 
     # -----------------------------------------------------------------
 
+    def check_modules_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the modules on the remote host ...")
+
+        # Create the modules
+        self.modules = Modules(self.remote)
+
+        # Check compilers
+        self.check_compilers_remote()
+
+        # Check Qt
+        self.check_qt_remote()
+
+        # Check git
+        self.check_git_remote()
+
+    # -----------------------------------------------------------------
+
     def check_compilers_remote(self):
 
         """
@@ -630,14 +666,59 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking the presence of C++ and MPI compilers ...")
 
-        # Get the compiler paths
-        self.compiler_path = self.remote.find_and_load_cpp_compiler()
-        self.mpi_compiler_path = self.remote.find_and_load_mpi_compiler()
+        # C++ compiler
+        cpp_path = self.modules.paths["cpp"]
+        cpp_version = self.modules.versions["cpp"]
+        cpp_module = self.modules.names["cpp"]
 
-        # Debugging
-        log.debug("The C++ compiler path is '" + self.compiler_path)
-        if self.mpi_compiler_path is not None: log.debug("The MPI compiler path is '" + self.mpi_compiler_path)
-        else: log.debug("An MPI compiler is not found")
+        # Check if module has to be loaded
+        if cpp_module is not None:
+
+            # Inform the user
+            log.info("The module '" + cpp_module + "' has to be loaded for qmake")
+
+            # Set the module name and the path
+            self.compiler_module = cpp_module
+            self.compiler_path = cpp_path
+
+        # No module required
+        else:
+
+            # Inform the user
+            log.info("The C++ compiler is present at '" + cpp_path + "'")
+
+            # Set the path
+            self.compiler_path = cpp_path
+
+        # MPI compiler
+        mpi_path = self.modules.paths["mpi"]
+        mpi_version = self.modules.versions["mpi"]
+        mpi_module = self.modules.names["mpi"]
+
+        # Check if MPI compiler is present
+        if mpi_path is not None:
+
+            # Check if module has to be loaded
+            if mpi_module is not None:
+
+                # Inform the user
+                log.info("The module '" + mpi_module + "' has to be loaded for MPI")
+
+                # Set the module name and the path
+                self.mpi_compiler_module = mpi_module
+                self.mpi_compiler_path = mpi_path
+
+            # No module required
+            else:
+
+                # Inform the user
+                log.info("The MPI compiler is present at '" + mpi_path + "'")
+
+                # Set the path
+                self.mpi_compiler_path = mpi_path
+
+        # No MPI compiler found
+        else: log.info("An MPI compiler is not present")
 
     # -----------------------------------------------------------------
 
@@ -651,11 +732,55 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Checking for Qt installation on remote ...")
 
-        # Load Qt module, find the qmake path
-        self.qmake_path = self.remote.find_and_load_qmake()
+        # Qt is present
+        if self.modules.paths["qt"] is not None:
 
-        # Debugging
-        log.debug("The qmake path is '" + self.qmake_path + "'")
+            # Get the version
+            version = self.modules.versions["qt"]
+
+            # Check if module has to be loaded
+            if self.modules.names["qt"] is not None:
+
+                # Inform the user
+                log.info("The module '" + self.modules.names["qt"] + "' has to be loaded for qmake ...")
+
+                # Set the module name and the qmake path
+                self.qmake_module = self.modules.names["qt"]
+                self.qmake_path = self.modules.paths["qt"]
+
+            else:
+
+                # Inform the user
+                log.info("Qmake is present at '" + self.modules.paths["qt"] + "'")
+
+                # Set qmake path
+                self.qmake_path = self.modules.paths["qt"]
+
+        # Qt is not present
+        else: log.info("Qt is not present, will be installing ...")
+
+    # -----------------------------------------------------------------
+
+    def check_git_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of git on the remote host ...")
+
+        # Get info
+        path = self.modules.paths["git"]
+        version = self.modules.versions["git"]
+        module = self.modules.names["git"]
+
+        if path is None: raise RuntimeError("Git could not be found")
+
+        # Set path and module name
+        self.git_path = path
+        if module is not None: self.git_module = module
 
     # -----------------------------------------------------------------
 
@@ -670,6 +795,10 @@ class SKIRTInstaller(Installer):
         log.info("Installing Qt ...")
 
         installation_name = "Qt"
+
+        # Load compiler modules
+        if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
+        if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
 
         # Determine location based on how much space is available
         if self.remote.free_space_home_directory < full_qt_installation_size:
@@ -696,7 +825,7 @@ class SKIRTInstaller(Installer):
         self.remote.download_from_url_to(qt_url, path)
 
         # Unarchive
-        decompress_path = self.remote.create_directory_in(temp_path, "Qt-install")
+        decompress_path = self.remote.create_directory_in(temp_path, "Qt-install", show_output=log.is_debug())
         self.remote.decompress_file(path, decompress_path)
 
         decompress_path = fs.join(temp_path, "Qt-install")
@@ -722,27 +851,19 @@ class SKIRTInstaller(Installer):
         # Success
         log.success("Qt was succesfully installed")
 
-    # -----------------------------------------------------------------
+        # Set the qmake path
+        all_files_in_installation_directory = self.remote.files_in_path(installation_path, recursive=True)
+        for path in all_files_in_installation_directory:
+            name = fs.name(path)
+            if name == "qmake" and self.remote.is_file(path):
+                self.qmake_path = path
+                break
 
-    def check_git_remote(self):
+        # Check if qmake path was set
+        if self.qmake_path is None: raise RuntimeError("Qt was installed but qmake could not be located")
 
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Checking the presence of git ...")
-
-        # Find and load git
-        path, version = self.remote.find_and_load_git()
-
-        # Debugging
-        log.debug("The path of the git installation is '" + path)
-        log.debug("The version of git is '" + version + "'")
-
-        # Unload all modules to avoid conflicts with the other modules
-        #self.remote.unload_all_modules()
+        # Unload modules
+        self.remote.unload_all_modules()
 
     # -----------------------------------------------------------------
 
@@ -755,6 +876,9 @@ class SKIRTInstaller(Installer):
 
         # Inform the user
         log.info("Getting the SKIRT source code ...")
+
+        # Load git module
+        if self.git_module is not None: self.remote.load_module(self.git_module, show_output=log.is_debug())
 
         # Get repository link
         if self.config.repository is not None: url = introspection.skirt_git_remote_url(self.config.repository)
@@ -807,6 +931,9 @@ class SKIRTInstaller(Installer):
         # Success
         log.success("SKIRT was successfully downloaded")
 
+        # Unload all modules
+        self.remote.unload_all_modules()
+
     # -----------------------------------------------------------------
 
     def build_skirt_remote(self):
@@ -819,11 +946,20 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Building SKIRT ...")
 
+        # Load modules
+        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug())
+        else:
+            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
+            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
+
         # Execute the build
         build_skirt_on_remote(self.remote, self.skirt_repo_path, self.qmake_path, self.git_version)
 
         # Success
         log.success("SKIRT was successfully built")
+
+        # Unload modules
+        self.remote.unload_all_modules()
 
     # -----------------------------------------------------------------
 
