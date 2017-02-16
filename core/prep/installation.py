@@ -25,6 +25,7 @@ from ..tools import network, archive
 from ..tools import terminal
 from ..tools import git
 from ..tools import conda
+from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -1288,6 +1289,12 @@ class PTSInstaller(Installer):
         # Run the installation script
         terminal.run_script(installer_path, options, show_output=log.is_debug(), no_pexpect=True)
 
+        # Debugging
+        log.debug("Removing the installer ...")
+
+        # Remove the installer
+        fs.remove_file(installer_path)
+
         # Set the installation path
         self.conda_installation_path = conda_installation_path
         conda_bin_path = fs.join(conda_installation_path, "bin")
@@ -1645,8 +1652,17 @@ class PTSInstaller(Installer):
         # Set options for installer
         options = "-b -p " + conda_installation_path
 
+        # Debugging
+        log.debug("Running the '" + installer_path + "' script with options: [" + options + "]")
+
         # Run the installation script
         self.remote.run_script(installer_path, options, show_output=log.is_debug())
+
+        # Debugging
+        log.debug("Removing the installer script ...")
+
+        # Remove the installer
+        self.remote.remove_file(installer_path)
 
         # Set the installation path
         self.conda_installation_path = conda_installation_path
@@ -2040,6 +2056,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
         # GitHub url
         elif "github.com" in via:
+
             log.warning("Obtaining packages from a remote repository on GitHub is not supported yet")
             not_installed.append(module_name)
             continue
@@ -2053,6 +2070,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
             # Download
             filepath = network.download_file_no_requests(via, path)
+
+            # Debugging
+            log.debug("Decompressing the file '" + filepath + "' ...")
 
             # Decompress
             decompress_directory_path = archive.decompress_directory_in_place(filepath, remove=True)
@@ -2178,7 +2198,8 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
         remote.execute_lines(*lines, show_output=log.is_debug())
 
     # Use the introspection module on the remote end to get the dependencies and installed python packages
-    session = remote.start_python_session()
+    screen_output_path = remote.create_directory_in(remote.pts_temp_path, time.unique_name("installation"))
+    session = remote.start_python_session(output_path=screen_output_path)
     session.import_package("introspection", from_name="pts.core.tools")
     dependencies = session.get_simple_property("introspection", "get_all_dependencies().keys()")
     packages = session.get_simple_property("introspection", "installed_python_packages()")

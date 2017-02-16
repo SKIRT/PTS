@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from abc import ABCMeta, abstractmethod
-from textwrap import wrap
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -31,6 +30,7 @@ from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import formatting as fmt
 from ...core.tools import stringify
 from ..core.adapters import DBFileCSV, DBSQLite
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -54,8 +54,11 @@ class Optimizer(Configurable):
         # Call the constructor of the base class
         super(Optimizer, self).__init__(config)
 
-        # The database
+        # The database adapter
         self.database = None
+
+        # The statistics table adapter
+        self.statistics = None
 
         # The intial genome
         self.initial_genome = None
@@ -65,6 +68,9 @@ class Optimizer(Configurable):
 
         # The best individual
         self.best = None
+
+        # The generations plotter
+        self.generations_plotter = None
 
     # -----------------------------------------------------------------
 
@@ -81,6 +87,32 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def initialize_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Initializing the statistics table ...")
+
+        # Determine the file path
+        filepath = self.output_path_file("statistics.csv")
+
+        # Check the file
+        if fs.is_file(filepath):
+            log.debug("The statistics file is already present. Adding a new run to the file.")
+            reset = False
+        else:
+            log.debug("Creating a new statistics file ...")
+            reset = True
+
+        # Create the adapter
+        self.statistics = DBFileCSV(filename=filepath, frequency=self.config.statistics_frequency, reset=reset, identify=self.config.run_id)
+
+    # -----------------------------------------------------------------
+
     def initialize_database(self):
 
         """
@@ -91,23 +123,19 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Initializing the database ...")
 
-        # CSV database
-        if self.config.database_type == "csv":
+        # Determine the file path
+        filepath = self.output_path_file("database.db")
 
-            # Determine the file path
-            filepath = self.output_path_file("database.csv")
+        # Check the file
+        if fs.is_file(filepath):
+            log.debug("The database file is already present. Adding a new run to the database.")
+            reset = False
+        else:
+            log.debug("Creating a new database file ...")
+            reset = True
 
-            # Create database adapter
-            self.database = DBFileCSV(filename=filepath, identify=self.config.database_identifier, frequency=self.config.database_frequency, reset=True)
-
-        # SQlite database
-        elif self.config.database_type == "sqlite":
-
-            # Determine the file path
-            filepath = self.output_path_file("database.db")
-
-            # Create the database adapter
-            self.database = DBSQLite(dbname=filepath, identify=self.config.database_identifier, resetDB=True, commit_freq=self.config.database_frequency, frequency=self.config.database_frequency)
+        # Create the database adapter
+        self.database = DBSQLite(dbname=filepath, identify=self.config.run_id, resetDB=reset, commit_freq=self.config.database_frequency, frequency=self.config.database_frequency)
 
     # -----------------------------------------------------------------
 
@@ -217,28 +245,36 @@ class Optimizer(Configurable):
         self.engine.setElitismReplacement(self.config.nelite_individuals)
 
         # Get the callback function
-        callback = kwargs.pop("callback") if "callback" in kwargs else None
+        #callback = kwargs.pop("callback") if "callback" in kwargs else None
 
         # Get kwargs for the different functions
         evaluator_kwargs = kwargs.pop("evaluator_kwargs") if "evaluator_kwargs" in kwargs else None
         initializator_kwargs = kwargs.pop("initializator_kwargs") if "initializator_kwargs" in kwargs else None
         mutator_kwargs = kwargs.pop("mutator_kwargs") if "mutator_kwargs" in kwargs else None
         crossover_kwargs = kwargs.pop("crossover_kwargs") if "crossover_kwargs" in kwargs else None
-        callback_kwargs = kwargs.pop("callback_kwargs") if "callback_kwargs" in kwargs else None
+        #callback_kwargs = kwargs.pop("callback_kwargs") if "callback_kwargs" in kwargs else None
 
         # Set the callback function
-        if callback is not None: self.engine.stepCallback.set(callback)
+        #if callback is not None: self.engine.stepCallback.set(callback)
+
+        # Set generations plotter
+        self.generations_plotter = kwargs.pop("generations_plotter", None)
+        if self.generations_plotter is not None: self.engine.stepCallback.set(self.generations_plotter.add_generation)
 
         # Set the database adapter
         self.database.open(self.engine)
         self.engine.setDBAdapter(self.database)
+
+        # Set the adapter for the statistics table
+        self.statistics.open(self.engine)
+        self.engine.setDBAdapter(self.statistics)
 
         # Set kwargs
         if evaluator_kwargs is not None: self.engine.set_kwargs("evaluator", evaluator_kwargs)
         if initializator_kwargs is not None: self.engine.set_kwargs("initializator", initializator_kwargs)
         if mutator_kwargs is not None: self.engine.set_kwargs("mutator", mutator_kwargs)
         if crossover_kwargs is not None: self.engine.set_kwargs("crossover", crossover_kwargs)
-        if callback_kwargs is not None: self.engine.set_kwargs("callback", callback_kwargs)
+        #if callback_kwargs is not None: self.engine.set_kwargs("callback", callback_kwargs)
 
     # -----------------------------------------------------------------
 

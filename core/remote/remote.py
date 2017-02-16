@@ -2337,29 +2337,31 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def start_python_session(self, assume_pts=True):
+    def start_python_session(self, assume_pts=True, output_path=None):
 
         """
         This function ...
         :param assume_pts: assume PTS is present, import some basic PTS tools
+        :param output_path:
         :return:
         """
 
         # Start python session and return it
-        return RemotePythonSession(self, assume_pts=assume_pts)
+        return RemotePythonSession(self, assume_pts=assume_pts, output_path=output_path)
 
     # -----------------------------------------------------------------
 
-    def execute_python_interactive(self, lines):
+    def execute_python_interactive(self, lines, output_path=None):
 
         """
         This function ...
         :param lines:
+        :param output_path:
         :return:
         """
 
         # Create python session
-        python = self.start_python_session()
+        python = self.start_python_session(output_path=output_path)
 
         # Execute the lines
         output = python.send_lines(lines)

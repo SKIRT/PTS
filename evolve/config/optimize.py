@@ -30,9 +30,9 @@ definition.add_optional("best_raw_score", "real", "best score for an individual"
 definition.add_optional("rounddecimal", "integer", "round everything to this decimal place")
 definition.add_optional("mutation_method", "string", "mutation method", choices=["range", "gaussian", "binary"])
 definition.add_optional("min_or_max", "string", "minimize or maximize", choices=["minimize", "maximize"])
-definition.add_optional("database_type", "string", "type of database", default="csv", choices=["sqlite", "csv"])
-definition.add_optional("database_identifier", "string", "identifier for this run in the database", default="run_01")
+definition.add_optional("run_id", "string", "identifier for this run", default="run0")
 definition.add_optional("database_frequency", "positive_integer", "frequency of appending to the database (in the number of generations)", 1)
+definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table")
 
 # Other
 definition.add_optional("output", "directory_path", "output directory")

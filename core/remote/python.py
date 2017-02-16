@@ -28,7 +28,7 @@ class RemotePythonSession(object):
     This class ...
     """
 
-    def __init__(self, remote, assume_pts=False, tmux=False):
+    def __init__(self, remote, assume_pts=False, tmux=False, output_path=None):
 
         """
         This function ...
@@ -40,6 +40,9 @@ class RemotePythonSession(object):
 
         # Set tmux flag
         self.tmux = tmux
+
+        # Set the output directory path
+        self.output_path = output_path
 
         # The remote connection
         if isinstance(remote, basestring):
@@ -95,6 +98,37 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def screenlog_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.output_path is None: return None
+
+        the_index = 0
+        the_path = None
+
+        # Find screenlog file
+        for path, name in self.remote.files_in_path(self.output_path, returns=["path", "name"]):
+
+            if name.startswith("screenlog"):
+
+                index = int(name.split(".")[1])
+                if the_path is None:
+                    the_path = path
+                    the_index = index
+                elif index > the_index:
+                    the_path = path
+                    the_index = index
+
+        # Return the path
+        return the_path
+
+    # -----------------------------------------------------------------
+
     def start_session(self):
 
         """
@@ -119,6 +153,7 @@ class RemotePythonSession(object):
         #command = "tmux new-session -d -n " + self.screen_name + " python > " + self.out_pipe_filepath
 
         if self.tmux: command = "tmux new -d -n " + self.screen_name + " python"
+        elif self.output_path is not None: command = "screen -dmS " + self.screen_name + " -L"
         else: command = "screen -dmS " + self.screen_name
 
         #command = "tmux new -d -n " + self.screen_name + " python > " + self.out_pipe_filepath
@@ -126,11 +161,11 @@ class RemotePythonSession(object):
         #command = "tmux new -d -n " + self.screen_name + " python \; pipe-pane 'cat > " + self.out_pipe_filepath + "'"
 
         # Debugging
-        log.debug("Starting tmux session with the command:")
+        log.debug("Starting session with the command:")
         log.debug(command)
 
         # Execute the command
-        self.remote.execute(command, show_output=True)
+        self.remote.execute(command, show_output=True, cwd=self.output_path)
 
         # Tmux ls
         #self.remote.execute("tmux ls", show_output=True)
@@ -393,26 +428,32 @@ class RemotePythonSession(object):
         # Get output
         lines = []
         for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
-            #print(line)
+            #print("LINE", line)
             if line == "[PTS]": break
             lines.append(line)
         lines.reverse()
 
-        print("1", lines)
+        #print("1", lines)
 
         if len(lines) == 0 or lines[0] == "":
 
-            time.wait(10)
+            time.wait(15)
 
             # Get output
             lines = []
             for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
-                # print(line)
+                #print("LINE", line)
                 if line == "[PTS]": break
                 lines.append(line)
             lines.reverse()
 
-        print("2", lines)
+        #print("2", lines)
+
+        if len(lines) == 0 or lines[0] == "":
+
+            # Get output from screen output file
+            for line in self.remote.read_lines_reversed(self.screenlog_path):
+                print("LINE", line)
 
         # Return the value
         return eval(lines[0])
@@ -875,25 +916,38 @@ class RemotePythonSession(object):
         :return:
         """
 
-        #return
+        # Debugging
+        if self.output_path is not None: log.debug("Screen output has been placed in '" + self.output_path + "'")
 
-        # Using tmux
-        if self.tmux:
+        # Remove things if we are not in debug mode
+        if not log.is_debug():
 
-            end_session_command = "tmux kill-session -t " + self.screen_name
-            self.remote.execute(end_session_command)
+            # Using tmux
+            if self.tmux:
 
-        # Using screen
+                end_session_command = "tmux kill-session -t " + self.screen_name
+                self.remote.execute(end_session_command)
+
+            # Using screen
+            else:
+
+                # Stop the python session
+                end_python_command = "screen -r -S " + self.screen_name + " -X stuff 'exit()\n'"
+                self.remote.execute(end_python_command)
+
+                # Stop screen session
+                self.remote.kill_screen(self.screen_name)
+
+            # Remove the pipe file
+            self.remote.remove_file(self.out_pipe_filepath)
+
         else:
 
-            # Stop the python session
-            end_python_command = "screen -r -S " + self.screen_name + " -X stuff 'exit()\n'"
-            self.remote.execute(end_python_command)
-
-            # Stop screen session
-            self.remote.kill_screen(self.screen_name)
-
-        # Remove the pipe file
-        self.remote.remove_file(self.out_pipe_filepath)
+            # Debugging info
+            log.debug("Not closing session and removing pipe in debug mode")
+            if self.tmux: log.debug(" - Tmux session name: " + self.screen_name)
+            else: log.debug(" - Screen session name: " + self.screen_name)
+            log.debug(" - pipe file path: " + self.out_pipe_filepath)
+            if self.output_path is not None: log.debug(" - screen log file: " + self.screenlog_path)
 
 # -----------------------------------------------------------------

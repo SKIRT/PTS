@@ -26,11 +26,9 @@ from pts.evolve.core.crossovers import G1DListCrossoverOX
 from pts.evolve.core.mutators import G1DListMutatorSwap
 from pts.core.basics.animation import Animation
 
-PIL_SUPPORT = None
-try:
-   from PIL import Image, ImageDraw, ImageFont
-   PIL_SUPPORT = True
-except: PIL_SUPPORT = False
+from .plot import Plotter
+
+from PIL import Image, ImageDraw, ImageFont
 
 # -----------------------------------------------------------------
 
@@ -140,58 +138,6 @@ def tour_length(matrix, tour):
 
 # -----------------------------------------------------------------
 
-def write_tour_to_img(coords, tour, img_file):
-
-   """
-   The function to plot the graph
-   :param coords:
-   :param tour:
-   :param img_file:
-   """
-
-   padding = 20
-   coords = [(x+padding,y+padding) for (x,y) in coords]
-   maxx, maxy = 0, 0
-
-   for x, y in coords:
-
-      maxx = max(x, maxx)
-      maxy = max(y, maxy)
-
-   maxx += padding
-   maxy += padding
-
-   img = Image.new("RGB",(int(maxx),int(maxy)),color=(255,255,255))
-
-   font = ImageFont.load_default()
-   d = ImageDraw.Draw(img)
-   num_cities = len(tour)
-
-    # Loop over the cities
-   for i in range(num_cities):
-
-      j = (i+1) % num_cities
-      city_i = tour[i]
-      city_j = tour[j]
-      x1,y1 = coords[city_i]
-      x2,y2 = coords[city_j]
-
-      d.line((int(x1),int(y1),int(x2),int(y2)),fill=(0,0,0))
-      d.text((int(x1)+7,int(y1)-5),str(i),font=font,fill=(32,32,32))
-
-   for x, y in coords:
-
-      x, y = int(x),int(y)
-      d.ellipse((x-5,y-5,x+5,y+5),outline=(0,0,0),fill=(196,196,196))
-
-   del d
-
-   img.save(img_file, "PNG")
-
-   #print("The plot was saved into the %s file." % (img_file,))
-
-# -----------------------------------------------------------------
-
 def G1DListTSPInitializator(genome, **kwargs):
 
     """
@@ -268,25 +214,6 @@ def write_random(filename, cities, xmax=800, ymax=600):
       y = random.randint(0, ymax)
       filehandle.write("%d,%d\n" % (x,y))
    filehandle.close()
-
-# -----------------------------------------------------------------
-
-def evolve_callback(ga_engine, **kwargs):
-
-    """
-    This function ...
-    :param ga_engine:
-    :param kwargs:
-    :return:
-    """
-
-    # Get the coords
-    coords = kwargs.pop("coordinates")
-
-    if ga_engine.currentGeneration % 10 == 0:
-        best = ga_engine.bestIndividual()
-        write_tour_to_img(coords, best, "tsp_result_%d.png" % (ga_engine.currentGeneration,))
-    return False
 
 # -----------------------------------------------------------------
 
@@ -415,12 +342,15 @@ input_optimize["evaluator"] = eval_func
 input_optimize["initializator"] = G1DListTSPInitializator
 input_optimize["mutator"] = G1DListMutatorSwap
 input_optimize["crossover"] = G1DListCrossoverOX
-input_optimize["callback"] = evolve_callback
-#input_optimize["adapter"] = sqlite_adapter
+
+# Create the generations plotter
+plotter = Plotter(coordinates=coords)
+
+# Set the plotter
+input_optimize["generations_plotter"] = plotter
 
 # Create dictionary for extra arguments to the evalutor function
 input_optimize["evaluator_kwargs"] = {"distances": cm}
-input_optimize["callback_kwargs"] = {"coordinates": coords}
 
 # -----------------------------------------------------------------
 
@@ -433,19 +363,8 @@ def finish_optimize(optimizer, **kwargs):
     :return:
     """
 
-    # Get the best
-    best = optimizer.best
-
-    # Get the coordinates
-    coords = kwargs.pop("coordinates")
-
     # Determine path
     temp_path = optimizer.config.path
-    filepath = fs.join(temp_path, "best.png")
-
-    # Write plot
-    if PIL_SUPPORT: write_tour_to_img(coords, best, filepath)
-    else: print("No PIL detected, cannot plot the graph !")
 
     # Create animated gif
     animation = Animation()

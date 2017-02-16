@@ -36,6 +36,11 @@ def decompress_directory_in_place(filepath, remove=False):
     :return:
     """
 
+    from .logging import log
+
+    # Inform the user
+    log.info("Decompressing '" + filepath + "' ...")
+
     if filepath.endswith(".tar.gz"):
 
         # Determine the path of the directory
@@ -43,8 +48,13 @@ def decompress_directory_in_place(filepath, remove=False):
         #fs.create_directory(new_path)
         dir_path = fs.directory_of(new_path)
 
+        # Debugging
+        log.debug("New path: '" + new_path + "'")
+        log.debug("Decompressing in directory '" + dir_path + "' ...")
+
         # Decompress
         command = "tar -zxvf " + filepath + " --directory " + dir_path
+        log.debug("Decompress command: '" + command + "'")
         subprocess.call(command, shell=True)
 
     else: raise NotImplementedError("Not implemented yet")
@@ -66,6 +76,12 @@ def decompress_file_in_place(path, remove=False):
     :return:
     """
 
+    from .logging import log
+
+    # Inform the user
+    log.info("Decompressing '" + path + "' ...")
+
+    # Check extension
     if path.endswith(".bz2"):
         new_path = path.rstrip(".bz2")
         decompress_bz2(path, new_path)

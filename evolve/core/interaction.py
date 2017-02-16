@@ -25,12 +25,12 @@ import numpy
 
 # -----------------------------------------------------------------
 
-def getPopScores(population, fitness=False):
+def get_population_scores(population, fitness=False):
 
    """
    Returns a list of population scores
    Example:
-      >>> lst = getPopScores(population)
+      >>> lst = get_population_scores(population)
 
    :param population: population object (:class:`GPopulation.GPopulation`)
    :param fitness: if True, the fitness score will be used, otherwise, the raw.
@@ -44,18 +44,18 @@ def getPopScores(population, fitness=False):
 
 # -----------------------------------------------------------------
 
-def plotPopScore(population, fitness=False):
+def plot_population_score(population, fitness=False):
 
    """
    Plot the population score distribution
    Example:
-      >>> plotPopScore(population)
+      >>> plot_population_score(population)
    :param population: population object (:class:`GPopulation.GPopulation`)
    :param fitness: if True, the fitness score will be used, otherwise, the raw.
    :rtype: None
    """
 
-   score_list = getPopScores(population, fitness)
+   score_list = get_population_scores(population, fitness)
    plt.plot(score_list, 'o')
    plt.title("Plot of population score distribution")
    plt.xlabel('Individual')
@@ -65,18 +65,18 @@ def plotPopScore(population, fitness=False):
 
 # -----------------------------------------------------------------
 
-def plotHistPopScore(population, fitness=False):
+def plot_histogram_population_score(population, fitness=False):
 
    """
    Population score distribution histogram
    Example:
-      >>> plotHistPopScore(population)
+      >>> plot_histogram_population_score(population)
    :param population: population object (:class:`GPopulation.GPopulation`)
    :param fitness: if True, the fitness score will be used, otherwise, the raw.
    :rtype: None
    """
 
-   score_list = getPopScores(population, fitness)
+   score_list = get_population_scores(population, fitness)
    n, bins, patches = plt.hist(score_list, 50, facecolor='green', alpha=0.75, normed=1)
    plt.plot(bins, mlab.normpdf(bins, numpy.mean(score_list), numpy.std(score_list)), 'r--')
    plt.xlabel('Score')

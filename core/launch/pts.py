@@ -140,11 +140,14 @@ class PTSRemoteLauncher(object):
         # Initialize
         subproject, exact_command_name, class_name, class_module_path, config = self._initialize(pts_command, config_dict, input_dict)
 
+        # Create a remote temporary directory (for the config and input)
+        remote_temp_path = self.remote.new_temp_directory()
+
         # Debugging
         log.info("Running in attached mode ...")
 
         # START REMOTE PYTHON SESSION
-        python = self.remote.start_python_session()
+        python = self.remote.start_python_session(output_path=remote_temp_path)
 
         # Import the class from which to make an instance
         python.import_package("importlib")
@@ -153,9 +156,6 @@ class PTSRemoteLauncher(object):
 
         # Inform the user
         log.start("Starting " + exact_command_name + " ...")
-
-        # Create a remote temporary directory (for the config and input)
-        remote_temp_path = self.remote.new_temp_directory()
 
         # Always create a log file while executing remotely
         config.report = True

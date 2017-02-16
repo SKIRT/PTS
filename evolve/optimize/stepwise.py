@@ -80,17 +80,17 @@ class StepWiseOptimizer(Optimizer):
         # Set the engine
         optimizer.engine = engine
 
-        # Set the database (opening is done during initialization or evolution)
-        if fs.extension_of(dir_path, "database") == "csv":
-            database_path = fs.join(dir_path, "database.csv")
-            optimizer.database = DBFileCSV(filename=database_path, reset=False)
-        elif fs.extension_of(dir_path, "database") == "db":
-            database_path = fs.join(dir_path, "database.db")
-            optimizer.database = DBSQLite(dbname=database_path)
-        else: raise ValueError("Unknown extension for database file")
+        # Load the statistics (opening is done during initialization or evolution)
+        statistics_path = fs.join(dir_path, "statistics.csv")
+        if not fs.is_file(statistics_path): raise IOError("The statistics file could not be found at '" + statistics_path + "'")
+        optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False)
+
+        # Load the database (opening is done during initialization or evolution)
+        database_path = fs.join(dir_path, "database.db")
+        if not fs.is_file(database_path): raise IOError("The database could not be found at '" + database_path + "'")
+        optimizer.database = DBSQLite(dbname=database_path)
 
         # Set the path
-        #optimizer.path = dir_path
         optimizer.config.output = dir_path
 
         # Return the optimizer
@@ -179,16 +179,19 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Initializing ...")
 
-        # 1. Initialize databse
+        # 1. Initialize the statistics table
+        self.initialize_statistics()
+
+        # 2. Initialize databse
         self.initialize_database()
 
-        # 2. Initialize genome
+        # 3. Initialize genome
         self.initialize_genome(**kwargs)
 
-        # 3. Initialize engine
+        # 4. Initialize engine
         self.initialize_engine(**kwargs)
 
-        # 4. Initialize the evolution (the initial generation)
+        # 5. Initialize the evolution (the initial generation)
         self.initialize_evolution()
 
     # -----------------------------------------------------------------

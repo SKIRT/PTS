@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.configuration Contains the configuration class.
+## \package pts.evolve.plot.graphs Graphs plotting functions ...
 
 # -----------------------------------------------------------------
 
@@ -550,6 +550,7 @@ if __name__ == "__main__":
    pop = None
 
    if options.pop_heatmap_raw or options.pop_heatmap_fitness:
+
       conn = sqlite3.connect(options.dbfile)
       conn.row_factory = sqlite3.Row
       c = conn.cursor()
@@ -605,6 +606,7 @@ if __name__ == "__main__":
 
 
    if len(identify_list) == 1 and not popGraph:
+
       if options.compare_raw or options.compare_fitness:
          parser.error("You can't use this graph type with only one identify !")
 
@@ -630,6 +632,7 @@ if __name__ == "__main__":
       print("%d generations found !" % (len(pop),))
    
    elif len(identify_list) > 1 and not popGraph:
+
       pop = []
       if (not options.compare_raw) and (not options.compare_fitness):
          parser.error("You can't use many ids with this graph type !")

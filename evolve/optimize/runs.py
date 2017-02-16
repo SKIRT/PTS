@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.optimize.continuous Contains the ContinuousOptimizer class.
+## \package pts.evolve.optimize.runs Contains the RunsOptimizer class.
 
 # -----------------------------------------------------------------
 
@@ -14,11 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from .optimizer import Optimizer, show_best
+from ...core.basics.configurable import Configurable
+from .stepwise import StepWiseOptimizer
 
 # -----------------------------------------------------------------
 
-class ContinuousOptimizer(Optimizer):
+class RunsOptimizer(Configurable):
 
     """
     This class ...
@@ -32,7 +33,7 @@ class ContinuousOptimizer(Optimizer):
         """
 
         # Call the constructor of the base class
-        super(ContinuousOptimizer, self).__init__(config)
+        super(RunsOptimizer, self).__init__(config)
 
     # -----------------------------------------------------------------
 
@@ -47,11 +48,8 @@ class ContinuousOptimizer(Optimizer):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Initialize
-        self.initialize(**kwargs)
-
-        # 3. Evolve
-        self.evolve()
+        # 3. Perform the runs
+        self.perform()
 
         # 4. Show
         if self.config.show: self.show()
@@ -73,39 +71,11 @@ class ContinuousOptimizer(Optimizer):
         """
 
         # Call the setup function of the base class
-        super(ContinuousOptimizer, self).setup(**kwargs)
+        super(RunsOptimizer, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def initialize(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Initializing ...")
-
-        # 1. Initialize the statistics table
-        self.initialize_statistics()
-
-        # 2. Initialize the database
-        self.initialize_database()
-
-        # 3. Initialize genome
-        self.initialize_genome(**kwargs)
-
-        # 4. Set the evaluator of the initial genome
-        self.initial_genome.evaluator.set(kwargs.pop("evaluator"))
-
-        # 5. Initialize engine
-        self.initialize_engine(**kwargs)
-
-    # -----------------------------------------------------------------
-
-    def evolve(self):
+    def perform(self):
 
         """
         This function ...
@@ -113,28 +83,25 @@ class ContinuousOptimizer(Optimizer):
         """
 
         # Inform the user
-        log.info("Evolving ...")
+        log.info("Performing the runs ...")
 
-        # Let evolve
-        self.engine.evolve(freq_stats=self.config.stats_freq, progress_bar=self.config.progress_bar)
+        # Loop over the different runs
+        for run in range(self.config.runs):
 
-        # Get the best individual
-        self.best = self.engine.bestIndividual()
+            # Determine run ID
+            run_id = "run" + str(run)
 
-        # Determine path
-        if self.generations_plotter is not None:
+            # Create the optimizer
+            optimizer = StepWiseOptimizer()
 
-            self.generations_plotter.add_generation()
+            # Set options
+            optimizer.config.run_id = run_id
 
+            # Inform the user
+            log.info("Starting run '" + run_id + "' ...")
 
-        temp_path = optimizer.config.path
-        filepath = fs.join(temp_path, "best.png")
-
-        # Write plot
-        if PIL_SUPPORT:
-            write_tour_to_img(coords, best, filepath)
-        else:
-            print("No PIL detected, cannot plot the graph !")
+            # Run the optimizer
+            optimizer.run()
 
     # -----------------------------------------------------------------
 
@@ -147,9 +114,6 @@ class ContinuousOptimizer(Optimizer):
 
         # Inform the user
         log.info("Showing ...")
-
-        # Show the best individual
-        show_best(self.best)
 
     # -----------------------------------------------------------------
 
@@ -174,34 +138,5 @@ class ContinuousOptimizer(Optimizer):
 
         # Inform the user
         log.info("Plotting ...")
-
-        # Plot scores
-        self.plot_scores()
-
-        # Plot heat map
-        self.plot_heat_map()
-
-    # -----------------------------------------------------------------
-
-    def plot_scores(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Plotting the scores ...")
-
-
-
-    # -----------------------------------------------------------------
-
-    def plot_heat_map(self):
-
-        """
-        This function ...
-        :return:
-        """
 
 # -----------------------------------------------------------------
