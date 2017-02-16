@@ -47,6 +47,11 @@ qt_url = "http://download.qt.io/official_releases/qt/5.7/5.7.1/single/qt-everywh
 
 # -----------------------------------------------------------------
 
+# The approximate size for a full installation of Qt
+full_qt_installation_size = 1.5
+
+# -----------------------------------------------------------------
+
 class Installer(Configurable):
 
     """
@@ -252,7 +257,8 @@ class Installer(Configurable):
 
 # Determine Qt configure options
 qt_configure_options = []
-qt_configure_options.append("-prefix '$HOME/Qt'")
+#qt_configure_options.append("-prefix '$HOME/Qt'")
+qt_configure_options.append("-prefix '$INSTALLATION_PATH'")
 qt_configure_options.append("-opensource")
 qt_configure_options.append("-confirm-license")
 #qt_configure_options.append("-c++11") # not valid anymore
@@ -663,9 +669,21 @@ class SKIRTInstaller(Installer):
         # Inform the user
         log.info("Installing Qt ...")
 
-        # Detemrine location
-        if self.remote.host.scratch_path is not None: temp_path = self.remote.absolute_path(self.remote.host.scratch_path)
-        else: temp_path = self.remote.home_directory
+        installation_name = "Qt"
+
+        # Determine location based on how much space is available
+        if self.remote.free_space_home_directory < full_qt_installation_size:
+
+            # Debugging
+            log.debug("Not enough space on the home directory, so installing Qt on scratch system ...")
+
+            if self.remote.scratch_path is None: raise RuntimeError("Not enough space on home directory for installing Qt and scratch path not defined")
+            else:
+                temp_path = self.remote.scratch_path
+                installation_path = fs.join(self.remote.scratch_path, installation_name)
+        else:
+            temp_path = self.remote.home_directory
+            installation_path = fs.join(self.remote.home_directory, installation_name)
 
         # Determine the path for the Qt source code
         path = fs.join(temp_path, "qt.tar.gz")
@@ -681,6 +699,9 @@ class SKIRTInstaller(Installer):
 
         # Get the only directory in the Qt-install directory
         qt_everywhere_opensource_path = self.remote.directories_in_path(decompress_path)[0]
+
+        # Set the installation path
+        qt_configure_options[0].replace("$INSTALLATION_PATH", installation_path)
 
         # Determine commands
         configure_command = "./configure " + " ".join(qt_configure_options)
@@ -1026,6 +1047,11 @@ miniconda_macos_url = "https://repo.continuum.io/miniconda/Miniconda2-latest-Mac
 # Now close and re-open your terminal window for the changes to take effect.
 
 # To test your installation, enter the command conda list. If installed correctly, you will see a list of packages that were installed.
+
+# -----------------------------------------------------------------
+
+# Approximate size of a full conda installation (all PTS dependencies) in GB
+full_conda_installation_size = 5.
 
 # -----------------------------------------------------------------
 
@@ -2133,16 +2159,25 @@ def install_conda_remote(remote):
     :return:
     """
 
-    # Determine installer path
-    installer_path = fs.join(remote.home_directory, "conda.sh")
+    # Determine the conda installation location based on how much space is available
+    if remote.free_space_home_directory < full_conda_installation_size:
+
+        # Debugging
+        log.debug("Not enough space on the home directory, so installing Conda on scratch system ...")
+
+        if remote.scratch_path is None:
+            raise RuntimeError("Not enough space on home directory for installing Qt and scratch path not defined")
+        else:
+            installer_path = fs.join(remote.scratch_path, "conda.sh")
+            conda_installation_path = fs.join(remote.scratch_path, "miniconda")
+    else:
+        installer_path = fs.join(remote.home_directory, "conda.sh")
+        conda_installation_path = fs.join(remote.home_directory, "minconda")
 
     # Download the installer
     if remote.is_macos: remote.download_from_url_to(miniconda_macos_url, installer_path, overwrite=True)
     elif remote.is_linux: remote.download_from_url_to(miniconda_linux_url, installer_path, overwrite=True)
     else: raise OSError("The operating system on the remote host is not supported")
-
-    # Determine the conda installation directory
-    conda_installation_path = fs.join(remote.home_directory, "miniconda")
 
     # Cleanup leftovers
     if remote.is_directory(conda_installation_path): remote.remove_directory(conda_installation_path)

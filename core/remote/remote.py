@@ -2406,6 +2406,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def touch_alternative(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        output = self.write_line(path, "")
+
+    # -----------------------------------------------------------------
+
     def rename_file(self, directory, old_name, new_name):
 
         """
@@ -3612,6 +3624,31 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def free_space_home_directory(self):
+
+        """
+        This function returns the usable amount of disk space in the home directory
+        :return:
+        """
+
+        # Quota command
+        if self.host.quota_command is not None:
+
+            # Get the used and max amount of memory for the home directory
+            used, total = self.quota[self.home_directory]
+
+            # Calculate the free amount of memory
+            free = (total - used).to("GB")
+
+            # Return it in GB
+            return free.value
+
+        # No quota: return free memory on the entire disk
+        else: return free
+
+    # -----------------------------------------------------------------
+
+    @property
     def scheduler(self):
 
         """
@@ -4476,6 +4513,53 @@ class Remote(object):
         path = fs.join(introspection.pts_run_dir, self.host.id)
         if not fs.is_directory(path): fs.create_directory(path, recursive=True)
         return path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scratch_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.host.scratch_path is None: return None
+        else: return self.absolute_path(self.host.scratch_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def quota(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..basics.quantity import parse_quantity
+
+        if self.host.quota_command is None: return None
+
+        output = self.execute(self.host.quota_command)
+
+        quotas = dict()
+
+        for line in output:
+
+            if ": used" not in line: continue
+
+            alias = line.split(":")[0]
+            path = self.resolve_environment_variable(alias)
+
+            used = parse_quantity(line.split("used ")[1].split(" (")[0])
+            limit = parse_quantity(line.split("quota ")[1].split(" (")[0])
+
+            # Set information
+            quotas[path] = (used, limit)
+
+        # Return the quotas
+        return quotas
 
     # -----------------------------------------------------------------
 

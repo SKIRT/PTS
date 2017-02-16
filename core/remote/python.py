@@ -92,7 +92,8 @@ class RemotePythonSession(object):
         # Create the pipe file for output
         if self.remote.is_file(self.out_pipe_filepath): self.remote.remove_file(self.out_pipe_filepath)
         #self.remote.touch(self.out_pipe_filepath)
-        self.remote.write_line(self.out_pipe_filepath, "")
+        #self.remote.write_line(self.out_pipe_filepath, "")
+        self.remote.touch_alternative(self.out_pipe_filepath)
 
         #print(self.out_pipe_filepath)
 

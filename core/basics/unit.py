@@ -51,6 +51,10 @@ input_replacements["nmgy"] = nanomaggy_string
 input_replacements["nMgy"] = nanomaggy_string
 input_replacements["nanomaggies"] = nanomaggy_string
 input_replacements["um"] = "micron"
+input_replacements["kiB"] = "kB"
+input_replacements["GiB"] = "GB"
+input_replacements["MiB"] = "MB"
+input_replacements["TiB"] = "TB"
 
 # -----------------------------------------------------------------
 

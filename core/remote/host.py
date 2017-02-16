@@ -172,6 +172,7 @@ class Host(object):
         self.port = config.port
         self.key = config.key
         self.key_password = config.key_password
+        self.quota_command = config.quota_command
 
     # -----------------------------------------------------------------
 
