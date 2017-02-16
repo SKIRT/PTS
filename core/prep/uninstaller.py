@@ -279,6 +279,7 @@ class Uninstaller(Configurable):
         # Remove lines from shell configuration file
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
         terminal.remove_aliases_and_variables_with_comment(comment)
+        terminal.remove_from_path_variable_containing("miniconda/bin")
 
     # -----------------------------------------------------------------
 
@@ -310,6 +311,7 @@ class Uninstaller(Configurable):
         # Remove lines from shell configuration file
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
         self.remote.remove_aliases_and_variables_with_comment(comment)
+        self.remote.remove_from_path_variable_containing("miniconda/bin")
 
     # -----------------------------------------------------------------
 

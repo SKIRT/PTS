@@ -116,6 +116,9 @@ class Installer(Configurable):
             self.remote = kwargs.pop("remote")
             if not self.remote.connected: raise ValueError("Remote has not been setup")
 
+            # Fix configuration files
+            self.remote.fix_configuration_files()
+
         # Setup the remote execution environment if necessary
         elif self.config.host_id is not None:
 
@@ -971,7 +974,7 @@ class SKIRTInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Testing the SKIRT installation ...")
+        log.info("Testing the SKIRT installation locally ...")
 
         output = terminal.execute("skirt -h", show_output=log.is_debug())
         for line in output:
@@ -981,6 +984,9 @@ class SKIRTInstaller(Installer):
         else:
             log.error("Something is wrong with the SKIRT installation:")
             for line in output: log.error("   " + line)
+
+        # Success
+        log.success("SKIRT and its dependencies were succesfully installed locally")
 
     # -----------------------------------------------------------------
 
@@ -992,7 +998,13 @@ class SKIRTInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Testing the SKIRT installation ...")
+        log.info("Testing the SKIRT installation on remote host '" + self.remote.host_id + "'...")
+
+        # Load modules
+        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug())
+        else:
+            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
+            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
 
         output = self.remote.execute("skirt -h", show_output=log.is_debug())
         for line in output:
@@ -1002,6 +1014,9 @@ class SKIRTInstaller(Installer):
         else:
             log.error("Something is wrong with the SKIRT installation:")
             for line in output: log.error("   " + line)
+
+        # Success
+        log.success("SKIRT and its dependencies were succesfully installed on remote host '" + self.remote.host_id + "'")
 
 # -----------------------------------------------------------------
 
@@ -1354,17 +1369,8 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Checking the presence of a conda installation ...")
 
-        # Find conda path
-        if terminal.is_existing_executable("conda"): conda_executable_path = terminal.executable_path("conda", no_pexpect=True)
-        else: conda_executable_path = None
-
-        # Find conda installation in the home directory
-        if conda_executable_path is None:
-            # Search for conda executables in the home directory
-            #for path in fs.files_in_path(fs.home(), exact_name="conda", extension=""):
-            #    print(path)
-            conda_path = fs.join(fs.home(), "miniconda", "bin", "conda")
-            if fs.is_file(conda_path): conda_executable_path = conda_path
+        # Find conda locally
+        conda_executable_path = conda.find_conda()
 
         # If conda is present
         if conda_executable_path is not None:
@@ -1434,6 +1440,20 @@ class PTSInstaller(Installer):
         assert fs.is_file(self.conda_python_path)
         assert fs.is_file(self.conda_easy_install_path)
 
+        # Clear previous things
+        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+        terminal.remove_aliases(self.config.python_name, "pts", "ipts")
+        terminal.remove_aliases_and_variables_with_comment(comment)
+        if self.pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(self.pts_root_path)
+
+        # Add an alias for the PTS python version
+        terminal.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
+
+        # Add PTS to shell configuration file
+        terminal.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
+        terminal.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+        terminal.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+
     # -----------------------------------------------------------------
 
     def get_pts_local(self):
@@ -1495,7 +1515,8 @@ class PTSInstaller(Installer):
         log.info("Getting the PTS dependencies ...")
 
         # Get available conda packages
-        output = terminal.execute_no_pexpect(self.conda_executable_path + " search", show_output=log.is_debug())
+        #output = terminal.execute_no_pexpect(self.conda_executable_path + " search", show_output=log.is_debug())
+        output = terminal.execute_no_pexpect(self.conda_executable_path + " search")
         available_packages = []
         for line in output:
             if not line.split(" ")[0]: continue
@@ -1503,7 +1524,8 @@ class PTSInstaller(Installer):
 
         # Get already installed packages
         already_installed = []
-        for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name, show_output=log.is_debug()):
+        #for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name, show_output=log.is_debug()):
+        for line in terminal.execute_no_pexpect(self.conda_executable_path + " list --name " + self.config.python_name):
             if line.startswith("#"): continue
             already_installed.append(line.split(" ")[0])
 
@@ -1624,21 +1646,12 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Checking the presence of a conda installation on the remote host ...")
 
-        # Find conda path
-        if self.remote.is_executable("conda"): conda_executable_path = self.remote.find_executable("conda")
-        else: conda_executable_path = None
+        # Find conda
+        self.conda_installation_path, conda_main_executable_path = self.remote.find_conda()
 
-        # Find conda installation in the home directory
-        if conda_executable_path is None:
-            conda_path = fs.join(self.remote.home_directory, "miniconda", "bin", "conda")
-            if self.remote.is_file(conda_path): conda_executable_path = conda_path
-
-        # If conda is present
-        if conda_executable_path is not None:
-
-            self.conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
-            if self.config.force_conda: self.remote.remove_directory(self.conda_installation_path)
-            else: self.conda_main_executable_path = conda_executable_path
+        # If force installation
+        if self.conda_installation_path is not None and self.config.force_conda: self.remote.remove_directory(self.conda_installation_path)
+        else: self.conda_main_executable_path = conda_main_executable_path
 
     # -----------------------------------------------------------------
 
@@ -1668,8 +1681,12 @@ class PTSInstaller(Installer):
         log.info("Creating a fresh python environment ...")
 
         # Create the environment
-        create_conda_environment_remote(self.remote, self.config.python_name, self.conda_installation_path,
-                                        self.pts_root_path, self.config.python_version, self.conda_main_executable_path)
+        # # conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+        self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, \
+        self.conda_easy_install_path = create_conda_environment_remote(self.remote, self.config.python_name,
+                                                                       self.conda_installation_path, self.pts_root_path,
+                                                                       self.config.python_version,
+                                                                       self.conda_main_executable_path)
 
     # -----------------------------------------------------------------
 
@@ -1695,6 +1712,20 @@ class PTSInstaller(Installer):
         assert self.remote.is_file(self.conda_activate_path)
         assert self.remote.is_file(self.conda_python_path)
         assert self.remote.is_file(self.conda_easy_install_path)
+
+        # Clear previous things
+        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+        self.remote.remove_aliases(self.config.python_name, "pts", "ipts")
+        self.remote.remove_aliases_and_variables_with_comment(comment)
+        if self.pts_root_path in self.remote.paths_in_python_path_variable: self.remote.remove_from_python_path_variable(self.pts_root_path)
+
+        # Add an alias for the PTS python version
+        self.remote.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
+
+        # Add PTS to shell configuration file
+        self.remote.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
+        self.remote.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+        self.remote.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
     # -----------------------------------------------------------------
 
@@ -1767,7 +1798,7 @@ class PTSInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Testing the PTS installation ...")
+        log.info("Testing the PTS installation locally ...")
 
         output = terminal.execute_no_pexpect(self.pts_path + " -h", show_output=log.is_debug())
         for line in output:
@@ -1777,7 +1808,7 @@ class PTSInstaller(Installer):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("PTS and its dependencies were succesfully installed")
+        log.success("PTS and its dependencies were succesfully installed locally")
 
     # -----------------------------------------------------------------
 
@@ -1789,7 +1820,7 @@ class PTSInstaller(Installer):
         """
 
         # Inform the user
-        log.info("Testing the PTS installation ...")
+        log.info("Testing the PTS installation on remote host '" + self.remote.host_id + "'...")
 
         output = self.remote.execute(self.pts_path + " -h", show_output=log.is_debug())
         for line in output:
@@ -1799,7 +1830,7 @@ class PTSInstaller(Installer):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("PTS and its dependencies were succesfully installed on the remote host")
+        log.success("PTS and its dependencies were succesfully installed on remote host '" + self.remote.host_id + "'")
 
 # -----------------------------------------------------------------
 
@@ -2114,7 +2145,8 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     """
 
     # Get available conda packages
-    output = remote.execute(conda_path + " search", show_output=log.is_debug())
+    # output = remote.execute(conda_path + " search", show_output=log.is_debug())
+    output = remote.execute(conda_path + " search")
     available_packages = []
     for line in output:
         if not line.split(" ")[0]: continue
@@ -2128,7 +2160,8 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     # List
     if conda_environment is not None: list_command = conda_path + " list --name " + conda_environment
     else: list_command = conda_path + " list"
-    for line in remote.execute(list_command, show_output=log.is_debug()):
+    #for line in remote.execute(list_command, show_output=log.is_debug()):
+    for line in remote.execute(list_command):
         if line.startswith("#"): continue
         already_installed.append(line.split(" ")[0])
 
@@ -2286,6 +2319,7 @@ def install_conda_local():
     # Clear previous things
     comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
     if conda_bin_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(conda_bin_path)
+    terminal.remove_from_path_variable_containing("miniconda/bin")
 
     # Run the export command also in the current shell, so that the conda commands can be found
     terminal.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
@@ -2320,7 +2354,7 @@ def install_conda_remote(remote):
         log.debug("Installing Conda in the home directory ...")
 
         installer_path = fs.join(remote.home_directory, "conda.sh")
-        conda_installation_path = fs.join(remote.home_directory, "minconda")
+        conda_installation_path = fs.join(remote.home_directory, "miniconda")
 
     # Download the installer
     if remote.is_macos: remote.download_from_url_to(miniconda_macos_url, installer_path, overwrite=True)
@@ -2358,6 +2392,7 @@ def install_conda_remote(remote):
     # Remove previous things
     comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
     if conda_bin_path in remote.paths_in_path_variable: remote.remove_from_path_variable(conda_bin_path)
+    remote.remove_from_path_variable_containing("miniconda/bin")
 
     # Run the export command also in the current shell, so that the conda commands can be found
     remote.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)

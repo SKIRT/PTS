@@ -22,6 +22,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from . import terminal
+from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -37,11 +38,37 @@ class CondaEnvExistsError(CondaError):
 
 # -----------------------------------------------------------------
 
+def find_conda():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Find conda path
+    if terminal.is_existing_executable("conda"): conda_executable_path = terminal.executable_path("conda", no_pexpect=True)
+    else: conda_executable_path = None
+
+    # Find conda installation in the home directory
+    if conda_executable_path is None:
+
+        # Search for conda executables in the home directory
+        #for path in fs.files_in_path(fs.home(), exact_name="conda", extension=""):
+        #    print(path)
+        conda_path = fs.join(fs.home(), "miniconda", "bin", "conda")
+        if fs.is_file(conda_path): conda_executable_path = conda_path
+
+    # Return the path to the conda executable
+    return conda_executable_path
+
+# -----------------------------------------------------------------
+
 def is_environment(name, conda_path="conda"):
 
     """
     This function ...
     :param name:
+    :param conda_path:
     :return:
     """
 
@@ -160,14 +187,14 @@ def _setup_install_commands_from_kwargs(kwargs, keys=tuple()):
 
 # -----------------------------------------------------------------
 
-def get_conda_version():
+def get_conda_version(conda_path="conda"):
 
     """
     return the version of conda being used (invoked) as a string
     """
 
     pat = re.compile(r'conda:?\s+(\d+\.\d\S+|unknown)')
-    stdout, stderr = _call_conda(['--version'])
+    stdout, stderr = _call_conda(['--version'], conda_path=conda_path)
     # argparse outputs version to stderr in Python < 3.4.
     # http://bugs.python.org/issue18920
     m = pat.match(stderr.decode().strip())

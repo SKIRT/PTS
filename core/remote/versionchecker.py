@@ -18,6 +18,7 @@ from pts.core.tools import introspection
 from pts.core.tools.logging import log
 from .configurable import RemotesConfigurable
 from pts.core.tools import conda
+from .modules import Modules
 
 # -----------------------------------------------------------------
 
@@ -99,31 +100,45 @@ class VersionChecker(RemotesConfigurable):
             # Get host ID
             host_id = remote.host_id
 
+            # Create the modules object
+            modules = Modules(remote)
+
             # Get the operating system
             os_version = remote.operating_system_short
 
+            compiler_version = modules.versions["cpp"]
+            mpi_compiler_version = modules.versions["mpi"]
+            qmake_version = modules.versions["qmake"]
+            python_version = modules.versions["python"]
+
             # Loading compilers
-            compiler_path = remote.find_and_load_cpp_compiler()
-            mpi_compiler_path = remote.find_and_load_mpi_compiler()
+            #compiler_path = remote.find_and_load_cpp_compiler(show_output=log.is_debug())
+            #mpi_compiler_path = remote.find_and_load_mpi_compiler(show_output=log.is_debug())
 
             # Get C++ compiler and MPI compiler version
-            compiler_version = remote.version_of(compiler_path) if compiler_path is not None else None
-            mpi_compiler_version = remote.version_of(mpi_compiler_path) if mpi_compiler_path is not None else None
+            #compiler_version = remote.version_of(compiler_path, show_output=log.is_debug()) if compiler_path is not None else None
+            #mpi_compiler_version = remote.version_of(mpi_compiler_path, show_output=log.is_debug()) if mpi_compiler_path is not None else None
 
             # Load Qt module, find the qmake path
-            qmake_path = remote.find_and_load_qmake()
+            #qmake_path = remote.find_and_load_qmake(show_output=log.is_debug())
 
             # Get qmake version
-            qmake_version = remote.version_of(qmake_path) if qmake_path is not None else None
+            #qmake_version = remote.version_of(qmake_path, show_output=log.is_debug()) if qmake_path is not None else None
 
             # Load python
-            python_path = remote.find_and_load_python()
+            #python_path = remote.find_and_load_python(show_output=log.is_debug())
 
             # Get python version
-            python_version = remote.custom_python_version_long(python_path)
+            #python_version = remote.custom_python_version_long(python_path)
 
             # Get conda version
-            conda_version = remote.conda_version
+            #conda_version = remote.conda_version
+
+            # Find conda
+            conda_installation_path, conda_main_executable_path = remote.find_conda()
+
+            # Check conda version
+            conda_version = remote.conda_version_at(conda_main_executable_path)
 
             # Get SKIRT and PTS version
             skirt_version = remote.skirt_version
@@ -226,7 +241,9 @@ class VersionChecker(RemotesConfigurable):
         # Conda
         print(fmt.bold + fmt.blue + "Conda" + fmt.reset + ":")
         print("")
-        if introspection.has_conda(): print(" - local: " + fmt.green + conda.get_conda_version() + fmt.reset)
+        conda_path = conda.find_conda()
+        conda_version = conda.get_conda_version(conda_path=conda_path)
+        if introspection.has_conda(): print(" - local: " + fmt.green + conda_version + fmt.reset)
         else: print(" - local: " + fmt.red + "not found" + fmt.reset)
         for host_id in self.host_ids:
             if host_id in self.conda_versions: print(" - " + host_id + ": " + fmt.green + self.conda_versions[host_id] + fmt.reset)
@@ -237,23 +254,23 @@ class VersionChecker(RemotesConfigurable):
         print(fmt.bold + fmt.blue + "Conformity SKIRT installation" + fmt.reset + ":")
         print("")
         if introspection.has_skirt():
-            if introspection.skirt_installation_is_conform(): print(" - local: " + fmt.green + " installation is conform" + fmt.reset)
+            if introspection.skirt_installation_is_conform(): print(" - local: " + fmt.green + "installation is conform" + fmt.reset)
             else: print(" - local: " + fmt.red + " installation not conform (" + introspection.skirt_conformity_issues() + ")" + fmt.reset)
         for host_id in self.host_ids:
             if host_id not in self.skirt_versions: continue
             if host_id in self.skirt_issues: print(" - " + host_id + ": " + fmt.red + "installation not conform (" + self.skirt_issues[host_id] + ")" + fmt.reset)
-            else: print(" - " + host_id + ": " + fmt.green + "installation conform" + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.green + "installation is conform" + fmt.reset)
         print("")
 
         # Conform PTS installation
         print(fmt.bold + fmt.blue + "Conformity PTS installation" + fmt.reset + ":")
         print("")
-        if introspection.pts_installation_is_conform(): print(" - local: " + fmt.green + " installation is conform" + fmt.reset)
+        if introspection.pts_installation_is_conform(): print(" - local: " + fmt.green + "installation is conform" + fmt.reset)
         else: print(" - local: " + fmt.red + " installation not conform (" + introspection.pts_conformity_issues() + ")" + fmt.reset)
         for host_id in self.host_ids:
             if host_id not in self.pts_versions: continue
             if host_id in self.pts_issues: print(" - " + host_id + ": " + fmt.red + "installation not conform (" + self.pts_issues[host_id] + ")" + fmt.reset)
-            else: print(" - " + host_id + ": " + fmt.green + "installation conform" + fmt.reset)
+            else: print(" - " + host_id + ": " + fmt.green + "installation is conform" + fmt.reset)
         print("")
 
 # -----------------------------------------------------------------

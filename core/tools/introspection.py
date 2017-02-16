@@ -621,6 +621,27 @@ def shell_configuration_path():
 
 # -----------------------------------------------------------------
 
+def other_configuration_paths():
+
+    """
+    This function ...
+    :return:
+    """
+
+    paths = []
+
+    if is_macos():
+        if fs.is_file(bashrc_path()): paths.append(bashrc_path())
+        if fs.is_file(bash_profile_path()): paths.append(bash_profile_path())
+    elif is_linux():
+        if fs.is_file(bash_profile_path()): paths.append(bash_profile_path())
+        if fs.is_file(profile_path()): paths.append(bash_profile_path())
+    else: raise NotImplementedError("System must be running MacOS or Linux")
+
+    return paths
+
+# -----------------------------------------------------------------
+
 def host_name():
 
     """
@@ -743,7 +764,7 @@ def pts_conformity_issues():
     if pts_root_dir_name != "PTS": issues.append("PTS root directory is not called 'PTS'")
     if fs.directory_of(pts_root_dir) != fs.home(): issues.append("PTS installation is not located in the home directory")
 
-    if not has_conda(): issues.append("Conda installation is not present")
+    if not has_conda(): issues.append("Conda executable cannot be located based on the PATH")
     else:
 
         installation_path = conda_installation_path()

@@ -343,6 +343,35 @@ def execute_lines(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
+def remove_alias_from(alias, configuration_path):
+
+    """
+    This function ...
+    :param alias:
+    :param configuration_path:
+    :return:
+    """
+
+    # Lines to keep
+    lines = []
+
+    remove_next = False
+    for line in fs.read_lines(configuration_path):
+
+        if line.startswith("alias " + alias):
+            remove_next = True
+            if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+        elif remove_next and line.strip() == "": pass
+        elif remove_next:
+            lines.append(line)
+            remove_next = False
+        else: lines.append(line)
+
+    # Write lines
+    fs.write_lines(configuration_path, lines)
+
+# -----------------------------------------------------------------
+
 def remove_aliases(*args):
 
     """
@@ -357,7 +386,9 @@ def remove_aliases(*args):
     remove_next = False
     for line in fs.read_lines(introspection.shell_configuration_path()):
 
-        if strings.startswith_any(line, ["alias " + alias for alias in args]): remove_next = True
+        if strings.startswith_any(line, ["alias " + alias for alias in args]):
+            remove_next = True
+            if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
         elif remove_next and line.strip() == "": pass
         elif remove_next:
             lines.append(line)
@@ -366,6 +397,14 @@ def remove_aliases(*args):
 
     # Write lines
     fs.write_lines(introspection.shell_configuration_path(), lines)
+
+    # Check if aliases don't exist anymore
+    current_aliases = aliases()
+
+    # Loop over the aliases that had to be removed
+    for alias in args:
+        if alias in current_aliases:
+            for configuration_path in introspection.other_configuration_paths(): remove_alias_from(alias, configuration_path)
 
 # -----------------------------------------------------------------
 
@@ -569,6 +608,39 @@ def remove_from_path_variable(path):
     for line in fs.read_lines(introspection.shell_configuration_path()):
 
         if path + ":$PATH" in line and line.startswith("export PATH"):
+            if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+            remove_next = True
+        elif remove_next:
+            if line.strip() == "": pass
+            else:
+                lines.append(line)
+                remove_next = False
+        else: lines.append(line)
+
+    # Write lines
+    fs.write_lines(introspection.shell_configuration_path(), lines)
+
+# -----------------------------------------------------------------
+
+def remove_from_path_variable_containing(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    # Lines to keep
+    lines = []
+
+    remove_next = False
+    for line in fs.read_lines(introspection.shell_configuration_path()):
+
+        if not line.startswith("export PATH="): continue
+
+        what = line.split("PATH=")[1].split(":$PATH")[0]
+
+        if string in what:
             if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
             remove_next = True
         elif remove_next:

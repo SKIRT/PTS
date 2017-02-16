@@ -28,6 +28,7 @@ from ..tools import git
 from ..tools import terminal
 from ..tools import filesystem as fs
 from ..remote.modules import Modules
+from ..tools import conda
 
 # -----------------------------------------------------------------
 
@@ -91,6 +92,9 @@ class Updater(Configurable):
             # Get the remote
             self.remote = kwargs.pop("remote")
             if not self.remote.connected: raise ValueError("Remote has not been setup")
+
+            # Fix configuration files
+            self.remote.fix_configuration_files()
 
         # Setup the remote execution environment if necessary
         elif self.config.host_id is not None:
@@ -536,9 +540,10 @@ class SKIRTUpdater(Updater):
         # Compare git hashes
         if latest_git_hash == git_hash:
 
-            log.success("Already up to date")  # up to date
+            log.success("SKIRT is already up to date on remote host '" + self.remote.host_id + "'")  # up to date
             self.rebuild = False
             self.git_version = git.get_short_git_version(self.remote.skirt_repo_path, self.remote)
+            self.remote.unload_all_modules()
             return
 
         # Set the clone command
@@ -610,7 +615,7 @@ class SKIRTUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Testing the SKIRT installation ...")
+        log.info("Testing the SKIRT installation locally ...")
 
         output = terminal.execute("skirt -h")
         for line in output:
@@ -622,7 +627,7 @@ class SKIRTUpdater(Updater):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("SKIRT and its dependencies were succesfully updated")
+        log.success("SKIRT and its dependencies were succesfully updated locally")
 
     # -----------------------------------------------------------------
 
@@ -634,7 +639,13 @@ class SKIRTUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Testing the SKIRT installation on the remote host ...")
+        log.info("Testing the SKIRT installation on remote host '" + self.remote.host_id + "'...")
+
+        # Load modules
+        if self.qmake_module is not None: self.remote.load_module(self.qmake_module, show_output=log.is_debug())
+        else:
+            if self.compiler_module is not None: self.remote.load_module(self.compiler_module, show_output=log.is_debug())
+            if self.mpi_compiler_module is not None and self.mpi_compiler_module != self.compiler_module: self.remote.load_module(self.mpi_compiler_module, show_output=log.is_debug())
 
         output = self.remote.execute("skirt -h")
         for line in output:
@@ -646,7 +657,7 @@ class SKIRTUpdater(Updater):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("SKIRT and its dependencies were successfully updated on the remote host")
+        log.success("SKIRT and its dependencies were successfully updated on remote host '" + self.remote.host_id + "'")
 
 # -----------------------------------------------------------------
 
@@ -757,6 +768,9 @@ class PTSUpdater(Updater):
 
         # Inform the user
         log.info("Checking conda locally ...")
+
+        # Find conda locally
+        conda_executable_path = conda.find_conda()
 
     # -----------------------------------------------------------------
 
@@ -879,7 +893,7 @@ class PTSUpdater(Updater):
         # Compare git hashes
         if latest_git_hash == git_hash:
 
-            log.success("Already up to date")  # up to date
+            log.success("PTS is already up to date on remote host '" + self.remote.host_id + "'")  # up to date
             self.git_version = git.get_short_git_version(self.remote.pts_package_path, self.remote)
             return
 
@@ -924,26 +938,11 @@ class PTSUpdater(Updater):
         # Inform the user
         log.info("Checking the presence of a conda installation on the remote host ...")
 
-        # Find conda path
-        if self.remote.is_executable("conda"): conda_executable_path = self.remote.find_executable("conda")
-        else: conda_executable_path = None
-
-        # Find conda installation in the home directory
-        if conda_executable_path is None:
-
-            conda_path = fs.join(self.remote.home_directory, "miniconda", "bin", "conda")
-            if self.remote.is_file(conda_path): conda_executable_path = conda_path
-
-            # Search in scratch path
-            if conda_executable_path is None and self.remote.scratch_path is not None:
-                conda_path = fs.join(self.remote.scratch_path, "miniconda", "bin", "conda")
-                if self.remote.is_file(conda_path): conda_executable_path = conda_path
+        # Find conda
+        self.conda_installation_path, self.conda_main_executable_path = self.remote.find_conda()
 
         # If conda is present
-        if conda_executable_path is not None:
-
-            self.conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
-            self.conda_main_executable_path = conda_executable_path
+        if self.conda_main_executable_path is not None:
 
             # Debugging
             log.debug("Determining the conda environment name for PTS ...")
@@ -1119,7 +1118,7 @@ class PTSUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Testing the PTS installation ...")
+        log.info("Testing the PTS installation locally ...")
 
         # Test
         output = terminal.execute("pts -h")
@@ -1130,7 +1129,7 @@ class PTSUpdater(Updater):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("PTS and its dependencies were successfully updated ...")
+        log.success("PTS and its dependencies were successfully updated locally ...")
 
     # -----------------------------------------------------------------
 
@@ -1142,7 +1141,7 @@ class PTSUpdater(Updater):
         """
 
         # Inform the user
-        log.info("Testing the PTS installation ...")
+        log.info("Testing the PTS installation on remote host '" + self.remote.host_id + "'...")
 
         # Test
         output = self.remote.execute("pts -h")
@@ -1153,7 +1152,7 @@ class PTSUpdater(Updater):
             for line in output: log.error("   " + line)
 
         # Success
-        log.success("PTS and its dependencies were successfully updated ...")
+        log.success("PTS and its dependencies were successfully updated on remote host '" + self.remote.host_id + "' ...")
 
 # -----------------------------------------------------------------
 

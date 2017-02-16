@@ -88,8 +88,8 @@ class Modules(object):
         log.info("Checking the presence of C++ and MPI compilers ...")
 
         # Get the compiler paths
-        compiler_path, cpp_module = self.remote.find_and_load_cpp_compiler(return_module=True)
-        mpi_compiler_path, mpi_module = self.remote.find_and_load_mpi_compiler(return_module=True)
+        compiler_path, cpp_module = self.remote.find_and_load_cpp_compiler(return_module=True, show_output=log.is_debug())
+        mpi_compiler_path, mpi_module = self.remote.find_and_load_mpi_compiler(return_module=True, show_output=log.is_debug())
 
         # Debugging
         log.debug("The C++ compiler path is '" + compiler_path)
@@ -121,7 +121,7 @@ class Modules(object):
         log.info("Checking for Qt installation on remote ...")
 
         # Load Qt module, find the qmake path
-        qmake_path, module = self.remote.find_and_load_qmake(return_module=True)
+        qmake_path, module = self.remote.find_and_load_qmake(return_module=True, show_output=log.is_debug())
 
         # Debugging
         log.debug("The qmake path is '" + qmake_path + "'")
@@ -147,7 +147,7 @@ class Modules(object):
         log.info("Checking the presence of git ...")
 
         # Find and load git
-        path, version, module = self.remote.find_and_load_git(return_module=True)
+        path, version, module = self.remote.find_and_load_git(return_module=True, show_output=log.is_debug())
 
         # Debugging
         log.debug("The path of the git installation is '" + path)

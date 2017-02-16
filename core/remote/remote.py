@@ -671,6 +671,28 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def other_configuration_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        paths = []
+
+        if self.is_macos:
+            if self.is_file(self.bashrc_path): paths.append(self.bashrc_path)
+            if self.is_file(self.bash_profile_path): paths.append(self.bash_profile_path)
+        elif self.is_linux:
+            if self.is_file(self.bash_profile_path): paths.append(self.bash_profile_path)
+            if self.is_file(self.profile_path): paths.append(self.profile_path)
+        else: raise NotImplementedError("System must be running MacOS or Linux")
+
+        return paths
+
+    # -----------------------------------------------------------------
+
     def fix_configuration_files(self):
 
         """
@@ -874,6 +896,36 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def remove_alias_from(self, alias, configuration_path):
+
+        """
+        This function ...
+        :param alias:
+        :param configuration_path:
+        :return:
+        """
+
+        # Lines to keep
+        lines = []
+
+        remove_next = False
+        for line in self.read_lines(configuration_path):
+
+            if line.startswith("alias " + alias):
+                remove_next = True
+                if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+            elif remove_next and line.strip() == "":
+                pass
+            elif remove_next:
+                lines.append(line)
+                remove_next = False
+            else: lines.append(line)
+
+        # Write lines
+        self.write_lines(configuration_path, lines)
+
+    # -----------------------------------------------------------------
+
     def remove_aliases(self, *args):
 
         """
@@ -898,6 +950,14 @@ class Remote(object):
         # Write lines
         self.write_lines(self.shell_configuration_path, lines)
 
+        # Check if aliases don't exist anymore
+        current_aliases = self.aliases
+
+        # Loop over the aliases that had to be removed
+        for alias in args:
+            if alias in current_aliases:
+                for configuration_path in self.other_configuration_paths: self.remove_alias_from(alias, configuration_path)
+
     # -----------------------------------------------------------------
 
     def remove_from_path_variable(self, path):
@@ -915,6 +975,39 @@ class Remote(object):
         for line in self.read_lines(self.shell_configuration_path):
 
             if path + ":$PATH" in line and line.startswith("export PATH"):
+                if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
+                remove_next = True
+            elif remove_next:
+                if line.strip() == "": pass
+                else:
+                    lines.append(line)
+                    remove_next = False
+            else: lines.append(line)
+
+        # Write lines
+        self.write_lines(self.shell_configuration_path, lines)
+
+    # -----------------------------------------------------------------
+
+    def remove_from_path_variable_containing(self, string):
+
+        """
+        This function ...
+        :param string:
+        :return:
+        """
+
+        # Lines to keep
+        lines = []
+
+        remove_next = False
+        for line in self.read_lines(self.shell_configuration_path):
+
+            if not line.startswith("export PATH="): continue
+
+            what = line.split("PATH=")[1].split(":$PATH")[0]
+
+            if string in what:
                 if len(lines) > 0 and lines[-1].startswith("#"): del lines[-1]
                 remove_next = True
             elif remove_next:
@@ -1104,16 +1197,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def find_and_load_python(self, return_module=False):
+    def find_and_load_python(self, return_module=False, show_output=False):
 
         """
         This function ...
         :param return_module:
+        :param show_output:
         :return:
         """
 
         # Load module
-        if self.has_lmod: module_name = self.load_python_module()
+        if self.has_lmod: module_name = self.load_python_module(show_output=show_output)
         else: module_name = None
 
         # Return
@@ -1173,15 +1267,16 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def load_python_module(self):
+    def load_python_module(self, show_output=False):
 
         """
         This function ...
+        :param show_output:
         :return:
         """
 
         # Find Python module versions
-        versions = self.get_module_versions("Python")
+        versions = self.get_module_versions("Python", show_output=show_output)
 
         latest_version = None
         latest_floating_python_version = None
@@ -1231,24 +1326,26 @@ class Remote(object):
         # Return the latest version
         #return latest_version
 
-        self.load_module(latest_version)  # Load the python module
+        self.load_module(latest_version, show_output=show_output)  # Load the python module
 
+        # Return the version
         return latest_version
 
     # -----------------------------------------------------------------
 
-    def find_and_load_git(self, return_module=False):
+    def find_and_load_git(self, return_module=False, show_output=False):
 
         """
         This function ...
         :param return_module:
+        :param show_output:
         :return:
         """
 
         # Load intel compiler toolkit if possible
         if self.has_lmod:
 
-            versions = self.get_module_versions("git")
+            versions = self.get_module_versions("git", show_output=show_output)
 
             latest_version = None
             latest_module_name = None
@@ -1269,8 +1366,8 @@ class Remote(object):
         else: latest_module_name = None
 
         # Get path and version
-        git_path = self.find_executable("git")
-        git_version = self.version_of("git")
+        git_path = self.find_executable("git", show_output=show_output)
+        git_version = self.version_of("git", show_output=show_output)
 
         # Return
         if return_module: return git_path, git_version, latest_module_name
@@ -1278,16 +1375,17 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def find_and_load_cpp_compiler(self, return_module=False):
+    def find_and_load_cpp_compiler(self, return_module=False, show_output=False):
 
         """
         This function ...
         :param return_module:
+        :param show_output:
         :return:
         """
 
         # Load intel compiler toolkit if possible
-        if self.has_lmod: module_name = self.load_intel_compiler_toolkit()
+        if self.has_lmod: module_name = self.load_intel_compiler_toolkit(show_output=show_output)
         else: module_name = None
 
         # Search for the compiler and return its path
@@ -1296,32 +1394,34 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def load_intel_compiler_toolkit(self):
+    def load_intel_compiler_toolkit(self, show_output=False):
 
         """
         This function ...
+        :param show_output:
         :return:
         """
 
         # Find latest Intel Compiler Toolkit version and load it
-        intel_version = self._find_latest_iimpi_version_module()
+        intel_version = self._find_latest_iimpi_version_module(show_output=show_output)
         if intel_version is None: self.warning("Intel Cluster Toolkit Compiler Edition could not be found")
-        elif intel_version not in self.loaded_modules: self.load_module(intel_version) # Load the module
+        elif intel_version not in self.loaded_modules: self.load_module(intel_version, show_output=show_output) # Load the module
 
         # Return the module name
         return intel_version
 
     # -----------------------------------------------------------------
 
-    def _find_latest_iimpi_version_module(self):
+    def _find_latest_iimpi_version_module(self, show_output=False):
 
         """
         This function ...
+        :param show_output:
         :return:
         """
 
         # Load the Intel Cluster Toolkit Compiler Edition (inludes Intel MPI)
-        versions = self.get_module_versions("iimpi")
+        versions = self.get_module_versions("iimpi", show_output=show_output)
 
         latest_version = None
         latest_iimpi_version = None
@@ -1352,15 +1452,16 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def find_and_load_mpi_compiler(self, return_module=False):
+    def find_and_load_mpi_compiler(self, return_module=False, show_output=False):
 
         """
         This function ...
         :param return_module:
+        :param show_output:
         :return:
         """
 
-        if self.has_lmod: module_name = self.load_intel_compiler_toolkit()
+        if self.has_lmod: module_name = self.load_intel_compiler_toolkit(show_output=show_output)
         else: module_name = None
 
         # Return
@@ -3146,19 +3247,65 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def version_of(self, name):
+    def version_of(self, name, show_output=False):
 
         """
         This function ...
         :param name:
+        :param show_output:
         :return:
         """
 
         # Execute
-        output = self.execute(name + " --version")
+        output = self.execute(name + " --version", show_output=show_output)
+
+        # Return the line with the version number
+        for line in output:
+            if "warning: setlocale:" in line: continue
+            return line
+
+        # Cannot determine version
+        return None
 
         # Return the relevant portion of the output
-        return output[0]
+        #return output[0]
+
+    # -----------------------------------------------------------------
+
+    def find_conda(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Find conda path
+        if self.is_executable("conda"): conda_executable_path = self.find_executable("conda")
+        else: conda_executable_path = None
+
+        # Find conda installation in the home directory
+        if conda_executable_path is None:
+
+            conda_path = fs.join(self.home_directory, "miniconda", "bin", "conda")
+            if self.is_file(conda_path): conda_executable_path = conda_path
+
+            # Search in scratch path
+            if conda_executable_path is None and self.scratch_path is not None:
+
+                conda_path = fs.join(self.scratch_path, "miniconda", "bin", "conda")
+                if self.is_file(conda_path): conda_executable_path = conda_path
+
+        # If conda is present
+        if conda_executable_path is not None:
+
+            conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
+            conda_main_executable_path = conda_executable_path
+
+            # Return the paths
+            return conda_installation_path, conda_main_executable_path
+
+        # Conda not present
+        else: return None, None
 
     # -----------------------------------------------------------------
 
@@ -3185,6 +3332,19 @@ class Remote(object):
         if not self.has_conda: return None
 
         output = self.execute("conda -V")
+        return output[0]
+
+    # -----------------------------------------------------------------
+
+    def conda_version_at(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        output = self.execute(path + " -V")
         return output[0]
 
     # -----------------------------------------------------------------
@@ -3326,7 +3486,7 @@ class Remote(object):
         if pts_root_dir_name != "PTS": issues.append("PTS root directory is not called 'PTS'")
         if fs.directory_of(self.pts_root_path) != self.home_directory: issues.append("PTS installation is not located in the home directory")
 
-        if not self.has_conda: issues.append("Conda installation is not present")
+        if not self.has_conda: issues.append("Conda executable cannot be located based on the PATH")
         else:
 
             installation_path = self.conda_installation_path
@@ -3398,6 +3558,9 @@ class Remote(object):
         This function ...
         :return:
         """
+
+        # load module if necessary (C libraries etc.)
+        if self.has_lmod: self.find_and_load_cpp_compiler()
 
         output = self.execute("skirt -v")
         skirt_version = None
