@@ -1636,6 +1636,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def close_screen_session(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        self.kill_screen(name)
+
+    # -----------------------------------------------------------------
+
     def kill_job(self, id):
 
         """
@@ -1675,7 +1687,18 @@ class Remote(object):
         output = self.execute("tmux ls")
         #for line in output:
 
+    # -----------------------------------------------------------------
 
+    def close_tmux_session(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        end_session_command = "tmux kill-session -t " + name
+        self.execute(end_session_command)
 
     # -----------------------------------------------------------------
 
@@ -3162,6 +3185,19 @@ class Remote(object):
                 env = splitted[0].strip()
                 break
         return env
+
+    # -----------------------------------------------------------------
+
+    def activate_conda_environment(self, environment_name, conda_path="conda", activate_path="activate"):
+
+        """
+        This function ...
+        :return:
+        """
+
+        previous = self.conda_active_environment(conda_path=conda_path)
+        self.execute("source " + activate_path + " " + environment_name)
+        return previous
 
     # -----------------------------------------------------------------
 

@@ -14,10 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import matplotlib.pyplot as plt
+import sqlite3
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.basics.plot import Plot
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -37,6 +39,10 @@ class HeatMapPlotter(Configurable):
         # Call the constructor of the base class
         super(HeatMapPlotter, self).__init__(config)
 
+        # The database connection
+        self.database = None
+
+        # The plot
         self.plot = None
 
     # -----------------------------------------------------------------
@@ -51,7 +57,6 @@ class HeatMapPlotter(Configurable):
 
         # 1. Call the setup function
         self.setup(**kwargs)
-
 
         if len(identify_list) == 1 and not popGraph:
 
@@ -139,6 +144,22 @@ class HeatMapPlotter(Configurable):
 
         # Call the setup function of the base class
         super(HeatMapPlotter, self).setup(**kwargs)
+
+        # Get the database
+        if "database" in kwargs:
+
+            self.database = kwargs.pop("database")
+
+        elif self.config.database is not None:
+
+            self.database = sqlite3.connect(self.config.database)
+
+        elif fs.is_file(fs.join(self.config.path, "database.db")):
+
+            # Load database from file
+            self.database = sqlite3.connect(fs.join(self.config.path, "database.db"))
+
+        else: raise ValueError("Database not found and not specified")
 
     # -----------------------------------------------------------------
 

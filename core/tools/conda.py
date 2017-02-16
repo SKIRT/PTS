@@ -86,6 +86,19 @@ def conda_active_environment(conda_path="conda"):
 
 # -----------------------------------------------------------------
 
+def activate_environment(environment_name, conda_path="conda", activate_path="activate"):
+
+    """
+    This function ...
+    :return:
+    """
+
+    previous = conda_active_environment(conda_path)
+    terminal.execute_no_pexpect("source " + activate_path + " " + environment_name)
+    return previous
+
+# -----------------------------------------------------------------
+
 def _call_conda(extra_args, conda_path="conda"):
 
     """

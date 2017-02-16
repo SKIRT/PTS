@@ -1058,6 +1058,7 @@ class PTSInstaller(Installer):
         self.conda_installation_path = None
         self.conda_executable_path = None
         self.conda_pip_path = None
+        self.conda_activate_path = None
         self.conda_python_path = None
         self.conda_easy_install_path = None
 
@@ -1240,7 +1241,7 @@ class PTSInstaller(Installer):
         log.info("Creating a fresh python environment ...")
 
         # Create the environment
-        self.conda_executable_path, self.conda_pip_path, self.conda_python_path, self.conda_easy_install_path = create_conda_environment_local(self.config.python_name, self.conda_installation_path, self.pts_root_path, self.config.python_version, self.conda_main_executable_path)
+        self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, self.conda_easy_install_path = create_conda_environment_local(self.config.python_name, self.conda_installation_path, self.pts_root_path, self.config.python_version, self.conda_main_executable_path)
 
     # -----------------------------------------------------------------
 
@@ -1256,12 +1257,14 @@ class PTSInstaller(Installer):
         if not fs.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_activate_path = fs.join(environment_bin_path, "activate")
         self.conda_python_path = fs.join(environment_bin_path, "python")
         self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
         # Check if paths exist
         assert fs.is_file(self.conda_executable_path)
         assert fs.is_file(self.conda_pip_path)
+        assert fs.is_file(self.conda_activate_path)
         assert fs.is_file(self.conda_python_path)
         assert fs.is_file(self.conda_easy_install_path)
 
@@ -1345,6 +1348,9 @@ class PTSInstaller(Installer):
         dependencies = introspection.get_all_dependencies().keys()
         packages = introspection.installed_python_packages()
 
+        # Activate the correct environment
+        previous_environment = conda.activate_environment(self.config.python_name, self.conda_executable_path, self.conda_activate_path)
+
         # Get installation commands
         installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
                                                                                     already_installed, available_packages,
@@ -1408,6 +1414,9 @@ class PTSInstaller(Installer):
             print("")
             print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
             print("")
+
+        # Activate the previous environment
+        conda.activate_environment(previous_environment, self.conda_executable_path, self.conda_activate_path)
 
     # -----------------------------------------------------------------
 
@@ -1510,12 +1519,14 @@ class PTSInstaller(Installer):
         if not self.remote.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_activate_path = fs.join(environment_bin_path, "activate")
         self.conda_python_path = fs.join(environment_bin_path, "python")
         self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
         # Check if paths exist
         assert self.remote.is_file(self.conda_executable_path)
         assert self.remote.is_file(self.conda_pip_path)
+        assert self.remote.is_file(self.conda_activate_path)
         assert self.remote.is_file(self.conda_python_path)
         assert self.remote.is_file(self.conda_easy_install_path)
 
@@ -1575,7 +1586,7 @@ class PTSInstaller(Installer):
         # Install PTS dependencies
         installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path,
                                     python_path=self.conda_python_path, easy_install_path=self.conda_easy_install_path,
-                                    conda_environment=self.config.python_name)
+                                    conda_environment=self.config.python_name, conda_activate_path=self.conda_activate_path)
 
         # Success
         log.success("Succesfully installed the dependencies on the remote host")
@@ -1919,7 +1930,7 @@ def find_qmake():
 # -----------------------------------------------------------------
 
 def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", python_path="python",
-                                easy_install_path="easy_install", conda_environment=None):
+                                easy_install_path="easy_install", conda_environment=None, conda_activate_path="activate"):
 
     """
     This fucntion ...
@@ -1929,6 +1940,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     :param python_path:
     :param easy_install_path:
     :param conda_environment:
+    :param conda_activate_path:
     :return:
     """
 
@@ -1973,6 +1985,9 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     packages = session.get_simple_property("introspection", "installed_python_packages()")
     # self.remote.end_python_session()
     # Don't end the python session just yet
+
+    # Change the conda environment
+    previous_environment = remote.activate_conda_environment(conda_environment, conda_path, conda_activate_path)
 
     # Get installation commands
     # dependencies, packages, already_installed, available_packages, conda_path="conda",
@@ -2042,6 +2057,10 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
         print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
         print("")
 
+    # Change the environment back
+    remote.activate_conda_environment(previous_environment, conda_path, conda_activate_path)
+
+    # Return
     return installed, not_installed, already_installed
 
 # -----------------------------------------------------------------
@@ -2277,6 +2296,7 @@ def create_conda_environment_local(environment_name, conda_installation_path, pt
     if not fs.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
     conda_executable_path = fs.join(environment_bin_path, "conda")
     conda_pip_path = fs.join(environment_bin_path, "pip")
+    conda_activate_path = fs.join(environment_bin_path, "activate")
     conda_python_path = fs.join(environment_bin_path, "python")
     conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
@@ -2295,7 +2315,7 @@ def create_conda_environment_local(environment_name, conda_installation_path, pt
     terminal.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
     # Return the paths
-    return conda_executable_path, conda_pip_path, conda_python_path, conda_easy_install_path
+    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
 
 # -----------------------------------------------------------------
 
@@ -2329,6 +2349,7 @@ def create_conda_environment_remote(remote, environment_name, conda_installation
     if not remote.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
     conda_executable_path = fs.join(environment_bin_path, "conda")
     conda_pip_path = fs.join(environment_bin_path, "pip")
+    conda_activate_path = fs.join(environment_bin_path, "activate")
     conda_python_path = fs.join(environment_bin_path, "python")
     conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
@@ -2347,6 +2368,6 @@ def create_conda_environment_remote(remote, environment_name, conda_installation
     remote.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
     # Return the paths
-    return conda_executable_path, conda_pip_path, conda_python_path, conda_easy_install_path
+    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
 
 # -----------------------------------------------------------------

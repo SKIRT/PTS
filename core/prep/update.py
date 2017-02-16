@@ -557,6 +557,7 @@ class PTSUpdater(Updater):
         self.conda_main_executable_path = None
         self.conda_executable_path = None
         self.conda_pip_path = None
+        self.conda_activate_path = None
         self.conda_python_path = None
         self.conda_easy_install_path = None
 
@@ -664,7 +665,8 @@ class PTSUpdater(Updater):
         log.info("Creating a fresh python environment ...")
 
         # Create the environment
-        self.conda_executable_path, self.conda_pip_path, self.conda_python_path, self.conda_easy_install_path = \
+        # conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+        self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, self.conda_easy_install_path = \
             create_conda_environment_local(self.conda_environment, self.conda_installation_path, introspection.pts_root_dir,
                                            self.python_version, self.conda_main_executable_path)
 
@@ -872,7 +874,8 @@ class PTSUpdater(Updater):
         log.info("Creating a fresh python environment ...")
 
         # Create the environment
-        self.conda_executable_path, self.conda_pip_path, self.conda_python_path, self.conda_easy_install_path = \
+        # conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+        self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, self.conda_easy_install_path = \
             create_conda_environment_remote(self.remote, self.conda_environment, self.conda_installation_path,
                                         self.remote.pts_root_path, self.python_version, self.conda_main_executable_path)
 
@@ -890,12 +893,14 @@ class PTSUpdater(Updater):
         if not self.remote.is_directory(environment_bin_path): raise RuntimeError("The environment directory is not present")
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_activate_path = fs.join(environment_bin_path, "activate")
         self.conda_python_path = fs.join(environment_bin_path, "python")
         self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
         # Check if paths exist
         assert self.remote.is_file(self.conda_executable_path)
         assert self.remote.is_file(self.conda_pip_path)
+        assert self.remote.is_file(self.conda_activate_path)
         assert self.remote.is_file(self.conda_python_path)
         assert self.remote.is_file(self.conda_easy_install_path)
 
@@ -925,8 +930,9 @@ class PTSUpdater(Updater):
         # Install PTS dependencies
         # conda_path="conda", pip_path="pip", python_path="python",
         # easy_install_path="easy_install", conda_environment=None
-        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.conda_executable_path, self.conda_pip_path, self.conda_python_path,
-                                    self.conda_easy_install_path, self.conda_environment)
+        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.conda_executable_path,
+                                                                                  self.conda_pip_path, self.conda_python_path,
+                                                                                  self.conda_easy_install_path, self.conda_environment, conda_activate_path=self.conda_activate_path)
 
         # Get dependency version restrictions
         versions = introspection.get_constricted_versions()

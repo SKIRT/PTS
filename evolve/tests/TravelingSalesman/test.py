@@ -25,6 +25,7 @@ from pts.evolve.core.crossovers import G1DListCrossoverOX
 from pts.evolve.core.mutators import G1DListMutatorSwap
 from pts.core.basics.animation import Animation
 from pts.evolve.tests.TravelingSalesman.plot import Plotter
+from pts.core.tools.random import setup_prng, skirt_seed
 
 # -----------------------------------------------------------------
 
@@ -296,7 +297,8 @@ def setup(temp_path):
     :param temp_path:
     """
 
-    return
+    # Set the random state
+    setup_prng(skirt_seed)
 
 # -----------------------------------------------------------------
 # OPTIMIZE
@@ -387,6 +389,9 @@ def test(temp_path):
     """
     This function ...
     """
+
+    # Set the random state
+    setup_prng(skirt_seed)
 
     # Make new genome, made from the original Pyevolve classes
     genome = create_genome_reference(coords)
