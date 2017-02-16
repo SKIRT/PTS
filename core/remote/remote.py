@@ -38,6 +38,7 @@ from ..tools.introspection import possible_cpp_compilers, possible_mpi_compilers
 from .python import RemotePythonSession
 from ..basics.unit import parse_unit as u
 from ..basics.map import Map
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -865,6 +866,32 @@ class Remote(object):
             elif remove_next:
                 if line.strip() == "": remove_next = False
                 else: pass
+            else: lines.append(line)
+
+        # Write lines
+        self.write_lines(self.shell_configuration_path, lines)
+
+    # -----------------------------------------------------------------
+
+    def remove_aliases(self, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        # Lines to keep
+        lines = []
+
+        remove_next = False
+        for line in self.read_lines(self.shell_configuration_path):
+
+            if strings.startswith_any(line, ["alias " + alias for alias in args]): remove_next = True
+            elif remove_next and line.strip() == "": pass
+            elif remove_next:
+                lines.append(line)
+                remove_next = False
             else: lines.append(line)
 
         # Write lines

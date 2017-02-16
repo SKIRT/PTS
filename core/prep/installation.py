@@ -1300,7 +1300,7 @@ class PTSInstaller(Installer):
 
         # Clear previous things
         comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
-        terminal.remove_aliases_and_variables_with_comment(comment)
+        #terminal.remove_aliases_and_variables_with_comment(comment)
         if conda_bin_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(conda_bin_path)
 
         # Run the export command also in the current shell, so that the conda commands can be found
@@ -1340,6 +1340,7 @@ class PTSInstaller(Installer):
 
         # Clear previous things
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+        terminal.remove_aliases(self.config.python_name, "pts", "ipts")
         terminal.remove_aliases_and_variables_with_comment(comment)
         if self.pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(self.pts_root_path)
 
@@ -1699,6 +1700,7 @@ class PTSInstaller(Installer):
 
         # Clear previous things
         comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+        self.remote.remove_aliases(self.config.python_name, "pts", "ipts")
         self.remote.remove_aliases_and_variables_with_comment(comment)
         if self.pts_root_path in self.remote.paths_in_python_path_variable: self.remote.remove_from_python_path_variable(self.pts_root_path)
 

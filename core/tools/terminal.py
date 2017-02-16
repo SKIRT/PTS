@@ -20,6 +20,7 @@ import subprocess
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
 from . import introspection
+from . import strings
 
 # -----------------------------------------------------------------
 
@@ -339,6 +340,32 @@ def execute_lines(*args, **kwargs):
 
     # Return the output
     if output: return child.before.split("\r\n")[1:-1]
+
+# -----------------------------------------------------------------
+
+def remove_aliases(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # Lines to keep
+    lines = []
+
+    remove_next = False
+    for line in fs.read_lines(introspection.shell_configuration_path()):
+
+        if strings.startswith_any(line, ["alias " + alias for alias in args]): remove_next = True
+        elif remove_next and line.strip() == "": pass
+        elif remove_next:
+            lines.append(line)
+            remove_next = False
+        else: lines.append(line)
+
+    # Write lines
+    fs.write_lines(introspection.shell_configuration_path(), lines)
 
 # -----------------------------------------------------------------
 

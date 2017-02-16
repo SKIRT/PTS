@@ -390,3 +390,17 @@ def split_in_lines(string, length=60, as_list=False):
     else: return "\n".join(lst)
 
 # -----------------------------------------------------------------
+
+def startswith_any(line, patterns):
+
+    """
+    This function ...
+    :param patterns:
+    :return:
+    """
+
+    for pattern in patterns:
+        if line.startswith(pattern): return True
+    return False
+
+# -----------------------------------------------------------------
