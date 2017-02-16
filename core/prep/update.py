@@ -934,6 +934,11 @@ class PTSUpdater(Updater):
             conda_path = fs.join(self.remote.home_directory, "miniconda", "bin", "conda")
             if self.remote.is_file(conda_path): conda_executable_path = conda_path
 
+            # Search in scratch path
+            if conda_executable_path is None and self.remote.scratch_path is not None:
+                conda_path = fs.join(self.remote.scratch_path, "miniconda", "bin", "conda")
+                if self.remote.is_file(conda_path): conda_executable_path = conda_path
+
         # If conda is present
         if conda_executable_path is not None:
 

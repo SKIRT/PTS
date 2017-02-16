@@ -4621,7 +4621,8 @@ class Remote(object):
 
             if ": used" not in line: continue
 
-            alias = line.split(":")[0]
+            alias = line.split(":")[0].strip()
+            if "[" in alias and "]" in alias: alias = alias.split(" [")[0].strip()
             path = self.resolve_environment_variable(alias)
 
             used = parse_quantity(line.split("used ")[1].split(" (")[0])
