@@ -116,25 +116,13 @@ class ContinuousOptimizer(Optimizer):
         log.info("Evolving ...")
 
         # Let evolve
-        self.engine.evolve(freq_stats=self.config.stats_freq, progress_bar=self.config.progress_bar)
+        self.engine.evolve(freq_stats=self.config.stats_freq, progress_bar=(not log.is_debug()))
 
         # Get the best individual
         self.best = self.engine.bestIndividual()
 
-        # Determine path
-        if self.generations_plotter is not None:
-
-            self.generations_plotter.add_generation()
-
-
-        temp_path = optimizer.config.path
-        filepath = fs.join(temp_path, "best.png")
-
-        # Write plot
-        if PIL_SUPPORT:
-            write_tour_to_img(coords, best, filepath)
-        else:
-            print("No PIL detected, cannot plot the graph !")
+        # Plot best
+        if self.generations_plotter is not None: self.generations_plotter.add_best(self.best)
 
     # -----------------------------------------------------------------
 

@@ -289,16 +289,21 @@ class PTSTestSuite(Configurable):
         definition = ConfigurationDefinition()
 
         # Loop over the specified subprojects
+        multiple_subprojects = len(self.config.subprojects) > 1
         for subproject in self.config.subprojects:
             if self.has_test_names(subproject): continue
-            definition.add_required(subproject + "_tests", "string_list", "test to perform from the " + subproject + " subproject", choices=tests_and_descriptions_for_subproject(subproject))
+            if multiple_subprojects: definition.add_optional(subproject + "_tests", "string_list", "test to perform from the " + subproject + " subproject", choices=tests_and_descriptions_for_subproject(subproject))
+            else: definition.add_required(subproject + "_tests", "string_list", "test to perform from the " + subproject + " subproject", choices=tests_and_descriptions_for_subproject(subproject))
 
         # Get config
         setter = InteractiveConfigurationSetter("subproject_tests", add_logging=False, add_cwd=False)
-        config = setter.run(definition, prompt_optional=False)
+        config = setter.run(definition, prompt_optional=multiple_subprojects)
 
         # Set the tests
         for subproject in self.subprojects_without_test_names:
+
+            # No test must be done for this subproject
+            if config[subproject + "_tests"] is None: continue
 
             # Get tests
             self.test_names[subproject] = config[subproject + "_tests"]

@@ -19,7 +19,7 @@ from pts.core.tools import filesystem as fs
 from pts.do.commandline import Command
 from pts.core.basics.range import RealRange
 from pts.evolve.core import reference
-from pts.evolve.optimize.optimize import show_best
+from pts.evolve.optimize.optimizer import show_best
 
 # -----------------------------------------------------------------
 
@@ -196,9 +196,6 @@ settings_optimize["crossover_rate"] = crossover_rate
 settings_optimize["stats_freq"] = stats_freq
 settings_optimize["mutation_method"] = mutation_method
 settings_optimize["min_or_max"] = min_or_max
-
-# Other
-settings_optimize["progress_bar"] = True
 
 # Input
 input_optimize = dict()

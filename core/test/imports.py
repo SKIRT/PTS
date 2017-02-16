@@ -117,9 +117,12 @@ class ImportsChecker(Configurable):
                             ok = hasattr(module, name)
                             if not ok: log.warning("Name '" + name + "' could not be imported from module '" + pythonic_path + "'")
 
-                if len(unresolved) > 0:
-                    print("Unresolved imports:")
-                    print(unresolved)
+                if len(unresolved) == 1:
+                    log.warning("Unresolved import: '" + unresolved[0][1] + "' in '" + unresolved[0][0] + "'")
+                elif len(unresolved) > 1:
+                    log.warning("Unresolved imports:")
+                    for module, name in unresolved:
+                        log.warning(" - '" + name + "' in '" + module + "'")
 
     # -----------------------------------------------------------------
 

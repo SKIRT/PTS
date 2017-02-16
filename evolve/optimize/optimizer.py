@@ -72,6 +72,9 @@ class Optimizer(Configurable):
         # The generations plotter
         self.generations_plotter = None
 
+        # The plot path
+        self.plot_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -84,6 +87,9 @@ class Optimizer(Configurable):
 
         # Call the setup function of the base class
         super(Optimizer, self).setup(**kwargs)
+
+        # Set the plot path
+        self.plot_path = fs.create_directory_in(self.config.path, "plot")
 
     # -----------------------------------------------------------------
 
@@ -259,6 +265,7 @@ class Optimizer(Configurable):
 
         # Set generations plotter
         self.generations_plotter = kwargs.pop("generations_plotter", None)
+        self.generations_plotter.output_path = self.plot_path
         if self.generations_plotter is not None: self.engine.stepCallback.set(self.generations_plotter.add_generation)
 
         # Set the database adapter
@@ -278,21 +285,15 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @abstractmethod
     def evolve(self):
 
         """
-        This function ...
+        This fucntion ...
         :return:
         """
 
-        # Inform the user
-        log.info("Evolving ...")
-
-        # Let evolve
-        self.engine.evolve(freq_stats=self.config.stats_freq, progress_bar=self.config.progress_bar)
-
-        # Get the best individual
-        self.best = self.engine.bestIndividual()
+        pass
 
     # -----------------------------------------------------------------
 
@@ -304,11 +305,7 @@ class Optimizer(Configurable):
         :return:
         """
 
-        # Inform the user
-        log.info("Showing ...")
-
-        # Show the best individual
-        show_best(self.best)
+        pass
 
     # -----------------------------------------------------------------
 
@@ -320,8 +317,7 @@ class Optimizer(Configurable):
         :return:
         """
 
-        # Inform the user
-        log.info("Writing ...")
+        pass
 
     # -----------------------------------------------------------------
 
@@ -333,8 +329,7 @@ class Optimizer(Configurable):
         :return:
         """
 
-        # Inform the user
-        log.info("Plotting ...")
+        pass
 
 # -----------------------------------------------------------------
 
@@ -357,7 +352,7 @@ def show_best(best):
 
     print(fmt.yellow + "  Genome:" + fmt.reset)
     print("")
-    print(stringify.stringify_list_fancy([gene for gene in genome])[1], 100, ", ", "    ")
+    print(stringify.stringify_list_fancy([gene for gene in genome], 100, ", ", "    ")[1])
     print("")
 
     print(fmt.yellow + "  Score: " + fmt.reset + str(score))

@@ -1145,46 +1145,7 @@ class PTSInstaller(Installer):
         :return:
         """
 
-        #return introspection.is_existing_executable("conda")
         return self.conda_main_executable_path is not None
-
-    # -----------------------------------------------------------------
-
-    def has_valid_conda_environment_local(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if conda.is_environment(self.config.python_name, self.conda_main_executable_path):
-
-            # Check if the bin dir is present
-            env_path = fs.join(self.conda_installation_path, "envs", self.config.python_name)
-            bin_path = fs.join(env_path, "bin")
-            python_path = fs.join(bin_path, "python")
-
-            if not fs.is_directory(bin_path):
-
-                # Remove the environment
-                fs.remove_directory(env_path)
-                return False
-
-            elif fs.is_empty(bin_path):
-
-                # Remove the environment
-                fs.remove_directory(env_path)
-                return False
-
-            elif not fs.is_file(python_path):
-
-                # Remove the environment
-                fs.remove_directory(env_path)
-                return False
-
-            else: return True
-
-        else: return False
 
     # -----------------------------------------------------------------
 
@@ -1205,7 +1166,7 @@ class PTSInstaller(Installer):
         if not self.has_conda: self.get_conda_local()
 
         # 3. Create python environment
-        if not self.has_valid_conda_environment_local(): self.create_environment_local()
+        if not has_valid_conda_environment_local(self.config.python_name, self.conda_main_executable_path, self.conda_installation_path): self.create_environment_local()
         else: self.set_environment_paths_local()
 
         # 4. Get PTS
@@ -1263,55 +1224,8 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Getting a Conda python distribution locally ...")
 
-        # Determine installer path
-        installer_path = fs.join(fs.home(), "conda.sh")
-
-        # Debugging
-        log.debug("Downloading the installer ...")
-
-        # Download the installer
-        if introspection.is_macos(): network.download_file_no_requests(miniconda_macos_url, installer_path, overwrite=True)
-        elif introspection.is_linux(): network.download_file_no_requests(miniconda_linux_url, installer_path, overwrite=True)
-        else: raise OSError("Your operating system is not supported")
-
-        # Determine the conda installation directory
-        conda_installation_path = fs.join(fs.home(), "miniconda")
-
-        # Check if not present
-        if fs.is_directory(conda_installation_path): raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")
-
-        # Determine the options
-        options = "-b -p " + conda_installation_path
-
-        # Debugging
-        log.debug("Running the installer ...")
-
-        # Run the installation script
-        terminal.run_script(installer_path, options, show_output=log.is_debug(), no_pexpect=True)
-
-        # Debugging
-        log.debug("Removing the installer ...")
-
-        # Remove the installer
-        fs.remove_file(installer_path)
-
-        # Set the installation path
-        self.conda_installation_path = conda_installation_path
-        conda_bin_path = fs.join(conda_installation_path, "bin")
-
-        # Set main executable
-        self.conda_main_executable_path = fs.join(self.conda_installation_path, "bin", "conda")
-
-        # Debugging
-        log.debug("Adding the conda executables to the PATH ...")
-
-        # Clear previous things
-        comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
-        #terminal.remove_aliases_and_variables_with_comment(comment)
-        if conda_bin_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(conda_bin_path)
-
-        # Run the export command also in the current shell, so that the conda commands can be found
-        terminal.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
+        # Install conda locally and set paths
+        self.conda_installation_path, self.conda_main_executable_path = install_conda_local()
 
     # -----------------------------------------------------------------
 
@@ -1325,39 +1239,8 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Creating a fresh python environment ...")
 
-        # Generate the command
-        command = self.conda_main_executable_path + " create -n " + self.config.python_name + " python=" + self.config.python_version
-
-        # Expect question
-        expect = "Proceed ([y]/n)?"
-        lines = []
-        lines.append(command)
-        lines.append((expect, "y", True))
-
-        # Execute the lines
-        terminal.execute_lines_expect_clone(*lines, show_output=log.is_debug())
-
-        # Check whether the environment has been made and the executables are present
-        environment_bin_path = fs.join(self.conda_installation_path, "envs", self.config.python_name, "bin")
-        if not fs.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
-        self.conda_executable_path = fs.join(environment_bin_path, "conda")
-        self.conda_pip_path = fs.join(environment_bin_path, "pip")
-        self.conda_python_path = fs.join(environment_bin_path, "python")
-        self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
-
-        # Clear previous things
-        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
-        terminal.remove_aliases(self.config.python_name, "pts", "ipts")
-        terminal.remove_aliases_and_variables_with_comment(comment)
-        if self.pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(self.pts_root_path)
-
-        # Add an alias for the PTS python version
-        terminal.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
-
-        # Add PTS to shell configuration file
-        terminal.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
-        terminal.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
-        terminal.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+        # Create the environment
+        self.conda_executable_path, self.conda_pip_path, self.conda_python_path, self.conda_easy_install_path = create_conda_environment_local(self.config.python_name, self.conda_installation_path, self.pts_root_path, self.config.python_version, self.conda_main_executable_path)
 
     # -----------------------------------------------------------------
 
@@ -1509,59 +1392,22 @@ class PTSInstaller(Installer):
         if len(installed) > 0:
             log.info("Packages that were installed:")
             print("")
-            print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+            print(stringify.stringify_list_fancy(installed, 100, ", ", "    ")[1])
             print("")
 
         # Show not installed packages
         if len(not_installed) > 0:
             log.info("Packages that could not be installed:")
             print("")
-            print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    "))
+            print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    ")[1])
             print("")
 
         # Show already present packages
         if len(already_installed) > 0:
             log.info("Packages that were already present:")
             print("")
-            print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    "))
+            print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
             print("")
-
-    # -----------------------------------------------------------------
-
-    def has_valid_conda_environment_remote(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        if self.remote.is_conda_environment(self.config.python_name, self.conda_main_executable_path):
-
-            # Check if the bin dir is present
-            env_path = fs.join(self.conda_installation_path, "envs", self.config.python_name)
-            bin_path = fs.join(env_path, "bin")
-            python_path = fs.join(bin_path, "python")
-            if not self.remote.is_directory(bin_path):
-
-                # Remove the environment
-                self.remote.remove_directory(env_path)
-                return False
-
-            elif self.remote.is_empty(bin_path):
-
-                # Remove the environment
-                self.remote.remove_directory(env_path)
-                return False
-
-            elif not self.remote.is_file(python_path):
-
-                # Remove the environment
-                self.remote.remove_directory(env_path)
-                return False
-
-            else: return True
-
-        else: return False
 
     # -----------------------------------------------------------------
 
@@ -1582,7 +1428,7 @@ class PTSInstaller(Installer):
         if not self.has_conda: self.get_conda_remote()
 
         # 2. Create a remote python environment
-        if not self.has_valid_conda_environment_remote(): self.create_environment_remote()
+        if not has_valid_conda_environment_remote(self.remote, self.config.python_name, self.conda_main_executable_path, self.conda_installation_path): self.create_environment_remote()
         else: self.set_environment_paths_remote()
 
         # 3. Get PTS
@@ -1631,56 +1477,8 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Getting a Conda python distribution on the remote host ...")
 
-        # Determine installer path
-        installer_path = fs.join(self.remote.home_directory, "conda.sh")
-
-        # Download the installer
-        if self.remote.is_macos: self.remote.download_from_url_to(miniconda_macos_url, installer_path, overwrite=True)
-        elif self.remote.is_linux: self.remote.download_from_url_to(miniconda_linux_url, installer_path, overwrite=True)
-        else: raise OSError("The operating system on the remote host is not supported")
-
-        # Determine the conda installation directory
-        conda_installation_path = fs.join(self.remote.home_directory, "miniconda")
-
-        # Check if not present
-        #if self.remote.is_directory(conda_installation_path):
-        #    raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")
-
-        # Cleanup leftovers
-        if self.remote.is_directory(conda_installation_path): self.remote.remove_directory(conda_installation_path)
-
-        # Set options for installer
-        options = "-b -p " + conda_installation_path
-
-        # Debugging
-        log.debug("Running the '" + installer_path + "' script with options: [" + options + "]")
-
-        # Run the installation script
-        self.remote.run_script(installer_path, options, show_output=log.is_debug())
-
-        # Debugging
-        log.debug("Removing the installer script ...")
-
-        # Remove the installer
-        self.remote.remove_file(installer_path)
-
-        # Set the installation path
-        self.conda_installation_path = conda_installation_path
-        conda_bin_path = fs.join(conda_installation_path, "bin")
-
-        # Set main executable
-        self.conda_main_executable_path = fs.join(self.conda_installation_path, "bin", "conda")
-
-        # Debugging
-        log.debug("Adding the conda executables to the PATH ...")
-
-        # Remove previous things
-        comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
-        #self.remote.remove_aliases_and_variables_with_comment(comment)
-        if conda_bin_path in self.remote.paths_in_path_variable: self.remote.remove_from_path_variable(conda_bin_path)
-
-        # Run the export command also in the current shell, so that the conda commands can be found
-        self.remote.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
+        # Install conda
+        self.conda_installation_path, self.conda_main_executable_path = install_conda_remote(self.remote)
 
     # -----------------------------------------------------------------
 
@@ -1694,39 +1492,9 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Creating a fresh python environment ...")
 
-        # Generate the command
-        command = self.conda_main_executable_path + " create -n " + self.config.python_name + " python=" + self.config.python_version
-
-        # Expect question
-        expect = "Proceed ([y]/n)?"
-        lines = []
-        lines.append(command)
-        lines.append((expect, "y", True))
-
-        # Execute the commands
-        self.remote.execute_lines(*lines, show_output=log.is_debug())
-
-        # Check whether the environment has been made and the executables are present
-        environment_bin_path = fs.join(self.conda_installation_path, "envs", self.config.python_name, "bin")
-        if not self.remote.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
-        self.conda_executable_path = fs.join(environment_bin_path, "conda")
-        self.conda_pip_path = fs.join(environment_bin_path, "pip")
-        self.conda_python_path = fs.join(environment_bin_path, "python")
-        self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
-
-        # Clear previous things
-        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
-        self.remote.remove_aliases(self.config.python_name, "pts", "ipts")
-        self.remote.remove_aliases_and_variables_with_comment(comment)
-        if self.pts_root_path in self.remote.paths_in_python_path_variable: self.remote.remove_from_python_path_variable(self.pts_root_path)
-
-        # Add an alias for the PTS python version
-        self.remote.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
-
-        # Add PTS to shell configuration file
-        self.remote.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
-        self.remote.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
-        self.remote.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+        # Create the environment
+        create_conda_environment_remote(self.remote, self.config.python_name, self.conda_installation_path,
+                                        self.pts_root_path, self.config.python_version, self.conda_main_executable_path)
 
     # -----------------------------------------------------------------
 
@@ -2257,23 +2025,328 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     if len(installed) > 0:
         log.info("Packages that were installed:")
         print("")
-        print(stringify.stringify_list_fancy(installed, 100, ", ", "    "))
+        print(stringify.stringify_list_fancy(installed, 100, ", ", "    ")[1])
         print("")
 
     # Show not installed packages
     if len(not_installed) > 0:
         log.info("Packages that could not be installed:")
         print("")
-        print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    "))
+        print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    ")[1])
         print("")
 
     # Show already present packages
     if len(already_installed) > 0:
         log.info("Packages that were already present:")
         print("")
-        print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    "))
+        print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
         print("")
 
     return installed, not_installed, already_installed
+
+# -----------------------------------------------------------------
+
+def install_conda_local():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Determine installer path
+    installer_path = fs.join(fs.home(), "conda.sh")
+
+    # Debugging
+    log.debug("Downloading the installer ...")
+
+    # Download the installer
+    if introspection.is_macos(): network.download_file_no_requests(miniconda_macos_url, installer_path, overwrite=True)
+    elif introspection.is_linux(): network.download_file_no_requests(miniconda_linux_url, installer_path, overwrite=True)
+    else: raise OSError("Your operating system is not supported")
+
+    # Determine the conda installation directory
+    conda_installation_path = fs.join(fs.home(), "miniconda")
+
+    # Check if not present
+    if fs.is_directory(conda_installation_path): raise RuntimeError("Conda is already installed in '" + conda_installation_path + "'")
+
+    # Determine the options
+    options = "-b -p " + conda_installation_path
+
+    # Debugging
+    log.debug("Running the installer ...")
+
+    # Run the installation script
+    terminal.run_script(installer_path, options, show_output=log.is_debug(), no_pexpect=True)
+
+    # Debugging
+    log.debug("Removing the installer ...")
+
+    # Remove the installer
+    fs.remove_file(installer_path)
+
+    # Set the installation path
+    conda_bin_path = fs.join(conda_installation_path, "bin")
+
+    # Set main executable
+    conda_main_executable_path = fs.join(conda_installation_path, "bin", "conda")
+
+    # Debugging
+    log.debug("Adding the conda executables to the PATH ...")
+
+    # Clear previous things
+    comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
+    if conda_bin_path in terminal.paths_in_path_variable(): terminal.remove_from_path_variable(conda_bin_path)
+
+    # Run the export command also in the current shell, so that the conda commands can be found
+    terminal.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
+
+    # Return paths
+    return conda_installation_path, conda_main_executable_path
+
+# -----------------------------------------------------------------
+
+def install_conda_remote(remote):
+
+    """
+    This function ...
+    :param remote:
+    :return:
+    """
+
+    # Determine installer path
+    installer_path = fs.join(remote.home_directory, "conda.sh")
+
+    # Download the installer
+    if remote.is_macos: remote.download_from_url_to(miniconda_macos_url, installer_path, overwrite=True)
+    elif remote.is_linux: remote.download_from_url_to(miniconda_linux_url, installer_path, overwrite=True)
+    else: raise OSError("The operating system on the remote host is not supported")
+
+    # Determine the conda installation directory
+    conda_installation_path = fs.join(remote.home_directory, "miniconda")
+
+    # Cleanup leftovers
+    if remote.is_directory(conda_installation_path): remote.remove_directory(conda_installation_path)
+
+    # Set options for installer
+    options = "-b -p " + conda_installation_path
+
+    # Debugging
+    log.debug("Running the '" + installer_path + "' script with options: [" + options + "]")
+
+    # Run the installation script
+    remote.run_script(installer_path, options, show_output=log.is_debug())
+
+    # Debugging
+    log.debug("Removing the installer script ...")
+
+    # Remove the installer
+    remote.remove_file(installer_path)
+
+    # Set the installation path
+    conda_installation_path = conda_installation_path
+    conda_bin_path = fs.join(conda_installation_path, "bin")
+
+    # Set main executable
+    conda_main_executable_path = fs.join(conda_installation_path, "bin", "conda")
+
+    # Debugging
+    log.debug("Adding the conda executables to the PATH ...")
+
+    # Remove previous things
+    comment = "For Conda, added by PTS (Python Toolkit for SKIRT)"
+    if conda_bin_path in remote.paths_in_path_variable: remote.remove_from_path_variable(conda_bin_path)
+
+    # Run the export command also in the current shell, so that the conda commands can be found
+    remote.add_to_path_variable(conda_bin_path, comment=comment, in_shell=True)
+
+    # Return paths
+    return conda_installation_path, conda_main_executable_path
+
+# -----------------------------------------------------------------
+
+def has_valid_conda_environment_local(environment_name, conda_path="conda", conda_installation_path=None):
+
+    """
+    This function ...
+    :param environment_name:
+    :param conda_path:
+    :param conda_installation_path:
+    :return:
+    """
+
+    # Check
+    if conda.is_environment(environment_name, conda_path):
+
+        # Check if the bin dir is present
+        env_path = fs.join(conda_installation_path, "envs", environment_name)
+        bin_path = fs.join(env_path, "bin")
+        python_path = fs.join(bin_path, "python")
+
+        if not fs.is_directory(bin_path):
+
+            # Remove the environment
+            fs.remove_directory(env_path)
+            return False
+
+        elif fs.is_empty(bin_path):
+
+            # Remove the environment
+            fs.remove_directory(env_path)
+            return False
+
+        elif not fs.is_file(python_path):
+
+            # Remove the environment
+            fs.remove_directory(env_path)
+            return False
+
+        else: return True
+
+    else: return False
+
+# -----------------------------------------------------------------
+
+def has_valid_conda_environment_remote(remote, environment_name, conda_path="conda", conda_installation_path=None):
+
+    """
+    This function ...
+    :param remote:
+    :param environment_name:
+    :param conda_path:
+    :param conda_installation_path:
+    :return:
+    """
+
+    if remote.is_conda_environment(environment_name, conda_path):
+
+        # Check if the bin dir is present
+        env_path = fs.join(conda_installation_path, "envs", environment_name)
+        bin_path = fs.join(env_path, "bin")
+        python_path = fs.join(bin_path, "python")
+        if not remote.is_directory(bin_path):
+
+            # Remove the environment
+            remote.remove_directory(env_path)
+            return False
+
+        elif remote.is_empty(bin_path):
+
+            # Remove the environment
+            remote.remove_directory(env_path)
+            return False
+
+        elif not remote.is_file(python_path):
+
+            # Remove the environment
+            remote.remove_directory(env_path)
+            return False
+
+        else: return True
+
+    else: return False
+
+# -----------------------------------------------------------------
+
+def create_conda_environment_local(environment_name, conda_installation_path, pts_root_path, python_version="2.7", conda_path="conda"):
+
+    """
+    This function ...
+    :param environment_name:
+    :param conda_installation_path:
+    :param pts_root_path:
+    :param python_version:
+    :param conda_path:
+    :return:
+    """
+
+    # Generate the command
+    command = conda_path + " create -n " + environment_name + " python=" + python_version
+
+    # Expect question
+    expect = "Proceed ([y]/n)?"
+    lines = []
+    lines.append(command)
+    lines.append((expect, "y", True))
+
+    # Execute the lines
+    terminal.execute_lines_expect_clone(*lines, show_output=log.is_debug())
+
+    # Check whether the environment has been made and the executables are present
+    environment_bin_path = fs.join(conda_installation_path, "envs", environment_name, "bin")
+    if not fs.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
+    conda_executable_path = fs.join(environment_bin_path, "conda")
+    conda_pip_path = fs.join(environment_bin_path, "pip")
+    conda_python_path = fs.join(environment_bin_path, "python")
+    conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+
+    # Clear previous things
+    comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+    terminal.remove_aliases(environment_name, "pts", "ipts")
+    terminal.remove_aliases_and_variables_with_comment(comment)
+    if pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(pts_root_path)
+
+    # Add an alias for the PTS python version
+    terminal.define_alias(environment_name, conda_python_path, comment=comment, in_shell=True)
+
+    # Add PTS to shell configuration file
+    terminal.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
+    terminal.define_alias("pts", conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+    terminal.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+
+    # Return the paths
+    return conda_executable_path, conda_pip_path, conda_python_path, conda_easy_install_path
+
+# -----------------------------------------------------------------
+
+def create_conda_environment_remote(remote, environment_name, conda_installation_path, pts_root_path, python_version="2.7", conda_path="conda"):
+
+    """
+    This function ...
+    :param remote:
+    :param environment_name:
+    :param conda_installation_path:
+    :param pts_root_path:
+    :param python_version:
+    :param conda_path:
+    :return:
+    """
+
+    # Generate the command
+    command = conda_path + " create -n " + environment_name + " python=" + python_version
+
+    # Expect question
+    expect = "Proceed ([y]/n)?"
+    lines = []
+    lines.append(command)
+    lines.append((expect, "y", True))
+
+    # Execute the commands
+    remote.execute_lines(*lines, show_output=log.is_debug())
+
+    # Check whether the environment has been made and the executables are present
+    environment_bin_path = fs.join(conda_installation_path, "envs", environment_name, "bin")
+    if not remote.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
+    conda_executable_path = fs.join(environment_bin_path, "conda")
+    conda_pip_path = fs.join(environment_bin_path, "pip")
+    conda_python_path = fs.join(environment_bin_path, "python")
+    conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+
+    # Clear previous things
+    comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+    remote.remove_aliases(environment_name, "pts", "ipts")
+    remote.remove_aliases_and_variables_with_comment(comment)
+    if pts_root_path in remote.paths_in_python_path_variable: remote.remove_from_python_path_variable(pts_root_path)
+
+    # Add an alias for the PTS python version
+    remote.define_alias(environment_name, conda_python_path, comment=comment, in_shell=True)
+
+    # Add PTS to shell configuration file
+    remote.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
+    remote.define_alias("pts", conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+    remote.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+
+    # Return the paths
+    return conda_executable_path, conda_pip_path, conda_python_path, conda_easy_install_path
 
 # -----------------------------------------------------------------

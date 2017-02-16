@@ -13,22 +13,18 @@ import inspect
 import random
 from math import sqrt
 import numpy as np
-from functools import partial
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.do.commandline import Command
 from pts.evolve.core import reference
-from pts.evolve.optimize.optimize import show_best
+from pts.evolve.optimize.optimizer import show_best
 from pts.evolve.genomes.list1d import G1DList
 from pts.evolve.core.allele import GAlleles, GAlleleList
 from pts.evolve.core.crossovers import G1DListCrossoverOX
 from pts.evolve.core.mutators import G1DListMutatorSwap
 from pts.core.basics.animation import Animation
-
-from .plot import Plotter
-
-from PIL import Image, ImageDraw, ImageFont
+from pts.evolve.tests.TravelingSalesman.plot import Plotter
 
 # -----------------------------------------------------------------
 
@@ -286,11 +282,6 @@ def create_genome_reference(coords):
 
 # -----------------------------------------------------------------
 
-# For database ...
-#sqlite_adapter = DBAdapters.DBSQLite(identify="tsp", commit_freq=1000, frequency=500)
-
-# -----------------------------------------------------------------
-
 # Initialize list for the commands
 commands = []
 
@@ -332,9 +323,6 @@ settings_optimize["stats_freq"] = stats_freq
 #settings_optimize["mutation_method"] = mutation_method
 settings_optimize["min_or_max"] = min_or_max
 
-# Other
-settings_optimize["progress_bar"] = True
-
 # Input
 input_optimize = dict()
 input_optimize["genome"] = genome
@@ -344,7 +332,7 @@ input_optimize["mutator"] = G1DListMutatorSwap
 input_optimize["crossover"] = G1DListCrossoverOX
 
 # Create the generations plotter
-plotter = Plotter(coordinates=coords)
+plotter = Plotter(coordinates=coords, frequency=10)
 
 # Set the plotter
 input_optimize["generations_plotter"] = plotter
@@ -354,7 +342,7 @@ input_optimize["evaluator_kwargs"] = {"distances": cm}
 
 # -----------------------------------------------------------------
 
-def finish_optimize(optimizer, **kwargs):
+def finish_optimize(optimizer):
 
     """
     This function ...
@@ -366,11 +354,14 @@ def finish_optimize(optimizer, **kwargs):
     # Determine path
     temp_path = optimizer.config.path
 
+    # Determine plot path
+    plot_path = fs.join(temp_path, "plot")
+
     # Create animated gif
     animation = Animation()
 
     # Open the images present in the directory
-    for path in fs.files_in_path(temp_path, extension="png", exact_not_name="best"):
+    for path in fs.files_in_path(plot_path, extension="png", exact_not_name="best"):
 
         # Add frame to the animation
         animation.add_frame_from_file(path)
@@ -381,13 +372,8 @@ def finish_optimize(optimizer, **kwargs):
 
 # -----------------------------------------------------------------
 
-# Add the finish_optimize command
-partialized_finish = partial(finish_optimize, **{"coordinates": coords})
-
-# -----------------------------------------------------------------
-
 # Construct the command
-optimize = Command("optimize", "solving the traveling salesman problem", settings_optimize, input_optimize, cwd=".", finish=partialized_finish)
+optimize = Command("optimize_continuous", "solving the traveling salesman problem", settings_optimize, input_optimize, cwd=".", finish=finish_optimize)
 
 # Add the command
 commands.append(optimize)
@@ -401,9 +387,6 @@ def test(temp_path):
     """
     This function ...
     """
-
-    # Remove 'callback' from the settings dictionary: we don't want to plot now
-    if "callback" in input_optimize: del input_optimize["callback"]
 
     # Make new genome, made from the original Pyevolve classes
     genome = create_genome_reference(coords)

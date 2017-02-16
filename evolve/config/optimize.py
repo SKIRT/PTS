@@ -32,14 +32,13 @@ definition.add_optional("mutation_method", "string", "mutation method", choices=
 definition.add_optional("min_or_max", "string", "minimize or maximize", choices=["minimize", "maximize"])
 definition.add_optional("run_id", "string", "identifier for this run", default="run0")
 definition.add_optional("database_frequency", "positive_integer", "frequency of appending to the database (in the number of generations)", 1)
-definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table")
+definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table", 1)
 
 # Other
 definition.add_optional("output", "directory_path", "output directory")
 
 # Flags
 definition.add_flag("elitism", "enable elitism", True)
-definition.add_flag("progress_bar", "use a progress bar to show the progress of the evoluation")
 definition.add_flag("show", "show results", True)
 definition.add_flag("write", "write results", True)
 definition.add_flag("plot", "plot results", False)

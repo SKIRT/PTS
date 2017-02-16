@@ -13,6 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -31,8 +32,10 @@ class Plotter(object):
 
         # Get properties
         self.coordinates = kwargs.pop("coordinates")
-        self.output_path = kwargs.pop("output")
         self.frequency = kwargs.pop("frequency")
+
+        # The output path
+        self.output_path = None
 
         self.counter = 0
 
@@ -110,11 +113,18 @@ class Plotter(object):
 
         del d
 
-        # Determine the plot path
-        path = fs.join(self.output_path, str(self.counter) + ".png")
+        # Save
+        if self.output_path is not None:
 
-        img.save(path, "PNG")
+            # Determine the plot path
+            path = fs.join(self.output_path, str(self.counter) + ".png")
 
-        print("The plot was saved into the %s file." % (path,))
+            # Debugging
+            log.debug("Saving the plot to '" + path + "' ...")
+
+            # Save
+            img.save(path, "PNG")
+
+        else: raise RuntimeError("Cannot show the plot, specify an output path")
 
 # -----------------------------------------------------------------

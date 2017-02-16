@@ -112,8 +112,9 @@ class RemotePythonSession(object):
         the_path = None
 
         # Find screenlog file
-        for path, name in self.remote.files_in_path(self.output_path, returns=["path", "name"]):
+        for path in self.remote.files_in_path(self.output_path):
 
+            name = fs.name(path)
             if name.startswith("screenlog"):
 
                 index = int(name.split(".")[1])

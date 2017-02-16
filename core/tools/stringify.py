@@ -147,7 +147,9 @@ def stringify_list_fancy(lst, width=100, delimiter=", ", lines_prefix=""):
     """
 
     from textwrap import wrap
-    return lines_prefix + ("\n" + lines_prefix).join(wrap(stringify(lst)[1].replace(",", delimiter), width))
+
+    ptype, string = stringify(lst)
+    return ptype, lines_prefix + ("\n" + lines_prefix).join(wrap(string.replace(",", delimiter), width))
 
 # -----------------------------------------------------------------
 

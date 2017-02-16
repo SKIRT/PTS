@@ -21,7 +21,9 @@ from ..basics.configurable import Configurable
 from ..remote.remote import Remote
 from ..tools.logging import log
 from ..tools import introspection
-from .installation import get_installation_commands, find_qmake, build_skirt_on_remote, build_skirt_local, get_pts_dependencies_remote
+from .installation import find_qmake, build_skirt_on_remote, build_skirt_local, get_pts_dependencies_remote
+from .installation import has_valid_conda_environment_local, has_valid_conda_environment_remote, install_conda_remote
+from .installation import create_conda_environment_local, create_conda_environment_remote
 from ..tools import git
 from ..tools import terminal
 from ..tools import filesystem as fs
@@ -560,6 +562,19 @@ class PTSUpdater(Updater):
 
         # The conda environment
         self.conda_environment = None
+        self.python_version = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_conda(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.conda_main_executable_path is not None
 
     # -----------------------------------------------------------------
 
@@ -579,10 +594,17 @@ class PTSUpdater(Updater):
         # 2. Check conda
         self.check_conda_local()
 
-        # 3. Update conda
+        # 2. Get conda locally
+        if not self.has_conda: self.get_conda_local()
+
+        # 3. Create python environment
+        if not has_valid_conda_environment_local(self.conda_environment, self.conda_main_executable_path, self.conda_installation_path): self.create_environment_local()
+        else: self.set_environment_paths_local()
+
+        # 4. Update conda
         if self.config.dependencies: self.update_conda_local()
 
-        # 4. Update the dependencies
+        # 5. Update the dependencies
         if self.config.dependencies: self.update_dependencies_local()
 
     # -----------------------------------------------------------------
@@ -618,7 +640,44 @@ class PTSUpdater(Updater):
         # Inform the user
         log.info("Checking conda locally ...")
 
+    # -----------------------------------------------------------------
 
+    def get_conda_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def create_environment_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating a fresh python environment ...")
+
+        # Create the environment
+        self.conda_executable_path, self.conda_pip_path, self.conda_python_path, self.conda_easy_install_path = \
+            create_conda_environment_local(self.conda_environment, self.conda_installation_path, introspection.pts_root_dir,
+                                           self.python_version, self.conda_main_executable_path)
+
+    # -----------------------------------------------------------------
+
+    def set_environment_paths_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -659,6 +718,13 @@ class PTSUpdater(Updater):
 
         # 2. Check conda, get paths
         self.check_conda_remote()
+
+        # 2. Get conda
+        if not self.has_conda: self.get_conda_remote()
+
+        # 2. Create a remote python environment
+        if not has_valid_conda_environment_remote(self.remote, self.conda_environment, self.conda_main_executable_path, self.conda_installation_path): self.create_environment_remote()
+        else: self.set_environment_paths_remote()
 
         # 3. Update conda
         if self.config.dependencies: self.update_conda_remote()
@@ -755,26 +821,72 @@ class PTSUpdater(Updater):
             self.conda_installation_path = fs.directory_of(fs.directory_of(conda_executable_path))
             self.conda_main_executable_path = conda_executable_path
 
-        # Conda not found
-        else: raise RuntimeError("Conda not found")
+            # Debugging
+            log.debug("Determining the conda environment name for PTS ...")
 
-        # Get environment name
-        pts_alias = self.remote.resolve_alias("pts")
-        #print(pts_alias)
-        pts_python_path = pts_alias.split()[0]
-        if pts_python_path == "python": raise Exception("Cannot determine the conda environment used for pts")
+            # Get environment name
+            pts_alias = self.remote.resolve_alias("pts")
+            pts_python_path = pts_alias.split()[0]
+            if pts_python_path == "python": raise Exception("Cannot determine the conda environment used for pts")
+            else:
+
+                env_path = fs.directory_of(fs.directory_of(pts_python_path))
+                environment_name = fs.name(env_path)
+                self.conda_environment = environment_name
+
+        # Conda not found
         else:
 
-            env_path = fs.directory_of(fs.directory_of(pts_python_path))
-            #print(env_path)
-            environment_name = fs.name(env_path)
-            self.conda_environment = environment_name
+            # Warning
+            log.warning("Conda is not found: installing")
 
-        #print(self.conda_environment)
+            # Set the conda environment name
+            self.conda_environment = "python_pts"
+            self.python_version = "2.7"
+
+    # -----------------------------------------------------------------
+
+    def get_conda_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting a Conda python distribution on the remote host ...")
+
+        # Install conda
+        self.conda_installation_path, self.conda_main_executable_path = install_conda_remote(self.remote)
+
+    # -----------------------------------------------------------------
+
+    def create_environment_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating a fresh python environment ...")
+
+        # Create the environment
+        self.conda_executable_path, self.conda_pip_path, self.conda_python_path, self.conda_easy_install_path = \
+            create_conda_environment_remote(self.remote, self.conda_environment, self.conda_installation_path,
+                                        self.remote.pts_root_path, self.python_version, self.conda_main_executable_path)
+
+    # -----------------------------------------------------------------
+
+    def set_environment_paths_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Set paths
         environment_bin_path = fs.join(self.conda_installation_path, "envs", self.conda_environment, "bin")
-        #print(environment_bin_path)
         if not self.remote.is_directory(environment_bin_path): raise RuntimeError("The environment directory is not present")
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
@@ -861,25 +973,10 @@ class PTSUpdater(Updater):
                 log.debug("Update command: " + command)
 
                 # Launch the command
-                #self.remote.execute(command)
                 self.remote.ssh.sendline(command)
 
                 # Expect the prompt or question
                 while self.remote.ssh.expect([self.remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None) == 1: self.remote.ssh.sendline("y")
-
-            # Determine update command
-
-        # Update all packages
-        #update_command = self.conda_executable_path + " update --all"
-
-        # Send the command
-        #self.remote.ssh.sendline(update_command)
-
-        # Expect the prompt or question
-        #while self.remote.ssh.expect([self.remote.ssh.PROMPT, "Proceed ([y]/n)?"], timeout=None) == 1: self.remote.ssh.sendline("y")
-
-        # Match prompt: already has happend in the evaluation of the latest while loop!
-        ##self.remote.ssh.prompt(timeout=None)
 
         # Success
         log.success("Succesfully installed and updated the dependencies on the remote host")

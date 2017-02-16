@@ -13,13 +13,12 @@ import inspect
 import random
 from math import sqrt
 import numpy as np
-from functools import partial
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.do.commandline import Command
 from pts.evolve.core import reference
-from pts.evolve.optimize.optimize import show_best
+from pts.evolve.optimize.optimizer import show_best
 from pts.evolve.core.crossovers import G1DListCrossoverOX
 from pts.evolve.core.mutators import G1DListMutatorSwap
 from pts.core.basics.animation import Animation
@@ -142,9 +141,6 @@ settings_optimize["stats_freq"] = stats_freq
 #settings_optimize["mutation_method"] = mutation_method
 settings_optimize["min_or_max"] = min_or_max
 
-# Other
-settings_optimize["progress_bar"] = True
-
 # Input
 input_optimize = dict()
 #input_optimize["genome"] = genome
@@ -195,7 +191,7 @@ def finish_optimize(optimizer, **kwargs):
 # -----------------------------------------------------------------
 
 # Construct the command
-optimize = Command("optimize", "finding the maximum of the function defined by Charbonneau (1995)", settings_optimize, input_optimize, cwd=".", finish=finish_optimize)
+optimize = Command("optimize_continuous", "finding the maximum of the function defined by Charbonneau (1995)", settings_optimize, input_optimize, cwd=".", finish=finish_optimize)
 
 # Add the command
 commands.append(optimize)
