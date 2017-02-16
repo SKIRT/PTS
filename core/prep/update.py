@@ -456,28 +456,28 @@ class SKIRTUpdater(Updater):
         log.info("Checking for Qt installation on remote ...")
 
         # Qt is present
-        if self.modules.paths["qt"] is not None:
+        if self.modules.paths["qmake"] is not None:
 
             # Get the version
-            version = self.modules.versions["qt"]
+            version = self.modules.versions["qmake"]
 
             # Check if module has to be loaded
-            if self.modules.names["qt"] is not None:
+            if self.modules.names["qmake"] is not None:
 
                 # Inform the user
-                log.info("The module '" + self.modules.names["qt"] + "' has to be loaded for qmake ...")
+                log.info("The module '" + self.modules.names["qmake"] + "' has to be loaded for qmake ...")
 
                 # Set the module name and the qmake path
-                self.qmake_module = self.modules.names["qt"]
-                self.qmake_path = self.modules.paths["qt"]
+                self.qmake_module = self.modules.names["qmake"]
+                self.qmake_path = self.modules.paths["qmake"]
 
             else:
 
                 # Inform the user
-                log.info("Qmake is present at '" + self.modules.paths["qt"] + "'")
+                log.info("Qmake is present at '" + self.modules.paths["qmake"] + "'")
 
                 # Set qmake path
-                self.qmake_path = self.modules.paths["qt"]
+                self.qmake_path = self.modules.paths["qmake"]
 
         # Qt is not present
         else: log.info("Qt is not present, will be installing ...")
