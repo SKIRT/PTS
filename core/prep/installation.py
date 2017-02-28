@@ -2094,7 +2094,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
             lines = []
             lines.append(command)
-            lines.append(("Proceed ([y]/n)?", "y"))
+            lines.append(("Proceed ([y]/n)?", "y", True))
 
             # Set the commands
             commands[install_module_name] = lines
@@ -2109,9 +2109,12 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         # GitHub url
         elif "github.com" in via:
 
-            log.warning("Obtaining packages from a remote repository on GitHub is not supported yet")
-            not_installed.append(module_name)
-            continue
+            #log.warning("Obtaining packages from a remote repository on GitHub is not supported yet")
+            #not_installed.append(module_name)
+            #continue
+
+            command = pip_path + " install git+" + via
+            commands[install_module_name] = command
 
         # Link with source code
         elif via.startswith("http"):
@@ -2256,7 +2259,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
         else: command = conda_path + " install " + essential
         lines = []
         lines.append(command)
-        lines.append(("Proceed ([y]/n)?", "y"))
+        lines.append(("Proceed ([y]/n)?", "y", True))
         remote.execute_lines(*lines, show_output=log.is_debug())
 
     # Use the introspection module on the remote end to get the dependencies and installed python packages
