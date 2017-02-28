@@ -152,7 +152,7 @@ class DependenciesChecker(Configurable):
             table_matches = introspection.find_matches_tables(self.config.script, tables)
 
             # List the dependencies of the matching script
-            dependencies = defaultdict(set)
+            self.dependencies = defaultdict(set)
 
             # No match
             if len(matches) + len(table_matches) == 0:
@@ -170,7 +170,7 @@ class DependenciesChecker(Configurable):
                 # Determine the full path to the matching script
                 script_path = fs.join(introspection.pts_do_dir, matches[0][0], matches[0][1])
 
-                introspection.add_dependencies(dependencies, script_path, set())
+                introspection.add_dependencies(self.dependencies, script_path, set())
 
             # Exactly one match from tabulated command
             elif len(table_matches) == 1 and len(matches) == 0:
@@ -198,9 +198,9 @@ class DependenciesChecker(Configurable):
 
                 # Add dependencies
                 encountered = set()
-                introspection.add_dependencies(dependencies, logging_path, encountered)
-                introspection.add_dependencies(dependencies, configuration_module_path, encountered)
-                introspection.add_dependencies(dependencies, class_module_path, encountered)
+                introspection.add_dependencies(self.dependencies, logging_path, encountered)
+                introspection.add_dependencies(self.dependencies, configuration_module_path, encountered)
+                introspection.add_dependencies(self.dependencies, class_module_path, encountered)
 
     # -----------------------------------------------------------------
 

@@ -255,21 +255,8 @@ class RemoteSynchronizer(Configurable):
         # Loop over the list of retrieved tasks
         for task in self.tasks:
 
-            # Loop over the analyser classes that are defined for this task
-            for analyser_class in task.analyser_classes:
-
-                # Create an instance of the analyser class
-                analyser = analyser_class.for_task(task)
-
-                # Run the analyser
-                analyser.run()
-
-            # Set analysed flag to True
-            task.analysed = True
-            task.save()
-
-            # Remove the local output if requested
-            if task.remove_local_output: fs.remove_directory(task.local_output_path)
+            # Analyse the task
+            task.analyse()
 
     # -----------------------------------------------------------------
 

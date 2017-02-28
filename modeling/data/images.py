@@ -24,8 +24,7 @@ from ...core.launch.pts import PTSRemoteLauncher
 from ...core.tools import network, archive
 from ...magic.core.frame import Frame
 from ...core.tools.serialization import write_dict
-from ...core.basics.task import Task
-from .analyser import MosaicAnalyser
+from ...core.launch.pts import launch_local
 
 # -----------------------------------------------------------------
 
@@ -55,7 +54,7 @@ class ImageFetcher(DataComponent):
         self.dustpedia_image_urls = defaultdict(dict)
 
         # Create the PTS remote environment
-        self.launcher = PTSRemoteLauncher()
+        self.launcher = None
 
     # -----------------------------------------------------------------
 
@@ -77,8 +76,6 @@ class ImageFetcher(DataComponent):
 
         # 4. Fetch SDSS data and calculate poisson errors
         self.fetch_sdss()
-
-        exit()
 
         # 5. Fetch the H-alpha image
         self.fetch_halpha()
@@ -123,7 +120,9 @@ class ImageFetcher(DataComponent):
         self.database.login(username, password)
 
         # Setup the remote PTS launcher
-        self.launcher.setup(self.config.remote)
+        if self.config.remote is not None:
+            self.launcher = PTSRemoteLauncher()
+            self.launcher.setup(self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -191,6 +190,7 @@ class ImageFetcher(DataComponent):
         # Fetch the GALEX data from the DustPedia archive
         self.fetch_from_dustpedia("GALEX")
 
+        # Determine local output directory path
         local_output_path = fs.create_directory_in(self.data_images_paths["GALEX"], "temp")
 
         # Create the configuration dictionary
@@ -202,38 +202,16 @@ class ImageFetcher(DataComponent):
         analysis_info = {"modeling_path": self.config.path}
         analysers = ["pts.modeling.data.analyser.MosaicAnalyser"]
 
+        # Create the GALEX mosaic and Poisson errors frame
         command = "make_galex"
 
-        # Create the GALEX mosaic and Poisson errors frame
-        if self.config.attached:
+        # Local
+        if self.launcher is None: launch_local(command, config_dict, analysers=analysers, analysis_info=analysis_info)
 
-            # Run attached
-            config = self.launcher.run_attached(command, config_dict, return_config=True)
+        # Remote, attached
+        elif self.config.attached: self.launcher.run_and_analyse(command, config_dict, local_output_path, analysers, analysis_info)
 
-            # Create a new Task object
-            task = Task(command, config.to_string())
-
-            # Set the host ID and cluster name (if applicable)
-            task.host_id = self.launcher.host_id
-            task.cluster_name = None
-
-            # Generate a new task ID
-            task_id = self.launcher.remote._new_task_id()
-
-            # Set properties such as the task ID and name and the screen name
-            task.id = task_id
-
-            # Set local and remote output path
-            task.local_output_path = local_output_path
-
-            # Set analysis info
-            task.analysis_info = analysis_info
-
-            # Run analysis
-            analyser = MosaicAnalyser.for_task(task)
-            analyser.run()
-
-        # Run in detached mode
+        # Remote, run in detached mode
         else: self.launcher.run_detached("make_galex", config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)
 
     # -----------------------------------------------------------------
@@ -251,6 +229,7 @@ class ImageFetcher(DataComponent):
         # Fetch the SDSS data from the DustPedia archive
         self.fetch_from_dustpedia("SDSS")
 
+        # Determine the output directory path
         local_output_path = fs.create_directory_in(self.data_images_paths["SDSS"], "temp")
 
         # Create the configuration dictionary
@@ -262,55 +241,14 @@ class ImageFetcher(DataComponent):
         analysis_info = {"modeling_path": self.config.path}
         analysers = ["pts.modeling.data.analyser.MosaicAnalyser"]
 
+        # Create the SDSS mosaic and Poisson errors frame
         command = "make_sdss"
 
-        # Create the SDSS mosaic and Poisson errors frame
-        if self.config.attached:
+        # Local
+        if self.launcher is None: launch_local(command, config_dict, analysers=analysers, analysis_info=analysis_info)
 
-            # Run attached
-            config = self.launcher.run_attached(command, config_dict, return_config=True)
-
-            # Create a new Task object
-            task = Task(command, config.to_string())
-
-            # Set the host ID and cluster name (if applicable)
-            task.host_id = self.launcher.host_id
-            task.cluster_name = None
-
-            # Generate a new task ID
-            task_id = self.launcher.remote._new_task_id()
-
-            # Determine the path to the task file
-            #task_file_path = fs.join(self.local_pts_host_run_dir, str(task_id) + ".task")
-            #task.path = task_file_path
-
-            # Set properties such as the task ID and name and the screen name
-            task.id = task_id
-            #task.remote_temp_pts_path = remote_temp_path
-            #task.name = unique_session_name
-            #task.screen_name = unique_session_name
-            #task.remote_screen_output_path = remote_temp_path
-
-            # Set local and remote output path
-            task.local_output_path = local_output_path
-            #task.remote_output_path = remote_output_path
-
-            # Other
-            #task.remove_remote_output = not keep_remote_output
-            #task.remove_local_output = remove_local_output
-
-            # Save the task
-            #task.save()
-
-            # Return the task
-            #return task
-
-            # Set analysis info
-            task.analysis_info = analysis_info
-
-            # Run analysis
-            analyser = MosaicAnalyser.for_task(task)
-            analyser.run()
+        # Remote attached
+        elif self.config.attached: self.launcher.run_and_analyse(command, config_dict, local_output_path, analysers, analysis_info)
 
         # Run in detached mode
         else: self.launcher.run_detached(command, config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)

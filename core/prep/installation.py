@@ -1205,6 +1205,11 @@ miniconda_macos_url = "https://repo.continuum.io/miniconda/Miniconda2-latest-Mac
 
 # -----------------------------------------------------------------
 
+# Montage
+montage_url = "http://montage.ipac.caltech.edu/download/Montage_v5.0.tar.gz"
+
+# -----------------------------------------------------------------
+
 # Approximate size of a full conda installation (all PTS dependencies) in GB
 full_conda_installation_size = 5.
 
@@ -1248,6 +1253,9 @@ class PTSInstaller(Installer):
 
         # The git version
         self.git_version = None
+
+        # The path to the montage executable
+        self.montage_path = None
 
     # -----------------------------------------------------------------
 
@@ -1328,6 +1336,18 @@ class PTSInstaller(Installer):
         """
 
         return self.conda_main_executable_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_montage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.montage_path is not None
 
     # -----------------------------------------------------------------
 
@@ -1534,7 +1554,9 @@ class PTSInstaller(Installer):
         # session.import_package("introspection", from_name="pts.core.tools")
 
         dependencies = introspection.get_all_dependencies().keys()
-        packages = introspection.installed_python_packages()
+
+        #packages = introspection.installed_python_packages()
+        packages = []
 
         # Activate the correct environment
         previous_environment = conda.activate_environment(self.config.python_name, self.conda_executable_path, self.conda_activate_path)
@@ -1618,6 +1640,12 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Installing PTS remotely ...")
 
+        # Check the presence of Montage
+        self.check_montage()
+
+        # Install montage
+        if not self.has_montage: self.get_montage()
+
         # Check presence of conda remotely
         self.check_conda_remote()
 
@@ -1633,6 +1661,53 @@ class PTSInstaller(Installer):
 
         # 4. Get PTS dependencies
         self.get_dependencies_remote()
+
+    # -----------------------------------------------------------------
+
+    def check_montage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of Montage ...")
+
+        # Look for Montage
+        executable_path = self.remote.find_executable("mArchiveGet")
+        if executable_path is not None: self.montage_path = fs.directory_of(executable_path)
+
+        # Debugging
+        if executable_path is not None: log.debug("Montage installation found in '" + self.montage_path + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_montage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting Montage on the remote host ...")
+
+        # Download the tar.gz file
+        filepath = self.remote.download_from_url_to(montage_url, self.remote.home_directory, show_output=log.is_debug())
+
+        # Extract the file
+        montage_path = self.remote.decompress_directory_in_place(filepath, show_output=log.is_debug(), remove=True)
+
+        # Compile
+        self.remote.execute("make", cwd=montage_path, show_output=log.is_debug())
+
+        montage_bin_path = fs.join(montage_path, "bin")
+        #montage_exec_path = fs.join(montage_bin_path, "montage")
+        self.montage_path = montage_bin_path
+
+        # Add to path
+        self.remote.add_to_path_variable(montage_bin_path, in_shell=True)
 
     # -----------------------------------------------------------------
 
@@ -2165,8 +2240,12 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
         if line.startswith("#"): continue
         already_installed.append(line.split(" ")[0])
 
+    # Debugging
+    log.debug("Already installed packages: ")
+    for package in already_installed: log.debug(" - " + package)
+
     ## Install essential packages: numpy and astropy
-    for essential in ["numpy", "astropy"]:
+    for essential in ["pip", "numpy", "astropy"]:
 
         # Skip installation if it is already present
         if essential in already_installed: continue
@@ -2184,7 +2263,10 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
     session = remote.start_python_session(output_path=screen_output_path)
     session.import_package("introspection", from_name="pts.core.tools")
     dependencies = session.get_simple_property("introspection", "get_all_dependencies().keys()")
-    packages = session.get_simple_property("introspection", "installed_python_packages()")
+
+    #packages = session.get_simple_property("introspection", "installed_python_packages()")
+    packages = []
+
     # self.remote.end_python_session()
     # Don't end the python session just yet
 

@@ -74,6 +74,7 @@ class Frame(NDDataArray):
         self.fwhm = kwargs.pop("fwhm", None)
         self._pixelscale = kwargs.pop("pixelscale", None)
         self._wavelength = kwargs.pop("wavelength", None)
+        self.meta = kwargs.pop("meta", dict())
 
         # The path
         self.path = kwargs.pop("path", None)
@@ -1557,7 +1558,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def save(self, header=None, origin=None, extra_header_info=None):
+    def save(self, header=None, origin=None, extra_header_info=None, add_meta=True):
 
         """
         This function ...
@@ -1577,11 +1578,11 @@ class Frame(NDDataArray):
         if self._from_multiplane: raise RuntimeError("Cannot save frame into a multiplane image")
 
         # Save
-        self.saveto(self.path, header, origin, extra_header_info)
+        self.saveto(self.path, header, origin, extra_header_info, add_meta)
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, header=None, origin=None, extra_header_info=None):
+    def saveto(self, path, header=None, origin=None, extra_header_info=None, add_meta=True):
 
         """
         This function ...
@@ -1589,6 +1590,7 @@ class Frame(NDDataArray):
         :param header:
         :param origin:
         :param extra_header_info:
+        :param add_meta:
         """
 
         if header is None: header = self.header
@@ -1604,6 +1606,11 @@ class Frame(NDDataArray):
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Frame class of PTS package"
+
+        # Add meta information
+        if add_meta:
+            for key in self.meta:
+                header[key] = self.meta[key]
 
         # Add extra info
         if extra_header_info is not None:

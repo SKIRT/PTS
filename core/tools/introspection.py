@@ -27,7 +27,6 @@ from collections import defaultdict
 from contextlib import contextmanager
 from distutils.spawn import find_executable
 from importlib import import_module
-import pip
 
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
@@ -1351,6 +1350,8 @@ def installed_python_packages():
     # Initialize dictionary to contain the package names and version numbers
     packages = dict()
 
+    import pip
+
     # Get all python distributions
     distributions = pip.get_installed_distributions()
 
@@ -1406,6 +1407,8 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
 
     unresolved = []
 
+    multiple = None
+
     if "," in import_statement:
 
         if import_statement.startswith("from"):
@@ -1421,6 +1424,8 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
 
         else:
 
+            #print(import_statement)
+
             splitted = import_statement.split(",")
             firstsplitted = splitted[0].split()
 
@@ -1428,6 +1433,7 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
             else: fr, wh = firstsplitted[1].strip(), None
 
             if wh is not None: imported = [wh.strip()]
+            else: imported = []
 
             #imported = [firstsplitted]
 
@@ -1436,7 +1442,16 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
                 if "." in more: fr2, wh2 = more.split(".")
                 else: fr2, wh2 = more.strip(), None
                 fr2 = fr2.strip()
-                if fr2 != fr: raise RuntimeError("Cannot proceed: " + fr2 + " is not equal to " + fr)
+                #print(fr2)
+                #print(wh2)
+                #print(splitted)
+                #print(imported)
+                if fr2 != fr:
+                    if multiple is None:
+                        multiple = []
+                        multiple.append(fr)
+                    multiple.append(fr2)
+                    #pass #raise RuntimeError("Cannot proceed: " + fr2 + " is not equal to " + fr)
                 if wh2 is not None: imported.append(wh2.strip())
 
             splitted = ["from", fr]
@@ -1449,75 +1464,88 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
         if len(splitted) <= 2: imported = []
         else: imported = [splitted[3]]
 
-    #which = []
-    which = defaultdict(set)
+    #print(multiple)
+    #print(splitted)
+    #print(imported)
 
-    # Check if this line denotes a relative import statement
-    if splitted[1].startswith("."):
+    if multiple is None:
 
-        after_dots = splitted[1].lstrip(".")
+        #which = []
+        which = defaultdict(set)
 
-        number_of_dots = len(splitted[1]) - len(after_dots)
+        # Check if this line denotes a relative import statement
+        if splitted[1].startswith("."):
 
-        # Determine the path to the PTS subpackage
-        subpackage_dir = script_path
-        for i in range(number_of_dots):
-            subpackage_dir = fs.directory_of(subpackage_dir)
+            after_dots = splitted[1].lstrip(".")
 
-        subpackage_name = after_dots.split(".")[0]
-        subpackage_path = fs.join(subpackage_dir, after_dots.replace(".", "/"))
+            number_of_dots = len(splitted[1]) - len(after_dots)
 
-        for name in imported:
+            # Determine the path to the PTS subpackage
+            subpackage_dir = script_path
+            for i in range(number_of_dots):
+                subpackage_dir = fs.directory_of(subpackage_dir)
 
-            #print(subpackage_path)
+            subpackage_name = after_dots.split(".")[0]
+            subpackage_path = fs.join(subpackage_dir, after_dots.replace(".", "/"))
 
-            #if debug: print(name)
-            module_path = which_module(subpackage_path, name)
-            if debug: print(subpackage_path, name, ":", module_path)
-            if module_path is not None:
-                #print(fs.strip_extension(fs.name(module_path)), name)
-                if fs.strip_extension(fs.name(module_path)) == name: which[module_path] = None
-                else:
-                    if name == "*": name = None
-                    if name == "__version__": name = None
-                    which[module_path].add(name)
-            else: unresolved.append((subpackage_path, name))
+            for name in imported:
 
-    # Absolute import of a pts class or module
-    elif splitted[1].startswith("pts"):
+                #print(subpackage_path)
 
-        parts = splitted[1].split(".")[1:]
+                #if debug: print(name)
+                module_path = which_module(subpackage_path, name)
+                if debug: print(subpackage_path, name, ":", module_path)
+                if module_path is not None:
+                    #print(fs.strip_extension(fs.name(module_path)), name)
+                    if fs.strip_extension(fs.name(module_path)) == name: which[module_path] = None
+                    else:
+                        if name == "*": name = None
+                        if name == "__version__": name = None
+                        which[module_path].add(name)
+                else: unresolved.append((subpackage_path, name))
 
-        subpackage_dir = pts_package_dir
-        for part in parts:
-            subpackage_dir = fs.join(subpackage_dir, part)
+        # Absolute import of a pts class or module
+        elif splitted[1].startswith("pts"):
 
-        for name in imported:
-            module_path = which_module(subpackage_dir, name)
-            if debug: print(subpackage_dir, name, ":", module_path)
-            if module_path is not None:
-                if fs.strip_extension(fs.name(module_path)) == name: which[module_path] = None
-                else: which[module_path].add(name)
-            else: unresolved.append((subpackage_dir, name))
+            parts = splitted[1].split(".")[1:]
 
-    # MPL toolkits
-    elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
+            subpackage_dir = pts_package_dir
+            for part in parts:
+                subpackage_dir = fs.join(subpackage_dir, part)
 
-    # Pylab
-    elif splitted[1].startswith("pylab"): pass # skip pylab
+            for name in imported:
+                #print(name)
+                module_path = which_module(subpackage_dir, name)
+                #print(module_path)
+                if debug: print(subpackage_dir, name, ":", module_path)
+                if module_path is not None:
+                    if fs.strip_extension(fs.name(module_path)) == name: which[module_path] = None
+                    else: which[module_path].add(name)
+                else: unresolved.append((subpackage_dir, name))
 
-    # External module
+        # MPL toolkits
+        elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
+
+        # Pylab
+        elif splitted[1].startswith("pylab"): pass # skip pylab
+
+        # External module
+        else:
+
+            # Get the name of the module
+            module = splitted[1].split(".")[0]
+
+            imported_names = []
+            if len(splitted) > 2 and splitted[2] == "import":
+                for name in imported: imported_names.append(name)
+            else: imported_names = ["__init__"]
+
+            for name in imported_names: which[module].add(name)
+
     else:
 
-        # Get the name of the module
-        module = splitted[1].split(".")[0]
-
-        imported_names = []
-        if len(splitted) > 2 and splitted[2] == "import":
-            for name in imported: imported_names.append(name)
-        else: imported_names = ["__init__"]
-
-        for name in imported_names: which[module].add(name)
+        which = defaultdict(set)
+        for name in multiple: which[name].add("__init__")
 
     # Return the list of modules
     if return_unresolved: return which, unresolved

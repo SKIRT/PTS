@@ -129,6 +129,17 @@ def timestamp():
 
 # -----------------------------------------------------------------
 
+def filename_timestamp():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")
+
+# -----------------------------------------------------------------
+
 def day_and_time_as_string():
 
     """
@@ -154,11 +165,11 @@ def unique_name(name=None, separator="_", precision="milli"):
     elif precision == "micro" or precision == "microsecond": ndigits = 0
     else: raise ValueError("Invalid precision")
 
-    if name is None: return strip_last_digits(datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f"), ndigits)
+    if name is None: return strip_last_digits(filename_timestamp(), ndigits)
     else:
 
         # Add a timestamp accurate up to the millisecond to the passed name
-        return name + separator + strip_last_digits(datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f"), ndigits)
+        return name + separator + strip_last_digits(filename_timestamp(), ndigits)
 
 # -----------------------------------------------------------------
 

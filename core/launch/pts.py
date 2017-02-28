@@ -22,6 +22,52 @@ from ..tools import introspection
 from ..tools.logging import log
 from ..basics.configuration import ConfigurationDefinition, DictConfigurationSetter
 from ..tools import filesystem as fs
+from ..basics.task import Task
+from ...do.commandline import start_target
+
+# -----------------------------------------------------------------
+
+def launch_local(pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None):
+
+    """
+    This function ...
+    :param pts_command:
+    :param config_dict:
+    :param input_dict:
+    :param analysers:
+    :param analysis_info:
+    :return:
+    """
+
+    # Resolve the PTS command
+    subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(pts_command)
+
+    # Create the configuration
+    config = create_configuration(command_name, class_name, configuration_module_path, config_dict, input_dict, description)
+
+    # Get the class
+    cls = introspection.get_class(class_module_path, class_name)
+
+    # Create the class instance, configure it with the configuration settings
+    inst = cls(config)
+
+    # Start
+    start_target(command_name, inst.run)
+
+    # Exact command name
+    exact_command_name = subproject + "/" + command_name
+
+    # Create task
+    task = Task(exact_command_name, config.to_string())
+
+    # Set analysis info
+    task.analysis_info = analysis_info
+
+    # Set analysers
+    for analyser_class in analysers: task.add_analyser(analyser_class)
+
+    # Do the analysis
+    task.analyse()
 
 # -----------------------------------------------------------------
 
@@ -121,6 +167,48 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
+    def run_and_analyse(self, pts_command, config_dict, local_output_path, analysers, analysis_info):
+
+        """
+        This function ...
+        :param pts_command:
+        :param config_dict:
+        :param local_output_path:
+        :param analysers:
+        :param analysis_info:
+        :return:
+        """
+
+        # Run attached
+        config = self.run_attached(pts_command, config_dict, return_config=True)
+
+        # Create a new Task object
+        task = Task(pts_command, config.to_string())
+
+        # Set the host ID and cluster name (if applicable)
+        task.host_id = self.host_id
+        task.cluster_name = None
+
+        # Generate a new task ID
+        task_id = self.remote._new_task_id()
+
+        # Set properties such as the task ID and name and the screen name
+        task.id = task_id
+
+        # Set local and remote output path
+        task.local_output_path = local_output_path
+
+        # Set analysis info
+        task.analysis_info = analysis_info
+
+        # Set analysers
+        for analyser_class in analysers: task.add_analyser(analyser_class)
+
+        # Analyse
+        task.analyse()
+
+    # -----------------------------------------------------------------
+
     def run_attached(self, pts_command, config_dict, input_dict=None, return_output_names=None, unpack=False, return_config=False):
 
         """
@@ -147,12 +235,13 @@ class PTSRemoteLauncher(object):
         log.info("Running in attached mode ...")
 
         # START REMOTE PYTHON SESSION
-        python = self.remote.start_python_session(output_path=remote_temp_path)
+        #python = self.remote.start_python_session(output_path=remote_temp_path)
+        python = self.remote.start_python_session(output_path=remote_temp_path, attached=True)
 
         # Import the class from which to make an instance
-        python.import_package("importlib")
-        python.send_line("module = importlib.import_module('" + class_module_path + "')")  # get the module of the class
-        python.send_line("cls = getattr(module, '" + class_name + "')")  # get the class
+        python.import_package("importlib", show_output=log.is_debug())
+        python.send_line("module = importlib.import_module('" + class_module_path + "')", show_output=log.is_debug())  # get the module of the class
+        python.send_line("cls = getattr(module, '" + class_name + "')", show_output=log.is_debug())  # get the class
 
         # Inform the user
         log.start("Starting " + exact_command_name + " ...")
@@ -179,7 +268,7 @@ class PTSRemoteLauncher(object):
 
         # Upload the config file
         remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
-        self.remote.upload(temp_conf_path, remote_temp_path)
+        self.remote.upload(temp_conf_path, remote_temp_path, show_output=log.is_debug())
 
         # Remove the original config file
         fs.remove_file(temp_conf_path)
@@ -210,12 +299,10 @@ class PTSRemoteLauncher(object):
             #### UPLOAD THE INPUT :
 
             # Upload the input files
-            self.remote.upload(local_input_filepaths, remote_temp_path)
+            self.remote.upload(local_input_filepaths, remote_temp_path, show_output=log.is_debug())
 
             ### LOAD THE INPUT DICT REMOTELY
-
-            python.send_line("input_dict = dict()")
-
+            python.send_line("input_dict = dict()", show_output=log.is_debug())
             for name in input_dict:
 
                 # Determine the remote filepath
@@ -226,21 +313,21 @@ class PTSRemoteLauncher(object):
 
                 modulepath, classname = classpath.rsplit(".", 1)
 
-                python.send_line("input_module = importlib.import_module('" + modulepath + "')")  # get the module of the class
-                python.send_line("input_cls = getattr(input_module, '" + classname + "')")  # get the class
+                python.send_line("input_module = importlib.import_module('" + modulepath + "')", show_output=log.is_debug())  # get the module of the class
+                python.send_line("input_cls = getattr(input_module, '" + classname + "')", show_output=log.is_debug())  # get the class
 
                 # Open the input file
                 python.send_line("input_dict['" + name + "'] = input_cls.from_file('" + remote_filepath + "')", show_output=True)
         ###
 
         # Import the Configuration class remotely
-        python.import_package("Configuration", from_name="pts.core.basics.configuration")
+        python.import_package("Configuration", from_name="pts.core.basics.configuration", show_output=log.is_debug())
 
         # Load the config into the remote python session
-        python.send_line("config = Configuration.from_file('" + remote_conf_path + "')")
+        python.send_line("config = Configuration.from_file('" + remote_conf_path + "')", show_output=log.is_debug())
 
         # Create the class instance, configure it with the configuration settings
-        python.send_line("inst = cls(config)")
+        python.send_line("inst = cls(config)", show_output=log.is_debug())
 
         # Run the instance
         if input_dict is not None: python.send_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
@@ -254,7 +341,7 @@ class PTSRemoteLauncher(object):
             output_list = []
 
             # Fill in the values in the dict
-            for name in return_output_names: output_list.append(python.get_simple_property("inst", name))
+            for name in return_output_names: output_list.append(python.get_simple_property("inst", name, show_output=log.is_debug()))
 
         ######
 
@@ -289,33 +376,8 @@ class PTSRemoteLauncher(object):
         # Resolve the PTS command
         subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(pts_command)
 
-        ## GET THE CONFIGURATION DEFINITION
-
-        try:
-            configuration_module = importlib.import_module(configuration_module_path)
-            definition = getattr(configuration_module, "definition")
-        except ImportError:
-            log.warning("No configuration definition found for the " + class_name + " class")
-            definition = ConfigurationDefinition()  # Create new configuration definition
-
-        ## SET THE INPUT FILENAMES
-
-        if input_dict is not None:
-
-            config_dict["input"] = dict()
-            for name in input_dict:
-                config_dict["input"] = name + "." + input_dict[name].default_extension  # generate a default filename
-
-        ## CREATE THE CONFIGURATION
-
-        # Create the configuration setter
-        if config_dict is None: config_dict = dict()  # no problem if all options are optional
-        setter = DictConfigurationSetter(config_dict, command_name, description)
-
-        # Create the configuration from the definition and from the provided configuration dictionary
-        config = setter.run(definition)
-
-        ###
+        # Create the configuration
+        config = create_configuration(command_name, class_name, configuration_module_path, config_dict, input_dict, description)
 
         # Exact command name
         exact_command_name = subproject + "/" + command_name
@@ -376,5 +438,48 @@ def find_match(pts_command):
 
     # Return
     return subproject, command_name, description, class_name, module_path, configuration_module_path, configuration_method_table
+
+# -----------------------------------------------------------------
+
+def create_configuration(command_name, class_name, configuration_module_path, config_dict, input_dict=None, description=None):
+
+    """
+    This function ...
+    :param command_name:
+    :param class_name:
+    :param configuration_module_path:
+    :param config_dict:
+    :param input_dict:
+    :param description:
+    :return:
+    """
+
+    # Find definition
+    try:
+        configuration_module = importlib.import_module(configuration_module_path)
+        definition = getattr(configuration_module, "definition")
+    except ImportError:
+        log.warning("No configuration definition found for the " + class_name + " class")
+        definition = ConfigurationDefinition()  # Create new configuration definition
+
+    ## SET THE INPUT FILENAMES
+
+    if input_dict is not None:
+
+        config_dict["input"] = dict()
+        for name in input_dict:
+            config_dict["input"] = name + "." + input_dict[name].default_extension  # generate a default filename
+
+    ## CREATE THE CONFIGURATION
+
+    # Create the configuration setter
+    if config_dict is None: config_dict = dict()  # no problem if all options are optional
+    setter = DictConfigurationSetter(config_dict, command_name, description)
+
+    # Create the configuration from the definition and from the provided configuration dictionary
+    config = setter.run(definition)
+
+    # Return the configuration
+    return config
 
 # -----------------------------------------------------------------

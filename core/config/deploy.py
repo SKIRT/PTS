@@ -30,7 +30,7 @@ definition.add_flag("pts", "deploy PTS", True)
 definition.add_flag("check", "check versions after deployment", True)
 definition.add_flag("one_attempt", "only perform one attempt at connecting to a remote")
 
-definition.add_flag("update_dependencies", "update the dependencies if possible", False)
+definition.add_flag("update_dependencies", "update the dependencies if possible", True)
 
 # Add optional
 definition.add_optional("pts_on", "string_list", "hosts on which PTS should be installed (None means all)", choices=find_host_ids())

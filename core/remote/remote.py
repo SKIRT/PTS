@@ -35,7 +35,7 @@ from ..tools import time
 from ..basics.task import Task
 from ..tools import introspection
 from ..tools.introspection import possible_cpp_compilers, possible_mpi_compilers, possible_mpirun_names
-from .python import RemotePythonSession
+from .python import AttachedPythonSession, DetachedPythonSession
 from ..basics.unit import parse_unit as u
 from ..basics.map import Map
 from ..tools import strings
@@ -421,7 +421,16 @@ class Remote(object):
         :return:
         """
 
-        self.execute("module load " + module_name, show_output=show_output)
+        output = self.execute("module load " + module_name, show_output=show_output)
+
+        # Look for errors
+        for line in output:
+            if "Lmod has detected the following error" in line:
+                error_message = line.split("error:").strip()
+                if "see output of 'ml'" in error_message:
+                    error_message.replace("(see output of 'ml')", "")
+                    error_message += " Loaded modules: " + ", ".join(self.loaded_modules)
+                raise RuntimeError(error_message)
 
     # -----------------------------------------------------------------
 
@@ -582,7 +591,8 @@ class Remote(object):
         :return:
         """
 
-        output = self.execute("module list")
+        #output = self.execute("module list")
+        output = self.execute("ml")
 
         modules = []
 
@@ -1774,6 +1784,7 @@ class Remote(object):
         :return:
         """
 
+        if not self.is_executable("tmux"): return []
         output = self.execute("tmux ls")
         return output
 
@@ -2020,7 +2031,26 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download_from_url_to(self, url, filepath, show_output=True, overwrite=False):
+    def download_from_url_to(self, url, path, show_output=True, overwrite=False):
+
+        """
+        This function ...
+        :param url:
+        :param path:
+        :param show_output:
+        :param overwrite:
+        :return:
+        """
+
+        # Download to directory of file path
+        if self.is_directory(path): return self.download_from_url_to_directory(url, path, show_output, overwrite)
+        else:
+            self.download_from_url_to_file(url, path, show_output, overwrite)
+            return path
+
+    # -----------------------------------------------------------------
+
+    def download_from_url_to_file(self, url, filepath, show_output=True, overwrite=False):
 
         """
         This function ...
@@ -2033,29 +2063,41 @@ class Remote(object):
 
         # Is an existing file
         if self.is_file(filepath):
-
             if overwrite: self.remove_file(filepath)
             else: raise IOError("File already exists: " + filepath)
 
-        # Is a directory
-        if self.is_directory(filepath):
+        # Execute the download command
+        command = "wget " + url + " -O " + filepath
+        self.execute(command, show_output=show_output)
 
-            command = "wget " + url
-            self.execute(command, show_output=show_output, cwd=filepath)
+        # Check
+        if not self.is_file(filepath): raise RuntimeError("Something went wrong downloading the file '" + url + "' to '" + filepath + "'")
 
-            # Determine the path of the downloaded file
-            filename = fs.name(url)
-            filepath = fs.join(filepath, filename)
-            if not self.is_file(filepath): raise RuntimeError("Something went wrong downloading the file '" + url + "' to '" + filepath + "'")
+    # -----------------------------------------------------------------
 
-        # Otherwise: assume it is a new file
-        else:
+    def download_from_url_to_directory(self, url, path, show_output=True, overwrite=False):
 
-            # Execute the download command
-            command = "wget " + url + " -O " + filepath
-            self.execute(command, show_output=show_output)
+        """
+        This function ...
+        :param url:
+        :param path:
+        :param show_output:
+        :param overwrite:
+        :return:
+        """
 
-        # Return the file path
+        # Determine the path of the downloaded file
+        filename = fs.name(url)
+        filepath = fs.join(path, filename)
+
+        # If is already a file
+        if self.is_file(filepath):
+            filepath = fs.join(path, time.filename_timestamp() + "_" + filename)
+
+        # Download to file path
+        self.download_from_url_to_file(url, filepath, show_output=show_output, overwrite=overwrite)
+
+        # Return the filepath
         return filepath
 
     # -----------------------------------------------------------------
@@ -2484,31 +2526,34 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def start_python_session(self, assume_pts=True, output_path=None):
+    def start_python_session(self, assume_pts=True, output_path=None, attached=False):
 
         """
         This function ...
         :param assume_pts: assume PTS is present, import some basic PTS tools
         :param output_path:
+        :param attached:
         :return:
         """
 
         # Start python session and return it
-        return RemotePythonSession(self, assume_pts=assume_pts, output_path=output_path)
+        if attached: return AttachedPythonSession(self, assume_pts=assume_pts, output_path=output_path)
+        else: return DetachedPythonSession(self, assume_pts=assume_pts, output_path=output_path)
 
     # -----------------------------------------------------------------
 
-    def execute_python_interactive(self, lines, output_path=None):
+    def execute_python_interactive(self, lines, output_path=None, attached=False):
 
         """
         This function ...
         :param lines:
         :param output_path:
+        :param attached:
         :return:
         """
 
         # Create python session
-        python = self.start_python_session(output_path=output_path)
+        python = self.start_python_session(output_path=output_path, attached=attached)
 
         # Execute the lines
         output = python.send_lines(lines)
@@ -2577,11 +2622,12 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def remove_file(self, path):
+    def remove_file(self, path, show_output=False):
 
         """
         This function ...
         :param path:
+        :param show_output:
         :return:
         """
 
@@ -2589,7 +2635,7 @@ class Remote(object):
         self.debug("Removing file '" + path + "' ...")
 
         # Execute the command
-        self.execute("rm " + path, output=False)
+        self.execute("rm " + path, output=False, show_output=show_output)
 
     # -----------------------------------------------------------------
 
@@ -2817,12 +2863,13 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def decompress_directory_in_place(self, filepath, remove=False):
+    def decompress_directory_in_place(self, filepath, remove=False, show_output=False):
 
         """
         This function ...
         :param filepath:
         :param remove:
+        :param show_output:
         :return:
         """
 
@@ -2842,18 +2889,22 @@ class Remote(object):
             self.debug("New path: '" + new_path + "'")
             self.debug("Decompressing in directory '" + dir_path + "' ...")
 
+            dir_path = fs.join(dir_path, filepath.split(".tar.gz")[0])
+            self.create_directory(dir_path)
+
             # Decompress
-            command = "tar -zxvf " + filepath + " --directory " + dir_path
+            #command = "tar -zxvf " + filepath + " --directory " + dir_path
+            command = "tar -zxvf " + filepath + " -C " + dir_path + " --strip-components=1"
             log.debug("Decompress command: '" + command + "'")
 
             # Execute the command
-            self.execute(command)
+            self.execute(command, show_output=show_output)
 
         # Not implemented
         else: raise NotImplementedError("Not implemented yet")
 
         # Remove the file
-        if remove: self.remove_file(filepath)
+        if remove: self.remove_file(filepath, show_output=show_output)
 
         # Return the new path
         return new_path

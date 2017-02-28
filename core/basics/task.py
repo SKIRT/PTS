@@ -180,6 +180,31 @@ class Task(object):
 
     # -----------------------------------------------------------------
 
+    def analyse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the analyser classes that are defined for this task
+        for analyser_class in self.analyser_classes:
+
+            # Create an instance of the analyser class
+            analyser = analyser_class.for_task(self)
+
+            # Run the analyser
+            analyser.run()
+
+        # Set analysed flag to True
+        self.analysed = True
+        self.save()
+
+        # Remove the local output if requested
+        if self.remove_local_output: fs.remove_directory(self.local_output_path)
+
+    # -----------------------------------------------------------------
+
     def remove_from_remote(self, remote, full=False):
 
         """

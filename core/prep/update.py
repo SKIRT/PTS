@@ -29,6 +29,7 @@ from ..tools import terminal
 from ..tools import filesystem as fs
 from ..remote.modules import Modules
 from ..tools import conda
+from .installation import montage_url
 
 # -----------------------------------------------------------------
 
@@ -693,6 +694,9 @@ class PTSUpdater(Updater):
         self.conda_environment = None
         self.python_version = None
 
+        # Path to the Montage executable
+        self.montage_path = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -704,6 +708,18 @@ class PTSUpdater(Updater):
         """
 
         return self.conda_main_executable_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_montage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.montage_path is not None
 
     # -----------------------------------------------------------------
 
@@ -731,7 +747,7 @@ class PTSUpdater(Updater):
         else: self.set_environment_paths_local()
 
         # 4. Update conda
-        if self.config.dependencies: self.update_conda_local()
+        if self.config.conda: self.update_conda_local()
 
         # 5. Update the dependencies
         if self.config.dependencies: self.update_dependencies_local()
@@ -849,6 +865,12 @@ class PTSUpdater(Updater):
         # 1. Pull
         self.pull_remote()
 
+        # Check Montage
+        self.check_montage()
+
+        # Get Montage
+        if not self.has_montage: self.get_montage()
+
         # 2. Check conda, get paths
         self.check_conda_remote()
 
@@ -860,7 +882,7 @@ class PTSUpdater(Updater):
         else: self.set_environment_paths_remote()
 
         # 3. Update conda
-        if self.config.dependencies: self.update_conda_remote()
+        if self.config.conda: self.update_conda_remote()
 
         # 4. Update the dependencies
         if self.config.dependencies: self.update_dependencies_remote()
@@ -924,7 +946,59 @@ class PTSUpdater(Updater):
         self.git_version = git.get_short_git_version(self.remote.pts_package_path, self.remote)
 
         # Success
-        log.success("PTS was successfully updated on remote host " + self.remote.host_id)
+        #log.success("PTS was successfully updated on remote host " + self.remote.host_id)
+
+    # -----------------------------------------------------------------
+
+    def check_montage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of Montage ...")
+
+        # Look for Montage
+        executable_path = self.remote.find_executable("mArchiveGet")
+        if executable_path is not None: self.montage_path = fs.directory_of(executable_path)
+
+        # Debugging
+        if executable_path is not None: log.debug("Montage installation found in '" + self.montage_path + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_montage(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting Montage on the remote host ...")
+
+        # Download the tar.gz file
+        filepath = self.remote.download_from_url_to(montage_url, self.remote.home_directory, show_output=log.is_debug())
+
+        # Extract the file
+        montage_path = self.remote.decompress_directory_in_place(filepath, show_output=log.is_debug(), remove=True)
+
+        # Determine the path to the montage source code directory
+        #montage_montage_path = fs.join(montage_path, "Montage")
+
+        #self.remote.execute("./configure", cwd=montage_montage_path, show_output=log.is_debug())
+
+        # Compile
+        self.remote.execute("make", cwd=montage_path, show_output=log.is_debug())
+
+        montage_bin_path = fs.join(montage_path, "bin")
+        #montage_exec_path = fs.join(montage_bin_path, "montage")
+        self.montage_path = montage_bin_path
+
+        # Add to path
+        self.remote.add_to_path_variable(montage_bin_path, in_shell=True)
 
     # -----------------------------------------------------------------
 

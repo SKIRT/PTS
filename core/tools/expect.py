@@ -1567,7 +1567,7 @@ class spawn(object):
         window size to change when the parent's window size changes then do
         something like the following example::
 
-            import pexpect, struct, fcntl, termios, signal, sys
+            #import pexpect, struct, fcntl, termios, signal, sys
             def sigwinch_passthrough (sig, data):
                 s = struct.pack("HHHH", 0, 0, 0, 0)
                 a = struct.unpack('hhhh', fcntl.ioctl(sys.stdout.fileno(),
