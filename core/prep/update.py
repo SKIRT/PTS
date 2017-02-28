@@ -1125,7 +1125,7 @@ class PTSUpdater(Updater):
         # Install PTS dependencies
         # conda_path="conda", pip_path="pip", python_path="python",
         # easy_install_path="easy_install", conda_environment=None
-        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.conda_executable_path,
+        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.remote.pts_package_path, self.conda_executable_path,
                                                                                   self.conda_pip_path, self.conda_python_path,
                                                                                   self.conda_easy_install_path, self.conda_environment, conda_activate_path=self.conda_activate_path)
 

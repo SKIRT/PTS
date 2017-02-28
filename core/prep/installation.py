@@ -1856,7 +1856,7 @@ class PTSInstaller(Installer):
         log.info("Getting the PTS dependencies on the remote host ...")
 
         # Install PTS dependencies
-        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path,
+        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.pts_package_path, conda_path=self.conda_executable_path, pip_path=self.conda_pip_path,
                                     python_path=self.conda_python_path, easy_install_path=self.conda_easy_install_path,
                                     conda_environment=self.config.python_name, conda_activate_path=self.conda_activate_path)
 
@@ -2204,12 +2204,13 @@ def find_qmake():
 
 # -----------------------------------------------------------------
 
-def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", python_path="python",
+def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pip_path="pip", python_path="python",
                                 easy_install_path="easy_install", conda_environment=None, conda_activate_path="activate"):
 
     """
     This fucntion ...
     :param remote:
+    :param pts_package_path:
     :param conda_path:
     :param pip_path:
     :param python_path:
@@ -2260,9 +2261,17 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
 
     # Use the introspection module on the remote end to get the dependencies and installed python packages
     screen_output_path = remote.create_directory_in(remote.pts_temp_path, time.unique_name("installation"))
-    session = remote.start_python_session(output_path=screen_output_path)
-    session.import_package("introspection", from_name="pts.core.tools")
-    dependencies = session.get_simple_property("introspection", "get_all_dependencies().keys()")
+    #session = remote.start_python_session(output_path=screen_output_path)
+    #session.import_package("introspection", from_name="pts.core.tools")
+    #dependencies = session.get_simple_property("introspection", "get_all_dependencies().keys()")
+
+    # Get list of dependencies on the remote host
+    dependencies_script_path = fs.join(pts_package_path, "dependencies.py")
+    dependencies = remote.execute("python " + dependencies_script_path)
+
+    # Debugging
+    log.debug("Dependencies:")
+    for package in dependencies: log.debug(" - " + package)
 
     #packages = session.get_simple_property("introspection", "installed_python_packages()")
     packages = []
@@ -2287,7 +2296,7 @@ def get_pts_dependencies_remote(remote, conda_path="conda", pip_path="pip", pyth
                                                                                 remote=remote)
 
     # Stop the python session
-    del session
+    #del session
 
     # Install
     for module in installation_commands:

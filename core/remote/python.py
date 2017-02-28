@@ -198,7 +198,7 @@ class RemotePythonSession(object):
     # -----------------------------------------------------------------
 
     @abstractmethod
-    def get_simple_variable(self):
+    def get_simple_variable(self, name, show_output=False):
 
         """
         This function ...
@@ -913,6 +913,10 @@ class DetachedPythonSession(RemotePythonSession):
         # Set attached flag
         self.attached = True
 
+        # Set displayhook to default
+        #self.send_line("sys.displayhook = sys.__displayhook__")
+        self.remote.execute("sys.displayhook = sys.__displayhook__", expect=">>>")
+
     # -----------------------------------------------------------------
 
     def detach(self):
@@ -927,6 +931,10 @@ class DetachedPythonSession(RemotePythonSession):
 
         # Check
         if not self.attached: log.warning("Not attached")
+
+        # Set displayhook back to custom function
+        #self.send_line("sys.displayhook = my_display")
+        self.remote.execute("sys.displayhook = my_display", expect=">>>")
 
         # Tmux
         if self.tmux:
@@ -950,37 +958,31 @@ class DetachedPythonSession(RemotePythonSession):
 
     # -----------------------------------------------------------------
 
-    def get_simple_variable(self, name, show_output=False):
+    def get_simple_variable(self, name, show_output=False, max_attempts=4):
 
         """
         This function ...
         :param name:
         :param show_output:
+        :param read_attempts:
         :return:
         """
 
-        # Marker
-        self.send_line("'[PTS]'")
+        if show_output:
 
-        # Spit out the value of the variable with name 'name'
-        self.send_line(name, show_output=show_output)
+            output = self.send_line(name)
+            print(output)
 
-        # Wait for some time
-        time.wait(10)
+        else:
 
-        # Get output
-        lines = []
-        for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
-            #print("LINE", line)
-            if line == "[PTS]": break
-            lines.append(line)
-        lines.reverse()
+            # Marker
+            self.send_line("'[PTS]'")
 
-        #print("1", lines)
+            # Spit out the value of the variable with name 'name'
+            self.send_line(name)
 
-        if len(lines) == 0 or lines[0] == "":
-
-            time.wait(15)
+            # Wait for some time
+            time.wait(10)
 
             # Get output
             lines = []
@@ -990,32 +992,54 @@ class DetachedPythonSession(RemotePythonSession):
                 lines.append(line)
             lines.reverse()
 
-        #print("2", lines)
+            #print("1", lines)
 
-        if len(lines) == 0 or lines[0] == "":
+            attempts = 1
+            while (len(lines) == 0 or lines[0] == "") and attempts <= max_attempts:
 
-            print("NAME", name)
-            after = []
-            # Get output from screen output file
-            screenlog_lines_reversed = list(self.remote.read_lines_reversed(self.screenlog_path))
-            for index in range(len(screenlog_lines_reversed)):
-                #print("LINE", line)
-                #print(line, ">>> " + name)
-                line = screenlog_lines_reversed[index]
-                print(line)
-                if ">>> " + name in line:
-                    after = screenlog_lines_reversed[1:index]
-                    break
+                time.wait(15)
 
-            after.reverse()
+                # Get output
+                lines = []
+                for line in self.remote.read_lines_reversed(self.out_pipe_filepath):
+                    #print("LINE", line)
+                    if line == "[PTS]": break
+                    lines.append(line)
+                lines.reverse()
 
-            for line in after:
-                if "Traceback (most recent call last)" in line: raise RuntimeError(after[-1])
+                # Increment the number of attempts
+                attempts += 1
 
-            lines = after
+            #print("2", lines)
 
-        # Return the value
-        return eval(lines[0])
+            # LOOK FOR AN ERROR
+            if len(lines) == 0 or lines[0] == "":
+
+                # LOOK FOR ERRORS
+                #print("NAME", name)
+                after = []
+                # Get output from screen output file
+                screenlog_lines_reversed = list(self.remote.read_lines_reversed(self.screenlog_path))
+                for index in range(len(screenlog_lines_reversed)):
+                    #print("LINE", line)
+                    #print(line, ">>> " + name)
+                    line = screenlog_lines_reversed[index]
+                    #print(line)
+                    if ">>> " + name in line:
+                        after = screenlog_lines_reversed[1:index]
+                        break
+
+                after.reverse()
+
+                for line in after:
+                    if "Traceback (most recent call last)" in line: raise RuntimeError(after[-1])
+
+                else: raise RuntimeError("Could not determine the value of '" + name)
+
+                #lines = after
+
+            # Return the value
+            return eval(lines[0])
 
     # -----------------------------------------------------------------
 
@@ -1048,10 +1072,13 @@ class DetachedPythonSession(RemotePythonSession):
         self.attach()
 
         # Send the line, show output since that is the reason we executed in attached mode
-        self.remote.execute(line, timeout=timeout, show_output=True, expect=">>>")
+        output = self.remote.execute(line, timeout=timeout, show_output=True, expect=">>>")
 
         # Detach again
         self.detach()
+
+        # Return the output
+        return output
 
     # -----------------------------------------------------------------
 

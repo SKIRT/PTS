@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.modeling.decomposition.imfit Contains the ImfitDecomposer class.
+#
 # Code for astronomically useful functions -- especially functions dealing
 # with surface-brightness or similar (e.g., spectroscopic) profiles.
 #
@@ -18,6 +27,9 @@
 # By default, *all* functions take a positional value (x0) as their first
 # parameter, even if they ignore it.
 
+# -----------------------------------------------------------------
+
+# Import standard modules
 import math
 import numpy as np
 try:
@@ -26,6 +38,8 @@ try:
 except ImportError:
 	from scipy.special import kv as BesselK
 	from scipy.special import gamma as Gamma
+
+# -----------------------------------------------------------------
 
 # Parameters for Sersic b_n approximations:
 a0 = 0.3333333333333333
@@ -40,8 +54,9 @@ a2_m03 = 10.95
 a3_m03 = -19.67
 a4_m03 = 13.43
 
-
+# -----------------------------------------------------------------
 # auxiliary functions used by other functions
+# -----------------------------------------------------------------
 
 def b_n( n ):
 	"""Calculate the b_n parameter of a Sersic function for the given
@@ -61,9 +76,9 @@ def b_n( n ):
 		bn = a0_m03 + a1_m03*n + a2_m03*n2 + a3_m03*n2*n + a4_m03*n2*n2
 	return bn
 
-
-
+# -----------------------------------------------------------------
 # Here begins the main set of imfit-compatible functions
+# -----------------------------------------------------------------
 
 def Moffat( r, params, mag=True, magOutput=True ):
 	"""Compute intensity at radius r for a Moffat profile, given the specified
@@ -96,7 +111,7 @@ def Moffat( r, params, mag=True, magOutput=True ):
 	else:
 		return I
 
-
+# -----------------------------------------------------------------
 
 def Sersic( r, params, mag=True, magOutput=True ):
 	"""Compute intensity at radius r for a Sersic profile, given the specified
@@ -127,6 +142,7 @@ def Sersic( r, params, mag=True, magOutput=True ):
 	else:
 		return I
 
+# -----------------------------------------------------------------
 
 def Exponential( r, params, mag=True, magOutput=True ):
 	"""Compute intensity at radius r for an exponential profile, given the specified
@@ -155,6 +171,7 @@ def Exponential( r, params, mag=True, magOutput=True ):
 	else:
 		return I
 
+# -----------------------------------------------------------------
 
 def BrokenExp( r, params, mag=True, magOutput=True ):
 	"""Calculate the value of a broken exponential function at r, given a
@@ -224,6 +241,7 @@ def BrokenExp( r, params, mag=True, magOutput=True ):
 	else:
 		return I
 
+# -----------------------------------------------------------------
 
 def Sech( r, params, mag=True, magOutput=True ):
 	"""Compute intensity at radius r for a sech profile, given the specified
@@ -253,6 +271,7 @@ def Sech( r, params, mag=True, magOutput=True ):
 	else:
 		return I
 
+# -----------------------------------------------------------------
 
 def Sech2( r, params, mag=True, magOutput=True ):
 	"""Compute intensity at radius r for a sech^2 profile, given the specified
@@ -282,7 +301,7 @@ def Sech2( r, params, mag=True, magOutput=True ):
 	else:
 		return I
 
-
+# -----------------------------------------------------------------
 
 def vdKSech( r, params, mag=True, magOutput=True ):
 	"""Compute intensity at radius r [= vertical height z in the case of off-plane
@@ -318,7 +337,7 @@ def vdKSech( r, params, mag=True, magOutput=True ):
 	else:
 		return I
 
-
+# -----------------------------------------------------------------
 
 def Gauss( x, params, mag=True, magOutput=True ):
 	"""Compute surface brightness for a profile consisting of a Gaussian,
@@ -344,7 +363,7 @@ def Gauss( x, params, mag=True, magOutput=True ):
 	else:
 		return I_gauss
 
-
+# -----------------------------------------------------------------
 
 def GaussRing( x, params, mag=True, magOutput=True ):
 	"""Compute surface brightness for a profile consisting of a Gaussian,
@@ -373,7 +392,7 @@ def GaussRing( x, params, mag=True, magOutput=True ):
 	else:
 		return I_gauss
 
-
+# -----------------------------------------------------------------
 
 def Gauss2Side( x, params, mag=True, magOutput=True ):
 	"""Compute surface brightness for a profile consisting of an asymmetric
@@ -417,7 +436,7 @@ def Gauss2Side( x, params, mag=True, magOutput=True ):
 	else:
 		return I_gauss
 
-
+# -----------------------------------------------------------------
 
 def GaussRing2Side( x, params, mag=True, magOutput=True ):
 	"""Compute surface brightness for a profile consisting of an asymmetric
@@ -465,12 +484,13 @@ def GaussRing2Side( x, params, mag=True, magOutput=True ):
 	else:
 		return I_gauss
 
-
-
+# -----------------------------------------------------------------
 # Some alternate functions, which do not necessarily follow the rules for
 # the imfit-compatible functions given above.
+# -----------------------------------------------------------------
 
 def ExpMag( x, params ):
+
 	"""Compute surface brightness for a profile consisting of an exponential,
 	given input parameters in vector params:
 		params[0] = mu_0
@@ -482,6 +502,7 @@ def ExpMag( x, params ):
 	
 	return mu_0 + 1.085736*(x/h)
 
+# -----------------------------------------------------------------
 
 def vdKBessel( r, mu00, h ):
 	"""Implements the f(r) part of van der Kruit & Searle's (1981) edge-on
@@ -493,7 +514,8 @@ def vdKBessel( r, mu00, h ):
 	else:
 #		return mu00 * (r/h) * mpmath.besselk(1, r/h)
 		return mu00 * (r/h) * BesselK(1, r/h)
-		
+
+# -----------------------------------------------------------------
 	
 def EdgeOnDisk(rr, p):
 	
@@ -507,7 +529,7 @@ def EdgeOnDisk(rr, p):
 		I = vdKBessel(rr, mu00, h)
 	return I
 
-
+# -----------------------------------------------------------------
 
 # Total magnitudes, assuming that inputs are in units of
 # counts/pixel and dimensions are in pixels
@@ -525,6 +547,7 @@ def TotalMagExp( params, zeroPoint=0, magOut=True, ell=0.0 ):
 	else:
 		return totalFlux
 
+# -----------------------------------------------------------------
 
 def TotalMagSersic( params, zeroPoint=0, magOut=True, ell=0.0 ):
 	"""Calculate the total magnitude (or flux if magOut=False) for a
@@ -545,3 +568,4 @@ def TotalMagSersic( params, zeroPoint=0, magOut=True, ell=0.0 ):
 	else:
 		return totalFlux
 
+# -----------------------------------------------------------------

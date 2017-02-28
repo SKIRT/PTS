@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.install Install PTS after obtaining the source code.
+## \package pts.dependencies Print each PTS dependency
 
 # -----------------------------------------------------------------
 
@@ -13,14 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from core.prep.installation import PTSInstaller
+from core.tools import introspection
 
 # -----------------------------------------------------------------
 
-# Create the PTS installer
-installer = PTSInstaller()
-
-# Run the installer
-installer.run()
+# Print each dependency on a seperate line
+for package in introspection.get_all_dependencies(): print(package)
 
 # -----------------------------------------------------------------

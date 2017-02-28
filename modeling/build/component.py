@@ -33,7 +33,7 @@ class BuildComponent(GalaxyModelingComponent):
         """
 
         # Call the constructor of the base class
-        super(PhotometryComponent, self).__init__(config)
+        super(BuildComponent, self).__init__(config)
 
     # -----------------------------------------------------------------
 
@@ -45,6 +45,6 @@ class BuildComponent(GalaxyModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(PhotometryComponent, self).setup()
+        super(BuildComponent, self).setup()
  
 # -----------------------------------------------------------------
