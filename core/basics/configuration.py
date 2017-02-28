@@ -48,6 +48,29 @@ related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band
 
 # -----------------------------------------------------------------
 
+def prompt_proceed():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Create definition
+    definition = ConfigurationDefinition(write_config=False)
+    definition.add_flag("proceed", "proceed?", default=None)
+
+    # Create setter
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+
+    # Get the answer
+    while True:
+        config = setter.run(definition, prompt_optional=True)
+        if config.proceed is None:
+            log.warning("Answer with yes (y) or no (n)")
+        else: return config.proceed
+
+# -----------------------------------------------------------------
+
 def create_configuration(definition, command_name, description, configuration_method):
 
     """

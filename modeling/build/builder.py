@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import BuildComponent
 from .dust import DustBuilder
 from .stars import StarsBuilder
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -84,8 +85,11 @@ class ModelBuilder(BuildComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Building the stellar components ...")
+
         # Create the builder
-        builder = StarBuilder()
+        builder = StarsBuilder()
 
         # Run
         builder.run()
@@ -98,6 +102,9 @@ class ModelBuilder(BuildComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Building the dust components ...")
 
         # Create the builder
         builder = DustBuilder()

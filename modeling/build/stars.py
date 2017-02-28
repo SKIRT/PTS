@@ -19,7 +19,7 @@ import math
 from .component import BuildComponent
 from ...core.tools.logging import log
 from ...core.basics.configuration import ConfigurationDefinition
-from ...core.basics.configuration import InteractiveConfigurationSetter
+from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed
 from ...core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
@@ -108,7 +108,7 @@ class StarsBuilder(BuildComponent):
         definition.add_optional("template", "string", "template SED family", default=bulge_template, choices=[bulge_template])
         definition.add_optional("age", "positive_real", "age in Gyr", default=bulge_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=bulge_metallicity)
-        definition.add_optional("fluxdensity", "photometric_quantity", default=fluxdensity)
+        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
 
         # Prompt for the values
         setter = InteractiveConfigurationSetter("bulge")
@@ -204,6 +204,18 @@ class StarsBuilder(BuildComponent):
         # Get the FUV flux density
         fluxdensity = 2. * self.observed_flux(self.fuv_filter, unit="Jy")
 
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_optional("template", "string", "template SED family", default=young_template, choices=[young_template])
+        definition.add_optional("age", "positive_real", "age in Gyr", default=young_age)
+        definition.add_optional("metallicity", "positive_real", "metallicity", default=young_metallicity)
+        definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
+        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
+
+        # Prompt for the values
+        setter = InteractiveConfigurationSetter("young stellar disk")
+        config = setter.run(definition)
+
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
 
@@ -239,6 +251,71 @@ class StarsBuilder(BuildComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Configuring the ionizing stellar component ...")
+
+        # Like M51 and M31
+        # ionizing_metallicity = 0.02
+        ionizing_metallicity = 0.03  # XU KONG et al. 2000
+        ionizing_compactness = 6.
+        ionizing_pressure = 1e12 * u("K/m3")
+        ionizing_covering_factor = 0.2
+
+        # Get the scale height
+        # scale_height = 150 * Unit("pc") # first models
+        scale_height = 100. * u("pc")  # M51
+
+        ## NEW: SET FIXED PARAMETERS
+        #self.fixed["ionizing_scaleheight"] = scale_height
+        #self.fixed["sfr_compactness"] = ionizing_compactness
+        #self.fixed["sfr_covering"] = ionizing_covering_factor
+        #self.fixed["sfr_pressure"] = ionizing_pressure
+        ##
+
+        # Convert the SFR into a FUV luminosity
+        sfr = 0.8  # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        #definition.add_optional("template", "string", "template SED family", default=young_template, choices=[young_template])
+        #definition.add_optional("age", "positive_real", "age in Gyr", default=young_age)
+        definition.add_optional("metallicity", "positive_real", "metallicity", default=ionizing_metallicity)
+        definition.add_optional("compactness", "positive_real", "compactness", default=ionizing_compactness)
+        definition.add_optional("pressure", "quantity", "pressure", default=ionizing_pressure)
+        definition.add_optional("covering_factor", "positive_real", "covering factor", default=ionizing_covering_factor)
+        definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
+        #definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
+        definition.add_optional("sfr", "positive_real", "SFR", default=sfr)
+
+        # Prompt for the values
+        setter = InteractiveConfigurationSetter("ionizing stellar disk")
+        config = setter.run(definition)
+
+        mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
+        # luminosity = mappings.luminosity_for_filter(self.fuv_filter) # * 1e6
+        # the times 1e6 is just a fix because these luminosities are otherwise much too small!! (what does the mappings luminosity really represent??)
+        # TODO: investigate how to get a valid guess for the ionizing stellar luminosity here!!!
+        # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
+
+        # Get the spectral luminosity at the FUV wavelength
+        luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
+
+        # Set the parameters of the ionizing stellar component
+        deprojection = self.deprojection.copy()
+        deprojection.filename = self.ionizing_stellar_map_filename
+        deprojection.scale_height = scale_height
+        self.deprojections["ionizing stars"] = deprojection
+
+        # Adjust the ski file
+        #self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
+        #self.ski_template.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor)  # SED
+        # self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
+        # self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
+
+        # SET NORMALIZATION (IS FREE PARAMETER)
+        #self.ski_template.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
+        #self.ski_template.set_labeled_value("fuv_ionizing", luminosity)  # keep label
+
     # -----------------------------------------------------------------
 
     def build_additional(self):
@@ -248,6 +325,20 @@ class StarsBuilder(BuildComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Configuring additional stellar components ...")
+
+        # Proceed?
+        while prompt_proceed():
+
+            definition = ConfigurationDefinition()
+            definition.add_required("name", "string", "name for this stellar component")
+            definition.add_optional("description", "string", "description for the component")
+            definition.add_optional("geometry", "string", "SKIRT base geometry for the component")
+
+            setter = InteractiveConfigurationSetter("additional stellar component")
+            config = setter.run(definition)
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -256,6 +347,9 @@ class StarsBuilder(BuildComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing ...")
 
 # -----------------------------------------------------------------
 

@@ -347,10 +347,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #self.set_old_stellar_component()
 
         # Set the young stellar component
-        self.set_young_stellar_component()
+        #self.set_young_stellar_component()
 
         # Set the ionizing stellar component
-        self.set_ionizing_stellar_component()
+        #self.set_ionizing_stellar_component()
 
         # The dust component
         self.set_dust_component()

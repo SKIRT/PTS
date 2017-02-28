@@ -24,6 +24,7 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_required("dust", "string", "choice of dust map", choices=get_dust_map_names(modeling_path))
 
 # Flags
+definition.add_flag("disk", "add dust disk", True)
 definition.add_flag("additional", "add additional dust component(s)", True)
 
 # -----------------------------------------------------------------
