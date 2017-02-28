@@ -35,6 +35,10 @@ class BuildComponent(GalaxyModelingComponent):
         # Call the constructor of the base class
         super(BuildComponent, self).__init__(config)
 
+        # Paths
+        self.model_stars_path = None
+        self.model_dust_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -46,5 +50,9 @@ class BuildComponent(GalaxyModelingComponent):
 
         # Call the setup function of the base class
         super(BuildComponent, self).setup()
+
+        # Paths
+        self.model_stars_path = fs.create_directory_in(self.model_path, "stars")
+        self.model_dust_path = fs.create_directory_in(self.model_path, "dust")
  
 # -----------------------------------------------------------------

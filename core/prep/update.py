@@ -1008,6 +1008,8 @@ class PTSUpdater(Updater):
 
         # Decompress into "~/Imfit"
         imfit_installation_path = fs.join(self.remote.home_directory, "Imfit")
+        if self.remote.is_directory(imfit_installation_path): raise RuntimeError("There is already a directory '" + imfit_installation_path + "'")
+        else: self.remote.create_directory(imfit_installation_path)
         self.remote.decompress_directory_to(filepath, imfit_installation_path, show_output=log.is_debug(), remove=True)
 
         # Set the imfit path

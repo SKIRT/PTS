@@ -2605,7 +2605,30 @@ class Remote(object):
         old_path = fs.join(directory, old_name)
         new_path = fs.join(directory, new_name)
 
+        # Check if file exists
+        if not self.is_file(old_path): raise IOError("Not a file: '" + old_path + "'")
+
         # Use the 'mv' command to rename the file
+        self.execute("mv " + old_path + " " + new_path)
+
+    # -----------------------------------------------------------------
+
+    def rename_directory(self, parent, old_name, new_name):
+
+        """
+        This function ...
+        :param parent:
+        :param old_name:
+        :param new_name:
+        :return:
+        """
+
+        # Check if directory exists
+        path = fs.join(parent, old_name)
+        new_path = fs.join(parent, new_name)
+        if not self.is_directory(path): raise IOError("Not a directory: '" + path + "'")
+
+        # Move
         self.execute("mv " + old_path + " " + new_path)
 
     # -----------------------------------------------------------------
@@ -3559,6 +3582,28 @@ class Remote(object):
 
         # return the dictionary
         return packages
+
+    # -----------------------------------------------------------------
+
+    def is_present_conda_package(self, name, environment_name=None, conda_path="conda"):
+
+        """
+        This function ...
+        :param name:
+        :param environment_name:
+        :param conda_path:
+        :return:
+        """
+
+        if environment_name is not None: command = conda_path + " list " + name + " --name " + environment_name
+        else: command = conda_path + " list " + name
+
+        output = self.execute(command)
+
+        # Find the package
+        for line in output:
+            if line.split()[0] == name: return True
+        return False
 
     # -----------------------------------------------------------------
 

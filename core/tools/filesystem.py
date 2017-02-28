@@ -839,6 +839,28 @@ def rename_file(directory, original_name, new_name):
 
 # -----------------------------------------------------------------
 
+def rename_directory(parent, original_name, new_name):
+
+    """
+    This function ...
+    :param parent:
+    :param original_name:
+    :param new_name:
+    :return:
+    """
+
+    # Check whether the original directory exists
+    original_path = join(parent, original_name)
+    if not is_directory(original_path): raise ValueError("Directory '" + original_path + "' does not exist")
+
+    # Determine new directory path
+    new_path = join(parent, new_name)
+
+    # Rename the directory
+    os.rename(original_path, new_path)
+
+# -----------------------------------------------------------------
+
 def copy_file(file_path, directory_path, new_name=None):
 
     """

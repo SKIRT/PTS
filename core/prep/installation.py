@@ -1609,7 +1609,11 @@ class PTSInstaller(Installer):
             # Launch the command
             import subprocess
             try:
-                if isinstance(command, list): terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
+                if isinstance(command, list):
+                    # Skip module if already installed together with another package in the meantime
+                    if command[0].startswith(self.conda_executable_path):
+                        if conda.is_present_package(module, self.config.python_name, self.conda_executable_path): continue
+                    terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
                 elif isinstance(command, basestring):
                     if "setup.py" in command:
                         # special: for python setup.py, we must be in the directory or it won't work
@@ -1729,6 +1733,8 @@ class PTSInstaller(Installer):
 
         # Decompress into "~/Imfit"
         imfit_installation_path = fs.join(self.remote.home_directory, "Imfit")
+        if self.remote.is_directory(imfit_installation_path): raise RuntimeError("There is already a directory '" + imfit_installation_path + "'")
+        else: self.remote.create_directory(imfit_installation_path)
         self.remote.decompress_directory_to(filepath, imfit_installation_path, show_output=log.is_debug(), remove=True)
 
         # Set the imfit path
@@ -2391,7 +2397,11 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
 
         # Launch the installation command
         try:
-            if isinstance(command, list): remote.execute_lines(*command, show_output=log.is_debug())
+            if isinstance(command, list):
+                # Skip module if already installed together with another package in the meantime
+                if command[0].startswith(conda_path):
+                    if remote.is_present_conda_package(module, conda_environment, conda_path): continue
+                remote.execute_lines(*command, show_output=log.is_debug())
             elif isinstance(command, basestring):
                 if "setup.py" in command:
                     # special: for python setup.py, we must be in the directory or it won't work

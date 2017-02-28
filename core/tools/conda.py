@@ -126,6 +126,28 @@ def activate_environment(environment_name, conda_path="conda", activate_path="ac
 
 # -----------------------------------------------------------------
 
+def is_present_package(name, environment_name=None, conda_path="conda"):
+
+    """
+    This function ...
+    :param name:
+    :param environment_name:
+    :param conda_path:
+    :return:
+    """
+
+    if environment_name is not None: command = conda_path + " list " + name + " --name " + environment_name
+    else: command = conda_path + " list " + name
+
+    output = terminal.execute_no_pexpect(command)
+
+    # Find the package
+    for line in output:
+        if line.split()[0] == name: return True
+    return False
+
+# -----------------------------------------------------------------
+
 def _call_conda(extra_args, conda_path="conda"):
 
     """
