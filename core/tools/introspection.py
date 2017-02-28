@@ -1513,10 +1513,12 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
                 else: unresolved.append((subpackage_dir, name))
 
         # MPL toolkits
-        elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
-
+        #elif splitted[1].startswith("mpl_toolkits"): pass # skip mpl_toolkits
         # Pylab
-        elif splitted[1].startswith("pylab"): pass # skip pylab
+        #elif splitted[1].startswith("pylab"): pass # skip pylab
+
+        # Skip modules
+        elif skip_module(splitted[1]): pass
 
         # External module
         else:
@@ -1735,6 +1737,8 @@ def skip_module(name, path=None):
     if name == "runner": return True
     if name == "run_queue": return True
     if name == "enable_qch_mathjax": return True
+    if name == "mpl_toolkits": return True
+    if name == "pylab": return True
 
     # If path is known
     if path is not None:

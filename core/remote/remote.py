@@ -3575,8 +3575,18 @@ class Remote(object):
         # Loop over the lines
         for line in output:
 
-            name = line.split()[0].strip()
-            version = line.split()[1].strip()
+            #print(line)
+            if line.startswith("#"): continue
+            if line.strip() == "": continue
+
+            #print(line)
+
+            try:
+                name = line.split()[0].strip()
+                version = line.split()[1].strip()
+            except IndexError:
+                log.warning("Unexpected line: '" + line + "'")
+                pass
 
             packages[name] = version
 
@@ -3602,7 +3612,7 @@ class Remote(object):
 
         # Find the package
         for line in output:
-            if line.split()[0] == name: return True
+            if line.split()[0].lower() == name.lower(): return True
         return False
 
     # -----------------------------------------------------------------

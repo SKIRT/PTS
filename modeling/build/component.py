@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
+from .table import ModelsTable
 
 # -----------------------------------------------------------------
 
@@ -36,8 +37,10 @@ class BuildComponent(GalaxyModelingComponent):
         super(BuildComponent, self).__init__(config)
 
         # Paths
-        self.model_stars_path = None
-        self.model_dust_path = None
+        #self.model_stars_path = None
+        #self.model_dust_path = None
+
+        self.models_table_path = None
 
     # -----------------------------------------------------------------
 
@@ -51,8 +54,25 @@ class BuildComponent(GalaxyModelingComponent):
         # Call the setup function of the base class
         super(BuildComponent, self).setup()
 
-        # Paths
-        self.model_stars_path = fs.create_directory_in(self.model_path, "stars")
-        self.model_dust_path = fs.create_directory_in(self.model_path, "dust")
- 
+        # Determine the path to the models table
+        self.models_table_path = fs.join(self.models_path, "models.dat")
+
+        # Initialize the models table if necessary
+        if not fs.is_file(self.models_table_path):
+            table = ModelsTable()
+            table.saveto(self.models_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def models_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the table
+        return ModelsTable.from_file(self.models_table_path)
+
 # -----------------------------------------------------------------

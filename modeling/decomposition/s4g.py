@@ -65,13 +65,10 @@ class S4GDecomposer(DecompositionComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Inform the user
-        log.info("Getting the structural galaxy parameters from the S4G catalog ...")
-
-        # Get the components
+        # 2. Get the components
         self.get_components()
 
-        # Writing
+        # 3. Writing
         self.write()
 
     # -----------------------------------------------------------------

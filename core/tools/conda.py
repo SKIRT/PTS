@@ -143,7 +143,7 @@ def is_present_package(name, environment_name=None, conda_path="conda"):
 
     # Find the package
     for line in output:
-        if line.split()[0] == name: return True
+        if line.split()[0].lower() == name.lower(): return True
     return False
 
 # -----------------------------------------------------------------
