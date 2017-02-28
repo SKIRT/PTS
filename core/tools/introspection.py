@@ -1739,6 +1739,7 @@ def skip_module(name, path=None):
     if name == "enable_qch_mathjax": return True
     if name == "mpl_toolkits": return True
     if name == "pylab": return True
+    if name == "pts": return True
 
     # If path is known
     if path is not None:

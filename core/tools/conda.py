@@ -126,6 +126,18 @@ def activate_environment(environment_name, conda_path="conda", activate_path="ac
 
 # -----------------------------------------------------------------
 
+def deactivate(deactivate_path="deactivate"):
+
+    """
+    This function ...
+    :param deactivate_path:
+    :return:
+    """
+
+    terminal.execute_no_pexpect("source " + deactivate_path)
+
+# -----------------------------------------------------------------
+
 def is_present_package(name, environment_name=None, conda_path="conda"):
 
     """

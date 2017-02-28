@@ -660,6 +660,9 @@ class SKIRTUpdater(Updater):
         # Success
         log.success("SKIRT and its dependencies were successfully updated on remote host '" + self.remote.host_id + "'")
 
+        # Unload modules
+        self.remote.unload_all_modules()
+
 # -----------------------------------------------------------------
 
 class PTSUpdater(Updater):

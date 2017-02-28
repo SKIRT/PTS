@@ -1654,6 +1654,9 @@ class PTSInstaller(Installer):
         # Activate the previous environment
         conda.activate_environment(previous_environment, self.conda_executable_path, self.conda_activate_path)
 
+        # Deactivate
+        conda.deactivate(self.conda_activate_path.replace("activate", "deactivate"))
+
     # -----------------------------------------------------------------
 
     def install_remote(self):
@@ -2441,6 +2444,9 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
 
     # Change the environment back
     remote.activate_conda_environment(previous_environment, conda_path, conda_activate_path)
+
+    # Deactivate
+    remote.deactivate_conda(conda_activate_path.replace("activate", "deactivate"))
 
     # Return
     return installed, not_installed, already_installed

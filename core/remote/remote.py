@@ -426,7 +426,7 @@ class Remote(object):
         # Look for errors
         for line in output:
             if "Lmod has detected the following error" in line:
-                error_message = line.split("error:").strip()
+                error_message = line.split("error:")[1].strip()
                 if "see output of 'ml'" in error_message:
                     error_message.replace("(see output of 'ml')", "")
                     error_message += " Loaded modules: " + ", ".join(self.loaded_modules)
@@ -2408,6 +2408,10 @@ class Remote(object):
         # Set the working directory back to the original
         if original_cwd is not None: self.change_cwd(original_cwd)
 
+        # Check whether the output contains the (env_name) string from activated conda environment
+        if len(the_output) > 0 and the_output[-1].strip().startswith("(") and the_output[-1].strip().endswith(")"):
+            the_output = the_output[:-1]
+
         # Return the output
         if output: return the_output
 
@@ -3557,6 +3561,18 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def deactivate_conda(self, deactivate_path="deactivate"):
+
+        """
+        This function ...
+        :param deactivate_path:
+        :return:
+        """
+
+        self.execute("source " + deactivate_path)
+
+    # -----------------------------------------------------------------
+
     def installed_conda_packages(self, conda_path="conda", environment_name=None):
 
         """
@@ -3582,13 +3598,14 @@ class Remote(object):
             #print(line)
 
             try:
+
                 name = line.split()[0].strip()
                 version = line.split()[1].strip()
+                packages[name] = version
+
             except IndexError:
                 log.warning("Unexpected line: '" + line + "'")
                 pass
-
-            packages[name] = version
 
         # return the dictionary
         return packages

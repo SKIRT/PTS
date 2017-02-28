@@ -303,13 +303,10 @@ class DustMapMaker(MapsComponent):
         log.info("Writing ...")
 
         # Write the maps
-        #self.write_maps()
+        self.write_maps()
 
         # Write the error maps
-        #self.write_error_maps()
-
-        # Write the final dust map
-        #self.write_map()
+        self.write_error_maps()
 
         # Write the significance mask
         self.write_significance_masks()
@@ -358,21 +355,6 @@ class DustMapMaker(MapsComponent):
 
             # Save the error map
             self.error_maps[label].saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the final dust map ...")
-
-        # Write the final dust map
-        self.map.saveto(self.dust_map_path)
 
     # -----------------------------------------------------------------
 

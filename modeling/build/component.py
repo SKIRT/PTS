@@ -36,10 +36,7 @@ class BuildComponent(GalaxyModelingComponent):
         # Call the constructor of the base class
         super(BuildComponent, self).__init__(config)
 
-        # Paths
-        #self.model_stars_path = None
-        #self.model_dust_path = None
-
+        # Path to the models table
         self.models_table_path = None
 
     # -----------------------------------------------------------------
@@ -74,5 +71,53 @@ class BuildComponent(GalaxyModelingComponent):
 
         # Open the table
         return ModelsTable.from_file(self.models_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.models_table.names
+
+# -----------------------------------------------------------------
+
+def get_models_table_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "models", "models.dat")
+
+# -----------------------------------------------------------------
+
+def get_models_table(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return ModelsTable.from_file(get_models_table_path(modeling_path))
+
+# -----------------------------------------------------------------
+
+def get_model_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return get_models_table(modeling_path).names
 
 # -----------------------------------------------------------------

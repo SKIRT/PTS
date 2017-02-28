@@ -81,3 +81,99 @@ class MapsComponent(GalaxyModelingComponent):
         self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
 
 # -----------------------------------------------------------------
+
+def get_dust_maps_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "maps", "dust")
+
+# -----------------------------------------------------------------
+
+def get_dust_map_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.files_in_path(get_dust_maps_path(modeling_path), extension="fits", returns="name")
+
+# -----------------------------------------------------------------
+
+def get_old_stars_maps_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "maps", "old")
+
+# -----------------------------------------------------------------
+
+def get_old_stellar_map_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.files_in_path(get_old_stars_maps_path(modeling_path), extension="fits", returns="name")
+
+# -----------------------------------------------------------------
+
+def get_young_stars_maps_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "maps", "young")
+
+# -----------------------------------------------------------------
+
+def get_young_stellar_map_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.files_in_path(get_young_stars_maps_path(modeling_path), extension="fits", returns="name")
+
+# -----------------------------------------------------------------
+
+def get_ionizing_stars_maps_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "maps", "ionizing")
+
+# -----------------------------------------------------------------
+
+def get_ionizing_stellar_map_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.files_in_path(get_ionizing_stars_maps_path(modeling_path), extension="fits", returns="name")
+
+# -----------------------------------------------------------------

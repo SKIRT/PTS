@@ -157,6 +157,9 @@ class BlackBodyDustMapMaker(MapsComponent):
         # 8. Normalize the dust map
         self.normalize()
 
+        # Write
+        self.write()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -680,6 +683,17 @@ class BlackBodyDustMapMaker(MapsComponent):
 
         # Return the best fitting parameters
         return best_t1, best_t2, best_md, best_ratio
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 

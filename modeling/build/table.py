@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
+from ...core.tools import arrays, tables
 
 # -----------------------------------------------------------------
 
@@ -62,5 +63,82 @@ class ModelsTable(SmartTable):
 
         # Add a row to the table
         self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return arrays.array_as_list(self["Name"])
+
+    # -----------------------------------------------------------------
+
+    def description_for_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        index = tables.find_index(self, name)
+        return self["Description"][index] if not self["Description"].mask[index] else None
+
+    # -----------------------------------------------------------------
+
+    def old_stars_path_for_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        index = tables.find_index(self, name)
+        return self["Old stars path"][index]
+
+    # -----------------------------------------------------------------
+
+    def young_stars_path_for_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        index = tables.find_index(self, name)
+        return self["Young stars path"][index]
+
+    # -----------------------------------------------------------------
+
+    def ionizing_stars_path_for_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        index = tables.find_index(self, name)
+        return self["Ionizing stars path"][index]
+
+    # -----------------------------------------------------------------
+
+    def dust_path_for_model(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        index = tables.find_index(self, name)
+        return self["Dust path"][index]
 
 # -----------------------------------------------------------------

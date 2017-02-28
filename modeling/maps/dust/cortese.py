@@ -403,10 +403,10 @@ class CorteseDustMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the SSFR maps
+        # 1. Write the SSFR maps
         self.write_ssfr_maps()
 
-        # Write the attenuation maps
+        # 2. Write the attenuation maps
         self.write_attenuation_maps()
 
     # -----------------------------------------------------------------

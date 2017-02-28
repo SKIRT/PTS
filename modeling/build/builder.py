@@ -34,7 +34,11 @@ class ModelBuilder(BuildComponent):
         # Call the constructor of the base class
         super(ModelBuilder, self).__init__(config)
 
-        
+        # The maps
+        self.old_stars = None
+        self.young_stars = None
+        self.ionizing_stars = None
+        self.dust = None
 
     # -----------------------------------------------------------------
 
@@ -48,7 +52,7 @@ class ModelBuilder(BuildComponent):
         # 1. Call the setup function
         self.setup()
 
-        
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -60,10 +64,26 @@ class ModelBuilder(BuildComponent):
         """
 
         # Call the setup function of the base class
-        super(BestModelLauncher, self).setup()
+        super(ModelBuilder, self).setup()
 
-        
+    # -----------------------------------------------------------------
 
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
     
+        self.write_maps()
+
+    # -----------------------------------------------------------------
+
+    def write_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
 
 # -----------------------------------------------------------------
