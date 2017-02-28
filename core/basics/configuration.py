@@ -728,6 +728,7 @@ class ConfigurationDefinition(object):
         """
 
         # Required
+        index = 0
         for name in self.required:
 
             # Get properties
@@ -744,7 +745,18 @@ class ConfigurationDefinition(object):
             if real_type.__name__.endswith("_list"): choices = None
 
             # Add argument to argument parser
-            parser.add_argument(name, type=real_type, help=description, choices=choices)
+
+            #print("real_type", real_type.__name__)
+            #print(len(self.pos_optional))
+            #print(index, len(self.required) - 1)
+
+            # If this is the last required argument, and it is of 'string' type, and there are no positional arguments,
+            # we can allow the string to contain spaces without having to add quotation marks
+            if real_type.__name__ == "string" and len(self.pos_optional) == 0 and index == len(self.required) - 1:
+                parser.add_argument(name, nargs='+', help=description, choices=choices)
+            else: parser.add_argument(name, type=real_type, help=description, choices=choices)
+
+            index += 1
 
         # Positional optional
         for name in self.pos_optional:
@@ -889,6 +901,9 @@ class ConfigurationDefinition(object):
                 # Check whether they are all in the choices
                 for item in value:
                     if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+
+            # Convert from list into string if string contains spaces and was the last required argument
+            if real_type.__name__ == "string" and isinstance(value, list): value = " ".join(value)
 
             # Set the value
             settings[name] = value
