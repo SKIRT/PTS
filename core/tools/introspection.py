@@ -1739,6 +1739,8 @@ def skip_module(name, path):
     :return:
     """
 
+    if name == "core": return True
+    if name == "__future__": return True
     if name == "__init__": return True
     if name == "__main__": return True
     if name == "runner": return True

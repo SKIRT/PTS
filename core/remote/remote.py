@@ -2458,6 +2458,7 @@ class Remote(object):
 
                     # index = self.ssh.expect([self.ssh.PROMPT, "$", line[0]], timeout=timeout)
                     #index = self.ssh.expect([line[0], "$", self.ssh.PROMPT], timeout=timeout)
+                    print("here", self.ssh.PROMPT)
                     index = self.ssh.expect([line[0], self.ssh.PROMPT], timeout=timeout)
                     #print(index)
                     if index == 0: self.ssh.sendline(line[1])
