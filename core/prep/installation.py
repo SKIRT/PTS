@@ -2452,10 +2452,12 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     #del session
 
     log.debug("Installation commands:")
+    log.debug("")
     for module in installation_commands:
         if isinstance(installation_commands[module], list): string = installation_commands[module][0]
         else: string = installation_commands[module]
         log.debug(" - " + module + ": " + string)
+    log.debug("")
 
     # Debugging
     log.debug("In standard library:")
