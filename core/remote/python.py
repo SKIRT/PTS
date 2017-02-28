@@ -540,7 +540,7 @@ class AttachedPythonSession(RemotePythonSession):
     This function ...
     """
 
-    def __init__(self, remote, assume_pts=False, output_path=None):
+    def __init__(self, remote, python_command="python", assume_pts=False, output_path=None):
 
         """
         This function ...
@@ -576,7 +576,7 @@ class AttachedPythonSession(RemotePythonSession):
             if not connected: raise RuntimeError("Could not create a seperate connection to the remote for the attached python session")
 
         # Start python
-        self.parent.execute("python", expect=">>>")
+        self.parent.execute(python_command, expect=">>>")
 
         # Import PTS stuff
         if assume_pts: self.import_pts()
@@ -655,7 +655,7 @@ class DetachedPythonSession(RemotePythonSession):
     This class ...
     """
 
-    def __init__(self, remote, assume_pts=False, tmux=False, output_path=None):
+    def __init__(self, remote, python_command="python", assume_pts=False, tmux=False, output_path=None):
 
         """
         This function ...
@@ -759,10 +759,11 @@ class DetachedPythonSession(RemotePythonSession):
 
     # -----------------------------------------------------------------
 
-    def start_session(self):
+    def start_session(self, python_command="python"):
 
         """
         This function ...
+        :param python_command:
         :return:
         """
 
@@ -782,7 +783,7 @@ class DetachedPythonSession(RemotePythonSession):
         # Determine command
         #command = "tmux new-session -d -n " + self.screen_name + " python > " + self.out_pipe_filepath
 
-        if self.tmux: command = "tmux new -d -n " + self.screen_name + " python"
+        if self.tmux: command = "tmux new -d -n " + self.screen_name + " " + python_command
         elif self.output_path is not None: command = "screen -dmS " + self.screen_name + " -L"
         else: command = "screen -dmS " + self.screen_name
 
@@ -810,7 +811,7 @@ class DetachedPythonSession(RemotePythonSession):
 
         if not self.tmux:
 
-            start_python_command = "screen -S " + self.screen_name + " -p 0 -X stuff 'python\n'"
+            start_python_command = "screen -S " + self.screen_name + " -p 0 -X stuff '" + python_command + "\n'"
             self.remote.execute(start_python_command)
 
     # -----------------------------------------------------------------
@@ -964,7 +965,7 @@ class DetachedPythonSession(RemotePythonSession):
         This function ...
         :param name:
         :param show_output:
-        :param read_attempts:
+        :param max_attempts:
         :return:
         """
 

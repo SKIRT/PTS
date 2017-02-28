@@ -1094,15 +1094,10 @@ class PTSUpdater(Updater):
             # Debugging
             log.debug("Determining the conda environment name for PTS ...")
 
-            # Get environment name
-            pts_alias = self.remote.resolve_alias("pts")
-            pts_python_path = pts_alias.split()[0]
-            if pts_python_path == "python": raise Exception("Cannot determine the conda environment used for pts")
-            else:
-
-                env_path = fs.directory_of(fs.directory_of(pts_python_path))
-                environment_name = fs.name(env_path)
-                self.conda_environment = environment_name
+            # Determine the conda environment for PTS
+            env_name = self.remote.conda_environment_for_pts
+            if env_name is None: raise Exception("Cannot determine the conda environment used for pts")
+            self.conda_environment = env_name
 
         # Conda not found
         else:

@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import sys
+import traceback
 from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
@@ -1577,6 +1578,14 @@ class PTSInstaller(Installer):
 
         dependencies = introspection.get_all_dependencies().keys()
 
+        from ..tools import stringify
+
+        # Debugging
+        log.debug("Dependencies:")
+        log.debug("")
+        for line in stringify.stringify_list_fancy(dependencies, lines_prefix="   ")[1].split("\n"): log.debug(line)
+        log.debug("")
+
         #packages = introspection.installed_python_packages()
         packages = []
 
@@ -1584,13 +1593,50 @@ class PTSInstaller(Installer):
         previous_environment = conda.activate_environment(self.config.python_name, self.conda_executable_path, self.conda_activate_path)
 
         # Get installation commands
-        installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
+        installation_commands, installed, not_installed, std_lib, real_names = get_installation_commands(dependencies, packages,
                                                                                     already_installed, available_packages,
                                                                                     conda_path=self.conda_executable_path,
                                                                                     pip_path=self.conda_pip_path,
                                                                                     conda_environment=self.config.python_name,
                                                                                     python_path=self.conda_python_path,
                                                                                     easy_install_path=self.conda_easy_install_path)
+
+        # Show commands
+        log.debug("Installation commands:")
+        log.debug("")
+        for module in installation_commands:
+            if isinstance(installation_commands[module], list): string = installation_commands[module][0]
+            else: string = installation_commands[module]
+            log.debug(" - " + module + ": " + string)
+        log.debug("")
+
+        # Debugging
+        log.debug("In standard library:")
+        log.debug("")
+        for line in stringify.stringify_list_fancy(std_lib, lines_prefix="   ")[1].split("\n"): log.debug(line)
+        log.debug("")
+
+        # Debugging
+        log.debug("Already installed:")
+        log.debug("")
+        for line in stringify.stringify_list_fancy(already_installed, lines_prefix="   ")[1].split("\n"): log.debug(line)
+        log.debug("")
+
+        # Debugging
+        log.debug("Cannot be installed:")
+        log.debug("")
+        for line in stringify.stringify_list_fancy(not_installed, lines_prefix="   ")[1].split("\n"): log.debug(line)
+        log.debug("")
+
+        # Internal check
+        for dependency in dependencies:
+            #print(real_names)
+            if dependency in real_names: dependency = real_names[dependency]
+            if dependency in installed: continue
+            if dependency in not_installed: continue
+            if dependency in already_installed: continue
+            if dependency in std_lib: continue
+            log.error("Dependency '" + dependency + "' not in 'installed', 'not_installed', 'already_installed', or 'std_lib'")
 
         # Install
         for module in installation_commands:
@@ -1626,6 +1672,7 @@ class PTSInstaller(Installer):
             except subprocess.CalledProcessError:
                 installed.remove(module)
                 log.warning("Something went wrong installing '" + module + "'")
+                traceback.print_exc()
                 not_installed.append(module)
 
         from ..tools import stringify
@@ -2119,6 +2166,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
     installed = []
     not_installed = []
+    std_lib = []
 
     commands = dict()
 
@@ -2133,7 +2181,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         if module_name in packages: continue
 
         # Skip packages from the standard library
-        if introspection.is_std_lib(module_name): continue
+        if introspection.is_std_lib(module_name):
+            std_lib.append(module_name)
+            continue
 
         # Check if already installed
         if module_name in already_installed: continue
@@ -2157,6 +2207,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
                 log.warning("Package '" + module + "' can not be installed")
                 not_installed.append(module)
                 continue
+
+            # Set real name
+            else: real_names[module_name] = install_module_name
 
         # Debugging
         log.debug("Checking whether a specific version of the package is required ...")
@@ -2183,12 +2236,18 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             # Set the commands
             commands[install_module_name] = lines
 
+            # Add to installed
+            installed.append(install_module_name)
+
         # Install with pip
         elif via == "pip":
 
             command = pip_path + " install " + install_module_name
             if version is not None: command += "==" + version
             commands[install_module_name] = command
+
+            # Add to installed
+            installed.append(install_module_name)
 
         # GitHub url
         elif "github.com" in via:
@@ -2199,6 +2258,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
             command = pip_path + " install git+" + via
             commands[install_module_name] = command
+
+            # Add to installed
+            installed.append(install_module_name)
 
         # Link with source code
         elif via.startswith("http"):
@@ -2224,14 +2286,14 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             command = python_path + " " + setup_path + " install"
             commands[install_module_name] = command
 
+            # Add to installed
+            installed.append(install_module_name)
+
         # Not recognized
         else: not_installed.append(install_module_name)
 
-        # Add to installed
-        installed.append(install_module_name)
-
     # Return ...
-    return commands, installed, not_installed
+    return commands, installed, not_installed, std_lib, real_names
 
 # -----------------------------------------------------------------
 
@@ -2329,8 +2391,8 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
         already_installed.append(line.split(" ")[0])
 
     # Debugging
-    log.debug("Already installed packages: ")
-    for package in already_installed: log.debug(" - " + package)
+    #log.debug("Already installed packages:")
+    #for package in already_installed: log.debug(" - " + package)
 
     ## Install essential packages: numpy and astropy
     for essential in ["pip", "numpy", "astropy"]:
@@ -2356,9 +2418,13 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     dependencies_script_path = fs.join(pts_package_path, "dependencies.py")
     dependencies = remote.execute("python " + dependencies_script_path)
 
+    from ..tools import stringify
+
     # Debugging
     log.debug("Dependencies:")
-    for package in dependencies: log.debug(" - " + package)
+    log.debug("")
+    for line in stringify.stringify_list_fancy(dependencies, lines_prefix="   ")[1].split("\n"): log.debug(line)
+    log.debug("")
 
     #packages = session.get_simple_property("introspection", "installed_python_packages()")
     packages = []
@@ -2373,7 +2439,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     # dependencies, packages, already_installed, available_packages, conda_path="conda",
     # pip_path="pip", python_path="python", easy_install_path="easy_install",
     # conda_environment=None
-    installation_commands, installed, not_installed = get_installation_commands(dependencies, packages,
+    installation_commands, installed, not_installed, std_lib, real_names = get_installation_commands(dependencies, packages,
                                                                                 already_installed, available_packages,
                                                                                 conda_path=conda_path,
                                                                                 pip_path=pip_path,
@@ -2384,6 +2450,40 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
 
     # Stop the python session
     #del session
+
+    log.debug("Installation commands:")
+    for module in installation_commands:
+        if isinstance(installation_commands[module], list): string = installation_commands[module][0]
+        else: string = installation_commands[module]
+        log.debug(" - " + module + ": " + string)
+
+    # Debugging
+    log.debug("In standard library:")
+    log.debug("")
+    for line in stringify.stringify_list_fancy(std_lib, lines_prefix="   ")[1].split("\n"): log.debug(line)
+    log.debug("")
+
+    # Debugging
+    log.debug("Already installed:")
+    log.debug("")
+    for line in stringify.stringify_list_fancy(already_installed, lines_prefix="   ")[1].split("\n"): log.debug(line)
+    log.debug("")
+
+    # Debugging
+    log.debug("Cannot be installed:")
+    log.debug("")
+    for line in stringify.stringify_list_fancy(not_installed, lines_prefix="   ")[1].split("\n"): log.debug(line)
+    log.debug("")
+
+    # Internal check
+    for dependency in dependencies:
+        #print(real_names)
+        if dependency in real_names: dependency = real_names[dependency]
+        if dependency in installed: continue
+        if dependency in not_installed: continue
+        if dependency in already_installed: continue
+        if dependency in std_lib: continue
+        log.error("Dependency '" + dependency + "' not in 'installed', 'not_installed', 'already_installed', or 'std_lib'")
 
     # Install
     for module in installation_commands:
@@ -2414,12 +2514,11 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
                     remote.execute(command, show_output=log.is_debug(), cwd=dir_path)
                 else: remote.execute(command, show_output=log.is_debug())
             else: raise ValueError("Invalid command: " + str(command))
-        except Exception:
+        except Exception, err:
             installed.remove(module)
             log.warning("Something went wrong installing '" + module + "'")
+            traceback.print_exc()
             not_installed.append(module)
-
-    from ..tools import stringify
 
     # Show installed packages
     if len(installed) > 0:

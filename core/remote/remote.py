@@ -2448,8 +2448,8 @@ class Remote(object):
 
             #print("LINE:", line)
 
-            print("BEFORE", self.ssh.before)
-            print("AFTER", self.ssh.after)
+            #print("BEFORE", self.ssh.before)
+            #print("AFTER", self.ssh.after)
 
             # If string
             if isinstance(line, basestring):
@@ -2544,9 +2544,14 @@ class Remote(object):
         :return:
         """
 
+        # Check whether we find a python installation made for PTS
+        if self.conda_environment_for_pts is not None:
+            python_path = fs.join(self.conda_installation_path, "envs", self.conda_environment_for_pts, "bin", "python")
+        else: python_path = "python"
+
         # Start python session and return it
-        if attached: return AttachedPythonSession(self, assume_pts=assume_pts, output_path=output_path)
-        else: return DetachedPythonSession(self, assume_pts=assume_pts, output_path=output_path)
+        if attached: return AttachedPythonSession(self, python_path, assume_pts=assume_pts, output_path=output_path)
+        else: return DetachedPythonSession(self, python_path, assume_pts=assume_pts, output_path=output_path)
 
     # -----------------------------------------------------------------
 
@@ -3527,6 +3532,29 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def conda_environment_for_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get environment name
+        pts_alias = self.resolve_alias("pts")
+        pts_python_path = pts_alias.split()[0]
+
+        # If just 'python'
+        #if pts_python_path == "python": raise Exception("Cannot determine the conda environment used for pts")
+        if pts_python_path == "python": return None
+
+        # Get the environment name
+        env_path = fs.directory_of(fs.directory_of(pts_python_path))
+        environment_name = fs.name(env_path)
+        return environment_name
+
+    # -----------------------------------------------------------------
+
     def conda_active_environment(self, conda_path="conda"):
 
         """
@@ -3629,6 +3657,8 @@ class Remote(object):
 
         # Find the package
         for line in output:
+            if line.startswith("#"): continue
+            if line.strip() == "": continue
             if line.split()[0].lower() == name.lower(): return True
         return False
 

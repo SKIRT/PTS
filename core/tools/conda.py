@@ -113,6 +113,28 @@ def conda_active_environment(conda_path="conda"):
 
 # -----------------------------------------------------------------
 
+def conda_environment_for_pts():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Get environment name
+    pts_alias = terminal.resolve_alias("pts")
+    pts_python_path = pts_alias.split()[0]
+
+    # If just 'python'
+    #if pts_python_path == "python": raise Exception("Cannot determine the conda environment used for pts")
+    if pts_python_path == "python": return None
+
+    # Get the environment name
+    env_path = fs.directory_of(fs.directory_of(pts_python_path))
+    environment_name = fs.name(env_path)
+    return environment_name
+
+# -----------------------------------------------------------------
+
 def activate_environment(environment_name, conda_path="conda", activate_path="activate"):
 
     """
@@ -155,6 +177,8 @@ def is_present_package(name, environment_name=None, conda_path="conda"):
 
     # Find the package
     for line in output:
+        if line.startswith("#"): continue
+        if line.strip() == "": continue
         if line.split()[0].lower() == name.lower(): return True
     return False
 
