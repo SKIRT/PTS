@@ -29,7 +29,7 @@ from ..tools import terminal
 from ..tools import filesystem as fs
 from ..remote.modules import Modules
 from ..tools import conda
-from .installation import montage_url
+from .installation import montage_url, imfit_macos_binary_url, imfit_linux_binary_url
 
 # -----------------------------------------------------------------
 
