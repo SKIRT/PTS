@@ -18,6 +18,8 @@ make_ionizing_map | -- | maps.stars.ionizing.IonizingStellarMapMaker | interacti
 make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make the map of the dust distribution
 deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
 build_model | -- | build.builder.ModelBuilder | interactive | Build the model
+build_stars | -- | build.stars.StarsBuilder | interactive | Build stellar components of model
+build_dust | -- | build.dust.DustBuilder | interactive | Build dust components of model
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure
 initialize_fit_galaxy | initialize_fit | fitting.initialization.galaxy.GalaxyFittingInitializer | arguments | Do the initialization before starting the fitting
 initialize_fit_sed | initialize_fit | fitting.initialization.sed.SEDFittingInitializer | arguments | Do the initialization before starting the fitting

@@ -20,15 +20,11 @@ modeling_path = fs.cwd()
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# Add settings
-model_names = get_model_names(modeling_path)
-if len(model_names) == 0: definition.add_positional_optional("name", "string", "name for the model", default="standard")
-else: definition.add_required("name", "string", "name for the model")
-
-# Stellar and dust maps
-definition.add_required("old_stars", "string", "choice of old stars map", choices=get_old_stellar_map_names(modeling_path))
-definition.add_required("young_stars", "string", "choice of young stars map", choices=get_young_stellar_map_names(modeling_path))
-definition.add_required("ionizing_stars", "string", "choice of ionizing stars map", choices=get_ionizing_stellar_map_names(modeling_path))
-definition.add_required("dust", "string", "choice of dust map", choices=get_dust_map_names(modeling_path))
+# Flags
+definition.add_flag("bulge", "add bulge", True)
+definition.add_flag("old", "add old stars", True)
+definition.add_flag("young", "add young stars", True)
+definition.add_flag("ionizing", "add ionizing stars", True)
+definition.add_flag("additional", "add additional stellar component(s)", True)
 
 # -----------------------------------------------------------------

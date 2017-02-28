@@ -341,10 +341,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Setting the stellar and dust components ...")
 
         # Set the evolved stellar bulge component
-        self.set_bulge_component()
+        #self.set_bulge_component()
 
         # Set the evolved stellar disk component
-        self.set_old_stellar_component()
+        #self.set_old_stellar_component()
 
         # Set the young stellar component
         self.set_young_stellar_component()

@@ -198,7 +198,7 @@ class Task(object):
 
         # Set analysed flag to True
         self.analysed = True
-        self.save()
+        if self.path is not None: self.save()
 
         # Remove the local output if requested
         if self.remove_local_output: fs.remove_directory(self.local_output_path)

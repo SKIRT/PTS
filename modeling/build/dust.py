@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.builder Contains the ModelBuilder class.
+## \package pts.modeling.build.dust Contains the DustBuilder class.
 
 # -----------------------------------------------------------------
 
@@ -14,12 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import BuildComponent
-from .dust import DustBuilder
-from .stars import StarsBuilder
 
 # -----------------------------------------------------------------
 
-class ModelBuilder(BuildComponent):
+class DustBuilder(BuildComponent):
     
     """
     This class...
@@ -36,11 +34,7 @@ class ModelBuilder(BuildComponent):
         # Call the constructor of the base class
         super(ModelBuilder, self).__init__(config)
 
-        # The maps
-        self.old_stars = None
-        self.young_stars = None
-        self.ionizing_stars = None
-        self.dust = None
+        
 
     # -----------------------------------------------------------------
 
@@ -54,11 +48,7 @@ class ModelBuilder(BuildComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Build stars
-        self.build_stars()
-
-        # Build dust component
-        self.build_dust()
+        
 
         # Write
         self.write()
@@ -77,63 +67,6 @@ class ModelBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
-    def build_stars(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the builder
-        builder = StarBuilder()
-
-        # Run
-        builder.run()
-
-    # -----------------------------------------------------------------
-
-    def build_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Create the builder
-        builder = DustBuilder()
-
-        # Run
-        builder.run()
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
     
-        self.write_maps()
-
-        self.write_deprojections()
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    def write_deprojections(self):
-
-        """
-        This function ...
-        :return:
-        """
 
 # -----------------------------------------------------------------
