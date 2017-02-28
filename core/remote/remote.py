@@ -2444,6 +2444,9 @@ class Remote(object):
 
             #print("LINE:", line)
 
+            print("BEFORE", self.ssh.before)
+            print("AFTER", self.ssh.after)
+
             # If string
             if isinstance(line, basestring):
 
@@ -2458,8 +2461,8 @@ class Remote(object):
 
                     # index = self.ssh.expect([self.ssh.PROMPT, "$", line[0]], timeout=timeout)
                     #index = self.ssh.expect([line[0], "$", self.ssh.PROMPT], timeout=timeout)
-                    print("here", self.ssh.PROMPT)
-                    index = self.ssh.expect([line[0], self.ssh.PROMPT], timeout=timeout)
+                    #print("here", self.ssh.PROMPT)
+                    index = self.ssh.expect([line[0], self.ssh.PROMPT, "[PEXPECT]$"], timeout=timeout)
                     #print(index)
                     if index == 0: self.ssh.sendline(line[1])
                     else: pass
@@ -2909,6 +2912,41 @@ class Remote(object):
 
         # Return the new path
         return new_path
+
+    # -----------------------------------------------------------------
+
+    def decompress_directory_to(self, filepath, destination, remove=False, show_output=False):
+
+        """
+        This function ...
+        :param filepath:
+        :param destination:
+        :param remove:
+        :param show_output:
+        :return:
+        """
+
+        # Inform the user
+        self.info("Decompressing '" + filepath + "' ...")
+
+        # tar.gz file
+        if filepath.endswith(".tar.gz"):
+
+            # Debugging
+            self.debug("Decompressing to '" + destination + "' ...")
+
+            # Decompress
+            command = "tar -zxvf " + filepath + " -C " + destination + " --strip-components=1"
+            log.debug("Decompress command: '" + command + "'")
+
+            # Execute the command
+            self.execute(command, show_output=show_output)
+
+        # Not implemented
+        else: raise NotImplementedError("Not implemented yet")
+
+        # Remove the file, if requested
+        if remove: self.remove_file(filepath, show_output=show_output)
 
     # -----------------------------------------------------------------
 

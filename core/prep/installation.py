@@ -1208,6 +1208,13 @@ miniconda_macos_url = "https://repo.continuum.io/miniconda/Miniconda2-latest-Mac
 # Montage
 montage_url = "http://montage.ipac.caltech.edu/download/Montage_v5.0.tar.gz"
 
+# Imfit source code
+imfit_url = "imfit-1.4.0-source.tar.gz"
+
+# Imfit binaries
+imfit_macos_binary_url = "http://www.mpe.mpg.de/~erwin/resources/imfit/binaries/imfit-1.4.0-macintel.tar.gz"
+imfit_linux_binary_url = "http://www.mpe.mpg.de/~erwin/resources/imfit/binaries/imfit-1.4.0-linux-64.tar.gz"
+
 # -----------------------------------------------------------------
 
 # Approximate size of a full conda installation (all PTS dependencies) in GB
@@ -1254,8 +1261,11 @@ class PTSInstaller(Installer):
         # The git version
         self.git_version = None
 
-        # The path to the montage executable
+        # The path to the montage installation directory
         self.montage_path = None
+
+        # The path to the Imfit installation directory
+        self.imfit_path = None
 
     # -----------------------------------------------------------------
 
@@ -1348,6 +1358,18 @@ class PTSInstaller(Installer):
         """
 
         return self.montage_path is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_imfit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.imfit_path is not None
 
     # -----------------------------------------------------------------
 
@@ -1640,6 +1662,12 @@ class PTSInstaller(Installer):
         # Inform the user
         log.info("Installing PTS remotely ...")
 
+        # Check the presence of imfit
+        self.check_imfit_remote()
+
+        # Install imfit
+        if not self.has_imfit: self.get_imfit_remote()
+
         # Check the presence of Montage
         self.check_montage()
 
@@ -1661,6 +1689,53 @@ class PTSInstaller(Installer):
 
         # 4. Get PTS dependencies
         self.get_dependencies_remote()
+
+    # -----------------------------------------------------------------
+
+    def check_imfit_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the presence of Imfit ...")
+
+        # Look for Imfit
+        executable_path = self.remote.find_executable("imfit")
+        if executable_path is not None: self.imfit_path = fs.directory_of(executable_path)
+
+        # Debugging
+        if executable_path is not None: log.debug("Imfit installation found in '" + self.imfit_path + "'")
+
+    # -----------------------------------------------------------------
+
+    def get_imfit_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting Montage on the remote host ...")
+
+        # Download the tar.gz file
+        if self.remote.is_macos: url = imfit_macos_binary_url
+        elif self.remote.is_linux: url = imfit_linux_binary_url
+        else: raise NotImplementedError("Platform not supported")
+        filepath = self.remote.download_from_url_to(url, self.remote.home_directory, show_output=log.is_debug())
+
+        # Decompress into "~/Imfit"
+        imfit_installation_path = fs.join(self.remote.home_directory, "Imfit")
+        self.remote.decompress_directory_to(filepath, imfit_installation_path, show_output=log.is_debug(), remove=True)
+
+        # Set the imfit path
+        self.imfit_path = imfit_installation_path
+
+        # Add to path
+        self.remote.add_to_path_variable(self.imfit_path, in_shell=True)
 
     # -----------------------------------------------------------------
 

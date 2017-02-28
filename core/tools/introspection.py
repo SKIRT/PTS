@@ -1249,18 +1249,7 @@ def get_all_dependencies():
                 # Loop over the modules imported at this line
                 for module in modules_line:
 
-                    # Skip "pts"
-                    if module == "pts": continue
-
-                    # Skip "mpl_toolkits"
-                    if module == "mpl_toolkits": continue
-
-                    # Skip 'pylab', imports should be replaced by matplotlib.pyplot anyway
-                    if module == "pylab": continue
-
-                    # Skip __main__, __future__
-                    if module == "__main__": continue
-                    if module == "__future__": continue
+                    if skip_module(module): continue
 
                     # Add the module name to the list
                     if module: modules_file.append(module)
@@ -1732,7 +1721,7 @@ def get_arguments_tables():
 
 # -----------------------------------------------------------------
 
-def skip_module(name, path):
+def skip_module(name, path=None):
 
     """
     This function ...
@@ -1746,15 +1735,19 @@ def skip_module(name, path):
     if name == "runner": return True
     if name == "run_queue": return True
     if name == "enable_qch_mathjax": return True
-    if path.endswith("eagle/config.py"): return True
-    if path.endswith("eagle/collections.py"): return True
-    if path.endswith("eagle/database.py"): return True
-    if path.endswith("eagle/galaxy.py"): return True
-    if path.endswith("eagle/plotresults.py"): return True
-    if path.endswith("eagle/runner.py"): return True
-    if path.endswith("eagle/scheduler.py"): return True
-    if path.endswith("eagle/skirtrun.py"): return True
-    if name == "fit2BB_Md": return True
+
+    # If path is known
+    if path is not None:
+
+        if path.endswith("eagle/config.py"): return True
+        if path.endswith("eagle/collections.py"): return True
+        if path.endswith("eagle/database.py"): return True
+        if path.endswith("eagle/galaxy.py"): return True
+        if path.endswith("eagle/plotresults.py"): return True
+        if path.endswith("eagle/runner.py"): return True
+        if path.endswith("eagle/scheduler.py"): return True
+        if path.endswith("eagle/skirtrun.py"): return True
+        if name == "fit2BB_Md": return True
 
     return False
 
