@@ -34,6 +34,8 @@ def stringify(value, scientific=False, decimal_places=2):
     # List or derived from list
     if isinstance(value, list):
 
+        if len(value) == 0: raise ValueError("Cannot stringify an empty list")
+
         strings = []
         ptype = None
         for entry in value:
@@ -48,6 +50,8 @@ def stringify(value, scientific=False, decimal_places=2):
 
             strings.append(val)
 
+        #print(ptype)
+        #print(strings)
         return ptype + "_list", ",".join(strings)
 
     # Array or derived from Array, but not quantity
@@ -89,49 +93,41 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     :return:
     """
 
-    #from pts.magic.basics.coordinate import SkyCoordinate
-    #from pts.magic.basics.stretch import SkyStretch
-
-    #from astropy.units import UnitBase, Quantity
-    #from astropy.coordinates import Angle
-
-    #from ..filter.broad import BroadBandFilter
-    #from ..filter.narrow import NarrowBandFilter
-
-    #from ..basics.range import RealRange, IntegerRange, QuantityRange
-
-    #from ..basics.unit import stringify_unit
-    #from ..basics.quantity import stringify_quantity
-
+    # Standard
     if types.is_boolean_type(value): return "boolean", str_from_bool(value)
-
     elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific)
-
     elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places)
-
     elif isinstance(value, basestring): return "string", value
-
     elif isinstance(value, NoneType): return "None", "None"
 
-    elif introspection.try_importing_class("UnitBase", "astropy.units", True) and isinstance(value, UnitBase): return stringify_unit(value)
-
-    elif introspection.try_importing_class("Quantity", "astropy.units", True) and isinstance(value, Quantity): return stringify_quantity(value)
-
-    elif introspection.try_importing_class("Angle", "astropy.coordinates", True) and isinstance(value, Angle): return "angle", str_from_angle(value)
-
-    elif introspection.try_importing_class("RealRange", "pts.core.basics.range", True) and isinstance(value, RealRange): return "real_range", repr(value)
-    elif introspection.try_importing_class("IntegerRange", "pts.core.basics.range", True) and isinstance(value, IntegerRange): return "integer_range", repr(value)
-    elif introspection.try_importing_class("QuantityRange", "pts.core.basics.range", True) and isinstance(value, QuantityRange): return "quantity_range", repr(value)
-
-    elif introspection.try_importing_class("SkyCoordinate", "pts.magic.basics.coordinate", True) and isinstance(value, SkyCoordinate): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-
-    elif introspection.try_importing_class("SkyStretch", "pts.magic.basics.stretch", True) and isinstance(value, SkyStretch): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-
-    elif introspection.try_importing_class("NarrowBandFilter", "pts.core.filter.narrow", True) and isinstance(value, NarrowBandFilter): return "narrow_band_filter", str(value)
-
-    elif introspection.try_importing_class("BroadBandFilter", "pts.core.filter.broad", True) and isinstance(value, BroadBandFilter): return "broad_band_filter", str(value)
+    # Special
+    elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.basics.unit", value)
+    elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.basics.quantity", value)
+    elif introspection.lazy_isinstance(value, "Angle", "astropy.coordinates"): return "angle", str_from_angle(value)
+    elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", repr(value)
+    elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", repr(value)
+    elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", repr(value)
+    elif introspection.lazy_isinstance(value, "SkyCoordinate", "pts.magic.basics.coordinate"): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
+    elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
+    elif introspection.lazy_isinstance(value, "NarrowBandFilter", "pts.core.filter.narrow"): return "narrow_band_filter", str(value)
+    elif introspection.lazy_isinstance(value, "BroadBandFilter", "pts.core.filter.broad"): return "broad_band_filter", str(value)
 
     else: raise ValueError("Unrecognized type: " + str(type(value)))
+
+# -----------------------------------------------------------------
+
+def stringify_string_fancy(string, width=100, lines_prefix=""):
+
+    """
+    This function ...
+    :param string:
+    :param width:
+    :param lines_prefix:
+    :return:
+    """
+
+    from textwrap import wrap
+    return "string", lines_prefix + ("\n" + lines_prefix).join(wrap(string, width))
 
 # -----------------------------------------------------------------
 

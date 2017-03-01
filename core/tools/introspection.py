@@ -2037,6 +2037,7 @@ def try_importing_module(path, in_globals=False):
     """
 
     import imp
+    import importlib
 
     # Determine the name of the module
     name = path.split(".")[-1]
@@ -2047,17 +2048,33 @@ def try_importing_module(path, in_globals=False):
         # Determine relative import path
         rel_import_path = path.split("pts.")[1]
 
+        #print(path)
+
         # Determine file path
-        file_path = fs.join(pts_package_dir, rel_import_path.replace(".", "/"), name + ".py")
+        file_path = fs.join(pts_package_dir, rel_import_path.replace(".", "/") + ".py")
+        #module_path = fs.join(pts_package_dir, rel_import_path.replace(".", "/"))
+
+        #print(module_path)
 
         # Load the module
-        module = imp.load_source(name, file_path)
+        #print(file_path)
+        #module = imp.load_source(name, file_path)
+
+        module = importlib.import_module(path)
 
     # External
     else:
-
-        file, filename, (suffix, mode, type) = imp.find_module(path)
-        module = imp.load_module(name, file, filename, (suffix, mode, type))
+        if "." in path:
+            #import importlib
+            #splitted = path.split(".")
+            #file, filename, (suffix, mode, type) = imp.find_module(splitted[0])
+            #module_path = fs.join(filename, *(splitted[1:] + ["__init__.py"]))
+            #module_path = fs.join(filename, *splitted[1:])
+            #module = imp.load_module(splitted[-1], None, module_path, ('', '', 5)) # 5 means pacakge directory (so no __init__.py)
+            module = importlib.import_module(path)
+        else:
+            file, filename, (suffix, mode, type) = imp.find_module(path)
+            module = imp.load_module(name, file, filename, (suffix, mode, type))
 
     # Add the module to the globals
     if in_globals: globals()[name] = module
@@ -2083,10 +2100,46 @@ def try_importing_class(name, path, in_globals=False):
     # Get the class
     cls = getattr(module, name)
 
+    #print(cls)
+
     # Add the class to the globals
     if in_globals: globals()[name] = cls
 
+    #print(globals()[name])
+
     # Return the class
     return cls
+
+# -----------------------------------------------------------------
+
+def lazy_isinstance(instance, classname, path):
+
+    """
+    This function ...
+    :param instance:
+    :param classname:
+    :param path:
+    :return:
+    """
+
+    cls = try_importing_class(classname, path)
+    return isinstance(instance, cls)
+
+# -----------------------------------------------------------------
+
+def lazy_call(function_name, module_name, *args, **kwargs):
+
+    """
+    This function ...
+    :param function_name:
+    :param module_name:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    module = try_importing_module(module_name)
+    func = getattr(module, function_name)
+    return func(*args, **kwargs)
 
 # -----------------------------------------------------------------

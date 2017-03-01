@@ -1163,7 +1163,7 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, choices=None, dynamic_list=False):
+    def add_required(self, name, user_type, description, choices=None, dynamic_list=False, suggestions=None, min_value=None, max_value=None):
 
         """
         This function ...
@@ -1172,6 +1172,9 @@ class ConfigurationDefinition(object):
         :param description:
         :param choices:
         :param dynamic_list:
+        :param suggestions:
+        :param min_value:
+        :param max_value:
         :return:
         """
 
@@ -1179,12 +1182,13 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Add
-        self.required[name] = Map(type=real_type, description=description, choices=choices, dynamic_list=dynamic_list)
+        self.required[name] = Map(type=real_type, description=description, choices=choices, dynamic_list=dynamic_list,
+                                  suggestions=suggestions, min_value=min_value, max_value=max_value)
 
     # -----------------------------------------------------------------
 
     def add_positional_optional(self, name, user_type, description, default=None, choices=None,
-                                convert_default=False, dynamic_list=False):
+                                convert_default=False, dynamic_list=False, suggestions=None, min_value=None, max_value=None):
 
         """
         This function ...
@@ -1195,6 +1199,9 @@ class ConfigurationDefinition(object):
         :param choices:
         :param convert_default:
         :param dynamic_list:
+        :param suggestions:
+        :param min_value:
+        :param max_value:
         :return:
         """
 
@@ -1211,11 +1218,13 @@ class ConfigurationDefinition(object):
                     raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add
-        self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices, dynamic_list=dynamic_list)
+        self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
+                                      dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value, max_value=max_value)
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False, dynamic_list=False):
+    def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False,
+                     dynamic_list=False, suggestions=None, min_value=None, max_value=None):
 
         """
         This function ...
@@ -1227,6 +1236,9 @@ class ConfigurationDefinition(object):
         :param letter:
         :param convert_default:
         :param dynamic_list:
+        :param suggestions:
+        :param min_value:
+        :param max_value:
         :return:
         """
 
@@ -1245,11 +1257,12 @@ class ConfigurationDefinition(object):
                     raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
 
         # Add
-        self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices, letter=letter, dynamic_list=dynamic_list)
+        self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
+                                  letter=letter, dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value, max_value=max_value)
 
     # -----------------------------------------------------------------
 
-    def add_flag(self, name, description, default=False, letter=None):
+    def add_flag(self, name, description, default=False, letter=None, convert_default=False):
 
         """
         This function ...
@@ -1257,8 +1270,12 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param letter:
+        :param convert_default:
         :return:
         """
+
+        # Convert default
+        if convert_default: default = get_real_value(default, parsing.boolean)
 
         # Add
         self.flags[name] = Map(description=description, letter=letter, default=default)
@@ -1939,7 +1956,7 @@ def write_definition(definition, configfile, indent=""):
         elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [required, " + str(real_type) + "]: None" + choices_string, file=configfile)
+        print(indent + name + " [required, " + real_type.__name__ + "]: None" + choices_string, file=configfile)
 
     # Positional optional
     for name in definition.pos_optional:
@@ -1955,7 +1972,7 @@ def write_definition(definition, configfile, indent=""):
         elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [pos_optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
+        print(indent + name + " [pos_optional, " + real_type.__name__ + "]: " + str(default) + choices_string, file=configfile)
 
     # Optional
     for name in definition.optional:
@@ -1972,7 +1989,7 @@ def write_definition(definition, configfile, indent=""):
         elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
+        print(indent + name + " [optional, " + real_type.__name__ + "]: " + str(default) + choices_string, file=configfile)
 
     # Flag
     for name in definition.flags:

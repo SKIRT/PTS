@@ -21,7 +21,7 @@ modeling_path = fs.cwd()
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Dust map
-definition.add_required("dust", "string", "choice of dust map", choices=get_dust_map_names(modeling_path))
+definition.add_required("dust_map", "string", "choice of dust map", choices=get_dust_map_names(modeling_path))
 
 # Flags
 definition.add_flag("disk", "add dust disk", True)

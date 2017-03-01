@@ -63,7 +63,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.deprojections = dict()
 
         # The instruments
-        self.instruments = dict()
+        #self.instruments = dict()
 
         # The table of weights for each band
         self.weights = None
@@ -71,12 +71,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # Solar luminosity units
         self.sun_fuv = None
         self.sun_i1 = None
-
-        # The ski files for simulating the contributions of the various stellar components
-        self.ski_contributions = dict()
-
-        # The ski file for generating simulated images
-        self.ski_images = None
 
         # The wavelength grid and dust grid generators
         self.wg_generator = None
@@ -353,7 +347,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #self.set_ionizing_stellar_component()
 
         # The dust component
-        self.set_dust_component()
+        #self.set_dust_component()
 
     # -----------------------------------------------------------------
 

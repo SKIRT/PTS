@@ -26,6 +26,7 @@ from ..tools import archive as arch
 from ..tools import filesystem as fs
 from ..tools.stringify import str_from_bool, str_from_angle
 from ..basics.quantity import represent_quantity
+from ..tools import xml
 
 # -----------------------------------------------------------------
 
@@ -117,7 +118,7 @@ class SkiFile:
     @property
     def input_files(self):
 
-        elements = get_all_elements(self.tree.getroot())
+        elements = xml.get_all_elements(self.tree.getroot())
 
         filenames = []
 
@@ -1009,7 +1010,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Return the dust distribution
-        return get_unique_element(dust_system, "dustDistribution")
+        return xml.get_unique_element(dust_system, "dustDistribution")
 
     ## This function returns the list of dust components
     def get_dust_components(self, include_comments=False):
@@ -1226,7 +1227,7 @@ class SkiFile:
         stellar_component = self.get_stellar_component(component_id)
 
         # Get the properties
-        return get_properties(stellar_component)
+        return xml.get_properties(stellar_component)
 
     ## This function returns all properties of the stellar component with the specified id
     def get_dust_component_properties(self, component_id):
@@ -1235,7 +1236,7 @@ class SkiFile:
         dust_component = self.get_dust_component(component_id)
 
         # Get the properties
-        return get_properties(dust_component)
+        return xml.get_properties(dust_component)
 
     ## This functions returns the normalization of the stellar component with the specified id
     def get_stellar_component_normalization(self, component_id):
@@ -1244,7 +1245,7 @@ class SkiFile:
         stellar_component = self.get_stellar_component(component_id)
 
         # Get normalization of this component
-        return get_unique_element(stellar_component, "normalization")
+        return xml.get_unique_element(stellar_component, "normalization")
 
     ## This function sets the wavelength for the spectral luminosity normalization
     def set_stellar_component_normalization_wavelength(self, component_id, wavelength):
@@ -1363,7 +1364,7 @@ class SkiFile:
         dust_component = self.get_dust_component(component_id)
 
         # Return the normalization
-        return get_unique_element(dust_component, "normalization")
+        return xml.get_unique_element(dust_component, "normalization")
 
     ## This function returns the dust mix for the dust component with the specified id
     def get_dust_component_mix(self, component_id):
@@ -1372,7 +1373,7 @@ class SkiFile:
         dust_component = self.get_dust_component(component_id)
 
         # Return the dust mix
-        return get_unique_element(dust_component, "mix")
+        return xml.get_unique_element(dust_component, "mix")
 
     ## This functions sets a THEMIS dust mix model for the dust component with the specified id
     def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
@@ -1510,7 +1511,7 @@ class SkiFile:
         stellar_component = self.get_stellar_component(component_id)
 
         # Return the geometry element of the stellar component
-        return get_unique_element(stellar_component, "geometry")
+        return xml.get_unique_element(stellar_component, "geometry")
 
     ## This function returns the geometry hierarchy of the stellar component with the specified ID
     def get_stellar_component_geometry_hierarchy_names(self, component_id):
@@ -1550,7 +1551,7 @@ class SkiFile:
         # Decorator
         if geometry.tag.endswith("Decorator"):
 
-            child = get_unique_element(geometry, "geometry")
+            child = xml.get_unique_element(geometry, "geometry")
             return self._fill_geometry_hierarchy(child, hierarchy)
 
         # Not a decorator
@@ -1563,7 +1564,7 @@ class SkiFile:
         dust_component = self.get_dust_component(component_id)
 
         # Return the geometry element of the dust component
-        return get_unique_element(dust_component, "geometry")
+        return xml.get_unique_element(dust_component, "geometry")
 
     ## This function rotates the geometry of the specified stellar component
     def rotate_stellar_component(self, component_id, alpha, beta, gamma):
@@ -1918,7 +1919,7 @@ class SkiFile:
         component = self.get_stellar_component(component_id)
 
         # Get the SED element
-        return get_unique_element(component, "sed")
+        return xml.get_unique_element(component, "sed")
 
     ## This function sets the SED template of the specified stellar component to a certain model with a specific age
     #  and metallicity (but not MAPPINGS SED)
@@ -1963,7 +1964,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Return the dust emissivity element
-        return get_unique_element(dust_system, "dustEmissivity")
+        return xml.get_unique_element(dust_system, "dustEmissivity")
 
     ## This property returns whether a dust emissivity object is present in the ski file
     @property
@@ -2022,7 +2023,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Return the dust lib element
-        return get_unique_element(dust_system, "dustLib")
+        return xml.get_unique_element(dust_system, "dustLib")
 
     ## This function sets the dust library to an AllCellsDustLib
     def set_allcells_dust_lib(self):
@@ -2078,7 +2079,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Return the dust grid
-        return get_unique_element(dust_system, "dustGrid")
+        return xml.get_unique_element(dust_system, "dustGrid")
 
     ## This function returns the dust grid as a DustGrid object
     def get_dust_grid_object(self):
@@ -2100,15 +2101,15 @@ class SkiFile:
             min_z = self.get_quantity(grid, "minZ")
             max_z = self.get_quantity(grid, "maxZ")
 
-            mesh_x = get_unique_element(grid, "meshX")
+            mesh_x = xml.get_unique_element(grid, "meshX")
             xbins = int(mesh_x.get("numBins"))
             xratio = int(mesh_x.get("ratio"))
 
-            mesh_y = get_unique_element(grid, "meshY")
+            mesh_y = xml.get_unique_element(grid, "meshY")
             ybins = int(mesh_y.get("numBins"))
             yratio = int(mesh_y.get("ratio"))
 
-            mesh_z = get_unique_element(grid, "meshZ")
+            mesh_z = xml.get_unique_element(grid, "meshZ")
             zbins = int(mesh_z.get("numBins"))
             zratio = int(mesh_z.get("ratio"))
 
@@ -2781,7 +2782,7 @@ class SkiFile:
 
     ## This (experimental) function converts the ski file structure into a (nested) python dictionary
     def to_dict(self):
-        return recursive_dict(self.tree.getroot())
+        return xml.recursive_dict(self.tree.getroot())
 
     ## This (experimental) function converts the ski file structure into json format
     def to_json(self):
@@ -2791,7 +2792,7 @@ class SkiFile:
 
     ## This function returns the xml tree element with the specified name that is at the base level of the simulation hierarchy
     def get_unique_base_element(self, name):
-        return get_unique_element(self.tree.getroot(), "//"+name)
+        return xml.get_unique_element(self.tree.getroot(), "//"+name)
 
     # -----------------------------------------------------------------
 
@@ -3098,100 +3099,5 @@ class LabeledSkiFile(SkiFile):
         """
 
         pass
-
-# -----------------------------------------------------------------
-
-## This function returns the xml tree element with the specified name that is a child of the specified element
-def get_unique_element(element, name):
-
-    # Get child element of the given element
-    parents = element.xpath(name)
-
-    # Check if only one child element is present
-    if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
-    elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
-    parents = parents[0]
-
-    # Check if only one child object is present
-    if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
-    elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
-    child = parents[0]
-
-    # Return the child element
-    return child
-
-# -----------------------------------------------------------------
-
-def recursive_dict(element):
-    return element.tag, dict(map(recursive_dict, element)) or element.text
-
-# -----------------------------------------------------------------
-
-def add_properties(element, dictionary):
-    for key, value in element.items(): dictionary[key] = value
-
-# -----------------------------------------------------------------
-
-def add_children(element, dictionary):
-
-    """
-    This function ...
-    :param element:
-    :param dictionary:
-    :return:
-    """
-
-    dictionary["children"] = dict()
-
-    for child in element.getchildren():
-
-        dictionary["children"][child.tag] = dict()
-
-        add_properties(child, dictionary["children"][child.tag])
-        add_children(child, dictionary["children"][child.tag])
-
-# -----------------------------------------------------------------
-
-def get_properties(element):
-
-    """
-    This function ...
-    :param element:
-    :return:
-    """
-
-    properties = dict()
-    add_properties(element, properties)
-    add_children(element, properties)
-    return properties
-
-# -----------------------------------------------------------------
-
-def get_all_elements(root):
-
-    """
-    This function ...
-    :param root:
-    :return:
-    """
-
-    elements = []
-    add_all_elements(root, elements)
-    return elements
-
-# -----------------------------------------------------------------
-
-def add_all_elements(root, elements):
-
-    """
-    This function ...
-    :param root:
-    :param elements:
-    :return:
-    """
-
-    for child in root.getchildren():
-        elements.append(child)
-        add_all_elements(child, elements)
 
 # -----------------------------------------------------------------

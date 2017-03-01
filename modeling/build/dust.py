@@ -107,10 +107,10 @@ class DustBuilder(BuildComponent):
         ##
 
         # Set the parameters of the dust component
-        deprojection = self.deprojection.copy()
-        deprojection.filename = self.dust_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["dust"] = deprojection
+        #deprojection = self.deprojection.copy()
+        #deprojection.filename = self.dust_map_filename
+        #deprojection.scale_height = scale_height
+        #self.deprojections["dust"] = deprojection
 
         # Adjust the ski file
         #self.ski_template.set_dust_component_geometry(0, deprojection)

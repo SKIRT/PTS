@@ -21,6 +21,8 @@ from ...core.tools.logging import log
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed
 from ...core.basics.unit import parse_unit as u
+from ..core.mappings import Mappings
+from ...core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -40,6 +42,15 @@ class StarsBuilder(BuildComponent):
 
         # Call the constructor of the base class
         super(StarsBuilder, self).__init__(config)
+
+        # The parameters
+        self.parameters = dict()
+
+        # The stellar components
+        self.components = dict()
+
+        # The SKIRT smile schema
+        self.smile = None
 
     # -----------------------------------------------------------------
 
@@ -83,9 +94,30 @@ class StarsBuilder(BuildComponent):
         # Call the setup function of the base class
         super(StarsBuilder, self).setup()
 
+        # Create the SKIRT smile schema
+        self.smile = SKIRTSmileSchema()
+
     # -----------------------------------------------------------------
 
     def build_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the old stellar bulge component ...")
+
+        # Get the parameters
+        self.get_bulge_parameters()
+
+        # Load the model
+        self.load_bulge_model()
+
+    # -----------------------------------------------------------------
+
+    def get_bulge_parameters(self):
 
         """
         This function ...
@@ -115,7 +147,31 @@ class StarsBuilder(BuildComponent):
         config = setter.run(definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+
+        # Set the luminosity
+        config.luminosity = luminosity
+
+        # Set the bulge parameters
+        self.parameters["bulge"] = config
+
+    # -----------------------------------------------------------------
+
+    def load_bulge_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the bulge model ...")
+
+        # Set the parameters of the bulge
+        #self.ski_template.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
+        #self.ski_template.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity)  # SED
+        ## self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
+        #self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * u("micron"))
 
     # -----------------------------------------------------------------
 
@@ -127,7 +183,28 @@ class StarsBuilder(BuildComponent):
         """
 
         # Inform the user
-        log.info("Configuring the old stellar component ...")
+        log.info("Building the old stellar disk component ...")
+
+        # Get the parameters
+        self.get_old_parameters()
+
+        # Load the map
+        self.load_old_map()
+
+        # Create the deprojection
+        self.create_deprojection_old()
+
+    # -----------------------------------------------------------------
+
+    def get_old_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the old stellar disk component ...")
 
         # Like M31
         disk_template = "BruzualCharlot"
@@ -136,7 +213,6 @@ class StarsBuilder(BuildComponent):
         disk_metallicity = 0.03
 
         # Get the scale height
-        # scale_height = 521. * Unit("pc") # first models
         scale_height = self.disk2d_model.scalelength / 8.26  # De Geyter et al. 2014
         bulge_fluxdensity = self.bulge2d_model.fluxdensity
 
@@ -156,7 +232,13 @@ class StarsBuilder(BuildComponent):
         config = setter.run(definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        luminosity = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+
+        # Set the luminosity
+        config.luminosity = luminosity
+
+        # Set the parameters
+        self.parameters["old"] = config
 
         ## NEW: SET FIXED PARAMETERS
         #self.fixed["metallicity"] = disk_metallicity
@@ -168,10 +250,10 @@ class StarsBuilder(BuildComponent):
         # luminosity = luminosity.to(self.sun_i1).value
 
         # Set the parameters of the evolved stellar component
-        deprojection = self.deprojection.copy()
-        deprojection.filename = self.old_stellar_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["old stars"] = deprojection
+        #deprojection = self.deprojection.copy()
+        #deprojection.filename = self.old_stellar_map_filename
+        #deprojection.scale_height = scale_height
+        #self.deprojections["old stars"] = deprojection
 
         # Adjust the ski file
         #self.ski_template.set_stellar_component_geometry("Evolved stellar disk", deprojection)
@@ -181,7 +263,82 @@ class StarsBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
+    def load_old_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the map of old stars ...")
+
+    # -----------------------------------------------------------------
+
+    def create_deprojection_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the deprojection model for the old stellar disk ...")
+
+        filename = None
+        hz = None
+
+        # Get the galaxy distance, the inclination and position angle
+        distance = self.galaxy_properties.distance
+        inclination = self.galaxy_properties.inclination
+        pa = self.earth_projection.position_angle
+
+        ## NEW: SET FIXED PARAMETERS
+        #self.fixed["distance"] = distance
+        #self.fixed["inclination"] = inclination
+        #self.fixed["position_angle"] = pa
+        ##
+
+        # Get the center pixel
+        pixel_center = self.galaxy_properties.center.to_pixel(self.reference_wcs)
+        xc = pixel_center.x
+        yc = pixel_center.y
+
+        # Get the pixelscale in physical units
+        pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Get the number of x and y pixels
+        x_size = self.reference_wcs.xsize
+        y_size = self.reference_wcs.ysize
+
+        # Create the deprojection model
+        deprojection = DeprojectionModel3D(filename, pixelscale, pa, inclination, x_size, y_size, xc, yc, hz)
+
+    # -----------------------------------------------------------------
+
     def build_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the young stellar component ...")
+
+        # Get the parameters
+        self.get_young_parameters()
+
+        # Load the map
+        self.load_young_map()
+
+        # Create deprojection
+        self.create_deprojection_young()
+
+    # -----------------------------------------------------------------
+
+    def get_young_parameters(self):
 
         """
         This function ...
@@ -219,6 +376,12 @@ class StarsBuilder(BuildComponent):
         # Convert the flux density into a spectral luminosity
         luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
 
+        # Set the luminosity
+        config.luminosity = luminosity
+
+        # Set the parameters
+        self.parameters["young"] = config
+
         # Get the spectral luminosity in solar units
         # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
@@ -227,10 +390,10 @@ class StarsBuilder(BuildComponent):
         ##
 
         # Set the parameters of the young stellar component
-        deprojection = self.deprojection.copy()
-        deprojection.filename = self.young_stellar_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["young stars"] = deprojection
+        #deprojection = self.deprojection.copy()
+        #deprojection.filename = self.young_stellar_map_filename
+        #deprojection.scale_height = scale_height
+        #self.deprojections["young stars"] = deprojection
 
         # Adjust the ski file
         #self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
@@ -244,7 +407,36 @@ class StarsBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
+    def load_young_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    def create_deprojection_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
     def build_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the ionizing stellar component ...")
+
+        # Set the parameters
+        self.set_ionizing_parameters()
+
+    # -----------------------------------------------------------------
+
+    def set_ionizing_parameters(self):
 
         """
         This function ...
@@ -291,20 +483,24 @@ class StarsBuilder(BuildComponent):
         setter = InteractiveConfigurationSetter("ionizing stellar disk")
         config = setter.run(definition)
 
+        # Generate Mappings template for the specified parameters
         mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
-        # luminosity = mappings.luminosity_for_filter(self.fuv_filter) # * 1e6
-        # the times 1e6 is just a fix because these luminosities are otherwise much too small!! (what does the mappings luminosity really represent??)
-        # TODO: investigate how to get a valid guess for the ionizing stellar luminosity here!!!
         # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
         # Get the spectral luminosity at the FUV wavelength
         luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
 
+        # Set the luminosity
+        config.luminosity = luminosity
+
+        # Set the parameters
+        self.parameters["ionizing"] = config
+
         # Set the parameters of the ionizing stellar component
-        deprojection = self.deprojection.copy()
-        deprojection.filename = self.ionizing_stellar_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["ionizing stars"] = deprojection
+        #deprojection = self.deprojection.copy()
+        #deprojection.filename = self.ionizing_stellar_map_filename
+        #deprojection.scale_height = scale_height
+        #self.deprojections["ionizing stars"] = deprojection
 
         # Adjust the ski file
         #self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
@@ -326,18 +522,90 @@ class StarsBuilder(BuildComponent):
         """
 
         # Inform the user
-        log.info("Configuring additional stellar components ...")
+        log.info("Building additional stellar components ...")
 
         # Proceed?
         while prompt_proceed():
 
-            definition = ConfigurationDefinition()
-            definition.add_required("name", "string", "name for this stellar component")
-            definition.add_optional("description", "string", "description for the component")
-            definition.add_optional("geometry", "string", "SKIRT base geometry for the component")
+            # Set parameters
+            name = self.set_additional_parameters()
 
-            setter = InteractiveConfigurationSetter("additional stellar component")
-            config = setter.run(definition)
+            # Set properties
+            normalization_parameters = self.set_normalization_properties(name)
+
+            # Set geometry properties
+            geometry_parameters = self.set_geometry_properties(name)
+
+    # -----------------------------------------------------------------
+
+    def set_additional_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring an additional stellar component ...")
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        definition.add_required("name", "string", "name for this stellar component")
+        definition.add_optional("description", "string", "description for the component")
+        definition.add_optional("geometry", "string", "SKIRT base geometry for the component", self.smile.concrete_geometries)
+        definition.add_optional("normalization", "string", "normalization for the component", self.smile.concrete_stellar_normalizations)
+
+        # Prompt for settings
+        setter = InteractiveConfigurationSetter("additional stellar component", add_cwd=False, add_logging=False)
+        config = setter.run(definition)
+
+        # Set the parameters
+        self.parameters[config.name] = config
+
+        # Return the name of the new component
+        return config.name
+
+    # -----------------------------------------------------------------
+
+    def set_normalization_properties(self, name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the normalization of stellar component '" + name + "' ...")
+
+        # Get the selected type of normalization
+        normalization_type = self.parameters[name].normalization
+
+        # Get parameters for this simulation item
+        parameters = self.smile.prompt_parameters_for_type(normalization_type)
+
+        # Return the parameters
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def set_geometry_properties(self, name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the geometry of stellar component '" + name + "' ...")
+
+        # Get the selected type of geometry
+        geometry_type = self.parameters[name].geometry
+
+        # Get parameters for this simulation item
+        parameters = self.smile.prompt_parameters_for_type(geometry_type)
+
+        # Return the parameters
+        return parameters
 
     # -----------------------------------------------------------------
 

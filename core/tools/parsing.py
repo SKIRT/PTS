@@ -776,6 +776,66 @@ def photometric_density_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def length_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.quantity import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "length": raise ValueError("Not a length")
+    return qty
+
+# -----------------------------------------------------------------
+
+def temperature_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.quantity import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "temperature": raise ValueError("Not a temperature")
+    return qty
+
+# -----------------------------------------------------------------
+
+def mass_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.quantity import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "mass": raise ValueError("Not a mass")
+    return qty
+
+# -----------------------------------------------------------------
+
+def mass_density_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.quantity import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "mass density": raise ValueError("Not a mass density")
+    return qty
+
+# -----------------------------------------------------------------
+
 def angle(argument, default_unit=None):
 
     """

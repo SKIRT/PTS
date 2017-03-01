@@ -37,11 +37,8 @@ class ModelBuilder(BuildComponent):
         # Call the constructor of the base class
         super(ModelBuilder, self).__init__(config)
 
-        # The maps
-        self.old_stars = None
-        self.young_stars = None
-        self.ionizing_stars = None
-        self.dust = None
+        # The instruments
+        self.instruments = dict()
 
     # -----------------------------------------------------------------
 
@@ -55,13 +52,16 @@ class ModelBuilder(BuildComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Build stars
+        # 2. Build stars
         self.build_stars()
 
-        # Build dust component
+        # 3. Build dust component
         self.build_dust()
 
-        # Write
+        # Create the instruments
+        self.create_instruments()
+
+        # 4. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -114,15 +114,41 @@ class ModelBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
+    def create_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the instruments ...")
+
+        # Create an SED instrument
+        self.instruments["SED"] = SEDInstrument.from_projection(self.earth_projection)
+
+        # Create a frame instrument to generate datacube
+        self.instruments["frame"] = FrameInstrument.from_projection(self.earth_projection)
+
+        # Create a simple instrument (SED + frame)
+        self.instruments["simple"] = SimpleInstrument.from_projection(self.earth_projection)
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
         This function ...
         :return:
         """
-    
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the maps
         self.write_maps()
 
+        # Write the deprojections
         self.write_deprojections()
 
     # -----------------------------------------------------------------
@@ -133,6 +159,8 @@ class ModelBuilder(BuildComponent):
         This function ...
         :return:
         """
+
+
 
     # -----------------------------------------------------------------
 
