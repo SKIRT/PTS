@@ -21,17 +21,7 @@ from astropy.utils import lazyproperty
 # Import the relevant PTS classes and modules
 from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
-from ...core.launch.timing import TimingTable
-from ...core.launch.memory import MemoryTable
-from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestParametersTable
-from ...core.simulation.skifile import LabeledSkiFile
-from ...core.basics.distribution import Distribution
-from ..basics.instruments import load_instrument
-from ..core.model import Model
-from ...core.simulation.grids import load_grid
-from ...core.simulation.skifile import SkiFile
-from ...core.simulation.simulation import SkirtSimulation
-from .tables import ModelProbabilitiesTable
+from .tables import RunsTable
 
 # -----------------------------------------------------------------
 
@@ -58,7 +48,11 @@ class FittingComponent(ModelingComponent):
 
         # -- Attributes --
 
+        # Runs table path
         self.runs_table_path = None
+
+        # The database path
+        self.database_path = None
 
     # -----------------------------------------------------------------
 
@@ -72,9 +66,47 @@ class FittingComponent(ModelingComponent):
         # Call the setup function of the base class
         super(FittingComponent, self).setup(**kwargs)
 
+        # Set the path to the runs table
+        self.runs_table_path = fs.join(self.fit_path, "runs.dat")
+
+        # Set the path to the database
+        self.database_path = fs.join(self.fit_path, "database.db")
+
     # -----------------------------------------------------------------
 
+    @property
+    def runs_table(self):
 
+        """
+        This function ...
+        :return:
+        """
+
+        return RunsTable.from_file(self.runs_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def run_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.runs_table.run_names
+
+    # -----------------------------------------------------------------
+
+    def model_for_run(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        return self.runs_table.model_for_run(run_name)
 
 # -----------------------------------------------------------------
 

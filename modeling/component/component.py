@@ -72,7 +72,7 @@ class ModelingComponent(Configurable):
         self.kernels_path = None
 
         # The path to the fitting configuration file
-        self.fitting_configuration_path = None
+        #self.fitting_configuration_path = None
 
     # -----------------------------------------------------------------
 
@@ -114,7 +114,7 @@ class ModelingComponent(Configurable):
         self.kernels_path = fs.join(introspection.pts_user_dir, "kernels")
 
         # Set the path to the fitting configuration file
-        self.fitting_configuration_path = fs.join(self.fit_path, "configuration.cfg")
+        #self.fitting_configuration_path = fs.join(self.fit_path, "configuration.cfg")
 
     # -----------------------------------------------------------------
 
@@ -305,91 +305,91 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fitting_configuration(self):
+    #@lazyproperty
+    #def fitting_configuration(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return Configuration.from_file(self.fitting_configuration_path) if fs.is_file(self.fitting_configuration_path) else None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def spectral_convolution(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.fitting_configuration.spectral_convolution
+        #return Configuration.from_file(self.fitting_configuration_path) if fs.is_file(self.fitting_configuration_path) else None
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fitting_filter_names(self):
+    #@lazyproperty
+    #def spectral_convolution(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return self.fitting_configuration.filters if self.fitting_configuration is not None else None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def free_parameter_labels(self):
-
-        """
-        THIS FUNCTION GUARANTEES THAT THE LABELS ARE ALWAYS ORDERED ALPHABETICALLY !!
-        :return:
-        """
-
-        return sorted(self.fitting_configuration.free_parameters) if self.fitting_configuration is not None else None
+        #return self.fitting_configuration.spectral_convolution
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def free_parameter_ranges(self):
+    #@lazyproperty
+    #def fitting_filter_names(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        ranges = dict()
-        for label in self.free_parameter_labels:
-            parameter_range = self.fitting_configuration[label + "_range"]
-            ranges[label] = parameter_range
-        return ranges
+        #return self.fitting_configuration.filters if self.fitting_configuration is not None else None
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def parameter_descriptions(self):
+    #@lazyproperty
+    #def free_parameter_labels(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #THIS FUNCTION GUARANTEES THAT THE LABELS ARE ALWAYS ORDERED ALPHABETICALLY !!
+        #:return:
+        #"""
 
-        return self.fitting_configuration.descriptions
+        #return sorted(self.fitting_configuration.free_parameters) if self.fitting_configuration is not None else None
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def parameter_units(self):
+    #@lazyproperty
+    #def free_parameter_ranges(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return self.fitting_configuration.units
+        #ranges = dict()
+        #for label in self.free_parameter_labels:
+        #    parameter_range = self.fitting_configuration[label + "_range"]
+        #    ranges[label] = parameter_range
+        #return ranges
+
+    # -----------------------------------------------------------------
+
+    #@lazyproperty
+    #def parameter_descriptions(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        #return self.fitting_configuration.descriptions
+
+    # -----------------------------------------------------------------
+
+    #@lazyproperty
+    #def parameter_units(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        #return self.fitting_configuration.units
 
     # -----------------------------------------------------------------
 
@@ -453,20 +453,20 @@ class ModelingComponent(Configurable):
 
 # -----------------------------------------------------------------
 
-def load_fitting_configuration(modeling_path):
+#def load_fitting_configuration(modeling_path):
 
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
+    #"""
+    #This function ...
+    #:param modeling_path:
+    #:return:
+    #"""
 
     # Determine the path to the fitting configuration file
-    fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
-    if not fs.is_file(fitting_configuration_path): return None
+    #fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
+    #if not fs.is_file(fitting_configuration_path): return None
 
     # Open the configuration and return it
-    return Configuration.from_file(fitting_configuration_path)
+    #return Configuration.from_file(fitting_configuration_path)
 
 # -----------------------------------------------------------------
 
@@ -526,15 +526,15 @@ def load_modeling_history(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_spectral_convolution_flag(modeling_path):
+#def get_spectral_convolution_flag(modeling_path):
 
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
+    #"""
+    #This function ...
+    #:param modeling_path:
+    #:return:
+    #"""
 
-    fitting_configuration = load_fitting_configuration(modeling_path)
-    return fitting_configuration.spectral_convolution
+    #fitting_configuration = load_fitting_configuration(modeling_path)
+    #return fitting_configuration.spectral_convolution
 
 # -----------------------------------------------------------------

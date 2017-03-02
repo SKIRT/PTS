@@ -26,6 +26,70 @@ from ...core.tools import time
 
 # -----------------------------------------------------------------
 
+class RunsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RunsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.column_info.append(("Run name", str, None, "Name for the fitting run"))
+        self.column_info.append(("Model name", str, None, "Name of the model used"))
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, run_name, model_name):
+
+        """
+        This function ...
+        :param run_name:
+        :param model_name:
+        :return:
+        """
+
+        values = [run_name, model_name]
+
+        # Add row
+        self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def run_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Run name"])
+
+    # -----------------------------------------------------------------
+
+    def model_for_run(self, run_name):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        index = tables.find_index(self, run_name)
+        return self["Model name"][index]
+
+# -----------------------------------------------------------------
+
 class WeightsTable(FilterCurve):
 
     """

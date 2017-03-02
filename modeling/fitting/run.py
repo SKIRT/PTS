@@ -17,6 +17,18 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
+from ...core.launch.timing import TimingTable
+from ...core.launch.memory import MemoryTable
+from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestParametersTable
+from ...core.simulation.skifile import LabeledSkiFile
+from ...core.basics.distribution import Distribution
+from ..basics.instruments import load_instrument
+from ..core.model import Model
+from ...core.simulation.grids import load_grid
+from ...core.simulation.skifile import SkiFile
+from ...core.simulation.simulation import SkirtSimulation
+from .tables import ModelProbabilitiesTable
+from ...core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
@@ -26,110 +38,51 @@ class FittingRun(object):
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, modeling_path, name):
 
         """
         The constructor ...
         :return:
         """
 
-        # The path to the template ski file
-        self.template_ski_path = None
+        # Set the name of the fitting run
+        self.name = name
 
-        # The path to the fixed parameter values file
-        self.fixed_parameters_path = None
+        # Determine the fit path
+        fit_path = fs.join(modeling_path, "fit")
 
-        # The path to the fit/evolution directory
-        self.fit_generations_path = None
-
-        # The path to the fit/wavelength grids directory
-        self.fit_wavelength_grids_path = None
-
-        # The path to the wavelength grids table
-        self.wavelength_grids_table_path = None
-
-        # The path to the fit/dust grids directory
-        self.fit_dust_grids_path = None
-
-        # The path to the dust grids table
-        self.dust_grids_table_path = None
-
-        # The path to the fit/best directory
-        self.fit_best_path = None
-
-        # The path to the fit/instruments directory
-        self.fit_instruments_path = None
-
-        # The paths to the SED and frame instrument files
-        self.sed_instrument_path = None
-        self.frame_instrument_path = None
-        self.simple_instrument_path = None
-
-        # The path to the fit/prob directory
-        self.fit_prob_path = None
-
-        # The path to the generations table
-        self.generations_table_path = None
-
-        # The path to the best parameters table
-        self.best_parameters_table_path = None
-
-        # The path to the weights table
-        self.weights_table_path = None
-
-        # The path to the timing table
-        self.timing_table_path = None
-
-        # The path to the memory table
-        self.memory_table_path = None
-
-        # The path to the geometries directory
-        self.fit_geometries_path = None
-
-        # The directory with the probability distributions for the different free parameters
-        self.prob_distributions_path = None
-
-        # The directory for the posterior / parameter probability distribution tables
-        self.prob_parameters_path = None
-
-    # -----------------------------------------------------------------
-
-    def setup(self):
-
-        """
-        This function ...
-        :return:
-        """
+        # Set the path to the fitting configuration file
+        self.fitting_configuration_path =
 
         # Set the path to the template ski file
-        self.template_ski_path = fs.join(self.fit_path, "template.ski")
+        self.template_ski_path = fs.join(fit_path, "template.ski")
 
         # Set the path to the fixed parameters file
-        self.fixed_parameters_path = fs.join(self.fit_path, "fixed.dat")
+        self.fixed_parameters_path = fs.join(fit_path, "fixed.dat")
 
         # Set the path to the fit/generations directory
-        self.fit_generations_path = fs.create_directory_in(self.fit_path, "generations")
+        self.fit_generations_path = fs.create_directory_in(fit_path, "generations")
 
         # Set the path to the fit/wavelength grids directory
-        self.fit_wavelength_grids_path = fs.create_directory_in(self.fit_path, "wavelength grids")
+        self.fit_wavelength_grids_path = fs.create_directory_in(fit_path, "wavelength grids")
 
         # Set the path to the wavelength grids table
         self.wavelength_grids_table_path = fs.join(self.fit_wavelength_grids_path, "grids.dat")
 
         # Set the path to the fit/dust grids directory
-        self.fit_dust_grids_path = fs.create_directory_in(self.fit_path, "dust grids")
+        self.fit_dust_grids_path = fs.create_directory_in(fit_path, "dust grids")
 
         # Set the path to the dust grids table
         self.dust_grids_table_path = fs.join(self.fit_dust_grids_path, "grids.dat")
 
         # Set the path to the fit/best directory
-        self.fit_best_path = fs.create_directory_in(self.fit_path, "best")
+        self.fit_best_path = fs.create_directory_in(fit_path, "best")
 
         # Set the path to the fit/prob directory
-        self.fit_prob_path = fs.create_directory_in(self.fit_path, "prob")
+        self.fit_prob_path = fs.create_directory_in(fit_path, "prob")
 
         # Set the path to the fit/instruments directory
-        self.fit_instruments_path = fs.create_directory_in(self.fit_path, "instruments")
+        self.fit_instruments_path = fs.create_directory_in(fit_path, "instruments")
 
         # Set the path to the SED and frame instrument
         self.sed_instrument_path = fs.join(self.fit_instruments_path, "sed.instr")
@@ -137,19 +90,19 @@ class FittingRun(object):
         self.simple_instrument_path = fs.join(self.fit_instruments_path, "simple.instr")
 
         # Set the path to the fit/geometries directory
-        self.fit_geometries_path = fs.create_directory_in(self.fit_path, "geometries")
+        self.fit_geometries_path = fs.create_directory_in(fit_path, "geometries")
 
         # -----------------------------------------------------------------
 
         ## WEIGHTS TABLE
 
         # Set the path to the weights table file
-        self.weights_table_path = fs.join(self.fit_path, "weights.dat")
+        self.weights_table_path = fs.join(fit_path, "weights.dat")
 
         ## TIMING TABLE
 
         # Set the path to the timing table file
-        self.timing_table_path = fs.join(self.fit_path, "timing.dat")
+        self.timing_table_path = fs.join(fit_path, "timing.dat")
 
         # Initialize the timing table if necessary
         if not fs.is_file(self.timing_table_path):
@@ -159,7 +112,7 @@ class FittingRun(object):
         ## MEMORY TABLE
 
         # Set the path to the memory table file
-        self.memory_table_path = fs.join(self.fit_path, "memory.dat")
+        self.memory_table_path = fs.join(fit_path, "memory.dat")
 
         # Initialize the memory table if necessary
         if not fs.is_file(self.memory_table_path):
@@ -169,7 +122,7 @@ class FittingRun(object):
         ## GENERATIONS TABLE
 
         # Set the path to the generations table
-        self.generations_table_path = fs.join(self.fit_path, "generations.dat")
+        self.generations_table_path = fs.join(fit_path, "generations.dat")
 
         # Initialize the generations table if necessary
         if not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
@@ -187,7 +140,7 @@ class FittingRun(object):
         ## BEST PARAMETERS TABLE
 
         # Set the path to the best parameters table
-        self.best_parameters_table_path = fs.join(self.fit_path, "best_parameters.dat")
+        self.best_parameters_table_path = fs.join(fit_path, "best_parameters.dat")
 
         # Initialize the best parameters table if necessary
         if not fs.is_file(self.best_parameters_table_path) and self.free_parameter_labels is not None:
@@ -196,7 +149,99 @@ class FittingRun(object):
             best_parameters_table.saveto(self.best_parameters_table_path)
 
     # -----------------------------------------------------------------
-        
+    # NEW FROM MODELINGCOMPONENT
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_configuration(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Configuration.from_file(self.fitting_configuration_path) if fs.is_file(self.fitting_configuration_path) else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectral_convolution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.spectral_convolution
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.filters if self.fitting_configuration is not None else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def free_parameter_labels(self):
+
+        """
+        THIS FUNCTION GUARANTEES THAT THE LABELS ARE ALWAYS ORDERED ALPHABETICALLY !!
+        :return:
+        """
+
+        return sorted(self.fitting_configuration.free_parameters) if self.fitting_configuration is not None else None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def free_parameter_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ranges = dict()
+        for label in self.free_parameter_labels:
+            parameter_range = self.fitting_configuration[label + "_range"]
+            ranges[label] = parameter_range
+        return ranges
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.descriptions
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.units
+
+    # -----------------------------------------------------------------
+    # END
+    # -----------------------------------------------------------------
+
     @property
     def needs_input(self):
 
@@ -1510,3 +1555,39 @@ def has_unevaluated_generations(modeling_path):
     return False
     
 # -----------------------------------------------------------------
+# NEW FROM MODELINGCOMPONENT
+# -----------------------------------------------------------------
+
+def load_fitting_configuration(modeling_path):
+
+    """"
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    # Determine the path to the fitting configuration file
+    fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
+    if not fs.is_file(fitting_configuration_path): return None
+
+    # Open the configuration and return it
+    return Configuration.from_file(fitting_configuration_path)
+
+# -----------------------------------------------------------------
+
+def get_spectral_convolution_flag(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    fitting_configuration = load_fitting_configuration(modeling_path)
+    return fitting_configuration.spectral_convolution
+
+# -----------------------------------------------------------------
+# NEW
+# -----------------------------------------------------------------
+
+
