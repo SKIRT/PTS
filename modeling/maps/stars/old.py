@@ -297,7 +297,7 @@ class OldStellarMapMaker(MapsComponent):
         log.info("Writing the map of old stars ...")
 
         # Write
-        self.map.saveto(self.old_stellar_map_path)
+        #self.map.saveto(self.old_stellar_map_path)
 
     # -----------------------------------------------------------------
 

@@ -356,7 +356,7 @@ class SKIRTSmileSchema(object):
                 if len(choices) == 0: print(name, pname)
 
                 # Add property
-                properties[pname] = Map(ptype="string", description=description, default=default, choices=choices)
+                properties[pname] = Map(ptype="string", description=description, default=default, choices=choices, item=True)
 
             # Simulation item list
             elif ptype == "ITEM_LIST":
@@ -368,7 +368,7 @@ class SKIRTSmileSchema(object):
                 if len(choices) == 0: print(name, pname)
 
                 # Add property
-                properties[pname] = Map(ptype="string_list", description=description, choices=choices)
+                properties[pname] = Map(ptype="string_list", description=description, choices=choices, item=True)
 
             # Other
             else:
@@ -409,6 +409,9 @@ class SKIRTSmileSchema(object):
         # Get properties
         properties = self.properties_for_type(name)
 
+        # Keep track of the properties that are actually simulation items
+        simulation_items = []
+
         # Create definition
         definition = ConfigurationDefinition(write_config=False)
 
@@ -421,14 +424,18 @@ class SKIRTSmileSchema(object):
             max_value = properties[prop_name].max
             default = properties[prop_name].default
             choices = properties[prop_name].choices
+            item = properties[prop_name].item
 
             # Add setting
             if ptype == "boolean": definition.add_flag(prop_name, description, default)
-            elif default is None: definition.add_required(prop_name, ptype, description, min_value=min_value, max_value=max_value, dynamic_list=True)
+            elif default is None: definition.add_required(prop_name, ptype, description, choices=choices, min_value=min_value, max_value=max_value, dynamic_list=True)
             else: definition.add_optional(prop_name, ptype, description, default=default, choices=choices, min_value=min_value, max_value=max_value, dynamic_list=True)
 
+            # Add to list if simulation item
+            if item: simulation_items.append(prop_name)
+
         # Return the definition
-        return definition
+        return definition, simulation_items
 
     # -----------------------------------------------------------------
 
@@ -441,14 +448,38 @@ class SKIRTSmileSchema(object):
         """
 
         # Get the configuration definition
-        definition = self.definition_for_type(name)
+        definition, simulation_items = self.definition_for_type(name)
 
         # Prompt for parameters
         setter = InteractiveConfigurationSetter("configuration of " + name + " simulation item", add_cwd=False, add_logging=False)
         config = setter.run(definition, prompt_optional=True)
 
+        children = dict()
+
+        # Prompt for parameters of simulation item properties
+        for prop_name in simulation_items:
+
+            # List of simulation items
+            if isinstance(config[prop_name], list):
+
+                item_names = config[prop_name]
+
+                for item_name in item_names:
+                    child_parameters, child_children = self.prompt_parameters_for_type(item_name)
+                    children[item_name] = child_parameters, child_children
+
+            # Single simulation item
+            else:
+
+                item_name = config[prop_name]
+                child_parameters, child_children = self.prompt_parameters_for_type(item_name)
+                children[item_name] = child_parameters, child_children
+
         # Return the parameters
-        return config
+        #return config, simulation_items
+
+        # Return the parameters of this item and of its children
+        return config, children
 
     # -----------------------------------------------------------------
 

@@ -40,16 +40,17 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ModelingComponent, self).__init__(config)
+        super(ModelingComponent, self).__init__(config, interactive)
 
         # The modeling configuration file
         self.config_file_path = None

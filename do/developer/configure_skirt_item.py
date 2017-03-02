@@ -12,13 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import StringIO
-
 # Import the relevant PTS classes and modules
 from pts.core.prep.smile import SKIRTSmileSchema
-from pts.core.basics.configuration import ConfigurationDefinition, write_mapping
-from pts.core.basics.configuration import ArgumentConfigurationSetter, InteractiveConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, print_mapping
+from pts.core.basics.configuration import ArgumentConfigurationSetter
+from pts.core.tools import stringify
+from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -36,22 +35,38 @@ config = setter.run(definition)
 smile = SKIRTSmileSchema()
 
 # Get the configuration parameters interactively
-parameters = smile.prompt_parameters_for_type(config.name)
+parameters, children = smile.prompt_parameters_for_type(config.name)
 
-# Create output string
-output = StringIO.StringIO()
-
-# Write definition to string buffer
 print("")
-write_mapping(output, parameters)
+print(fmt.red + fmt.underlined + "Parameters" + fmt.reset)
+
+# Print mapping
+print_mapping(parameters)
+
+# Show simulation items
+print(fmt.blue + "Simulation items: " + fmt.reset + stringify.stringify(children.keys())[1].replace(",", ", "))
 print("")
 
-# Show contents
-contents = output.getvalue()
-for line in contents.split("\n"):
-    print(line)
+# Print children
+for name in children:
 
-# Close the string buffer
-output.close()
+    # Get parameters of child (and children)
+    parameters, child_children = children[name]
+
+    if len(parameters) == 0:
+
+        print("    " + fmt.red + fmt.underlined + name + ": no parameters" + fmt.reset)
+        print("")
+
+    else:
+
+        print("    " + fmt.red + fmt.underlined + name + " parameters" + fmt.reset)
+
+        # Print mapping
+        print_mapping(parameters, indent="    ")
+
+        # Show simulation items
+
+#print("")
 
 # -----------------------------------------------------------------

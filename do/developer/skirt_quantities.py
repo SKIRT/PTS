@@ -38,7 +38,7 @@ print("")
 for quantity in smile.quantities:
 
     units = smile.units_for_quantity(quantity)
-    print(fmt.green + fmt.underlined + quantity + fmt.reset + ": " + stringify.stringify(units)[1] + " [" + skirt_quantities_to_pts_quantities[quantity] + "]")
+    print(fmt.green + fmt.underlined + quantity + fmt.reset + ": " + stringify.stringify(units)[1].replace(" ", "").replace(",", ", ") + " [PTS: " + skirt_quantities_to_pts_quantities[quantity] + "]")
     print("")
 
 #print("")

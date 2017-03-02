@@ -48,16 +48,17 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(GalaxyModelingComponent, self).__init__(config)
+        super(GalaxyModelingComponent, self).__init__(config, interactive)
 
         # Attributes
         self.galaxy_name = None
@@ -76,22 +77,22 @@ class GalaxyModelingComponent(ModelingComponent):
         self.observed_sed_dustpedia_path = None
 
         # The path to the maps
-        self.old_stellar_map_path = None
-        self.young_stellar_map_path = None
-        self.ionizing_stellar_map_path = None
-        self.dust_map_path = None
+        #self.old_stellar_map_path = None
+        #self.young_stellar_map_path = None
+        #self.ionizing_stellar_map_path = None
+        #self.dust_map_path = None
 
         # The paths to the significance maps
-        self.old_stellar_significance_path = None
-        self.young_stellar_significance_path = None
-        self.ionizing_stellar_significance_path = None
-        self.dust_significance_path = None
+        #self.old_stellar_significance_path = None
+        #self.young_stellar_significance_path = None
+        #self.ionizing_stellar_significance_path = None
+        #self.dust_significance_path = None
 
         # The paths to the cutoff masks
-        self.old_stellar_cutoff_path = None
-        self.young_stellar_cutoff_path = None
-        self.ionizing_stellar_cutoff_path = None
-        self.dust_cutoff_path = None
+        #self.old_stellar_cutoff_path = None
+        #self.young_stellar_cutoff_path = None
+        #self.ionizing_stellar_cutoff_path = None
+        #self.dust_cutoff_path = None
 
         # The path to the galaxy properties file
         self.galaxy_properties_path = None
@@ -176,23 +177,23 @@ class GalaxyModelingComponent(ModelingComponent):
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
 
-        # Set the paths to the input maps
-        self.old_stellar_map_path = fs.join(self.maps_path, "old_stars.fits")
-        self.young_stellar_map_path = fs.join(self.maps_path, "young_stars.fits")
-        self.ionizing_stellar_map_path = fs.join(self.maps_path, "ionizing_stars.fits")
-        self.dust_map_path = fs.join(self.maps_path, "dust.fits")
+        # Set the paths to the input map
+        #self.old_stellar_map_path = fs.join(self.maps_path, "old_stars.fits")
+        #self.young_stellar_map_path = fs.join(self.maps_path, "young_stars.fits")
+        #self.ionizing_stellar_map_path = fs.join(self.maps_path, "ionizing_stars.fits")
+        #self.dust_map_path = fs.join(self.maps_path, "dust.fits")
 
         # The paths to the significance masks
-        self.old_stellar_significance_path = fs.join(self.maps_path, "old_stars_significance.fits")
-        self.young_stellar_significance_path = fs.join(self.maps_path, "young_stars_significance.fits")
-        self.ionizing_stellar_significance_path = fs.join(self.maps_path, "ionizing_stars_significance.fits")
-        self.dust_significance_path = fs.join(self.maps_path, "dust_significance.fits")
+        #self.old_stellar_significance_path = fs.join(self.maps_path, "old_stars_significance.fits")
+        #self.young_stellar_significance_path = fs.join(self.maps_path, "young_stars_significance.fits")
+        #self.ionizing_stellar_significance_path = fs.join(self.maps_path, "ionizing_stars_significance.fits")
+        #self.dust_significance_path = fs.join(self.maps_path, "dust_significance.fits")
 
         # The paths to the significance masks
-        self.old_stellar_cutoff_path = fs.join(self.maps_path, "old_stars_cutoff.fits")
-        self.young_stellar_cutoff_path = fs.join(self.maps_path, "young_stars_cutoff.fits")
-        self.ionizing_stellar_cutoff_path = fs.join(self.maps_path, "ionizing_stars_cutoff.fits")
-        self.dust_cutoff_path = fs.join(self.maps_path, "dust_cutoff.fits")
+        #self.old_stellar_cutoff_path = fs.join(self.maps_path, "old_stars_cutoff.fits")
+        #self.young_stellar_cutoff_path = fs.join(self.maps_path, "young_stars_cutoff.fits")
+        #self.ionizing_stellar_cutoff_path = fs.join(self.maps_path, "ionizing_stars_cutoff.fits")
+        #self.dust_cutoff_path = fs.join(self.maps_path, "dust_cutoff.fits")
 
         # Set the path to the galaxy properties file
         self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
@@ -968,134 +969,134 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def input_map_paths(self):
+    #@property
+    #def input_map_paths(self):
 
-        """
-        This function returns the paths to the input maps of stellar and dust distribution
-        :return:
-        """
+        #"""
+        #This function returns the paths to the input maps of stellar and dust distribution
+        #:return:
+        #"""
 
         # Check whether the FITS files exist
-        if not fs.is_file(self.old_stellar_map_path): raise RuntimeError("The map of old stars is not present. Run make_old_map first.")
-        if not fs.is_file(self.young_stellar_map_path): raise RuntimeError("The map of young stars is not present. Run make_young_map first.")
-        if not fs.is_file(self.ionizing_stellar_map_path): raise RuntimeError("The map of ionizing stars is not present. Run make_ionizing_map first.")
-        if not fs.is_file(self.dust_map_path): raise RuntimeError("The dust map is not present. Run make_dust_map first.")
+        #if not fs.is_file(self.old_stellar_map_path): raise RuntimeError("The map of old stars is not present. Run make_old_map first.")
+        #if not fs.is_file(self.young_stellar_map_path): raise RuntimeError("The map of young stars is not present. Run make_young_map first.")
+        #if not fs.is_file(self.ionizing_stellar_map_path): raise RuntimeError("The map of ionizing stars is not present. Run make_ionizing_map first.")
+        #if not fs.is_file(self.dust_map_path): raise RuntimeError("The dust map is not present. Run make_dust_map first.")
 
         # Return the paths to the maps of stars and dust
-        return [self.old_stellar_map_path, self.young_stellar_map_path, self.ionizing_stellar_map_path, self.dust_map_path]
+        #return [self.old_stellar_map_path, self.young_stellar_map_path, self.ionizing_stellar_map_path, self.dust_map_path]
 
     # -----------------------------------------------------------------
 
-    @property
-    def old_stellar_map_filename(self):
+    #@property
+    #def old_stellar_map_filename(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return fs.name(self.old_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_stellar_map_filename(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.young_stellar_map_path)
+        #return fs.name(self.old_stellar_map_path)
 
     # -----------------------------------------------------------------
 
-    @property
-    def ionizing_stellar_map_filename(self):
+    #@property
+    #def young_stellar_map_filename(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return fs.name(self.ionizing_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def dust_map_filename(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.name(self.dust_map_path)
+        #return fs.name(self.young_stellar_map_path)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def old_stars_map(self):
+    #@property
+    #def ionizing_stellar_map_filename(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        #return fs.name(self.ionizing_stellar_map_path)
+
+    # -----------------------------------------------------------------
+
+    #@property
+    #def dust_map_filename(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        #return fs.name(self.dust_map_path)
+
+    # -----------------------------------------------------------------
+
+    #@lazyproperty
+    #def old_stars_map(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check whether the file is present
-        if not fs.is_file(self.old_stellar_map_path): raise IOError("The map of old stars is not present. Run 'make_old_map' to create it")
+        #if not fs.is_file(self.old_stellar_map_path): raise IOError("The map of old stars is not present. Run 'make_old_map' to create it")
 
         # Open and return the frame of the old stellar distribution
-        return Frame.from_file(self.old_stellar_map_path)
+        #return Frame.from_file(self.old_stellar_map_path)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def young_stars_map(self):
+    #@lazyproperty
+    #def young_stars_map(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check whether the file is present
-        if not fs.is_file(self.young_stellar_map_path): raise IOError("The map of young stars is not present. Run 'make_young_map' to create it")
+        #if not fs.is_file(self.young_stellar_map_path): raise IOError("The map of young stars is not present. Run 'make_young_map' to create it")
 
         # Open and return the frame of the young stellar distribution
-        return Frame.from_file(self.young_stellar_map_path)
+        #return Frame.from_file(self.young_stellar_map_path)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def ionizing_stars_map(self):
+    #@lazyproperty
+    #def ionizing_stars_map(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check whether the file is present
-        if not fs.is_file(self.ionizing_stellar_map_path): raise IOError("The map of ionizing stars is not present. Run 'make_ionizing_map' to create it")
+        #if not fs.is_file(self.ionizing_stellar_map_path): raise IOError("The map of ionizing stars is not present. Run 'make_ionizing_map' to create it")
 
         # Open and return the frame of the ionizing stellar distribution
-        return Frame.from_file(self.ionizing_stellar_map_path)
+        #return Frame.from_file(self.ionizing_stellar_map_path)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def dust_map(self):
+    #@lazyproperty
+    #def dust_map(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check whether the file is present
-        if not fs.is_file(self.dust_map_path): raise IOError("The dust map is not present. Run 'make_dust_map' to create it")
+        #if not fs.is_file(self.dust_map_path): raise IOError("The dust map is not present. Run 'make_dust_map' to create it")
 
         # Open and return the frame of the dust distribution
-        return Frame.from_file(self.dust_map_path)
+        #return Frame.from_file(self.dust_map_path)
 
     # -----------------------------------------------------------------
 

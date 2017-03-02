@@ -34,6 +34,7 @@ from .base import ModelerBase
 from ..config.parameters import units as parameter_units
 from ..config.parameters import default_ranges, types, parameter_descriptions
 from ...core.basics.unit import parse_unit as u
+from ..build.builder import ModelBuilder
 
 # -----------------------------------------------------------------
 
@@ -148,6 +149,9 @@ class GalaxyModeler(ModelerBase):
 
         # 7. Make the maps
         self.make_maps()
+
+        # 8. Build model
+        self.build_model()
 
         # 8. Do the fitting
         self.fit()
@@ -603,6 +607,40 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    def build_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the model ...")
+
+        # Create configuration
+        config = dict()
+
+        # Set model name
+        config["name"] = "model_a"
+
+        # Create the builder
+        builder = ModelBuilder(config)
+
+        # Add an entry to the history
+        self.history.add_entry(FittingConfigurer.command_name())
+
+        # Set the working directory
+        builder.config.path = self.modeling_path
+
+        # Run the model builder
+        builder.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
     def configure_fit(self):
 
         """
@@ -615,6 +653,12 @@ class GalaxyModeler(ModelerBase):
 
         # Create configuration
         config = dict()
+
+        # Set the name for the fitting run
+        config["name"] = "run_1"
+
+        # Set the model name
+        config["model_name"] = "model_a"
 
         # Set free parameters
         config["parameters"] = free_parameters[self.modeling_config.method]

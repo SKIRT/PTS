@@ -19,6 +19,7 @@ from types import NoneType
 import sys
 import argparse
 from collections import OrderedDict
+import StringIO
 
 # Import the relevant PTS classes and modules
 from .map import Map
@@ -101,12 +102,13 @@ def create_configuration(definition, command_name, description, configuration_me
 
 # -----------------------------------------------------------------
 
-def get_config_for_class(cls, config=None):
+def get_config_for_class(cls, config=None, interactive=False):
 
     """
     This function ...
     :param cls:
     :param config:
+    :param interactive:
     :return:
     """
 
@@ -153,7 +155,9 @@ def get_config_for_class(cls, config=None):
             # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
             # if configuration_method is None: configuration_method = configuration_method_table
 
-            setter = PassiveConfigurationSetter(class_name, add_logging=False)
+            # Create configuration setter
+            if interactive: setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+            else: setter = PassiveConfigurationSetter(class_name, add_logging=False)
 
             # Create the configuration from the definition
             config = setter.run(definition)
@@ -663,6 +667,33 @@ def mapping_to_lines(lines, mapping, indent=""):
 
 # -----------------------------------------------------------------
 
+def print_mapping(mapping, indent=""):
+
+    """
+    This function ...
+    :param mapping:
+    :param indent:
+    :return:
+    """
+
+    # Create output string
+    output = StringIO.StringIO()
+
+    # Write mapping to string buffer
+    print("")
+    write_mapping(output, mapping, indent=indent)
+    print("")
+
+    # Show contents
+    contents = output.getvalue()
+    for line in contents.split("\n"):
+        print(line)
+
+    # Close the string buffer
+    output.close()
+
+# -----------------------------------------------------------------
+
 class ConfigurationDefinition(object):
 
     """
@@ -1163,7 +1194,8 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, choices=None, dynamic_list=False, suggestions=None, min_value=None, max_value=None):
+    def add_required(self, name, user_type, description, choices=None, dynamic_list=False, suggestions=None,
+                     min_value=None, max_value=None, forbidden=None):
 
         """
         This function ...
@@ -1175,6 +1207,7 @@ class ConfigurationDefinition(object):
         :param suggestions:
         :param min_value:
         :param max_value:
+        :param forbidden:
         :return:
         """
 
@@ -1183,12 +1216,13 @@ class ConfigurationDefinition(object):
 
         # Add
         self.required[name] = Map(type=real_type, description=description, choices=choices, dynamic_list=dynamic_list,
-                                  suggestions=suggestions, min_value=min_value, max_value=max_value)
+                                  suggestions=suggestions, min_value=min_value, max_value=max_value, forbidden=forbidden)
 
     # -----------------------------------------------------------------
 
     def add_positional_optional(self, name, user_type, description, default=None, choices=None,
-                                convert_default=False, dynamic_list=False, suggestions=None, min_value=None, max_value=None):
+                                convert_default=False, dynamic_list=False, suggestions=None, min_value=None,
+                                max_value=None, forbidden=None):
 
         """
         This function ...
@@ -1202,6 +1236,7 @@ class ConfigurationDefinition(object):
         :param suggestions:
         :param min_value:
         :param max_value:
+        :param forbidden:
         :return:
         """
 
@@ -1219,12 +1254,13 @@ class ConfigurationDefinition(object):
 
         # Add
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
-                                      dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value, max_value=max_value)
+                                      dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value,
+                                      max_value=max_value, forbidden=forbidden)
 
     # -----------------------------------------------------------------
 
     def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False,
-                     dynamic_list=False, suggestions=None, min_value=None, max_value=None):
+                     dynamic_list=False, suggestions=None, min_value=None, max_value=None, forbidden=None):
 
         """
         This function ...
@@ -1239,6 +1275,7 @@ class ConfigurationDefinition(object):
         :param suggestions:
         :param min_value:
         :param max_value:
+        :param forbidden:
         :return:
         """
 
@@ -1258,7 +1295,8 @@ class ConfigurationDefinition(object):
 
         # Add
         self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
-                                  letter=letter, dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value, max_value=max_value)
+                                  letter=letter, dynamic_list=dynamic_list, suggestions=suggestions,
+                                  min_value=min_value, max_value=max_value, forbidden=forbidden)
 
     # -----------------------------------------------------------------
 

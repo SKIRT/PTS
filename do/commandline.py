@@ -74,6 +74,10 @@ def start_target(command_name, target):
     #log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
     print("Finished " + command_name + " in " + str(seconds) + " seconds")
 
+    # Clear temporary data
+    print("Clearing temporary data ...")
+    fs.clear_directory(introspection.pts_temp_dir)
+
 # -----------------------------------------------------------------
 
 def show_all_available(scripts, tables=None):

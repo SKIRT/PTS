@@ -89,7 +89,7 @@ class ModelBuilder(BuildComponent):
         log.info("Building the stellar components ...")
 
         # Create the builder
-        builder = StarsBuilder()
+        builder = StarsBuilder(interactive=True)
 
         # Run
         builder.run()
@@ -107,7 +107,7 @@ class ModelBuilder(BuildComponent):
         log.info("Building the dust components ...")
 
         # Create the builder
-        builder = DustBuilder()
+        builder = DustBuilder(interactive=True)
 
         # Run
         builder.run()

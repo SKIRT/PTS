@@ -57,31 +57,33 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Set configuration
-        self.config = self.get_config(config)
+        self.config = self.get_config(config, interactive=interactive)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def get_config(cls, config=None):
+    def get_config(cls, config=None, interactive=False):
 
         """
         This function ...
         :param config:
+        :param interactive:
         :return:
         """
 
         from .configuration import get_config_for_class
 
         # Get the config
-        return get_config_for_class(cls, config)
+        return get_config_for_class(cls, config, interactive=interactive)
 
     # -----------------------------------------------------------------
 

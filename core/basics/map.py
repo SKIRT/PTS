@@ -66,6 +66,16 @@ class Map(dict):
 
     # -----------------------------------------------------------------
 
+    def __len__(self):
+
+        count = 0
+        for label in self:
+            if label.startswith("_"): continue
+            count += 1
+        return count
+
+    # -----------------------------------------------------------------
+
     def __eq__(self, other):
 
         """

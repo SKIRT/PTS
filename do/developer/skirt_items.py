@@ -55,7 +55,7 @@ for name in smile.concrete_types:
     if config.definitions:
 
         # Create definition
-        definition = smile.definition_for_type(name)
+        definition, simulation_items = smile.definition_for_type(name)
 
         # Create output string
         output = StringIO.StringIO()
@@ -92,6 +92,7 @@ for name in smile.concrete_types:
             max_value = properties[prop_name].max
             default = properties[prop_name].default
             choices = properties[prop_name].choices
+            item = properties[prop_name].item
 
             string = fmt.blue + prop_name + fmt.reset
 
@@ -102,6 +103,8 @@ for name in smile.concrete_types:
             if choices is not None: string += " [choices: " + stringify.stringify(choices.keys())[1] + "]"
 
             string += " " + fmt.darkgray + stringify.stringify_string_fancy(description, lines_prefix="    ")[1] + fmt.reset
+
+            if item: string += fmt.red + " [SIMULATION ITEM] " + fmt.reset
 
             print(" -  " + string)
             print("")

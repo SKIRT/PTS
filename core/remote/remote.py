@@ -225,6 +225,9 @@ class Remote(object):
         :return:
         """
 
+        # Clear the temporary data
+        #self.clear_pts_temp()
+
         # Disconnect from the remote host
         if self.connected: self.logout()
 
@@ -2638,7 +2641,7 @@ class Remote(object):
         if not self.is_directory(path): raise IOError("Not a directory: '" + path + "'")
 
         # Move
-        self.execute("mv " + old_path + " " + new_path)
+        self.execute("mv " + path + " " + new_path)
 
     # -----------------------------------------------------------------
 
@@ -2655,6 +2658,25 @@ class Remote(object):
 
         # Execute the command
         self.execute("rm -rf " + path, output=False)
+
+    # -----------------------------------------------------------------
+
+    def clear_directory(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Debugging
+        self.debug("Clearing directory '" + path + "' ...")
+
+        # Remove all files
+        for file_path in self.files_in_path(path): self.remove_file(file_path)
+
+        # Remove all d irectories
+        for directory_path in self.directories_in_path(path): self.remove_directory(directory_path)
 
     # -----------------------------------------------------------------
 
@@ -4912,6 +4934,21 @@ class Remote(object):
         path = fs.join(self.pts_root_path, "temp")
         if not self.is_directory(path): self.create_directory(path)
         return path
+
+    # -----------------------------------------------------------------
+
+    def clear_pts_temp(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.info("Clearing temporary data ...")
+
+        # Clear the temporary directory
+        self.clear_directory(self.pts_temp_path)
 
     # -----------------------------------------------------------------
 

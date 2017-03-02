@@ -32,22 +32,26 @@ class StarsBuilder(BuildComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(StarsBuilder, self).__init__(config)
+        super(StarsBuilder, self).__init__(config, interactive)
 
         # The parameters
         self.parameters = dict()
 
         # The stellar components
         self.components = dict()
+
+        # The deprojections
+        self.deprojections = dict()
 
         # The SKIRT smile schema
         self.smile = None
@@ -273,6 +277,8 @@ class StarsBuilder(BuildComponent):
         # Inform the user
         log.info("Loading the map of old stars ...")
 
+
+
     # -----------------------------------------------------------------
 
     def create_deprojection_old(self):
@@ -414,12 +420,16 @@ class StarsBuilder(BuildComponent):
         :return:
         """
 
+    # -----------------------------------------------------------------
+
     def create_deprojection_young(self):
 
         """
         This function ...
         :return:
         """
+
+    # -----------------------------------------------------------------
 
     def build_ionizing(self):
 
@@ -433,6 +443,12 @@ class StarsBuilder(BuildComponent):
 
         # Set the parameters
         self.set_ionizing_parameters()
+
+        # Load map
+        self.load_ionizing_map()
+
+        # Create deprojection model
+        self.create_deprojection_ionizing()
 
     # -----------------------------------------------------------------
 
@@ -514,6 +530,24 @@ class StarsBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
+    def load_ionizing_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_deprojection_ionizing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def build_additional(self):
 
         """
@@ -581,7 +615,7 @@ class StarsBuilder(BuildComponent):
         normalization_type = self.parameters[name].normalization
 
         # Get parameters for this simulation item
-        parameters = self.smile.prompt_parameters_for_type(normalization_type)
+        parameters, children = self.smile.prompt_parameters_for_type(normalization_type)
 
         # Return the parameters
         return parameters
@@ -602,7 +636,7 @@ class StarsBuilder(BuildComponent):
         geometry_type = self.parameters[name].geometry
 
         # Get parameters for this simulation item
-        parameters = self.smile.prompt_parameters_for_type(geometry_type)
+        parameters, children = self.smile.prompt_parameters_for_type(geometry_type)
 
         # Return the parameters
         return parameters

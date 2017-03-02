@@ -17,6 +17,7 @@ from .component import BuildComponent
 from ...core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter
 from ...core.tools.logging import log
 from ...core.basics.unit import parse_unit as u
+from ...core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -26,16 +27,26 @@ class DustBuilder(BuildComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(DustBuilder, self).__init__(config)
+        super(DustBuilder, self).__init__(config, interactive)
+
+        # The parameters
+        self.parameters = dict()
+
+        # The components
+        self.components = dict()
+
+        # The SKIRT smile schema
+        self.smile = None
 
     # -----------------------------------------------------------------
 
@@ -79,6 +90,13 @@ class DustBuilder(BuildComponent):
         :return:
         """
 
+        # Get parameters
+        self.get_dust_disk_parameters()
+
+    # -----------------------------------------------------------------
+
+    def get_dust_disk_parameters(self):
+
         # Inform the user
         log.info("Configuring the dust component ...")
 
@@ -101,6 +119,9 @@ class DustBuilder(BuildComponent):
         # Prompt for settings
         setter = InteractiveConfigurationSetter("dust disk")
         config = setter.run(definition)
+
+        # Set the parameters
+        self.parameters["disk"] = config
 
         ## NEW: SET FIXED PARAMETERS
         #self.fixed["dust_scaleheight"] = scale_height
