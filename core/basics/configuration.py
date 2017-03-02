@@ -72,6 +72,32 @@ def prompt_proceed():
 
 # -----------------------------------------------------------------
 
+def prompt_string(name, description, choices=None, default=None):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param choices:
+    :param default:
+    :return:
+    """
+
+    # Create definition
+    definition = ConfigurationDefinition(write_config=False)
+
+    if default is not None: definition.add_optional(name, "string", description, choices=choices, default=default)
+    else: definition.add_required(name, "string", description, choices=choices)
+
+    # Create setter
+    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False)
+
+    # Get the answer
+    config = setter.run(definition, prompt_optional=True)
+    return config[name]
+
+# -----------------------------------------------------------------
+
 def create_configuration(definition, command_name, description, configuration_method):
 
     """

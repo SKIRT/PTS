@@ -329,6 +329,18 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.fitting_run
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def generation_name(self):
 
         """

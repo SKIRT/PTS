@@ -9,16 +9,11 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
-from pts.modeling.fitting.component import get_finished_generations, get_last_finished_generation
+from pts.modeling.fitting.component import get_run_names
 
 # -----------------------------------------------------------------
 
-# Set the default option for the generation name
-last_generation_name = get_last_finished_generation(fs.cwd())
-if last_generation_name is None: raise RuntimeError("No generations found in fitting directory")
-
-# Set the choices for the generationn name
-generation_names = get_finished_generations(fs.cwd())
+modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
@@ -29,8 +24,11 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_optional("remote", "string", "remote host on which to launch the simulation", "nancy", choices=find_host_ids())
 definition.add_optional("images_remote", "string", "the remote host on which to make the observed images", "nancy", choices=find_host_ids())
 
-# Required settings
-definition.add_positional_optional("generation", "string", "the name of the (finished) generation for which to launch the best simulation for analysis", default=last_generation_name, choices=generation_names)
+# The fitting run to use for analysis
+run_names = get_run_names(modeling_path)
+if len(run_names) == 0: raise RuntimeError("There are no fitting runs")
+elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", "name of the fitting run to use")
+else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
 
 # Settings for the wavelength grid
 definition.add_optional("nwavelengths", "integer", "the number of wavelengths to simulate the best model", 450)

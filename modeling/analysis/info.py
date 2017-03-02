@@ -32,6 +32,7 @@ class AnalysisRunInfo(object):
 
         self.name = None
         self.path = None
+        self.fitting_run = None
         self.generation_name = None
         self.simulation_name = None
         self.parameter_values = None
@@ -57,6 +58,7 @@ class AnalysisRunInfo(object):
         info = cls()
         info.name = map.name
         info.path = map.path
+        info.fitting_run = map.fitting_run
         info.generation_name = map.generation_name
         info.simulation_name = map.simulation_name
         info.parameter_values = map.parameter_values
@@ -93,6 +95,7 @@ class AnalysisRunInfo(object):
         map = Map()
         map.name = self.name
         map.path = self.path
+        map.fitting_run = self.fitting_run
         map.generation_name = self.generation_name
         map.simulation_name = self.simulation_name
         map.parameter_valus = self.parameter_values

@@ -475,9 +475,6 @@ class SKIRTSmileSchema(object):
                 child_parameters, child_children = self.prompt_parameters_for_type(item_name)
                 children[item_name] = child_parameters, child_children
 
-        # Return the parameters
-        #return config, simulation_items
-
         # Return the parameters of this item and of its children
         return config, children
 

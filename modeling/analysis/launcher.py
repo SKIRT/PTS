@@ -35,6 +35,7 @@ from .info import AnalysisRunInfo
 from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
 from ...core.advanced.dustgridtool import DustGridTool
 from ...core.basics.unit import parse_unit as u
+from ...core.basics.configuration import prompt_string
 
 # -----------------------------------------------------------------
 
@@ -59,6 +60,9 @@ class AnalysisLauncher(AnalysisComponent):
 
         # The remote SKIRT environment
         self.remote = SkirtRemote()
+
+        # The name of the generation
+        self.generation_name = None
 
         # The name of the analysis run
         self.analysis_run_name = None
@@ -180,6 +184,23 @@ class AnalysisLauncher(AnalysisComponent):
         # Call the setup function of the base class
         super(AnalysisLauncher, self).setup()
 
+        # Prompt for generation name
+        fitting_run = self.config.fitting_run
+
+        # ...
+
+        #"the name of the (finished) generation for which to launch the best simulation for analysis", default=last_generation_name, choices=generation_names)
+
+        # Set the default option for the generation name
+        # last_generation_name = get_last_finished_generation(fs.cwd())
+        # if last_generation_name is None: raise RuntimeError("No generations found in fitting directory")
+
+        # Set the choices for the generationn name
+        # generation_names = get_finished_generations(fs.cwd())
+
+        # Get the generation name
+        self.generation_name = prompt_string("generation", "name of the (finished) generation for which to launch the best simulation for analysis")
+
         # Setup the remote execution environment
         self.remote.setup(self.config.remote)
 
@@ -202,7 +223,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.run_info_path = fs.join(self.analysis_run_path, "info.dat")
 
         # Load the best model for the specified generation
-        self.best_model = get_best_model_for_generation(self.config.path, self.config.generation)
+        self.best_model = get_best_model_for_generation(self.config.path, self.generation_name)
 
         # Create the analysis run info
         self.create_info()
@@ -228,7 +249,8 @@ class AnalysisLauncher(AnalysisComponent):
         # Set the info
         self.analysis_run_info.name = self.analysis_run_name
         self.analysis_run_info.path = self.analysis_run_path
-        self.analysis_run_info.generation_name = self.config.generation
+        self.analysis_run_info.fitting_run = self.config.fitting_run
+        self.analysis_run_info.generation_name = self.generation_name
         self.analysis_run_info.simulation_name = self.best_model.simulation_name
         self.analysis_run_info.parameter_values = self.best_model.parameter_values
         self.analysis_run_info.chi_squared = self.best_model.chi_squared
@@ -273,7 +295,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Loading the ski file ...")
 
         # Load the ski file
-        self.ski = get_ski_file_for_simulation(self.config.path, self.config.generation, self.best_model.simulation_name)
+        self.ski = get_ski_file_for_simulation(self.config.path, self.generation_name, self.best_model.simulation_name)
 
     # -----------------------------------------------------------------
 
