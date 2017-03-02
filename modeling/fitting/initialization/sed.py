@@ -44,6 +44,9 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         FittingComponent.__init__(self, config)
         SEDModelingComponent.__init__(self, config)
 
+        # The fitting run
+        self.fitting_run = None
+
         # The table of weights for each band
         self.weights = None
 

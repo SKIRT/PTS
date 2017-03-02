@@ -22,6 +22,7 @@ from astropy.utils import lazyproperty
 from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from .tables import RunsTable
+from .run import FittingRun
 
 # -----------------------------------------------------------------
 
@@ -69,8 +70,26 @@ class FittingComponent(ModelingComponent):
         # Set the path to the runs table
         self.runs_table_path = fs.join(self.fit_path, "runs.dat")
 
+        # Create the runs table if it doesn't exist yet
+        if not fs.is_file(self.runs_table_path):
+            table = RunsTable()
+            table.saveto(self.runs_table_path)
+
         # Set the path to the database
         self.database_path = fs.join(self.fit_path, "database.db")
+
+    # -----------------------------------------------------------------
+
+    def load_fitting_run(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        model_name = self.model_for_run(name)
+        return FittingRun(self.config.path, name, model_name)
 
     # -----------------------------------------------------------------
 

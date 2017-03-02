@@ -24,7 +24,6 @@ from ...core.basics.configurable import Configurable
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.filter.broad import BroadBandFilter
-from ...core.filter.filter import parse_filter
 from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
 
@@ -293,15 +292,15 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fitting_filters(self):
+    #@lazyproperty
+    #def fitting_filters(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return map(parse_filter, self.fitting_filter_names)
+        #return map(parse_filter, self.fitting_filter_names)
 
     # -----------------------------------------------------------------
 

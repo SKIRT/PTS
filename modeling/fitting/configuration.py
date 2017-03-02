@@ -22,6 +22,7 @@ from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration, combine_configs
 from ..config.parameters import parsing_types_for_parameter_types, unit_parsing_type
 from ..config.parameters import default_units, possible_parameter_types_descriptions
+from .run import FittingRun
 
 # -----------------------------------------------------------------
 
@@ -47,6 +48,9 @@ class FittingConfigurer(FittingComponent):
         super(FittingConfigurer, self).__init__(config)
 
         # -- Attributes --
+
+        # The fitting run
+        self.fitting_run = None
 
         # The default ranges
         self.default_ranges = dict()
@@ -102,10 +106,13 @@ class FittingConfigurer(FittingComponent):
         # 8. Get the fitting filters
         self.set_filters()
 
-        # 9. Adjust the labels of the template ski file
+        # 9. Create the fitting configuration
+        self.create_config()
+
+        # 10. Adjust the labels of the template ski file
         self.adjust_labels()
 
-        # 10. Writing
+        # 11. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -120,6 +127,9 @@ class FittingConfigurer(FittingComponent):
         # Call the setup function of the base class
         super(FittingConfigurer, self).setup()
 
+        # Create the fitting run
+        self.create_fitting_run()
+
         # Get the default ranges
         self.default_ranges = kwargs.pop("default_ranges", dict())
 
@@ -133,6 +143,60 @@ class FittingConfigurer(FittingComponent):
 
         # Set settings dict
         if "settings" in kwargs: self.settings = kwargs.pop("settings")
+
+    # -----------------------------------------------------------------
+
+    def create_fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the fitting run ...")
+
+        # Create the run
+        self.fitting_run = FittingRun(self.config.path, self.config.name, self.config.model_name)
+
+        # Create the run directory
+        fs.create_directory(self.fitting_run.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.model_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def run_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.path
 
     # -----------------------------------------------------------------
 
@@ -464,6 +528,24 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def create_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the fitting run configuration ...")
+
+        # Combine configs
+        self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config, self.units_config, self.ranges_config, self.filters_config)
+
+        # Set additional settings
+        for label in self.settings: self.fitting_config[label] = self.settings[label]
+
+    # -----------------------------------------------------------------
+
     def adjust_labels(self):
 
         """
@@ -501,6 +583,9 @@ class FittingConfigurer(FittingComponent):
         # Write the ski file template
         self.write_ski()
 
+        # Write the runs table
+        self.write_table()
+
     # -----------------------------------------------------------------
 
     def write_config(self):
@@ -511,16 +596,10 @@ class FittingConfigurer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing the fitting configuration file ...")
-
-        # Combine configs
-        self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config, self.units_config, self.ranges_config, self.filters_config)
-
-        # Set additional settings
-        for label in self.settings: self.fitting_config[label] = self.settings[label]
+        log.info("Writing the fitting configuration ...")
 
         # Write the configuration
-        self.fitting_config.saveto(self.fitting_configuration_path)
+        self.fitting_config.saveto(self.fitting_run.fitting_configuration_path)
 
     # -----------------------------------------------------------------
 
@@ -531,7 +610,27 @@ class FittingConfigurer(FittingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the template ski file ...")
+
         # Save the ski file template
-        self.ski.saveto(self.template_ski_path)
+        self.ski.saveto(self.fitting_run.template_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the runs table ...")
+
+        # Open the runs table, add the new run and save
+        table = self.runs_table
+        table.add_run(self.fitting_run)
+        table.save()
 
 # -----------------------------------------------------------------

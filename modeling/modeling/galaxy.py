@@ -706,8 +706,14 @@ class GalaxyModeler(ModelerBase):
         # Inform the user
         log.info("Initializing the fitting ...")
 
+        # Create configuration
+        config = dict()
+
+        # Set the name for the fitting run
+        config["name"] = "run_1"
+
         # Create the fitting initializer
-        initializer = GalaxyFittingInitializer()
+        initializer = GalaxyFittingInitializer(config)
 
         # Add an entry to the history
         self.history.add_entry(GalaxyFittingInitializer.command_name())

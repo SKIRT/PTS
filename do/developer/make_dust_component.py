@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.prep.smile import SKIRTSmileSchema, show_parameters, merge_parameters
+from pts.core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -21,12 +21,9 @@ from pts.core.prep.smile import SKIRTSmileSchema, show_parameters, merge_paramet
 smile = SKIRTSmileSchema()
 
 # Get the configuration parameters interactively
-parameters, children = smile.prompt_parameters_for_type("DustComp")
+parameters = smile.prompt_parameters_for_type("DustComp", merge=True)
 
-# Show the parameters
-#show_parameters(parameters, children)
-
-merged = merge_parameters(parameters, children)
-print(merged)
+# Show
+print(parameters)
 
 # -----------------------------------------------------------------

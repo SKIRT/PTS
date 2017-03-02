@@ -29,6 +29,7 @@ from ...core.simulation.skifile import SkiFile
 from ...core.simulation.simulation import SkirtSimulation
 from .tables import ModelProbabilitiesTable
 from ...core.basics.configuration import Configuration
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -38,10 +39,13 @@ class FittingRun(object):
     This class...
     """
 
-    def __init__(self, modeling_path, name):
+    def __init__(self, modeling_path, name, model_name):
 
         """
         The constructor ...
+        :param modeling_path:
+        :param name:
+        :param model_name:
         :return:
         """
 
@@ -51,38 +55,44 @@ class FittingRun(object):
         # Determine the fit path
         fit_path = fs.join(modeling_path, "fit")
 
+        # Set the path for this fitting run
+        self.path = fs.join(fit_path, self.name)
+
+        # Set the name of the model used
+        self.model_name = model_name
+
         # Set the path to the fitting configuration file
-        self.fitting_configuration_path =
+        self.fitting_configuration_path = fs.join(self.path, "configuration.cfg")
 
         # Set the path to the template ski file
-        self.template_ski_path = fs.join(fit_path, "template.ski")
+        self.template_ski_path = fs.join(self.path, "template.ski")
 
         # Set the path to the fixed parameters file
-        self.fixed_parameters_path = fs.join(fit_path, "fixed.dat")
+        self.fixed_parameters_path = fs.join(self.path, "fixed.dat")
 
         # Set the path to the fit/generations directory
-        self.fit_generations_path = fs.create_directory_in(fit_path, "generations")
+        self.fit_generations_path = fs.create_directory_in(self.path, "generations")
 
         # Set the path to the fit/wavelength grids directory
-        self.fit_wavelength_grids_path = fs.create_directory_in(fit_path, "wavelength grids")
+        self.fit_wavelength_grids_path = fs.create_directory_in(self.path, "wavelength grids")
 
         # Set the path to the wavelength grids table
         self.wavelength_grids_table_path = fs.join(self.fit_wavelength_grids_path, "grids.dat")
 
         # Set the path to the fit/dust grids directory
-        self.fit_dust_grids_path = fs.create_directory_in(fit_path, "dust grids")
+        self.fit_dust_grids_path = fs.create_directory_in(self.path, "dust grids")
 
         # Set the path to the dust grids table
         self.dust_grids_table_path = fs.join(self.fit_dust_grids_path, "grids.dat")
 
         # Set the path to the fit/best directory
-        self.fit_best_path = fs.create_directory_in(fit_path, "best")
+        self.fit_best_path = fs.create_directory_in(self.path, "best")
 
         # Set the path to the fit/prob directory
-        self.fit_prob_path = fs.create_directory_in(fit_path, "prob")
+        self.fit_prob_path = fs.create_directory_in(self.path, "prob")
 
         # Set the path to the fit/instruments directory
-        self.fit_instruments_path = fs.create_directory_in(fit_path, "instruments")
+        self.fit_instruments_path = fs.create_directory_in(self.path, "instruments")
 
         # Set the path to the SED and frame instrument
         self.sed_instrument_path = fs.join(self.fit_instruments_path, "sed.instr")
@@ -90,7 +100,7 @@ class FittingRun(object):
         self.simple_instrument_path = fs.join(self.fit_instruments_path, "simple.instr")
 
         # Set the path to the fit/geometries directory
-        self.fit_geometries_path = fs.create_directory_in(fit_path, "geometries")
+        self.fit_geometries_path = fs.create_directory_in(self.path, "geometries")
 
         # -----------------------------------------------------------------
 
@@ -173,6 +183,18 @@ class FittingRun(object):
         """
 
         return self.fitting_configuration.spectral_convolution
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return map(parse_filter, self.fitting_filter_names)
 
     # -----------------------------------------------------------------
 
@@ -362,11 +384,13 @@ class FittingRun(object):
         # INitialize list
         names = []
 
+        modeling_path = fs.directory_of(fs.directory_of(self.path))
+
         # Loop over the finished generations
         for generation_name in self.finished_generations:
 
             # Get the probabilities table
-            prob_table = get_model_probabilities_table(self.config.path, generation_name)
+            prob_table = get_model_probabilities_table(modeling_path, generation_name)
 
             # If table doesn't exist yet
             if prob_table is None: names.append(generation_name)

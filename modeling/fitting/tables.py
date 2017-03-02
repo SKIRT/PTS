@@ -49,6 +49,18 @@ class RunsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def add_run(self, run):
+
+        """
+        This function ...
+        :param run:
+        :return:
+        """
+
+        self.add_entry(run.name, run.model_name)
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, run_name, model_name):
 
         """
