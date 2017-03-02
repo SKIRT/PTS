@@ -1265,6 +1265,9 @@ class ConfigurationDefinition(object):
         :return:
         """
 
+        # Check
+        if choices is not None and suggestions is not None: raise ValueError("Cannot specify both choices and suggestions at the same time")
+
         # Get the real type
         real_type = get_real_type(user_type)
 
@@ -1293,6 +1296,9 @@ class ConfigurationDefinition(object):
         :param forbidden:
         :return:
         """
+
+        # Check
+        if choices is not None and suggestions is not None: raise ValueError("Cannot specify both choices and suggestions at the same time")
 
         # Get the real type
         real_type = get_real_type(user_type)
@@ -1332,6 +1338,9 @@ class ConfigurationDefinition(object):
         :param forbidden:
         :return:
         """
+
+        # Check
+        if choices is not None and suggestions is not None: raise ValueError("Cannot specify both choices and suggestions at the same time")
 
         if self.prefix is not None and letter is not None: raise ValueError("Cannot assign letter argument for child configuration definition")
 
@@ -1515,6 +1524,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
             if answer == "": prompt_optional = True
             else: prompt_optional = parsing.boolean(answer)
 
+        # Get the settings from an interactive prompt
         add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional)
 
 # -----------------------------------------------------------------
@@ -2363,50 +2373,88 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # No choices
         if choices is None:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
+                # Dynamic list
                 if dynamic_list:
 
                     real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
 
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
                     log.info("Provide a value for a list item and press ENTER. Leave blank and press ENTER to end the list")
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
 
                     value = []
                     while True:
                         answer = raw_input("   : ")
                         if answer == "": break # end of the list
                         try:
-                            single_value = real_base_type(answer)
+                            #single_value = real_base_type(answer)
+                            single_value = the_type(answer)
                             value.append(single_value)
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+                # Not a dynamic list
                 else:
 
                     log.info("Provide the values, seperated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
 
                     value = []  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
                         answer = raw_input("   : ")
                         try:
-                            value = real_type(answer)
+                            #value = real_type(answer)
+                            value = the_type
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+            # Single-value setting
             else:
 
                 log.info("Provide a value")
+
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
                     answer = raw_input("   : ")
                     try:
-                        value = real_type(answer)
+                        #value = real_type(answer)
+                        value = the_type(answer)
                         break
                     except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # More than one choice
         elif len(choices) > 1:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"): # list-type setting
 
                 log.info("Choose one or more of the following options (separated only by commas)")
@@ -2426,6 +2474,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         break
                     except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+            # Single-value setting
             else:
 
                 log.info("Choose one of the following options")
@@ -2449,12 +2498,14 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # Only one choice
         else:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 # Inform the user
                 log.info("Only one option: automatically using a list of this value '[" + str(choices[0]) + "]' for " + name)
                 value = [choices[0]]
 
+            # Single-value setting
             else:
 
                 # Inform the user
@@ -2496,8 +2547,10 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         #
         log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
+        # Choices are given
         if choices_list is not None:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 log.info("or choose one or more of the following options (separated only by commas)")
@@ -2544,13 +2597,23 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+        # No choices
         else:
 
+            # List-typ setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
+                # Dynamic list
                 if dynamic_list:
 
                     log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
 
                     value = [] # to remove warning
                     while True:
@@ -2562,9 +2625,17 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                                 value.append(single_value)
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+                # Not a dynamic list
                 else:
 
                     log.info("or provide other values, separated by commas")
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -2578,9 +2649,17 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                                 break
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+            # Not a list
             else:
 
                 log.info("or provide another value")
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -2630,8 +2709,10 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         #
         log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
+        # Choices are given
         if choices_list is not None:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 log.info("or choose one or more of the following options (separated only by commas)")
@@ -2656,6 +2737,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+            # Not a list
             else:
 
                 log.info("or choose one of the following options")
@@ -2680,13 +2762,23 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+        # No choices
         else:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
+                # Dynamic list
                 if dynamic_list:
 
                     log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
 
                     value = [] # to remove warning
                     while True:
@@ -2698,9 +2790,17 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                                 value.append(single_value)
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+                # Not dynamic list
                 else:
 
                     log.info("or provide other values, separated by commas")
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -2714,9 +2814,17 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                                 break
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+            # Single-value setting
             else:
 
                 log.info("or provide another value")
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
 
                 value = default # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
@@ -2815,6 +2923,45 @@ def add_nested_dict_values_to_map(mapping, dictionary):
 
 # -----------------------------------------------------------------
 
+def smart_type(argument, real_type, min_value, max_value, forbidden):
+
+    """
+    This function ...
+    :param argument:
+    :param real_type:
+    :param min_value:
+    :param max_value:
+    :param forbidden:
+    :return:
+    """
+
+    parsed = real_type(argument)
+    if min_value is not None and parsed < min_value: raise ValueError("Value should be higher than " + stringify.stringify_not_list(min_value)[1])
+    if max_value is not None and parsed > max_value: raise ValueError("Value should be lower than " + stringify.stringify_not_list(max_value)[1])
+    if forbidden is not None and parsed in forbidden: raise ValueError("Value " + stringify.stringify_not_list(parsed) + " is forbidden")
+
+    # All checks passed, return the parsed value
+    return parsed
+
+# -----------------------------------------------------------------
+
+def smart_list_type(argument, real_base_type, min_value, max_value, forbidden):
+
+    """
+    This function ...
+    :param argument:
+    :param real_base_type:
+    :param min_value:
+    :param max_value:
+    :param forbidden:
+    :return:
+    """
+
+    arguments = [argument.strip() for argument in argument.split(",")]
+    return [smart_type(argument, real_base_type, min_value, max_value, forbidden) for argument in arguments]
+
+# -----------------------------------------------------------------
+
 def construct_type(real_type, min_value, max_value, forbidden):
 
     """
@@ -2826,20 +2973,22 @@ def construct_type(real_type, min_value, max_value, forbidden):
     :return:
     """
 
-    # Define smart type
-    def smart_type(argument, real_type, min_value, max_value, forbidden):
-        parsed = real_type(argument)
-        if min_value is not None and parsed < min_value: raise ValueError("Value should be higher than " + stringify.stringify_not_list(min_value)[1])
-        if max_value is not None and parsed > max_value: raise ValueError("Value should be lower than " + stringify.stringify_not_list(max_value)[1])
-        if forbidden is not None and parsed in forbidden: raise ValueError("Value " + stringify.stringify_not_list(parsed) + " is forbidden")
+    # List type
+    if real_type.__name__.endswith("list"):
 
-        # All checks passed, return the parsed value
-        return parsed
+        # Determine base type parsing function
+        base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+        the_type = partial(smart_list_type, base_type, min_value, max_value, forbidden)
 
-    # Construct the actual type
-    the_type = partial(smart_type, **{"real_type": real_type, "min_value": min_value, "max_value": max_value, "forbidden": forbidden})
+        # Return the new function
+        return the_type
 
-    # Return the new function
-    return the_type
+    else:
+
+        # Construct the actual type
+        the_type = partial(smart_type, **{"real_type": real_type, "min_value": min_value, "max_value": max_value, "forbidden": forbidden})
+
+        # Return the new function
+        return the_type
 
 # -----------------------------------------------------------------
