@@ -23,6 +23,7 @@ from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_
 from ...core.basics.unit import parse_unit as u
 from ..core.mappings import Mappings
 from ...core.prep.smile import SKIRTSmileSchema
+from ..basics.models import DeprojectionModel3D
 
 # -----------------------------------------------------------------
 
@@ -46,6 +47,9 @@ class StarsBuilder(BuildComponent):
 
         # The parameters
         self.parameters = dict()
+
+        # The maps
+        self.maps = dict()
 
         # The stellar components
         self.components = dict()
@@ -277,7 +281,8 @@ class StarsBuilder(BuildComponent):
         # Inform the user
         log.info("Loading the map of old stars ...")
 
-
+        # Set the map
+        self.maps["old"] = None
 
     # -----------------------------------------------------------------
 
@@ -305,21 +310,18 @@ class StarsBuilder(BuildComponent):
         #self.fixed["position_angle"] = pa
         ##
 
-        # Get the center pixel
-        pixel_center = self.galaxy_properties.center.to_pixel(self.reference_wcs)
-        xc = pixel_center.x
-        yc = pixel_center.y
+        # Get WCS of old stellar map
+        reference_wcs = self.maps["old"].wcs
 
-        # Get the pixelscale in physical units
-        pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        # Get center coordinate of galaxy
+        galaxy_center = self.galaxy_properties.center
 
-        # Get the number of x and y pixels
-        x_size = self.reference_wcs.xsize
-        y_size = self.reference_wcs.ysize
+        # Create deprojection
+        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
+        deprojection = DeprojectionModel3D.from_wcs(reference_wcs, galaxy_center, distance, pa, inclination, filename, hz)
 
-        # Create the deprojection model
-        deprojection = DeprojectionModel3D(filename, pixelscale, pa, inclination, x_size, y_size, xc, yc, hz)
+        # Set the deprojection model
+        self.deprojections["old"] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -419,6 +421,12 @@ class StarsBuilder(BuildComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the map of young stars ...")
+
+        # Set the map
+        self.maps["young"] = None
 
     # -----------------------------------------------------------------
 

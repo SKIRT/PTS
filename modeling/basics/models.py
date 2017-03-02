@@ -19,6 +19,7 @@ from abc import ABCMeta
 # Import astronomical modules
 from astropy.coordinates import Angle
 from astropy.modeling.models import Sersic2D
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
@@ -238,6 +239,42 @@ class DeprojectionModel3D(Model):
 
         # Set the properties
         self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_wcs(cls, wcs, galaxy_center, distance, pa, inclination, filepath, scale_height):
+
+        """
+        This function ...
+        :param wcs:
+        :param galaxy_center:
+        :param distance:
+        :param pa:
+        :param inclination:
+        :param filepath
+        :param scale_height:
+        :return:
+        """
+
+        # Get the center pixel
+        pixel_center = galaxy_center.to_pixel(wcs)
+        xc = pixel_center.x
+        yc = pixel_center.y
+
+        # Get the pixelscale in physical units
+        pixelscale_angular = wcs.average_pixelscale.to("deg")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Get the number of x and y pixels
+        x_size = wcs.xsize
+        y_size = wcs.ysize
+
+        # Create the deprojection model
+        deprojection = cls(filepath, pixelscale, pa, inclination, x_size, y_size, xc, yc, scale_height)
+
+        # Return the deprojection model
+        return deprojection
 
 # -----------------------------------------------------------------
 
