@@ -2608,6 +2608,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                     log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
 
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
                     # Show suggestions
                     if suggestions is not None:
                         log.info("Suggestions:")
@@ -2621,7 +2626,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         if answer == "": break # end of list
                         else:
                             try:
-                                single_value = real_type(answer)
+                                #single_value = real_type(answer)
+                                single_value = the_type(answer)
                                 value.append(single_value)
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -2629,6 +2635,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 else:
 
                     log.info("or provide other values, separated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
 
                     # Show suggestions
                     if suggestions is not None:
@@ -2645,7 +2654,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             break
                         else:
                             try:
-                                value = real_type(answer)
+                                #value = real_type(answer)
+                                value = the_type(answer)
                                 break
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -2653,6 +2663,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
             else:
 
                 log.info("or provide another value")
+
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
 
                 # Show suggestions
                 if suggestions is not None:
@@ -2669,7 +2682,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         break
                     else:
                         try:
-                            value = real_type(answer)
+                            #value = real_type(answer)
+                            value = the_type(answer)
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -2773,6 +2787,11 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                     log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
 
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
                     # Show suggestions
                     if suggestions is not None:
                         log.info("Suggestions:")
@@ -2786,7 +2805,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         if answer == "": break # end of list
                         else:
                             try:
-                                single_value = real_type(answer)
+                                #single_value = real_type(answer)
+                                single_value = the_type(answer)
                                 value.append(single_value)
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -2794,6 +2814,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                 else:
 
                     log.info("or provide other values, separated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
 
                     # Show suggestions
                     if suggestions is not None:
@@ -2810,7 +2833,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             break
                         else:
                             try:
-                                value = real_type(answer)
+                                #value = real_type(answer)
+                                value = the_type(answer)
                                 break
                             except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
@@ -2818,6 +2842,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
             else:
 
                 log.info("or provide another value")
+
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
 
                 # Show suggestions
                 if suggestions is not None:
@@ -2835,7 +2862,8 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         break
                     else:
                         try:
-                            value = real_type(answer)
+                            #value = real_type(answer)
+                            value = the_type(answer)
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 

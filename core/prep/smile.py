@@ -29,6 +29,9 @@ from ..tools import xml
 from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from ..basics.unit import parse_unit as u
 from ..tools import parsing
+from ..tools import formatting as fmt
+from ..basics.configuration import print_mapping
+from ..tools import stringify
 
 # -----------------------------------------------------------------
 
@@ -618,5 +621,43 @@ def get_ptype(tag):
 
     # Not recognized
     else: raise RuntimeError("Did not recognize tag '" + tag + "' for property type")
+
+# -----------------------------------------------------------------
+
+def show_parameters(parameters, children, indent="", name=None):
+
+    """
+    This function ...
+    :param parameters:
+    :param children:
+    :param indent:
+    :param name:
+    :return:
+    """
+
+    print("")
+    if len(parameters) == 0:
+        if name is not None: print(indent + fmt.red + fmt.underlined + name + ": no parameters" + fmt.reset)
+        else: print(indent + fmt.red + fmt.underlined + "No parameters" + fmt.reset)
+    else:
+        if name is not None: print(indent + fmt.red + fmt.underlined + name + " parameters" + fmt.reset)
+        else: print(indent + fmt.red + fmt.underlined + "Parameters" + fmt.reset)
+
+    # Print mapping
+    print_mapping(parameters, indent=indent)
+
+    # Show simulation items
+    if len(children) > 0:
+        print(indent + fmt.blue + "Simulation items: " + fmt.reset + stringify.stringify(children.keys())[1].replace(",", ", "))
+    print("")
+
+    # Print children
+    for name in children:
+
+        # Get parameters of child (and children)
+        parameters, child_children = children[name]
+
+        # Show
+        show_parameters(parameters, child_children, indent=indent+"    ", name=name)
 
 # -----------------------------------------------------------------
