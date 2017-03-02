@@ -161,6 +161,32 @@ class SKIRTSmileSchema(object):
 
     # -----------------------------------------------------------------
 
+    def get_concrete_types_with_base(self, base):
+
+        """
+        This function ...
+        :param base:
+        :return:
+        """
+
+        types = []
+
+        # Loop
+        for t in self.get_concrete_types():
+
+            name = t.attrib["name"]
+
+            # If this concrete type is the base itsself
+            if name == base: types.append(t)
+
+            # Derived from
+            elif self.is_derived_from(name, base): types.append(t)
+
+        # Return the types
+        return types
+
+    # -----------------------------------------------------------------
+
     def concrete_types_with_base(self, base):
 
         """
@@ -233,7 +259,7 @@ class SKIRTSmileSchema(object):
         :return:
         """
 
-        return [geometry for geometry in self.get_concrete_types() if geometry.attrib["name"].endswith("StellarCompNormalization")]
+        return [normalization for normalization in self.get_concrete_types() if normalization.attrib["name"].endswith("StellarCompNormalization")]
 
     # -----------------------------------------------------------------
 
@@ -259,6 +285,113 @@ class SKIRTSmileSchema(object):
 
         # Return the dictionary
         return normalizations
+
+    # -----------------------------------------------------------------
+
+    def get_concrete_dust_normalizations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [normalization for normalization in self.get_concrete_types() if normalization.attrib["name"].endswith("DustCompNormalization")]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def concrete_dust_normalizations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a dictionary
+        normalizations = dict()
+
+        # Loop
+        for normalization in self.get_concrete_dust_normalizations():
+
+            name = normalization.attrib["name"]
+            description = normalization.attrib["title"]
+
+            # Add to the dictionary
+            normalizations[name] = description
+
+        # Return the dictionary
+        return normalizations
+
+    # -----------------------------------------------------------------
+
+    def get_concrete_stellar_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_concrete_types_with_base("StellarSED")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def concrete_stellar_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        seds = dict()
+
+        # Loop
+        for sed in self.get_concrete_stellar_seds():
+
+            name = sed.attrib["name"]
+            description = sed.attrib["title"]
+
+            # Add to the dictionary
+            seds[name] = description
+
+        # Return the dictionary
+        return seds
+
+    # -----------------------------------------------------------------
+
+    def get_concrete_dust_mixes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [mix for mix in self.get_concrete_types() if mix.attrib["name"].endswith("DustMix")]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def concrete_dust_mixes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a dictionary
+        mixes = dict()
+
+        # Loop
+        for mix in self.get_concrete_dust_mixes():
+
+            name = mix.attrib["name"]
+            description = mix.attrib["title"]
+
+            # Add to the dictionary
+            mixes[name] = description
+
+        # Return the dictionary
+        return mixes
 
     # -----------------------------------------------------------------
 
@@ -442,11 +575,12 @@ class SKIRTSmileSchema(object):
 
     # -----------------------------------------------------------------
 
-    def prompt_parameters_for_type(self, name):
+    def prompt_parameters_for_type(self, name, merge=False):
 
         """
         This function ...
         :param name:
+        :param merge:
         :return:
         """
 
@@ -479,7 +613,8 @@ class SKIRTSmileSchema(object):
                 children[item_name] = child_parameters, child_children
 
         # Return the parameters of this item and of its children
-        return config, children
+        if merge: return merge_parameters(config, children)
+        else: return config, children
 
     # -----------------------------------------------------------------
 
@@ -659,5 +794,47 @@ def show_parameters(parameters, children, indent="", name=None):
 
         # Show
         show_parameters(parameters, child_children, indent=indent+"    ", name=name)
+
+# -----------------------------------------------------------------
+
+def merge_parameters(parameters, children):
+
+    """
+    This function ...
+    :param parameters:
+    :param children:
+    :return:
+    """
+
+    new = dict()
+
+    children_names = children.keys()
+
+    for name in parameters:
+
+        if name.startswith("_"): continue
+
+        value = parameters[name]
+
+        if isinstance(value, list):
+
+            new[name] = dict()
+
+            for val in value:
+
+                if val in children_names:
+
+                    child_parameters, child_children = children[val]
+                    new[name][val] = merge_parameters(child_parameters, child_children)
+
+        elif value in children_names:
+
+            child_parameters, child_children = children[value]
+            new[name] = (value, merge_parameters(child_parameters, child_children))
+
+        else: new[name] = parameters[name]
+
+    # Return the new parameters dict
+    return new
 
 # -----------------------------------------------------------------

@@ -14,20 +14,19 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import numpy as np
 
 # Import the relevant PTS classes and modules
-from .component import BuildComponent
 from ...core.tools.logging import log
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed
 from ...core.basics.unit import parse_unit as u
 from ..core.mappings import Mappings
-from ...core.prep.smile import SKIRTSmileSchema
-from ..basics.models import DeprojectionModel3D
+from .general import GeneralBuilder
 
 # -----------------------------------------------------------------
 
-class StarsBuilder(BuildComponent):
+class StarsBuilder(GeneralBuilder):
     
     """
     This class...
@@ -44,21 +43,6 @@ class StarsBuilder(BuildComponent):
 
         # Call the constructor of the base class
         super(StarsBuilder, self).__init__(config, interactive)
-
-        # The parameters
-        self.parameters = dict()
-
-        # The maps
-        self.maps = dict()
-
-        # The stellar components
-        self.components = dict()
-
-        # The deprojections
-        self.deprojections = dict()
-
-        # The SKIRT smile schema
-        self.smile = None
 
     # -----------------------------------------------------------------
 
@@ -101,9 +85,6 @@ class StarsBuilder(BuildComponent):
 
         # Call the setup function of the base class
         super(StarsBuilder, self).setup()
-
-        # Create the SKIRT smile schema
-        self.smile = SKIRTSmileSchema()
 
     # -----------------------------------------------------------------
 
@@ -155,7 +136,9 @@ class StarsBuilder(BuildComponent):
         config = setter.run(definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
+        assert np.isclose(luminosity_manual, luminosity)
 
         # Set the luminosity
         config.luminosity = luminosity
@@ -240,7 +223,9 @@ class StarsBuilder(BuildComponent):
         config = setter.run(definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
+        luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
+        assert np.isclose(luminosity_manual, luminosity)
 
         # Set the luminosity
         config.luminosity = luminosity
@@ -296,29 +281,8 @@ class StarsBuilder(BuildComponent):
         # Inform the user
         log.info("Creating the deprojection model for the old stellar disk ...")
 
-        filename = None
-        hz = None
-
-        # Get the galaxy distance, the inclination and position angle
-        distance = self.galaxy_properties.distance
-        inclination = self.galaxy_properties.inclination
-        pa = self.earth_projection.position_angle
-
-        ## NEW: SET FIXED PARAMETERS
-        #self.fixed["distance"] = distance
-        #self.fixed["inclination"] = inclination
-        #self.fixed["position_angle"] = pa
-        ##
-
-        # Get WCS of old stellar map
-        reference_wcs = self.maps["old"].wcs
-
-        # Get center coordinate of galaxy
-        galaxy_center = self.galaxy_properties.center
-
-        # Create deprojection
-        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
-        deprojection = DeprojectionModel3D.from_wcs(reference_wcs, galaxy_center, distance, pa, inclination, filename, hz)
+        # Create the deprojection model
+        deprojection = self.create_deprojection_for_map(self.maps["old"])
 
         # Set the deprojection model
         self.deprojections["old"] = deprojection
@@ -382,7 +346,9 @@ class StarsBuilder(BuildComponent):
         config = setter.run(definition)
 
         # Convert the flux density into a spectral luminosity
-        luminosity = fluxdensity_to_luminosity(fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
+        luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
+        luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
+        assert np.isclose(luminosity_manual, luminosity)
 
         # Set the luminosity
         config.luminosity = luminosity
@@ -436,6 +402,15 @@ class StarsBuilder(BuildComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the deprojection model for the young stellar disk ...")
+
+        # Create the deprojection model
+        deprojection = self.create_deprojection_for_map(self.maps["young"])
+
+        # Set the deprojection model
+        self.deprojections["young"] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -545,6 +520,12 @@ class StarsBuilder(BuildComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the map of ionizing stars ...")
+
+        # Set the map
+        self.maps["ionizing"] = None
+
     # -----------------------------------------------------------------
 
     def create_deprojection_ionizing(self):
@@ -553,6 +534,15 @@ class StarsBuilder(BuildComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the deprojection model for the ionizing stellar disk ...")
+
+        # Create the deprojection model
+        deprojection = self.create_deprojection_for_map(self.maps["ionizing"])
+
+        # Set the deprojection model
+        self.deprojections["ionizing"] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -571,6 +561,9 @@ class StarsBuilder(BuildComponent):
 
             # Set parameters
             name = self.set_additional_parameters()
+
+            # Set SED properties
+            sed_parameters = self.set_sed_properties(name)
 
             # Set properties
             normalization_parameters = self.set_normalization_properties(name)
@@ -595,6 +588,7 @@ class StarsBuilder(BuildComponent):
         definition.add_required("name", "string", "name for this stellar component")
         definition.add_optional("description", "string", "description for the component")
         definition.add_optional("geometry", "string", "SKIRT base geometry for the component", self.smile.concrete_geometries)
+        definition.add_optional("sed", "string", "SED template for the component", self.smile.concrete_stellar_seds)
         definition.add_optional("normalization", "string", "normalization for the component", self.smile.concrete_stellar_normalizations)
 
         # Prompt for settings
@@ -606,6 +600,28 @@ class StarsBuilder(BuildComponent):
 
         # Return the name of the new component
         return config.name
+
+    # -----------------------------------------------------------------
+
+    def set_sed_properties(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Configuring the SED template of stellar component '" + name + "' ...")
+
+        # Get the selected type of SED
+        sed_type = self.parameters[name].sed
+
+        # Get parameters for this simulation item
+        parameters = self.smile.prompt_parameters_for_type(sed_type, merge=True)
+
+        # Return the parameters
+        return parameters
 
     # -----------------------------------------------------------------
 
@@ -623,7 +639,7 @@ class StarsBuilder(BuildComponent):
         normalization_type = self.parameters[name].normalization
 
         # Get parameters for this simulation item
-        parameters, children = self.smile.prompt_parameters_for_type(normalization_type)
+        parameters = self.smile.prompt_parameters_for_type(normalization_type, merge=True)
 
         # Return the parameters
         return parameters
@@ -644,7 +660,7 @@ class StarsBuilder(BuildComponent):
         geometry_type = self.parameters[name].geometry
 
         # Get parameters for this simulation item
-        parameters, children = self.smile.prompt_parameters_for_type(geometry_type)
+        parameters = self.smile.prompt_parameters_for_type(geometry_type, merge=True)
 
         # Return the parameters
         return parameters
@@ -662,6 +678,9 @@ class StarsBuilder(BuildComponent):
         log.info("Writing ...")
 
 # -----------------------------------------------------------------
+
+# Import astronomical modules
+from astropy import constants
 
 # The speed of light
 speed_of_light = constants.c
