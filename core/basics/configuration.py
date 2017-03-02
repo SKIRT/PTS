@@ -20,6 +20,7 @@ import sys
 import argparse
 from collections import OrderedDict
 import StringIO
+from functools import partial
 
 # Import the relevant PTS classes and modules
 from .map import Map
@@ -815,6 +816,10 @@ class ConfigurationDefinition(object):
             real_type = self.required[name].type
             description = self.required[name].description
             choices = self.required[name].choices
+            suggestions = self.required[name].suggestions
+            min_value = self.required[name].min_value
+            max_value = self.required[name].max_value
+            forbidden = self.required[name].forbidden
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -830,11 +835,16 @@ class ConfigurationDefinition(object):
             #print(len(self.pos_optional))
             #print(index, len(self.required) - 1)
 
+            # Construct type
+            the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+            if suggestions is not None: description += " [suggestions: " + stringify.stringify(suggestions)[1] + "]"
+
             # If this is the last required argument, and it is of 'string' type, and there are no positional arguments,
             # we can allow the string to contain spaces without having to add quotation marks
             if real_type.__name__ == "string" and len(self.pos_optional) == 0 and index == len(self.required) - 1:
                 parser.add_argument(name, nargs='+', help=description, choices=choices)
-            else: parser.add_argument(name, type=real_type, help=description, choices=choices)
+            else: parser.add_argument(name, type=the_type, help=description, choices=choices)
 
             index += 1
 
@@ -846,6 +856,10 @@ class ConfigurationDefinition(object):
             description = self.pos_optional[name].description
             default = self.pos_optional[name].default
             choices = self.pos_optional[name].choices
+            suggestions = self.pos_optional[name].suggestions
+            min_value = self.pos_optional[name].min_value
+            max_value = self.pos_optional[name].max_value
+            forbidden = self.pos_optional[name].forbidden
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -855,8 +869,13 @@ class ConfigurationDefinition(object):
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
 
+            # Construct type
+            the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+            if suggestions is not None: description += " [suggestions: " + stringify.stringify(suggestions)[1] + "]"
+
             # Add argument to argument parser
-            parser.add_argument(name, type=real_type, help=description, default=default, nargs='?', choices=choices)
+            parser.add_argument(name, type=the_type, help=description, default=default, nargs='?', choices=choices)
 
         # Optional
         for name in self.optional:
@@ -867,6 +886,10 @@ class ConfigurationDefinition(object):
             default = self.optional[name].default
             choices = self.optional[name].choices
             letter = self.optional[name].letter
+            suggestions = self.optional[name].suggestions
+            min_value = self.optional[name].min_value
+            max_value = self.optional[name].max_value
+            forbidden = self.optional[name].forbidden
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -878,9 +901,14 @@ class ConfigurationDefinition(object):
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
 
+            # Construct type
+            the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+            if suggestions is not None: description += " [suggestions: " + stringify.stringify(suggestions)[1] + "]"
+
             # Add the argument
-            if letter is None: parser.add_argument("--" + name, type=real_type, help=description, default=default, choices=choices)
-            else: parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default, choices=choices)
+            if letter is None: parser.add_argument("--" + name, type=the_type, help=description, default=default, choices=choices)
+            else: parser.add_argument("-" + letter, "--" + name, type=the_type, help=description, default=default, choices=choices)
 
         # Flag
         for name in self.flags:
@@ -2014,6 +2042,11 @@ def write_definition(definition, configfile, indent=""):
         real_type = definition.required[name].type
         description = definition.required[name].description
         choices = definition.required[name].choices
+        dynamic_list = definition.required[name].dynamic_list
+        suggestions = definition.required[name].suggestions
+        min_value = definition.required[name].min_value
+        max_value = definition.required[name].max_value
+        forbidden = definition.required[name].forbidden
 
         choices_string = ""
         if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
@@ -2030,6 +2063,11 @@ def write_definition(definition, configfile, indent=""):
         description = definition.pos_optional[name].description
         default = definition.pos_optional[name].default
         choices = definition.pos_optional[name].choices
+        dynamic_list = definition.pos_optional[name].dynamic_list
+        suggestions = definition.pos_optional[name].suggestions
+        min_value = definition.pos_optional[name].min_value
+        max_value = definition.pos_optional[name].max_value
+        forbidden = definition.pos_optional[name].forbidden
 
         choices_string = ""
         if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
@@ -2047,6 +2085,11 @@ def write_definition(definition, configfile, indent=""):
         default = definition.optional[name].default
         choices = definition.optional[name].choices
         letter = definition.optional[name].letter
+        dynamic_list = definition.optional[name].dynamic_list
+        suggestions = definition.optional[name].suggestions
+        min_value = definition.optional[name].min_value
+        max_value = definition.optional[name].max_value
+        forbidden = definition.optional[name].forbidden
 
         choices_string = ""
         if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
@@ -2303,6 +2346,10 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         description = definition.required[name].description
         choices = definition.required[name].choices
         dynamic_list = definition.required[name].dynamic_list
+        suggestions = definition.required[name].suggestions
+        min_value = definition.required[name].min_value
+        max_value = definition.required[name].max_value
+        forbidden = definition.required[name].forbidden
 
         # Give name and description
         log.success(name + ": " + description)
@@ -2426,6 +2473,10 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         default = definition.pos_optional[name].default
         choices = definition.pos_optional[name].choices
         dynamic_list = definition.pos_optional[name].dynamic_list
+        suggestions = definition.pos_optional[name].suggestions
+        min_value = definition.pos_optional[name].min_value
+        max_value = definition.pos_optional[name].max_value
+        forbidden = definition.pos_optional[name].forbidden
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -2556,6 +2607,10 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         choices = definition.optional[name].choices
         letter = definition.optional[name].letter
         dynamic_list = definition.optional[name].dynamic_list
+        suggestions = definition.optional[name].suggestions
+        min_value = definition.optional[name].min_value
+        max_value = definition.optional[name].max_value
+        forbidden = definition.optional[name].forbidden
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -2757,5 +2812,34 @@ def add_nested_dict_values_to_map(mapping, dictionary):
 
         # Else, add the value to the mapping
         else: mapping[name] = value
+
+# -----------------------------------------------------------------
+
+def construct_type(real_type, min_value, max_value, forbidden):
+
+    """
+    This function ...
+    :param real_type:
+    :param min_value:
+    :param max_value:
+    :param forbidden:
+    :return:
+    """
+
+    # Define smart type
+    def smart_type(argument, real_type, min_value, max_value, forbidden):
+        parsed = real_type(argument)
+        if min_value is not None and parsed < min_value: raise ValueError("Value should be higher than " + stringify.stringify_not_list(min_value)[1])
+        if max_value is not None and parsed > max_value: raise ValueError("Value should be lower than " + stringify.stringify_not_list(max_value)[1])
+        if forbidden is not None and parsed in forbidden: raise ValueError("Value " + stringify.stringify_not_list(parsed) + " is forbidden")
+
+        # All checks passed, return the parsed value
+        return parsed
+
+    # Construct the actual type
+    the_type = partial(smart_type, **{"real_type": real_type, "min_value": min_value, "max_value": max_value, "forbidden": forbidden})
+
+    # Return the new function
+    return the_type
 
 # -----------------------------------------------------------------
