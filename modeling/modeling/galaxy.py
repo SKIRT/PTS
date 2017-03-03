@@ -656,10 +656,10 @@ class GalaxyModeler(ModelerBase):
         config = dict()
 
         # Set the name for the fitting run
-        config["name"] = "run_1"
+        config["name"] = self.fitting_run_name
 
         # Set the model name
-        config["model_name"] = "model_a"
+        config["model_name"] = self.model_name
 
         # Set free parameters
         config["parameters"] = free_parameters[self.modeling_config.method]
@@ -711,7 +711,7 @@ class GalaxyModeler(ModelerBase):
         config = dict()
 
         # Set the name for the fitting run
-        config["name"] = "run_1"
+        config["name"] = self.fitting_run_name
 
         # Create the fitting initializer
         initializer = GalaxyFittingInitializer(config)

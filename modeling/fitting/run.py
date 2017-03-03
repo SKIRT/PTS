@@ -120,12 +120,12 @@ class FittingRun(object):
         ## WEIGHTS TABLE
 
         # Set the path to the weights table file
-        self.weights_table_path = fs.join(fit_path, "weights.dat")
+        self.weights_table_path = fs.join(self.path, "weights.dat")
 
         ## TIMING TABLE
 
         # Set the path to the timing table file
-        self.timing_table_path = fs.join(fit_path, "timing.dat")
+        self.timing_table_path = fs.join(self.path, "timing.dat")
 
         # Initialize the timing table if necessary
         if not fs.is_file(self.timing_table_path):
@@ -135,7 +135,7 @@ class FittingRun(object):
         ## MEMORY TABLE
 
         # Set the path to the memory table file
-        self.memory_table_path = fs.join(fit_path, "memory.dat")
+        self.memory_table_path = fs.join(self.path, "memory.dat")
 
         # Initialize the memory table if necessary
         if not fs.is_file(self.memory_table_path):
@@ -145,7 +145,7 @@ class FittingRun(object):
         ## GENERATIONS TABLE
 
         # Set the path to the generations table
-        self.generations_table_path = fs.join(fit_path, "generations.dat")
+        self.generations_table_path = fs.join(self.path, "generations.dat")
 
         # Initialize the generations table if necessary
         if not fs.is_file(self.generations_table_path) and self.free_parameter_labels is not None:
@@ -155,15 +155,15 @@ class FittingRun(object):
         ## PROBABILITY DISTRIBUTION TABLES
 
         # The directory with the probability distributions for the different free parameters
-        self.prob_distributions_path = fs.create_directory_in(self.fit_prob_path, "distributions")
+        self.prob_distributions_path = fs.create_directory_in(self.prob_path, "distributions")
 
         # The directory with the combined probability tables for the different free parameters
-        self.prob_parameters_path = fs.create_directory_in(self.fit_prob_path, "parameters")
+        self.prob_parameters_path = fs.create_directory_in(self.prob_path, "parameters")
 
         ## BEST PARAMETERS TABLE
 
         # Set the path to the best parameters table
-        self.best_parameters_table_path = fs.join(fit_path, "best_parameters.dat")
+        self.best_parameters_table_path = fs.join(self.path, "best_parameters.dat")
 
         # Initialize the best parameters table if necessary
         if not fs.is_file(self.best_parameters_table_path) and self.free_parameter_labels is not None:

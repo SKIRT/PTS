@@ -819,6 +819,30 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def galaxy_inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.inclination
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.position_angle
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def galaxy_redshift(self):
 
         """

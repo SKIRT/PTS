@@ -42,15 +42,16 @@ class BuildComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(BuildComponent, self).setup()
+        super(BuildComponent, self).setup(**kwargs)
 
         # Determine the path to the models table
         self.models_table_path = fs.join(self.models_path, "models.dat")

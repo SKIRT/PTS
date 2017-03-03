@@ -17,6 +17,7 @@ from .component import BuildComponent
 from .dust import DustBuilder
 from .stars import StarsBuilder
 from ...core.tools.logging import log
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -26,31 +27,33 @@ class ModelBuilder(BuildComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ModelBuilder, self).__init__(config)
+        super(ModelBuilder, self).__init__(config, interactive)
 
-        # The instruments
-        self.instruments = dict()
+        # The path for this model
+        self.model_path = None
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Build stars
         self.build_stars()
@@ -58,23 +61,36 @@ class ModelBuilder(BuildComponent):
         # 3. Build dust component
         self.build_dust()
 
-        # Create the instruments
-        self.create_instruments()
-
         # 4. Write
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ModelBuilder, self).setup(**kwargs)
+
+        # Set the model path and create it
+        self.model_path = fs.create_directory_in(self.models_path, self.model_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_name(self):
 
         """
         This function ...
         :return:
         """
 
-        # Call the setup function of the base class
-        super(ModelBuilder, self).setup()
+        return self.config.name
 
     # -----------------------------------------------------------------
 
@@ -90,6 +106,9 @@ class ModelBuilder(BuildComponent):
 
         # Create the builder
         builder = StarsBuilder(interactive=True)
+
+        # Set the output path
+        builder.config.output = self.model_path
 
         # Run
         builder.run()
@@ -109,29 +128,11 @@ class ModelBuilder(BuildComponent):
         # Create the builder
         builder = DustBuilder(interactive=True)
 
+        # Set the output path
+        builder.config.output = self.model_path
+
         # Run
         builder.run()
-
-    # -----------------------------------------------------------------
-
-    def create_instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the instruments ...")
-
-        # Create an SED instrument
-        self.instruments["SED"] = SEDInstrument.from_projection(self.earth_projection)
-
-        # Create a frame instrument to generate datacube
-        self.instruments["frame"] = FrameInstrument.from_projection(self.earth_projection)
-
-        # Create a simple instrument (SED + frame)
-        self.instruments["simple"] = SimpleInstrument.from_projection(self.earth_projection)
 
     # -----------------------------------------------------------------
 
@@ -146,29 +147,9 @@ class ModelBuilder(BuildComponent):
         log.info("Writing ...")
 
         # Write the maps
-        self.write_maps()
+        #self.write_maps()
 
         # Write the deprojections
-        self.write_deprojections()
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-
-
-    # -----------------------------------------------------------------
-
-    def write_deprojections(self):
-
-        """
-        This function ...
-        :return:
-        """
+        #self.write_deprojections()
 
 # -----------------------------------------------------------------

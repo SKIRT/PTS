@@ -25,7 +25,7 @@ from ..fitting.sedfitting import SEDFitter
 from ..component.component import load_modeling_history, get_config_file_path, load_modeling_configuration
 from ...core.launch.synchronizer import RemoteSynchronizer
 from ...core.prep.deploy import Deployer
-from ..fitting.component import get_generations_table, get_ngenerations, has_unevaluated_generations, has_unfinished_generations, get_unevaluated_generations
+from ..fitting.run import get_generations_table, get_ngenerations, has_unevaluated_generations, has_unfinished_generations, get_unevaluated_generations
 from ...core.remote.moderator import PlatformModerator
 from ...core.tools import stringify
 from ...core.tools.loops import repeat
@@ -64,6 +64,10 @@ class ModelerBase(Configurable):
 
         # The modeling history
         self.history = None
+
+        # Fixed names for the fitting run and the model
+        self.fitting_run_name = "run_1"
+        self.model_name = "model_a"
 
     # -----------------------------------------------------------------
 
@@ -241,7 +245,7 @@ class ModelerBase(Configurable):
         log.info("Advancing the fitting with a new generation ...")
 
         # Load the generations table
-        generations = get_generations_table(self.modeling_path)
+        generations = get_generations_table(self.modeling_path, self.fitting_run_name)
 
         # Debugging
         if generations.last_generation_name is not None: log.debug("Previous generation: " + generations.last_generation_name)
@@ -252,10 +256,10 @@ class ModelerBase(Configurable):
 
         # Debugging
         if generations.has_finished: log.debug("There are finished generations: " + stringify.stringify(generations.finished_generations)[1])
-        if has_unevaluated_generations(self.modeling_path): log.debug("There are unevaluated generations: " + stringify.stringify(get_unevaluated_generations(self.modeling_path))[1])
+        if has_unevaluated_generations(self.modeling_path, self.fitting_run_name): log.debug("There are unevaluated generations: " + stringify.stringify(get_unevaluated_generations(self.modeling_path, self.fitting_run_name))[1])
 
         # If some generations have finished, fit the SED
-        if generations.has_finished and has_unevaluated_generations(self.modeling_path): self.fit_sed()
+        if generations.has_finished and has_unevaluated_generations(self.modeling_path, self.fitting_run_name): self.fit_sed()
 
         # If all generations have finished, explore new generation of models
         if generations.all_finished: self.explore()
@@ -296,8 +300,12 @@ class ModelerBase(Configurable):
         # Inform the user
         log.info("Fitting the SED to the finished generations ...")
 
+        # Configuration settings
+        config = dict()
+        config["name"] = self.fitting_run_name
+
         # Create the SED fitter
-        fitter = SEDFitter()
+        fitter = SEDFitter(config)
 
         # Add an entry to the history
         self.history.add_entry(SEDFitter.command_name())
@@ -319,6 +327,10 @@ class ModelerBase(Configurable):
 
         # Inform the user
         log.info("Exploring the parameter space ...")
+
+        # Configuration settings
+        config = dict()
+        config["name"] = self.fitting_run_name
 
         # Create the parameter explorer
         explorer = ParameterExplorer()
@@ -364,17 +376,16 @@ class ModelerBase(Configurable):
         log.info("Evaluating last generation ...")
 
         # Check the current number of generations
-        current_ngenerations = get_ngenerations(self.modeling_path)
+        current_ngenerations = get_ngenerations(self.modeling_path, self.fitting_run_name)
         #if current_ngenerations <= 1: raise RuntimeError("Need at least one generation after the initial generation to finish the fitting")
         if current_ngenerations == 0: raise RuntimeError("There are no generations")
 
         # Check if there are unfinished generations
-        has_unfinished = has_unfinished_generations(self.modeling_path)
+        has_unfinished = has_unfinished_generations(self.modeling_path, self.fitting_run_name)
         if has_unfinished: log.warning("There are unfinished generations, but evaluting finished simulations anyway ...")
 
         # Check if there are unevaluated generations
-        if not has_unevaluated_generations(self.modeling_path):
-            log.success("All generations have already been evaluated")
+        if not has_unevaluated_generations(self.modeling_path, self.fitting_run_name): log.success("All generations have already been evaluated")
 
         # Do the SED fitting step
         self.fit_sed()

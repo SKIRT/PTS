@@ -49,8 +49,8 @@ definition.add_flag("group", "group simulations in larger jobs")
 definition.add_optional("walltime", "real", "the preferred walltime per job (for schedulers)")
 
 # Advanced options for the genetic engine
-definition.add_optional("crossover_rate", "fraction", "the crossover rate", 0.5)
-definition.add_optional("mutation_rate", "fraction", "the mutation rate", 0.5)
+#definition.add_optional("crossover_rate", "fraction", "the crossover rate", 0.5)
+#definition.add_optional("mutation_rate", "fraction", "the mutation rate", 0.5)
 
 # The ranges of the different free parameters (although the absolute ranges are defined in the fitting configuration,
 # give the option to refine these ranges for each exploration step (generation))
@@ -64,10 +64,10 @@ definition.add_optional("mutation_rate", "fraction", "the mutation rate", 0.5)
     #definition.add_optional(label + "_range", ptype, "the range of " + label, default_range)
 
 # Flags
-definition.add_flag("relative", "whether the range values are relative to the best (or initial) parameter value")
-definition.add_flag("young_log", "use logarithmic spacing of the young stellar luminosity values")
-definition.add_flag("ionizing_log", "use logarithmic spacing of the ionizing stellar luminosity values")
-definition.add_flag("dust_log", "use logarithmic spacing of the dust mass values")
+#definition.add_flag("relative", "whether the range values are relative to the best (or initial) parameter value")
+#definition.add_flag("young_log", "use logarithmic spacing of the young stellar luminosity values")
+#definition.add_flag("ionizing_log", "use logarithmic spacing of the ionizing stellar luminosity values")
+#definition.add_flag("dust_log", "use logarithmic spacing of the dust mass values")
 definition.add_flag("visualise", "make visualisations")
 
 # Model options

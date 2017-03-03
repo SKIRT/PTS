@@ -48,6 +48,9 @@ class SEDFitter(FittingComponent):
 
         # -- Attributes --
 
+        # The fitting run
+        self.fitting_run = None
+
         # The model probabilities tables
         self.model_probabilities = dict()
 
@@ -107,6 +110,9 @@ class SEDFitter(FittingComponent):
 
         # Call the setup function of the base class
         super(SEDFitter, self).setup()
+
+        # Load the fitting run
+        self.fitting_run = self.load_fitting_run(self.config.name)
 
         # The directory with the probability tables for all finished generations
         self.prob_generations_path = fs.create_directory_in(self.fitting_run.prob_path, "generations")
@@ -372,10 +378,10 @@ class SEDFitter(FittingComponent):
         log.info("Writing the parameter probabilities ...")
 
         # Loop over the probability tables for the different free parameter
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
             # Save the table
-            self.parameter_probabilities[label].saveto(self.get_parameter_probabilities_path(label))
+            self.parameter_probabilities[label].saveto(self.fitting_run.get_parameter_probabilities_path(label))
 
     # -----------------------------------------------------------------
 
@@ -390,7 +396,7 @@ class SEDFitter(FittingComponent):
         log.info("Writing the best model parameters table ...")
 
         # Save the best parameters table
-        self.best_parameters_table.save()
+        self.fitting_run.best_parameters_table.save()
 
     # -----------------------------------------------------------------
 
@@ -408,10 +414,10 @@ class SEDFitter(FittingComponent):
         for label in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[label] + " ...")
+            log.debug("Writing the probability distribution of the " + self.fitting_run.parameter_descriptions[label] + " ...")
 
             # Write the table of probabilities for this parameter
-            self.distributions[label].saveto(self.get_parameter_distribution_path(label))
+            self.distributions[label].saveto(self.fitting_run.get_parameter_distribution_path(label))
 
     # -----------------------------------------------------------------
 
@@ -429,14 +435,14 @@ class SEDFitter(FittingComponent):
         for parameter_name in self.distributions:
 
             # Debugging
-            log.debug("Plotting the probability distribution of the " + self.parameter_descriptions[parameter_name] + " ...")
+            log.debug("Plotting the probability distribution of the " + self.fitting_run.parameter_descriptions[parameter_name] + " ...")
 
             # Get the probability distribution for this parameter
             distribution = self.distributions[parameter_name]
-            description = self.parameter_descriptions[parameter_name]
+            description = self.fitting_run.parameter_descriptions[parameter_name]
 
             # Create a plot file for the probability distribution
-            path = fs.join(self.prob_distributions_path, parameter_name + ".pdf")
+            path = fs.join(self.fitting_run.prob_distributions_path, parameter_name + ".pdf")
             distribution.plot(title="Probability of the " + description, path=path, logscale=True)
 
     # -----------------------------------------------------------------

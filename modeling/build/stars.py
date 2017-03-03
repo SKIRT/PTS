@@ -138,7 +138,7 @@ class StarsBuilder(GeneralBuilder):
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
         luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
-        assert np.isclose(luminosity_manual, luminosity)
+        assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
         # Set the luminosity
         config.luminosity = luminosity
@@ -225,34 +225,13 @@ class StarsBuilder(GeneralBuilder):
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.i1_filter.pivot, self.galaxy_properties.distance)
         luminosity = config.fluxdensity.to("W/micron", fltr=self.i1_filter, distance=self.galaxy_properties.distance)
-        assert np.isclose(luminosity_manual, luminosity)
+        assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
         # Set the luminosity
         config.luminosity = luminosity
 
         # Set the parameters
         self.parameters["old"] = config
-
-        ## NEW: SET FIXED PARAMETERS
-        #self.fixed["metallicity"] = disk_metallicity
-        #self.fixed["old_scaleheight"] = scale_height
-        #self.fixed["i1_old"] = luminosity
-        ##
-
-        # Get the spectral luminosity in solar units
-        # luminosity = luminosity.to(self.sun_i1).value
-
-        # Set the parameters of the evolved stellar component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.old_stellar_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["old stars"] = deprojection
-
-        # Adjust the ski file
-        #self.ski_template.set_stellar_component_geometry("Evolved stellar disk", deprojection)
-        #self.ski_template.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity)  # SED
-        # self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1) # normalization by band
-        #self.ski_template.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1_filter.centerwavelength() * u("micron"))
 
     # -----------------------------------------------------------------
 
@@ -348,36 +327,13 @@ class StarsBuilder(GeneralBuilder):
         # Convert the flux density into a spectral luminosity
         luminosity_manual = fluxdensity_to_luminosity(config.fluxdensity, self.fuv_filter.pivot, self.galaxy_properties.distance)
         luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
-        assert np.isclose(luminosity_manual, luminosity)
+        assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
         # Set the luminosity
         config.luminosity = luminosity
 
         # Set the parameters
         self.parameters["young"] = config
-
-        # Get the spectral luminosity in solar units
-        # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
-
-        ## NEW: SET FIXED PARAMETERS
-        #self.fixed["young_scaleheight"] = scale_height
-        ##
-
-        # Set the parameters of the young stellar component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.young_stellar_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["young stars"] = deprojection
-
-        # Adjust the ski file
-        #self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
-        #self.ski_template.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity)  # SED
-        # self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
-        # self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * u("micron"))
-
-        # SET NORMALIZATION (IS FREE PARAMETER)
-        #self.ski_template.set_stellar_component_normalization_wavelength("Young stars", self.fuv_filter.centerwavelength() * u("micron"))
-        #self.ski_template.set_labeled_value("fuv_young", luminosity)
 
     # -----------------------------------------------------------------
 
@@ -456,13 +412,6 @@ class StarsBuilder(GeneralBuilder):
         # scale_height = 150 * Unit("pc") # first models
         scale_height = 100. * u("pc")  # M51
 
-        ## NEW: SET FIXED PARAMETERS
-        #self.fixed["ionizing_scaleheight"] = scale_height
-        #self.fixed["sfr_compactness"] = ionizing_compactness
-        #self.fixed["sfr_covering"] = ionizing_covering_factor
-        #self.fixed["sfr_pressure"] = ionizing_pressure
-        ##
-
         # Convert the SFR into a FUV luminosity
         sfr = 0.8  # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
 
@@ -494,22 +443,6 @@ class StarsBuilder(GeneralBuilder):
 
         # Set the parameters
         self.parameters["ionizing"] = config
-
-        # Set the parameters of the ionizing stellar component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.ionizing_stellar_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["ionizing stars"] = deprojection
-
-        # Adjust the ski file
-        #self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
-        #self.ski_template.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor)  # SED
-        # self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
-        # self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
-
-        # SET NORMALIZATION (IS FREE PARAMETER)
-        #self.ski_template.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
-        #self.ski_template.set_labeled_value("fuv_ionizing", luminosity)  # keep label
 
     # -----------------------------------------------------------------
 

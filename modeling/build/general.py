@@ -96,12 +96,6 @@ class GeneralBuilder(BuildComponent):
         inclination = self.galaxy_properties.inclination
         pa = self.earth_projection.position_angle
 
-        ## NEW: SET FIXED PARAMETERS
-        # self.fixed["distance"] = distance
-        # self.fixed["inclination"] = inclination
-        # self.fixed["position_angle"] = pa
-        ##
-
         # Get center coordinate of galaxy
         galaxy_center = self.galaxy_properties.center
 

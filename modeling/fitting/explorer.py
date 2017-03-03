@@ -21,7 +21,6 @@ from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.launch.batchlauncher import BatchLauncher
 from .modelgenerators.grid import GridModelGenerator
-from .modelgenerators.initial import InitialModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
 from .modelgenerators.instinctive import InstinctiveModelGenerator
 from ...core.tools import time
@@ -34,6 +33,7 @@ from ...core.tools.stringify import stringify_not_list, stringify
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.remote.host import Host
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -126,15 +126,16 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the ski template
         self.load_ski()
@@ -171,10 +172,11 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -183,6 +185,9 @@ class ParameterExplorer(FittingComponent):
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.name)
+
+        # Get ranges
+        if "ranges" in kwargs: self.ranges = kwargs.pop("ranges")
 
         # Set options for the batch launcher
         self.set_launcher_options()
@@ -338,66 +343,75 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting the parameter ranges ...")
 
-        # The given ranges are relative to the best or initial value
-        if self.config.relative:
+        # Create a definition
+        definition = ConfigurationDefinition(write_config=False)
 
-            # Check if there are any models that have been evaluated
-            if self.fitting_run.has_evaluated_models:
+        extra_info = dict()
+        # Check if there are any models that have been evaluated
+        if self.fitting_run.has_evaluated_models:
 
-                # Inform the user
-                log.info("Determining the parameter ranges based on the current best values and the specified relative ranges ...")
+            # Inform the user
+            # log.info("Determining the parameter ranges based on the current best values and the specified relative ranges ...")
 
-                # Get the best model
-                model = self.fitting_run.best_model
-
-                # Debugging
-                log.debug("Using the parameter values of simulation '" + model.simulation_name + "' of generation '" + model.generation_name + "' ...")
-
-                # Get the parameter values of the best model
-                parameter_values = model.parameter_values
-
-            else:
-
-                # Inform the user
-                log.info("Determining the parameter ranges based on the first guess values and the specified relative ranges ...")
-
-                # Get the initial guess values
-                parameter_values = self.fitting_run.first_guess_parameter_values
+            # Get the best model
+            model = self.fitting_run.best_model
 
             # Debugging
-            log.debug("The values that are used as the centers of the ranges are:")
+            # log.debug("Using the parameter values of simulation '" + model.simulation_name + "' of generation '" + model.generation_name + "' ...")
 
-            # Loop over the free parameter labels
-            for label in self.fitting_run.free_parameter_labels:
+            # Get the parameter values of the best model
+            parameter_values = model.parameter_values
 
-                # Get the best value (or initial value in the case no generations were lauched yet)
-                value = parameter_values[label]
-
-                # Debugging
-                log.debug(" - " + label + ": " + str(value))
-
-                # Calculate the range
-                rel_min = self.config[label + "_range"].min
-                rel_max = self.config[label + "_range"].max
-                self.ranges[label] = range_around(value, rel_min, rel_max)
+            # Set info
+            for label in parameter_values:
+                extra_info[label] = "parameter value of current best model = " + stringify(parameter_values[label])[1]
 
         else:
 
             # Inform the user
-            log.info("Using the specified ranges ...")
+            #log.info("Determining the parameter ranges based on the first guess values and the specified relative ranges ...")
 
-            # Loop over the free parameter labels
-            for label in self.fitting_run.free_parameter_labels:
+            # Get the initial guess values
+            parameter_values = self.fitting_run.first_guess_parameter_values
 
-                # Get the range
-                parameter_range = self.config[label + "_range"]
-                if parameter_range is None: parameter_range = self.fitting_run.free_parameter_ranges[label] # absolute range
+            # Set info
+            for label in parameter_values:
+                extra_info[label] = "initial parameter value = " + stringify(parameter_values[label])[1]
 
-                # Set the range
-                self.ranges[label] = parameter_range
+        # Loop over the free parameters
+        for label in self.fitting_run.free_parameter_labels:
 
-        # Set the ranges for the generator
-        for label in self.ranges: self.generator.add_parameter(label, self.ranges[label])
+            # Skip if range is already defined for this label
+            if label in self.ranges: continue
+
+            # Get the default range
+            default_range = self.fitting_run.fitting_configuration[label + "_range"]
+            ptype, string = stringify_not_list(default_range)
+
+            # Determine description
+            description = "the range of " + label
+            description += " (" + extra_info[label] + ")"
+
+            # Add the optional range setting for this free parameter
+            definition.add_optional(label + "_range", ptype, description, default_range)
+
+        # Get the ranges
+        if len(definition) > 0:
+
+            setter = InteractiveConfigurationSetter("ranges", add_cwd=False, add_logging=False)
+            config = setter.run(definition)
+
+        # No parameters for which the ranges still have to be specified interactively
+        else: config = None
+
+        # Set the ranges
+        for label in self.fitting_run.free_parameter_labels:
+
+            # If range is already defined
+            if label in self.ranges: continue
+
+            # Set the range
+            self.ranges[label] = config[label + "_range"]
 
     # -----------------------------------------------------------------
 

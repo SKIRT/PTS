@@ -37,6 +37,9 @@ class ImagesPlotter(FittingPlottingComponent):
         # Call the constructor of the base class
         super(ImagesPlotter, self).__init__(config)
 
+        # The fitting run
+        self.fitting_run = None
+
         # The simulated images
         self.simulated_images = dict()
 

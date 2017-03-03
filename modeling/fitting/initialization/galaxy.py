@@ -89,10 +89,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Load the ski file
+        # 2. Load the ski file
         self.load_ski()
 
-        # 2. Create the wavelength grids
+        # 3. Create the wavelength grids
         self.create_wavelength_grids()
 
         # 4. Create the instruments
@@ -140,6 +140,11 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Create the table to contain the weights
         self.weights = WeightsTable()
+
+        # Set general fixed parameters
+        self.fixed["distance"] = self.galaxy_distance
+        self.fixed["inclination"] = self.galaxy_inclination
+        self.fixed["position_angle"] = self.galaxy_position_angle
 
     # -----------------------------------------------------------------
 
@@ -318,6 +323,11 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting the stellar components ...")
+
+        # Loop over the stellar components
+
     # -----------------------------------------------------------------
 
     def set_dust_components(self):
@@ -326,6 +336,12 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Setting the dust components ...")
+
+        # Loop over the dust components
+
 
     # -----------------------------------------------------------------
 
@@ -599,9 +615,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # 4. Write the weights table
         self.write_weights()
 
-        # 5. Write the deprojection models
-        self.write_deprojection_models()
-
         # 6. Write the wavelength grids
         self.write_wavelength_grids()
 
@@ -621,13 +634,13 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Writing the SED, frame and simple instruments ...")
 
         # Write the SED instrument
-        self.instruments["SED"].saveto(self.sed_instrument_path)
+        self.instruments["SED"].saveto(self.fitting_run.sed_instrument_path)
 
         # Write the frame instrument
-        self.instruments["frame"].saveto(self.frame_instrument_path)
+        self.instruments["frame"].saveto(self.fitting_run.frame_instrument_path)
 
         # Write the simple instrument
-        self.instruments["simple"].saveto(self.simple_instrument_path)
+        self.instruments["simple"].saveto(self.fitting_run.simple_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -673,25 +686,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Write the table with weights
         self.weights.saveto(self.fitting_run.weights_table_path)
-
-    # -----------------------------------------------------------------
-
-    def write_deprojection_models(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the deprojection model for the other components ...")
-
-        # Write the deprojection models
-        for label in self.deprojections:
-
-            # Save the deprojection model
-            path = fs.join(self.fit_geometries_path, label + ".mod")
-            self.deprojections[label].saveto(path)
 
     # -----------------------------------------------------------------
 

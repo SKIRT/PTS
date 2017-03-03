@@ -27,4 +27,7 @@ definition.add_required("dust_map", "string", "choice of dust map", choices=get_
 definition.add_flag("disk", "add dust disk", True)
 definition.add_flag("additional", "add additional dust component(s)", True)
 
+# Output directory
+definition.add_optional("output", "directory_path", "output directory")
+
 # -----------------------------------------------------------------

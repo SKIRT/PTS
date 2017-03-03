@@ -31,4 +31,7 @@ definition.add_flag("young", "add young stars", True)
 definition.add_flag("ionizing", "add ionizing stars", True)
 definition.add_flag("additional", "add additional stellar component(s)", True)
 
+# Output directory
+definition.add_optional("output", "directory_path", "output directory")
+
 # -----------------------------------------------------------------

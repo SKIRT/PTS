@@ -786,6 +786,17 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.fixed) + len(self.required) + len(self.pos_optional) + len(self.optional) + len(self.flags)
+
+    # -----------------------------------------------------------------
+
     def save(self, path):
 
         """
