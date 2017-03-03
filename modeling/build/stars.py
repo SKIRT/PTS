@@ -164,6 +164,8 @@ class StarsBuilder(GeneralBuilder):
         ## self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
         #self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * u("micron"))
 
+        self.models["bulge"] = None
+
     # -----------------------------------------------------------------
 
     def build_old(self):
@@ -504,6 +506,12 @@ class StarsBuilder(GeneralBuilder):
             # Set geometry properties
             geometry_parameters = self.set_geometry_properties(name)
 
+            # Set the properties
+            properties = {"sed": sed_parameters, "normalization": normalization_parameters, "geometry": geometry_parameters}
+
+            # Add the properties
+            self.properties[name] = properties
+
     # -----------------------------------------------------------------
 
     def set_additional_parameters(self):
@@ -597,18 +605,6 @@ class StarsBuilder(GeneralBuilder):
 
         # Return the parameters
         return parameters
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
 
 # -----------------------------------------------------------------
 

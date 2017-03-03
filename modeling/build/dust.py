@@ -127,22 +127,6 @@ class DustBuilder(GeneralBuilder):
         # Set the parameters
         self.parameters["disk"] = config
 
-        ## NEW: SET FIXED PARAMETERS
-        #self.fixed["dust_scaleheight"] = scale_height
-        ##
-
-        # Set the parameters of the dust component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.dust_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["dust"] = deprojection
-
-        # Adjust the ski file
-        #self.ski_template.set_dust_component_geometry(0, deprojection)
-        #self.ski_template.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops)  # dust mix
-        # self.ski_template.set_dust_component_mass(0, dust_mass) # dust mass
-        #self.ski_template.set_labeled_value("dust_mass", dust_mass)  # keep label
-
     # -----------------------------------------------------------------
 
     def load_dust_disk_map(self):
@@ -199,6 +183,12 @@ class DustBuilder(GeneralBuilder):
 
             # Set mix properties
             mix_parameters = self.set_mix_properties(name)
+
+            # Create the properties
+            properties = {"normalization": normalization_parameters, "geometry": geometry_parameters, "mix": mix_parameters}
+
+            # Add the properties
+            self.properties[name] = properties
 
     # -----------------------------------------------------------------
 
@@ -294,17 +284,5 @@ class DustBuilder(GeneralBuilder):
 
         # Return the parameters
         return parameters
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
 
 # -----------------------------------------------------------------

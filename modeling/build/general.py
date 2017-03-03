@@ -20,6 +20,8 @@ from .component import BuildComponent
 from ...core.tools.logging import log
 from ...core.prep.smile import SKIRTSmileSchema
 from ..basics.models import DeprojectionModel3D
+from ...core.tools import filesystem as fs
+from ...core.tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
@@ -52,10 +54,16 @@ class GeneralBuilder(BuildComponent):
         self.maps = dict()
 
         # The stellar components
-        self.components = dict()
+        #self.components = dict()
 
         # The deprojections
         self.deprojections = dict()
+
+        # The models
+        self.models = dict()
+
+        # The properties
+        self.properties = dict()
 
         # The SKIRT smile schema
         self.smile = None
@@ -129,5 +137,55 @@ class GeneralBuilder(BuildComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write components
+        self.write_components()
+
+    # -----------------------------------------------------------------
+
+    def write_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the components ...")
+
+        # Loop over the components
+        for name in self.parameters:
+
+            # Create a directory
+            component_path = self.output_path_file(name)
+            fs.create_directory(component_path)
+
+            # Save parameters
+            path = fs.join(component_path, "parameters.cfg")
+            self.parameters[name].saveto(path)
+
+            # Save deprojection
+            if name in self.deprojections:
+
+                path = fs.join(component_path, "deprojection.mod")
+                self.deprojections[name].saveto(path)
+
+            # Save map
+            if name in self.maps:
+
+                path = fs.join(component_path, "map.fits")
+                self.maps[name].saveto(path)
+
+            # Save model
+            if name in self.models:
+
+                path = fs.join(component_path, "model.mod")
+                self.models[name].saveto(path)
+
+            # Save properties
+            if name in self.properties:
+
+                path = fs.join(component_path, "properties.dat")
+                write_dict(self.properties[name], path)
 
 # -----------------------------------------------------------------
