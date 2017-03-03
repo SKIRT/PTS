@@ -38,6 +38,10 @@ class GeneticModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GeneticModelGenerator, self).__init__(config, interactive)
 
+        # The scores (only if this is not the initial generation)
+        self.scores = None
+        self.scores_check = None
+
         # The optimizer
         self.optimizer = None
 
@@ -56,8 +60,24 @@ class GeneticModelGenerator(ModelGenerator):
         # Get the fitting run
         self.fitting_run = kwargs.pop("fitting_run")
 
-        # Create the optimizer
-        self.optimizer = StepWiseOptimizer()
+        # Re-invoke existing optimizer run
+        if fs.is_file(self.fitting_run.main_engine_path): self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
+                                                                                                        self.fitting_run.main_engine_path,
+                                                                                                        self.fitting_run.main_prng_path,
+                                                                                                        self.fitting_run.optimizer_config_path,
+                                                                                                        self.statistics_path, self.database_path)
+
+        # New optimizer run
+        else:
+
+            # Create a new optimizer and set paths
+            self.optimizer = StepWiseOptimizer()
+            self.optimizer.config.output = self.fitting_run.path
+            self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
+            self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
+            self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
+            self.optimizer.config.writing.statistics_path = self.statistics_path
+            self.optimizer.config.writing.database_path = self.database_path
 
         # Set settings
         self.set_optimizer_settings()
@@ -92,7 +112,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.statistics_frequency = 1
 
         # Fixed
-        self.optimizer.config.output = self.fitting_run.path
+        #self.optimizer.config.output = self.fitting_run.path
 
         # Fixed
         self.optimizer.config.elitism = True
@@ -112,8 +132,78 @@ class GeneticModelGenerator(ModelGenerator):
         # Inform the user
         log.info("Generating the new models ...")
 
+        # Set the scores
+        self.set_scores()
+
         # Run the optimizer
-        self.optimizer.run()
+        self.optimizer.run(scores=self.scores, scores_check=self.scores_check)
+
+        # Get the parameter values of the new models
+        self.get_model_parameters()
+
+    # -----------------------------------------------------------------
+
+    def set_scores(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting scores from previous generation ...")
+
+        # Load the parameters table from the previous generation
+        parameters_table = self.fitting_run.parameters_table_for_generation(self.fitting_run.last_genetic_or_initial_generation_name)
+
+        # Load the chi squared table from the previous generation
+        chi_squared_table = self.fitting_run.chi_squared_table_for_generation(self.fitting_run.last_genetic_or_initial_generation_name)
+
+        # List of chi squared values in the same order as the parameters table
+        chi_squared_values = []
+
+        # Check whether the chi-squared and parameter tables match
+        for i in range(len(parameters_table)):
+            simulation_name = parameters_table["Simulation name"][i]
+            chi_squared = chi_squared_table.chi_squared_for(simulation_name)
+            chi_squared_values.append(chi_squared)
+
+        # Get the scores
+        scores = chi_squared_table["Chi squared"]
+
+        # Check individual values with parameter table of the last generation
+        check = []
+        for label in self.fitting_run.free_parameter_labels:
+            values = parameters_table[label]
+            check.append(values)
+
+        # Set the scores
+        self.scores = scores
+        self.scores_check = check
+
+    # -----------------------------------------------------------------
+
+    def get_model_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the model parameters ...")
+
+        # Loop over the individuals of the population
+        for individual in self.optimizer.population:
+
+            # Loop over all the genes (parameters)
+            for i in range(len(individual)):
+
+                # Get the parameter value
+                value = individual[i]
+
+                # Add the parameter value to the dictionary
+                self.parameters[self.fitting_run.free_parameter_labels[i]].append(value)
 
     # -----------------------------------------------------------------
 

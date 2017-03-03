@@ -151,7 +151,7 @@ class BestModelLauncher(FittingComponent):
         self.set_analysis_options_total()
 
         # Create a directory for the simulation of the best model of the specified generation
-        self.best_generation_path = fs.join(self.fit_best_path, self.config.generation)
+        self.best_generation_path = fs.join(self.fitting_run.best_path, self.config.generation)
         if fs.is_directory(self.best_generation_path): raise RuntimeError("The best model has already been launched for this generation (" + self.config.generation + ")")
         fs.create_directory(self.best_generation_path)
 

@@ -98,19 +98,19 @@ class SEDsPLotter(FittingPlottingComponent):
         log.info("Loading the SEDs of all the fit models ...")
 
         # Loop over all finished generations
-        for generation_name in self.finished_generations:
+        for generation_name in self.fitting_run.finished_generations:
 
             # Initialize dictionary to contain SEDs for this generation
             #seds_generation = dict()
             seds_generation = []
 
             # Loop over all simulations in this generation
-            for simulation_name in self.get_simulations_in_generation(generation_name):
+            for simulation_name in self.fitting_run.get_simulations_in_generation(generation_name):
 
                 # Determine the path to the 'plot' directory for this simulation
-                #plot_path = fs.join(self.fit_generations_path, generation_name, simulation_name, "plot")
+                #plot_path = fs.join(self.fitting_run.generations_path, generation_name, simulation_name, "plot")
 
-                out_path = fs.join(self.fit_generations_path, generation_name, simulation_name, "out")
+                out_path = fs.join(self.fitting_run.generations_path, generation_name, simulation_name, "out")
 
                 # Determine the path to the SED plot
                 #sed_path = fs.join(plot_path, self.galaxy_name + "_earth_sed.dat")
@@ -147,7 +147,7 @@ class SEDsPLotter(FittingPlottingComponent):
         log.info("Loading the SEDs of the various stellar contributions for the best models of each generation ...")
 
         # Loop over the directories in the fit_best directory
-        for path, generation_name in fs.directories_in_path(self.fit_best_path, returns=["path", "name"]):
+        for path, generation_name in fs.directories_in_path(self.fitting_run.best_path, returns=["path", "name"]):
 
             # Initialize ...
             seds_generation = dict()

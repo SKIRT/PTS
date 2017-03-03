@@ -139,7 +139,7 @@ class DustGridTool(object):
         """
 
         # Loop over the dust grid files
-        for path, name in fs.files_in_path(self.fit_dust_grids_path, extension="dg", sort=int, returns=["path", "name"]):
+        for path, name in fs.files_in_path(self.dust_grids_path, extension="dg", sort=int, returns=["path", "name"]):
 
             # Create corresponding directory
             out_path = fs.create_directory_in(path, name)

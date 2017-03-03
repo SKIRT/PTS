@@ -66,8 +66,11 @@ class FittingRun(object):
         # Set the path to the main genetic engine
         self.main_engine_path = fs.join(self.path, "engine.pickle")
 
-        # Set the path to the
+        # Set the path to the main PRNG
+        self.main_prng_path = fs.join(self.path, "prng.pickle")
 
+        # Set the path to the optimizer configuration
+        self.optimizer_config_path = fs.join(self.path, "optimizer.cfg")
 
         ##
 
@@ -81,36 +84,36 @@ class FittingRun(object):
         self.fixed_parameters_path = fs.join(self.path, "fixed.dat")
 
         # Set the path to the fit/generations directory
-        self.fit_generations_path = fs.create_directory_in(self.path, "generations")
+        self.generations_path = fs.create_directory_in(self.path, "generations")
 
         # Set the path to the fit/wavelength grids directory
-        self.fit_wavelength_grids_path = fs.create_directory_in(self.path, "wavelength grids")
+        self.wavelength_grids_path = fs.create_directory_in(self.path, "wavelength grids")
 
         # Set the path to the wavelength grids table
-        self.wavelength_grids_table_path = fs.join(self.fit_wavelength_grids_path, "grids.dat")
+        self.wavelength_grids_table_path = fs.join(self.wavelength_grids_path, "grids.dat")
 
         # Set the path to the fit/dust grids directory
-        self.fit_dust_grids_path = fs.create_directory_in(self.path, "dust grids")
+        self.dust_grids_path = fs.create_directory_in(self.path, "dust grids")
 
         # Set the path to the dust grids table
-        self.dust_grids_table_path = fs.join(self.fit_dust_grids_path, "grids.dat")
+        self.dust_grids_table_path = fs.join(self.dust_grids_path, "grids.dat")
 
         # Set the path to the fit/best directory
-        self.fit_best_path = fs.create_directory_in(self.path, "best")
+        self.best_path = fs.create_directory_in(self.path, "best")
 
         # Set the path to the fit/prob directory
-        self.fit_prob_path = fs.create_directory_in(self.path, "prob")
+        self.prob_path = fs.create_directory_in(self.path, "prob")
 
         # Set the path to the fit/instruments directory
-        self.fit_instruments_path = fs.create_directory_in(self.path, "instruments")
+        self.instruments_path = fs.create_directory_in(self.path, "instruments")
 
         # Set the path to the SED and frame instrument
-        self.sed_instrument_path = fs.join(self.fit_instruments_path, "sed.instr")
-        self.frame_instrument_path = fs.join(self.fit_instruments_path, "frame.instr")
-        self.simple_instrument_path = fs.join(self.fit_instruments_path, "simple.instr")
+        self.sed_instrument_path = fs.join(self.instruments_path, "sed.instr")
+        self.frame_instrument_path = fs.join(self.instruments_path, "frame.instr")
+        self.simple_instrument_path = fs.join(self.instruments_path, "simple.instr")
 
         # Set the path to the fit/geometries directory
-        self.fit_geometries_path = fs.create_directory_in(self.path, "geometries")
+        self.geometries_path = fs.create_directory_in(self.path, "geometries")
 
         # -----------------------------------------------------------------
 
@@ -307,7 +310,7 @@ class FittingRun(object):
         :return:
         """
 
-        return len(fs.files_in_path(self.fit_wavelength_grids_path, extension="txt")) > 0
+        return len(fs.files_in_path(self.wavelength_grids_path, extension="txt", not_contains="grids")) > 0
 
     # -----------------------------------------------------------------
 
@@ -319,7 +322,7 @@ class FittingRun(object):
         :return:
         """
 
-        return len(fs.files_in_path(self.fit_dust_grids_path, extension="txt")) > 0
+        return len(fs.files_in_path(self.dust_grids_path, extension="txt")) > 0
 
     # -----------------------------------------------------------------
 
@@ -412,7 +415,7 @@ class FittingRun(object):
         for generation_name in self.finished_generations:
 
             # Get the probabilities table
-            prob_table = get_model_probabilities_table(modeling_path, generation_name)
+            prob_table = get_model_probabilities_table(modeling_path, self.name, generation_name)
 
             # If table doesn't exist yet
             if prob_table is None: names.append(generation_name)
@@ -451,7 +454,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_generations_path, generation_name, "engine.pickle")
+        return fs.join(self.generations_path, generation_name, "engine.pickle")
 
     # -----------------------------------------------------------------
 
@@ -463,7 +466,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_generations_path, generation_name, "prng.pickle")
+        return fs.join(self.generations_path, generation_name, "prng.pickle")
 
     # -----------------------------------------------------------------
 
@@ -475,7 +478,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_generations_path, generation_name, "chi_squared.dat")
+        return fs.join(self.generations_path, generation_name, "chi_squared.dat")
 
     # -----------------------------------------------------------------
 
@@ -499,7 +502,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_generations_path, generation_name, "parameters.dat")
+        return fs.join(self.generations_path, generation_name, "parameters.dat")
 
     # -----------------------------------------------------------------
 
@@ -941,7 +944,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_generations_path, self.last_genetic_generation_name)
+        return fs.join(self.generations_path, self.last_genetic_generation_name)
 
     # -----------------------------------------------------------------
 
@@ -953,7 +956,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_generations_path, self.last_genetic_or_initial_generation_name)
+        return fs.join(self.generations_path, self.last_genetic_or_initial_generation_name)
 
     # -----------------------------------------------------------------
 
@@ -1050,7 +1053,7 @@ class FittingRun(object):
         """
 
         # Return the last filename, sorted as integers
-        return int(fs.files_in_path(self.fit_wavelength_grids_path, not_contains="grids", extension="txt", returns="name", sort=int)[-1])
+        return int(fs.files_in_path(self.wavelength_grids_path, not_contains="grids", extension="txt", returns="name", sort=int)[-1])
 
     # -----------------------------------------------------------------
 
@@ -1078,7 +1081,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_wavelength_grids_path, str(level) + ".txt")
+        return fs.join(self.wavelength_grids_path, str(level) + ".txt")
 
     # -----------------------------------------------------------------
 
@@ -1091,7 +1094,7 @@ class FittingRun(object):
         """
 
         # Return the last filename, sorted as integers
-        return int(fs.files_in_path(self.fit_dust_grids_path, not_contains="grids", extension="dg", returns="name", sort=int)[-1])
+        return int(fs.files_in_path(self.dust_grids_path, not_contains="grids", extension="dg", returns="name", sort=int)[-1])
 
     # -----------------------------------------------------------------
 
@@ -1119,7 +1122,7 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.fit_dust_grids_path, str(level) + ".dg")
+        return fs.join(self.dust_grids_path, str(level) + ".dg")
 
     # -----------------------------------------------------------------
 
@@ -1184,48 +1187,51 @@ class FittingRun(object):
 
 # -----------------------------------------------------------------
 
-def get_generation_names(modeling_path):
+def get_generation_names(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Get the generations table
-    generations_table = get_generations_table(modeling_path)
+    generations_table = get_generations_table(modeling_path, fitting_run)
 
     # Return the generation names
     return generations_table.generation_names
 
 # -----------------------------------------------------------------
 
-def get_finished_generations(modeling_path):
+def get_finished_generations(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Get the generations table
-    generations_table = get_generations_table(modeling_path)
+    generations_table = get_generations_table(modeling_path, fitting_run)
 
     # Return the names of the finished generations
     return generations_table.finished_generations
 
 # -----------------------------------------------------------------
 
-def get_last_generation_name(modeling_path):
+def get_last_generation_name(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Get the generations table
-    generations_table = get_generations_table(modeling_path)
+    generations_table = get_generations_table(modeling_path, fitting_run)
 
     # Return the name of the last generation
     if len(generations_table) > 0: return generations_table["Generation name"][-1]
@@ -1233,16 +1239,17 @@ def get_last_generation_name(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_last_finished_generation(modeling_path):
+def get_last_finished_generation(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Get the generations table
-    generations_table = get_generations_table(modeling_path)
+    generations_table = get_generations_table(modeling_path, fitting_run)
 
     # Return the name of the last finished generation
     finished_generations = generations_table.finished_generations
@@ -1251,16 +1258,17 @@ def get_last_finished_generation(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_generations_table(modeling_path):
+def get_generations_table(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Determine the path to the generations table
-    generations_table_path = fs.join(modeling_path, "fit", "generations.dat")
+    generations_table_path = fs.join(modeling_path, "fit", fitting_run, "generations.dat")
 
     # Load the generations table
     generations_table = GenerationsTable.from_file(generations_table_path)
@@ -1270,31 +1278,33 @@ def get_generations_table(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_ngenerations(modeling_path):
+def get_ngenerations(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Get the table
-    generations_table = get_generations_table(modeling_path)
+    generations_table = get_generations_table(modeling_path, fitting_run)
     return generations_table.ngenerations
 
 # -----------------------------------------------------------------
 
-def get_chi_squared_table(modeling_path, generation_name):
+def get_chi_squared_table(modeling_path, fitting_run, generation_name):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :param generation_name:
     :return:
     """
 
     # Determine the path to the chi squared table
-    path = fs.join(modeling_path, "fit", generation_name, "chi_squared.dat")
+    path = fs.join(modeling_path, "fit", fitting_run, "generations", generation_name, "chi_squared.dat")
 
     # Load the table
     table = ChiSquaredTable.from_file(path)
@@ -1304,17 +1314,18 @@ def get_chi_squared_table(modeling_path, generation_name):
 
 # -----------------------------------------------------------------
 
-def get_parameters_table(modeling_path, generation_name):
+def get_parameters_table(modeling_path, fitting_run, generation_name):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :param generation_name:
     :return:
     """
 
     # Determine the path to the parameters table
-    path = fs.join(modeling_path, "fit", generation_name, )
+    path = fs.join(modeling_path, "fit", fitting_run, generation_name, "parameters.dat")
 
     # Load the table
     table = ParametersTable.from_file(path)
@@ -1324,23 +1335,24 @@ def get_parameters_table(modeling_path, generation_name):
 
 # -----------------------------------------------------------------
 
-def get_best_model_for_generation(modeling_path, generation_name):
+def get_best_model_for_generation(modeling_path, fitting_run, generation_name):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :param generation_name:
     :return:
     """
 
     # Open the chi squared table
-    chi_squared_table = get_chi_squared_table(modeling_path, generation_name)
+    chi_squared_table = get_chi_squared_table(modeling_path, fitting_run, generation_name)
 
     # Get the name of the simulation with the lowest chi squared value
     best_simulation_name = chi_squared_table.best_simulation_name
 
     # Open the parameters table for this generation
-    parameters_table = get_parameters_table(generation_name, generation_name)
+    parameters_table = get_parameters_table(generation_name, fitting_run, generation_name)
 
     # Get the chi squared value
     chi_squared = chi_squared_table.chi_squared_for(best_simulation_name)
@@ -1361,11 +1373,12 @@ def get_best_model_for_generation(modeling_path, generation_name):
 
 # -----------------------------------------------------------------
 
-def get_ski_file_for_simulation(modeling_path, generation_name, simulation_name):
+def get_ski_file_for_simulation(modeling_path, fitting_run, generation_name, simulation_name):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :param generation_name:
     :param simulation_name:
     :return:
@@ -1375,71 +1388,76 @@ def get_ski_file_for_simulation(modeling_path, generation_name, simulation_name)
     galaxy_name = fs.name(modeling_path)
 
     # Determine the path to the ski file
-    ski_path = fs.join(modeling_path, generation_name, simulation_name, galaxy_name + ".ski")
+    ski_path = fs.join(modeling_path, "fit", fitting_run, "generations", generation_name, simulation_name, galaxy_name + ".ski")
 
     # Load and return the ski file
     return SkiFile(ski_path)
 
 # -----------------------------------------------------------------
 
-def get_generation_path(modeling_path, generation_name):
+def get_generation_path(modeling_path, fitting_run, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param fitting_run:
+    :param generation_name:
+    :return:
+    """
+
+    generations_path = fs.join(modeling_path, "fit", fitting_run, "generations")
+    return fs.join(generations_path, generation_name)
+
+# -----------------------------------------------------------------
+
+def get_simulation_paths(modeling_path, fitting_run, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param fitting_run:
+    :param generation_name:
+    :return:
+    """
+
+    return fs.directories_in_path(get_generation_path(modeling_path, fitting_run, generation_name))
+
+# -----------------------------------------------------------------
+
+def get_simulation_names(modeling_path, fitting_run, generation_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param fitting_run:
+    :param generation_name:
+    :return:
+    """
+
+    return [fs.name(path) for path in get_simulation_paths(modeling_path, fitting_run, generation_name)]
+
+# -----------------------------------------------------------------
+
+def get_wavelength_grids_path(modeling_path, fitting_run):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param fitting_run:
+    :return:
+    """
+
+    return fs.join(modeling_path, "fit", fitting_run, "wavelength grids")
+
+# -----------------------------------------------------------------
+
+def get_simulations(modeling_path, fitting_run, generation_name):
 
     """
     This function ...
     :param modeling_path:
     :param generation_name:
-    :return:
-    """
-
-    fit_generations_path = fs.join(modeling_path, "fit", "generations")
-    return fs.join(fit_generations_path, generation_name)
-
-# -----------------------------------------------------------------
-
-def get_simulation_paths(modeling_path, generation_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param generation_name:
-    :return:
-    """
-
-    return fs.directories_in_path(get_generation_path(modeling_path, generation_name))
-
-# -----------------------------------------------------------------
-
-def get_simulation_names(modeling_path, generation_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param generation_name:
-    :return:
-    """
-
-    return [fs.name(path) for path in get_simulation_paths(modeling_path, generation_name)]
-
-# -----------------------------------------------------------------
-
-def get_fit_wavelength_grids_path(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    return fs.join(modeling_path, "fit", "wavelength grids")
-
-# -----------------------------------------------------------------
-
-def get_simulations(modeling_path, generation_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param generation_name:
+    :param fitting_run
     :return:
     """
 
@@ -1450,7 +1468,7 @@ def get_simulations(modeling_path, generation_name):
     object_name = fs.name(modeling_path)
 
     # Loop over the simulation directories
-    for simulation_path in get_simulation_paths(modeling_path, generation_name):
+    for simulation_path in get_simulation_paths(modeling_path, fitting_run, generation_name):
 
         # Get name
         simulation_name = fs.name(simulation_path)
@@ -1466,7 +1484,7 @@ def get_simulations(modeling_path, generation_name):
         input_filenames = ski.input_files
         input_paths = []
         maps_path = fs.join(modeling_path, "maps")
-        wavelength_grids_path = get_fit_wavelength_grids_path(modeling_path)
+        wavelength_grids_path = get_wavelength_grids_path(modeling_path, fitting_run)
         for filename in input_filenames:
             if filename.endswith(".fits"): filepath = fs.join(maps_path, filename)
             else: filepath = fs.join(wavelength_grids_path, filename)
@@ -1486,53 +1504,56 @@ def get_simulations(modeling_path, generation_name):
 
 # -----------------------------------------------------------------
 
-def has_unfinished_generations(modeling_path):
+def has_unfinished_generations(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Open the generations table
-    table = get_generations_table(modeling_path)
+    table = get_generations_table(modeling_path, fitting_run)
     return table.has_unfinished
 
 # -----------------------------------------------------------------
 
-def get_model_probabilities_table(modeling_path, generation_name):
+def get_model_probabilities_table(modeling_path, fitting_run, generation_name):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :param generation_name:
     :return:
     """
 
-    path = fs.join(modeling_path, "fit", "prob", "generations", generation_name + ".dat")
+    path = fs.join(modeling_path, "fit", fitting_run, "prob", "generations", generation_name + ".dat")
     if fs.is_file(path): return ModelProbabilitiesTable.from_file(path)
     else: return None
 
 # -----------------------------------------------------------------
 
-def is_evaluated(modeling_path, generation_name):
+def is_evaluated(modeling_path, fitting_run, generation_name):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :param generation_name:
     :return:
     """
 
     # Get the probabilities table
-    prob_table = get_model_probabilities_table(modeling_path, generation_name)
+    prob_table = get_model_probabilities_table(modeling_path, fitting_run, generation_name)
 
     if prob_table is None:
         #print("prob table is None")
         return False
 
     # Loop over all the simulation names of the generation
-    for simulation_name in get_simulation_names(modeling_path, generation_name):
+    for simulation_name in get_simulation_names(modeling_path, fitting_run, generation_name):
         #print(simulation_name, prob_table.has_simulation(simulation_name))
         if not prob_table.has_simulation(simulation_name):
             #print("here")
@@ -1543,59 +1564,62 @@ def is_evaluated(modeling_path, generation_name):
 
 # -----------------------------------------------------------------
 
-def get_evaluated_generations(modeling_path):
+def get_evaluated_generations(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     generation_names = []
 
     # Loop over the generations
-    for generation_name in get_generation_names(modeling_path):
+    for generation_name in get_generation_names(modeling_path, fitting_run):
 
-        if is_evaluated(modeling_path, generation_name): generation_names.append(generation_name)
+        if is_evaluated(modeling_path, fitting_run, generation_name): generation_names.append(generation_name)
 
     # Return the generation names
     return generation_names
 
 # -----------------------------------------------------------------
 
-def get_unevaluated_generations(modeling_path):
+def get_unevaluated_generations(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     generation_names = []
 
     # Loop over the generations
-    for generation_name in get_generation_names(modeling_path):
+    for generation_name in get_generation_names(modeling_path, fitting_run):
 
-        if not is_evaluated(modeling_path, generation_name): generation_names.append(generation_name)
+        if not is_evaluated(modeling_path, fitting_run, generation_name): generation_names.append(generation_name)
 
     # Return the generation names
     return generation_names
 
 # -----------------------------------------------------------------
 
-def has_unevaluated_generations(modeling_path):
+def has_unevaluated_generations(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
     # Loop over the generations
-    for generation_name in get_generation_names(modeling_path):
+    for generation_name in get_generation_names(modeling_path, fitting_run):
 
         # If at least one generation is not evaluated, return False
-        if not is_evaluated(modeling_path, generation_name): return True
+        if not is_evaluated(modeling_path, fitting_run, generation_name): return True
 
     # No generation was encountered that was not completely evaluated
     return False
@@ -1635,5 +1659,3 @@ def get_spectral_convolution_flag(modeling_path):
 # -----------------------------------------------------------------
 # NEW
 # -----------------------------------------------------------------
-
-

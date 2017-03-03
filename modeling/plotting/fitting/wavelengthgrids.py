@@ -101,7 +101,8 @@ class WavelengthGridsPlotter(FittingPlottingComponent):
         log.info("Loading the wavelength grids used for the fitting ...")
 
         # Loop over the files found in the fit/wavelength grids directory
-        for path in fs.files_in_path(self.fit_wavelength_grids_path, extension="txt", sort=int, not_contains="grids"):
+        for path in fs.files_in_path(self.fitting_run.fit_wavelength_grids_path, extension="txt", sort=int, not_contains="grids"):
+
             # Load the wavelength grid
             grid = WavelengthGrid.from_skirt_input(path)
 

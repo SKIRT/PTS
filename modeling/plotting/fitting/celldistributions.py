@@ -68,7 +68,7 @@ class CellDistributionsPlotter(FittingPlottingComponent):
         log.info("Loading the dust cell tree information ...")
 
         # Loop over the directories inside the fit/dust grids directory
-        for path in fs.directories_in_path(self.fit_dust_grids_path, sort=int):
+        for path in fs.directories_in_path(self.fitting_run.dust_grids_path, sort=int):
 
             # Determine the path to the log file of the dust grid generating simulation
             log_file_path = fs.join(path, self.object_name + "_log.txt")
@@ -81,6 +81,8 @@ class CellDistributionsPlotter(FittingPlottingComponent):
 
             # Get the distribution of cells per level of the tree
             self.dust_cell_trees.append(log_file.tree_leaf_distribution)
+
+    # -----------------------------------------------------------------
 
     def plot_dust_cell_distribution(self):
 

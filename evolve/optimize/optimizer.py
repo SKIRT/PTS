@@ -105,7 +105,8 @@ class Optimizer(Configurable):
         log.info("Initializing the statistics table ...")
 
         # Determine the file path
-        filepath = self.output_path_file("statistics.csv")
+        if self.config.writing.statistics_path is not None: filepath = fs.absolute_or_in(self.config.writing.statistics_path, self.output_path)
+        else: filepath = self.output_path_file("statistics.csv")
 
         # Check the file
         if fs.is_file(filepath):
@@ -131,7 +132,8 @@ class Optimizer(Configurable):
         log.info("Initializing the database ...")
 
         # Determine the file path
-        filepath = self.output_path_file("database.db")
+        if self.config.writing.database_path is not None: filepath = fs.absolute_or_in(self.config.writing.database_path, self.output_path)
+        else: filepath = self.output_path_file("database.db")
 
         # Check the file
         if fs.is_file(filepath):

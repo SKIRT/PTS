@@ -84,7 +84,7 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
-        return len(self.parameters[self.free_parameter_labels[0]])
+        return len(self.parameters[self.fitting_run.free_parameter_labels[0]])
 
     # -----------------------------------------------------------------
 
@@ -100,7 +100,7 @@ class ModelGenerator(FittingComponent):
         minima = []
 
         # Set the list values
-        for label in self.free_parameter_labels: minima.append(self.ranges[label].min)
+        for label in self.fitting_run.free_parameter_labels: minima.append(self.ranges[label].min)
 
         # Return the minimal parameter values
         return minima
@@ -119,7 +119,7 @@ class ModelGenerator(FittingComponent):
         maxima = []
 
         # Set the list values
-        for label in self.free_parameter_labels: maxima.append(self.ranges[label].max)
+        for label in self.fitting_run.free_parameter_labels: maxima.append(self.ranges[label].max)
 
         # Return the maximal parameter values
         return maxima
@@ -187,10 +187,10 @@ class ModelGenerator(FittingComponent):
         log.info("Loading the current parameter distributions ...")
 
         # Loop over the free parameters
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
             # Load the distribution
-            if self.has_distribution(label): self.distributions[label] = self.get_parameter_distribution(label)
+            if self.fitting_run.has_distribution(label): self.distributions[label] = self.fitting_run.get_parameter_distribution(label)
 
     # -----------------------------------------------------------------
 
@@ -205,10 +205,10 @@ class ModelGenerator(FittingComponent):
         log.info("Initializing the animations ...")
 
         # Initialize the scatter animation, if there are exactly 3 free parameters
-        if len(self.free_parameter_labels) == 3:
+        if len(self.fitting_run.free_parameter_labels) == 3:
 
-            label0, label1, label2 = self.free_parameter_labels
-            description0, description1, description2 = [self.parameter_descriptions[label] for label in [label0, label1, label2]]
+            label0, label1, label2 = self.fitting_run.free_parameter_labels
+            description0, description1, description2 = [self.fitting_run.parameter_descriptions[label] for label in [label0, label1, label2]]
 
             # Establish the order of the free parameters in the scatter ani
             self.scatter_animation_labels = [label0, label1, label2]
@@ -220,9 +220,9 @@ class ModelGenerator(FittingComponent):
             self.scatter_animation.z_label = description2
 
         # Loop over the free parameters and create an individual animation for each of them
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
-            description = self.parameter_descriptions[label]
+            description = self.fitting_run.parameter_descriptions[label]
 
             # Initialize the young FUV luminosity distribution animation
             animation = DistributionAnimation(self.ranges[label].min, self.ranges[label].max, description, "New models")

@@ -385,10 +385,10 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         """
 
         # Inform the user
-        log.info("Writing the table with weights to " + self.weights_table_path + " ...")
+        log.info("Writing the table with weights to " + self.fitting_run.weights_table_path + " ...")
 
         # Write the table with weights
-        self.weights.saveto(self.weights_table_path)
+        self.weights.saveto(self.fitting_run.weights_table_path)
 
     # -----------------------------------------------------------------
 
@@ -407,7 +407,7 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         for grid in self.wg_generator.grids:
 
             # Determine the path to the grid
-            path = fs.join(self.fit_wavelength_grids_path, str(index) + ".txt")
+            path = fs.join(self.fitting_run.wavelength_grids_path, str(index) + ".txt")
 
             # Save the wavelength grid
             grid.to_skirt_input(path)
@@ -416,6 +416,6 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
             index += 1
 
         # Write the wavelength grids table
-        tables.write(self.wg_generator.table, self.wavelength_grids_table_path)
+        tables.write(self.wg_generator.table, self.fitting_run.wavelength_grids_table_path)
 
 # -----------------------------------------------------------------

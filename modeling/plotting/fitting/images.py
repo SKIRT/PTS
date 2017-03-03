@@ -74,10 +74,10 @@ class ImagesPlotter(FittingPlottingComponent):
         log.info("Loading the simulated images ...")
 
         # Determine the path to the fit/best directory
-        fit_best_path = fs.join(self.fit_path, "best")
+        best_path = self.fitting_run.best_path
 
         # Determine the path to the fit/best/images directory
-        out_path = fs.join(fit_best_path, "images")
+        out_path = fs.join(best_path, "images")
 
         # Loop over all FITS files found in the fit/best/images directory
         for path, name in fs.files_in_path(out_path, extension="fits", returns=["path", "name"], contains="__"):

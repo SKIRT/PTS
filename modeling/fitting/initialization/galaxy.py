@@ -710,7 +710,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         for grid in self.wg_generator.grids:
 
             # Determine the path to the grid
-            path = fs.join(self.fitting_run.fit_wavelength_grids_path, str(index) + ".txt")
+            path = fs.join(self.fitting_run.wavelength_grids_path, str(index) + ".txt")
 
             # Save the wavelength grid
             grid.to_skirt_input(path)
@@ -738,7 +738,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         for grid in self.dg_generator.grids:
 
             # Determine the path to the grid
-            path = fs.join(self.fitting_run.fit_dust_grids_path, str(index) + ".dg")
+            path = fs.join(self.fitting_run.dust_grids_path, str(index) + ".dg")
 
             # Save the dust grid
             grid.saveto(path)

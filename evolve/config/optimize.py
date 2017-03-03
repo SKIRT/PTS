@@ -44,6 +44,14 @@ definition.add_flag("write", "write results", True)
 definition.add_flag("plot", "plot results", False)
 definition.add_flag("finish", "finish the evolution: set the scores of the last generation but don't generate a new population", False)
 
+# Writing options
+definition.add_section("writing", "writing options")
+definition.sections["writing"].add_optional("engine_path", "string", "path for the genetic engine")
+definition.sections["writing"].add_optional("prng_path", "string", "path for the prng")
+definition.sections["writing"].add_optional("config_path", "string", "path for the configuration file")
+definition.sections["writing"].add_optional("statistics_path", "string", "path for the statistics file")
+definition.sections["writing"].add_optional("database_path", "string", "path for the database")
+
 # Advanced
 definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)
 

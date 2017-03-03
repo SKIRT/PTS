@@ -45,6 +45,9 @@ class StepWiseOptimizer(Optimizer):
         # The scores of the past generation
         self.scores = None
 
+        # A check for the parameters of the models that are scored
+        self.scores_check = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -59,42 +62,20 @@ class StepWiseOptimizer(Optimizer):
         # Determine the path to the engine
         engine_path = fs.join(dir_path, "engine.pickle")
 
-        # Load the engine
-        engine = GeneticEngine.from_file(engine_path)
-
         # Determine the path to the random generator
         prng_path = fs.join(dir_path, "prng.pickle")
-
-        # Load the random state
-        load_state(prng_path)
 
         # Determine the path to the configuration
         config_path = fs.join(dir_path, "optimizer.cfg")
 
-        # Load the configuration
-        config = Configuration.from_file(config_path)
-
-        # Create the optimizer instance
-        optimizer = cls(config)
-
-        # Set the engine
-        optimizer.engine = engine
-
         # Load the statistics (opening is done during initialization or evolution)
         statistics_path = fs.join(dir_path, "statistics.csv")
-        if not fs.is_file(statistics_path): raise IOError("The statistics file could not be found at '" + statistics_path + "'")
-        optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False)
 
         # Load the database (opening is done during initialization or evolution)
         database_path = fs.join(dir_path, "database.db")
-        if not fs.is_file(database_path): raise IOError("The database could not be found at '" + database_path + "'")
-        optimizer.database = DBSQLite(dbname=database_path)
 
-        # Set the path
-        optimizer.config.output = dir_path
-
-        # Return the optimizer
-        return optimizer
+        # Create the optimizer instance and return it
+        return cls.from_paths(dir_path, engine_path, prng_path, config_path, statistics_path, database_path)
 
     # -----------------------------------------------------------------
 
@@ -106,7 +87,41 @@ class StepWiseOptimizer(Optimizer):
         :return:
         """
 
+        # Load the engine
+        engine = GeneticEngine.from_file(engine_path)
 
+        # Load the random state
+        load_state(prng_path)
+
+        # Load the configuration
+        config = Configuration.from_file(config_path)
+
+        # Create the optimizer instance
+        optimizer = cls(config)
+
+        # Set the engine
+        optimizer.engine = engine
+
+        # Load the statistics (opening is done during initialization or evolution)
+        if not fs.is_file(statistics_path): raise IOError("The statistics file could not be found at '" + statistics_path + "'")
+        optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False)
+
+        # Load the database (opening is done during initialization or evolution)
+        if not fs.is_file(database_path): raise IOError("The database could not be found at '" + database_path + "'")
+        optimizer.database = DBSQLite(dbname=database_path)
+
+        # Set the path
+        optimizer.config.output = output_path
+
+        # Set the individual paths
+        optimizer.config.writing.engine_path = engine_path
+        optimizer.config.writing.prng_path = prng_path
+        optimizer.config.writing.config_path = config_path
+        optimizer.config.writing.statistics_path = statistics_path
+        optimizer.config.writing.database_path = database_path
+
+        # Return the optimizer
+        return optimizer
 
     # -----------------------------------------------------------------
 
@@ -172,6 +187,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Get the scores
         if "scores" in kwargs: self.scores = kwargs.pop("scores")
+
+        # Get the scores check
+        if "scores_check" in kwargs: self.scores_check = kwargs.pop("scores_check")
 
         # Get the output path
         if "output" in kwargs: self.config.output = kwargs.pop("output")
@@ -288,7 +306,7 @@ class StepWiseOptimizer(Optimizer):
         if self.scores is None: raise ValueError("The scores are not set")
 
         # Set the scores
-        self.engine.set_scores(self.scores)
+        self.engine.set_scores(self.scores, self.scores_check)
 
     # -----------------------------------------------------------------
 
@@ -363,7 +381,8 @@ class StepWiseOptimizer(Optimizer):
         log.info("Writing the engine ...")
 
         # Determine the path to the engine
-        engine_path = self.output_path_file("engine.pickle")
+        if self.config.writing.engine_path is not None: engine_path = fs.absolute_or_in(self.config.writing.engine_path, self.output_path)
+        else: engine_path = self.output_path_file("engine.pickle")
 
         # Save the engine
         self.engine.saveto(engine_path)
@@ -381,7 +400,8 @@ class StepWiseOptimizer(Optimizer):
         log.info("Writing the state of the random number generator ...")
 
         # Determine the path to the prng
-        prng_path = self.output_path_file("prng.pickle")
+        if self.config.writing.prng_path is not None: prng_path = fs.absolute_or_in(self.config.writing.prng_path, self.output_path)
+        else: prng_path = self.output_path_file("prng.pickle")
 
         # Save the prng state
         save_state(prng_path)
@@ -399,7 +419,8 @@ class StepWiseOptimizer(Optimizer):
         log.info("Writing the configuration file ...")
 
         # Determine the path
-        path = self.output_path_file("optimizer.cfg")
+        if self.config.writing.config_path is not None: path = fs.absolute_or_in(self.config.writing.config_path, self.output_path)
+        else: path = self.output_path_file("optimizer.cfg")
 
         # Save the configuration
         self.config.saveto(path)

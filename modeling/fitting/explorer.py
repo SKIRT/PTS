@@ -90,6 +90,9 @@ class ParameterExplorer(FittingComponent):
         # The fitting run
         self.fitting_run = None
 
+        # The ski template
+        self.ski = None
+
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
 
@@ -133,34 +136,37 @@ class ParameterExplorer(FittingComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Set the parameter ranges
+        # 2. Load the ski template
+        self.load_ski()
+
+        # 3. Set the parameter ranges
         self.set_ranges()
 
-        # 3. Set the generation info
+        # 4. Set the generation info
         self.set_info()
 
-        # 4. Create the generation directory
+        # 5. Create the generation directory
         self.create_generation_directory()
 
-        # 5. Generate the model parameters
+        # 6. Generate the model parameters
         self.generate_models()
 
-        # 6. Set the paths to the input files
+        # 7. Set the paths to the input files
         if self.fitting_run.needs_input: self.set_input()
 
-        # 7. Adjust the ski template
+        # 8. Adjust the ski template
         self.adjust_ski()
 
-        # 8. Set the parallelization schemes for the different remote hosts
+        # 9. Set the parallelization schemes for the different remote hosts
         if self.uses_schedulers: self.set_parallelization()
 
-        # 9. Estimate the runtimes for the different remote hosts
+        # 10. Estimate the runtimes for the different remote hosts
         if self.uses_schedulers: self.estimate_runtimes()
 
         # 11. Writing
         self.write()
 
-        # 10. Launch the simulations for different parameter values
+        # 12. Launch the simulations for different parameter values
         self.launch()
 
     # -----------------------------------------------------------------
@@ -190,8 +196,8 @@ class ParameterExplorer(FittingComponent):
 
         # Check whether initialize_fit has been called
         if self.modeling_type == "galaxy":
-            if not fs.is_file(self.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
-            if not fs.is_file(self.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
+            if not fs.is_file(self.fitting_run.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
+            if not fs.is_file(self.fitting_run.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
 
     # -----------------------------------------------------------------
 
@@ -207,7 +213,7 @@ class ParameterExplorer(FittingComponent):
 
         # Set remote host IDs
         remote_host_ids = []
-        if self.ngenerations == 0:
+        if self.fitting_run.ngenerations == 0:
             for host_id in self.config.remotes:
                 if Host(host_id).scheduler: log.warning("Not using remote host '" + host_id + "' for the initial generation because it uses a scheduling system for launching jobs")
                 else: remote_host_ids.append(host_id)
@@ -219,8 +225,8 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.attached = self.config.attached                   # Run remote simulations in attached mode
         self.launcher.config.group_simulations = self.config.group             # Group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
         self.launcher.config.group_walltime = self.config.walltime             # The preferred walltime for jobs of a group of simulations
-        self.launcher.config.timing_table_path = self.timing_table_path        # The path to the timing table file
-        self.launcher.config.memory_table_path = self.memory_table_path        # The path to the memory table file
+        self.launcher.config.timing_table_path = self.fitting_run.timing_table_path        # The path to the timing table file
+        self.launcher.config.memory_table_path = self.fitting_run.memory_table_path        # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
         self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations)
         self.launcher.config.progress_bar = True  # show progress bars for local execution
@@ -292,37 +298,33 @@ class ParameterExplorer(FittingComponent):
         # Generate new models using genetic algorithms
         elif self.config.generation_method == "genetic":
 
+            # Not the initial generation
+            if "initial" in self.fitting_run.generation_names:
+
+                # Set index and name
+                self.generation_index = self.fitting_run.last_genetic_generation_index + 1
+                self.generation_name = str("Generation " + str(self.generation_index))
+
+            # Initial generation
+            else: self.generation_name = "initial"
+
             # Create the generator
             self.generator = GeneticModelGenerator()
 
-            #if "initial" in self.generation_names:
+    # -----------------------------------------------------------------
 
-                # Set index and name
-                #self.generation_index = self.last_genetic_generation_index + 1
-                #self.generation_name = str("Generation " + str(self.generation_index))
+    def load_ski(self):
 
-                # Create the model generator
-                #self.generator = GeneticModelGenerator()
+        """
+        This function ...
+        :return:
+        """
 
-            #else:
+        # Inform the user
+        log.info("Loading the ski file template ...")
 
-                # Set the generation name
-                #self.generation_name = "initial"
-
-                # Create the model generator
-                #self.generator = InitialModelGenerator()
-
-        # Create the configuration for the generator
-        #from ...core.basics.configuration import Configuration
-        #config = Configuration()
-        #config.path = self.config.path
-        #config.generation_name = self.generation_name
-        #config.nmodels = self.config.nsimulations
-        #config.crossover_rate = self.config.crossover_rate
-        #config.mutation_rate = self.config.mutation_rate
-
-        # Set the config
-        #self.generator.config = config
+        # Load the labeled ski template file
+        self.ski = self.fitting_run.ski_template
 
     # -----------------------------------------------------------------
 
@@ -499,7 +501,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Creating the generation directory")
 
         # Determine the path to the generation directory
-        self.generation.path = fs.create_directory_in(self.fit_generations_path, self.generation_name)
+        self.generation.path = fs.create_directory_in(self.fitting_run.generations_path, self.generation_name)
 
         # Determine the path to the generation parameters table
         self.generation.parameters_table_path = fs.join(self.generation.path, "parameters.dat")
@@ -508,7 +510,7 @@ class ParameterExplorer(FittingComponent):
         self.generation.chi_squared_table_path = fs.join(self.generation.path, "chi_squared.dat")
 
         # Initialize the parameters table
-        self.parameters_table = ParametersTable(parameters=self.free_parameter_labels, units=self.parameter_units)
+        self.parameters_table = ParametersTable(parameters=self.fitting_run.free_parameter_labels, units=self.fitting_run.parameter_units)
 
         # Initialize the chi squared table
         self.chi_squared_table = ChiSquaredTable()
@@ -535,10 +537,10 @@ class ParameterExplorer(FittingComponent):
         self.set_transient_heating()
 
         # Set wavelength grid
-        if self.has_wavelength_grids: self.set_wavelength_grid()
+        if self.fitting_run.has_wavelength_grids: self.set_wavelength_grid()
 
         # Set dust grid
-        if self.has_dust_grids: self.set_dust_grid()
+        if self.fitting_run.has_dust_grids: self.set_dust_grid()
 
     # -----------------------------------------------------------------
 
@@ -553,7 +555,7 @@ class ParameterExplorer(FittingComponent):
         log.debug("Setting the number of photon packages to " + str(self.generation.npackages) + " ...")
 
         # Set the number of photon packages per wavelength
-        self.ski_template.setpackages(self.generation.npackages)
+        self.ski.setpackages(self.generation.npackages)
 
     # -----------------------------------------------------------------
 
@@ -568,8 +570,8 @@ class ParameterExplorer(FittingComponent):
         log.debug("Enabling dust self-absorption ..." if self.generation.selfabsorption else "Disabling dust self-absorption ...")
 
         # Set dust self-absorption
-        if self.generation.selfabsorption: self.ski_template.enable_selfabsorption()
-        else: self.ski_template.disable_selfabsorption()
+        if self.generation.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
 
     # -----------------------------------------------------------------
 
@@ -584,8 +586,8 @@ class ParameterExplorer(FittingComponent):
         log.debug("Enabling transient heating ..." if self.generation.transient_heating else "Disabling transient heating ...")
 
         # Set transient heating
-        if self.generation.transient_heating: self.ski_template.set_transient_dust_emissivity()
-        else: self.ski_template.set_grey_body_dust_emissivity()
+        if self.generation.transient_heating: self.ski.set_transient_dust_emissivity()
+        else: self.ski.set_grey_body_dust_emissivity()
 
     # -----------------------------------------------------------------
 
@@ -597,10 +599,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the name of the wavelengths file to " + fs.name(self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + ") ...")
+        log.debug("Setting the name of the wavelengths file to " + fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + ") ...")
 
         # Set the name of the wavelength grid file
-        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)))
+        self.ski.set_file_wavelength_grid(fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)))
 
     # -----------------------------------------------------------------
 
@@ -615,7 +617,7 @@ class ParameterExplorer(FittingComponent):
         log.debug("Setting the dust grid (level " + str(self.generation.dust_grid_level) + ") ...")
 
         # Set the dust grid
-        self.ski_template.set_dust_grid(self.dust_grid_for_level(self.generation.dust_grid_level))
+        self.ski.set_dust_grid(self.fitting_run.dust_grid_for_level(self.generation.dust_grid_level))
 
     # -----------------------------------------------------------------
 
@@ -638,7 +640,7 @@ class ParameterExplorer(FittingComponent):
             tool = ParallelizationTool()
 
             # Set configuration options
-            tool.config.ski = self.ski_template
+            tool.config.ski = self.ski
             tool.config.input = self.input_paths
 
             # Set host properties
@@ -680,7 +682,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Estimating the runtimes based on the results of previously finished simulations ...")
 
         # Create a RuntimeEstimator instance
-        estimator = RuntimeEstimator.from_file(self.timing_table_path)
+        estimator = RuntimeEstimator.from_file(self.fitting_run.timing_table_path)
 
         # Initialize a dictionary to contain the estimated walltimes for the different hosts with scheduling system
         walltimes = dict()
@@ -699,7 +701,7 @@ class ParameterExplorer(FittingComponent):
             else: plot_path = None
 
             # Estimate the runtime for the current number of photon packages and the current remote host
-            runtime = estimator.runtime_for(self.ski_template, parallelization, host.id, host.cluster_name, self.config.data_parallel, nwavelengths=self.nwavelengths, plot_path=plot_path)
+            runtime = estimator.runtime_for(self.ski, parallelization, host.id, host.cluster_name, self.config.data_parallel, nwavelengths=self.nwavelengths, plot_path=plot_path)
 
             # Debugging
             log.debug("The estimated runtime for this host is " + str(runtime) + " seconds")
@@ -734,14 +736,14 @@ class ParameterExplorer(FittingComponent):
 
             # Set the parameter values as a dictionary for this individual model
             parameter_values = dict()
-            for label in self.free_parameter_labels:
+            for label in self.fitting_run.free_parameter_labels:
 
                 # Get the value for this model from the generator and get the unit defined for this parameter
                 value = self.generator.parameters[label][i]
 
                 # Set value with unit
-                if self.parameter_units[label] is not None:
-                    unit = Unit(self.parameter_units[label])
+                if self.fitting_run.parameter_units[label] is not None:
+                    unit = Unit(self.fitting_run.parameter_units[label])
                     parameter_values[label] = value * unit
 
                 # Set dimensionless value
@@ -755,7 +757,7 @@ class ParameterExplorer(FittingComponent):
             simulation_name = time.unique_name()
 
             # Set the parameter values in the ski file template
-            self.ski_template.set_labeled_values(parameter_values)
+            self.ski.set_labeled_values(parameter_values)
 
             # Create a directory for this simulation
             simulation_path = fs.create_directory_in(self.generation.path, simulation_name)
@@ -765,7 +767,7 @@ class ParameterExplorer(FittingComponent):
 
             # Put the ski file with adjusted parameters into the simulation directory
             ski_path = fs.join(simulation_path, self.object_name + ".ski")
-            self.ski_template.saveto(ski_path)
+            self.ski.saveto(ski_path)
 
             # Create the SKIRT simulation definition
             definition = SingleSimulationDefinition(ski_path, simulation_output_path, self.input_paths, name=simulation_name)
@@ -809,8 +811,8 @@ class ParameterExplorer(FittingComponent):
                 log.error("Cleaning up generation and quitting ...")
 
                 # Remove this generation from the generations table
-                self.generations_table.remove_entry(self.generation_name)
-                self.generations_table.save()
+                self.fitting_run.generations_table.remove_entry(self.generation_name)
+                self.fitting_run.generations_table.save()
 
                 # Remove the generation directory
                 fs.remove_directory(self.generation.path)
@@ -909,10 +911,10 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing generation info ...")
 
         # Add an entry to the generations table
-        self.generations_table.add_entry(self.generation, self.ranges)
+        self.fitting_run.generations_table.add_entry(self.generation, self.ranges)
 
         # Save the table
-        self.generations_table.save()
+        self.fitting_run.generations_table.save()
 
     # -----------------------------------------------------------------
 

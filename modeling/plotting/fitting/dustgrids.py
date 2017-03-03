@@ -64,7 +64,7 @@ class DustGridsPlotter(FittingPlottingComponent):
 
         # Loop over the different dust grids
         index = 0
-        for path in fs.directories_in_path(self.fit_dust_grids_path, sort=int):
+        for path in fs.directories_in_path(self.dust_grids_path, sort=int):
 
             ski_path = fs.join(path, self.object_name + ".ski")
             simulation = SkirtSimulation(ski_path=ski_path, outpath=path)
