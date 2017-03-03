@@ -26,15 +26,16 @@ class OldStellarMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(OldStellarMapMaker, self).__init__(config)
+        super(OldStellarMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 

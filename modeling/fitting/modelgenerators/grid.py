@@ -24,27 +24,35 @@ class GridModelGenerator(ModelGenerator):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(GridModelGenerator, self).__init__(config)
+        super(GridModelGenerator, self).__init__(config, interactive)
 
         # -- Attributes --
 
+        # The fitting run
+        self.fitting_run = None
+
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        # Call the constructor of the base class
+        super(GridModelGenerator, self).setup(**kwargs)
+
+        # Get the fitting run
+        self.fitting_run = kwargs.pop("fitting_run")
 
 # -----------------------------------------------------------------

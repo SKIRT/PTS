@@ -34,15 +34,19 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ModelGenerator, self).__init__(config)
+        super(ModelGenerator, self).__init__(config, interactive)
+
+        # The fitting run
+        self.fitting_run = None
 
         # The dictionary with the parameter ranges
         self.ranges = OrderedDict()
@@ -159,15 +163,16 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup of the base class
-        super(ModelGenerator, self).setup()
+        super(ModelGenerator, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

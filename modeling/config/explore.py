@@ -7,23 +7,35 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.tools.stringify import stringify_not_list
+#from pts.core.tools.stringify import stringify_not_list
 from pts.core.tools import filesystem as fs
-from pts.modeling.component.component import load_fitting_configuration
+#from pts.modeling.component.component import load_fitting_configuration
+from pts.modeling.fitting.component import get_run_names
 from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 
+# Set the modeling path
+modeling_path = fs.cwd()
+
+# -----------------------------------------------------------------
+
 # Load the fitting configuration
-fitting_configuration = load_fitting_configuration(fs.cwd())
+#fitting_configuration = load_fitting_configuration(fs.cwd())
 
 # Free parameter labels
-free_parameter_labels = fitting_configuration.free_parameters
+#free_parameter_labels = fitting_configuration.free_parameters
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
+
+# The fitting run for which to explore the parameter space
+run_names = get_run_names(modeling_path)
+if len(run_names) == 0: raise RuntimeError("No fitting runs found: first run configure_fit to create a new fitting run")
+elif len(run_names) == 1: definition.add_fixed("name", "name of the fitting run", run_names[0])
+else: definition.add_required("name", "string", "name of the fitting run", choices=run_names)
 
 # Positional optional parameter
 definition.add_positional_optional("generation_method", "string", "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
@@ -42,14 +54,14 @@ definition.add_optional("mutation_rate", "fraction", "the mutation rate", 0.5)
 
 # The ranges of the different free parameters (although the absolute ranges are defined in the fitting configuration,
 # give the option to refine these ranges for each exploration step (generation))
-for label in free_parameter_labels:
+#for label in free_parameter_labels:
 
     # Get the default range
-    default_range = fitting_configuration[label + "_range"]
-    ptype, string = stringify_not_list(default_range)
+    #default_range = fitting_configuration[label + "_range"]
+    #ptype, string = stringify_not_list(default_range)
 
     # Add the optional range setting for this free parameter
-    definition.add_optional(label + "_range", ptype, "the range of " + label, default_range)
+    #definition.add_optional(label + "_range", ptype, "the range of " + label, default_range)
 
 # Flags
 definition.add_flag("relative", "whether the range values are relative to the best (or initial) parameter value")

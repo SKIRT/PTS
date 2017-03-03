@@ -98,6 +98,18 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_paths(cls, output_path, engine_path, prng_path, config_path, statistics_path, database_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
     @property
     def initialized(self):
 
@@ -398,7 +410,6 @@ class StepWiseOptimizer(Optimizer):
 
         """
         This function ...
-        :param dir_path:
         :return:
         """
 

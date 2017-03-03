@@ -34,6 +34,25 @@ class InstinctiveModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(InstinctiveModelGenerator, self).__init__(config)
 
+        # The fitting run
+        self.fitting_run = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(InstinctiveModelGenerator, self).setup(**kwargs)
+
+        # Get the fitting run
+        self.fitting_run = kwargs.pop("fitting_run")
+
     # -----------------------------------------------------------------
 
     def load_input(self):

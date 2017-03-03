@@ -26,14 +26,15 @@ class ChiSquardedPLotter(FittingPlottingComponent):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(ChiSquardedPLotter, self).__init__(config)
+        super(ChiSquardedPLotter, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 

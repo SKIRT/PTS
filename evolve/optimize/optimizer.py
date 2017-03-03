@@ -44,15 +44,16 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(Optimizer, self).__init__(config)
+        super(Optimizer, self).__init__(config, interactive)
 
         # The database adapter
         self.database = None

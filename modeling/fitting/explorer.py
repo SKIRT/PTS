@@ -73,18 +73,22 @@ class ParameterExplorer(FittingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ParameterExplorer, self).__init__(config)
+        super(ParameterExplorer, self).__init__(config, interactive)
 
         # -- Attributes --
+
+        # The fitting run
+        self.fitting_run = None
 
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
@@ -142,7 +146,7 @@ class ParameterExplorer(FittingComponent):
         self.generate_models()
 
         # 6. Set the paths to the input files
-        if self.needs_input: self.set_input()
+        if self.fitting_run.needs_input: self.set_input()
 
         # 7. Adjust the ski template
         self.adjust_ski()
@@ -170,6 +174,9 @@ class ParameterExplorer(FittingComponent):
 
         # Call the setup function of the base class
         super(ParameterExplorer, self).setup()
+
+        # Load the fitting run
+        self.fitting_run = self.load_fitting_run(self.config.name)
 
         # Set options for the batch launcher
         self.set_launcher_options()
@@ -285,34 +292,37 @@ class ParameterExplorer(FittingComponent):
         # Generate new models using genetic algorithms
         elif self.config.generation_method == "genetic":
 
-            if "initial" in self.generation_names:
+            # Create the generator
+            self.generator = GeneticModelGenerator()
+
+            #if "initial" in self.generation_names:
 
                 # Set index and name
-                self.generation_index = self.last_genetic_generation_index + 1
-                self.generation_name = str("Generation " + str(self.generation_index))
+                #self.generation_index = self.last_genetic_generation_index + 1
+                #self.generation_name = str("Generation " + str(self.generation_index))
 
                 # Create the model generator
-                self.generator = GeneticModelGenerator()
+                #self.generator = GeneticModelGenerator()
 
-            else:
+            #else:
 
                 # Set the generation name
-                self.generation_name = "initial"
+                #self.generation_name = "initial"
 
                 # Create the model generator
-                self.generator = InitialModelGenerator()
+                #self.generator = InitialModelGenerator()
 
         # Create the configuration for the generator
-        from ...core.basics.configuration import Configuration
-        config = Configuration()
-        config.path = self.config.path
-        config.generation_name = self.generation_name
-        config.nmodels = self.config.nsimulations
-        config.crossover_rate = self.config.crossover_rate
-        config.mutation_rate = self.config.mutation_rate
+        #from ...core.basics.configuration import Configuration
+        #config = Configuration()
+        #config.path = self.config.path
+        #config.generation_name = self.generation_name
+        #config.nmodels = self.config.nsimulations
+        #config.crossover_rate = self.config.crossover_rate
+        #config.mutation_rate = self.config.mutation_rate
 
         # Set the config
-        self.generator.config = config
+        #self.generator.config = config
 
     # -----------------------------------------------------------------
 
@@ -330,13 +340,13 @@ class ParameterExplorer(FittingComponent):
         if self.config.relative:
 
             # Check if there are any models that have been evaluated
-            if self.has_evaluated_models:
+            if self.fitting_run.has_evaluated_models:
 
                 # Inform the user
                 log.info("Determining the parameter ranges based on the current best values and the specified relative ranges ...")
 
                 # Get the best model
-                model = self.best_model
+                model = self.fitting_run.best_model
 
                 # Debugging
                 log.debug("Using the parameter values of simulation '" + model.simulation_name + "' of generation '" + model.generation_name + "' ...")
@@ -350,13 +360,13 @@ class ParameterExplorer(FittingComponent):
                 log.info("Determining the parameter ranges based on the first guess values and the specified relative ranges ...")
 
                 # Get the initial guess values
-                parameter_values = self.first_guess_parameter_values
+                parameter_values = self.fitting_run.first_guess_parameter_values
 
             # Debugging
             log.debug("The values that are used as the centers of the ranges are:")
 
             # Loop over the free parameter labels
-            for label in self.free_parameter_labels:
+            for label in self.fitting_run.free_parameter_labels:
 
                 # Get the best value (or initial value in the case no generations were lauched yet)
                 value = parameter_values[label]
@@ -375,11 +385,11 @@ class ParameterExplorer(FittingComponent):
             log.info("Using the specified ranges ...")
 
             # Loop over the free parameter labels
-            for label in self.free_parameter_labels:
+            for label in self.fitting_run.free_parameter_labels:
 
                 # Get the range
                 parameter_range = self.config[label + "_range"]
-                if parameter_range is None: parameter_range = self.free_parameter_ranges[label] # absolute range
+                if parameter_range is None: parameter_range = self.fitting_run.free_parameter_ranges[label] # absolute range
 
                 # Set the range
                 self.ranges[label] = parameter_range
@@ -400,7 +410,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Generating the model parameters ...")
 
         # Run the model generator
-        self.generator.run()
+        self.generator.run(fitting_run=self.fitting_run)
 
     # -----------------------------------------------------------------
 
@@ -415,30 +425,30 @@ class ParameterExplorer(FittingComponent):
         log.info("Setting the generation info ...")
 
         # Get the previous wavelength grid level
-        wavelength_grid_level = self.current_wavelength_grid_level
-        dust_grid_level = self.current_dust_grid_level
+        wavelength_grid_level = self.fitting_run.current_wavelength_grid_level
+        dust_grid_level = self.fitting_run.current_dust_grid_level
 
         # Determine the wavelength grid level
         if self.config.refine_wavelengths:
-            if wavelength_grid_level == self.highest_wavelength_grid_level: log.warning("Cannot refine wavelength grid: highest level reached (" + str(wavelength_grid_level) + ")")
+            if wavelength_grid_level == self.fitting_run.highest_wavelength_grid_level: log.warning("Cannot refine wavelength grid: highest level reached (" + str(wavelength_grid_level) + ")")
             else: wavelength_grid_level += 1
 
         # Determine the dust grid level
         if self.config.refine_dust:
-            if dust_grid_level == self.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
+            if dust_grid_level == self.fitting_run.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
             else: dust_grid_level += 1
 
         # Determine the number of photon packages
-        if self.config.increase_npackages: npackages = int(self.current_npackages * self.config.npackages_factor)
-        else: npackages = self.current_npackages
+        if self.config.increase_npackages: npackages = int(self.fitting_run.current_npackages * self.config.npackages_factor)
+        else: npackages = self.fitting_run.current_npackages
 
         # Determine whether selfabsorption should be enabled
         if self.config.selfabsorption is not None: selfabsorption = self.config.selfabsorption
-        else: selfabsorption = self.current_selfabsorption
+        else: selfabsorption = self.fitting_run.current_selfabsorption
 
         # Determine whether transient heating should be enabled
         if self.config.transient_heating is not None: transient_heating = self.config.transient_heating
-        else: transient_heating = self.current_transient_heating
+        else: transient_heating = self.fitting_run.current_transient_heating
 
         # Set the generation info
         self.generation.name = self.generation_name
@@ -467,7 +477,7 @@ class ParameterExplorer(FittingComponent):
         self.input_paths = self.input_map_paths
 
         # Determine and set the path to the appropriate wavelength grid file
-        wavelength_grid_path = self.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)
+        wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)
         self.input_paths.append(wavelength_grid_path)
 
         # Get the number of wavelengths

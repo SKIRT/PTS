@@ -40,23 +40,27 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        FittingComponent.__init__(self, config)
-        GalaxyModelingComponent.__init__(self, config)
+        FittingComponent.__init__(self, config, interactive)
+        GalaxyModelingComponent.__init__(self, config, interactive)
 
         # The fitting run
         self.fitting_run = None
 
+        # The ski file
+        self.ski = None
+
         # The instruments
-        #self.instruments = dict()
+        self.instruments = dict()
 
         # The table of weights for each band
         self.weights = None
@@ -84,6 +88,9 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # Load the ski file
+        self.load_ski()
 
         # 2. Create the wavelength grids
         self.create_wavelength_grids()
@@ -133,6 +140,17 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Create the table to contain the weights
         self.weights = WeightsTable()
+
+    # -----------------------------------------------------------------
+
+    def load_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ski = self.fitting_run.ski_template
 
     # -----------------------------------------------------------------
 
@@ -244,16 +262,16 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Adjusting the ski file parameters ...")
 
         # Remove the existing instruments
-        self.ski_template.remove_all_instruments()
+        self.ski.remove_all_instruments()
 
         # Add the instrument
-        self.ski_template.add_instrument("earth", self.instruments["SED"])
+        self.ski.add_instrument("earth", self.instruments["SED"])
 
         # Set the number of photon packages
-        self.ski_template.setpackages(self.config.npackages)
+        self.ski.setpackages(self.config.npackages)
 
         # Set the name of the wavelength grid file
-        self.ski_template.set_file_wavelength_grid("wavelengths.txt")
+        self.ski.set_file_wavelength_grid("wavelengths.txt")
 
         # Set the stellar and dust components
         self.set_components()
@@ -262,16 +280,16 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.set_dust_emissivity()
 
         # Set the lowest-resolution dust grid
-        self.ski_template.set_dust_grid(self.dg_generator.grids[0])
+        self.ski.set_dust_grid(self.dg_generator.grids[0])
 
         # Set all-cells dust library
-        self.ski_template.set_allcells_dust_lib()
+        self.ski.set_allcells_dust_lib()
 
         # Set the dust selfabsorption
         self.set_selfabsorption()
 
         # Disable all writing options
-        self.ski_template.disable_all_writing_options()
+        self.ski.disable_all_writing_options()
 
     # -----------------------------------------------------------------
 
@@ -322,10 +340,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Configuring the bulge component ...")
 
         # Set the parameters of the bulge
-        self.ski_template.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
-        self.ski_template.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
+        self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
+        self.ski.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * u("micron"))
+        self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * u("micron"))
 
     # -----------------------------------------------------------------
 
@@ -352,10 +370,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #self.deprojections["old stars"] = deprojection
 
         # Adjust the ski file
-        self.ski_template.set_stellar_component_geometry("Evolved stellar disk", deprojection)
-        self.ski_template.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
+        self.ski.set_stellar_component_geometry("Evolved stellar disk", deprojection)
+        self.ski.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1) # normalization by band
-        self.ski_template.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1_filter.centerwavelength() * u("micron"))
+        self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1_filter.centerwavelength() * u("micron"))
 
     # -----------------------------------------------------------------
 
@@ -380,14 +398,14 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #self.deprojections["young stars"] = deprojection
 
         # Adjust the ski file
-        self.ski_template.set_stellar_component_geometry("Young stars", deprojection)
-        self.ski_template.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
+        self.ski.set_stellar_component_geometry("Young stars", deprojection)
+        self.ski.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
         #self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
         #self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * u("micron"))
 
         # SET NORMALIZATION (IS FREE PARAMETER)
-        self.ski_template.set_stellar_component_normalization_wavelength("Young stars", self.fuv_filter.centerwavelength() * u("micron"))
-        self.ski_template.set_labeled_value("fuv_young", luminosity)
+        self.ski.set_stellar_component_normalization_wavelength("Young stars", self.fuv_filter.centerwavelength() * u("micron"))
+        self.ski.set_labeled_value("fuv_young", luminosity)
 
     # -----------------------------------------------------------------
 
@@ -415,14 +433,14 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #self.deprojections["ionizing stars"] = deprojection
 
         # Adjust the ski file
-        self.ski_template.set_stellar_component_geometry("Ionizing stars", deprojection)
-        self.ski_template.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
+        self.ski.set_stellar_component_geometry("Ionizing stars", deprojection)
+        self.ski.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
         #self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
         #self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
 
         # SET NORMALIZATION (IS FREE PARAMETER)
-        self.ski_template.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
-        self.ski_template.set_labeled_value("fuv_ionizing", luminosity) # keep label
+        self.ski.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
+        self.ski.set_labeled_value("fuv_ionizing", luminosity) # keep label
 
     # -----------------------------------------------------------------
 
@@ -447,11 +465,11 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         #self.deprojections["dust"] = deprojection
 
         # Adjust the ski file
-        self.ski_template.set_dust_component_geometry(0, deprojection)
-        self.ski_template.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
+        self.ski.set_dust_component_geometry(0, deprojection)
+        self.ski.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
         #self.ski_template.set_dust_component_mass(0, dust_mass) # dust mass
 
-        self.ski_template.set_labeled_value("dust_mass", dust_mass) # keep label
+        self.ski.set_labeled_value("dust_mass", dust_mass) # keep label
 
     # -----------------------------------------------------------------
 
@@ -466,11 +484,11 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Setting the dust emissivity ...")
 
         # Set dust emissivity if present
-        if self.ski_template.has_dust_emissivity:
+        if self.ski.has_dust_emissivity:
 
             # Enable or disable
-            if self.config.transient_heating: self.ski_template.set_transient_dust_emissivity()
-            else: self.ski_template.set_grey_body_dust_emissivity()
+            if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
+            else: self.ski.set_grey_body_dust_emissivity()
 
     # -----------------------------------------------------------------
 
@@ -485,8 +503,8 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Setting the dust self-absorption ...")
 
         # Dust self-absorption
-        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
-        else: self.ski_template.disable_selfabsorption()
+        if self.config.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
 
     # -----------------------------------------------------------------
 
@@ -621,10 +639,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Writing the ski file to " + self.template_ski_path + " ...")
+        log.info("Writing the ski file to " + self.fitting_run.template_ski_path + " ...")
 
         # Save the ski template file
-        self.ski_template.save()
+        self.ski.save()
 
     # -----------------------------------------------------------------
 

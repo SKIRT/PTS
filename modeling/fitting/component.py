@@ -17,6 +17,7 @@ from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
+from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ..component.component import ModelingComponent
@@ -36,16 +37,17 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(FittingComponent, self).__init__(config)
+        super(FittingComponent, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -54,6 +56,9 @@ class FittingComponent(ModelingComponent):
 
         # The database path
         self.database_path = None
+
+        # The statistics path
+        self.statistics_path = None
 
     # -----------------------------------------------------------------
 
@@ -77,6 +82,9 @@ class FittingComponent(ModelingComponent):
 
         # Set the path to the database
         self.database_path = fs.join(self.fit_path, "database.db")
+
+        # Set the path to the statistics file
+        self.statistics_path = fs.join(self.fit_path, "statistics.csv")
 
     # -----------------------------------------------------------------
 
@@ -126,6 +134,18 @@ class FittingComponent(ModelingComponent):
         """
 
         return self.runs_table.model_for_run(run_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Table.read(self.statistics_path)
 
 # -----------------------------------------------------------------
 

@@ -30,14 +30,15 @@ class Projector(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(Projector, self).__init__(config)
+        super(Projector, self).__init__(config, interactive)
 
         # The galaxy properties object
         self.properties = None

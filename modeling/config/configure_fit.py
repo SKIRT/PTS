@@ -36,6 +36,7 @@ definition.add_optional("descriptions", "string_string_dictionary", "parameter d
 definition.add_optional("types", "string_string_dictionary", "parameter types")
 definition.add_optional("units", "string_unit_dictionary", "parameter units")
 definition.add_optional("filters", "string_list", "fit to the observed data of these filters")
+definition.add_optional("genetic", "dictionary", "options for the genetic algorithm")
 
 # Sections
 definition.add_section("ranges", "parameter ranges")

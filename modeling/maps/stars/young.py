@@ -30,15 +30,16 @@ class YoungStellarMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(YoungStellarMapMaker, self).__init__(config)
+        super(YoungStellarMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 

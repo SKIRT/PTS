@@ -33,14 +33,15 @@ class ApertureCorrector(Configurable):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(ApertureCorrector, self).__init__(config)
+        super(ApertureCorrector, self).__init__(config, interactive)
 
         # The input
         self.psf = None

@@ -18,10 +18,121 @@ from ....evolve.core.engine import GeneticEngine
 from .generator import ModelGenerator
 from ....core.tools import filesystem as fs
 from ....core.tools.random import save_state, load_state
+from ....evolve.optimize.stepwise import StepWiseOptimizer
 
 # -----------------------------------------------------------------
 
 class GeneticModelGenerator(ModelGenerator):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, config=None, interactive=False):
+
+        """
+        The constructor ...
+        :param interactive:
+        """
+
+        # Call the constructor of the base class
+        super(GeneticModelGenerator, self).__init__(config, interactive)
+
+        # The optimizer
+        self.optimizer = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(GeneticModelGenerator, self).setup(**kwargs)
+
+        # Get the fitting run
+        self.fitting_run = kwargs.pop("fitting_run")
+
+        # Create the optimizer
+        self.optimizer = StepWiseOptimizer()
+
+        # Set settings
+        self.set_optimizer_settings()
+
+    # -----------------------------------------------------------------
+
+    def set_optimizer_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ## In order of optimizer configuration
+
+        # User
+        self.optimizer.config.mutation_rate = self.fitting_run.genetic_settings.mutation_rate
+        self.optimizer.config.crossover_rate = self.fitting_run.genetic_settings.crossover_rate
+
+        # Fixed
+        self.optimizer.config.stats_freq = 1
+        self.optimizer.config.best_raw_score = 0.
+
+        # User
+        self.optimizer.config.rounddecimal = self.fitting_run.genetic_settings.rounddecimal
+        self.optimizer.config.mutation_method = self.fitting_run.genetic_settings.mutation_method
+
+        # Fixed
+        self.optimizer.config.min_or_max = "minimize"
+        self.optimizer.config.run_id = self.fitting_run.name
+        self.optimizer.config.database_frequency = 1
+        self.optimizer.config.statistics_frequency = 1
+
+        # Fixed
+        self.optimizer.config.output = self.fitting_run.path
+
+        # Fixed
+        self.optimizer.config.elitism = True
+
+        # Fixed
+        self.optimizer.config.nelite_individuals = self.fitting_run.genetic_settings.nelite_individuals
+
+    # -----------------------------------------------------------------
+
+    def generate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the new models ...")
+
+        # Run the optimizer
+        self.optimizer.run()
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the state of the optimizer
+        #self.write_optimizer()
+
+# -----------------------------------------------------------------
+
+class OldGeneticModelGenerator(ModelGenerator):
     
     """
     This class...

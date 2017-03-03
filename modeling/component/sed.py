@@ -36,16 +36,17 @@ class SEDModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SEDModelingComponent, self).__init__(config)
+        super(SEDModelingComponent, self).__init__(config, interactive)
 
         # The SED file path
         self.sed_path = None

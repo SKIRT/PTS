@@ -19,7 +19,8 @@ from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.tools.logging import log
 from ..config.parameters import definition as parameters_definition
-from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration, combine_configs
+from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
+from ...core.basics.configuration import DictConfigurationSetter, combine_configs
 from ..config.parameters import parsing_types_for_parameter_types, unit_parsing_type
 from ..config.parameters import default_units, possible_parameter_types_descriptions
 from .run import FittingRun
@@ -36,16 +37,17 @@ class FittingConfigurer(FittingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(FittingConfigurer, self).__init__(config)
+        super(FittingConfigurer, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -58,6 +60,9 @@ class FittingConfigurer(FittingComponent):
         # The ski file template
         self.ski = None
 
+        # The definition for the genetic algorithm settings
+        self.genetic_definition = None
+
         # The individual configurations
         self.parameters_config = None
         self.descriptions_config = None
@@ -65,6 +70,7 @@ class FittingConfigurer(FittingComponent):
         self.units_config = None
         self.ranges_config = None
         self.filters_config = None
+        self.genetic_config = None
 
         # Additional settings
         self.settings = None
@@ -106,6 +112,9 @@ class FittingConfigurer(FittingComponent):
         # 8. Get the fitting filters
         self.set_filters()
 
+        # 9. Get the settings for the genetic algorithm
+        self.set_genetic()
+
         # 9. Create the fitting configuration
         self.create_config()
 
@@ -140,9 +149,13 @@ class FittingConfigurer(FittingComponent):
         if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
         if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
         if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
+        if "genetic_config" in kwargs: self.genetic_config = kwargs.pop("genetic_config")
 
         # Set settings dict
         if "settings" in kwargs: self.settings = kwargs.pop("settings")
+
+        # Set definition of genetic algorithm configuration
+        self.set_genetic_definition()
 
     # -----------------------------------------------------------------
 
@@ -161,6 +174,53 @@ class FittingConfigurer(FittingComponent):
 
         # Create the run directory
         fs.create_directory(self.fitting_run.path)
+
+    # -----------------------------------------------------------------
+
+    def set_genetic_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the definition of the genetic algorithm configuration ...")
+
+        # Create the configuration
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Add settings
+        definition.add_optional("mutation_rate", "real", "mutation rate", 0.02)
+        definition.add_optional("crossover_rate", "real", "crossover rate", 0.9)
+        # definition.add_optional("stats_freq", "integer", "frequency of statistics (in number of generations)", 50)
+        # definition.add_optional("best_raw_score", "real", "best score for an individual")
+        definition.add_optional("rounddecimal", "integer", "round everything to this decimal place")
+        definition.add_optional("mutation_method", "string", "mutation method", choices=["range", "gaussian", "binary"])
+        # definition.add_optional("min_or_max", "string", "minimize or maximize", choices=["minimize", "maximize"])
+        # definition.add_optional("run_id", "string", "identifier for this run", default="run0")
+        # definition.add_optional("database_frequency", "positive_integer",
+        #                        "frequency of appending to the database (in the number of generations)", 1)
+        # definition.add_optional("statistics_frequency", "positive_integer",
+        #                        "frequency of appending to the statistics table", 1)
+
+        # Other
+        # definition.add_optional("output", "directory_path", "output directory")
+
+        # Flags
+        definition.add_flag("elitism", "enable elitism", True)
+        # definition.add_flag("show", "show results", True)
+        # definition.add_flag("write", "write results", True)
+        # definition.add_flag("plot", "plot results", False)
+        # definition.add_flag("finish",
+        #                    "finish the evolution: set the scores of the last generation but don't generate a new population",
+        #                    False)
+
+        # Advanced
+        definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)
+
+        # Set
+        self.genetic_definition = definition
 
     # -----------------------------------------------------------------
 
@@ -498,6 +558,44 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_genetic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the genetic algorithm configuration ...")
+
+        # Load or prompt for the settings
+        if self.config.genetic is not None:
+            setter = DictConfigurationSetter(self.config.genetic, "genetic")
+            configuration = setter.run(self.genetic_definition)
+            self.genetic_config = Configuration(genetic=configuration)
+        elif isinstance(self.genetic_config, dict): pass
+        else: self.prompt_genetic()
+
+    # -----------------------------------------------------------------
+
+    def prompt_genetic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for the settings of the genetic algorithm ...")
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
+
+        # Create config, get the filter choices
+        self.genetic_config = Configuration(genetic=setter.run(self.genetic_definition, prompt_optional=True))
+
+    # -----------------------------------------------------------------
+
     def set_settings(self):
 
         """
@@ -539,7 +637,9 @@ class FittingConfigurer(FittingComponent):
         log.info("Creating the fitting run configuration ...")
 
         # Combine configs
-        self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config, self.units_config, self.ranges_config, self.filters_config)
+        self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config,
+                                              self.units_config, self.ranges_config, self.filters_config,
+                                              self.genetic_config)
 
         # Set additional settings
         for label in self.settings: self.fitting_config[label] = self.settings[label]

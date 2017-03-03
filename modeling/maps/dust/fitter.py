@@ -200,15 +200,16 @@ class BlackBodyFitter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(BlackBodyFitter, self).__init__(config)
+        super(BlackBodyFitter, self).__init__(config, interactive)
 
         # The pixel or galaxy SEDs
         self.seds = None
@@ -338,15 +339,16 @@ class GridBlackBodyFitter(BlackBodyFitter):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(GridBlackBodyFitter, self).__init__(config)
+        super(GridBlackBodyFitter, self).__init__(config, interactive)
 
         # The process pool
         self.pool = None
@@ -467,15 +469,16 @@ class GeneticBlackBodyFitter(BlackBodyFitter):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(GeneticBlackBodyFitter, self).__init__(config)
+        super(GeneticBlackBodyFitter, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 

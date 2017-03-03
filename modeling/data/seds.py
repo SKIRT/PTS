@@ -30,14 +30,16 @@ class SEDFetcher(DataComponent):
     This class ...
     """
     
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
     
         """
         The constructor ...
+        :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(SEDFetcher, self).__init__(config)
+        super(SEDFetcher, self).__init__(config, interactive)
 
         # -- Attributes --
 

@@ -61,6 +61,16 @@ class FittingRun(object):
         # Set the name of the model used
         self.model_name = model_name
 
+        ## Optimizer:
+
+        # Set the path to the main genetic engine
+        self.main_engine_path = fs.join(self.path, "engine.pickle")
+
+        # Set the path to the
+
+
+        ##
+
         # Set the path to the fitting configuration file
         self.fitting_configuration_path = fs.join(self.path, "configuration.cfg")
 
@@ -259,6 +269,18 @@ class FittingRun(object):
         """
 
         return self.fitting_configuration.units
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def genetic_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.genetic
 
     # -----------------------------------------------------------------
     # END

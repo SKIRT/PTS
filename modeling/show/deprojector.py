@@ -24,13 +24,15 @@ class Deprojector(ShowComponent):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param config:
+        :param interactive:
         """
 
-        super(Deprojector, self).__init__(config)
+        super(Deprojector, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 

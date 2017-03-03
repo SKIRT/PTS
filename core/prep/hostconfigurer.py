@@ -38,15 +38,16 @@ class HostConfigurer(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(HostConfigurer, self).__init__(config)
+        super(HostConfigurer, self).__init__(config, interactive)
 
         # The configuration setter
         self.setter = InteractiveConfigurationSetter("host", add_cwd=False, add_logging=False)

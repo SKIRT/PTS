@@ -32,15 +32,16 @@ class RemotesConfigurable(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(RemotesConfigurable, self).__init__(config)
+        super(RemotesConfigurable, self).__init__(config, interactive)
 
         # The remotes
         self.remotes = []

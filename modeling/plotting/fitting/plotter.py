@@ -68,11 +68,12 @@ class FittingPlotter(Configurable):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
@@ -80,7 +81,7 @@ class FittingPlotter(Configurable):
         #PlottingComponent.__init__(self, config)
         #FittingComponent.__init__(self, config)
 
-        super(FittingPlotter, self).__init__(config)
+        super(FittingPlotter, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 
