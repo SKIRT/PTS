@@ -59,15 +59,16 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(MapsComponent, self).setup()
+        super(MapsComponent, self).setup(**kwargs)
 
         # Set the path to the maps/dust directory
         self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")

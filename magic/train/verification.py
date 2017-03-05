@@ -31,16 +31,17 @@ class Verifier(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Verifier, self).__init__(config)
+        super(Verifier, self).__init__(config, interactive)
 
         # The classifier object
         self.classifier = None
@@ -71,15 +72,16 @@ class Verifier(Configurable):
         
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # Classify
         self.classify()
@@ -89,15 +91,16 @@ class Verifier(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup of the base class
-        super(Verifier, self).setup()
+        super(Verifier, self).setup(**kwargs)
 
         self.classifier = Classifier()
         self.classifier.config.mode = self.config.mode
@@ -123,7 +126,7 @@ class Verifier(Configurable):
         """
 
         # Inform the user
-        self.log.info("Starting the verification ...")
+        log.info("Starting the verification ...")
 
         # Get a list of the filepaths for every FITS file in the current working directory
         file_paths = fs.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)

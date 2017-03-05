@@ -33,14 +33,16 @@ class WavelengthGridsPlotter(FittingPlottingComponent):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
+        :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(WavelengthGridsPlotter, self).__init__(config)
+        super(WavelengthGridsPlotter, self).__init__(config, interactive)
 
         # The wavelength grids
         self.wavelength_grids = []

@@ -32,10 +32,11 @@ from ...core.basics.emissionlines import EmissionLines
 from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from ...core.prep.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
-from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
 from ...core.advanced.dustgridtool import DustGridTool
 from ...core.basics.unit import parse_unit as u
 from ...core.basics.configuration import prompt_string
+from ..fitting.run import get_best_model_for_generation, get_ski_file_for_simulation
+from ..fitting.component import load_fitting_run
 
 # -----------------------------------------------------------------
 
@@ -45,18 +46,22 @@ class AnalysisLauncher(AnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(AnalysisLauncher, self).__init__(config)
+        super(AnalysisLauncher, self).__init__(config, interactive)
 
         # -- Attributes --
+
+        # The fitting run
+        self.fitting_run = None
 
         # The remote SKIRT environment
         self.remote = SkirtRemote()
@@ -129,15 +134,16 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the ski file
         self.load_ski()
@@ -174,32 +180,24 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(AnalysisLauncher, self).setup()
+        super(AnalysisLauncher, self).setup(**kwargs)
 
         # Prompt for generation name
-        fitting_run = self.config.fitting_run
-
-        # ...
-
-        #"the name of the (finished) generation for which to launch the best simulation for analysis", default=last_generation_name, choices=generation_names)
-
-        # Set the default option for the generation name
-        # last_generation_name = get_last_finished_generation(fs.cwd())
-        # if last_generation_name is None: raise RuntimeError("No generations found in fitting directory")
-
-        # Set the choices for the generationn name
-        # generation_names = get_finished_generations(fs.cwd())
+        self.fitting_run = load_fitting_run(self.config.path, self.config.fitting_run)
 
         # Get the generation name
-        self.generation_name = prompt_string("generation", "name of the (finished) generation for which to launch the best simulation for analysis")
+        self.generation_name = prompt_string("generation", "name of the (finished) generation for which to launch the "
+                                                           "best simulation for analysis",
+                                             default=self.fitting_run.last_finished_generation, choices=self.fitting_run.finished_generations)
 
         # Setup the remote execution environment
         self.remote.setup(self.config.remote)
@@ -223,13 +221,25 @@ class AnalysisLauncher(AnalysisComponent):
         self.run_info_path = fs.join(self.analysis_run_path, "info.dat")
 
         # Load the best model for the specified generation
-        self.best_model = get_best_model_for_generation(self.config.path, self.generation_name)
+        self.best_model = get_best_model_for_generation(self.config.path, self.fitting_run_name, self.generation_name)
 
         # Create the analysis run info
         self.create_info()
 
         # Create the necessary directories
         self.create_directories()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.name
 
     # -----------------------------------------------------------------
 
@@ -295,7 +305,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Loading the ski file ...")
 
         # Load the ski file
-        self.ski = get_ski_file_for_simulation(self.config.path, self.generation_name, self.best_model.simulation_name)
+        self.ski = get_ski_file_for_simulation(self.config.path, self.fitting_run_name, self.generation_name, self.best_model.simulation_name)
 
     # -----------------------------------------------------------------
 

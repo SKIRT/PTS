@@ -28,14 +28,15 @@ class ImagesPlotter(FittingPlottingComponent):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(ImagesPlotter, self).__init__(config)
+        super(ImagesPlotter, self).__init__(config, interactive)
 
         # The fitting run
         self.fitting_run = None

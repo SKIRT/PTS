@@ -31,14 +31,16 @@ class SEDsPLotter(FittingPlottingComponent):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
+        :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(SEDsPLotter, self).__init__(config)
+        super(SEDsPLotter, self).__init__(config, interactive)
 
         # The simulated SEDs of all models, as lists for each generation
         self.seds = dict()

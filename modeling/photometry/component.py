@@ -24,16 +24,17 @@ class PhotometryComponent(GalaxyModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PhotometryComponent, self).__init__(config)
+        super(PhotometryComponent, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -51,15 +52,16 @@ class PhotometryComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(PhotometryComponent, self).setup()
+        super(PhotometryComponent, self).setup(**kwargs)
 
         # Set ...
         self.phot_temp_path = fs.create_directory_in(self.phot_path, "temp")

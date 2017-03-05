@@ -36,17 +36,18 @@ class PhotometryPlotter(PlottingComponent, PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
         #super(PlottingComponent, self).__init__(config) # not sure this will work
-        PlottingComponent.__init__(self, config)
+        PlottingComponent.__init__(self, config, interactive)
         PhotometryComponent.__init__(self)
 
         # -- Attributes --

@@ -37,14 +37,15 @@ class DecompositionResidualsCalculator(DecompositionComponent):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
         :param config:
+        :param interactive:
         """
 
-        super(DecompositionResidualsCalculator, self).__init__(config)
+        super(DecompositionResidualsCalculator, self).__init__(config, interactive)
 
         self.i1_jy = None
         self.disk_jy = None
@@ -60,15 +61,16 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Setup
-        self.setup()
+        self.setup(**kwargs)
 
         # Load the images
         self.load_images()

@@ -36,16 +36,17 @@ class Collector(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Collector, self).__init__(config)
+        super(Collector, self).__init__(config, interactive)
 
         # The current and previous source
         self.previous_source = None
@@ -87,15 +88,16 @@ class Collector(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Collect
         self.collect()
@@ -117,15 +119,16 @@ class Collector(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(Collector, self).setup()
+        super(Collector, self).setup(**kwargs)
 
         # Get description
         self.description = description[self.config.mode]

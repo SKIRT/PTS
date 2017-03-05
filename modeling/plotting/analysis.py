@@ -49,17 +49,18 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config)
-        AnalysisComponent.__init__(self, config)
+        PlottingComponent.__init__(self, config, interactive)
+        AnalysisComponent.__init__(self, config, interactive)
 
         # -- Attributes --
 
@@ -83,15 +84,16 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the wavelength grid
         self.load_wavelength_grid()

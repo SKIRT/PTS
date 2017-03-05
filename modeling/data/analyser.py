@@ -26,15 +26,16 @@ class MosaicAnalyser(DataComponent):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(MosaicAnalyser, self).__init__(config)
+        super(MosaicAnalyser, self).__init__(config, interactive)
 
         # The task which has created the mosaics
         self.task = None
@@ -78,15 +79,16 @@ class MosaicAnalyser(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the results from the mosaicing
         self.load_results()

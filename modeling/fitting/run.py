@@ -973,6 +973,21 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def last_finished_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the name of the last finished generation
+        finished_generations = self.generations_table.finished_generations
+        if len(finished_generations) > 0: return finished_generations[-1]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def ngenetic_generations(self):
 
         """

@@ -24,15 +24,16 @@ class InstinctiveModelGenerator(ModelGenerator):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(InstinctiveModelGenerator, self).__init__(config)
+        super(InstinctiveModelGenerator, self).__init__(config, interactive)
 
         # The fitting run
         self.fitting_run = None

@@ -42,16 +42,17 @@ class AttenuationCurveAnalyser(AttenuationAnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(AttenuationCurveAnalyser, self).__init__(config)
+        super(AttenuationCurveAnalyser, self).__init__(config, interactive)
 
         # -- Attributes --
 

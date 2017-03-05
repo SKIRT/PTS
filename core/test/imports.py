@@ -29,15 +29,16 @@ class ImportsChecker(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(ImportsChecker, self).__init__(config)
+        super(ImportsChecker, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 

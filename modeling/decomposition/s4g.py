@@ -35,14 +35,16 @@ class S4GDecomposer(DecompositionComponent):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(S4GDecomposer, self).__init__(config)
+        super(S4GDecomposer, self).__init__(config, interactive)
 
         # The S4G interface
         self.s4g = S4G()
@@ -55,15 +57,16 @@ class S4GDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the components
         self.get_components()
@@ -73,15 +76,16 @@ class S4GDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(S4GDecomposer, self).setup()
+        super(S4GDecomposer, self).setup(**kwargs)
 
         # Set the path
         self.components_2d_s4g_path = fs.create_directory_in(self.components_2d_path, "S4G")

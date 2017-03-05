@@ -54,14 +54,15 @@ class SDSSMosaicMaker(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(SDSSMosaicMaker, self).__init__(config)
+        super(SDSSMosaicMaker, self).__init__(config, interactive)
 
         # The DustPedia sample object
         self.sample = None
@@ -102,15 +103,16 @@ class SDSSMosaicMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Create directories
         self.create_directories()
@@ -162,15 +164,16 @@ class SDSSMosaicMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SDSSMosaicMaker, self).setup()
+        super(SDSSMosaicMaker, self).setup(**kwargs)
 
         # Create the DustPedia sample object
         self.sample = DustPediaSample()

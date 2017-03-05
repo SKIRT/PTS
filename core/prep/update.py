@@ -43,15 +43,16 @@ class Updater(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(Updater, self).__init__(config)
+        super(Updater, self).__init__(config, interactive)
 
         # The remote execution environment
         self.remote = None
@@ -205,14 +206,16 @@ class SKIRTUpdater(Updater):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(SKIRTUpdater, self).__init__(config)
+        super(SKIRTUpdater, self).__init__(config, interactive)
 
         # Modules
         self.modules = None
@@ -671,15 +674,16 @@ class PTSUpdater(Updater):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(PTSUpdater, self).__init__(config)
+        super(PTSUpdater, self).__init__(config, interactive)
 
         # The git version to which PTS is updated
         self.git_version = None

@@ -24,16 +24,17 @@ class CatalogBuilder(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(CatalogBuilder, self).__init__(config)
+        super(CatalogBuilder, self).__init__(config, interactive)
 
         # The image frame
         self.frame = None

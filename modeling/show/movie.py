@@ -23,13 +23,14 @@ class MovieMaker(ShowComponent):
     This class makes a movie of a radiative transfer model for a galaxy
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         """
 
-        super(MovieMaker, self).__init__(config)
+        super(MovieMaker, self).__init__(config, interactive)
 
 # -----------------------------------------------------------------

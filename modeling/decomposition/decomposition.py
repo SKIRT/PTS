@@ -49,16 +49,17 @@ class GalaxyDecomposer(DecompositionComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(GalaxyDecomposer, self).__init__(config)
+        super(GalaxyDecomposer, self).__init__(config, interactive)
 
         # The SKIRT launching environment
         self.launcher = SimpleSKIRTLauncher()
@@ -96,15 +97,16 @@ class GalaxyDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the decomposition parameters
         self.decompose()
@@ -126,15 +128,16 @@ class GalaxyDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(GalaxyDecomposer, self).setup()
+        super(GalaxyDecomposer, self).setup(**kwargs)
 
         # TEMP: provide a cfg file for this class
         self.config.bulge_packages = 1e7

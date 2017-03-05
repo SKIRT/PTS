@@ -42,6 +42,12 @@ class ModelBuilder(BuildComponent):
         # The path for this model
         self.model_path = None
 
+        # The path for the stellar components
+        self.model_stellar_path = None
+
+        # The path for the dust components
+        self.model_dust_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -80,6 +86,12 @@ class ModelBuilder(BuildComponent):
         # Set the model path and create it
         self.model_path = fs.create_directory_in(self.models_path, self.model_name)
 
+        # Set the path of the directory for the stellar components
+        self.model_stellar_path = fs.create_directory_in(self.model_path, "stellar")
+
+        # Set the path of the directory for the dust components
+        self.model_dust_path = fs.create_directory_in(self.model_path, "dust")
+
     # -----------------------------------------------------------------
 
     @property
@@ -108,7 +120,7 @@ class ModelBuilder(BuildComponent):
         builder = StarsBuilder(interactive=True)
 
         # Set the output path
-        builder.config.output = self.model_path
+        builder.config.output = self.model_stellar_path
 
         # Run
         builder.run()
@@ -129,7 +141,7 @@ class ModelBuilder(BuildComponent):
         builder = DustBuilder(interactive=True)
 
         # Set the output path
-        builder.config.output = self.model_path
+        builder.config.output = self.model_dust_path
 
         # Run
         builder.run()

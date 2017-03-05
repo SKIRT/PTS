@@ -24,16 +24,17 @@ class ReportingComponent(GalaxyModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ReportingComponent, self).__init__(config)
+        super(ReportingComponent, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -69,15 +70,16 @@ class ReportingComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(ReportingComponent, self).setup()
+        super(ReportingComponent, self).setup(**kwargs)
 
         # Set the report paths
         self.data_report_path = fs.join(self.reports_path, "data.txt")

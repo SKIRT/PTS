@@ -60,15 +60,16 @@ class CorteseDustMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(CorteseDustMapMaker, self).__init__(config)
+        super(CorteseDustMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 

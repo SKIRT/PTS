@@ -48,17 +48,18 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config)
-        PreparationComponent.__init__(self, config)
+        PlottingComponent.__init__(self, config, interactive)
+        PreparationComponent.__init__(self, config, interactive)
 
         # -- Attributes --
 

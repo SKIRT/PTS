@@ -33,16 +33,17 @@ class Classifier(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Classifier, self).__init__(config)
+        super(Classifier, self).__init__(config, interactive)
 
         # The classifier object
         self.vector_classifier = None
@@ -100,15 +101,16 @@ class Classifier(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the training data
         self.load_data()
@@ -121,15 +123,16 @@ class Classifier(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup of the base class
-        super(Classifier, self).setup()
+        super(Classifier, self).setup(**kwargs)
 
         # Create the vector classifier
         self.vector_classifier = svm.SVC(gamma=0.001, C=100.) # support vector classification

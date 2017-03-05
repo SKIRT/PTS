@@ -20,7 +20,7 @@ class TestReport(object):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self):
 
         """
         This function ...

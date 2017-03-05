@@ -24,31 +24,33 @@ class TruncationComponent(GalaxyModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(TruncationComponent, self).__init__(config)
+        super(TruncationComponent, self).__init__(config, interactive)
 
         # The path to the truncation/images directory
         self.truncation_images_path = None
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(TruncationComponent, self).setup()
+        super(TruncationComponent, self).setup(**kwargs)
 
         # Set the path to the truncation/images directory
         self.truncation_images_path = fs.create_directory_in(self.truncation_path, "images")

@@ -32,16 +32,17 @@ class CatalogImporter(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(CatalogImporter, self).__init__(config)
+        super(CatalogImporter, self).__init__(config, interactive)
 
         # The catalog box
         self.coordinate_box = None

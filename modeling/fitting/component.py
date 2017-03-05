@@ -23,7 +23,7 @@ from astropy.table import Table
 from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from .tables import RunsTable
-from .run import FittingRun
+from .run import FittingRun, get_generation_names, get_finished_generations
 
 # -----------------------------------------------------------------
 
@@ -159,5 +159,95 @@ def get_run_names(modeling_path):
 
     fit_path = fs.join(modeling_path, "fit")
     return fs.directories_in_path(fit_path, returns="name")
+
+# -----------------------------------------------------------------
+
+def get_run_generation_combinations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    combinations = []
+
+    for run_name in get_run_names(modeling_path):
+        for generation in get_generation_names(modeling_path, run_name):
+            combinations.append((run_name, generation))
+
+    # Return the combinations
+    return combinations
+
+# -----------------------------------------------------------------
+
+def get_run_finished_generation_combinations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    combinations = []
+
+    for run_name in get_run_names(modeling_path):
+        for generation in get_finished_generations(modeling_path, run_name):
+            combinations.append((run_name, generation))
+
+    # Return the combinations
+    return combinations
+
+# -----------------------------------------------------------------
+
+def load_fitting_run(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    model_name = get_model_for_run(modeling_path, name)
+    return FittingRun(modeling_path, name, model_name)
+
+# -----------------------------------------------------------------
+
+def get_runs_table_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    fit_path = fs.join(modeling_path, "fit")
+    return fs.join(fit_path, "runs.dat")
+
+# -----------------------------------------------------------------
+
+def get_runs_table(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_runs_table_path(modeling_path)
+    return RunsTable.from_file(path)
+
+# -----------------------------------------------------------------
+
+def get_model_for_run(modeling_path, name):
+
+    """
+    This function ...
+    :return:
+    """
+
+    table = get_runs_table(modeling_path)
+    return table.model_for_run(name)
 
 # -----------------------------------------------------------------

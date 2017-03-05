@@ -37,16 +37,17 @@ class PreparationInspector(PreparationComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PreparationInspector, self).__init__(config)
+        super(PreparationInspector, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -57,15 +58,16 @@ class PreparationInspector(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # Inspect errors
         self.inspect_significance()
@@ -75,15 +77,16 @@ class PreparationInspector(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(PreparationInspector, self).setup()
+        super(PreparationInspector, self).setup(**kwargs)
 
         self.inspect_path = fs.join(self.config.path, "inspect")
         if not fs.is_directory(self.inspect_path): fs.create_directory(self.inspect_path)

@@ -36,16 +36,17 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config)
+        PlottingComponent.__init__(self, config, interactive)
         DecompositionComponent.__init__(self)
 
         # -- Attributes --
@@ -57,7 +58,7 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -65,7 +66,7 @@ class DecompositionPlotter(PlottingComponent, DecompositionComponent):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the images
         self.load_images()

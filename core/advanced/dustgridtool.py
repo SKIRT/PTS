@@ -29,11 +29,10 @@ class DustGridTool(object):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self):
 
         """
         The constructor ...
-        :param config:
         :return:
         """
 

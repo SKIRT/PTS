@@ -29,14 +29,16 @@ class DistributionsPLotter(FittingPlottingComponent):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
+        :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(DistributionsPLotter, self).__init__(config)
+        super(DistributionsPLotter, self).__init__(config, interactive)
 
         # The prior and posterior probability distributions
         self.prior_distributions = dict()  # indexed on generation, then on the free parameter labels

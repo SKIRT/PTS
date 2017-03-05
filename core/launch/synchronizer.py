@@ -33,16 +33,17 @@ class RemoteSynchronizer(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(RemoteSynchronizer, self).__init__(config)
+        super(RemoteSynchronizer, self).__init__(config, interactive)
 
         # -- Attributes --
 

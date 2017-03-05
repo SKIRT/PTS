@@ -1106,11 +1106,12 @@ class DataSetCreator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, **kwargs):
 
         """
         The constructor ...
         :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class

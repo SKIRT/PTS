@@ -53,9 +53,6 @@ class GeneralBuilder(BuildComponent):
         # The maps
         self.maps = dict()
 
-        # The stellar components
-        #self.components = dict()
-
         # The deprojections
         self.deprojections = dict()
 
@@ -64,6 +61,9 @@ class GeneralBuilder(BuildComponent):
 
         # The properties
         self.properties = dict()
+
+        # The paths to the component directories
+        self.paths = dict()
 
         # The SKIRT smile schema
         self.smile = None
@@ -139,11 +139,26 @@ class GeneralBuilder(BuildComponent):
         log.info("Writing ...")
 
         # Write components
-        self.write_components()
+        self.write_component_directories()
+
+        # Write parameters
+        self.write_parameters()
+
+        # Write deprojections
+        self.write_deprojections()
+
+        # Write maps
+        self.write_maps()
+
+        # Write models
+        self.write_models()
+
+        # Write properties
+        self.write_properties()
 
     # -----------------------------------------------------------------
 
-    def write_components(self):
+    def write_component_directories(self):
 
         """
         This function ...
@@ -151,7 +166,7 @@ class GeneralBuilder(BuildComponent):
         """
 
         # Inform the user
-        log.info("Writing the components ...")
+        log.info("Writing the component directories ...")
 
         # Loop over the components
         for name in self.parameters:
@@ -160,32 +175,116 @@ class GeneralBuilder(BuildComponent):
             component_path = self.output_path_file(name)
             fs.create_directory(component_path)
 
+            # Set the path
+            self.paths[name] = component_path
+
+    # -----------------------------------------------------------------
+
+    def write_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the component parameters ...")
+
+        # Loop over the components
+        for name in self.parameters:
+
             # Save parameters
-            path = fs.join(component_path, "parameters.cfg")
+            path = fs.join(self.paths[name], "parameters.cfg")
             self.parameters[name].saveto(path)
 
-            # Save deprojection
-            if name in self.deprojections:
+    # -----------------------------------------------------------------
 
-                path = fs.join(component_path, "deprojection.mod")
-                self.deprojections[name].saveto(path)
+    def write_deprojections(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the deprojections ...")
+
+        # Loop over the components
+        for name in self.parameters:
+
+            # Save deprojection
+            if name not in self.deprojections: continue
+
+            # Save
+            path = fs.join(self.paths[name], "deprojection.mod")
+            self.deprojections[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the maps ...")
+
+        # Loop over the components
+        for name in self.parameters:
 
             # Save map
-            if name in self.maps:
+            if name not in self.maps: continue
 
-                path = fs.join(component_path, "map.fits")
-                self.maps[name].saveto(path)
+            # Save the map
+            path = fs.join(self.paths[name], "map.fits")
+            self.maps[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_models(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the models ...")
+
+        for name in self.parameters:
 
             # Save model
-            if name in self.models:
+            if name not in self.models: continue
 
-                path = fs.join(component_path, "model.mod")
-                self.models[name].saveto(path)
+            # Save the model
+            path = fs.join(self.paths[name], "model.mod")
+            self.models[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_properties(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the component properties ...")
+
+        # Loop over the parameters
+        for name in self.parameters:
 
             # Save properties
-            if name in self.properties:
+            if name not in self.properties: continue
 
-                path = fs.join(component_path, "properties.dat")
-                write_dict(self.properties[name], path)
+            # Write the properties
+            path = fs.join(self.paths[name], "properties.dat")
+            write_dict(self.properties[name], path)
 
 # -----------------------------------------------------------------

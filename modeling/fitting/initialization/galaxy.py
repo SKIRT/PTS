@@ -31,6 +31,7 @@ from ....core.basics.map import Map
 from ...component.galaxy import GalaxyModelingComponent
 from ..tables import WeightsTable
 from ....core.basics.unit import parse_unit as u
+from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 
 # -----------------------------------------------------------------
 
@@ -58,6 +59,10 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # The ski file
         self.ski = None
+
+        # The stellar and dust components
+        self.stellar_components = dict()
+        self.dust_components = dict()
 
         # The instruments
         self.instruments = dict()
@@ -145,6 +150,18 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.fixed["distance"] = self.galaxy_distance
         self.fixed["inclination"] = self.galaxy_inclination
         self.fixed["position_angle"] = self.galaxy_position_angle
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.model_name
 
     # -----------------------------------------------------------------
 
@@ -327,6 +344,30 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Setting the stellar components ...")
 
         # Loop over the stellar components
+        for name in get_stellar_component_names(self.config.path, self.model_name):
+
+            # Load the component
+            component = load_stellar_component(self.config.path, self.model_name, name)
+
+            # Set
+            #self.stellar_components[name] = component
+
+            # Set geometry
+            if "model" in component:
+
+                self.ski.set_stellar_component_geometry(component.model)
+
+            # Set deprojection
+            if "deprojection" in component:
+
+                # Also
+                self.ski.set_stellar_component_geometry(component.deprojection)
+
+            # Set parameters
+
+
+            # Set properties
+            if "properties" in component:
 
     # -----------------------------------------------------------------
 
@@ -341,7 +382,13 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         log.info("Setting the dust components ...")
 
         # Loop over the dust components
+        for name in get_dust_component_names(self.config.path, self.model_name):
 
+            # Load the component
+            component = load_dust_component(self.config.path, self.model_name, name)
+
+            # Set
+            #self.dust_components[name] = component
 
     # -----------------------------------------------------------------
 

@@ -32,17 +32,18 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructors of the base classes
-        FittingComponent.__init__(self, config)
-        SEDModelingComponent.__init__(self, config)
+        FittingComponent.__init__(self, config, interactive)
+        SEDModelingComponent.__init__(self, config, interactive)
 
         # The fitting run
         self.fitting_run = None

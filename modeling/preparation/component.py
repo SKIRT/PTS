@@ -31,16 +31,17 @@ class PreparationComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PreparationComponent, self).__init__(config)
+        super(PreparationComponent, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 

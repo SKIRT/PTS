@@ -68,16 +68,17 @@ class PreparationInitializer(PreparationComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PreparationInitializer, self).__init__(config)
+        super(PreparationInitializer, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -99,15 +100,16 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the image paths
         self.get_paths()
@@ -126,15 +128,16 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(PreparationInitializer, self).setup()
+        super(PreparationInitializer, self).setup(**kwargs)
 
         # Setup the remote PTS launcher
         if self.config.remote is not None: self.launcher.setup(self.config.remote)

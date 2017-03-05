@@ -34,16 +34,17 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ProjectedDustHeatingAnalyser, self).__init__(config)
+        super(ProjectedDustHeatingAnalyser, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -76,15 +77,16 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the wavelength grid
         self.load_wavelength_grid()
@@ -109,10 +111,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 

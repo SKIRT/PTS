@@ -78,14 +78,16 @@ class BatchImagePreparer(Configurable):
     This class ...
     """
     
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
         
         """
         The constructor ...
+        :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(BatchImagePreparer, self).__init__(config)
+        super(BatchImagePreparer, self).__init__(config, interactive)
 
         # The images
         self.images = dict()

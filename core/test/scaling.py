@@ -67,14 +67,15 @@ class ScalingTest(Configurable):
     An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(ScalingTest, self).__init__(config)
+        super(ScalingTest, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -141,14 +142,14 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         When this function is called, the scaling test is started.
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load (and create) the info tables
         self.create_info_table()
@@ -161,15 +162,16 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(ScalingTest, self).setup()
+        super(ScalingTest, self).setup(**kwargs)
 
         # Basic setup
         self.setup_basic()

@@ -30,6 +30,7 @@ from ...core.basics.emissionlines import EmissionLines
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.advanced.dustgridtool import DustGridTool
 from ...core.advanced.parallelizationtool import ParallelizationTool
+from ...core.basics.configuration import prompt_string
 
 # -----------------------------------------------------------------
 
@@ -46,18 +47,28 @@ class BestModelLauncher(FittingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(BestModelLauncher, self).__init__(config)
+        super(BestModelLauncher, self).__init__(config, interactive)
 
         # -- Attributes --
+
+        # The fitting run
+        self.fitting_run = None
+
+        # The generation name
+        self.generation_name = None
+
+        # The ski file template
+        self.ski = None
 
         # The SKIRT batch launcher
         self.launcher = BatchLauncher()
@@ -95,15 +106,19 @@ class BestModelLauncher(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
+
+        # Load the ski template
+        self.load_ski()
 
         # 2. Create the wavelength grid
         self.create_wavelength_grid()
@@ -134,15 +149,32 @@ class BestModelLauncher(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(BestModelLauncher, self).setup()
+        super(BestModelLauncher, self).setup(**kwargs)
+
+        # Load the fitting run
+        self.fitting_run = self.load_fitting_run(self.config.fitting_run)
+
+        # Set the default option for the generation name
+        last_generation_name = self.fitting_run.last_finished_generation
+        if last_generation_name is None: last_generation_name = "first_guess"
+
+        # Set the choices for the generationn name
+        generation_names = ["first_guess"] + self.fitting_run.finished_generations
+
+        # Get the generation name
+        self.generation_name = prompt_string("generation", "name of the (finished) generation for which to relaunch the "
+                                                           "best simulation",
+                                             default=last_generation_name,
+                                             choices=generation_names)
 
         # Set options for the batch launcher
         self.set_launcher_options()
@@ -151,8 +183,8 @@ class BestModelLauncher(FittingComponent):
         self.set_analysis_options_total()
 
         # Create a directory for the simulation of the best model of the specified generation
-        self.best_generation_path = fs.join(self.fitting_run.best_path, self.config.generation)
-        if fs.is_directory(self.best_generation_path): raise RuntimeError("The best model has already been launched for this generation (" + self.config.generation + ")")
+        self.best_generation_path = fs.join(self.fitting_run.best_path, self.generation_name)
+        if fs.is_directory(self.best_generation_path): raise RuntimeError("The best model has already been launched for this generation (" + self.generation_name + ")")
         fs.create_directory(self.best_generation_path)
 
         # Set the paths to the wavelength and dust grid files
@@ -172,8 +204,20 @@ class BestModelLauncher(FittingComponent):
             self.contributions_output_paths[contribution] = fs.create_directory_in(simulation_path, "out")
 
             # Set the ski path
-            ski_path = fs.join(simulation_path, self.galaxy_name + ".ski")
+            ski_path = fs.join(simulation_path, self.object_name + ".ski")
             self.ski_paths[contribution] = ski_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.name
 
     # -----------------------------------------------------------------
 
@@ -257,6 +301,17 @@ class BestModelLauncher(FittingComponent):
         self.analysis_options_total["misc"]["images_wcs"] = self.reference_wcs_path
         self.analysis_options_total["misc"]["images_unit"] = "MJy/sr"
         self.analysis_options_total["misc"]["images_kernels"] = kernel_paths
+
+    # -----------------------------------------------------------------
+
+    def load_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.ski = self.fitting_run.ski_template
 
     # -----------------------------------------------------------------
 
@@ -359,22 +414,22 @@ class BestModelLauncher(FittingComponent):
         log.info("Getting the parameter values ...")
 
         # If the first guess model should be used
-        if self.config.generation == "first_guess":
+        if self.generation_name == "first_guess":
 
             # Inform the user
             log.info("Using the parameter values from the initial guess model ...")
 
             # Get the parameter values
-            self.parameter_values = self.first_guess_parameter_values
+            self.parameter_values = self.fitting_run.first_guess_parameter_values
 
         # If the best simulation of a generation has to be used
         else:
 
             # Inform the user
-            log.info("Using the parameter values from the best model in the '" + self.config.generation + "' generation ...")
+            log.info("Using the parameter values from the best model in the '" + self.generation_name + "' generation ...")
 
             # Get the parameter values
-            self.parameter_values = self.best_parameter_values_for_generation(self.config.generation)
+            self.parameter_values = self.fitting_run.best_parameter_values_for_generation(self.generation_name)
 
         # Debugging
         log.debug("The parameter values used for the simulations are: ")
@@ -417,7 +472,7 @@ class BestModelLauncher(FittingComponent):
         for label in self.parameter_values: assert hasattr(self.parameter_values[label], "unit")
 
         # Set the parameter values in the ski file template
-        self.ski_template.set_labeled_values(self.parameter_values)
+        self.ski.set_labeled_values(self.parameter_values)
 
     # -----------------------------------------------------------------
 
@@ -435,33 +490,33 @@ class BestModelLauncher(FittingComponent):
         log.debug("Setting the number of photon packages to " + str(self.config.npackages) + " ...")
 
         # Set the number of photon packages per wavelength
-        self.ski_template.setpackages(self.config.npackages)
+        self.ski.setpackages(self.config.npackages)
 
         # Debugging
         log.debug("Enabling dust self-absorption ..." if self.config.selfabsorption else "Disabling dust self-absorption ...")
 
         # Set dust self-absorption
-        if self.config.selfabsorption: self.ski_template.enable_selfabsorption()
-        else: self.ski_template.disable_selfabsorption()
+        if self.config.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
 
         # Debugging
         log.debug("Enabling transient heating ..." if self.config.transient_heating else "Disabling transient heating ...")
 
         # Set transient heating
-        if self.config.transient_heating: self.ski_template.set_transient_dust_emissivity()
-        else: self.ski_template.set_grey_body_dust_emissivity()
+        if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
+        else: self.ski.set_grey_body_dust_emissivity()
 
         # Debugging
         log.debug("Setting the wavelength grid file ...")
 
         # Set the name of the wavelength grid file
-        self.ski_template.set_file_wavelength_grid(fs.name(self.wavelength_grid_path))
+        self.ski.set_file_wavelength_grid(fs.name(self.wavelength_grid_path))
 
         # Debugging
         log.debug("Setting the dust grid ...")
 
         # Set the dust grid
-        self.ski_template.set_dust_grid(self.dust_grid)
+        self.ski.set_dust_grid(self.dust_grid)
 
     # -----------------------------------------------------------------
 
@@ -479,7 +534,7 @@ class BestModelLauncher(FittingComponent):
         for contribution in contributions:
 
             # Create a copy of the ski file instance
-            ski = self.ski_template.copy()
+            ski = self.ski.copy()
 
             # Adjust the ski file for generating simulated images
             if contribution == "total":
@@ -524,7 +579,7 @@ class BestModelLauncher(FittingComponent):
         tool = ParallelizationTool()
 
         # Set configuration options
-        tool.config.ski = self.ski_template
+        tool.config.ski = self.ski
         tool.config.input = self.input_paths
 
         # Set host properties
@@ -769,7 +824,7 @@ class BestModelLauncher(FittingComponent):
             output_path = self.contributions_output_paths[contribution]
 
             # Set the simulation name
-            simulation_name = self.config.generation.replace(" ", "") + "_" + contribution
+            simulation_name = self.generation_name.replace(" ", "") + "_" + contribution
 
             # Create the SKIRT simulation definition
             definition = SingleSimulationDefinition(ski_path, output_path, self.input_paths)

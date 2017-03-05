@@ -33,28 +33,30 @@ class Reporter(ReportingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Reporter, self).__init__(config)
+        super(Reporter, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Make a report for the data
         if self.config.step == steps[0]: self.report_data()
@@ -88,15 +90,16 @@ class Reporter(ReportingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(Reporter, self).setup()
+        super(Reporter, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

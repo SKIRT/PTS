@@ -32,16 +32,17 @@ class AttenuationAnalysisComponent(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(AttenuationAnalysisComponent, self).__init__(config)
+        super(AttenuationAnalysisComponent, self).__init__(config, interactive)
 
         # The analysis run
         self.analysis_run = None

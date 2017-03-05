@@ -49,7 +49,7 @@ class DataComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -57,7 +57,7 @@ class DataComponent(GalaxyModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(DataComponent, self).setup()
+        super(DataComponent, self).setup(**kwargs)
 
         # Set the path to the galaxy info file
         self.galaxy_info_path = fs.join(self.data_path, "info.dat")

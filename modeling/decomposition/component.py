@@ -31,16 +31,17 @@ class DecompositionComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(DecompositionComponent, self).__init__(config)
+        super(DecompositionComponent, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -52,15 +53,16 @@ class DecompositionComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(DecompositionComponent, self).setup()
+        super(DecompositionComponent, self).setup(**kwargs)
 
         # Set ...
         self.components_2d_path = fs.create_directory_in(self.components_path, "2D")

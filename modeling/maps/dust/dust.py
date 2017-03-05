@@ -31,16 +31,17 @@ class DustMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
         :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(DustMapMaker, self).__init__(config)
+        super(DustMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -62,15 +63,16 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Calculate the significance masks
         self.calculate_significance()
@@ -104,15 +106,16 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(DustMapMaker, self).setup()
+        super(DustMapMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
