@@ -2895,6 +2895,25 @@ class LabeledSkiFile(SkiFile):
 
     # -----------------------------------------------------------------
 
+    def delabel_all_except(self, *args):
+
+        """
+        This function ...
+        :param args
+        :return:
+        """
+
+        # Loop over the labels, delabel
+        for label in self.labels:
+
+            # Skip if label is passed as argument
+            if label in args: continue
+
+            # Otherwise, delabel
+            self.delabel(label)
+
+    # -----------------------------------------------------------------
+
     def delabel(self, label):
 
         """

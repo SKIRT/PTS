@@ -263,7 +263,7 @@ class StarsBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the old stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["old"])
+        deprojection = self.create_deprojection_for_map(self.maps["old"], "old_stars.fits", self.parameters["old"].scale_height)
 
         # Set the deprojection model
         self.deprojections["old"] = deprojection
@@ -365,7 +365,7 @@ class StarsBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the young stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["young"])
+        deprojection = self.create_deprojection_for_map(self.maps["young"], "young_stars.fits", self.parameters["young"].scale_height)
 
         # Set the deprojection model
         self.deprojections["young"] = deprojection
@@ -474,7 +474,7 @@ class StarsBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the ionizing stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["ionizing"])
+        deprojection = self.create_deprojection_for_map(self.maps["ionizing"], "ionizing_stars.fits", self.parameters["ionizing"].scale_height)
 
         # Set the deprojection model
         self.deprojections["ionizing"] = deprojection

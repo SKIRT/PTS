@@ -363,8 +363,52 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
                 # Also
                 self.ski.set_stellar_component_geometry(component.deprojection)
 
-            # Set parameters
+            # Check if this is a new component
+            if "geometry" in component.parameters:
 
+                #definition.add_required("name", "string", "name for this stellar component")
+                #definition.add_optional("description", "string", "description for the component")
+                #definition.add_optional("geometry", "string", "SKIRT base geometry for the component",
+                #                        self.smile.concrete_geometries)
+                #definition.add_optional("sed", "string", "SED template for the component",
+                #                        self.smile.concrete_stellar_seds)
+                #definition.add_optional("normalization", "string", "normalization for the component",
+                #                        self.smile.concrete_stellar_normalizations)
+
+            # Check if this is a MAPPINGS template
+            elif "sfr" in component.parameters:
+
+                metallicity = component.parameters.metallicity
+                compactness = component.parameters.compactness
+                pressure = component.parameters.pressure
+                covering_factor = component.parameters.covering_factor
+
+                luminosity = component.parameters.luminosity
+
+                # Set SED and luminosity
+                #self.ski.set_stellar_component_geometry("Ionizing stars", deprojection)
+                self.ski.set_stellar_component_mappingssed("Ionizing stars", metallicity, compactness, pressure, covering_factor)  # SED
+
+                # SET NORMALIZATION (IS FREE PARAMETER)
+                self.ski.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
+                self.ski.set_labeled_value("fuv_ionizing", luminosity)  # keep label
+
+                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
+
+            # Not mappings
+            else:
+
+                template = component.parameters.template
+                age = component.parameters.age
+                metallicity = component.parameters.metallicity
+
+                luminosity = component.parameters.luminosity
+
+                # Set SED and luminosity
+                self.ski.set_stellar_component_sed(title, template, age, metallicity)
+                self.ski.set_stellar_component_luminosity(title, luminosity, wavelength)
+
+                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
 
             # Set properties
             if "properties" in component:
